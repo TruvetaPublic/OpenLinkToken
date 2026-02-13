@@ -49,6 +49,11 @@
                 <version>2.0.2</version>
             </dependency>
             <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>aircompressor-v3</artifactId>
+                <version>3.5</version>
+            </dependency>
+            <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
                 <version>33.5.0-jre</version>
@@ -94,6 +99,11 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-csv</artifactId>
             <version>1.14.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>aircompressor-v3</artifactId>
         </dependency>
 
         <!-- Parquet/Hadoop -->
@@ -162,6 +172,10 @@
             <artifactId>parquet-hadoop</artifactId>
             <version>1.17.0</version>
             <exclusions>
+                <exclusion>
+                    <groupId>io.airlift</groupId>
+                    <artifactId>aircompressor</artifactId>
+                </exclusion>
                 <exclusion>
                     <groupId>org.apache.hadoop</groupId>
                     <artifactId>hadoop-client-runtime</artifactId>
