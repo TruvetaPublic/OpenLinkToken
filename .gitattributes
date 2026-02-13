@@ -49,3 +49,5 @@ LICENSE text eol=lf
 *.gif binary
 *.ico binary
 *.pdf binary
+
+.github/workflows/*.lock.yml linguist-generated=true merge=ours
