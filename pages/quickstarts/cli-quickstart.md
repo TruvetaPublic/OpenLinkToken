@@ -12,9 +12,68 @@ Run the OpenToken CLI end-to-end to generate tokens from a sample dataset in min
 
 Choose one of:
 
-- **Docker** (recommended) - No other dependencies needed
+- **Self-contained executable** (easiest) - Download and run, zero dependencies
+- **Docker** (recommended for reproducibility) - No other dependencies needed
 - **Java 21+** and Maven 3.8+
 - **Python 3.10+**
+
+## Quick Start with Self-Contained Executable
+
+The easiest way to get started. No Docker, Java, or Python installation required.
+
+### Download
+
+Download the appropriate executable for your platform from the [latest release](https://github.com/TruvetaPublic/OpenToken/releases):
+
+- **Linux**: `opentoken-cli-{version}-linux-x64.zip`
+- **macOS**: `opentoken-cli-{version}-macos-universal.zip` (works on both Intel and Apple Silicon)
+- **Windows**: `opentoken-cli-{version}-windows-x64.zip`
+
+### Extract and Run
+
+**Linux/macOS:**
+
+```bash
+# Extract the zip file
+unzip opentoken-cli-1.12.5-macos-universal.zip
+cd opentoken-cli-1.12.5-macos-universal
+
+# Make executable (if needed)
+chmod +x opentoken
+
+# Run the CLI
+./opentoken \
+  -i /path/to/sample.csv \
+  -o /path/to/output.csv \
+  -t csv \
+  -h "HashingKey" \
+  -e "Secret-Encryption-Key-Goes-Here."
+```
+
+**Windows PowerShell:**
+
+```powershell
+# Extract the zip file
+Expand-Archive opentoken-cli-1.12.5-windows-x64.zip
+cd opentoken-cli-1.12.5-windows-x64
+
+# Run the CLI
+.\opentoken.exe `
+  -i C:\path\to\sample.csv `
+  -o C:\path\to\output.csv `
+  -t csv `
+  -h "HashingKey" `
+  -e "Secret-Encryption-Key-Goes-Here."
+```
+
+### Verifying the Executable
+
+The self-contained executable includes:
+- Python 3.11 runtime (bundled)
+- All dependencies (pyarrow, pandas, cryptography)
+- OpenToken CLI and core library
+
+No installation or setup required — just download, extract, and run.
 
 ## Quick Start with Docker
 

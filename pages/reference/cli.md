@@ -6,6 +6,26 @@ layout: default
 
 Complete reference for OpenToken CLI arguments, modes, and examples. This page is the single source of truth for CLI flags and options; other documentation (such as Configuration) links here instead of duplicating them.
 
+## Installation Options
+
+### Self-Contained Executable (Recommended)
+
+Download the pre-built executable from [releases](https://github.com/TruvetaPublic/OpenToken/releases):
+
+- **Linux**: `opentoken-cli-{version}-linux-x64.zip`
+- **macOS**: `opentoken-cli-{version}-macos-universal.zip` (Intel + Apple Silicon)
+- **Windows**: `opentoken-cli-{version}-windows-x64.zip`
+
+No dependencies required. Extract and run.
+
+### Other Options
+
+- **Docker**: Use `run-opentoken.sh` (Linux/Mac) or `run-opentoken.ps1` (Windows)
+- **Java**: Build from source with Maven, run `java -jar opentoken-cli-*.jar`
+- **Python**: Install via pip, run `opentoken` or `python -m opentoken_cli`
+
+For installation details, see the [CLI Quickstart](../quickstarts/cli-quickstart.md).
+
 ## Security Note
 
 Treat generated token outputs and metadata as **sensitive**. In particular, `--hash-only` output is intended for internal use and should not be shared externally (for example, in tickets, chats, or public repos).
@@ -15,6 +35,10 @@ Hash-only mode is primarily used to build **internal overlap-analysis datasets**
 ## Command Syntax
 
 ```bash
+# Self-contained executable
+./opentoken [OPTIONS]                    # Linux/macOS
+.\opentoken.exe [OPTIONS]                # Windows
+
 # Java
 java -jar opentoken-cli-*.jar [OPTIONS]
 

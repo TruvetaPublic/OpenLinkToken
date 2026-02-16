@@ -52,6 +52,20 @@ Perfect for understanding privacy-preserving record linkage concepts before divi
 
 ## Quickstart
 
+**Self-contained executable (easiest):**
+
+Download the [latest release](https://github.com/TruvetaPublic/OpenToken/releases) for your platform and run:
+
+```bash
+# Linux/macOS
+./opentoken -i ./resources/sample.csv -t csv -o ./resources/output.csv \
+  -h "HashingKey" -e "Secret-Encryption-Key-Goes-Here."
+
+# Windows
+.\opentoken.exe -i .\resources\sample.csv -t csv -o .\resources\output.csv `
+  -h "HashingKey" -e "Secret-Encryption-Key-Goes-Here."
+```
+
 **Docker/CLI workflow:**
 
 ```bash
