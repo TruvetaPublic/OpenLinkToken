@@ -10,7 +10,23 @@ permissions:
   contents: read
 
 jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Get version
+        id: get-version
+        run: |
+          version=$(sed -n '/^\[bumpversion\]/,/^\[/p' .bumpversion.cfg | grep "^current_version" | sed 's/^current_version = //')
+          echo "version=${version}" >> $GITHUB_OUTPUT
+          echo "Detected version: ${version}"
+
   build:
+    needs: version
     name: Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
@@ -53,20 +69,42 @@ jobs:
           Copy-Item resources\sample.csv smoke\input.csv
           .\dist\opentoken.exe -i smoke\input.csv -t csv -o smoke\out.csv -h secret --hash-only
 
-      - name: Prepare artifact
+      - name: Prepare and zip artifact
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "artifacts/${{ matrix.os }}"
+          VERSION="${{ needs.version.outputs.version }}"
+          
+          # Determine platform name
+          case "${{ runner.os }}" in
+            Linux)   PLATFORM="linux-x64" ;;
+            macOS)   PLATFORM="macos-x64" ;;
+            Windows) PLATFORM="windows-x64" ;;
+          esac
+          
+          # Create versioned directory
+          PACKAGE_NAME="opentoken-cli-${VERSION}-${PLATFORM}"
+          mkdir -p "${PACKAGE_NAME}"
+          
+          # Copy executable
           if [[ "${{ runner.os }}" == "Windows" ]]; then
-            cp "dist/opentoken.exe" "artifacts/${{ matrix.os }}/"
+            cp "dist/opentoken.exe" "${PACKAGE_NAME}/"
           else
-            cp "dist/opentoken" "artifacts/${{ matrix.os }}/"
+            cp "dist/opentoken" "${PACKAGE_NAME}/"
           fi
+          
+          # Create zip file
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            powershell -Command "Compress-Archive -Path '${PACKAGE_NAME}' -DestinationPath '${PACKAGE_NAME}.zip'"
+          else
+            zip -r "${PACKAGE_NAME}.zip" "${PACKAGE_NAME}"
+          fi
+          
+          echo "Created ${PACKAGE_NAME}.zip"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: opentoken-cli-${{ matrix.os }}
-          path: artifacts/${{ matrix.os }}/
+          name: opentoken-cli-${{ needs.version.outputs.version }}-${{ matrix.os }}
+          path: opentoken-cli-*.zip
           if-no-files-found: error
