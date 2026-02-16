@@ -10,6 +10,12 @@ on:
   workflow_run:
     workflows: ["Create Release on Merge"]
     types: [completed]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish (e.g., 1.12.5)"
+        required: true
+        type: string
 
 permissions:
   contents: read
