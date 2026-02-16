@@ -26,6 +26,8 @@ jobs:
     secrets: inherit
     with:
       lookup-release: true
+      # Use manual input version if provided (add v prefix for tag format)
+      release-tag: ${{ github.event.inputs.version && format('v{0}', github.event.inputs.version) || '' }}
 
   build:
     needs: release-info

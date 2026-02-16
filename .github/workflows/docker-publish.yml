@@ -35,6 +35,8 @@ jobs:
     secrets: inherit
     with:
       lookup-release: ${{ github.event_name == 'release' || github.event_name == 'workflow_run' }}
+      # Use manual input version if provided (add v prefix for tag format)
+      release-tag: ${{ github.event.inputs.version && format('v{0}', github.event.inputs.version) || '' }}
 
   build:
     needs: release-info
