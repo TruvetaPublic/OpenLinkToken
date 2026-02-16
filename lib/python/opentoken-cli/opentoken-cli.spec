@@ -5,7 +5,8 @@ from PyInstaller.utils.hooks import collect_all, collect_submodules
 
 block_cipher = None
 
-base_dir = os.path.abspath(os.path.join(os.getcwd(), "lib", "python", "opentoken-cli"))
+# Anchor to spec file location for reproducible builds
+base_dir = os.path.abspath(os.path.dirname(__file__))
 
 datas = []
 binaries = []
