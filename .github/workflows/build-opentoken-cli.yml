@@ -51,8 +51,14 @@ jobs:
           pip install -e lib/python/opentoken-cli
 
       - name: Build CLI binary
+        shell: bash
         run: |
-          pyinstaller --clean --noconfirm lib/python/opentoken-cli/opentoken-cli.spec
+          if [[ "${{ runner.os }}" == "macOS" ]]; then
+            # Build universal binary for macOS (both x86_64 and arm64)
+            pyinstaller --clean --noconfirm --target-arch universal2 lib/python/opentoken-cli/opentoken-cli.spec
+          else
+            pyinstaller --clean --noconfirm lib/python/opentoken-cli/opentoken-cli.spec
+          fi
 
       - name: Smoke test (macOS/Linux)
         if: runner.os != 'Windows'
@@ -78,7 +84,7 @@ jobs:
           # Determine platform name
           case "${{ runner.os }}" in
             Linux)   PLATFORM="linux-x64" ;;
-            macOS)   PLATFORM="macos-x64" ;;
+            macOS)   PLATFORM="macos-universal" ;;
             Windows) PLATFORM="windows-x64" ;;
           esac
           
