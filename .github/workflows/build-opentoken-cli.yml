@@ -1,0 +1,75 @@
+name: Build OpenToken CLI (PyInstaller)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "lib/python/opentoken-cli/**"
+      - ".github/workflows/build-opentoken-cli.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r lib/python/opentoken-cli/pyinstaller-requirements.txt
+          pip install -r lib/python/opentoken-cli/requirements.txt
+          pip install -e lib/python/opentoken-cli
+
+      - name: Build CLI binary
+        run: |
+          pyinstaller --clean --noconfirm lib/python/opentoken-cli/opentoken-cli.spec
+
+      - name: Smoke test (macOS/Linux)
+        if: runner.os != 'Windows'
+        run: |
+          mkdir -p smoke
+          cp resources/sample.csv smoke/input.csv
+          ./dist/opentoken -i smoke/input.csv -t csv -o smoke/out.csv -h secret --hash-only
+
+      - name: Smoke test (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path smoke | Out-Null
+          Copy-Item resources\sample.csv smoke\input.csv
+          .\dist\opentoken.exe -i smoke\input.csv -t csv -o smoke\out.csv -h secret --hash-only
+
+      - name: Prepare artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "artifacts/${{ matrix.os }}"
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            cp "dist/opentoken.exe" "artifacts/${{ matrix.os }}/"
+          else
+            cp "dist/opentoken" "artifacts/${{ matrix.os }}/"
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: opentoken-cli-${{ matrix.os }}
+          path: artifacts/${{ matrix.os }}/
+          if-no-files-found: error

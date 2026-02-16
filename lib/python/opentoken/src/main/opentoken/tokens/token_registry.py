@@ -2,9 +2,9 @@
 Copyright (c) Truveta. All rights reserved.
 """
 
-import pkgutil
 import importlib
-import pathlib
+import pkgutil
+from importlib import resources
 from typing import Dict, List
 from opentoken.attributes.attribute_expression import AttributeExpression
 from opentoken.tokens.token import Token
@@ -15,17 +15,24 @@ class TokenRegistry:
     def load_all_tokens() -> Dict[str, List[AttributeExpression]]:
         definitions: Dict[str, List[AttributeExpression]] = {}
 
-        # package name for import
-        package = "opentoken.tokens.definitions"
+        package_name = "opentoken.tokens.definitions"
+        package = importlib.import_module(package_name)
 
-        # real filesystem path (relative to this file)
-        package_path = str(pathlib.Path(__file__).parent / "definitions")
+        module_names = [module_info.name for module_info in pkgutil.iter_modules(package.__path__)]
 
-        # iterate over modules in the definitions package
-        for _, modname, _ in pkgutil.iter_modules([package_path]):
-            module = importlib.import_module(f"{package}.{modname}")
+        if not module_names:
+            try:
+                module_names = [
+                    item.name[:-3]
+                    for item in resources.files(package).iterdir()
+                    if item.name.endswith(".py") and item.name != "__init__.py"
+                ]
+            except Exception:
+                module_names = ["t1_token", "t2_token", "t3_token", "t4_token", "t5_token"]
 
-            # scan for Token subclasses
+        for module_name in module_names:
+            module = importlib.import_module(f"{package_name}.{module_name}")
+
             for obj in module.__dict__.values():
                 if isinstance(obj, type) and issubclass(obj, Token) and obj is not Token:
                     token = obj()
