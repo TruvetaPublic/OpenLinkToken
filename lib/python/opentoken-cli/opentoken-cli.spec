@@ -6,7 +6,8 @@ from PyInstaller.utils.hooks import collect_all, collect_submodules
 block_cipher = None
 
 # Anchor to spec file location for reproducible builds
-base_dir = os.path.abspath(os.path.dirname(__file__))
+# Note: SPECPATH is provided by PyInstaller when executing the spec
+base_dir = os.path.abspath(SPECPATH)
 
 datas = []
 binaries = []
