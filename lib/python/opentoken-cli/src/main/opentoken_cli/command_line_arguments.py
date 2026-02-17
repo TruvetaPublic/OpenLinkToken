@@ -3,6 +3,7 @@ Copyright (c) Truveta. All rights reserved.
 """
 
 import argparse
+import uuid
 from typing import Optional
 
 
@@ -22,6 +23,7 @@ class CommandLineArguments:
         self.output_type: str = ""
         self.decrypt: bool = False
         self.hash_only: bool = False
+        self.ring_id: str = str(uuid.uuid4())
 
     @classmethod
     def parse_args(cls, args: Optional[list] = None) -> 'CommandLineArguments':
@@ -102,6 +104,14 @@ class CommandLineArguments:
             default=False
         )
 
+        parser.add_argument(
+            "--ring-id",
+            dest="ring_id",
+            help="Ring identifier for key management. Defaults to a random UUID if not provided.",
+            required=False,
+            default=str(uuid.uuid4())
+        )
+
         parsed_args = parser.parse_args(args)
 
         # Create instance and populate with parsed values
@@ -114,6 +124,7 @@ class CommandLineArguments:
         instance.output_type = parsed_args.output_type
         instance.decrypt = parsed_args.decrypt
         instance.hash_only = parsed_args.hash_only
+        instance.ring_id = parsed_args.ring_id
 
         return instance
 
@@ -147,6 +158,11 @@ class CommandLineArguments:
     def outputType(self) -> str:
         """Get the output type (Java-style getter for compatibility)."""
         return self.output_type
+
+    @property
+    def ringId(self) -> str:
+        """Get the ring ID (Java-style getter for compatibility)."""
+        return self.ring_id
 
     def __str__(self) -> str:
         """String representation of the command line arguments."""

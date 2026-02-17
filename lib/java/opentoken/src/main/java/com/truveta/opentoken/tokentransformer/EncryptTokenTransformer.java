@@ -48,7 +48,8 @@ public class EncryptTokenTransformer implements TokenTransformer {
             throws InvalidKeyException, InvalidAlgorithmParameterException {
         if (encryptionKey.length() != EncryptionConstants.KEY_BYTE_LENGTH) {
             logger.error("Invalid Argument. Key must be {} characters long", EncryptionConstants.KEY_BYTE_LENGTH);
-            throw new InvalidKeyException(String.format("Key must be %s characters long", EncryptionConstants.KEY_BYTE_LENGTH));
+            throw new InvalidKeyException(
+                    String.format("Key must be %s characters long", EncryptionConstants.KEY_BYTE_LENGTH));
         }
 
         secureRandom = new SecureRandom();
@@ -88,7 +89,6 @@ public class EncryptTokenTransformer implements TokenTransformer {
     public String transform(String token)
             throws IllegalStateException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException,
             InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchPaddingException {
-
         // Generate random IV (for AES block size)
         byte[] ivBytes = new byte[EncryptionConstants.IV_SIZE];
         secureRandom.nextBytes(ivBytes);

@@ -1,9 +1,9 @@
 {
-  "JavaVersion": "21.0.9",
-  "Platform": "Java",
-  "OpenTokenVersion": "1.12.5",
-  "HashingSecretHash": "ff3324d20eb09c06bf32e21cbfe98ed4b668a2861c77af3aa202a36469614486",
-  "EncryptionSecretHash": "7510957b7109ac36e043c1b1cdd684105543d93763b3be2a1b0aa093d417c3bb",
+  "PythonVersion": "3.11.2",
+  "Platform": "Python",
+  "OpenTokenVersion": "2.0.0-alpha",
+  "HashingSecretHash": "26ce1637d4a1e514cbf90ce0d73d7ea257342009083ab6f6e06cb434fb3a9d99",
+  "EncryptionSecretHash": "05f0825275cb54bdf4cde58ef6875d24acb75f84ec0187a26d45d626f57f189b",
   "TotalRows": 105,
   "TotalRowsWithInvalidAttributes": 12,
   "InvalidAttributesByType": {

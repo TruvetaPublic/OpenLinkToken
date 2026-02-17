@@ -133,7 +133,7 @@ record1,T2,pUxPgYL9+cMxkA+8928Pil+9W+dm9kISwHYPdkZS+I2nQ/bQ/8HyL3FOVf3NYPW5NKZZO
 ```json
 {
   "JavaVersion": "21.0.0",
-  "OpenTokenVersion": "1.12.5",
+  "OpenTokenVersion": "2.0.0-alpha",
   "Platform": "Java",
   "TotalRows": 1,
   "TotalRowsWithInvalidAttributes": 0,

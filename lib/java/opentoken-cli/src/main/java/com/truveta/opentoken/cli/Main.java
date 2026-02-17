@@ -3,8 +3,6 @@
  */
 package com.truveta.opentoken.cli;
 
-import java.io.IOException;
-
 import com.truveta.opentoken.cli.commands.OpenTokenCommand;
 
 /**
@@ -25,9 +23,8 @@ public class Main {
      * Application entry point. Routes to the subcommand-based interface.
      *
      * @param args command-line arguments
-     * @throws IOException if an I/O error occurs
      */
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         OpenTokenCommand.main(args);
     }
 }

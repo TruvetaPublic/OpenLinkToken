@@ -227,7 +227,7 @@ OpenToken normalizes each field before token generation. For full rules, see [No
 
 ### Step 2: Token Generation
 
-Each record produces up to five tokens (T1–T5). Tokens are Base64-encoded hashes; the examples below are illustrative placeholders with realistic lengths (~88 characters for encrypted tokens).
+Each record produces up to five tokens (T1–T5). In encrypted mode, tokens are emitted as `ot.V1` JWE strings. In hash-only mode (or after decryption), tokens are base64-encoded HMAC values used for deterministic equality checks.
 
 For detailed rule compositions, see [Token Rules](token-rules.md).
 
@@ -251,7 +251,7 @@ For detailed rule compositions, see [Token Rules](token-rules.md).
 | T4   | `452387291\|F\|1988-03-22`       | `ZnBOdFdtS2haQWdWcko...` |
 | T5   | `GARCIA\|MAR\|F`                 | `RWtqVXhMY0dTcldmbVk...` |
 
-**Observation:** HOS-101 and CLN-201 produce **identical tokens** for all five rules because their normalized attributes are identical.
+**Observation:** HOS-101 and CLN-201 produce **identical token signatures** for all five rules because their normalized attributes are identical. Their hash-only values (or decrypted values) match exactly; encrypted `ot.V1` token strings can differ because encryption uses random IVs.
 
 **HOS-102 (tom O'Reilly, 1995-11-03):**
 
@@ -277,7 +277,7 @@ For detailed rule compositions, see [Token Rules](token-rules.md).
 
 ### Step 3: Matching Decisions
 
-When comparing tokens across the two systems:
+When comparing hash-only (or decrypted) token values across the two systems:
 
 | Record Pair       | T1  | T2  | T3  | T4  | T5  | Match?                |
 | ----------------- | --- | --- | --- | --- | --- | --------------------- |
@@ -288,7 +288,7 @@ When comparing tokens across the two systems:
 
 **Interpretation:**
 
-- **HOS-101 and CLN-201 are the same person.** Despite surface differences ("María" vs "Maria", suffix "Jr."), normalization produces identical attributes, so all tokens match.
+- **HOS-101 and CLN-201 are the same person.** Despite surface differences ("María" vs "Maria", suffix "Jr."), normalization produces identical attributes, so all deterministic token values match.
 - **HOS-102 and CLN-202 may be the same person, but only match on T1.** Depending on your matching policy, you might require multiple-rule agreement (higher precision) or accept single-rule matches (higher recall).
 
 ### Key Takeaways

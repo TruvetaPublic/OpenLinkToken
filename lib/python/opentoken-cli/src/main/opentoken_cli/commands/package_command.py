@@ -3,6 +3,7 @@ Copyright (c) Truveta. All rights reserved.
 """
 
 import logging
+import uuid
 from typing import List
 
 from opentoken.metadata import Metadata
@@ -95,6 +96,13 @@ class PackageCommand:
             help="Encryption key for token encryption",
         )
 
+        parser.add_argument(
+            "--ring-id",
+            dest="ring_id",
+            default=None,
+            help="Ring identifier for key management. Defaults to a random UUID if not provided",
+        )
+
         parser.set_defaults(func=PackageCommand.execute)
 
     @staticmethod
@@ -104,12 +112,14 @@ class PackageCommand:
 
         # Default output type to input type if not specified
         output_type = args.output_type if args.output_type else args.input_type
+        ring_id = args.ring_id if args.ring_id and args.ring_id.strip() else str(uuid.uuid4())
 
         # Log parameters (mask secrets)
         logger.info(f"Input: {args.input_path} ({args.input_type})")
         logger.info(f"Output: {args.output_path} ({output_type})")
         logger.info(f"Hashing Secret: {StringMaskingUtil.mask_string(args.hashing_secret)}")
         logger.info(f"Encryption Key: {StringMaskingUtil.mask_string(args.encryption_key)}")
+        logger.info(f"Ring ID: {ring_id}")
 
         # Validate secrets
         if not args.hashing_secret or not args.hashing_secret.strip():
@@ -127,6 +137,7 @@ class PackageCommand:
                 output_type,
                 args.hashing_secret,
                 args.encryption_key,
+                ring_id,
             )
             logger.info("Token generation and encryption completed successfully")
             return 0
@@ -142,6 +153,7 @@ class PackageCommand:
         output_type: str,
         hashing_secret: str,
         encryption_key: str,
+        ring_id: str,
     ):
         """Process tokens from person attributes."""
         token_transformer_list: List[TokenTransformer] = []
@@ -165,8 +177,15 @@ class PackageCommand:
                 metadata.add_hashed_secret(Metadata.HASHING_SECRET_HASH, hashing_secret)
                 metadata.add_hashed_secret(Metadata.ENCRYPTION_SECRET_HASH, encryption_key)
 
-                # Process data
-                PersonAttributesProcessor.process(reader, writer, token_transformer_list, metadata_map)
+                # Process data with JWE wrapping support for v1 token format
+                PersonAttributesProcessor.process(
+                    reader,
+                    writer,
+                    token_transformer_list,
+                    metadata_map,
+                    encryption_key,
+                    ring_id,
+                )
 
                 # Write metadata
                 metadata_writer = MetadataJsonWriter(output_path)

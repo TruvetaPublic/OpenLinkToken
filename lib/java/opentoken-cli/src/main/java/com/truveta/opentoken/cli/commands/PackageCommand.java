@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 
 import org.slf4j.Logger;
@@ -67,6 +68,10 @@ public class PackageCommand implements Callable<Integer> {
     @Option(names = {"-e", "--encryptionkey"}, required = true,
             description = "Encryption key for token encryption")
     private String encryptionKey;
+
+        @Option(names = {"--ring-id"},
+            description = "Ring identifier for key management. Defaults to a random UUID if not provided")
+        private String ringId;
     
     @Option(names = {"--help"}, usageHelp = true,
             description = "Show this help message and exit")
@@ -84,12 +89,17 @@ public class PackageCommand implements Callable<Integer> {
         if (outputType == null || outputType.isEmpty()) {
             outputType = inputType;
         }
+
+        if (ringId == null || ringId.isBlank()) {
+            ringId = UUID.randomUUID().toString();
+        }
         
         // Log parameters (mask secrets)
         logger.info("Input: {} ({})", inputPath, inputType);
         logger.info("Output: {} ({})", outputPath, outputType);
         logger.info("Hashing Secret: {}", maskString(hashingSecret));
         logger.info("Encryption Key: {}", maskString(encryptionKey));
+        logger.info("Ring ID: {}", ringId);
         
         // Validate types
         if (!isValidType(inputType)) {
@@ -142,8 +152,8 @@ public class PackageCommand implements Callable<Integer> {
             metadata.addHashedSecret(Metadata.HASHING_SECRET_HASH, hashingSecret);
             metadata.addHashedSecret(Metadata.ENCRYPTION_SECRET_HASH, encryptionKey);
             
-            // Process data
-            PersonAttributesProcessor.process(reader, writer, transformers, metadataMap);
+            // Process data with JWE wrapping support for v1 token format
+            PersonAttributesProcessor.process(reader, writer, transformers, metadataMap, encryptionKey, ringId);
             
             // Write metadata
             MetadataWriter metadataWriter = new MetadataJsonWriter(outputPath);
