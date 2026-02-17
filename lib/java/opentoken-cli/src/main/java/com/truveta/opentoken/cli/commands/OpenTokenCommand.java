@@ -129,7 +129,7 @@ public class OpenTokenCommand implements Callable<Integer> {
      */
     private static boolean isHelpRequest(String[] args) {
         for (String arg : args) {
-            if (arg.equals("--help") || arg.equals("-h") || arg.equals("help")) {
+            if (arg.equals("--help") || arg.equals("help")) {
                 return true;
             }
         }
