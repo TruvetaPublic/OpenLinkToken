@@ -7,6 +7,8 @@ import logging
 import os
 import sys
 
+from opentoken.metadata import Metadata
+
 logger = logging.getLogger(__name__)
 
 
@@ -16,7 +18,7 @@ class OpenTokenCommand:
     Provides modern, subcommand-based interface for token operations.
     """
 
-    VERSION = "1.12.5"
+    VERSION = Metadata.DEFAULT_VERSION
 
     @staticmethod
     def show_banner():

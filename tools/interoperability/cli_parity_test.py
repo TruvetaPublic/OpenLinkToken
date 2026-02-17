@@ -9,6 +9,7 @@ help output, and behavior parity across all subcommands.
 import subprocess
 import sys
 import os
+import re
 from pathlib import Path
 
 # Color codes for output
@@ -31,10 +32,21 @@ def find_repo_root():
 def run_java_cli(*args):
     """Run Java CLI and return output."""
     repo_root = find_repo_root()
-    jar_path = repo_root / "lib/java/opentoken-cli/target/opentoken-cli-1.12.5.jar"
-    
-    if not jar_path.exists():
-        raise FileNotFoundError(f"Java JAR not found at {jar_path}. Run: cd lib/java && mvn clean package -DskipTests")
+    jar_dir = repo_root / "lib/java/opentoken-cli/target"
+    jar_candidates = sorted(
+        [
+            path
+            for path in jar_dir.glob("opentoken-cli-*.jar")
+            if path.is_file() and not path.name.startswith("original-")
+        ]
+    )
+
+    if not jar_candidates:
+        raise FileNotFoundError(
+            f"Java JAR not found in {jar_dir}. Run: cd lib/java && mvn clean package -DskipTests"
+        )
+
+    jar_path = jar_candidates[-1]
     
     result = subprocess.run(
         ["java", "-jar", str(jar_path)] + list(args),
@@ -168,10 +180,11 @@ def test_version_flag():
     # Both should output version information
     java_combined = java_out + java_err
     python_combined = python_out + python_err
+    version_pattern = re.compile(r"\b\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?\b")
     
-    assert "1.12.5" in java_combined or "OpenToken" in java_combined, \
+    assert version_pattern.search(java_combined) or "OpenToken" in java_combined, \
         "Java version output missing version info"
-    assert "1.12.5" in python_combined or "OpenToken" in python_combined, \
+    assert version_pattern.search(python_combined) or "OpenToken" in python_combined, \
         "Python version output missing version info"
     
     print(f"{GREEN}✓ Both CLIs support --version{RESET}")
