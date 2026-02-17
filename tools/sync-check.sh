@@ -37,7 +37,7 @@ OPTIONS:
     -f, --format FORMAT     Output format: console, github-checklist, json (default: console)
     -s, --since COMMIT      Compare changes since this commit/branch (default: HEAD~1)
                            Use 'origin/main' for full PR comparison
-    -l, --languages LANGS   Comma-separated list of languages to check (e.g., python,nodejs)
+    -l, --languages LANGS   Comma-separated list of languages to check (e.g., python)
                            Default: all enabled languages
     -i, --issue            Create GitHub issue for sync tasks (requires gh CLI)
     -v, --verbose          Enable verbose output

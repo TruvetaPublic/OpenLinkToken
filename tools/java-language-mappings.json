@@ -302,23 +302,6 @@
                 "**/resources/**"
             ]
         },
-        "nodejs": {
-            "enabled": false,
-            "base_path": "lib/nodejs/opentoken",
-            "naming_convention": "camelCase",
-            "file_extension": ".js",
-            "test_pattern": "{name}.test.js",
-            "critical_files": {},
-            "directory_mappings": {
-                "lib/java/opentoken/src/main/java/com/truveta/opentoken/": {
-                    "target_directory": "lib/nodejs/opentoken/src/",
-                    "sync_priority": "low",
-                    "description": "Placeholder mapping root for future NodeJS implementation",
-                    "auto_sync": true
-                }
-            },
-            "ignore_patterns": []
-        },
         "csharp": {
             "enabled": false,
             "base_path": "lib/csharp/opentoken",

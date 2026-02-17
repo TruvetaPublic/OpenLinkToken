@@ -1,32 +1,31 @@
-# Multi-Language Interoperability Tests
+# Interoperability Tests
 
-This directory contains tests that validate compatibility and consistency between the Java, Python, and Node.js implementations of OpenToken.
+This directory contains tests that validate compatibility and consistency between the Java and Python implementations of OpenToken.
 
 ## Prerequisites
 
 - Python 3.10 or higher
 - pip (Python package installer)
-- Java 21 SDK or higher (JAR output compatible with Java 11)
-- Node.js 20.x LTS or higher
-- npm (Node package manager)
+
+- Java 21 SDK or higher (JAR output compatible with Java 17)
 
 ## Test Categories
 
-- **Token Generation Compatibility**: Verify all three implementations generate identical tokens for the same input
+- **Token Generation Compatibility**: Verify both implementations generate identical tokens for the same input
 - **Data Format Compatibility**: Ensure serialized data can be read cross-platform
-- **Encryption/Decryption Compatibility**: Validate encrypted tokens from all implementations can be decrypted using the same decryptor tool
-- **Metadata Consistency**: Check that metadata formats are consistent across all implementations
+- **Encryption/Decryption Compatibility**: Validate encrypted tokens from both implementations can be decrypted using the same decryptor tool
+- **Metadata Consistency**: Check that metadata formats are consistent between implementations
 
 ## Running Tests
 
-These tests require Java, Python, and Node.js environments to be properly configured.
+These tests require both Java and Python environments to be properly configured.
 
 ```bash
 # Run all interoperability tests
 python -m pytest tools/interoperability/ -v
 
-# Run the multilanguage_interoperability_test.py file, which will run all tests
-python3 tools/interoperability/multilanguage_interoperability_test.py
+# Run the java_python_interoperability_test.py file, which will run all tests
+python3 tools/interoperability/java_python_interoperability_test.py
 ```
 
 ## Test Data

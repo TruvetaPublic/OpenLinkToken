@@ -8,8 +8,6 @@ on:
       - "lib/java/opentoken-cli/src/main/java/com/truveta/opentoken/**/*.java"
       - "lib/python/opentoken/src/**/*.py"
       - "lib/python/opentoken-cli/src/**/*.py"
-      - "lib/nodejs/opentoken/src/**/*.js"
-      - "lib/nodejs/opentoken/src/**/*.ts"
 
 jobs:
   sync-check:

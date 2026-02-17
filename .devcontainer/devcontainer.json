@@ -20,12 +20,7 @@
             "installGradle": "false"
         },
         "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
-        "ghcr.io/devcontainers/features/git-lfs:1": {},
-        "ghcr.io/devcontainers/features/node:1": {
-            "version": "20",
-            "nodeGypDependencies": true,
-            "nvmVersion": "latest"
-        }
+        "ghcr.io/devcontainers/features/git-lfs:1": {}
     },
     "customizations": {
         "vscode": {
@@ -44,10 +39,7 @@
                 "shengchen.vscode-checkstyle",
                 "GitHub.vscode-github-actions",
                 "GitHub.copilot-chat",
-                "ms-python.python",
-                "dbaeumer.vscode-eslint",
-                "ms-vscode.vscode-typescript-next",
-                "orta.vscode-jest"
+                "ms-python.python"
             ],
             "settings": {
                 "sonarlint.ls.javaHome": "/usr/local/sdkman/candidates/java/21.0.9-ms"
@@ -56,6 +48,6 @@
     },
     "mounts": [],
     "containerEnv": {},
-    "postCreateCommand": "cd lib/nodejs/opentoken && npm install",
-    "postStartCommand": "cd lib/nodejs/opentoken && npm run build"
+    "postCreateCommand": "",
+    "postStartCommand": ""
 }

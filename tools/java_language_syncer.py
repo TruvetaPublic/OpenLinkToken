@@ -106,42 +106,6 @@ class PythonHandler(LanguageHandler):
         return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 
-class NodeJSHandler(LanguageHandler):
-    """Node.js-specific logic (camelCase, .js extension)"""
-
-    def convert_java_to_target_naming(self, java_name):
-        # Test classes: SomeThingTest.java -> someThing.test.js
-        if java_name.endswith('Test.java'):
-            base = java_name[:-9]  # remove Test.java
-            camel = base[0].lower() + base[1:]
-            return camel + '.test.js'
-        elif java_name.endswith('.java'):
-            base = java_name[:-5]
-            camel = base[0].lower() + base[1:]
-            return camel + '.js'
-        return java_name
-
-    def convert_java_to_target_path(self, java_path):
-        # Replace Java source roots with Node.js source root
-        if "lib/java/opentoken/src/main/java/com/truveta/opentoken/" in java_path:
-            node_path = java_path.replace(
-                "lib/java/opentoken/src/main/java/com/truveta/opentoken/",
-                "lib/nodejs/opentoken/src/"
-            )
-        elif "lib/java/opentoken/src/test/java/com/truveta/opentoken/" in java_path:
-            node_path = java_path.replace(
-                "lib/java/opentoken/src/test/java/com/truveta/opentoken/",
-                "lib/nodejs/opentoken/test/"
-            )
-        else:
-            node_path = java_path
-
-        if node_path.endswith('.java'):
-            directory, filename = node_path.rsplit('/', 1)
-            return directory + '/' + self.convert_java_to_target_naming(filename)
-        return node_path
-
-
 class CSharpHandler(LanguageHandler):
     """C#-specific logic (PascalCase, .cs extension)"""
 
@@ -200,8 +164,6 @@ class JavaLanguageSyncer:
             if config.get('enabled', False):
                 if lang == 'python':
                     handlers[lang] = PythonHandler(lang, config)
-                elif lang == 'nodejs':
-                    handlers[lang] = NodeJSHandler(lang, config)
                 elif lang == 'csharp':
                     handlers[lang] = CSharpHandler(lang, config)
         
@@ -446,7 +408,7 @@ class JavaLanguageSyncer:
         """Get list of changed files for a target language since specified commit
         
         Args:
-            language: The target language to check (e.g., 'python', 'nodejs').
+            language: The target language to check (e.g., 'python').
             since_commit: The commit to compare since.
 
         Returns:

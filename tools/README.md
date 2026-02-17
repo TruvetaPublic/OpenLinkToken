@@ -21,7 +21,7 @@
 ## Java Multi-Language Sync Tool
 
 ### Overview
-The multi-language sync tool detects changes in Java source files (source of truth) and evaluates synchronization status for enabled target languages (currently Python; Node.js and C# scaffolds exist but are disabled). It supports source-centric configuration, automatic path/naming conversion via language handlers, progress tracking, and GitHub PR workflow enforcement.
+The multi-language sync tool detects changes in Java source files (source of truth) and evaluates synchronization status for enabled target languages (currently Python; C# scaffolds exist but are disabled). It supports source-centric configuration, automatic path/naming conversion via language handlers, progress tracking, and GitHub PR workflow enforcement.
 
 Use this tool to ensure parity between Java and other implementations as they evolve.
 
@@ -91,7 +91,6 @@ The tool uses a source-centric JSON mapping file. High-level structure:
         }
       }
     },
-    "nodejs": { "enabled": false },
     "csharp": { "enabled": false }
   },
   "ignore_patterns": ["**/generated/**", "**/target/**"],
@@ -117,7 +116,6 @@ Key configuration concepts:
 Handlers implement language-specific path and naming conversion:
 
 - **PythonHandler**: CamelCase → snake_case, `Test.java` → `_test.py`
-- **NodeJSHandler (scaffold)**: CamelCase first letter lowercased, `Test.java` → `.test.js`
 - **CSharpHandler (scaffold)**: Preserves PascalCase, `Test.java` → `Tests.cs`
 
 Examples (Python enabled):

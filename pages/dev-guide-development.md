@@ -364,7 +364,7 @@ Key concepts:
 - Language overrides: Target-specific adjustments live under `target_languages.<lang>.overrides.critical_files`.
 - Auto-generation: If `auto_generate_unmapped` is true, unmapped Java files still produce inferred target paths via handlers.
 - Sync status logic: A target file is considered synced if it was modified after the Java file (timestamp) or, in simplified mode, if both were touched in the PR.
-- Disabled scaffolds: Node.js and C# handlers exist; enabling them requires setting `enabled: true` and supplying base path + conventions.
+- Disabled scaffolds: C# handlers exist; enabling them requires setting `enabled: true` and supplying base path + conventions.
 
 Usage examples:
 
