@@ -30,7 +30,7 @@ import picocli.CommandLine.HelpCommand;
 public class OpenTokenCommand implements Callable<Integer> {
 
     private static final String VERSION = Metadata.DEFAULT_VERSION;
-    private static final String CLI_VERSION = "OpenToken " + VERSION;
+    public static final String CLI_VERSION = "OpenToken " + VERSION;
     private static final String BANNER_SUBTITLE = "Privacy-Preserving Person Matching v" + VERSION;
 
     private static final Logger logger = LoggerFactory.getLogger(OpenTokenCommand.class);
