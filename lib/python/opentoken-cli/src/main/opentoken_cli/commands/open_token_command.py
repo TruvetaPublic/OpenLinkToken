@@ -104,7 +104,10 @@ class OpenTokenCommand:
         if len(argv) == 0 or not OpenTokenCommand._is_help_request(argv):
             OpenTokenCommand.show_banner()
         
-        parsed_args = parser.parse_args(args)
+        try:
+            parsed_args = parser.parse_args(args)
+        except SystemExit as error:
+            return error.code if isinstance(error.code, int) else 1
 
         # If no subcommand specified, show help
         if not parsed_args.command:
