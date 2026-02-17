@@ -159,7 +159,6 @@ class DecryptCommand:
             raise ValueError(f"Unsupported output type: {file_type}")
 
     @staticmethod
-    @staticmethod
     def _mask_string(input_str: str) -> str:
         """Mask a string for logging purposes."""
         return mask_string(input_str)
