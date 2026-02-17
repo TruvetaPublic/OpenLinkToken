@@ -1,0 +1,97 @@
+name: Node.js CI
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'lib/nodejs/opentoken/**'
+      - '.github/workflows/node-test.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'lib/nodejs/opentoken/**'
+      - '.github/workflows/node-test.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      packages: write
+    strategy:
+      matrix:
+        node-version: ['20.x', '22.x']
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: lib/nodejs/opentoken/package-lock.json
+    
+    - name: Install dependencies
+      run: |
+        cd lib/nodejs/opentoken
+        npm ci
+    
+    - name: Lint with ESLint
+      run: |
+        cd lib/nodejs/opentoken
+        npm run lint
+    
+    - name: Build TypeScript
+      run: |
+        cd lib/nodejs/opentoken
+        npm run build
+    
+    - name: Run tests
+      run: |
+        cd lib/nodejs/opentoken
+        npm test
+    
+    - name: Run CLI with sample data
+      run: |
+        cd lib/nodejs/opentoken
+        # Create sample input file
+        mkdir -p target
+        echo "first-name,last-name,birth-date,sex,social-security-number" > target/sample.csv
+        echo "John,Doe,1990-01-15,M,123456789" >> target/sample.csv
+        echo "Jane,Smith,1985-06-20,F,987654321" >> target/sample.csv
+        
+        # Run opentoken CLI
+        npm start -- -i target/sample.csv -o target/output.csv -k "HashingKey" -e "Secret-Encryption-Key-Goes-Here."
+    
+    - name: Validate Output Files Exist
+      run: |
+        cd lib/nodejs/opentoken
+        # Check if output files were created
+        if [ ! -f "target/output.csv" ]; then
+          echo "Error: output.csv not created"
+          exit 1
+        fi
+        
+        if [ ! -f "target/output.metadata.json" ]; then
+          echo "Error: metadata file not created"
+          exit 1
+        fi
+        
+        echo "Output files created successfully"
+    
+    - name: Validate Output Content
+      run: |
+        cd lib/nodejs/opentoken
+        # Check if output CSV has content (more than just headers)
+        line_count=$(wc -l < target/output.csv)
+        if [ "$line_count" -le 1 ]; then
+          echo "Error: Output CSV appears to be empty or only contains headers"
+          exit 1
+        fi
+        echo "Output CSV contains $line_count lines (including header)"
+        
+        # Display first few lines for verification
+        echo "Output CSV content:"
+        head -n 3 target/output.csv

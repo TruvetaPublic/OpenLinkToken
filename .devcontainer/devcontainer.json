@@ -1,62 +1,61 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/java
 {
-  "name": "OpenToken",
-  "build": {
-    "context": "..",
-    "dockerfile": "Dockerfile",
-    "args": {
-      "JAVA_VERSION": "21"
-    }
-  },
-  "features": {
-    "ghcr.io/devcontainers/features/common-utils:2": {
-      "configureZshAsDefaultShell": true
+    "name": "OpenToken",
+    "build": {
+        "context": "..",
+        "dockerfile": "Dockerfile",
+        "args": {
+            "JAVA_VERSION": "21"
+        }
     },
-    "ghcr.io/devcontainers/features/java:1": {
-      "version": "21.0.9",
-      "installMaven": "true",
-      "mavenVersion": "3.8.8",
-      "installGradle": "false"
+    "features": {
+        "ghcr.io/devcontainers/features/common-utils:2": {
+            "configureZshAsDefaultShell": true
+        },
+        "ghcr.io/devcontainers/features/java:1": {
+            "version": "21.0.9",
+            "installMaven": "true",
+            "mavenVersion": "3.8.8",
+            "installGradle": "false"
+        },
+        "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
+        "ghcr.io/devcontainers/features/git-lfs:1": {},
+        "ghcr.io/devcontainers/features/node:1": {
+            "version": "20",
+            "nodeGypDependencies": true,
+            "nvmVersion": "latest"
+        }
     },
-    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
-    "ghcr.io/devcontainers/features/git-lfs:1": {},
-    "ghcr.io/devcontainers/features/node:1": {},
-    "ghcr.io/devcontainers/features/github-cli:1": {},
-    "ghcr.io/devcontainers/features/copilot-cli:1": {}
-  },
-  "customizations": {
-    "vscode": {
-      "extensions": [
-        "ms-azuretools.vscode-docker",
-        "streetsidesoftware.code-spell-checker",
-        "esbenp.prettier-vscode",
-        "DavidAnson.vscode-markdownlint",
-        "redhat.java",
-        "vscjava.vscode-java-pack",
-        "DotJoshJohnson.xml",
-        "yzhang.markdown-all-in-one",
-        "SonarSource.sonarlint-vscode",
-        "AdamViola.parquet-explorer",
-        "GitHub.vscode-pull-request-github",
-        "shengchen.vscode-checkstyle",
-        "GitHub.vscode-github-actions",
-        "GitHub.copilot-chat",
-        "ms-python.python",
-        "ms-toolsai.jupyter",
-        "mikoz.autoflake-extension"
-      ],
-      "settings": {
-        "sonarlint.ls.javaHome": "/usr/local/sdkman/candidates/java/21.0.9-ms"
-      }
-    }
-  },
-  "mounts": [
-    "type=volume,source=opentoken-venv,target=/workspaces/OpenToken/.venv"
-  ],
-  "containerEnv": {
-    "PYSPARK_SUBMIT_ARGS": "--driver-memory 8g --executor-memory 8g --conf spark.driver.maxResultSize=4g --conf spark.memory.fraction=0.7 pyspark-shell"
-  },
-  "postCreateCommand": "/bin/bash .devcontainer/scripts/setup_python_env.sh",
-  "postStartCommand": {}
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-azuretools.vscode-docker",
+                "streetsidesoftware.code-spell-checker",
+                "esbenp.prettier-vscode",
+                "DavidAnson.vscode-markdownlint",
+                "redhat.java",
+                "vscjava.vscode-java-pack",
+                "DotJoshJohnson.xml",
+                "yzhang.markdown-all-in-one",
+                "SonarSource.sonarlint-vscode",
+                "AdamViola.parquet-explorer",
+                "GitHub.vscode-pull-request-github",
+                "shengchen.vscode-checkstyle",
+                "GitHub.vscode-github-actions",
+                "GitHub.copilot-chat",
+                "ms-python.python",
+                "dbaeumer.vscode-eslint",
+                "ms-vscode.vscode-typescript-next",
+                "orta.vscode-jest"
+            ],
+            "settings": {
+                "sonarlint.ls.javaHome": "/usr/local/sdkman/candidates/java/21.0.9-ms"
+            }
+        }
+    },
+    "mounts": [],
+    "containerEnv": {},
+    "postCreateCommand": "cd lib/nodejs/opentoken && npm install",
+    "postStartCommand": "cd lib/nodejs/opentoken && npm run build"
 }

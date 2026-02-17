@@ -1,0 +1,164 @@
+name: Multi-Language Sync Check (Java, Python, Node.js)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'lib/java/opentoken/src/main/java/com/truveta/opentoken/**/*.java'
+      - 'lib/python/opentoken/src/**/*.py'
+      - 'lib/nodejs/opentoken/src/**/*.ts'
+
+jobs:
+  sync-check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      issues: write
+      pull-requests: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        # Fetch full history for proper PR base comparison
+        fetch-depth: 0
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Check multi-language sync with completion tracking
+      id: sync-check
+      run: |
+        # Set up git remote for proper base branch comparison
+        git remote set-url origin https://github.com/${{ github.repository }}
+        git fetch origin ${{ github.event.pull_request.base.ref }}
+        
+        BASE_BRANCH="${{ github.event.pull_request.base.ref }}"
+        echo "Checking sync requirements against base branch: origin/$BASE_BRANCH"
+        
+        # Generate sync report with completion tracking using full PR context
+        SYNC_REPORT=$(python3 tools/multi_language_syncer.py \
+          --format github-checklist \
+          --since "origin/$BASE_BRANCH" 2>&1)
+        SYNC_EXIT_CODE=$?
+        
+        echo "SYNC_REPORT<<EOF" >> $GITHUB_OUTPUT
+        echo "$SYNC_REPORT" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+        echo "SYNC_EXIT_CODE=$SYNC_EXIT_CODE" >> $GITHUB_OUTPUT
+        
+        # Extract completion stats for quick reference
+        if echo "$SYNC_REPORT" | grep -q "completed)"; then
+          COMPLETION_STATUS=$(echo "$SYNC_REPORT" | grep -o "([0-9]*/[0-9]* completed)" | head -1)
+          echo "COMPLETION_STATUS=$COMPLETION_STATUS" >> $GITHUB_OUTPUT
+          
+          # Extract numbers for progress calculation
+          COMPLETED=$(echo "$COMPLETION_STATUS" | grep -o "^[0-9]*" || echo "0")
+          TOTAL=$(echo "$COMPLETION_STATUS" | grep -o "/[0-9]*" | grep -o "[0-9]*" || echo "1")
+          echo "COMPLETED=$COMPLETED" >> $GITHUB_OUTPUT
+          echo "TOTAL=$TOTAL" >> $GITHUB_OUTPUT
+          
+          if [ "$COMPLETED" -eq "$TOTAL" ]; then
+            echo "SYNC_COMPLETE=true" >> $GITHUB_OUTPUT
+          else
+            echo "SYNC_COMPLETE=false" >> $GITHUB_OUTPUT
+          fi
+        else
+          echo "COMPLETION_STATUS=All synced" >> $GITHUB_OUTPUT
+          echo "SYNC_COMPLETE=true" >> $GITHUB_OUTPUT
+        fi
+        
+        # Show summary in workflow log
+        echo "Sync Status: $COMPLETION_STATUS"
+        
+        # Always exit 0 for workflow to continue to comment step
+        exit 0
+    
+    - name: Create PR comment with progress tracking
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const syncReport = ${{ toJSON(steps.sync-check.outputs.SYNC_REPORT) }};
+          const completionStatus = `${{ steps.sync-check.outputs.COMPLETION_STATUS }}`;
+          const isComplete = `${{ steps.sync-check.outputs.SYNC_COMPLETE }}` === 'true';
+          const completed = `${{ steps.sync-check.outputs.COMPLETED }}` || '0';
+          const total = `${{ steps.sync-check.outputs.TOTAL }}` || '0';
+          
+          let commentBody;
+          
+          if (isComplete || syncReport.includes('All changes appear to be in sync')) {
+            let finalStatusLine = '';
+            if (completed > 0) {
+              finalStatusLine = `**Final Status**: ${completionStatus}`;
+            }
+            
+            commentBody = `## Multi-Language Sync Status: Complete! ✅
+            All changes in this PR are properly synchronized across Java, Python, and Node.js implementations.
+            ` + finalStatusLine;
+          } else {            
+            commentBody = `## 🔄 Multi-Language Sync Progress ${completionStatus}
+            ${syncReport}
+            ### 📋 How to use this checklist:
+            - **✓🔄** = File exists and was recently updated ✅ **COMPLETED**
+            - **✓⏳** = File exists but needs updates ⏳ **PENDING** 
+            - **✗⏳** = File missing and needs to be created ⏳ **PENDING**
+            
+            ### 🌐 Languages:
+            - **Java** → Python and Node.js
+            - **Python** → Java and Node.js  
+            - **Node.js** → Java and Python
+            
+            ### Multi-commit workflow support:
+            This sync tracker monitors your progress across **all commits in this PR**. As you update files, they'll automatically show as 🔄 completed in subsequent workflow runs!
+            **Next steps**: Update the ⏳ pending files to complete the sync.`;
+          }
+          
+          // Find and delete previous sync comments to keep history clean
+          const comments = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+          });
+          
+          const syncComments = comments.data.filter(comment => 
+            comment.user.type === 'Bot' && 
+            (comment.body.includes('Multi-Language Sync') || 
+             comment.body.includes('Java-Python Sync') || 
+             comment.body.includes('Sync Status') || 
+             comment.body.includes('Sync Progress'))
+          );
+          
+          // Delete all previous sync comments
+          for (const comment of syncComments) {
+            try {
+              await github.rest.issues.deleteComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: comment.id,
+              });
+              console.log(`Deleted previous sync comment: ${comment.id}`);
+            } catch (error) {
+              console.log(`Problem deleting comment ${comment.id}: ${error.message}`);
+            }
+          }
+          
+          // Create new comment
+          await github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+            body: commentBody
+          });
+          console.log('Created new sync comment');
+    
+    - name: Set workflow status
+      if: steps.sync-check.outputs.SYNC_COMPLETE != 'true'
+      run: |
+        echo "Multi-language sync is incomplete"
+        echo "Status: ${{ steps.sync-check.outputs.COMPLETION_STATUS }}"
+        echo "Check the PR comment for detailed progress tracking"
+        # Don't fail the workflow, just provide information
+        exit 0

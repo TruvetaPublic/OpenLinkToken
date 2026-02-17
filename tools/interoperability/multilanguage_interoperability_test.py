@@ -1,7 +1,7 @@
 """
-Interoperability tests for OpenToken Java and Python implementations.
+Interoperability tests for OpenToken Java, Python, and Node.js implementations.
 
-These tests validate that both implementations produce identical results
+These tests validate that all implementations produce identical results
 and can work with each other's outputs.
 """
 
@@ -26,12 +26,13 @@ class OpenTokenCLI:
     
     def __init__(self):
         self.project_root = Path(__file__).parent.parent.parent
-        java_jar_dir = self.project_root / "lib/java/opentoken-cli/target"
-        jar_files = list(java_jar_dir.glob("opentoken-cli-*.jar"))
+        java_jar_dir = self.project_root / "lib/java/opentoken/target"
+        jar_files = list(java_jar_dir.glob("opentoken-*.jar"))
         if not jar_files:
-            raise FileNotFoundError(f"No OpenToken CLI JAR found in {java_jar_dir}")
+            raise FileNotFoundError(f"No OpenToken JAR found in {java_jar_dir}")
         self.java_jar_path = jar_files[0]
-        self.python_main = self.project_root / "lib/python/opentoken-cli/src/main/opentoken_cli/main.py"
+        self.python_main = self.project_root / "lib/python/opentoken/src/main/opentoken/main.py"
+        self.nodejs_main = self.project_root / "lib/nodejs/opentoken/dist/Main.js"
         self.sample_csv = self.project_root / "resources/sample.csv"
         self.decryptor_path = self.project_root / "tools/decryptor/decryptor.py"
         
@@ -81,7 +82,7 @@ class PythonCLI(OpenTokenCLI):
             "-e", self.encryption_key
         ]
         
-        env = {**os.environ, "PYTHONPATH": str(self.project_root / "lib/python/opentoken/src/main") + ":" + str(self.project_root / "lib/python/opentoken-cli/src/main")}
+        env = {**os.environ, "PYTHONPATH": str(self.project_root / "lib/python/opentoken/src/main")}
         
         print("Running Python\n")
         result = subprocess.run(cmd, capture_output=True, text=True, 
@@ -91,6 +92,31 @@ class PythonCLI(OpenTokenCLI):
             print(f"OpenToken-Python stderr: {result.stderr}")
             print(f"OpenToken-Python stdout: {result.stdout}")
             raise RuntimeError(f"OpenToken-Python failed with return code {result.returncode}: {result.stderr}")
+        
+        return result
+
+
+class NodeJSCLI(OpenTokenCLI):
+    """Command Line wrapper for OpenToken-Node.js."""
+
+    def generate_tokens(self, input_file: Path, output_file: Path) -> subprocess.CompletedProcess:
+        """OpenToken-Node.js -- Generate tokens"""
+        cmd = [
+            "node", str(self.nodejs_main),
+            "-i", str(input_file),
+            "-o", str(output_file),
+            "-k", self.hashing_key,
+            "-e", self.encryption_key
+        ]
+        
+        print("Running Node.js\n")
+        result = subprocess.run(cmd, capture_output=True, text=True, 
+                              cwd=self.project_root)
+        
+        if result.returncode != 0:
+            print(f"OpenToken-Node.js stderr: {result.stderr}")
+            print(f"OpenToken-Node.js stdout: {result.stdout}")
+            raise RuntimeError(f"OpenToken-Node.js failed with return code {result.returncode}: {result.stderr}")
         
         return result
 
@@ -185,12 +211,13 @@ class TokenValidator:
 
 
 class TestTokenCompatibility:
-    """Test token compatibility between OpenToken-Java and OpenToken-Python."""
+    """Test token compatibility between OpenToken-Java, OpenToken-Python, and OpenToken-Node.js."""
     
     def setup_method(self):
         """Set up environment for each method."""
         self.java_cli = JavaCLI()
         self.python_cli = PythonCLI()
+        self.nodejs_cli = NodeJSCLI()
         self.validator = TokenValidator()
                 
         # Create decryptor
@@ -200,11 +227,12 @@ class TestTokenCompatibility:
         """
         Complete interoperability test:
         1. Run Java implementation on sample.csv
-        2. Run Python implementation on sample.csv  
-        3. Decrypt both outputs
-        4. Compare decrypted tokens to ensure they're identical
+        2. Run Python implementation on sample.csv
+        3. Run Node.js implementation on sample.csv
+        4. Decrypt all outputs
+        5. Compare decrypted tokens to ensure they're all identical
         """
-        print("Running Java/Python Interoperability Test")
+        print("Running Java/Python/Node.js Interoperability Test")
         print("-" * 50)
         
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -213,8 +241,10 @@ class TestTokenCompatibility:
             # Output files
             java_output = temp_path / "java_output.csv"
             python_output = temp_path / "python_output.csv"
+            nodejs_output = temp_path / "nodejs_output.csv"
             java_decrypted = temp_path / "java_decrypted.csv"
             python_decrypted = temp_path / "python_decrypted.csv"
+            nodejs_decrypted = temp_path / "nodejs_decrypted.csv"
             
             print("1. Running Java implementation...")
             
@@ -238,7 +268,18 @@ class TestTokenCompatibility:
             # Verify Python output exists
             assert python_output.exists(), f"Python output file {python_output} was not created"
             
-            print("3. Decrypting outputs...")
+            print("3. Running Node.js implementation...")
+            
+            # Generate tokens with Node.js
+            self.nodejs_cli.generate_tokens(
+                input_file=self.nodejs_cli.sample_csv,
+                output_file=nodejs_output
+            )
+            
+            # Verify Node.js output exists
+            assert nodejs_output.exists(), f"Node.js output file {nodejs_output} was not created"
+            
+            print("4. Decrypting outputs...")
             
             # Decrypt Java output
             self.decryptor.decrypt_file(java_output, java_decrypted)
@@ -248,32 +289,54 @@ class TestTokenCompatibility:
             self.decryptor.decrypt_file(python_output, python_decrypted)
             assert python_decrypted.exists(), f"Python decrypted file {python_decrypted} was not created"
             
-            print("4. Comparing results...")
+            # Decrypt Node.js output
+            self.decryptor.decrypt_file(nodejs_output, nodejs_decrypted)
+            assert nodejs_decrypted.exists(), f"Node.js decrypted file {nodejs_decrypted} was not created"
             
-            # Compare decrypted outputs
-            comparison = self.validator.compare_token_files(java_decrypted, python_decrypted)
+            print("5. Comparing results...")
             
-            print(f"\nResults: {comparison['matching_records']}/{comparison['total_records']} records match")
+            # Compare Java vs Python
+            print("  Comparing Java vs Python...")
+            comparison_java_python = self.validator.compare_token_files(java_decrypted, python_decrypted)
             
-            if comparison['mismatched_records']:
-                print(f"⚠️  {len(comparison['mismatched_records'])} mismatched records found")
-                for record_id in comparison['mismatched_records'][:3]:  # Show first 3
-                    print(f"  • Record {record_id} differs")
+            # Compare Java vs Node.js
+            print("  Comparing Java vs Node.js...")
+            comparison_java_nodejs = self.validator.compare_token_files(java_decrypted, nodejs_decrypted)
             
-            if comparison['missing_in_file1'] or comparison['missing_in_file2']:
-                print(f"⚠️  Missing records - Java: {len(comparison['missing_in_file1'])}, Python: {len(comparison['missing_in_file2'])}")
+            # Compare Python vs Node.js
+            print("  Comparing Python vs Node.js...")
+            comparison_python_nodejs = self.validator.compare_token_files(python_decrypted, nodejs_decrypted)
             
-            # Assert that all tokens match
-            assert comparison['matching_records'] == comparison['total_records'], \
-                f"Token mismatch found! {len(comparison['mismatched_records'])} records don't match"
+            # Print results
+            print(f"\nJava vs Python: {comparison_java_python['matching_records']}/{comparison_java_python['total_records']} records match")
+            print(f"Java vs Node.js: {comparison_java_nodejs['matching_records']}/{comparison_java_nodejs['total_records']} records match")
+            print(f"Python vs Node.js: {comparison_python_nodejs['matching_records']}/{comparison_python_nodejs['total_records']} records match")
             
-            assert len(comparison['missing_in_file1']) == 0, \
-                f"Records missing in Java output: {comparison['missing_in_file1']}"
+            # Check for mismatches
+            all_comparisons = [comparison_java_python, comparison_java_nodejs, comparison_python_nodejs]
+            comparison_names = ["Java vs Python", "Java vs Node.js", "Python vs Node.js"]
             
-            assert len(comparison['missing_in_file2']) == 0, \
-                f"Records missing in Python output: {comparison['missing_in_file2']}"
+            for comp_name, comparison in zip(comparison_names, all_comparisons):
+                if comparison['mismatched_records']:
+                    print(f"⚠️  {comp_name}: {len(comparison['mismatched_records'])} mismatched records found")
+                    for record_id in comparison['mismatched_records'][:3]:  # Show first 3
+                        print(f"    • Record {record_id} differs")
+                
+                if comparison['missing_in_file1'] or comparison['missing_in_file2']:
+                    print(f"⚠️  {comp_name}: Missing records - File1: {len(comparison['missing_in_file1'])}, File2: {len(comparison['missing_in_file2'])}")
             
-            print(f"✅ SUCCESS: All {comparison['total_records']} records have identical tokens!")
+            # Assert that all tokens match across all implementations
+            for comp_name, comparison in zip(comparison_names, all_comparisons):
+                assert comparison['matching_records'] == comparison['total_records'], \
+                    f"{comp_name}: Token mismatch found! {len(comparison['mismatched_records'])} records don't match"
+                
+                assert len(comparison['missing_in_file1']) == 0, \
+                    f"{comp_name}: Records missing in first file: {comparison['missing_in_file1']}"
+                
+                assert len(comparison['missing_in_file2']) == 0, \
+                    f"{comp_name}: Records missing in second file: {comparison['missing_in_file2']}"
+            
+            print(f"\n✅ SUCCESS: All {comparison_java_python['total_records']} records have identical tokens across Java, Python, and Node.js!")
             print("-" * 50)
     
     def test_metadata_consistency(self):
@@ -286,17 +349,21 @@ class TestTokenCompatibility:
             
             java_output = temp_path / "java_metadata_test.csv"
             python_output = temp_path / "python_metadata_test.csv"
+            nodejs_output = temp_path / "nodejs_metadata_test.csv"
             
-            # Generate tokens with both implementations
+            # Generate tokens with all implementations
             self.java_cli.generate_tokens(self.java_cli.sample_csv, java_output)
             self.python_cli.generate_tokens(self.python_cli.sample_csv, python_output)
+            self.nodejs_cli.generate_tokens(self.nodejs_cli.sample_csv, nodejs_output)
             
             # Check for metadata files
             java_metadata = java_output.with_suffix('.metadata.json')
             python_metadata = python_output.with_suffix('.metadata.json')
+            nodejs_metadata = nodejs_output.with_suffix('.metadata.json')
             
             assert java_metadata.exists(), f"Java metadata file {java_metadata} not found"
             assert python_metadata.exists(), f"Python metadata file {python_metadata} not found"
+            assert nodejs_metadata.exists(), f"Node.js metadata file {nodejs_metadata} not found"
             
             # Load and compare metadata
             with open(java_metadata, 'r') as f:

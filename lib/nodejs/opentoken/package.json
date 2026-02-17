@@ -1,0 +1,62 @@
+{
+  "name": "@truveta/opentoken",
+  "version": "1.10.0",
+  "description": "OpenToken - Privacy-preserving person matching using cryptographically secure token generation",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "opentoken": "dist/Main.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/Main.js",
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "keywords": [
+    "opentoken",
+    "privacy",
+    "person-matching",
+    "token",
+    "cryptography",
+    "hashing",
+    "encryption"
+  ],
+  "author": "Truveta",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TruvetaPublic/OpenToken.git",
+    "directory": "lib/nodejs/opentoken"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "commander": "^12.0.0",
+    "csv-parse": "^6.1.0",
+    "csv-parser": "^3.0.0",
+    "csv-stringify": "^6.6.0",
+    "csv-writer": "^1.6.0",
+    "parquetjs": "^0.11.2"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/node": "^20.19.25",
+    "@types/parquetjs": "^0.10.6",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "jest": "^29.5.0",
+    "prettier": "^3.0.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.0.0"
+  }
+}
