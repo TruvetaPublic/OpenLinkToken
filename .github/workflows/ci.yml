@@ -390,18 +390,18 @@ jobs:
               duration = sum(to_float(s.attrib.get("time", "0")) for s in suites)
               return tests, failures, errors, skipped, duration
 
-            def label_for(filename):
+          def label_for(filename):
               artifact_name = os.path.basename(os.path.dirname(filename))
               if artifact_name.startswith("python-junit-core-"):
-                version = artifact_name.removeprefix("python-junit-core-")
-                return f"Python Core {version}", (0, version, "")
+                  version = artifact_name.removeprefix("python-junit-core-")
+                  return f"Python Core {version}", (0, version, "")
               if artifact_name.startswith("python-junit-cli-"):
-                version = artifact_name.removeprefix("python-junit-cli-")
-                return f"Python CLI {version}", (1, version, "")
+                  version = artifact_name.removeprefix("python-junit-cli-")
+                  return f"Python CLI {version}", (1, version, "")
               if artifact_name.startswith("python-junit-pyspark-"):
-                version_spark = artifact_name.removeprefix("python-junit-pyspark-")
-                version, spark = version_spark.split("-spark", 1)
-                return f"PySpark Bridge {version} / Spark {spark}", (2, version, spark)
+                  version_spark = artifact_name.removeprefix("python-junit-pyspark-")
+                  version, spark = version_spark.split("-spark", 1)
+                  return f"PySpark Bridge {version} / Spark {spark}", (2, version, spark)
               return artifact_name, (9, artifact_name, "")
 
           rows = []
@@ -459,13 +459,18 @@ jobs:
           PY
 
       - name: Upsert sticky Python test comment
-        if: always()
+        if: always() && steps.build-summary.outcome == 'success' && steps.build-summary.outputs.body != ''
         continue-on-error: true
         uses: actions/github-script@v7
         with:
           script: |
             const commentMarker = '<!-- python-tests-sticky-comment -->';
             const body = `${{ steps.build-summary.outputs.body }}`;
+
+            if (!body || !body.trim()) {
+              core.info('Skipping sticky Python test comment update because the summary body is empty.');
+              return;
+            }
 
             const comments = await github.paginate(github.rest.issues.listComments, {
               owner: context.repo.owner,
