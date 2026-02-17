@@ -72,7 +72,7 @@ The token is transformed through a secure pipeline:
 Token Signature → SHA-256 Hash → HMAC-SHA256 → AES-256 Encrypt → Base64 Encode
 ```
 
-Or in hash-only mode:
+Or with the tokenize command (hash-only, no encryption):
 
 ```
 Token Signature → SHA-256 Hash → HMAC-SHA256 → Base64 Encode

@@ -47,12 +47,13 @@ class JavaCLI(OpenTokenCLI):
         """OpenToken-Java -- Generate tokens."""
         cmd = [
             "java", "-jar", str(self.java_jar_path),
+            "package",
             "-i", str(input_file),
             "-t", "csv",
             "-o", str(output_file),
             "-ot", "csv",
-            "-h", self.hashing_key,
-            "-e", self.encryption_key
+            "--hashingsecret", self.hashing_key,
+            "--encryptionkey", self.encryption_key
         ]
         
         # Add ring-id if provided
@@ -77,12 +78,13 @@ class PythonCLI(OpenTokenCLI):
         """OpenToken-Python -- Generate tokens"""
         cmd = [
             "python3", str(self.python_main),
+            "package",
             "-i", str(input_file),
             "-t", "csv",
             "-o", str(output_file),
             "-ot", "csv",
-            "-h", self.hashing_key,
-            "-e", self.encryption_key
+            "--hashingsecret", self.hashing_key,
+            "--encryptionkey", self.encryption_key
         ]
         
         # Add ring-id if provided
