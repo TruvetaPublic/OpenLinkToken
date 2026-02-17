@@ -138,6 +138,6 @@ class OpenTokenCommand:
         if not args:
             return False
         for arg in args:
-            if arg in ("--help", "-h", "help"):
+            if arg in ("--help", "help"):
                 return True
         return False
