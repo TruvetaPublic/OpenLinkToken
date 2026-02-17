@@ -125,6 +125,14 @@ jobs:
             lib/python/opentoken/coverage.xml
             lib/python/opentoken/htmlcov/*
 
+      - name: Upload Python JUnit results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-junit-core-${{ matrix.python-version }}
+          path: |
+            lib/python/opentoken/test-results-${{ matrix.python-version }}.xml
+
       - name: Publish Python unit test results
         if: always()
         uses: EnricoMi/publish-unit-test-result-action@v2
@@ -132,7 +140,7 @@ jobs:
           files: |
             lib/python/opentoken/test-results-${{ matrix.python-version }}.xml
           check_name: Python ${{ matrix.python-version }} Test Results
-          comment_mode: always
+          comment_mode: off
           compare_to_earlier_commit: false
 
       - name: Add Python code coverage to PR
@@ -192,6 +200,14 @@ jobs:
             lib/python/opentoken-cli/coverage.xml
             lib/python/opentoken-cli/htmlcov/*
 
+      - name: Upload Python CLI JUnit results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-junit-cli-${{ matrix.python-version }}
+          path: |
+            lib/python/opentoken-cli/test-results-${{ matrix.python-version }}.xml
+
       - name: Publish Python CLI test results
         if: always()
         uses: EnricoMi/publish-unit-test-result-action@v2
@@ -199,7 +215,7 @@ jobs:
           files: |
             lib/python/opentoken-cli/test-results-${{ matrix.python-version }}.xml
           check_name: Python CLI ${{ matrix.python-version }} Test Results
-          comment_mode: always
+          comment_mode: off
           compare_to_earlier_commit: false
 
       - name: Run CLI smoke test
@@ -296,6 +312,14 @@ jobs:
             lib/python/opentoken-pyspark/coverage-${{ matrix.python-version }}-spark${{ matrix.spark-version }}.xml
             lib/python/opentoken-pyspark/htmlcov-${{ matrix.python-version }}-spark${{ matrix.spark-version }}/*
 
+      - name: Upload PySpark JUnit results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-junit-pyspark-${{ matrix.python-version }}-spark${{ matrix.spark-version }}
+          path: |
+            lib/python/opentoken-pyspark/test-results-${{ matrix.python-version }}-spark${{ matrix.spark-version }}.xml
+
       - name: Publish PySpark test results
         if: always()
         uses: EnricoMi/publish-unit-test-result-action@v2
@@ -303,7 +327,7 @@ jobs:
           files: |
             lib/python/opentoken-pyspark/test-results-${{ matrix.python-version }}-spark${{ matrix.spark-version }}.xml
           check_name: PySpark Bridge ${{ matrix.python-version }} Spark ${{ matrix.spark-version }} Test Results
-          comment_mode: always
+          comment_mode: off
           compare_to_earlier_commit: false
 
       - name: Add PySpark code coverage to PR
@@ -315,6 +339,179 @@ jobs:
           thresholdAll: ${{ env.MIN_COVERAGE_OVERALL_RATIO }}
           thresholdNew: ${{ env.MIN_COVERAGE_CHANGED_FILES_RATIO }}
           thresholdModified: ${{ env.MIN_COVERAGE_CHANGED_FILES_RATIO }}
+
+  python-test-results-comment:
+    if: always() && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    needs:
+      - python-tests
+      - python-cli-tests
+      - pyspark-bridge-tests
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Download Python JUnit artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: python-junit-*
+          path: test-results
+
+      - name: Build consolidated Python test summary
+        id: build-summary
+        run: |
+          python - <<'PY'
+          import glob
+          import os
+          import xml.etree.ElementTree as ET
+
+          marker = "<!-- python-tests-sticky-comment -->"
+          files = sorted(glob.glob("test-results/**/*.xml", recursive=True))
+
+          def to_int(value):
+              try:
+                  return int(value)
+              except Exception:
+                  return 0
+
+          def to_float(value):
+              try:
+                  return float(value)
+              except Exception:
+                  return 0.0
+
+          def parse_junit(path):
+              root = ET.parse(path).getroot()
+              suites = [root] if root.tag == "testsuite" else root.findall("testsuite")
+              tests = sum(to_int(s.attrib.get("tests", "0")) for s in suites)
+              failures = sum(to_int(s.attrib.get("failures", "0")) for s in suites)
+              errors = sum(to_int(s.attrib.get("errors", "0")) for s in suites)
+              skipped = sum(to_int(s.attrib.get("skipped", s.attrib.get("disabled", "0"))) for s in suites)
+              duration = sum(to_float(s.attrib.get("time", "0")) for s in suites)
+              return tests, failures, errors, skipped, duration
+
+            def label_for(filename):
+              artifact_name = os.path.basename(os.path.dirname(filename))
+              if artifact_name.startswith("python-junit-core-"):
+                version = artifact_name.removeprefix("python-junit-core-")
+                return f"Python Core {version}", (0, version, "")
+              if artifact_name.startswith("python-junit-cli-"):
+                version = artifact_name.removeprefix("python-junit-cli-")
+                return f"Python CLI {version}", (1, version, "")
+              if artifact_name.startswith("python-junit-pyspark-"):
+                version_spark = artifact_name.removeprefix("python-junit-pyspark-")
+                version, spark = version_spark.split("-spark", 1)
+                return f"PySpark Bridge {version} / Spark {spark}", (2, version, spark)
+              return artifact_name, (9, artifact_name, "")
+
+          rows = []
+          totals = {"tests": 0, "failures": 0, "errors": 0, "skipped": 0, "time": 0.0}
+
+          for path in files:
+              label, sort_key = label_for(path)
+              tests, failures, errors, skipped, duration = parse_junit(path)
+              passed = max(tests - failures - errors - skipped, 0)
+              status = "✅" if failures == 0 and errors == 0 else "❌"
+              rows.append((sort_key, label, status, tests, passed, failures, errors, skipped, duration))
+
+              totals["tests"] += tests
+              totals["failures"] += failures
+              totals["errors"] += errors
+              totals["skipped"] += skipped
+              totals["time"] += duration
+
+          rows.sort(key=lambda x: x[0])
+          total_passed = max(totals["tests"] - totals["failures"] - totals["errors"] - totals["skipped"], 0)
+          overall_status = "✅" if totals["failures"] == 0 and totals["errors"] == 0 else "❌"
+
+          lines = [
+              marker,
+              "## 🐍 Consolidated Python Test Results",
+              "",
+              f"**Overall**: {overall_status}  **{totals['tests']} tests** · {total_passed} passed · {totals['failures']} failed · {totals['errors']} errors · {totals['skipped']} skipped · {totals['time']:.1f}s",
+              "",
+          ]
+
+          if rows:
+              lines.extend([
+                  "| Suite | Status | Tests | Passed | Failed | Errors | Skipped | Time |",
+                  "|---|---:|---:|---:|---:|---:|---:|---:|",
+              ])
+              for _, label, status, tests, passed, failures, errors, skipped, duration in rows:
+                  lines.append(
+                      f"| {label} | {status} | {tests} | {passed} | {failures} | {errors} | {skipped} | {duration:.1f}s |"
+                  )
+          else:
+              lines.append("No Python JUnit XML files were found for this run.")
+
+          lines.extend([
+              "",
+              f"Results for commit {os.environ.get('GITHUB_SHA', '')[:7]}.",
+              "",
+              "♻️ This comment has been updated with latest results.",
+          ])
+
+          body = "\n".join(lines)
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+              fh.write("body<<EOF\n")
+              fh.write(body)
+              fh.write("\nEOF\n")
+          PY
+
+      - name: Upsert sticky Python test comment
+        if: always()
+        continue-on-error: true
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const commentMarker = '<!-- python-tests-sticky-comment -->';
+            const body = `${{ steps.build-summary.outputs.body }}`;
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existingStickyComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body &&
+              comment.body.includes(commentMarker)
+            );
+
+            const legacyPythonComments = comments.filter(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body &&
+              /Python(?: CLI)?\s\d+\.\d+\sTest Results|PySpark Bridge\s\d+\.\d+\sSpark\s\d+\.\d+\sTest Results/.test(comment.body) &&
+              (!existingStickyComment || comment.id !== existingStickyComment.id)
+            );
+
+            for (const comment of legacyPythonComments) {
+              await github.rest.issues.deleteComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: comment.id,
+              });
+              core.info(`Deleted legacy Python result comment: ${comment.id}`);
+            }
+
+            if (existingStickyComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingStickyComment.id,
+                body,
+              });
+              core.info(`Updated sticky Python test comment: ${existingStickyComment.id}`);
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+              core.info('Created sticky Python test comment');
+            }
 
   interoperability-tests:
     runs-on: ubuntu-latest
