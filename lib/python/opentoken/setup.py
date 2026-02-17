@@ -21,7 +21,7 @@ with open(os.path.join(this_directory, "requirements.txt"), encoding="utf-8") as
 
 setup(
     name="opentoken",
-    version="1.12.5",
+    version="2.0.0-alpha",
     author="Truveta",
     description="OpenToken Python core library for person matching",
     long_description=long_description,

@@ -1,5 +1,5 @@
 # Core opentoken dependency
-opentoken==1.12.5
+opentoken==2.0.0-alpha
 
 # Data processing for I/O formats
 pandas
