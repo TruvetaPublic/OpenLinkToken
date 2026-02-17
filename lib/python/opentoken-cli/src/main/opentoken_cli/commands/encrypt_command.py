@@ -10,7 +10,7 @@ from opentoken_cli.io.csv.token_csv_writer import TokenCSVWriter
 from opentoken_cli.io.parquet.token_parquet_reader import TokenParquetReader
 from opentoken_cli.io.parquet.token_parquet_writer import TokenParquetWriter
 from opentoken_cli.processor.token_transformation_processor import TokenTransformationProcessor
-from opentoken_cli.util import mask_string
+from opentoken_cli.util import StringMaskingUtil
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +94,7 @@ class EncryptCommand:
         # Log parameters (mask key)
         logger.info(f"Input: {args.input_path} ({args.input_type})")
         logger.info(f"Output: {args.output_path} ({output_type})")
-        logger.info(f"Encryption Key: {EncryptCommand._mask_string(args.encryption_key)}")
+        logger.info(f"Encryption Key: {StringMaskingUtil.mask_string(args.encryption_key)}")
 
         # Validate key
         if not args.encryption_key or not args.encryption_key.strip():
@@ -157,8 +157,3 @@ class EncryptCommand:
             return TokenParquetWriter(path)
         else:
             raise ValueError(f"Unsupported output type: {file_type}")
-
-    @staticmethod
-    def _mask_string(input_str: str) -> str:
-        """Mask a string for logging purposes."""
-        return mask_string(input_str)

@@ -15,8 +15,8 @@ from opentoken_cli.io.json.metadata_json_writer import MetadataJsonWriter
 from opentoken_cli.io.parquet.person_attributes_parquet_reader import PersonAttributesParquetReader
 from opentoken_cli.io.parquet.person_attributes_parquet_writer import PersonAttributesParquetWriter
 from opentoken_cli.processor.person_attributes_processor import PersonAttributesProcessor
+from opentoken_cli.util import StringMaskingUtil
 
-from opentoken_cli.util import mask_string
 logger = logging.getLogger(__name__)
 
 
@@ -108,8 +108,8 @@ class PackageCommand:
         # Log parameters (mask secrets)
         logger.info(f"Input: {args.input_path} ({args.input_type})")
         logger.info(f"Output: {args.output_path} ({output_type})")
-        logger.info(f"Hashing Secret: {PackageCommand._mask_string(args.hashing_secret)}")
-        logger.info(f"Encryption Key: {PackageCommand._mask_string(args.encryption_key)}")
+        logger.info(f"Hashing Secret: {StringMaskingUtil.mask_string(args.hashing_secret)}")
+        logger.info(f"Encryption Key: {StringMaskingUtil.mask_string(args.encryption_key)}")
 
         # Validate secrets
         if not args.hashing_secret or not args.hashing_secret.strip():
@@ -197,9 +197,3 @@ class PackageCommand:
             return PersonAttributesParquetWriter(path)
         else:
             raise ValueError(f"Unsupported output type: {file_type}")
-
-    @staticmethod
-    @staticmethod
-    def _mask_string(input_str: str) -> str:
-        """Mask a string for logging purposes."""
-        return mask_string(input_str)

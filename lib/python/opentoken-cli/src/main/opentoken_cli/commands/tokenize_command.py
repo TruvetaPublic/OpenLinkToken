@@ -10,7 +10,7 @@ from opentoken.tokentransformer.hash_token_transformer import HashTokenTransform
 from opentoken.tokentransformer.token_transformer import TokenTransformer
 from opentoken_cli.io.csv.person_attributes_csv_reader import PersonAttributesCSVReader
 from opentoken_cli.io.csv.person_attributes_csv_writer import PersonAttributesCSVWriter
-from opentoken_cli.util import mask_string
+from opentoken_cli.util import StringMaskingUtil
 from opentoken_cli.io.json.metadata_json_writer import MetadataJsonWriter
 from opentoken_cli.io.parquet.person_attributes_parquet_reader import PersonAttributesParquetReader
 from opentoken_cli.io.parquet.person_attributes_parquet_writer import PersonAttributesParquetWriter
@@ -99,7 +99,7 @@ class TokenizeCommand:
         # Log parameters (mask secret)
         logger.info(f"Input: {args.input_path} ({args.input_type})")
         logger.info(f"Output: {args.output_path} ({output_type})")
-        logger.info(f"Hashing Secret: {TokenizeCommand._mask_string(args.hashing_secret)}")
+        logger.info(f"Hashing Secret: {StringMaskingUtil.mask_string(args.hashing_secret)}")
 
         # Validate secret
         if not args.hashing_secret or not args.hashing_secret.strip():
@@ -180,8 +180,3 @@ class TokenizeCommand:
             return PersonAttributesParquetWriter(path)
         else:
             raise ValueError(f"Unsupported output type: {file_type}")
-
-    @staticmethod
-    def _mask_string(input_str: str) -> str:
-        """Mask a string for logging purposes."""
-        return mask_string(input_str)
