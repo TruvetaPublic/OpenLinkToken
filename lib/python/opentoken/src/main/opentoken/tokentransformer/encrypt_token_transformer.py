@@ -31,8 +31,10 @@ class EncryptTokenTransformer(TokenTransformer):
             ValueError: If the encryption key is not 32 characters long.
         """
         if len(encryption_key) != EncryptionConstants.KEY_BYTE_LENGTH:
-            logger.error(f"Invalid Argument. Key must be {EncryptionConstants.KEY_BYTE_LENGTH} characters long")
-            raise ValueError(f"Key must be {EncryptionConstants.KEY_BYTE_LENGTH} characters long")
+            logger.error(
+                f"Invalid Argument. Key must be {EncryptionConstants.KEY_BYTE_LENGTH} characters long")
+            raise ValueError(
+                f"Key must be {EncryptionConstants.KEY_BYTE_LENGTH} characters long")
 
         self.encryption_key = encryption_key.encode('utf-8')
 

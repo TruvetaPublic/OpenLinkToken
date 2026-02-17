@@ -68,6 +68,7 @@ public class Main {
         String outputType = commandLineArguments.getOutputType();
         boolean decryptMode = commandLineArguments.isDecrypt();
         boolean hashOnlyMode = commandLineArguments.isHashOnly();
+        String ringId = commandLineArguments.getRingId();
 
         if (outputType == null || outputType.isEmpty()) {
             outputType = inputType; // defaulting to input type if not provided
@@ -75,6 +76,7 @@ public class Main {
 
         logger.info("Decrypt Mode: {}", decryptMode);
         logger.info("Hash-Only Mode: {}", hashOnlyMode);
+        logger.info("Ring ID: {}", ringId);
         if (logger.isInfoEnabled()) {
             logger.info("Hashing Secret: {}", maskString(hashingSecret));
             logger.info("Encryption Key: {}", maskString(encryptionKey));
@@ -120,12 +122,13 @@ public class Main {
                 return;
             }
 
-            processTokens(inputPath, outputPath, inputType, outputType, hashingSecret, encryptionKey, hashOnlyMode);
+            processTokens(inputPath, outputPath, inputType, outputType, hashingSecret, encryptionKey, hashOnlyMode,
+                    ringId);
         }
     }
 
     private static void processTokens(String inputPath, String outputPath, String inputType, String outputType,
-            String hashingSecret, String encryptionKey, boolean hashOnlyMode) {
+            String hashingSecret, String encryptionKey, boolean hashOnlyMode, String ringId) {
         List<TokenTransformer> tokenTransformerList = new ArrayList<>();
         try {
             // Always add hash transformer
@@ -156,7 +159,9 @@ public class Main {
             }
 
             // Process data and get updated metadata
-            PersonAttributesProcessor.process(reader, writer, tokenTransformerList, metadataMap);
+            // Pass encryption key and ring ID for JWE wrapping (only if not in hash-only mode)
+            PersonAttributesProcessor.process(reader, writer, tokenTransformerList, metadataMap,
+                    hashOnlyMode ? null : encryptionKey, ringId);
 
             // Write the metadata to file
             MetadataWriter metadataWriter = new MetadataJsonWriter(outputPath);
@@ -257,7 +262,7 @@ public class Main {
 
             try (TokenReader reader = createTokenReader(inputPath, inputType);
                     TokenWriter writer = createTokenWriter(outputPath, outputType)) {
-                TokenDecryptionProcessor.process(reader, writer, decryptor);
+                TokenDecryptionProcessor.process(reader, writer, decryptor, encryptionKey);
             }
         } catch (Exception e) {
             logger.error("Error during token decryption: ", e);

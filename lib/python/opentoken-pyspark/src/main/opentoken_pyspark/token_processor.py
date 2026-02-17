@@ -5,6 +5,7 @@ PySpark token processor for distributed token generation.
 """
 
 import logging
+import uuid
 from typing import Dict, Type, Optional, Mapping, cast, Any
 from pyspark.sql import DataFrame
 from pyspark.sql.column import Column
@@ -29,6 +30,7 @@ from opentoken.tokens.tokenizer.sha256_tokenizer import SHA256Tokenizer
 from opentoken.tokens.tokenizer.passthrough_tokenizer import PassthroughTokenizer
 from opentoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 from opentoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
+from opentoken.tokentransformer.jwe_match_token_formatter import JweMatchTokenFormatter
 
 
 logger = logging.getLogger(__name__)
@@ -73,7 +75,7 @@ class OpenTokenProcessor:
         return mappings
 
     def __init__(self, hashing_secret: Optional[str] = None, encryption_key: Optional[str] = None,
-                 token_definition: Optional[BaseTokenDefinition] = None):
+                 token_definition: Optional[BaseTokenDefinition] = None, ring_id: Optional[str] = None):
         """
         Initialize the OpenToken processor with secrets.
 
@@ -82,6 +84,8 @@ class OpenTokenProcessor:
             encryption_key: Optional key for AES-256 encryption. If None, tokens will not be encrypted.
             token_definition: Optional custom token definition. If None, uses default tokens (T1-T5).
                              Use this to pass custom tokens created with TokenBuilder or CustomTokenDefinition.
+            ring_id: Optional ring identifier used in ot.V1 token wrapping when encryption is enabled.
+                     If not provided and encryption is enabled, a UUID is generated per processor instance.
 
         Raises:
             ValueError: If secrets are empty or invalid
@@ -110,6 +114,7 @@ class OpenTokenProcessor:
         self.hashing_secret = hashing_secret
         self.encryption_key = encryption_key
         self.token_definition = token_definition  # Store custom token definition
+        self.ring_id = ring_id if ring_id else str(uuid.uuid4())
 
         # Build column mappings if not already built
         self._build_column_mappings()
@@ -156,6 +161,7 @@ class OpenTokenProcessor:
         hashing_secret = self.hashing_secret
         encryption_key = self.encryption_key
         token_definition = self.token_definition
+        ring_id = self.ring_id
 
         # Define the schema for the output (array of structs)
         token_schema = ArrayType(StructType([
@@ -204,6 +210,16 @@ class OpenTokenProcessor:
             # Use custom token definition if provided, otherwise use default
             definition = token_definition if token_definition is not None else TokenDefinition()
 
+            jwe_formatters: Dict[str, JweMatchTokenFormatter] = {}
+            if encryption_key is not None:
+                for token_id in definition.get_token_identifiers():
+                    jwe_formatters[token_id] = JweMatchTokenFormatter(
+                        encryption_key=encryption_key,
+                        ring_id=ring_id,
+                        rule_id=token_id,
+                        issuer="truveta.opentoken"
+                    )
+
             # Initialize token generator with custom tokenizer
             token_generator = TokenGenerator(definition, tokenizer)
 
@@ -238,7 +254,11 @@ class OpenTokenProcessor:
 
                     # Convert to list of dicts for this record
                     tokens_list = [
-                        {"RuleId": rule_id, "Token": token}
+                        {
+                            "RuleId": rule_id,
+                            "Token": jwe_formatters[rule_id].transform(token)
+                            if encryption_key is not None and token else token
+                        }
                         for rule_id, token in token_result.tokens.items()
                     ]
 

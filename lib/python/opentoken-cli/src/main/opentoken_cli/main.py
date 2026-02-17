@@ -44,9 +44,11 @@ def main():
     output_type = command_line_arguments.output_type if command_line_arguments.output_type else input_type
     decrypt_mode = command_line_arguments.decrypt
     hash_only_mode = command_line_arguments.hash_only
+    ring_id = command_line_arguments.ring_id
 
     logger.info(f"Decrypt Mode: {decrypt_mode}")
     logger.info(f"Hash-Only Mode: {hash_only_mode}")
+    logger.info(f"Ring ID: {ring_id}")
     logger.info(f"Hashing Secret: {_mask_string(hashing_secret)}")
     logger.info(f"Encryption Key: {_mask_string(encryption_key)}")
     logger.info(f"Input Path: {input_path}")
@@ -83,7 +85,7 @@ def main():
             logger.error("Encryption key must be specified (or use --hash-only to skip encryption)")
             return
 
-        _process_tokens(input_path, output_path, input_type, output_type, hashing_secret, encryption_key, hash_only_mode)
+        _process_tokens(input_path, output_path, input_type, output_type, hashing_secret, encryption_key, hash_only_mode, ring_id)
 
 
 def _create_person_attributes_reader(input_path: str, input_type: str):
@@ -146,7 +148,7 @@ def _mask_string(input_str: str) -> str:
 
 
 def _process_tokens(input_path: str, output_path: str, input_type: str, output_type: str,
-                    hashing_secret: str, encryption_key: str, hash_only_mode: bool):
+                    hashing_secret: str, encryption_key: str, hash_only_mode: bool, ring_id: str):
     """
     Process tokens from person attributes and write to output file.
     
@@ -158,6 +160,7 @@ def _process_tokens(input_path: str, output_path: str, input_type: str, output_t
         hashing_secret: Secret for hashing tokens.
         encryption_key: Key for encrypting tokens (not used in hash-only mode).
         hash_only_mode: If True, skip encryption step.
+        ring_id: Ring identifier for JWE token wrapping.
     """
     token_transformer_list: List[TokenTransformer] = []
     try:
@@ -187,7 +190,11 @@ def _process_tokens(input_path: str, output_path: str, input_type: str, output_t
                 metadata.add_hashed_secret(Metadata.ENCRYPTION_SECRET_HASH, encryption_key)
 
             # Process data and get updated metadata
-            PersonAttributesProcessor.process(reader, writer, token_transformer_list, metadata_map)
+            # Pass encryption key and ring ID for JWE wrapping (only if not in hash-only mode)
+            PersonAttributesProcessor.process(
+                reader, writer, token_transformer_list, metadata_map,
+                None if hash_only_mode else encryption_key, ring_id
+            )
 
             # Write the metadata to file
             metadata_writer = MetadataJsonWriter(output_path)
@@ -213,7 +220,7 @@ def _decrypt_tokens(input_path: str, output_path: str, input_type: str, output_t
         
         with _create_token_reader(input_path, input_type) as reader, \
              _create_token_writer(output_path, output_type) as writer:
-            TokenDecryptionProcessor.process(reader, writer, decryptor)
+            TokenDecryptionProcessor.process_with_key(reader, writer, decryptor, encryption_key)
                 
     except Exception as e:
         logger.error(f"Error during token decryption: {e}")

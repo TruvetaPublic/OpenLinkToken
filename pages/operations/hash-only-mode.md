@@ -85,11 +85,11 @@ docker run --rm -v $(pwd)/resources:/app/resources \
 
 ## Output Comparison
 
-### Encrypted Tokens (~80-100 characters)
+### Encrypted Match Tokens (`ot.V1.<JWE>`, variable length)
 
 ```csv
 RecordId,RuleId,Token
-ID001,T1,Gn7t1Zj16E5Qy+z9iINtczP6fRDYta6C0XFrQtpjnVQSEZ5pQXAzo02Aa9LS9oNMOog6Ssw9GZE6fvJrX2sQ/cThSkB6m91L
+ID001,T1,ot.V1.eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIiwia2lkIjoi...<truncated>
 ```
 
 ### Hash-Only Tokens (~44-64 characters)
@@ -130,7 +130,7 @@ No `EncryptionSecretHash` field is present in hash-only mode.
 
 | Aspect               | Encryption Mode                 | Hash-Only Mode      |
 | -------------------- | ------------------------------- | ------------------- |
-| **Token length**     | ~80-100 chars                   | ~44-64 chars        |
+| **Token length**     | Variable (typically longer)     | ~44-64 chars        |
 | **Processing speed** | Slower                          | Faster              |
 | **Secret required**  | Hashing secret + encryption key | Hashing secret only |
 | **Reversibility**    | Decryptable (to HMAC hash)      | Not decryptable     |
@@ -162,9 +162,7 @@ JOIN tokens_b b ON a.Token = b.Token AND a.RuleId = b.RuleId
 WHERE a.RuleId = 'T1';
 ```
 
-For encrypted tokens, either:
-1. Decrypt both datasets first, then match
-2. Use the same encryption key for both datasets and match encrypted tokens directly
+For encrypted tokens, decrypt to hash-only form first and then match. Encrypted `ot.V1` token strings are randomized (IV-based) and should not be compared directly for equality.
 
 ---
 

@@ -72,7 +72,7 @@ class TestOpenTokenProcessor:
             OpenTokenProcessor("   ", "Secret-Encryption-Key-Goes-Here.")
 
     def test_process_dataframe_with_valid_data(self, spark, sample_data):
-        """Test processing a DataFrame with valid data."""
+        """Test processing a DataFrame with valid data and ot.V1 encrypted output."""
         processor = OpenTokenProcessor("HashingKey", "Secret-Encryption-Key-Goes-Here.")
 
         # Create DataFrame
@@ -95,6 +95,9 @@ class TestOpenTokenProcessor:
         # Verify we have multiple rule IDs
         rule_ids = set(row.RuleId for row in results)
         assert len(rule_ids) > 1
+
+        # Encrypted output should use ot.V1 JWE format
+        assert any(row.Token.startswith("ot.V1.") for row in results if row.Token)
 
     def test_process_dataframe_with_alternative_column_names(self, spark):
         """Test processing with alternative column names."""
@@ -348,10 +351,10 @@ class TestOpenTokenProcessor:
 
         # Should produce tokens without hashing
         assert result.count() > 0
-        # Verify tokens are encrypted (base64 strings)
+        # Verify tokens are encrypted (ot.V1 JWE strings)
         token_sample = result.select("Token").first()[0]
         assert isinstance(token_sample, str)
-        assert len(token_sample) > 20  # Encrypted tokens are longer
+        assert token_sample.startswith("ot.V1.")
 
     def test_process_with_bad_data_handles_errors(self, spark):
         """Test that processor handles bad data gracefully by returning empty token lists."""

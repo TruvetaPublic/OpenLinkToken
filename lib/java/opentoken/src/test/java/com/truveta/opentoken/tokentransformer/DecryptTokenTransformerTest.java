@@ -55,10 +55,10 @@ class DecryptTokenTransformerTest {
     @Test
     void testTransform_ValidEncryptedToken_ReturnsDecryptedToken() throws Exception {
         String originalToken = "mySecretToken";
-        
+
         // Encrypt the token first
         String encryptedToken = encryptor.transform(originalToken);
-        
+
         // Now decrypt it
         String decryptedToken = decryptor.transform(encryptedToken);
 
@@ -129,13 +129,13 @@ class DecryptTokenTransformerTest {
     @Test
     void testTransform_WrongKey_ThrowsException() throws Exception {
         String originalToken = "mySecretToken";
-        
+
         // Encrypt with one key
         String encryptedToken = encryptor.transform(originalToken);
-        
+
         // Try to decrypt with a different key
         DecryptTokenTransformer wrongDecryptor = new DecryptTokenTransformer("00000000000000000000000000000000");
-        
+
         // Should throw an exception
         Assertions.assertThrows(Exception.class, () -> {
             wrongDecryptor.transform(encryptedToken);

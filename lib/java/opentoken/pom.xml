@@ -57,6 +57,12 @@
             <artifactId>commons-lang3</artifactId>
         </dependency>
 
+        <!-- JOSE/JWT for JWE token format -->
+        <dependency>
+            <groupId>com.nimbusds</groupId>
+            <artifactId>nimbus-jose-jwt</artifactId>
+        </dependency>
+
         <!-- Logging -->
         <dependency>
             <groupId>org.slf4j</groupId>

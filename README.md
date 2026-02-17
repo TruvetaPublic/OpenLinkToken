@@ -23,7 +23,7 @@ Our approach to person matching relies on building a set of matching tokens (or 
 
 - Multi-language Support
 - Cryptographically Secure encryption that prevents re-identification
-- Enables straightforward person-matching by comparing 5 deterministic and unique tokens, providing a high degree of confidence in matches
+- Enables straightforward person-matching by comparing 5 deterministic and unique hash values (after decryption), providing a high degree of confidence in matches
 
 ## Demo
 
@@ -40,9 +40,9 @@ Perfect for understanding privacy-preserving record linkage concepts before divi
 
 ## Overview
 
-- **Multi-language parity**: Java and Python implementations produce identical token outputs
-- **Deterministic tokens**: Same input always produces the same cryptographically secure token
-- **Privacy-preserving**: Tokens cannot be reversed to recover original person data
+- **Multi-language parity**: Java and Python implementations produce byte-identical hash outputs (decrypted values)
+- **Deterministic matching values**: Same input always produces the same cryptographically secure hash for matching
+- **Privacy-preserving**: Encrypted tokens cannot be reversed to recover original person data
 
 ## Why OpenToken
 
@@ -105,4 +105,3 @@ See <a href="https://truvetapublic.github.io/OpenToken/quickstarts/" target="_bl
 For issues or support, file an issue in this repository.
 
 <!-- Re-run CI checks -->
-
