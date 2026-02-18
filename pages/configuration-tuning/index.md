@@ -112,7 +112,7 @@ ID002,T1,...
 **Columns:**
 - `RecordId`: From input (or auto-generated UUID)
 - `RuleId`: Token rule identifier (T1–T5)
-- `Token`: Encrypted `ot.V1.<JWE compact serialization>` token (or base64 HMAC token if `--hash-only`)
+- `Token`: Encrypted `ot.V1.<JWE compact serialization>` token (or base64 HMAC token when generated via `opentoken tokenize`)
 
 **Notes:**
 - **One row per rule per record**: 5 rows for each valid record

@@ -22,23 +22,48 @@ java -jar opentoken-cli-*.jar <subcommand> [OPTIONS]
 python -m opentoken_cli.main <subcommand> [OPTIONS]
 ```
 
-## Required Arguments
+## Arguments by Subcommand
 
-| Argument          | Short | Description                         |
-| ----------------- | ----- | ----------------------------------- |
-| `--input`         | `-i`  | Path to input file (CSV or Parquet) |
-| `--output`        | `-o`  | Path to output file                 |
-| `--type`          | `-t`  | File type: `csv` or `parquet`       |
-| `--hashingsecret` | `-h`  | Secret key for HMAC-SHA256 hashing  |
+### `package` (Default Encrypted Mode)
 
-## Optional Arguments
+| Argument          | Short | Required | Description                              |
+| ----------------- | ----- | -------- | ---------------------------------------- |
+| `--input`         | `-i`  | Yes      | Path to input file (CSV or Parquet)      |
+| `--output`        | `-o`  | Yes      | Path to output file                      |
+| `--type`          | `-t`  | Yes      | File type: `csv` or `parquet`            |
+| `--hashingsecret` | `-h`  | Yes      | Secret key for HMAC-SHA256 hashing       |
+| `--encryptionkey` | `-e`  | Yes      | 32-character key for AES-256 encryption  |
+| `--output-type`   | `-ot` | No       | Output file type if different from input |
 
-| Argument          | Short | Description                               | Default                                      |
-| ----------------- | ----- | ----------------------------------------- | -------------------------------------------- |
-| `--encryptionkey` | `-e`  | 32-character key for AES-256 encryption   | Required for `package`, `encrypt`, `decrypt` |
-| `tokenize`        |       | Generate hashed tokens without encryption | Subcommand                                   |
-| `--output-type`   | `-ot` | Output file type if different from input  | Same as input                                |
-| `decrypt`         |       | Decrypt mode (input must be encrypted)    | Subcommand                                   |
+### `tokenize` (Hashed Tokens Only)
+
+| Argument          | Short | Required | Description                              |
+| ----------------- | ----- | -------- | ---------------------------------------- |
+| `--input`         | `-i`  | Yes      | Path to input file (CSV or Parquet)      |
+| `--output`        | `-o`  | Yes      | Path to output file                      |
+| `--type`          | `-t`  | Yes      | File type: `csv` or `parquet`            |
+| `--hashingsecret` | `-h`  | Yes      | Secret key for HMAC-SHA256 hashing       |
+| `--output-type`   | `-ot` | No       | Output file type if different from input |
+
+### `encrypt` (Encrypt Input Tokens)
+
+| Argument          | Short | Required | Description                              |
+| ----------------- | ----- | -------- | ---------------------------------------- |
+| `--input`         | `-i`  | Yes      | Path to input file (CSV or Parquet)      |
+| `--output`        | `-o`  | Yes      | Path to output file                      |
+| `--type`          | `-t`  | Yes      | File type: `csv` or `parquet`            |
+| `--encryptionkey` | `-e`  | Yes      | 32-character key for AES-256 encryption  |
+| `--output-type`   | `-ot` | No       | Output file type if different from input |
+
+### `decrypt` (Decrypt Encrypted Tokens)
+
+| Argument          | Short | Required | Description                              |
+| ----------------- | ----- | -------- | ---------------------------------------- |
+| `--input`         | `-i`  | Yes      | Path to input file (must be encrypted)   |
+| `--output`        | `-o`  | Yes      | Path to output file                      |
+| `--type`          | `-t`  | Yes      | File type: `csv` or `parquet`            |
+| `--encryptionkey` | `-e`  | Yes      | 32-character key for AES-256 encryption  |
+| `--output-type`   | `-ot` | No       | Output file type if different from input |
 
 ## Modes of Operation
 

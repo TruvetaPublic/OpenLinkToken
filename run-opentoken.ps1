@@ -4,7 +4,7 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false, HelpMessage="Subcommand: package, tokenize, encrypt, or decrypt (default: package)")]
+    [Parameter(Position=0, Mandatory=$false, HelpMessage="Subcommand: package, tokenize, encrypt, or decrypt (default: package)")]
     [ValidateSet("package", "tokenize", "encrypt", "decrypt")]
     [string]$Subcommand = "package",
 
