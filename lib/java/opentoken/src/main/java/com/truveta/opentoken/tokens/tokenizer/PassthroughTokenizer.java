@@ -71,6 +71,7 @@ public final class PassthroughTokenizer implements Tokenizer {
         for (TokenTransformer tokenTransformer : tokenTransformerList) {
             transformedToken = tokenTransformer.transform(transformedToken);
         }
+
         return transformedToken;
     }
 }

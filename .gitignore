@@ -78,3 +78,4 @@ test-results-*.xml
 tools/sync-report-*.json
 demos/pprl-superhero-example/outputs/
 demos/pprl-superhero-example/datasets/
+.worktrees/

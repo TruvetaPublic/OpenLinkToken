@@ -114,7 +114,7 @@ EncryptTokenTransformer encryptor = new EncryptTokenTransformer(
 
 String signature = "DOE|J|MALE|1980-01-15";
 String encryptedToken = encryptor.transform(signature);
-// Returns: Base64-encoded encrypted token
+// Returns: OpenToken encrypted match token string (ot.V1.<JWE compact serialization>)
 ```
 
 ## Complete Example
@@ -236,14 +236,14 @@ for (Map<Class<? extends Attribute>, String> personAttributes : persons) {
 <dependency>
     <groupId>com.truveta</groupId>
     <artifactId>opentoken</artifactId>
-    <version>1.12.5</version>
+    <version>2.0.0-alpha</version>
 </dependency>
 
 <!-- For CLI/IO classes -->
 <dependency>
     <groupId>com.truveta</groupId>
     <artifactId>opentoken-cli</artifactId>
-    <version>1.12.5</version>
+    <version>2.0.0-alpha</version>
 </dependency>
 ```
 

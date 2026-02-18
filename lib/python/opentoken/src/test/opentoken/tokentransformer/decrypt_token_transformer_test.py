@@ -54,10 +54,10 @@ class TestDecryptTokenTransformer:
     def test_transform_valid_encrypted_token_returns_decrypted_token(self):
         """Test that transforming a valid encrypted token returns the decrypted token."""
         original_token = "mySecretToken"
-        
+
         # Encrypt the token first
         encrypted_token = self.encryptor.transform(original_token)
-        
+
         # Now decrypt it
         decrypted_token = self.decryptor.transform(encrypted_token)
 
@@ -123,13 +123,13 @@ class TestDecryptTokenTransformer:
     def test_transform_wrong_key_throws_exception(self):
         """Test that decrypting with the wrong key throws an exception."""
         original_token = "mySecretToken"
-        
+
         # Encrypt with one key
         encrypted_token = self.encryptor.transform(original_token)
-        
+
         # Try to decrypt with a different key
         wrong_decryptor = DecryptTokenTransformer("00000000000000000000000000000000")
-        
+
         # Should throw an exception
         with pytest.raises(Exception):
             wrong_decryptor.transform(encrypted_token)

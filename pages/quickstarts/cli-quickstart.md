@@ -35,8 +35,8 @@ Download the appropriate executable for your platform from the [latest release](
 
 ```bash
 # Extract the zip file
-unzip opentoken-cli-1.12.5-macos-universal.zip
-cd opentoken-cli-1.12.5-macos-universal
+unzip opentoken-cli-2.0.0-alpha-macos-universal.zip
+cd opentoken-cli-2.0.0-alpha-macos-universal
 
 # Make executable (if needed)
 chmod +x opentoken
@@ -54,8 +54,8 @@ chmod +x opentoken
 
 ```powershell
 # Extract the zip file
-Expand-Archive opentoken-cli-1.12.5-windows-x64.zip
-cd opentoken-cli-1.12.5-windows-x64
+Expand-Archive opentoken-cli-2.0.0-alpha-windows-x64.zip
+cd opentoken-cli-2.0.0-alpha-windows-x64
 
 # Run the CLI
 .\opentoken.exe `
@@ -187,11 +187,11 @@ The primary use case for hash-only mode is to build an **internal overlap-analys
 
 Each input record produces 5 tokens (T1–T5):
 
-| Column     | Description                           |
-| ---------- | ------------------------------------- |
-| `RecordId` | Original record identifier            |
-| `RuleId`   | Token rule (T1, T2, T3, T4, or T5)    |
-| `Token`    | Base64-encoded encrypted/hashed token |
+| Column     | Description                                                             |
+| ---------- | ----------------------------------------------------------------------- |
+| `RecordId` | Original record identifier                                              |
+| `RuleId`   | Token rule (T1, T2, T3, T4, or T5)                                      |
+| `Token`    | Encrypted match token (ot.V1 format) or base64-encoded HMAC (hash-only) |
 
 ### Metadata File
 

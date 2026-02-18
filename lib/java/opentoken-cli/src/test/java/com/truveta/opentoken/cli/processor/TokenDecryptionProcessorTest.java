@@ -20,11 +20,16 @@ import com.truveta.opentoken.cli.io.TokenReader;
 import com.truveta.opentoken.cli.io.TokenWriter;
 import com.truveta.opentoken.tokens.Token;
 import com.truveta.opentoken.tokentransformer.DecryptTokenTransformer;
+import com.truveta.opentoken.tokentransformer.EncryptTokenTransformer;
+import com.truveta.opentoken.tokentransformer.JweMatchTokenFormatter;
 
 /**
  * Unit tests for {@link TokenDecryptionProcessor}.
  */
 class TokenDecryptionProcessorTest {
+
+    private static final String ENCRYPTION_KEY = "12345678901234567890123456789012";
+    private static final String RING_ID = "ring-1";
 
     private TokenReader mockReader;
     private TokenWriter mockWriter;
@@ -56,7 +61,7 @@ class TokenDecryptionProcessorTest {
         when(mockDecryptor.transform("encryptedToken2")).thenReturn("decryptedToken2");
 
         // Execute
-        TokenDecryptionProcessor.process(mockReader, mockWriter, mockDecryptor);
+        TokenDecryptionProcessor.process(mockReader, mockWriter, mockDecryptor, ENCRYPTION_KEY);
 
         // Verify
         ArgumentCaptor<Map<String, String>> captor = ArgumentCaptor.forClass(Map.class);
@@ -78,7 +83,7 @@ class TokenDecryptionProcessorTest {
         when(mockReader.next()).thenReturn(row);
 
         // Execute
-        TokenDecryptionProcessor.process(mockReader, mockWriter, mockDecryptor);
+        TokenDecryptionProcessor.process(mockReader, mockWriter, mockDecryptor, ENCRYPTION_KEY);
 
         // Verify decryptor was not called for blank token
         verify(mockDecryptor, times(0)).transform(Token.BLANK);
@@ -99,7 +104,7 @@ class TokenDecryptionProcessorTest {
         when(mockReader.next()).thenReturn(row);
 
         // Execute
-        TokenDecryptionProcessor.process(mockReader, mockWriter, mockDecryptor);
+        TokenDecryptionProcessor.process(mockReader, mockWriter, mockDecryptor, ENCRYPTION_KEY);
 
         // Verify decryptor was not called for empty token
         verify(mockDecryptor, times(0)).transform("");
@@ -120,7 +125,7 @@ class TokenDecryptionProcessorTest {
         when(mockReader.next()).thenReturn(row);
 
         // Execute
-        TokenDecryptionProcessor.process(mockReader, mockWriter, mockDecryptor);
+        TokenDecryptionProcessor.process(mockReader, mockWriter, mockDecryptor, ENCRYPTION_KEY);
 
         // Verify token was still written with null
         verify(mockWriter, times(1)).writeToken(row);
@@ -140,7 +145,7 @@ class TokenDecryptionProcessorTest {
                 .thenThrow(new RuntimeException("Decryption failed"));
 
         // Execute - should not throw, should log error
-        TokenDecryptionProcessor.process(mockReader, mockWriter, mockDecryptor);
+        TokenDecryptionProcessor.process(mockReader, mockWriter, mockDecryptor, ENCRYPTION_KEY);
 
         // Verify token was still written (with original encrypted value since decryption failed)
         verify(mockWriter, times(1)).writeToken(row);
@@ -172,7 +177,7 @@ class TokenDecryptionProcessorTest {
         when(mockDecryptor.transform("encryptedToken3")).thenReturn("decryptedToken3");
 
         // Execute
-        TokenDecryptionProcessor.process(mockReader, mockWriter, mockDecryptor);
+        TokenDecryptionProcessor.process(mockReader, mockWriter, mockDecryptor, ENCRYPTION_KEY);
 
         // Verify all tokens were written
         verify(mockWriter, times(3)).writeToken(org.mockito.ArgumentMatchers.any());
@@ -187,9 +192,34 @@ class TokenDecryptionProcessorTest {
         when(mockReader.hasNext()).thenReturn(false);
 
         // Execute
-        TokenDecryptionProcessor.process(mockReader, mockWriter, mockDecryptor);
+        TokenDecryptionProcessor.process(mockReader, mockWriter, mockDecryptor, ENCRYPTION_KEY);
 
         // Verify no tokens were written
         verify(mockWriter, times(0)).writeToken(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void testProcessDecryptsJweTokens() throws Exception {
+        String plainToken = "plain-token";
+        EncryptTokenTransformer encryptor = new EncryptTokenTransformer(ENCRYPTION_KEY);
+        DecryptTokenTransformer decryptor = new DecryptTokenTransformer(ENCRYPTION_KEY);
+        JweMatchTokenFormatter formatter = new JweMatchTokenFormatter(ENCRYPTION_KEY, RING_ID, "T1", null);
+
+        String encryptedToken = encryptor.transform(plainToken);
+        String jweToken = formatter.transform(encryptedToken);
+
+        Map<String, String> row = new HashMap<>();
+        row.put(TokenConstants.RECORD_ID, "record-1");
+        row.put(TokenConstants.RULE_ID, "T1");
+        row.put(TokenConstants.TOKEN, jweToken);
+
+        when(mockReader.hasNext()).thenReturn(true, false);
+        when(mockReader.next()).thenReturn(row);
+
+        TokenDecryptionProcessor.process(mockReader, mockWriter, decryptor, ENCRYPTION_KEY);
+
+        ArgumentCaptor<Map<String, String>> captor = ArgumentCaptor.forClass(Map.class);
+        verify(mockWriter, times(1)).writeToken(captor.capture());
+        assertEquals(plainToken, captor.getValue().get(TokenConstants.TOKEN));
     }
 }

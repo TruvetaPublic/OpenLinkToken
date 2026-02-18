@@ -25,7 +25,7 @@ public class Metadata {
     public static final String METADATA_FILE_EXTENSION = ".metadata.json";
     public static final String SYSTEM_JAVA_VERSION = System.getProperty("java.version");
 
-    public static final String DEFAULT_VERSION = "1.12.5";
+    public static final String DEFAULT_VERSION = "2.0.0-alpha";
 
     // Output format values
     public static final String OUTPUT_FORMAT_JSON = "JSON";

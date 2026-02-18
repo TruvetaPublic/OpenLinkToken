@@ -101,70 +101,91 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            const commentMarker = '<!-- java-language-sync-status -->';
             const syncReport = ${{ toJSON(steps.sync-check.outputs.SYNC_REPORT) }};
             const completionStatus = `${{ steps.sync-check.outputs.COMPLETION_STATUS }}`;
             const isComplete = `${{ steps.sync-check.outputs.SYNC_COMPLETE }}` === 'true';
             const completed = `${{ steps.sync-check.outputs.COMPLETED }}` || '0';
-            const total = `${{ steps.sync-check.outputs.TOTAL }}` || '0';
 
             let commentBody;
 
             if (isComplete || syncReport.includes('All Java changes appear to be in sync')) {
-              let finalStatusLine = '';
-              if (completed > 0) {
-                finalStatusLine = `**Final Status**: ${completionStatus}`;
+              const lines = [
+                commentMarker,
+                '## ✅ Java Multi-Language Sync Status: Complete!',
+                'All Java changes in this PR have corresponding target language file modifications.',
+              ];
+
+              if (completed !== '0') {
+                lines.push('', `**Final Status**: ${completionStatus}`);
               }
-              
-              commentBody = `## ✅ Java Multi-Language Sync Status: Complete!
-              All Java changes in this PR have corresponding target language file modifications.
-              ` + finalStatusLine;
-            } else {            
-              commentBody = `## 🔄 Java Multi-Language Sync Progress ${completionStatus}
-              ${syncReport}
-              ### 📋 How to use this checklist:
-              - **✅ SYNCED** = Both Java and target language files modified in this PR ✅ **COMPLETED**
-              - **⏳ NEEDS SYNC** = Java modified but target language not updated yet ⏳ **PENDING** 
-              - **❌ MISSING** = Target language file doesn't exist and needs to be created ⏳ **PENDING**
-              
-              ### Multi-commit workflow support:
-              This sync tracker monitors your progress across **all commits in this PR**. When you modify the corresponding target language files, they'll automatically show as ✅ SYNCED in subsequent workflow runs!
-              **Next steps**: Modify the ⏳ pending target language files to complete the sync.`;
+
+              commentBody = lines.join('\n');
+            } else {
+              commentBody = [
+                commentMarker,
+                `## 🔄 Java Multi-Language Sync Progress ${completionStatus}`,
+                syncReport,
+                '### 📋 How to use this checklist:',
+                '- **✅ SYNCED** = Both Java and target language files modified in this PR ✅ **COMPLETED**',
+                '- **⏳ NEEDS SYNC** = Java modified but target language not updated yet ⏳ **PENDING**',
+                '- **❌ MISSING** = Target language file does not exist and needs to be created ⏳ **PENDING**',
+                '',
+                '### Multi-commit workflow support:',
+                'This sync tracker monitors your progress across **all commits in this PR**. When you modify the corresponding target language files, they automatically show as ✅ SYNCED in subsequent workflow runs.',
+                '**Next steps**: Modify the ⏳ pending target language files to complete the sync.',
+              ].join('\n');
             }
 
-            // Find and delete previous sync comments to keep history clean
-            const comments = await github.rest.issues.listComments({
+            // Find existing sticky sync comment and update in place (single comment across runs)
+            const comments = await github.paginate(github.rest.issues.listComments, {
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
             });
 
-            const syncComments = comments.data.filter(comment => 
-              comment.user.type === 'Bot' && 
-              (comment.body.includes('Java Multi-Language Sync') || comment.body.includes('Java-Python Sync') || comment.body.includes('Sync Status') || comment.body.includes('Sync Progress'))
+            const existingStickyComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body &&
+              comment.body.includes(commentMarker)
             );
 
-            // Delete all previous sync comments
-            for (const comment of syncComments) {
-              try {
-                await github.rest.issues.deleteComment({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  comment_id: comment.id,
-                });
-                console.log(`Deleted previous sync comment: ${comment.id}`);
-              } catch (error) {
-                console.log(`Problem deleting comment ${comment.id}: ${error.message}`);
-              }
+            const legacySyncComments = comments.filter(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body &&
+              (comment.body.includes('Java Multi-Language Sync') ||
+               comment.body.includes('Java-Python Sync') ||
+               comment.body.includes('Sync Status') ||
+               comment.body.includes('Sync Progress')) &&
+              (!existingStickyComment || comment.id !== existingStickyComment.id)
+            );
+
+            for (const comment of legacySyncComments) {
+              await github.rest.issues.deleteComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: comment.id,
+              });
+              console.log(`Deleted legacy sync comment: ${comment.id}`);
             }
 
-            // Create new comment
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: commentBody
-            });
-            console.log('Created new sync comment');
+            if (existingStickyComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingStickyComment.id,
+                body: commentBody,
+              });
+              console.log(`Updated existing sync comment: ${existingStickyComment.id}`);
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: commentBody,
+              });
+              console.log('Created new sync comment');
+            }
 
       - name: Fail workflow if sync is incomplete
         if: steps.sync-check.outputs.SYNC_COMPLETE != 'true'

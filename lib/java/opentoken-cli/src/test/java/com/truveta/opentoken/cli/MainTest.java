@@ -16,9 +16,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import com.truveta.opentoken.cli.commands.OpenTokenCommand;
+
 /**
  * Integration tests for {@link Main} class.
- * Tests the end-to-end workflows for token generation and decryption.
+ * Tests the end-to-end workflows for token generation and decryption using new subcommand interface.
  */
 class MainTest {
 
@@ -55,16 +57,17 @@ class MainTest {
     }
 
     @Test
-    void testTokenGenerationCsvToCsv() throws IOException {
+    void testPackageCommandCsvToCsv() throws IOException {
         String[] args = {
+                "package",
                 "-i", inputCsv.toString(),
                 "-t", "csv",
                 "-o", outputCsv.toString(),
-                "-h", HASHING_SECRET,
-                "-e", ENCRYPTION_KEY
+                "--hashingsecret", HASHING_SECRET,
+                "--encryptionkey", ENCRYPTION_KEY
         };
 
-        assertDoesNotThrow(() -> Main.main(args));
+        assertDoesNotThrow(() -> OpenTokenCommand.execute(args));
 
         assertTrue(Files.exists(outputCsv), "Output CSV should be created");
         assertTrue(Files.size(outputCsv) > 0, "Output CSV should not be empty");
@@ -75,151 +78,80 @@ class MainTest {
     }
 
     @Test
-    void testTokenGenerationCsvToParquet() throws IOException {
+    void testPackageCommandCsvToParquet() throws IOException {
         String[] args = {
+                "package",
                 "-i", inputCsv.toString(),
                 "-t", "csv",
                 "-o", outputParquet.toString(),
                 "-ot", "parquet",
-                "-h", HASHING_SECRET,
-                "-e", ENCRYPTION_KEY
+                "--hashingsecret", HASHING_SECRET,
+                "--encryptionkey", ENCRYPTION_KEY
         };
 
-        assertDoesNotThrow(() -> Main.main(args));
+        assertDoesNotThrow(() -> OpenTokenCommand.execute(args));
 
         assertTrue(Files.exists(outputParquet), "Output Parquet should be created");
         assertTrue(Files.size(outputParquet) > 0, "Output Parquet should not be empty");
     }
 
     @Test
-    void testHashOnlyMode() throws IOException {
+    void testTokenizeCommand() throws IOException {
         String[] args = {
+                "tokenize",
                 "-i", inputCsv.toString(),
                 "-t", "csv",
                 "-o", outputCsv.toString(),
-                "-h", HASHING_SECRET,
-                "--hash-only"
+                "--hashingsecret", HASHING_SECRET
         };
 
-        assertDoesNotThrow(() -> Main.main(args));
+        assertDoesNotThrow(() -> OpenTokenCommand.execute(args));
 
         assertTrue(Files.exists(outputCsv), "Output CSV should be created");
         assertTrue(Files.size(outputCsv) > 0, "Output CSV should not be empty");
     }
 
     @Test
-    void testDecryptMode() throws IOException {
+    void testDecryptCommand() throws IOException {
         // First, generate encrypted tokens
         String[] encryptArgs = {
+                "package",
                 "-i", inputCsv.toString(),
                 "-t", "csv",
                 "-o", outputCsv.toString(),
-                "-h", HASHING_SECRET,
-                "-e", ENCRYPTION_KEY
+                "--hashingsecret", HASHING_SECRET,
+                "--encryptionkey", ENCRYPTION_KEY
         };
-        Main.main(encryptArgs);
+        OpenTokenCommand.execute(encryptArgs);
 
         // Now decrypt them
         Path decryptedCsv = tempDir.resolve("decrypted.csv");
         String[] decryptArgs = {
-                "-d",
+                "decrypt",
                 "-i", outputCsv.toString(),
                 "-t", "csv",
                 "-o", decryptedCsv.toString(),
-                "-e", ENCRYPTION_KEY
+                "--encryptionkey", ENCRYPTION_KEY
         };
 
-        assertDoesNotThrow(() -> Main.main(decryptArgs));
+        assertDoesNotThrow(() -> OpenTokenCommand.execute(decryptArgs));
 
         assertTrue(Files.exists(decryptedCsv), "Decrypted CSV should be created");
         assertTrue(Files.size(decryptedCsv) > 0, "Decrypted CSV should not be empty");
     }
 
     @Test
-    void testInvalidInputType() throws IOException {
-        String[] args = {
-                "-i", inputCsv.toString(),
-                "-t", "invalid",
-                "-o", outputCsv.toString(),
-                "-h", HASHING_SECRET,
-                "-e", ENCRYPTION_KEY
-        };
-
-        // Should not throw, but should log error and return early
-        assertDoesNotThrow(() -> Main.main(args));
-        // Output should not exist due to early exit
-        assertTrue(!Files.exists(outputCsv) || Files.size(outputCsv) == 0);
-    }
-
-    @Test
-    void testInvalidOutputType() {
-        String[] args = {
-                "-i", inputCsv.toString(),
-                "-t", "csv",
-                "-o", outputCsv.toString(),
-                "-ot", "invalid",
-                "-h", HASHING_SECRET,
-                "-e", ENCRYPTION_KEY
-        };
-
-        // Should not throw, but should log error and return early
-        assertDoesNotThrow(() -> Main.main(args));
-    }
-
-    @Test
-    void testMissingHashingSecret() {
-        String[] args = {
-                "-i", inputCsv.toString(),
-                "-t", "csv",
-                "-o", outputCsv.toString(),
-                "-e", ENCRYPTION_KEY
-        };
-
-        // Should not throw, but should log error and return early
-        assertDoesNotThrow(() -> Main.main(args));
-    }
-
-    @Test
-    void testMissingEncryptionKeyWithoutHashOnly() {
-        String[] args = {
-                "-i", inputCsv.toString(),
-                "-t", "csv",
-                "-o", outputCsv.toString(),
-                "-h", HASHING_SECRET
-        };
-
-        // Should not throw, but should log error and return early
-        assertDoesNotThrow(() -> Main.main(args));
-    }
-
-    @Test
-    void testDecryptModeWithMissingEncryptionKey() throws IOException {
-        // Create a dummy encrypted tokens file
-        Path dummyTokens = tempDir.resolve("tokens.csv");
-        Files.writeString(dummyTokens, "RecordId,RuleId,Token\ntest-001,T1,encrypted_token\n");
-
-        String[] args = {
-                "-d",
-                "-i", dummyTokens.toString(),
-                "-t", "csv",
-                "-o", outputCsv.toString()
-        };
-
-        // Should not throw, but should log error and return early
-        assertDoesNotThrow(() -> Main.main(args));
-    }
-
-    @Test
     void testOutputTypeDefaultsToInputType() throws IOException {
         String[] args = {
+                "package",
                 "-i", inputCsv.toString(),
                 "-t", "csv",
                 "-o", outputCsv.toString(),
-                "-h", HASHING_SECRET,
-                "-e", ENCRYPTION_KEY
+                "--hashingsecret", HASHING_SECRET,
+                "--encryptionkey", ENCRYPTION_KEY
         };
 
-        assertDoesNotThrow(() -> Main.main(args));
+        assertDoesNotThrow(() -> OpenTokenCommand.execute(args));
 
         // Verify CSV output was created (same as input type)
         assertTrue(Files.exists(outputCsv));
@@ -232,52 +164,171 @@ class MainTest {
         // First create a parquet file from CSV
         Path tempParquet = tempDir.resolve("temp.parquet");
         String[] createArgs = {
+                "package",
                 "-i", inputCsv.toString(),
                 "-t", "csv",
                 "-o", tempParquet.toString(),
                 "-ot", "parquet",
-                "-h", HASHING_SECRET,
-                "-e", ENCRYPTION_KEY
+                "--hashingsecret", HASHING_SECRET,
+                "--encryptionkey", ENCRYPTION_KEY
         };
-        Main.main(createArgs);
+        OpenTokenCommand.execute(createArgs);
 
         // Now use parquet as input
         Path outputParquet2 = tempDir.resolve("output2.parquet");
         String[] args = {
-                "-d",
+                "decrypt",
                 "-i", tempParquet.toString(),
                 "-t", "parquet",
                 "-o", outputParquet2.toString(),
-                "-e", ENCRYPTION_KEY
+                "--encryptionkey", ENCRYPTION_KEY
         };
 
-        assertDoesNotThrow(() -> Main.main(args));
+        assertDoesNotThrow(() -> OpenTokenCommand.execute(args));
     }
 
     @Test
     void testDecryptCsvToParquet() throws IOException {
         // First generate encrypted tokens
         String[] encryptArgs = {
+                "package",
                 "-i", inputCsv.toString(),
                 "-t", "csv",
                 "-o", outputCsv.toString(),
-                "-h", HASHING_SECRET,
-                "-e", ENCRYPTION_KEY
+                "--hashingsecret", HASHING_SECRET,
+                "--encryptionkey", ENCRYPTION_KEY
         };
-        Main.main(encryptArgs);
+        OpenTokenCommand.execute(encryptArgs);
 
         // Decrypt CSV to Parquet
         Path decryptedParquet = tempDir.resolve("decrypted.parquet");
         String[] decryptArgs = {
-                "-d",
+                "decrypt",
                 "-i", outputCsv.toString(),
                 "-t", "csv",
                 "-o", decryptedParquet.toString(),
                 "-ot", "parquet",
-                "-e", ENCRYPTION_KEY
+                "--encryptionkey", ENCRYPTION_KEY
         };
 
-        assertDoesNotThrow(() -> Main.main(decryptArgs));
+        assertDoesNotThrow(() -> OpenTokenCommand.execute(decryptArgs));
         assertTrue(Files.exists(decryptedParquet));
+    }
+
+    // ===== Negative Test Cases =====
+
+    @Test
+    void testMissingRequiredParameter_HashingSecret() {
+        String[] args = {
+                "tokenize",
+                "-i", inputCsv.toString(),
+                "-t", "csv",
+                "-o", outputCsv.toString()
+                // Missing --hashingsecret
+        };
+
+        int exitCode = OpenTokenCommand.execute(args);
+        assertTrue(exitCode != 0, "Command should exit with non-zero code for missing required parameter");
+    }
+
+    @Test
+    void testMissingRequiredParameter_EncryptionKey() {
+        String[] args = {
+                "encrypt",
+                "-i", inputCsv.toString(),
+                "-t", "csv",
+                "-o", outputCsv.toString()
+                // Missing --encryptionkey
+        };
+
+        int exitCode = OpenTokenCommand.execute(args);
+        assertTrue(exitCode != 0, "Command should exit with non-zero code for missing required parameter");
+    }
+
+    @Test
+    void testMissingRequiredParameter_Input() {
+        String[] args = {
+                "tokenize",
+                // Missing -i/--input
+                "-t", "csv",
+                "-o", outputCsv.toString(),
+                "--hashingsecret", HASHING_SECRET
+        };
+
+        int exitCode = OpenTokenCommand.execute(args);
+        assertTrue(exitCode != 0, "Command should exit with non-zero code for missing required parameter");
+    }
+
+    @Test
+    void testMissingRequiredParameter_Output() {
+        String[] args = {
+                "tokenize",
+                "-i", inputCsv.toString(),
+                "-t", "csv",
+                // Missing -o/--output
+                "--hashingsecret", HASHING_SECRET
+        };
+
+        int exitCode = OpenTokenCommand.execute(args);
+        assertTrue(exitCode != 0, "Command should exit with non-zero code for missing required parameter");
+    }
+
+    @Test
+    void testInvalidInputType() {
+        String[] args = {
+                "tokenize",
+                "-i", inputCsv.toString(),
+                "-t", "invalid_type", // Invalid input type
+                "-o", outputCsv.toString(),
+                "--hashingsecret", HASHING_SECRET
+        };
+
+        int exitCode = OpenTokenCommand.execute(args);
+        assertTrue(exitCode != 0, "Command should exit with non-zero code for invalid input type");
+    }
+
+    @Test
+    void testInvalidOutputType() {
+        String[] args = {
+                "tokenize",
+                "-i", inputCsv.toString(),
+                "-t", "csv",
+                "-o", outputCsv.toString(),
+                "-ot", "invalid_type", // Invalid output type
+                "--hashingsecret", HASHING_SECRET
+        };
+
+        int exitCode = OpenTokenCommand.execute(args);
+        assertTrue(exitCode != 0, "Command should exit with non-zero code for invalid output type");
+    }
+
+    @Test
+    void testNonExistentInputFile() {
+        Path nonExistentFile = tempDir.resolve("nonexistent.csv");
+
+        String[] args = {
+                "tokenize",
+                "-i", nonExistentFile.toString(),
+                "-t", "csv",
+                "-o", outputCsv.toString(),
+                "--hashingsecret", HASHING_SECRET
+        };
+
+        int exitCode = OpenTokenCommand.execute(args);
+        assertTrue(exitCode != 0, "Command should exit with non-zero code for non-existent input file");
+    }
+
+    @Test
+    void testPackageCommandMissingBothSecrets() {
+        String[] args = {
+                "package",
+                "-i", inputCsv.toString(),
+                "-t", "csv",
+                "-o", outputCsv.toString()
+                // Missing both --hashingsecret and --encryptionkey
+        };
+
+        int exitCode = OpenTokenCommand.execute(args);
+        assertTrue(exitCode != 0, "Command should exit with non-zero code for missing required parameters");
     }
 }

@@ -1,7 +1,7 @@
 {
-  "JavaVersion": "21.0.9",
-  "Platform": "Java",
-  "OpenTokenVersion": "1.12.0",
+  "PythonVersion": "3.11.2",
+  "Platform": "Python",
+  "OpenTokenVersion": "2.0.0-alpha",
   "HashingSecretHash": "26ce1637d4a1e514cbf90ce0d73d7ea257342009083ab6f6e06cb434fb3a9d99",
   "EncryptionSecretHash": "05f0825275cb54bdf4cde58ef6875d24acb75f84ec0187a26d45d626f57f189b",
   "TotalRows": 105,
