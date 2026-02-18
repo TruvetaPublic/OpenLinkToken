@@ -33,12 +33,12 @@ python -m opentoken_cli.main <subcommand> [OPTIONS]
 
 ## Optional Arguments
 
-| Argument          | Short | Description                               | Default                    |
-| ----------------- | ----- | ----------------------------------------- | -------------------------- |
-| `--encryptionkey` | `-e`  | 32-character key for AES-256 encryption   | Required in `package` mode |
-| `tokenize`        |       | Generate hashed tokens without encryption | Subcommand                 |
-| `--output-type`   | `-ot` | Output file type if different from input  | Same as input              |
-| `decrypt`         |       | Decrypt mode (input must be encrypted)    | Subcommand                 |
+| Argument          | Short | Description                               | Default                                      |
+| ----------------- | ----- | ----------------------------------------- | -------------------------------------------- |
+| `--encryptionkey` | `-e`  | 32-character key for AES-256 encryption   | Required for `package`, `encrypt`, `decrypt` |
+| `tokenize`        |       | Generate hashed tokens without encryption | Subcommand                                   |
+| `--output-type`   | `-ot` | Output file type if different from input  | Same as input                                |
+| `decrypt`         |       | Decrypt mode (input must be encrypted)    | Subcommand                                   |
 
 ## Modes of Operation
 
