@@ -199,7 +199,7 @@ df.to_parquet('large_test.parquet')
 "
 
 # Process with OpenToken
-java -jar opentoken-cli-*.jar \
+java -jar opentoken-cli-*.jar package \
   -i large_test.parquet -t parquet \
   -o tokens.parquet \
   -h "HashingKey" -e "EncryptionKey"

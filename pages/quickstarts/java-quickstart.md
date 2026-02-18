@@ -44,7 +44,7 @@ mvn clean install -DskipTests
 ### Basic Encrypted Tokens
 
 ```bash
-java -jar opentoken-cli/target/opentoken-cli-*.jar \
+java -jar opentoken-cli/target/opentoken-cli-*.jar package \
   -i ../../resources/sample.csv \
   -t csv \
   -o ../../resources/output.csv \
@@ -52,21 +52,21 @@ java -jar opentoken-cli/target/opentoken-cli-*.jar \
   -e "YourEncryptionKey-32Chars-Here!"
 ```
 
-### Hash-Only Mode (No Encryption)
+### Tokenize (No Encryption)
 
 ```bash
-java -jar opentoken-cli/target/opentoken-cli-*.jar \
+java -jar opentoken-cli/target/opentoken-cli-*.jar tokenize \
   -i ../../resources/sample.csv \
   -t csv \
   -o ../../resources/output.csv \
-  -h "YourHashingSecret" \
-  --hash-only
+  -h "YourHashingSecret"
+
 ```
 
 ### Parquet Format
 
 ```bash
-java -jar opentoken-cli/target/opentoken-cli-*.jar \
+java -jar opentoken-cli/target/opentoken-cli-*.jar package \
   -i input.parquet \
   -t parquet \
   -o output.parquet \
@@ -179,7 +179,7 @@ Run `mvn checkstyle:check` to see specific style violations, then fix them.
 For large files, increase heap size:
 
 ```bash
-java -Xmx4g -jar opentoken-cli-*.jar ...
+java -Xmx4g -jar opentoken-cli-*.jar package ...
 ```
 
 ## Next Steps

@@ -2,7 +2,7 @@
 layout: default
 ---
 
-# Hash-Only Mode
+# Tokenize
 
 How to generate tokens using HMAC-SHA256 without AES encryption.
 
@@ -10,7 +10,7 @@ How to generate tokens using HMAC-SHA256 without AES encryption.
 
 ## Overview
 
-Hash-only mode generates deterministic tokens without AES encryption:
+The `tokenize` subcommand generates deterministic tokens without AES encryption:
 
 ```
 Token Signature → SHA-256 Hash → HMAC-SHA256(hash, secret) → Base64 Encode
@@ -24,17 +24,17 @@ Token Signature → SHA-256 Hash → HMAC-SHA256(hash, secret) → AES-256-GCM E
 
 ---
 
-## When to Use Hash-Only Mode
+## When to Use `tokenize`
 
-Hash-only mode is primarily used to support **overlap analysis workflows** where you receive **encrypted tokens from an external partner** and want to build an internal dataset that can be joined against those tokens.
+The `tokenize` subcommand is primarily used to support **overlap analysis workflows** where you receive **encrypted tokens from an external partner** and want to build an internal dataset that can be joined against those tokens.
 
-**Use hash-only when:**
+**Use `tokenize` when:**
 
-- You are creating an internal tokenized dataset that will be matched against **encrypted tokens received from an external partner** (after decrypting their tokens to the hash-only equivalent)
+- You are creating an internal tokenized dataset that will be matched against **encrypted tokens received from an external partner** (after decrypting their tokens to their unencrypted equivalent)
 - You need faster processing or smaller token size for **internal analytics and overlap reporting**
 - Raw data and tokens are already protected at rest within your environment
 
-**Use encryption mode when:**
+**Use `package` when:**
 
 - Sharing tokens with external parties (encrypted tokens are the artifact that should be exchanged)
 - Defense in depth is required for tokens stored outside your boundary
@@ -89,14 +89,14 @@ RecordId,RuleId,Token
 ID001,T1,Gn7t1Zj16E5Qy+z9iINtczP6fRDYta6C0XFrQtpjnVQSEZ5pQXAzo02Aa9LS9oNMOog6Ssw9GZE6fvJrX2sQ/cThSkB6m91L
 ```
 
-### Hash-Only Tokens (~44-64 characters)
+### Tokenized (Unencrypted) Tokens (~44-64 characters)
 
 ```csv
 RecordId,RuleId,Token
 ID001,T1,abc123def456ghi789jkl012mno345pqr678stu901vwx234
 ```
 
-Hash-only tokens are shorter because they don't include the AES initialization vector (IV) and authentication tag.
+Tokenized (unencrypted) tokens are shorter because they don't include the AES initialization vector (IV) and authentication tag.
 
 ---
 
@@ -111,7 +111,7 @@ Hash-only tokens are shorter because they don't include the AES initialization v
 }
 ```
 
-### Hash-Only Mode Metadata
+### `tokenize` Metadata
 
 ```json
 {
@@ -119,13 +119,13 @@ Hash-only tokens are shorter because they don't include the AES initialization v
 }
 ```
 
-No `EncryptionSecretHash` field is present in hash-only mode.
+No `EncryptionSecretHash` field is present when using `tokenize`.
 
 ---
 
 ## Security Trade-offs
 
-| Aspect               | Encryption Mode                 | Hash-Only Mode      |
+| Aspect               | `package`                       | `tokenize`          |
 | -------------------- | ------------------------------- | ------------------- |
 | **Token length**     | ~80-100 chars                   | ~44-64 chars        |
 | **Processing speed** | Slower                          | Faster              |
@@ -137,19 +137,19 @@ No `EncryptionSecretHash` field is present in hash-only mode.
 ### Security Notes
 
 - **Both modes are one-way**: Original attributes cannot be recovered from either token type
-- **Same hashing secret = same tokens**: Hash-only tokens from different runs with the same secret will match
-- **Cross-language parity**: Java and Python produce identical hash-only tokens for the same input
+- **Same hashing secret = same tokens**: Tokenized output from different runs with the same secret will match
+- **Cross-language parity**: Java and Python produce identical tokenized output for the same input
 
 ---
 
-## Matching Hash-Only Tokens
+## Matching Tokenized Output
 
-Hash-only tokens can be matched directly without decryption when **both sides are in hash-only form**. In an external-partner workflow, this typically means:
+Tokenized (unencrypted) tokens can be matched directly without decryption when **both sides are in tokenized form**. In an external-partner workflow, this typically means:
 
 1. Partner generates and shares **encrypted tokens**.
-2. You run [Decrypting Tokens](decrypting-tokens.md) to convert the partner's encrypted tokens into their hash-only equivalent.
-3. You generate **hash-only tokens** for your own dataset using the same hashing secret.
-4. You join the two hash-only datasets to measure overlap.
+2. You run [Decrypting Tokens](decrypting-tokens.md) to convert the partner's encrypted tokens to their unencrypted equivalent.
+3. You generate **tokenized output** for your own dataset using the same hashing secret.
+4. You join the two tokenized datasets to measure overlap.
 
 ```sql
 -- Match records between datasets
@@ -203,6 +203,6 @@ java -jar opentoken-cli-*.jar tokenize -i data.csv -t csv -o out.csv -h "Key"
 
 ## Next Steps
 
-- **Encryption mode**: [Decrypting Tokens](decrypting-tokens.md)
+- **`package` (encrypt) mode**: [Decrypting Tokens](decrypting-tokens.md)
 - **Batch processing**: [Running Batch Jobs](running-batch-jobs.md)
 - **Security guidance**: [Security](../security.md)

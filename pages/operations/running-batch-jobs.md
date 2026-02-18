@@ -22,7 +22,7 @@ OpenToken processes input files (CSV or Parquet) and produces two outputs:
 ### Basic Syntax
 
 ```bash
-opentoken-cli [OPTIONS] -i <input> -t <type> -o <output> -h <hashing-secret> [-e <encryption-key>]
+opentoken <subcommand> [OPTIONS]
 ```
 
 ### Required Arguments
@@ -36,12 +36,12 @@ opentoken-cli [OPTIONS] -i <input> -t <type> -o <output> -h <hashing-secret> [-e
 
 ### Optional Arguments
 
-| Argument | Alias             | Description                    | Default                       |
-| -------- | ----------------- | ------------------------------ | ----------------------------- |
-| `-e`     | `--encryptionkey` | AES-256 encryption key         | Required unless `--hash-only` |
-| `-ot`    | `--output-type`   | Output file type               | Same as input                 |
-|          | `--hash-only`     | Hash-only mode (no encryption) | False                         |
-| `-d`     | `--decrypt`       | Decrypt mode                   | False                         |
+| Argument | Alias             | Description                 | Default                    |
+| -------- | ----------------- | --------------------------- | -------------------------- |
+| `-e`     | `--encryptionkey` | AES-256 encryption key      | Required in `package` mode |
+| `-ot`    | `--output-type`   | Output file type            | Same as input              |
+|          | `tokenize`        | Tokenize without encryption | Subcommand                 |
+|          | `decrypt`         | Decrypt mode                | Subcommand                 |
 
 ### Java CLI Example
 
@@ -49,7 +49,7 @@ opentoken-cli [OPTIONS] -i <input> -t <type> -o <output> -h <hashing-secret> [-e
 cd lib/java
 mvn clean install -DskipTests
 
-java -jar opentoken-cli/target/opentoken-cli-*.jar \
+java -jar opentoken-cli/target/opentoken-cli-*.jar package \
   -i ../../resources/sample.csv \
   -t csv \
   -o ../../resources/output.csv \
@@ -64,7 +64,7 @@ cd lib/python/opentoken-cli
 source ../../.venv/bin/activate
 pip install -r requirements.txt -e . -e ../opentoken
 
-python -m opentoken_cli.main \
+python -m opentoken_cli.main package \
   -i ../../../resources/sample.csv \
   -t csv \
   -o ../../../resources/output.csv \
@@ -118,7 +118,7 @@ docker build -t opentoken:latest .
 
 # Run with sample data
 docker run --rm -v $(pwd)/resources:/app/resources \
-  opentoken:latest \
+  opentoken:latest package \
   -i /app/resources/sample.csv \
   -t csv \
   -o /app/resources/output.csv \
@@ -183,7 +183,7 @@ See [Reference: Metadata Format](../reference/metadata-format.md) for complete f
 export OPENTOKEN_HASHING_SECRET="MyHashingKey"
 export OPENTOKEN_ENCRYPTION_KEY="MyEncryptionKey32CharactersLong"
 
-java -jar opentoken-cli-*.jar \
+java -jar opentoken-cli-*.jar package \
   -i data.csv -t csv -o tokens.csv \
   -h "$OPENTOKEN_HASHING_SECRET" \
   -e "$OPENTOKEN_ENCRYPTION_KEY"
@@ -202,7 +202,7 @@ Check the metadata file after each run for:
 
 | Problem                       | Solution                                                                |
 | ----------------------------- | ----------------------------------------------------------------------- |
-| "Encryption key not provided" | Add `-e "YourKey"` or use `--hash-only`                                 |
+| "Encryption key not provided" | Add `-e "YourKey"` or run `tokenize` subcommand                         |
 | "Invalid BirthDate"           | Use YYYY-MM-DD format; date must be 1910-01-01 to today                 |
 | "Column not found"            | Check column names match [accepted aliases](../config/configuration.md) |
 | Docker build fails            | Ensure Docker is running; use absolute paths                            |
@@ -212,5 +212,5 @@ Check the metadata file after each run for:
 ## Next Steps
 
 - **Distributed processing**: [Spark or Databricks](spark-or-databricks.md)
-- **Hash-only mode**: [Hash-Only Mode](hash-only-mode.md)
+- **Tokenize**: [Tokenize](tokenize.md)
 - **Decrypt tokens**: [Decrypting Tokens](decrypting-tokens.md)

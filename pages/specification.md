@@ -148,7 +148,7 @@ Each token rule signature is transformed through the cryptographic pipeline.
 Signature → SHA-256 → HMAC-SHA256 → AES-256-GCM → Base64
 ```
 
-**Hash-only mode (optional):**
+**`tokenize` subcommand (optional):**
 
 ```
 Signature → SHA-256 → HMAC-SHA256 → Base64

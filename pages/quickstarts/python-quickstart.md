@@ -54,7 +54,7 @@ pip install -r requirements.txt -e .
 ### Basic Encrypted Tokens
 
 ```bash
-python -m opentoken_cli.main \
+python -m opentoken_cli.main package \
   -i ../../../resources/sample.csv \
   -t csv \
   -o ../../../resources/output.csv \
@@ -62,21 +62,21 @@ python -m opentoken_cli.main \
   -e "YourEncryptionKey-32Chars-Here!"
 ```
 
-### Hash-Only Mode (No Encryption)
+### Tokenize (No Encryption)
 
 ```bash
-python -m opentoken_cli.main \
+python -m opentoken_cli.main tokenize \
   -i ../../../resources/sample.csv \
   -t csv \
   -o ../../../resources/output.csv \
-  -h "YourHashingSecret" \
-  --hash-only
+  -h "YourHashingSecret"
+
 ```
 
 ### Parquet Format
 
 ```bash
-python -m opentoken_cli.main \
+python -m opentoken_cli.main package \
   -i input.parquet \
   -t parquet \
   -o output.parquet \

@@ -108,7 +108,7 @@ Extension: .metadata.json
 **Security:**
 - Hashes are **not reversible** (SHA-256 is one-way)
 - Used for verification: calculate hash of your secret and compare to metadata
-- `EncryptionSecretHash` omitted in `--hash-only` mode (no encryption used)
+- `EncryptionSecretHash` omitted in `tokenize` mode (no encryption used)
 
 ---
 
@@ -142,7 +142,7 @@ Extension: .metadata.json
 }
 ```
 
-### Hash-Only Mode Example
+### `tokenize` Subcommand Example
 
 ```json
 {
@@ -161,7 +161,7 @@ Extension: .metadata.json
 }
 ```
 
-**Note:** No `EncryptionSecretHash` because `--hash-only` mode doesn't use encryption.
+**Note:** No `EncryptionSecretHash` because `tokenize` mode doesn't use encryption.
 
 ---
 

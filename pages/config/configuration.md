@@ -17,8 +17,8 @@ At a high level you must always specify:
 - the input path and type (CSV or Parquet)
 - an output path for tokens
 - a hashing secret (required)
-- either an encryption key (for encrypted mode) or `--hash-only` (for hash-only mode)
-- optionally `--decrypt` when reading previously encrypted tokens
+- either an encryption key (for `package`) or the `tokenize` subcommand to skip encryption
+- optionally the `decrypt` subcommand when reading previously encrypted tokens
 
 For the complete, authoritative list of flags, short options, and defaults, see the [CLI Reference](../reference/cli.md).
 
@@ -32,7 +32,7 @@ Secrets can be passed via environment variables for security:
 export OPENTOKEN_HASHING_SECRET="MyHashingKey"
 export OPENTOKEN_ENCRYPTION_KEY="MyEncryptionKey32CharactersLong"
 
-java -jar opentoken-cli-*.jar \
+java -jar opentoken-cli-*.jar package \
   -i data.csv -t csv -o tokens.csv \
   -h "$OPENTOKEN_HASHING_SECRET" \
   -e "$OPENTOKEN_ENCRYPTION_KEY"
@@ -45,7 +45,7 @@ docker run --rm \
   -e OPENTOKEN_HASHING_SECRET="MyHashingKey" \
   -e OPENTOKEN_ENCRYPTION_KEY="MyEncryptionKey32CharactersLong" \
   -v $(pwd)/resources:/app/resources \
-  opentoken:latest \
+  opentoken:latest package \
   -i /app/resources/sample.csv \
   -t csv \
   -o /app/resources/output.csv \
@@ -118,7 +118,7 @@ Use `-ot` to specify a different output format:
 
 ```bash
 # Input CSV, output Parquet
-java -jar opentoken-cli-*.jar \
+java -jar opentoken-cli-*.jar package \
   -i data.csv -t csv \
   -o tokens.parquet -ot parquet \
   -h "HashingKey" -e "EncryptionKey"
@@ -138,8 +138,8 @@ Each run produces two files:
 OpenToken supports three processing modes that control how token signatures are transformed:
 
 - **Encryption (default)** – produces encrypted tokens suitable for external exchange; requires both a hashing secret and an encryption key.
-- **Hash-only** – produces one-way hashed tokens for internal matching and overlap analysis; requires only the hashing secret.
-- **Decrypt** – takes previously encrypted tokens and decrypts them back to their hashed form (equivalent to hash-only output).
+- **Tokenize** – produces one-way hashed tokens for internal matching and overlap analysis; requires only the hashing secret.
+- **Decrypt** – takes previously encrypted tokens and decrypts them back to their hashed form (equivalent to `tokenize` output).
 
 For the exact CLI flags that enable each mode, see the [CLI Reference](../reference/cli.md).
 
@@ -169,13 +169,13 @@ For the exact CLI flags that enable each mode, see the [CLI Reference](../refere
 # Java
 cd lib/java
 mvn clean install -DskipTests
-java -jar opentoken-cli/target/opentoken-cli-*.jar \
+java -jar opentoken-cli/target/opentoken-cli-*.jar package \
   -i ../../resources/sample.csv -t csv -o ../../resources/output.csv \
   -h "HashingKey" -e "EncryptionKey32Characters!!!!!"
 
 # Python
 source /workspaces/OpenToken/.venv/bin/activate
-python -m opentoken_cli.main \
+python -m opentoken_cli.main package \
   -i ../../../resources/sample.csv -t csv -o ../../../resources/output.csv \
   -h "HashingKey" -e "EncryptionKey32Characters!!!!!"
 ```
