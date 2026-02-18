@@ -36,10 +36,6 @@ param(
     [Alias("s")]
     [switch]$SkipBuild,
 
-    [Parameter(Mandatory=$false, HelpMessage="Enable verbose output")]
-    [Alias("v")]
-    [switch]$VerboseOutput,
-
     [Parameter(Mandatory=$false, HelpMessage="Show help message")]
     [switch]$Help
 )
