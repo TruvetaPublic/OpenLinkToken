@@ -399,11 +399,11 @@ OpenToken supports three processing modes across Java, Python, and the PySpark b
 | --------- | ------------------------------------ | ------------------------------------------------- | ------------------------------------ | ------------------------- | ----------------------------------------------------------------- |
 | Plain     | None (not currently exposed via CLI) | Concatenate normalized attribute expressions only | `DOE\|JOHN\|1990-01-15\|MALE\|98101` | Yes (given same input)    | Debugging, rule design, docs demos                                |
 | Tokenize  | Hashing secret only                  | HMAC-SHA256(signature)                            | 64 hex chars (SHA-256 digest)        | Yes                       | Internal overlap analysis against decrypted partner token outputs |
-| Encrypted | Hashing secret + encryption key      | HMAC-SHA256 f AES-256-GCM (random IV per token)  | Base64 blob (length varies)          | Yes (post-decrypt hash)   | Production / privacy-preserving use and external token exchange   |
+| Encrypted | Hashing secret + encryption key      | HMAC-SHA256 → AES-256-GCM (random IV per token)   | Base64 blob (length varies)          | Yes (post-decrypt hash)   | Production / privacy-preserving use and external token exchange   |
 
 Notes:
 
-- The underlying signature (before hashing) is produced by ordered attribute expressions for each token rule (e.g., T1fT5 or custom T6+). Plain mode exposes this directly for inspection.
+- The underlying signature (before hashing) is produced by ordered attribute expressions for each token rule (e.g., T1→T5 or custom T6+). Plain mode exposes this directly for inspection.
 - Encryption uses AES-256-GCM with a random IV; identical hashed inputs yield different encrypted outputs each run. Matching encrypted tokens across datasets therefore requires either: (a) decryption with the shared key (to reach the tokenized representation) or (b) using the `tokenize` subcommand specifically for overlap workflows. Do NOT attempt to match encrypted blobs directly.
 - Tokenizer polymorphism: Java & Python `TokenGenerator` accept an injectable tokenizer. Defaults to SHA-256; when plain mode is active a `PassthroughTokenizer` is used so downstream transformers (if any) receive the raw signature.
 - Security: Plain and tokenized modes reduce protection. Never use plain mode for sharing PHI; tokenized output may leak structural frequency information. Encrypted mode is required for external distribution; tokenized datasets should remain internal and are typically used to join against decrypted partner tokens for overlap analysis.
