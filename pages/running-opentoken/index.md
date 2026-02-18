@@ -28,24 +28,12 @@ opentoken <subcommand> [OPTIONS]
 
 #### Subcommand-Specific Arguments
 
-**`package` subcommand** (encrypt and hash)
-| Argument | Alias             | Required | Description                | Example                                |
-| -------- | ----------------- | -------- | -------------------------- | -------------------------------------- |
-| `-h`     | `--hashingsecret` | Yes      | HMAC-SHA256 hashing secret | `-h "MyHashingKey"`                    |
-| `-e`     | `--encryptionkey` | Yes      | AES-256 encryption key     | `-e "Secret-Encryption-Key."`          |
-| `-ot`    | `--output-type`   | No       | Output file type           | `-ot parquet` (default: same as input) |
-
-**`tokenize` subcommand** (hash only, no encryption)
-| Argument | Alias             | Required | Description                | Example                                |
-| -------- | ----------------- | -------- | -------------------------- | -------------------------------------- |
-| `-h`     | `--hashingsecret` | Yes      | HMAC-SHA256 hashing secret | `-h "MyHashingKey"`                    |
-| `-ot`    | `--output-type`   | No       | Output file type           | `-ot parquet` (default: same as input) |
-
-**`decrypt` subcommand** (reverse encryption)
-| Argument | Alias             | Required | Description            | Example                                |
-| -------- | ----------------- | -------- | ---------------------- | -------------------------------------- |
-| `-e`     | `--encryptionkey` | Yes      | AES-256 encryption key | `-e "Secret-Encryption-Key."`          |
-| `-ot`    | `--output-type`   | No       | Output file type       | `-ot parquet` (default: same as input) |
+| Argument | Alias             | Description                                | Default                                     | Example                |
+| -------- | ----------------- | ------------------------------------------ | ------------------------------------------- | ---------------------- |
+| `-e`     | `--encryptionkey` | AES-256 encryption key                     | Required in `package`, `encrypt`, `decrypt` | `-e "MyEncryptionKey"` |
+| `-ot`    | `--output-type`   | Output file type                           | Same as input type                          | `-ot parquet`          |
+|          | `tokenize`        | Tokenize without encryption                | N/A (subcommand)                            | `tokenize`             |
+|          | `decrypt`         | Decrypt mode (reverse previous encryption) | N/A (subcommand)                            | `decrypt`              |
 
 ### Usage Examples
 
