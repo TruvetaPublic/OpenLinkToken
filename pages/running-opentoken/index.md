@@ -18,7 +18,7 @@ opentoken <subcommand> [OPTIONS]
 
 ### Arguments
 
-#### Common Arguments (All Subcommands)
+#### Required Arguments (All Subcommands)
 
 | Argument | Alias      | Description                      | Example                  |
 | -------- | ---------- | -------------------------------- | ------------------------ |
@@ -26,14 +26,13 @@ opentoken <subcommand> [OPTIONS]
 | `-t`     | `--type`   | Input file type                  | `-t csv` or `-t parquet` |
 | `-o`     | `--output` | Output file path                 | `-o tokens.csv`          |
 
-#### Subcommand-Specific Arguments
+#### Optional Arguments by Subcommand
 
-| Argument | Alias             | Description                                | Default                                     | Example                |
-| -------- | ----------------- | ------------------------------------------ | ------------------------------------------- | ---------------------- |
-| `-e`     | `--encryptionkey` | AES-256 encryption key                     | Required in `package`, `encrypt`, `decrypt` | `-e "MyEncryptionKey"` |
-| `-ot`    | `--output-type`   | Output file type                           | Same as input type                          | `-ot parquet`          |
-|          | `tokenize`        | Tokenize without encryption                | N/A (subcommand)                            | `tokenize`             |
-|          | `decrypt`         | Decrypt mode (reverse previous encryption) | N/A (subcommand)                            | `decrypt`              |
+| Argument | Alias             | `package` | `tokenize` | `decrypt` | Description                       | Default            | Example                |
+| -------- | ----------------- | --------- | ---------- | --------- | --------------------------------- | ------------------ | ---------------------- |
+| `-h`     | `--hashingkey`    | ✓         | ✓          |           | HMAC-SHA256 hashing secret        | Required           | `-h "HashingKey"`      |
+| `-e`     | `--encryptionkey` | ✓         |            | ✓         | AES-256 encryption key            | Required           | `-e "MyEncryptionKey"` |
+| `-ot`    | `--output-type`   | ✓         | ✓          | ✓         | Output file type (CSV or Parquet) | Same as input type | `-ot parquet`          |
 
 ### Usage Examples
 
