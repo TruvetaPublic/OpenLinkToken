@@ -82,7 +82,7 @@ python -m opentoken_cli.main package \
 ```bash
 cd /path/to/OpenToken
 
-./run-opentoken.sh \
+./run-opentoken.sh package \
   -i ./resources/sample.csv \
   -o ./resources/output.csv \
   -t csv \
@@ -94,7 +94,7 @@ cd /path/to/OpenToken
 ```powershell
 cd C:\path\to\OpenToken
 
-.\run-opentoken.ps1 `
+.\run-opentoken.ps1 package `
   -i .\resources\sample.csv `
   -o .\resources\output.csv `
   -FileType csv `

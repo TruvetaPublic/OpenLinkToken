@@ -183,7 +183,7 @@ python -m opentoken_cli.main package \
 ### Docker Container
 
 ```bash
-./run-opentoken.sh \
+./run-opentoken.sh package \
   -i ./resources/sample.csv \
   -o ./resources/output.csv \
   -t csv \

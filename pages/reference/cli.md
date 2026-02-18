@@ -156,7 +156,7 @@ Every run generates a `.metadata.json` file:
 ### Bash (run-opentoken.sh)
 
 ```bash
-./run-opentoken.sh \
+./run-opentoken.sh package \
   -i ./input.csv \
   -o ./output.csv \
   -t csv \
@@ -175,7 +175,7 @@ Every run generates a `.metadata.json` file:
 ### PowerShell (run-opentoken.ps1)
 
 ```powershell
-.\run-opentoken.ps1 `
+.\run-opentoken.ps1 package `
   -i .\input.csv `
   -o .\output.csv `
   -FileType csv `
