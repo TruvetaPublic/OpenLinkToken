@@ -13,6 +13,56 @@ import base64
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 
+def _base64url_decode(value):
+    """Decode base64url text with optional missing padding."""
+    padding = '=' * (-len(value) % 4)
+    return base64.urlsafe_b64decode(value + padding)
+
+
+def decrypt_legacy_token(encrypted_token, encryption_key):
+    """Decrypt legacy base64 token format (IV || ciphertext || tag)."""
+    message_bytes = base64.b64decode(encrypted_token)
+    iv = message_bytes[:12]
+    ciphertext_and_tag = message_bytes[12:]
+
+    aesgcm = AESGCM(encryption_key.encode('utf-8'))
+    decrypted_bytes = aesgcm.decrypt(iv, ciphertext_and_tag, None)
+    return decrypted_bytes.decode('utf-8')
+
+
+def decrypt_v1_token(v1_token, encryption_key):
+    """Decrypt ot.V1 JWE token and return deterministic comparable token value."""
+    if not v1_token.startswith("ot.V1."):
+        raise ValueError("Token does not use ot.V1 format")
+
+    jwe_compact = v1_token[len("ot.V1."):]
+    parts = jwe_compact.split('.')
+    if len(parts) != 5:
+        raise ValueError("Invalid JWE compact serialization")
+
+    protected_b64, _encrypted_key_b64, iv_b64, ciphertext_b64, tag_b64 = parts
+    aad = protected_b64.encode('ascii')
+    iv = _base64url_decode(iv_b64)
+    ciphertext = _base64url_decode(ciphertext_b64)
+    tag = _base64url_decode(tag_b64)
+
+    aesgcm = AESGCM(encryption_key.encode('utf-8'))
+    plaintext = aesgcm.decrypt(iv, ciphertext + tag, aad)
+    payload = json.loads(plaintext.decode('utf-8'))
+
+    ppid_value = payload.get("ppid", [])
+    if isinstance(ppid_value, list):
+        ppid_value = ppid_value[0] if ppid_value else ""
+
+    if not ppid_value:
+        return ""
+
+    try:
+        return decrypt_legacy_token(ppid_value, encryption_key)
+    except Exception:
+        return ppid_value
+
+
 def decrypt_token(encrypted_token, encryption_key):
     """
     Decrypt an OpenToken encrypted token to get the underlying hash.
@@ -25,17 +75,9 @@ def decrypt_token(encrypted_token, encryption_key):
         Decrypted token (HMAC-SHA256 hash in Base64)
     """
     try:
-        # Decode the base64-encoded message
-        message_bytes = base64.b64decode(encrypted_token)
-        
-        # Extract IV (first 12 bytes) and ciphertext+tag (remaining bytes)
-        iv = message_bytes[:12]
-        ciphertext_and_tag = message_bytes[12:]
-        
-        # Create AESGCM cipher and decrypt
-        aesgcm = AESGCM(encryption_key.encode('utf-8'))
-        decrypted_bytes = aesgcm.decrypt(iv, ciphertext_and_tag, None)
-        return decrypted_bytes.decode('utf-8')
+        if encrypted_token.startswith("ot.V1."):
+            return decrypt_v1_token(encrypted_token, encryption_key)
+        return decrypt_legacy_token(encrypted_token, encryption_key)
     except Exception as e:
         raise ValueError(f"Decryption failed for token: {e}")
 

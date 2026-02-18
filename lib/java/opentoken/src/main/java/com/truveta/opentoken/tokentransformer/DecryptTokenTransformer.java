@@ -86,7 +86,6 @@ public class DecryptTokenTransformer implements TokenTransformer {
     public String transform(String token)
             throws IllegalStateException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException,
             InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchPaddingException {
-
         // Decode the base64-encoded token
         byte[] messageBytes = Base64.getDecoder().decode(token);
 

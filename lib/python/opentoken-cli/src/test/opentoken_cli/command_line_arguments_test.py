@@ -29,6 +29,8 @@ class TestCommandLineArguments:
         assert result.output_type == ""
         assert result.decrypt is False
         assert result.hash_only is False
+        # ring_id should have a default value (UUID)
+        assert result.ring_id is not None and len(result.ring_id) > 0
 
     def test_parse_all_args(self):
         """Test parsing with all arguments provided."""
@@ -182,6 +184,23 @@ class TestCommandLineArguments:
         assert instance.output_type == ""
         assert instance.decrypt is False
         assert instance.hash_only is False
+        # ring_id should have a default UUID value
+        assert instance.ring_id is not None and len(instance.ring_id) > 0
+
+    def test_ring_id_parameter(self):
+        """Test parsing with ring-id parameter."""
+        args = [
+            "-i", "/path/to/input.csv",
+            "-t", "csv",
+            "-o", "/path/to/output.csv",
+            "--ring-id", "test-ring-2026-q1"
+        ]
+        
+        result = CommandLineArguments.parse_args(args)
+        
+        assert result.ring_id == "test-ring-2026-q1"
+        # Test Java-style property accessor
+        assert result.ringId == "test-ring-2026-q1"
 
     def test_parquet_input_type(self):
         """Test parsing with parquet input type."""

@@ -78,6 +78,7 @@ public final class SHA256Tokenizer implements Tokenizer {
         for (TokenTransformer tokenTransformer : tokenTransformerList) {
             transformedToken = tokenTransformer.transform(transformedToken);
         }
+
         return transformedToken;
     }
 }

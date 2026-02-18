@@ -1,6 +1,6 @@
 ---
 on:
-  schedule: daily
+  schedule: weekly
   skip-if-match: is:pr is:open in:title "[code-simplifier]"
 permissions:
   contents: read
@@ -45,6 +45,7 @@ Analyze recently modified code from the last 24 hours and apply refinements that
 - **Repository**: ${{ github.repository }}
 - **Analysis Date**: $(date +%Y-%m-%d)
 - **Workspace**: ${{ github.workspace }}
+- **Base Branch for analysis and PRs**: `develop`
 
 ## Phase 1: Identify Recently Modified Code
 
@@ -56,12 +57,15 @@ Search for merged pull requests and commits from the last 24 hours:
 # Get yesterday's date in ISO format
 YESTERDAY=$(date -d '1 day ago' '+%Y-%m-%d' 2>/dev/null || date -v-1d '+%Y-%m-%d')
 
+# Ensure local refs are up to date and anchor all analysis to develop
+git fetch origin develop
+
 # List recent commits
-git log --since="24 hours ago" --pretty=format:"%H %s" --no-merges
+git log origin/develop --since="24 hours ago" --pretty=format:"%H %s" --no-merges
 ```
 
 Use GitHub tools to:
-- Search for pull requests merged in the last 24 hours: `repo:${{ github.repository }} is:pr is:merged merged:>=${YESTERDAY}`
+- Search for pull requests merged in the last 24 hours into `develop`: `repo:${{ github.repository }} is:pr is:merged base:develop merged:>=${YESTERDAY}`
 - Get details of merged PRs to understand what files were changed
 - List commits from the last 24 hours to identify modified files
 
@@ -70,6 +74,7 @@ Use GitHub tools to:
 For each merged PR or recent commit:
 - Use `pull_request_read` with `method: get_files` to list changed files
 - Use `get_commit` to see file changes in recent commits
+- Compare and reason about simplifications against the current `origin/develop` code only
 - Focus on source code files (`.go`, `.js`, `.ts`, `.tsx`, `.cjs`, `.py`, etc.)
 - Exclude test files, lock files, and generated files
 
@@ -324,6 +329,8 @@ Create the pull request using the safe-outputs configuration:
 - Labeled with `refactoring`, `code-quality`, `automation`
 - Assigned to `copilot` for review
 - Set as ready for review (not draft)
+- **Target branch must always be `develop`**
+- **Never create PRs targeting `main` or any branch other than `develop`**
 
 ## Important Guidelines
 

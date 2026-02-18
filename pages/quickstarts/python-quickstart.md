@@ -7,6 +7,7 @@ layout: default
 For a high-level overview and other entry points, see [Quickstarts](index.md).
 
 Install the Python packages and run the OpenToken CLI with a virtual environment.
+After installation, use the `opentoken` command directly.
 
 ## Prerequisites
 
@@ -51,10 +52,10 @@ pip install -r requirements.txt -e .
 
 ## Run Token Generation
 
-### Basic Encrypted Tokens
+### Package Command (Tokenize + Encrypt)
 
 ```bash
-python -m opentoken_cli.main \
+opentoken package \
   -i ../../../resources/sample.csv \
   -t csv \
   -o ../../../resources/output.csv \
@@ -62,26 +63,52 @@ python -m opentoken_cli.main \
   -e "YourEncryptionKey-32Chars-Here!"
 ```
 
-### Hash-Only Mode (No Encryption)
+### Tokenize Command (Hash-Only, No Encryption)
 
 ```bash
-python -m opentoken_cli.main \
+opentoken tokenize \
   -i ../../../resources/sample.csv \
   -t csv \
   -o ../../../resources/output.csv \
-  -h "YourHashingSecret" \
-  --hash-only
+  -h "YourHashingSecret"
 ```
 
 ### Parquet Format
 
 ```bash
-python -m opentoken_cli.main \
+opentoken package \
   -i input.parquet \
   -t parquet \
   -o output.parquet \
   -h "YourHashingSecret" \
   -e "YourEncryptionKey-32Chars-Here!"
+```
+
+### Decrypt Command
+
+```bash
+opentoken decrypt \
+  -i ../../../resources/output.csv \
+  -t csv \
+  -o ../../../resources/decrypted.csv \
+  -e "YourEncryptionKey-32Chars-Here!"
+```
+
+## Getting Help
+
+```bash
+# Show all available commands
+opentoken --help
+
+# Show help for specific command
+opentoken help package
+opentoken package --help
+```
+
+If needed, you can still run the module form directly:
+
+```bash
+python -m opentoken_cli.main --help
 ```
 
 ## Verify Output
@@ -187,6 +214,16 @@ Reinstall the packages:
 
 ```bash
 pip install -e . --force-reinstall
+```
+
+### "opentoken: command not found"
+
+The console script is installed into the active environment. Re-activate your venv and reinstall the CLI package:
+
+```bash
+source /path/to/OpenToken/.venv/bin/activate
+cd /path/to/OpenToken/lib/python/opentoken-cli
+pip install -e .
 ```
 
 ## Development Setup

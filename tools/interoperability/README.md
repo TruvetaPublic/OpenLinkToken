@@ -1,33 +1,41 @@
 # Interoperability Tests
 
-This directory contains tests that validate compatibility and consistency between the Java and Python implementations of OpenToken.
+This directory contains tests to ensure parity between Java and Python implementations of OpenToken.
 
-## Prerequisites
+## CLI Parity Tests
 
-- Python 3.10 or higher
-- pip (Python package installer)
+The `cli_parity_test.py` script tests that Java and Python CLIs provide identical command structures and behavior.
 
 - Java 21 SDK or higher (JAR output compatible with Java 17)
 
-## Test Categories
-
-- **Token Generation Compatibility**: Verify both implementations generate identical tokens for the same input
-- **Data Format Compatibility**: Ensure serialized data can be read cross-platform
-- **Encryption/Decryption Compatibility**: Validate encrypted tokens from both implementations can be decrypted using the same decryptor tool
-- **Metadata Consistency**: Check that metadata formats are consistent between implementations
-
-## Running Tests
-
-These tests require both Java and Python environments to be properly configured.
-
+**Java:**
 ```bash
-# Run all interoperability tests
-python -m pytest tools/interoperability/ -v
-
-# Run the java_python_interoperability_test.py file, which will run all tests
-python3 tools/interoperability/java_python_interoperability_test.py
+cd lib/java
+mvn clean package -DskipTests
 ```
 
-## Test Data
+**Python:**
+```bash
+cd lib/python/opentoken
+pip install -r requirements.txt
+cd ../opentoken-cli
+pip install -r requirements.txt
+```
 
-Shared test data and expected outputs are stored in the `test_data/` subdirectory.
+### Running the Tests
+
+```bash
+python tools/interoperability/cli_parity_test.py
+```
+
+### What is Tested
+
+- Both CLIs support the same commands: `tokenize`, `encrypt`, `decrypt`, `package`, `help`
+- Both CLIs support `--help`, `--version`, and `-h` flags
+- Each command has consistent help output with required parameters
+- The `help` command works for all subcommands
+- Command recognition and error handling is consistent
+
+## Token Interoperability Tests
+
+The `java_python_interoperability_test.py` script tests that Java and Python produce byte-identical tokens for the same input.

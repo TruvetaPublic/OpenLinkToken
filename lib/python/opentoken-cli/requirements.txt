@@ -1,5 +1,5 @@
 # Core opentoken dependency
-opentoken==1.12.5
+opentoken==2.0.0-alpha
 
 # Data processing for I/O formats
 pandas
@@ -8,3 +8,6 @@ csv2parquet
 
 # Cryptography - mandate secure version to address CVE-2023-0286
 cryptography==46.0.5
+
+# JOSE/JWE for match token format
+jwcrypto>=1.5.6

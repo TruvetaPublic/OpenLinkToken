@@ -63,7 +63,7 @@ class HashTokenTransformer(TokenTransformer):
             raise RuntimeError("HMAC is not properly initialized due to empty hashing secret.")
 
         with self._lock:
-            # Create HMAC with SHA256
+            # Create HMAC with SHA256 - token is encoded to bytes using UTF-8
             mac = hmac.new(
                 self.hashing_secret.encode('utf-8'),
                 token.encode('utf-8'),

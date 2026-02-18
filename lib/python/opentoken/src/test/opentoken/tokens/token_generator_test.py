@@ -66,11 +66,10 @@ class TestTokenGenerator:
         assert tokens.get("token1") == "hashedToken"
         assert tokens.get("token2") == "hashedToken"
 
-    def test_get_all_tokens_invalid_attribute_returns_empty_token(self):
-        """Test that invalid attributes return empty tokens."""
+    def test_get_all_tokens_invalid_attribute_skips_token_generation(self):
+        """Test that invalid attributes skip token generation."""
         self.token_definition.get_token_identifiers.return_value = {"token1"}
-
-        self.token_generator.tokenizer = SHA256Tokenizer(self.token_transformer_list)
+        self.tokenizer.tokenize.return_value = None
 
         attr_expr = AttributeExpression(FirstNameAttribute, "U")
         attribute_expressions = [attr_expr]
@@ -83,10 +82,8 @@ class TestTokenGenerator:
 
         tokens = self.token_generator.get_all_tokens(person_attributes).tokens
 
-        # Validate that 1 token was generated
-        assert len(tokens) == 1, "Expected one token to be generated due to validation failure"
-        assert "token1" in tokens, "Expected token1 to be present in generated tokens"
-        assert tokens["token1"] == SHA256Tokenizer.EMPTY, "Expected empty token for invalid attribute"
+        # Validate that no tokens are generated
+        assert len(tokens) == 0, "Expected no tokens to be generated due to validation failure"
 
     def test_get_all_tokens_error_in_token_generation_logs_error(self):
         """Test that errors in token generation are logged and handled gracefully."""
@@ -178,8 +175,7 @@ class TestTokenGenerator:
 
     def test_get_token_null_signature_returns_none(self):
         """Test that null signature returns None."""
-        self.token_generator.tokenizer = SHA256Tokenizer(self.token_transformer_list)
-
+        self.tokenizer.tokenize.return_value = None
         attr_expr = AttributeExpression(FirstNameAttribute, "U")
         attribute_expressions = [attr_expr]
 
@@ -192,7 +188,7 @@ class TestTokenGenerator:
 
         token = self.token_generator._get_token("token1", person_attributes, TokenGeneratorResult())
 
-        assert token == SHA256Tokenizer.EMPTY, "Expected empty token for null signature"
+        assert token is None
 
     def test_get_token_tokenization_error_throws_exception(self):
         """Test that tokenization errors throw TokenGenerationException."""

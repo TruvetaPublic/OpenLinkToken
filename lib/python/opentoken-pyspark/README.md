@@ -201,7 +201,7 @@ The output DataFrame contains:
 
 - **RecordId**: The original record identifier
 - **RuleId**: Token rule identifier (T1, T2, T3, T4, T5)
-- **Token**: The generated cryptographic token
+- **Token**: Encrypted match token in `ot.V1.<JWE>` format (or base64-encoded HMAC in hash-only flows)
 
 Each input record produces multiple output rows (one per token rule).
 
@@ -261,7 +261,7 @@ jupyter notebook Dataset_Overlap_Analysis_Guide.ipynb
 
 ## Dataset Overlap Analysis
 
-The `OpenTokenOverlapAnalyzer` class helps identify matching records between two tokenized datasets based on encrypted tokens.
+The `OpenTokenOverlapAnalyzer` class helps identify matching records between two tokenized datasets by decrypting tokens to deterministic values before comparison.
 
 ### Basic Usage
 
@@ -327,7 +327,7 @@ for result in results:
 2. Matching rules specify which token types must match (e.g., ["T1", "T2"])
 3. Records are considered matching only if ALL specified token types match
 4. The analyzer provides statistics and a DataFrame of matched record pairs
-5. Uses the same encryption key that was used to generate the tokens
+5. Uses the same encryption key that was used to generate the tokens, supporting both `ot.V1` JWE tokens and legacy encrypted token format
 
 ## Testing
 
