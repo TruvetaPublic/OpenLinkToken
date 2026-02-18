@@ -41,7 +41,7 @@ mvn clean install -DskipTests
 
 ## Run Token Generation
 
-### Basic Encrypted Tokens
+### Package Command (Tokenize + Encrypt)
 
 ```bash
 java -jar opentoken-cli/target/opentoken-cli-*.jar package \
@@ -49,10 +49,10 @@ java -jar opentoken-cli/target/opentoken-cli-*.jar package \
   -t csv \
   -o ../../resources/output.csv \
   -h "YourHashingSecret" \
-  -e "YourEncryptionKey-32Chars-Here!"
+  -e "YourEncryptionKey-32Chars-HereXY"
 ```
 
-### Tokenize (No Encryption)
+### Tokenize Command (Hash-Only, No Encryption)
 
 ```bash
 java -jar opentoken-cli/target/opentoken-cli-*.jar tokenize \
@@ -60,7 +60,6 @@ java -jar opentoken-cli/target/opentoken-cli-*.jar tokenize \
   -t csv \
   -o ../../resources/output.csv \
   -h "YourHashingSecret"
-
 ```
 
 ### Parquet Format
@@ -71,7 +70,28 @@ java -jar opentoken-cli/target/opentoken-cli-*.jar package \
   -t parquet \
   -o output.parquet \
   -h "YourHashingSecret" \
-  -e "YourEncryptionKey-32Chars-Here!"
+  -e "YourEncryptionKey-32Chars-HereXY"
+```
+
+### Decrypt Command
+
+```bash
+java -jar opentoken-cli/target/opentoken-cli-*.jar decrypt \
+  -i ../../resources/output.csv \
+  -t csv \
+  -o ../../resources/decrypted.csv \
+  -e "YourEncryptionKey-32Chars-HereXY"
+```
+
+## Getting Help
+
+```bash
+# Show all available commands
+java -jar opentoken-cli/target/opentoken-cli-*.jar --help
+
+# Show help for specific command
+java -jar opentoken-cli/target/opentoken-cli-*.jar help package
+java -jar opentoken-cli/target/opentoken-cli-*.jar package --help
 ```
 
 ## Verify Output

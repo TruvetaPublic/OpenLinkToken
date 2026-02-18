@@ -8,11 +8,11 @@ layout: default
 
 OpenToken is a privacy-preserving tokenization and matching library for secure person linkage using PII-derived attributes. It generates cryptographically secure matching tokens from person attributes, enabling matching across datasets without directly comparing names, birthdates, SSNs, and other sensitive identifiers.
 
-Both Java and Python implementations produce **byte-identical tokens** for the same normalized input, enabling flexible deployment and cross-language workflows.
+Both Java and Python implementations produce **byte-identical hash-only outputs** (and byte-identical decrypted token payloads) for the same normalized input, enabling flexible deployment and cross-language workflows.
 
 ## The Problem
 
-Organizations often need to match people across datasets—finding the same person across systems and time. Direct comparison of names and birthdates raises privacy concerns and is error-prone due to typos and data quality variations. **OpenToken solves this by generating deterministic cryptographic tokens from person data.**
+Organizations often need to match people across datasets—finding the same person across systems and time. Direct comparison of names and birthdates raises privacy concerns and is error-prone due to typos and data quality variations. **OpenToken solves this by generating deterministic cryptographic fingerprints from person data, with optional encrypted token wrapping for secure exchange.**
 
 ## The Solution
 
@@ -25,18 +25,18 @@ John Doe | 1975-03-15 | 98004 → [STORED OR COMPARED]
 OpenToken generates secure tokens derived from those attributes:
 
 ```
-John Doe | 1975-03-15 | 98004 → SHA-256 HASH → HMAC-SHA256 → AES-256 ENCRYPT → Token
+John Doe | 1975-03-15 | 98004 → SHA-256 HASH → HMAC-SHA256 → AES-256/JWE (ot.V1) → Token
 ```
 
-Matching is done by comparing the encrypted tokens, not the original data.
+Matching is performed on deterministic hash-only values (or decrypted token payloads), not on raw PII.
 
 ## How It Works
 
 1. **Input**: Person records with attributes (name, birthdate, SSN, postal code, sex)
 2. **Validation & Normalization**: Attributes are validated and normalized (uppercase, diacritic removal, title stripping)
 3. **Token Generation**: Multiple token rules (T1–T5) combine different attributes
-4. **Encryption**: Tokens are hashed and encrypted using HMAC-SHA256 and AES-256
-5. **Output**: Token signatures for matching and metadata
+4. **Transformation**: Deterministic HMAC-SHA256 hashes are produced; encrypted mode wraps them as `ot.V1` JWE match tokens
+5. **Output**: Encrypted `ot.V1` tokens (default) or hash-only values, plus metadata
 
 ## Key Concepts
 
@@ -94,7 +94,7 @@ Output CSV/Parquet + Metadata
 
 ## Multi-Language Parity
 
-OpenToken is implemented in **Java and Python**. Both produce **byte-identical tokens** for the same normalized input using the same hashing and encryption keys. This enables:
+OpenToken is implemented in **Java and Python**. Both produce **byte-identical deterministic values** (hash-only outputs and decrypted token payloads) for the same normalized input and secrets. This enables:
 
 - Flexible deployment (choose Java or Python)
 - Cross-language processing (encrypt in one language, decrypt in another)
@@ -103,7 +103,8 @@ OpenToken is implemented in **Java and Python**. Both produce **byte-identical t
 ## Security Properties
 
 - **No Reversal**: Tokens cannot be decrypted back to original data without the encryption key
-- **Deterministic**: Same input always produces the same token (enables matching)
+- **Deterministic matching basis**: Same normalized input produces the same hash-only/decrypted value
+- **Randomized encrypted representation**: Encrypted `ot.V1` tokens use random IVs, so ciphertext differs across runs
 - **Privacy-Focused**: Designed for regulated environments where PII must be protected
 - **Validation**: Rejects invalid or placeholder values before processing
 

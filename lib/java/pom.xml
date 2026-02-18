@@ -89,6 +89,13 @@
                 <version>3.20.0</version>
             </dependency>
 
+            <!-- JOSE/JWT for JWE token format -->
+            <dependency>
+                <groupId>com.nimbusds</groupId>
+                <artifactId>nimbus-jose-jwt</artifactId>
+                <version>10.7</version>
+            </dependency>
+
             <!-- Logging -->
             <dependency>
                 <groupId>org.slf4j</groupId>

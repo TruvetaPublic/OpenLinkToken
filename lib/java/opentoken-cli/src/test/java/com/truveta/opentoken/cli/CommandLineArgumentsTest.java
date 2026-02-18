@@ -95,6 +95,23 @@ class CommandLineArgumentsTest {
         assertEquals("", args.getOutputType());
         assertFalse(args.isDecrypt());
         assertFalse(args.isHashOnly());
+        // ringId should have a default random UUID value
+        assertTrue(args.getRingId() != null && !args.getRingId().isEmpty());
+    }
+
+    @Test
+    void testRingIdParameter() {
+        CommandLineArguments args = new CommandLineArguments();
+        JCommander.newBuilder()
+                .addObject(args)
+                .build()
+                .parse(
+                        "-i", "input.csv",
+                        "-t", "csv",
+                        "-o", "output.csv",
+                        "--ring-id", "test-ring-2026-q1");
+
+        assertEquals("test-ring-2026-q1", args.getRingId());
     }
 
     @Test
