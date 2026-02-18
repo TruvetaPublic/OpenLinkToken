@@ -29,12 +29,12 @@ opentoken <subcommand> [OPTIONS]
 
 #### Optional
 
-| Argument | Alias             | Description                                | Default                    | Example                |
-| -------- | ----------------- | ------------------------------------------ | -------------------------- | ---------------------- |
-| `-e`     | `--encryptionkey` | AES-256 encryption key                     | Required in `package` mode | `-e "MyEncryptionKey"` |
-| `-ot`    | `--output-type`   | Output file type                           | Same as input type         | `-ot parquet`          |
-|          | `tokenize`        | Tokenize without encryption                | N/A (subcommand)           | `tokenize`             |
-|          | `decrypt`         | Decrypt mode (reverse previous encryption) | N/A (subcommand)           | `decrypt`              |
+| Argument | Alias             | Description                                | Default                                        | Example                |
+| -------- | ----------------- | ------------------------------------------ | ---------------------------------------------- | ---------------------- |
+| `-e`     | `--encryptionkey` | AES-256 encryption key                     | Required in `package`, `encrypt`, `decrypt`    | `-e "MyEncryptionKey"` |
+| `-ot`    | `--output-type`   | Output file type                           | Same as input type                             | `-ot parquet`          |
+|          | `tokenize`        | Tokenize without encryption                | N/A (subcommand)                               | `tokenize`             |
+|          | `decrypt`         | Decrypt mode (reverse previous encryption) | N/A (subcommand)                               | `decrypt`              |
 
 ### Usage Examples
 
