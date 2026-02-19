@@ -85,7 +85,6 @@ Language paths are defined directly in `multi_language_syncer.py`:
 LANGUAGES = {
     'java':   {'path': 'lib/java/opentoken/src/main/java/com/truveta/opentoken/', ...},
     'python': {'path': 'lib/python/opentoken/src/main/opentoken/', ...},
-    'nodejs': {'path': 'lib/nodejs/opentoken/src/', ...},
 }
 ```
 

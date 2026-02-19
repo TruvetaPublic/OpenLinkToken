@@ -24,7 +24,7 @@ class MultiLanguageSyncer:
             'naming': 'PascalCase'
         },
         'java-cli': {
-            'path': 'lib/java/opentoken-cli/',
+            'path': 'lib/java/opentoken-cli/src/main/java/com/truveta/opentoken/cli/',
             'extension': '.java',
             'naming': 'PascalCase'
         },
@@ -34,7 +34,7 @@ class MultiLanguageSyncer:
             'naming': 'snake_case'
         },
         'python-cli': {
-            'path': 'lib/python/opentoken-cli/',
+            'path': 'lib/python/opentoken-cli/src/main/opentoken_cli/',
             'extension': '.py',
             'naming': 'snake_case'
         },
@@ -52,6 +52,26 @@ class MultiLanguageSyncer:
         self.mapping_file = self.root_dir / mapping_file
         
         self.load_mappings()
+        self._discover_active_languages()
+
+    def _discover_active_languages(self):
+        """Discover which languages have existing paths in the repository.
+        
+        Filters LANGUAGES to only include entries whose configured path exists
+        on disk. This prevents spurious missing-sync tasks for languages that
+        have not yet been implemented in this repository.
+        """
+        discovered = {
+            lang: config
+            for lang, config in self.LANGUAGES.items()
+            if (self.root_dir / config['path']).is_dir()
+        }
+        if discovered:
+            self.LANGUAGES = discovered
+        else:
+            # Fall back to all languages if none are discovered (e.g. fresh clone
+            # without any lib directories) to avoid silently doing nothing.
+            pass
 
     def load_mappings(self):
         """Load the multi-language file mappings"""

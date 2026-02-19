@@ -170,12 +170,12 @@ fi
 
 # Run the sync checker
 SYNC_RESULT=""
-LANG_ARGS=""
-[[ -n "$TARGET_LANGUAGES" ]] && LANG_ARGS="--languages $TARGET_LANGUAGES"
+LANG_ARGS=()
+[[ -n "$TARGET_LANGUAGES" ]] && LANG_ARGS=("--languages" "$TARGET_LANGUAGES")
 
 if [[ $OUTPUT_FORMAT == "github-checklist" ]]; then
     # Capture output for potential issue creation
-    SYNC_RESULT=$(python3 tools/multi_language_syncer.py --format "$OUTPUT_FORMAT" --since "$SINCE_COMMIT" $LANG_ARGS 2>&1)
+    SYNC_RESULT=$(python3 tools/multi_language_syncer.py --format "$OUTPUT_FORMAT" --since "$SINCE_COMMIT" "${LANG_ARGS[@]}" 2>&1)
     SYNC_EXIT_CODE=$?
     
     # Always show the result for checklist format
@@ -183,9 +183,9 @@ if [[ $OUTPUT_FORMAT == "github-checklist" ]]; then
 else
     # Run normally
     if [[ $VERBOSE == true ]]; then
-        python3 tools/multi_language_syncer.py --format "$OUTPUT_FORMAT" --since "$SINCE_COMMIT" $LANG_ARGS
+        python3 tools/multi_language_syncer.py --format "$OUTPUT_FORMAT" --since "$SINCE_COMMIT" "${LANG_ARGS[@]}"
     else
-        python3 tools/multi_language_syncer.py --format "$OUTPUT_FORMAT" --since "$SINCE_COMMIT" $LANG_ARGS 2>/dev/null
+        python3 tools/multi_language_syncer.py --format "$OUTPUT_FORMAT" --since "$SINCE_COMMIT" "${LANG_ARGS[@]}" 2>/dev/null
     fi
     SYNC_EXIT_CODE=$?
 fi
@@ -212,7 +212,7 @@ if [[ $CREATE_ISSUE == true ]]; then
                 log_warning "Failed to create GitHub issue"
             else
                 # Generate checklist format for issue
-                ISSUE_CONTENT=$(python3 tools/multi_language_syncer.py --format github-checklist --since "$SINCE_COMMIT" $LANG_ARGS 2>/dev/null)
+                ISSUE_CONTENT=$(python3 tools/multi_language_syncer.py --format github-checklist --since "$SINCE_COMMIT" "${LANG_ARGS[@]}" 2>/dev/null)
                 gh issue create \
                     --title "Multi-Language Sync Required (Auto-generated)" \
                     --body "$ISSUE_CONTENT" \
