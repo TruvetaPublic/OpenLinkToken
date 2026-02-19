@@ -560,7 +560,7 @@ jobs:
         id: run-tests
         run: |
           cd tools/interoperability
-          python java_python_interoperability_test.py
+          python multi_language_interoperability_test.py
 
       - name: Upload interoperability artifacts
         if: always()

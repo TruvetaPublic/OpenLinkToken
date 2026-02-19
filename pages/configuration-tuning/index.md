@@ -234,7 +234,7 @@ OpenToken Java and Python implementations produce **identical tokens** for the s
 **Test interoperability:**
 ```bash
 cd tools/interoperability
-python java_python_interoperability_test.py
+python multi_language_interoperability_test.py
 ```
 
 ---

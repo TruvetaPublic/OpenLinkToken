@@ -20,10 +20,7 @@
       "installGradle": "false"
     },
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
-    "ghcr.io/devcontainers/features/git-lfs:1": {},
-    "ghcr.io/devcontainers/features/node:1": {},
-    "ghcr.io/devcontainers/features/github-cli:1": {},
-    "ghcr.io/devcontainers/features/copilot-cli:1": {}
+    "ghcr.io/devcontainers/features/git-lfs:1": {}
   },
   "customizations": {
     "vscode": {
@@ -43,8 +40,7 @@
         "GitHub.vscode-github-actions",
         "GitHub.copilot-chat",
         "ms-python.python",
-        "ms-toolsai.jupyter",
-        "mikoz.autoflake-extension"
+        "dbaeumer.vscode-eslint"
       ],
       "settings": {
         "sonarlint.ls.javaHome": "/usr/local/sdkman/candidates/java/21.0.9-ms"
@@ -57,6 +53,8 @@
   "containerEnv": {
     "PYSPARK_SUBMIT_ARGS": "--driver-memory 8g --executor-memory 8g --conf spark.driver.maxResultSize=4g --conf spark.memory.fraction=0.7 pyspark-shell"
   },
-  "postCreateCommand": "/bin/bash .devcontainer/scripts/setup_python_env.sh",
+  "postCreateCommand": {
+    "setup-py-env": "/bin/bash .devcontainer/scripts/setup_python_env.sh"
+  },
   "postStartCommand": {}
 }

@@ -69,7 +69,7 @@ dev/* (feature work) → develop → release/x.y.z → main → develop (auto-sy
 
 - Java: `mvn clean install` (includes unit tests, integration tests, Checkstyle, JaCoCo).
 - Python: `pytest` (run from `lib/python/opentoken` and `lib/python/opentoken-cli`).
-- Interoperability: `python tools/interoperability/java_python_interoperability_test.py`.
+- Interoperability: `python tools/interoperability/multi_language_interoperability_test.py`.
 - Sync check: [tools/sync-check.sh](https://github.com/TruvetaPublic/OpenToken/blob/main/tools/sync-check.sh) to ensure Java/Python parity.
 
 ## Dev Container

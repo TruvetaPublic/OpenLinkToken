@@ -350,7 +350,7 @@ Wrong:   1905-01-01, 2025-12-31, 01-15-80
 **Solution**:
 1. Verify secrets match exactly
 2. Check attribute normalization (see [Concepts: Normalization](../concepts/normalization-and-validation.md))
-3. Run the interoperability test suite: `tools/interoperability/java_python_interoperability_test.py`
+3. Run the interoperability test suite: `tools/interoperability/multi_language_interoperability_test.py`
 4. Decrypt and compare hashes to isolate the issue
 
 ### CSV parsing errors or column not found

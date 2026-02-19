@@ -38,4 +38,4 @@ python tools/interoperability/cli_parity_test.py
 
 ## Token Interoperability Tests
 
-The `java_python_interoperability_test.py` script tests that Java and Python produce byte-identical tokens for the same input.
+The `multi_language_interoperability_test.py` script tests that Java and Python produce byte-identical tokens for the same input.
