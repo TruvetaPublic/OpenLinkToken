@@ -17,7 +17,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      
+
       - name: Get version
         id: get-version
         run: |
@@ -66,7 +66,7 @@ jobs:
         run: |
           mkdir -p smoke
           cp resources/sample.csv smoke/input.csv
-          ./dist/opentoken -i smoke/input.csv -t csv -o smoke/out.csv -h secret --hash-only
+          ./dist/opentoken tokenize -i smoke/input.csv -t csv -o smoke/out.csv -h secret
 
       - name: Smoke test (Windows)
         if: runner.os == 'Windows'
@@ -74,39 +74,39 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path smoke | Out-Null
           Copy-Item resources\sample.csv smoke\input.csv
-          .\dist\opentoken.exe -i smoke\input.csv -t csv -o smoke\out.csv -h secret --hash-only
+          .\dist\opentoken.exe tokenize -i smoke\input.csv -t csv -o smoke\out.csv -h secret
 
       - name: Prepare and zip artifact
         shell: bash
         run: |
           set -euo pipefail
           VERSION="${{ needs.version.outputs.version }}"
-          
+
           # Determine platform name
           case "${{ runner.os }}" in
             Linux)   PLATFORM="linux-x64" ;;
             macOS)   PLATFORM="macos-universal" ;;
             Windows) PLATFORM="windows-x64" ;;
           esac
-          
+
           # Create versioned directory
           PACKAGE_NAME="opentoken-cli-${VERSION}-${PLATFORM}"
           mkdir -p "${PACKAGE_NAME}"
-          
+
           # Copy executable
           if [[ "${{ runner.os }}" == "Windows" ]]; then
             cp "dist/opentoken.exe" "${PACKAGE_NAME}/"
           else
             cp "dist/opentoken" "${PACKAGE_NAME}/"
           fi
-          
+
           # Create zip file
           if [[ "${{ runner.os }}" == "Windows" ]]; then
             powershell -Command "Compress-Archive -Path '${PACKAGE_NAME}' -DestinationPath '${PACKAGE_NAME}.zip'"
           else
             zip -r "${PACKAGE_NAME}.zip" "${PACKAGE_NAME}"
           fi
-          
+
           echo "Created ${PACKAGE_NAME}.zip"
 
       - name: Upload artifact

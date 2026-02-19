@@ -42,7 +42,7 @@ cd opentoken-cli-2.0.0-alpha-macos-universal
 chmod +x opentoken
 
 # Run the CLI
-./opentoken \
+./opentoken package \
   -i /path/to/sample.csv \
   -o /path/to/output.csv \
   -t csv \
@@ -58,7 +58,7 @@ Expand-Archive opentoken-cli-2.0.0-alpha-windows-x64.zip
 cd opentoken-cli-2.0.0-alpha-windows-x64
 
 # Run the CLI
-.\opentoken.exe `
+.\opentoken.exe package `
   -i C:\path\to\sample.csv `
   -o C:\path\to\output.csv `
   -t csv `
