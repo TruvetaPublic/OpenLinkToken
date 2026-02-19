@@ -57,8 +57,14 @@ jobs:
             echo "COMPLETION_STATUS=$COMPLETION_STATUS" >> $GITHUB_OUTPUT
             
             # Extract numbers for progress calculation
-            COMPLETED=$(echo "$COMPLETION_STATUS" | grep -o "^[0-9]*" || echo "0")
-            TOTAL=$(echo "$COMPLETION_STATUS" | grep -o "/[0-9]*" | grep -o "[0-9]*" || echo "1")
+            COMPLETED=$(echo "$COMPLETION_STATUS" | sed -nE 's/^\(([0-9]+)\/[0-9]+.*$/\1/p')
+            if [ -z "$COMPLETED" ]; then
+              COMPLETED=0
+            fi
+            TOTAL=$(echo "$COMPLETION_STATUS" | sed -nE 's/^\([0-9]+\/([0-9]+).*$/\1/p')
+            if [ -z "$TOTAL" ]; then
+              TOTAL=1
+            fi
             echo "COMPLETED=$COMPLETED" >> $GITHUB_OUTPUT
             echo "TOTAL=$TOTAL" >> $GITHUB_OUTPUT
             
@@ -88,6 +94,7 @@ jobs:
             const completed = `${{ steps.sync-check.outputs.COMPLETED }}` || '0';
             const total = `${{ steps.sync-check.outputs.TOTAL }}` || '0';
 
+            const SYNC_MARKER = '<!-- multi-language-sync-check -->';
             let commentBody;
 
             if (isComplete || syncReport.includes('All changes appear to be in sync')) {
@@ -96,11 +103,13 @@ jobs:
                 finalStatusLine = `**Final Status**: ${completionStatus}`;
               }
               
-              commentBody = `## Multi-Language Sync Status: Complete! ✅
+              commentBody = `${SYNC_MARKER}
+              ## Multi-Language Sync Status: Complete! ✅
               All changes in this PR are properly synchronized across Java, Python, and other implementations.
               ` + finalStatusLine;
             } else {            
-              commentBody = `## 🔄 Multi-Language Sync Progress ${completionStatus}
+              commentBody = `${SYNC_MARKER}
+              ## 🔄 Multi-Language Sync Progress ${completionStatus}
               ${syncReport}
               ### 📋 How to use this checklist:
               - **✓🔄** = File exists and was recently updated ✅ **COMPLETED**
@@ -125,10 +134,7 @@ jobs:
 
             const syncComments = comments.data.filter(comment => 
               comment.user.type === 'Bot' && 
-              (comment.body.includes('Multi-Language Sync') || 
-               comment.body.includes('Java-Python Sync') || 
-               comment.body.includes('Sync Status') || 
-               comment.body.includes('Sync Progress'))
+              comment.body.includes(SYNC_MARKER)
             );
 
             // Delete all previous sync comments

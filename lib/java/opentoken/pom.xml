@@ -19,6 +19,11 @@
     <description>OpenToken Core Library - Privacy-preserving person matching using cryptographically secure token generation</description>
     <url>http://www.truveta.com</url>
 
+    <properties>
+        <!-- Override parent default: only the core library is published to GitHub Packages -->
+        <maven.deploy.skip>false</maven.deploy.skip>
+    </properties>
+
     <dependencies>
         <!-- JUnit 5 -->
         <dependency>
