@@ -41,6 +41,8 @@ pip install --no-cache-dir \
   -r dev-requirements.txt \
   -e opentoken \
   -e opentoken-cli \
-  -e "opentoken-pyspark[spark40]"
+  -e "opentoken-pyspark[spark40]" \
+  pre-commit \
+  autoflake
 
 echo "✓ Python environment setup complete"
