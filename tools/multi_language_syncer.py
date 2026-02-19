@@ -38,11 +38,6 @@ class MultiLanguageSyncer:
             'extension': '.py',
             'naming': 'snake_case'
         },
-        'nodejs': {
-            'path': 'lib/nodejs/opentoken/src/',
-            'extension': '.ts',
-            'naming': 'PascalCase'
-        }
     }
     
     FALLBACK_MAPPINGS = {
