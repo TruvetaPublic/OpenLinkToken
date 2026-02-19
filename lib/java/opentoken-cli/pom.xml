@@ -21,6 +21,7 @@
 
     <properties>
         <hadoop.version>3.4.2</hadoop.version>
+        <maven.deploy.skip>true</maven.deploy.skip>
     </properties>
 
     <dependencyManagement>
