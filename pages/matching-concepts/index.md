@@ -134,12 +134,12 @@ Tokens are encrypted to prevent re-identification, but can be decrypted to debug
 
 ```bash
 # Generate encrypted tokens (default mode)
-java -jar opentoken-cli-*.jar \
+java -jar opentoken-cli-*.jar package \
   -i data.csv -t csv -o output.csv \
   -h "HashingKey" -e "EncryptionKey"
 
 # Decrypt previously encrypted tokens
-java -jar opentoken-cli-*.jar -d \
+java -jar opentoken-cli-*.jar decrypt \
   -i output.csv -t csv -o decrypted.csv \
   -e "EncryptionKey"
 ```

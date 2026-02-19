@@ -30,11 +30,6 @@
             "description": "Main entry point - critical for CLI compatibility"
         },
         {
-            "path": "CommandLineArguments.java",
-            "priority": "high",
-            "manual_review": true
-        },
-        {
             "path": "processor/PersonAttributesProcessor.java",
             "priority": "high"
         },
@@ -133,13 +128,6 @@
                     "target_file": "lib/python/opentoken-cli/src/main/opentoken_cli/main.py",
                     "sync_priority": "high",
                     "description": "Main entry point - critical for CLI compatibility",
-                    "auto_sync": false,
-                    "requires_manual_review": true
-                },
-                "lib/java/opentoken-cli/src/main/java/com/truveta/opentoken/cli/CommandLineArguments.java": {
-                    "target_file": "lib/python/opentoken-cli/src/main/opentoken_cli/command_line_arguments.py",
-                    "sync_priority": "high",
-                    "description": "CLI argument parsing - affects user interface",
                     "auto_sync": false,
                     "requires_manual_review": true
                 },

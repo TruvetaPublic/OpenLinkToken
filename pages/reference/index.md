@@ -135,7 +135,7 @@ The CLI processes CSV or Parquet files without writing code.
 **Basic usage:**
 
 ```bash
-java -jar opentoken-cli-*.jar \
+java -jar opentoken-cli-*.jar package \
   -i input.csv -t csv -o output.csv \
   -h "HashingSecret" -e "EncryptionKey32Chars!!!!!!!!!!"
 ```
@@ -143,7 +143,7 @@ java -jar opentoken-cli-*.jar \
 Or with Python:
 
 ```bash
-python -m opentoken_cli.main \
+python -m opentoken_cli.main package \
   -i input.csv -t csv -o output.csv \
   -h "HashingSecret" -e "EncryptionKey32Chars!!!!!!!!!!"
 ```
@@ -157,7 +157,7 @@ python -m opentoken_cli.main \
 | `-t` / `--type`          | File type (`csv` or `parquet`) |
 | `-h` / `--hashingsecret` | HMAC-SHA256 secret             |
 | `-e` / `--encryptionkey` | AES-256 key (32 chars)         |
-| `--hash-only`            | Skip encryption                |
+| `tokenize`               | Tokenize without encryption    |
 
 **Full reference:** [CLI Reference](cli.md)
 

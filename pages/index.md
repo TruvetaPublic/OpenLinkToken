@@ -48,7 +48,7 @@ This site organizes quickstarts, concepts, operations guidance, configuration, r
   - [Sharing Tokenized Data](operations/sharing-tokenized-data.md)
   - [PPRL Demo Walkthrough](operations/pprl-demo-walkthrough.md)
   - [Decrypting Tokens](operations/decrypting-tokens.md)
-  - [Hash-Only Mode](operations/hash-only-mode.md)
+  - [Tokenize](operations/tokenize.md)
   - [Mock Data Workflows](operations/mock-data-workflows.md)
 - [Configuration](config/configuration.md)
   - [Configuration](config/configuration.md)

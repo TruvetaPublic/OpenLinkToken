@@ -7,6 +7,7 @@
 set -e  # Exit on error
 
 # Default values
+SUBCOMMAND="package"
 INPUT_FILE=""
 OUTPUT_FILE=""
 FILE_TYPE="csv"
@@ -32,16 +33,24 @@ log_error() { echo -e "${RED}✗${NC} $1" >&2; }
 # Function to show usage
 show_usage() {
     cat << EOF
-Usage: $0 [OPTIONS]
+Usage: $0 [SUBCOMMAND] [OPTIONS]
 
 Convenience wrapper for building and running OpenToken via Docker.
 Automatically builds the Docker image if needed and runs OpenToken with specified parameters.
 
+SUBCOMMANDS:
+    package     Tokenize and encrypt in one step (default). Requires -h and -e.
+    tokenize    Hash-only mode, no encryption. Requires -h only.
+    encrypt     Encrypt previously tokenized output. Requires -e only.
+    decrypt     Decrypt encrypted tokens. Requires -e only.
+
 REQUIRED OPTIONS:
     -i, --input FILE        Input file path (absolute or relative)
     -o, --output FILE       Output file path (absolute or relative)
-    -h, --hash SECRET       Hashing secret key
-    -e, --encrypt KEY       Encryption key
+
+SUBCOMMAND-SPECIFIC OPTIONS:
+    -h, --hash SECRET       Hashing secret key        (package, tokenize)
+    -e, --encrypt KEY       Encryption key            (package, encrypt, decrypt)
 
 OPTIONAL:
     -t, --type TYPE         File type: csv or parquet (default: csv)
@@ -51,17 +60,26 @@ OPTIONAL:
     --help                  Show this help message
 
 EXAMPLES:
-    # Basic usage with CSV files
+    # Tokenize and encrypt (default package subcommand)
     $0 -i /path/to/input.csv -o /path/to/output.csv -h "MyHashKey" -e "MyEncryptionKey"
 
-    # With parquet files
-    $0 -i ./data/input.parquet -t parquet -o ./data/output.parquet -h "secret" -e "key123"
+    # Explicit package subcommand
+    $0 package -i input.csv -o output.csv -h "HashKey" -e "EncryptionKey"
+
+    # Hash-only mode (no encryption)
+    $0 tokenize -i input.csv -t csv -o hashed.csv -h "HashKey"
+
+    # Decrypt previously encrypted tokens
+    $0 decrypt -i tokens.csv -t csv -o decrypted.csv -e "EncryptionKey"
+
+    # Encrypt previously tokenized (hashed) output
+    $0 encrypt -i hashed.csv -t csv -o encrypted.csv -e "EncryptionKey"
 
     # Skip Docker build if image already exists
     $0 -i ./input.csv -o ./output.csv -h "secret" -e "key" --skip-build
 
     # Verbose mode for troubleshooting
-    $0 -i ./input.csv -o ./output.csv -h "secret" -e "key" -v
+    $0 tokenize -i ./input.csv -o ./output.csv -h "secret" -v
 
 NOTES:
     - This script must be run from the OpenToken repository root directory
@@ -73,6 +91,12 @@ EOF
 }
 
 # Parse command line arguments
+# Check if the first argument is a subcommand
+if [[ $# -gt 0 ]] && [[ "$1" =~ ^(package|tokenize|encrypt|decrypt)$ ]]; then
+    SUBCOMMAND="$1"
+    shift
+fi
+
 while [[ $# -gt 0 ]]; do
     case $1 in
         -i|--input)
@@ -138,19 +162,39 @@ if [[ -z "$OUTPUT_FILE" ]]; then
     exit 1
 fi
 
-if [[ -z "$HASHING_SECRET" ]]; then
-    log_error "Hashing secret is required (use -h or --hash)"
-    echo ""
-    show_usage
-    exit 1
-fi
-
-if [[ -z "$ENCRYPTION_KEY" ]]; then
-    log_error "Encryption key is required (use -e or --encrypt)"
-    echo ""
-    show_usage
-    exit 1
-fi
+# Validate subcommand-specific required options
+case "$SUBCOMMAND" in
+    package)
+        if [[ -z "$HASHING_SECRET" ]]; then
+            log_error "Hashing secret is required for 'package' (use -h or --hash)"
+            echo ""
+            show_usage
+            exit 1
+        fi
+        if [[ -z "$ENCRYPTION_KEY" ]]; then
+            log_error "Encryption key is required for 'package' (use -e or --encrypt)"
+            echo ""
+            show_usage
+            exit 1
+        fi
+        ;;
+    tokenize)
+        if [[ -z "$HASHING_SECRET" ]]; then
+            log_error "Hashing secret is required for 'tokenize' (use -h or --hash)"
+            echo ""
+            show_usage
+            exit 1
+        fi
+        ;;
+    encrypt|decrypt)
+        if [[ -z "$ENCRYPTION_KEY" ]]; then
+            log_error "Encryption key is required for '$SUBCOMMAND' (use -e or --encrypt)"
+            echo ""
+            show_usage
+            exit 1
+        fi
+        ;;
+esac
 
 # Check if Docker is installed
 if ! command -v docker &> /dev/null; then
@@ -179,6 +223,7 @@ OUTPUT_FILENAME=$(basename "$OUTPUT_FILE")
 mkdir -p "$OUTPUT_DIR"
 
 if [[ $VERBOSE == true ]]; then
+    log_info "Subcommand: $SUBCOMMAND"
     log_info "Input file: $INPUT_FILE"
     log_info "Output file: $OUTPUT_FILE"
     log_info "File type: $FILE_TYPE"
@@ -223,8 +268,22 @@ else
     fi
 fi
 
+# Build the subcommand-specific CLI argument list
+CLI_ARGS=()
+case "$SUBCOMMAND" in
+    package)
+        CLI_ARGS+=(-h "$HASHING_SECRET" -e "$ENCRYPTION_KEY")
+        ;;
+    tokenize)
+        CLI_ARGS+=(-h "$HASHING_SECRET")
+        ;;
+    encrypt|decrypt)
+        CLI_ARGS+=(-e "$ENCRYPTION_KEY")
+        ;;
+esac
+
 # Run OpenToken via Docker
-log_info "Running OpenToken..."
+log_info "Running OpenToken ($SUBCOMMAND)..."
 
 # If input and output are in the same directory, mount once
 if [[ "$INPUT_DIR" == "$OUTPUT_DIR" ]]; then
@@ -235,11 +294,11 @@ if [[ "$INPUT_DIR" == "$OUTPUT_DIR" ]]; then
     docker run --rm \
         -v "$INPUT_DIR:/data" \
         "$DOCKER_IMAGE" \
+        "$SUBCOMMAND" \
         -i "/data/$INPUT_FILENAME" \
         -t "$FILE_TYPE" \
         -o "/data/$OUTPUT_FILENAME" \
-        -h "$HASHING_SECRET" \
-        -e "$ENCRYPTION_KEY"
+        "${CLI_ARGS[@]}"
 else
     # Mount input and output directories separately
     if [[ $VERBOSE == true ]]; then
@@ -251,11 +310,11 @@ else
         -v "$INPUT_DIR:/data/input" \
         -v "$OUTPUT_DIR:/data/output" \
         "$DOCKER_IMAGE" \
+        "$SUBCOMMAND" \
         -i "/data/input/$INPUT_FILENAME" \
         -t "$FILE_TYPE" \
         -o "/data/output/$OUTPUT_FILENAME" \
-        -h "$HASHING_SECRET" \
-        -e "$ENCRYPTION_KEY"
+        "${CLI_ARGS[@]}"
 fi
 
 if [[ $? -eq 0 ]]; then

@@ -199,7 +199,7 @@ Run `mvn checkstyle:check` to see specific style violations, then fix them.
 For large files, increase heap size:
 
 ```bash
-java -Xmx4g -jar opentoken-cli-*.jar ...
+java -Xmx4g -jar opentoken-cli-*.jar package ...
 ```
 
 ## Next Steps
