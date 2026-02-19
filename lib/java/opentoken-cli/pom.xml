@@ -7,13 +7,13 @@
     <parent>
         <groupId>com.truveta</groupId>
         <artifactId>opentoken-parent</artifactId>
-        <version>1.12.5</version>
+        <version>1.13.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>opentoken-cli</artifactId>
     <packaging>jar</packaging>
-    <version>1.12.5</version>
+    <version>1.13.0</version>
 
     <name>opentoken-cli</name>
     <description>OpenToken CLI - Command-line interface with CSV and Parquet support for token generation</description>
@@ -47,6 +47,11 @@
                 <groupId>io.airlift</groupId>
                 <artifactId>aircompressor</artifactId>
                 <version>2.0.2</version>
+            </dependency>
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>aircompressor-v3</artifactId>
+                <version>3.5</version>
             </dependency>
             <dependency>
                 <groupId>com.google.guava</groupId>
@@ -94,6 +99,11 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-csv</artifactId>
             <version>1.14.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>aircompressor-v3</artifactId>
         </dependency>
 
         <!-- Parquet/Hadoop -->
@@ -162,6 +172,10 @@
             <artifactId>parquet-hadoop</artifactId>
             <version>1.17.0</version>
             <exclusions>
+                <exclusion>
+                    <groupId>io.airlift</groupId>
+                    <artifactId>aircompressor</artifactId>
+                </exclusion>
                 <exclusion>
                     <groupId>org.apache.hadoop</groupId>
                     <artifactId>hadoop-client-runtime</artifactId>

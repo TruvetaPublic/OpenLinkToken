@@ -156,7 +156,7 @@ To use OpenToken in your Java project:
 <dependency>
     <groupId>com.truveta</groupId>
     <artifactId>opentoken</artifactId>
-    <version>1.12.5</version>
+    <version>1.13.0</version>
 </dependency>
 ```
 

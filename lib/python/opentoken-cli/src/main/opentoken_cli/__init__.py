@@ -7,5 +7,5 @@ This package provides the command line interface for tokenizing and processing
 person attributes using the OpenToken library.
 """
 
-__version__ = "1.12.5"
+__version__ = "1.13.0"
 __author__ = "Truveta"

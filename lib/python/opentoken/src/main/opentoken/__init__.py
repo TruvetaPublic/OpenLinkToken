@@ -7,7 +7,7 @@ This package provides utilities for tokenizing and processing person attributes
 using various cryptographic transformations.
 """
 
-__version__ = "1.12.5"
+__version__ = "1.13.0"
 __author__ = "Truveta"
 
 __all__ = [

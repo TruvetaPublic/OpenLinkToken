@@ -7,7 +7,7 @@
     <groupId>com.truveta</groupId>
     <artifactId>opentoken-parent</artifactId>
     <packaging>pom</packaging>
-    <version>1.12.5</version>
+    <version>1.13.0</version>
 
     <name>opentoken-parent</name>
     <description>OpenToken Parent POM - Privacy-preserving person matching library</description>
@@ -43,7 +43,7 @@
             <dependency>
                 <groupId>com.truveta</groupId>
                 <artifactId>opentoken</artifactId>
-                <version>1.12.5</version>
+                <version>1.13.0</version>
             </dependency>
 
             <!-- JUnit 5 -->
@@ -79,7 +79,7 @@
             <dependency>
                 <groupId>commons-codec</groupId>
                 <artifactId>commons-codec</artifactId>
-                <version>1.20.0</version>
+                <version>1.21.0</version>
             </dependency>
 
             <!-- Commons Lang3 (string utilities) -->
