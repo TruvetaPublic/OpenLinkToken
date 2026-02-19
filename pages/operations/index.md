@@ -10,7 +10,7 @@ Guides for running and managing OpenToken in production.
 - [Spark or Databricks](spark-or-databricks.md) — Distributed processing with PySpark
 - [Sharing Tokenized Data](sharing-tokenized-data.md) — Exchanging tokens between organizations
 - [PPRL Demo Walkthrough](pprl-demo-walkthrough.md) — What data gets exchanged in `demos/`
-- [Hash-Only Mode](hash-only-mode.md) — Generating tokens without encryption
+- [Tokenize](tokenize.md) — Generating tokens without encryption
 - [Decrypting Tokens](decrypting-tokens.md) — Recovering original signatures (requires keys)
 - [Mock Data Workflows](mock-data-workflows.md) — Generating test data
 

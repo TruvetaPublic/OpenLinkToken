@@ -113,7 +113,7 @@ python data_generator.py 100 0.05 test_data.csv
 
 # 2. Process with OpenToken
 cd ../../
-./run-opentoken.sh \
+./run-opentoken.sh package \
   -i tools/mockdata/test_data.csv \
   -o resources/test_output.csv \
   -t csv \
@@ -199,7 +199,7 @@ df.to_parquet('large_test.parquet')
 "
 
 # Process with OpenToken
-java -jar opentoken-cli-*.jar \
+java -jar opentoken-cli-*.jar package \
   -i large_test.parquet -t parquet \
   -o tokens.parquet \
   -h "HashingKey" -e "EncryptionKey"

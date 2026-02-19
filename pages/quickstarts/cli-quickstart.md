@@ -84,7 +84,7 @@ The fastest way to get started. No Java or Python installation required.
 ```bash
 cd /path/to/OpenToken
 
-./run-opentoken.sh \
+./run-opentoken.sh package \
   -i ./resources/sample.csv \
   -o ./resources/output.csv \
   -t csv \
@@ -97,28 +97,44 @@ cd /path/to/OpenToken
 ```powershell
 cd C:\path\to\OpenToken
 
-.\run-opentoken.ps1 `
+.\run-opentoken.ps1 package `
   -i .\resources\sample.csv `
   -o .\resources\output.csv `
-  -FileType csv `
+  -t csv `
   -h "HashingKey" `
   -e "Secret-Encryption-Key-Goes-Here."
 ```
 
-## CLI Arguments
+## Subcommands
 
-| Argument          | Short | Description                                | Required |
-| ----------------- | ----- | ------------------------------------------ | -------- |
-| `--input`         | `-i`  | Input file path (CSV or Parquet)           | Yes      |
-| `--output`        | `-o`  | Output file path                           | Yes      |
-| `--type`          | `-t`  | File type: `csv` or `parquet`              | Yes      |
-| `--hashingsecret` | `-h`  | Secret key for HMAC hashing                | Yes      |
-| `--encryptionkey` | `-e`  | 32-character key for AES encryption        | No*      |
-| `--hash-only`     |       | Skip encryption, output hashed tokens only | No       |
+The CLI is organized into subcommands. Choose the one that matches your workflow:
 
-*Required unless `--hash-only` is specified.
+| Subcommand | Description                                             | Requires   |
+| ---------- | ------------------------------------------------------- | ---------- |
+| `package`  | Tokenize and encrypt in one step — use for data sharing | `-h`, `-e` |
+| `tokenize` | Tokenize without encryption — use for internal analysis | `-h`       |
+| `encrypt`  | Encrypt previously tokenized (hashed) output            | `-e`       |
+| `decrypt`  | Decrypt encrypted tokens back to hashed form            | `-e`       |
 
-## Example: CSV Input
+For most use cases, `package` is the right starting point.
+
+## Common Arguments
+
+These arguments are shared across all subcommands:
+
+| Argument          | Short | Description                         |
+| ----------------- | ----- | ----------------------------------- |
+| `--input`         | `-i`  | Input file path (CSV or Parquet)    |
+| `--output`        | `-o`  | Output file path                    |
+| `--type`          | `-t`  | File type: `csv` or `parquet`       |
+| `--hashingsecret` | `-h`  | Secret key for HMAC hashing         |
+| `--encryptionkey` | `-e`  | 32-character key for AES encryption |
+
+## `package` Command
+
+Tokenizes and encrypts records in one step. This produces tokens that can be safely shared with external partners.
+
+### Example: CSV Input
 
 **Input file (`sample.csv`):**
 
@@ -131,7 +147,7 @@ patient_002,Jane,Smith,1975-03-22,Female,90210,987-65-4321
 **Command:**
 
 ```bash
-java -jar opentoken-cli-*.jar \
+java -jar opentoken-cli-*.jar package \
   -i sample.csv \
   -t csv \
   -o tokens.csv \
@@ -151,10 +167,10 @@ patient_001,T5,QpBpGBqaMhagfcHGZhVa...
 patient_002,T1,...
 ```
 
-## Example: Parquet Input
+### Example: Parquet Input
 
 ```bash
-java -jar opentoken-cli-*.jar \
+java -jar opentoken-cli-*.jar package \
   -i input.parquet \
   -t parquet \
   -o tokens.parquet \
@@ -162,24 +178,13 @@ java -jar opentoken-cli-*.jar \
   -e "MyEncryptionKey-32Characters!"
 ```
 
-## Hash-Only Mode
+## Other Subcommands
 
-Generate tokens without encryption (faster, but tokens cannot be decrypted):
+For detail on `tokenize`, `encrypt`, and `decrypt`, see:
 
-```bash
-java -jar opentoken-cli-*.jar \
-  -i sample.csv \
-  -t csv \
-  -o tokens.csv \
-  -h "MyHashingSecret" \
-  --hash-only
-```
-
-### Security Note (Hash-Only)
-
-`--hash-only` output is intended for **internal use** and should **not** be shared externally. Hash-only tokens are deterministic and can still be linkable across datasets.
-
-The primary use case for hash-only mode is to build an **internal overlap-analysis dataset** that you join against **encrypted tokens received from an external partner** (after decrypting their tokens to the hash-only equivalent). If you need to exchange tokens across organizations, use encrypted mode and follow [Sharing Tokenized Data](../operations/sharing-tokenized-data.md).
+- [Tokenize](../operations/tokenize.md) — `tokenize` subcommand
+- [Decrypting Tokens](../operations/decrypting-tokens.md) — `decrypt` subcommand
+- [CLI Reference](../reference/cli.md) — full argument reference for all subcommands
 
 ## Understanding the Output
 
@@ -215,7 +220,7 @@ A `.metadata.json` file is created alongside the output:
 
 ### "Encryption key not provided"
 
-Either provide `-e "YourKey"` or use `--hash-only` flag.
+Either provide `-e "YourKey"` with `package` or use the `tokenize` subcommand.
 
 ### "Invalid BirthDate"
 

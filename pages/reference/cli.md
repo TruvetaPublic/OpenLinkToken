@@ -28,9 +28,9 @@ For installation details, see the [CLI Quickstart](../quickstarts/cli-quickstart
 
 ## Security Note
 
-Treat generated token outputs and metadata as **sensitive**. In particular, `--hash-only` output is intended for internal use and should not be shared externally (for example, in tickets, chats, or public repos).
+Treat generated token outputs and metadata as **sensitive**. In particular, `tokenize` output is intended for internal use and should not be shared externally (for example, in tickets, chats, or public repos).
 
-Hash-only mode is primarily used to build **internal overlap-analysis datasets** that can be joined against **encrypted tokens received from external partners** (after decryption). If you need to **exchange** tokens across organizations, use encrypted mode and follow a controlled exchange process: [Sharing Tokenized Data](../operations/sharing-tokenized-data.md).
+The `tokenize` subcommand is primarily used to build **internal overlap-analysis datasets** that can be joined against **encrypted tokens received from external partners** (after decryption). If you need to **exchange** tokens across organizations, use `package` and follow a controlled exchange process: [Sharing Tokenized Data](../operations/sharing-tokenized-data.md).
 
 ## Command Syntax
 
@@ -40,29 +40,54 @@ Hash-only mode is primarily used to build **internal overlap-analysis datasets**
 .\opentoken.exe [OPTIONS]                # Windows
 
 # Java
-java -jar opentoken-cli-*.jar [OPTIONS]
+java -jar opentoken-cli-*.jar <subcommand> [OPTIONS]
 
 # Python
-python -m opentoken_cli.main [OPTIONS]
+python -m opentoken_cli.main <subcommand> [OPTIONS]
 ```
 
-## Required Arguments
+## Arguments by Subcommand
 
-| Argument          | Short | Description                         |
-| ----------------- | ----- | ----------------------------------- |
-| `--input`         | `-i`  | Path to input file (CSV or Parquet) |
-| `--output`        | `-o`  | Path to output file                 |
-| `--type`          | `-t`  | File type: `csv` or `parquet`       |
-| `--hashingsecret` | `-h`  | Secret key for HMAC-SHA256 hashing  |
+### `package` (Default Encrypted Mode)
 
-## Optional Arguments
+| Argument          | Short | Required | Description                              |
+| ----------------- | ----- | -------- | ---------------------------------------- |
+| `--input`         | `-i`  | Yes      | Path to input file (CSV or Parquet)      |
+| `--output`        | `-o`  | Yes      | Path to output file                      |
+| `--type`          | `-t`  | Yes      | File type: `csv` or `parquet`            |
+| `--hashingsecret` | `-h`  | Yes      | Secret key for HMAC-SHA256 hashing       |
+| `--encryptionkey` | `-e`  | Yes      | 32-character key for AES-256 encryption  |
+| `--output-type`   | `-ot` | No       | Output file type if different from input |
 
-| Argument          | Short | Description                               | Default                       |
-| ----------------- | ----- | ----------------------------------------- | ----------------------------- |
-| `--encryptionkey` | `-e`  | 32-character key for AES-256 encryption   | Required unless `--hash-only` |
-| `--hash-only`     |       | Generate hashed tokens without encryption | `false`                       |
-| `--output-type`   | `-ot` | Output file type if different from input  | Same as input                 |
-| `--decrypt`       | `-d`  | Decrypt mode (input must be encrypted)    | `false`                       |
+### `tokenize` (Hashed Tokens Only)
+
+| Argument          | Short | Required | Description                              |
+| ----------------- | ----- | -------- | ---------------------------------------- |
+| `--input`         | `-i`  | Yes      | Path to input file (CSV or Parquet)      |
+| `--output`        | `-o`  | Yes      | Path to output file                      |
+| `--type`          | `-t`  | Yes      | File type: `csv` or `parquet`            |
+| `--hashingsecret` | `-h`  | Yes      | Secret key for HMAC-SHA256 hashing       |
+| `--output-type`   | `-ot` | No       | Output file type if different from input |
+
+### `encrypt` (Encrypt Input Tokens)
+
+| Argument          | Short | Required | Description                              |
+| ----------------- | ----- | -------- | ---------------------------------------- |
+| `--input`         | `-i`  | Yes      | Path to input file (CSV or Parquet)      |
+| `--output`        | `-o`  | Yes      | Path to output file                      |
+| `--type`          | `-t`  | Yes      | File type: `csv` or `parquet`            |
+| `--encryptionkey` | `-e`  | Yes      | 32-character key for AES-256 encryption  |
+| `--output-type`   | `-ot` | No       | Output file type if different from input |
+
+### `decrypt` (Decrypt Encrypted Tokens)
+
+| Argument          | Short | Required | Description                              |
+| ----------------- | ----- | -------- | ---------------------------------------- |
+| `--input`         | `-i`  | Yes      | Path to input file (must be encrypted)   |
+| `--output`        | `-o`  | Yes      | Path to output file                      |
+| `--type`          | `-t`  | Yes      | File type: `csv` or `parquet`            |
+| `--encryptionkey` | `-e`  | Yes      | 32-character key for AES-256 encryption  |
+| `--output-type`   | `-ot` | No       | Output file type if different from input |
 
 ## Modes of Operation
 
@@ -71,7 +96,7 @@ python -m opentoken_cli.main [OPTIONS]
 Generates fully encrypted tokens using AES-256-GCM. Tokens can be decrypted later with the encryption key.
 
 ```bash
-java -jar opentoken-cli-*.jar \
+java -jar opentoken-cli-*.jar package \
   -i input.csv -t csv -o output.csv \
   -h "HashingSecret" \
   -e "EncryptionKey-Exactly32Chars!!"
@@ -82,15 +107,15 @@ java -jar opentoken-cli-*.jar \
 Signature → SHA-256 → HMAC-SHA256 → AES-256-GCM → Base64
 ```
 
-### Hash-Only Mode
+### `tokenize` Subcommand
 
 Generates one-way hashed tokens. Faster but tokens cannot be decrypted.
 
 ```bash
-java -jar opentoken-cli-*.jar \
+java -jar opentoken-cli-*.jar tokenize \
   -i input.csv -t csv -o output.csv \
-  -h "HashingSecret" \
-  --hash-only
+  -h "HashingSecret"
+
 ```
 
 **Token Pipeline:**
@@ -180,7 +205,7 @@ Every run generates a `.metadata.json` file:
 ### Bash (run-opentoken.sh)
 
 ```bash
-./run-opentoken.sh \
+./run-opentoken.sh package \
   -i ./input.csv \
   -o ./output.csv \
   -t csv \
@@ -199,7 +224,7 @@ Every run generates a `.metadata.json` file:
 ### PowerShell (run-opentoken.ps1)
 
 ```powershell
-.\run-opentoken.ps1 `
+.\run-opentoken.ps1 package `
   -i .\input.csv `
   -o .\output.csv `
   -FileType csv `
@@ -211,13 +236,13 @@ Every run generates a `.metadata.json` file:
 
 ## Error Messages
 
-| Error                                  | Cause                          | Solution                            |
-| -------------------------------------- | ------------------------------ | ----------------------------------- |
-| "Encryption key not provided"          | Missing `-e` in encrypted mode | Add `-e "key"` or use `--hash-only` |
-| "Encryption key must be 32 characters" | Key length wrong               | Use exactly 32 characters           |
-| "Input file not found"                 | Invalid path                   | Check file exists                   |
-| "Unknown file type"                    | Invalid `-t` value             | Use `csv` or `parquet`              |
-| "Invalid attribute: BirthDate"         | Date validation failed         | Use YYYY-MM-DD format               |
+| Error                                  | Cause                        | Solution                         |
+| -------------------------------------- | ---------------------------- | -------------------------------- |
+| "Encryption key not provided"          | Missing `-e` in package mode | Add `-e "key"` or use `tokenize` |
+| "Encryption key must be 32 characters" | Key length wrong             | Use exactly 32 characters        |
+| "Input file not found"                 | Invalid path                 | Check file exists                |
+| "Unknown file type"                    | Invalid `-t` value           | Use `csv` or `parquet`           |
+| "Invalid attribute: BirthDate"         | Date validation failed       | Use YYYY-MM-DD format            |
 
 ## Exit Codes
 
@@ -231,7 +256,7 @@ Every run generates a `.metadata.json` file:
 ## Performance Tips
 
 - Use Parquet for large datasets (faster I/O, compression)
-- Use `--hash-only` if decryption not needed (20-30% faster)
+- Use `tokenize` if decryption not needed (20-30% faster)
 - For very large files, consider [PySpark integration](../operations/spark-or-databricks.md)
 
 ## Next Steps

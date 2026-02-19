@@ -4,6 +4,10 @@
 
 [CmdletBinding()]
 param(
+    [Parameter(Position=0, Mandatory=$false, HelpMessage="Subcommand: package, tokenize, encrypt, or decrypt (default: package)")]
+    [ValidateSet("package", "tokenize", "encrypt", "decrypt")]
+    [string]$Subcommand = "package",
+
     [Parameter(Mandatory=$false, HelpMessage="Input file path (absolute or relative)")]
     [Alias("i")]
     [string]$InputFile,
@@ -32,10 +36,6 @@ param(
     [Alias("s")]
     [switch]$SkipBuild,
 
-    [Parameter(Mandatory=$false, HelpMessage="Enable verbose output")]
-    [Alias("v")]
-    [switch]$VerboseOutput,
-
     [Parameter(Mandatory=$false, HelpMessage="Show help message")]
     [switch]$Help
 )
@@ -51,17 +51,25 @@ function Show-Usage {
     $usage = @"
 
 USAGE:
-    run-opentoken.ps1 [OPTIONS]
+    run-opentoken.ps1 [SUBCOMMAND] [OPTIONS]
 
 DESCRIPTION:
     Convenience wrapper for building and running OpenToken via Docker.
     Automatically builds the Docker image if needed and runs OpenToken with specified parameters.
 
+SUBCOMMANDS:
+    package     Tokenize and encrypt in one step (default). Requires -h and -e.
+    tokenize    Hash-only mode, no encryption. Requires -h only.
+    encrypt     Encrypt previously tokenized output. Requires -e only.
+    decrypt     Decrypt encrypted tokens. Requires -e only.
+
 REQUIRED PARAMETERS:
     -InputFile, -i <file>       Input file path (absolute or relative)
     -OutputFile, -o <file>      Output file path (absolute or relative)
-    -HashingSecret, -h <key>    Hashing secret key
-    -EncryptionKey, -e <key>    Encryption key
+
+SUBCOMMAND-SPECIFIC PARAMETERS:
+    -HashingSecret, -h <key>    Hashing secret key          (package, tokenize)
+    -EncryptionKey, -e <key>    32-character encryption key (package, encrypt, decrypt)
 
 OPTIONAL PARAMETERS:
     -FileType, -t <type>        File type: csv or parquet (default: csv)
@@ -71,17 +79,26 @@ OPTIONAL PARAMETERS:
     -Help                       Show this help message
 
 EXAMPLES:
-    # Basic usage with CSV files
-    .\run-opentoken.ps1 -i C:\Data\input.csv -o C:\Data\output.csv -h "MyHashKey" -e "MyEncryptionKey"
+    # Tokenize and encrypt (default package subcommand)
+    .\run-opentoken.ps1 -i .\input.csv -o .\output.csv -h "MyHashKey" -e "MyEncryptionKey"
 
-    # With parquet files
-    .\run-opentoken.ps1 -i .\data\input.parquet -t parquet -o .\data\output.parquet -h "secret" -e "key123"
+    # Explicit package subcommand
+    .\run-opentoken.ps1 -Subcommand package -i .\input.csv -o .\output.csv -h "HashKey" -e "EncryptionKey"
+
+    # Hash-only mode (no encryption)
+    .\run-opentoken.ps1 -Subcommand tokenize -i .\input.csv -t csv -o .\hashed.csv -h "HashKey"
+
+    # Decrypt previously encrypted tokens
+    .\run-opentoken.ps1 -Subcommand decrypt -i .\tokens.csv -t csv -o .\decrypted.csv -e "EncryptionKey"
+
+    # Encrypt previously tokenized (hashed) output
+    .\run-opentoken.ps1 -Subcommand encrypt -i .\hashed.csv -t csv -o .\encrypted.csv -e "EncryptionKey"
 
     # Skip Docker build if image already exists
     .\run-opentoken.ps1 -i .\input.csv -o .\output.csv -h "secret" -e "key" -SkipBuild
 
     # Verbose mode for troubleshooting
-    .\run-opentoken.ps1 -i .\input.csv -o .\output.csv -h "secret" -e "key" -Verbose
+    .\run-opentoken.ps1 -Subcommand tokenize -i .\input.csv -o .\output.csv -h "secret" -Verbose
 
 NOTES:
     - This script must be run from the OpenToken repository root directory
@@ -114,18 +131,38 @@ if (-not $OutputFile) {
     exit 1
 }
 
-if (-not $HashingSecret) {
-    Write-Info "Hashing secret is required (use -HashingSecret or -h)"
-    Write-Host ""
-    Show-Usage
-    exit 1
-}
-
-if (-not $EncryptionKey) {
-    Write-Info "Encryption key is required (use -EncryptionKey or -e)"
-    Write-Host ""
-    Show-Usage
-    exit 1
+# Validate subcommand-specific required options
+switch ($Subcommand) {
+    "package" {
+        if (-not $HashingSecret) {
+            Write-Info "Hashing secret is required for 'package' (use -HashingSecret or -h)"
+            Write-Host ""
+            Show-Usage
+            exit 1
+        }
+        if (-not $EncryptionKey) {
+            Write-Info "Encryption key is required for 'package' (use -EncryptionKey or -e)"
+            Write-Host ""
+            Show-Usage
+            exit 1
+        }
+    }
+    "tokenize" {
+        if (-not $HashingSecret) {
+            Write-Info "Hashing secret is required for 'tokenize' (use -HashingSecret or -h)"
+            Write-Host ""
+            Show-Usage
+            exit 1
+        }
+    }
+    { $_ -in @("encrypt", "decrypt") } {
+        if (-not $EncryptionKey) {
+            Write-Info "Encryption key is required for '$Subcommand' (use -EncryptionKey or -e)"
+            Write-Host ""
+            Show-Usage
+            exit 1
+        }
+    }
 }
 
 # Check if Docker is installed
@@ -181,6 +218,7 @@ if (-not (Test-Path $OutputDir)) {
 }
 
 if ($VerboseOutput) {
+    Write-Info "Subcommand: $Subcommand"
     Write-Info "Input file: $InputFile"
     Write-Info "Output file: $OutputFile"
     Write-Info "File type: $FileType"
@@ -226,7 +264,15 @@ if (-not $SkipBuild) {
 }
 
 # Run OpenToken via Docker
-Write-Info "Running OpenToken..."
+Write-Info "Running OpenToken ($Subcommand)..."
+
+# Build subcommand-specific CLI argument list
+$CliArgs = @()
+switch ($Subcommand) {
+    "package"  { $CliArgs += "-h", $HashingSecret, "-e", $EncryptionKey }
+    "tokenize" { $CliArgs += "-h", $HashingSecret }
+    { $_ -in @("encrypt", "decrypt") } { $CliArgs += "-e", $EncryptionKey }
+}
 
 # Convert Windows paths to Docker-compatible format (with forward slashes)
 $InputDirDocker = $InputDir -replace '\\', '/'
@@ -245,11 +291,11 @@ if ($InputDir -eq $OutputDir) {
     docker run --rm `
         -v "${InputDir}:/data" `
         $DockerImage `
+        $Subcommand `
         -i "/data/$InputFilename" `
         -t $FileType `
         -o "/data/$OutputFilename" `
-        -h $HashingSecret `
-        -e $EncryptionKey
+        @CliArgs
 } else {
     # Mount input and output directories separately
     if ($VerboseOutput) {
@@ -261,11 +307,11 @@ if ($InputDir -eq $OutputDir) {
         -v "${InputDir}:/data/input" `
         -v "${OutputDir}:/data/output" `
         $DockerImage `
+        $Subcommand `
         -i "/data/input/$InputFilename" `
         -t $FileType `
         -o "/data/output/$OutputFilename" `
-        -h $HashingSecret `
-        -e $EncryptionKey
+        @CliArgs
 }
 
 if ($LASTEXITCODE -eq 0) {

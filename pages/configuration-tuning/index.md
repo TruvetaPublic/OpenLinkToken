@@ -112,7 +112,7 @@ ID002,T1,...
 **Columns:**
 - `RecordId`: From input (or auto-generated UUID)
 - `RuleId`: Token rule identifier (T1–T5)
-- `Token`: Encrypted `ot.V1.<JWE compact serialization>` token (or base64 HMAC token if `--hash-only`)
+- `Token`: Encrypted `ot.V1.<JWE compact serialization>` token (or base64 HMAC token when generated via `opentoken tokenize`)
 
 **Notes:**
 - **One row per rule per record**: 5 rows for each valid record
@@ -157,7 +157,7 @@ See [Reference: Metadata Format](../reference/metadata-format.md) for detailed f
 Generates encrypted `ot.V1` match tokens using HMAC-SHA256 + JWE/AES-256-GCM.
 
 ```bash
-java -jar opentoken-cli-*.jar \
+java -jar opentoken-cli-*.jar package \
   -i data.csv -t csv -o tokens.csv \
   -h "HashingKey" -e "EncryptionKey"
 ```
@@ -176,8 +176,7 @@ Encrypted `ot.V1` tokens include randomized IVs, so ciphertext values are not de
 Generates hashed tokens without encryption. Useful for token matching scenarios where encryption overhead is unnecessary.
 
 ```bash
-java -jar opentoken-cli-*.jar \
-  --hash-only \
+java -jar opentoken-cli-*.jar tokenize \
   -i data.csv -t csv -o tokens.csv \
   -h "HashingKey"
 ```
@@ -200,13 +199,12 @@ Token Signature → SHA-256 Hash → HMAC-SHA256(hash, key) → Base64 Encode
 Reverse previous encryption to inspect or verify token generation.
 
 ```bash
-java -jar opentoken-cli-*.jar \
-  -d \
+java -jar opentoken-cli-*.jar decrypt \
   -i encrypted-tokens.csv -t csv -o decrypted-tokens.csv \
   -e "EncryptionKey"
 ```
 
-**Output:** HMAC-SHA256 hashed tokens (base64 encoded) **before** AES encryption—equivalent to `--hash-only` output.
+**Output:** HMAC-SHA256 hashed tokens (base64 encoded) **before** AES encryption—equivalent to `tokenize` output.
 
 **Use cases:**
 - Debugging attribute normalization issues

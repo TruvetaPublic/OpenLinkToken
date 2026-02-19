@@ -135,7 +135,7 @@ Using as Maven dependencies:
 CLI usage:
 
 ```shell
-cd lib/java && java -jar opentoken-cli/target/opentoken-cli-*.jar [OPTIONS]
+cd lib/java && java -jar opentoken-cli/target/opentoken-cli-*.jar package [OPTIONS]
 ```
 
 Arguments:
@@ -150,7 +150,7 @@ Arguments:
 Example:
 
 ```shell
-cd lib/java && java -jar opentoken-cli/target/opentoken-cli-*.jar \
+cd lib/java && java -jar opentoken-cli/target/opentoken-cli-*.jar package \
   -i opentoken/src/test/resources/sample.csv -t csv -o opentoken-cli/target/output.csv \
   -h "HashingKey" -e "Secret-Encryption-Key-Goes-Here."
 ```
@@ -231,7 +231,7 @@ CLI usage (from project root):
 
 ```shell
 # After installing opentoken-cli
-python -m opentoken_cli.main [OPTIONS]
+python -m opentoken_cli.main package [OPTIONS]
 ```
 
 Arguments mirror Java implementation.
@@ -240,7 +240,7 @@ Example:
 
 ```shell
 # After installing opentoken-cli
-python -m opentoken_cli.main \
+python -m opentoken_cli.main package \
   -i resources/sample.csv -t csv -o lib/python/opentoken-cli/target/output.csv \
   -h "HashingKey" -e "Secret-Encryption-Key-Goes-Here."
 ```
@@ -383,14 +383,14 @@ When adding attributes/tokens: update Java first, run sync tool, then implement 
 
 ### Cross-language Tips
 
-| Task            | Java Command                                             | Python Command                     |
-| --------------- | -------------------------------------------------------- | ---------------------------------- |
-| Build / Package | `cd lib/java && mvn clean install`                       | `pip install -e .`                 |
-| Run Tests       | `mvn test`                                               | `pytest src/test`                  |
-| Lint / Style    | `mvn checkstyle:check`                                   | (pep8 / flake8 if configured)      |
-| Run CLI         | `java -jar opentoken-cli/target/opentoken-cli-*.jar ...` | `python -m opentoken_cli.main ...` |
-| Add Token       | SPI entry & class                                        | new module in `tokens/definitions` |
-| Add Attribute   | SPI entry & class                                        | class + loader import              |
+| Task            | Java Command                                                     | Python Command                             |
+| --------------- | ---------------------------------------------------------------- | ------------------------------------------ |
+| Build / Package | `cd lib/java && mvn clean install`                               | `pip install -e .`                         |
+| Run Tests       | `mvn test`                                                       | `pytest src/test`                          |
+| Lint / Style    | `mvn checkstyle:check`                                           | (pep8 / flake8 if configured)              |
+| Run CLI         | `java -jar opentoken-cli/target/opentoken-cli-*.jar package ...` | `python -m opentoken_cli.main package ...` |
+| Add Token       | SPI entry & class                                                | new module in `tokens/definitions`         |
+| Add Attribute   | SPI entry & class                                                | class + loader import                      |
 
 Maintain the same functional behavior and normalization between languages.
 
@@ -661,10 +661,10 @@ Minimum required arguments:
 
 ```shell
 # Java
-java -jar lib/java/opentoken-cli/target/opentoken-cli-*.jar -i input.csv -t csv -o output.csv -h HashingKey -e Secret-Encryption-Key-Goes-Here.
+java -jar lib/java/opentoken-cli/target/opentoken-cli-*.jar package -i input.csv -t csv -o output.csv -h HashingKey -e Secret-Encryption-Key-Goes-Here.
 
 # Python
-python -m opentoken_cli.main -i input.csv -t csv -o output.csv -h HashingKey -e Secret-Encryption-Key-Goes-Here.
+python -m opentoken_cli.main package -i input.csv -t csv -o output.csv -h HashingKey -e Secret-Encryption-Key-Goes-Here.
 ```
 
 Arguments:
