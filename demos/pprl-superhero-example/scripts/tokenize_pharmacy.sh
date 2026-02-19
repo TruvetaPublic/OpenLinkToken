@@ -38,7 +38,7 @@ echo ""
 mkdir -p "${DEMO_DIR}/outputs"
 
 echo "Running OpenToken CLI (pharmacy)..."
-java -jar "${JAR_FILE}" \
+java -jar "${JAR_FILE}" package \
   -t csv \
   -i "${DEMO_DIR}/datasets/pharmacy_superhero_data.csv" \
   -o "${DEMO_DIR}/outputs/pharmacy_tokens.csv" \
