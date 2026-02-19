@@ -1,7 +1,7 @@
 """
-Interoperability tests for OpenToken Java and Python implementations.
+Interoperability tests for all OpenToken implementations.
 
-These tests validate that both implementations produce identical results
+These tests validate that all implementations produce identical results
 and can work with each other's outputs.
 """
 

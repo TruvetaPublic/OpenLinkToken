@@ -250,8 +250,7 @@ The Python `TokenRegistry.load_all_tokens()` implementation discovers `Token` su
 After making changes in both languages, verify parity:
 
 ```bash
-cd /workspaces/OpenToken/tools
-python java_language_syncer.py
+python3 tools/multi_language_syncer.py
 ```
 
 This tool checks:
@@ -266,7 +265,7 @@ Run the interoperability test suite:
 
 ```bash
 cd /workspaces/OpenToken/tools/interoperability
-python java_python_interoperability_test.py
+python multi_language_interoperability_test.py
 ```
 
 This verifies that identical inputs produce identical token outputs in both languages.
@@ -350,7 +349,7 @@ Before submitting a PR with new attributes or tokens:
 - [ ] Python `AttributeLoader.load()` updated (attributes)
 - [ ] Python token module added under `tokens/definitions/` (tokens)
 - [ ] Unit tests added for both languages
-- [ ] Sync tool passes: `python tools/java_language_syncer.py`
+- [ ] Sync tool passes: `python3 tools/multi_language_syncer.py`
 - [ ] Interoperability tests pass
 - [ ] Documentation updated
 

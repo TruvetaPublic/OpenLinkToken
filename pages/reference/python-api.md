@@ -255,7 +255,7 @@ person_attributes = {
 Verify parity with:
 ```bash
 cd tools/interoperability
-python java_python_interoperability_test.py
+python multi_language_interoperability_test.py
 ```
 
 ## Error Handling

@@ -165,12 +165,12 @@ You **cannot** reverse the original attribute values from decrypted tokens.
 
 ## Troubleshooting
 
-| Problem                             | Solution                                                                                 |
-| ----------------------------------- | ---------------------------------------------------------------------------------------- |
-| "Decryption error"                  | Verify encryption key matches the key used for encryption                                |
-| Key length error                    | Encryption key must be exactly 32 characters                                             |
-| Blank tokens in output              | Blank tokens in input (from invalid records) remain blank                                |
-| Tokens don't match across languages | Run interoperability test: `tools/interoperability/java_python_interoperability_test.py` |
+| Problem                             | Solution                                                                                    |
+| ----------------------------------- | ------------------------------------------------------------------------------------------- |
+| "Decryption error"                  | Verify encryption key matches the key used for encryption                                   |
+| Key length error                    | Encryption key must be exactly 32 characters                                                |
+| Blank tokens in output              | Blank tokens in input (from invalid records) remain blank                                   |
+| Tokens don't match across languages | Run interoperability test: `tools/interoperability/multi_language_interoperability_test.py` |
 
 ---
 

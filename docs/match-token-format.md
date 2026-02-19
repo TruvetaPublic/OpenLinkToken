@@ -397,7 +397,7 @@ This format is compatible with standard JOSE/JWE libraries:
 | ---------- | ------------------------------- |
 | Java       | jose4j, Nimbus JOSE+JWT         |
 | Python     | python-jose, jwcrypto           |
-| JavaScript | jose                            |
+| JavaScript | jose, node-jose                 |
 | Go         | go-jose                         |
 | .NET       | System.IdentityModel.Tokens.Jwt |
 

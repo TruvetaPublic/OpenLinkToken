@@ -47,12 +47,12 @@ OpenToken uses a Gitflow-based branching strategy:
 
 ### Branch Types
 
-| Branch | Purpose | Merges To |
-|--------|---------|-----------|
-| `main` | Production-ready releases | — |
-| `develop` | Integration branch | `release/*` |
-| `dev/<username>/<feature>` | Feature development | `develop` |
-| `release/x.y.z` | Release preparation | `main` |
+| Branch                     | Purpose                   | Merges To   |
+| -------------------------- | ------------------------- | ----------- |
+| `main`                     | Production-ready releases | —           |
+| `develop`                  | Integration branch        | `release/*` |
+| `dev/<username>/<feature>` | Feature development       | `develop`   |
+| `release/x.y.z`            | Release preparation       | `main`      |
 
 ### Creating a Feature Branch
 
@@ -97,7 +97,7 @@ git checkout -b dev/your-username/feature-name
 
 3. **Verify cross-language parity** (if applicable):
    ```bash
-   python tools/java_language_syncer.py
+   python3 tools/multi_language_syncer.py
    ```
 
 4. **Update documentation** if your changes affect user-facing behavior
@@ -190,7 +190,7 @@ When adding a new attribute (e.g., `MiddleNameAttribute`):
 
 After adding to both languages:
 ```bash
-python tools/java_language_syncer.py
+python3 tools/multi_language_syncer.py
 ```
 
 ---
@@ -229,14 +229,14 @@ Include:
 
 ### Types
 
-| Type | Description |
-|------|-------------|
-| `feat` | New feature |
-| `fix` | Bug fix |
-| `docs` | Documentation only |
-| `test` | Adding or updating tests |
+| Type       | Description                                             |
+| ---------- | ------------------------------------------------------- |
+| `feat`     | New feature                                             |
+| `fix`      | Bug fix                                                 |
+| `docs`     | Documentation only                                      |
+| `test`     | Adding or updating tests                                |
 | `refactor` | Code change that neither fixes a bug nor adds a feature |
-| `chore` | Build process, dependencies, tooling |
+| `chore`    | Build process, dependencies, tooling                    |
 
 ---
 

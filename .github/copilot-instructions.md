@@ -57,7 +57,7 @@ This document provides comprehensive guidance for AI coding agents working on th
 - `lib/python/opentoken/src/main/opentoken/attributes/attribute_loader.py` → add to `AttributeLoader.load()` set
 - `lib/python/opentoken/src/main/opentoken/tokens/token_registry.py` → add to registry
 
-**Both languages must be updated** or parity breaks. Use `tools/java_language_syncer.py` to verify cross-language sync.
+**Both languages must be updated** or parity breaks. Use `tools/multi_language_syncer.py` to verify cross-language sync.
 
 ## Development Workflows
 
@@ -210,7 +210,7 @@ Every token generation run produces `.metadata.json` with:
 
 - Token outputs must be **byte-identical** for same input (verified by `tools/interoperability/` tests)
 - Normalization logic must match exactly (e.g., diacritic removal, case conversion)
-- Update `tools/java-language-mappings.json` when adding new classes (source-centric: `critical_java_files`, `directory_roots`, per-language `overrides`)
+- Update `tools/multi-language-mapping.json` when adjusting ignore patterns for the sync tool
 - Run `tools/sync-check.sh` before PR submission
 
 ## File Structure Patterns
@@ -299,7 +299,7 @@ lib/python/
 ### Before Submitting
 
 1. **Run all builds**: `mvn clean install` (Java) and `pytest` (Python)
-2. **Check cross-language sync**: Run `tools/java_language_syncer.py`
+2. **Check cross-language sync**: Run `tools/multi_language_syncer.py`
 3. **Code style**: Java Checkstyle must pass, Python follows PEP 8
 4. **Test coverage**: Add tests for new code paths with **≥80% coverage** (see [Code Coverage Requirements](#code-coverage-requirements))
 5. **Clear Jupyter notebook outputs**: Before committing or merging PRs, clear all cell outputs from notebooks to avoid committing execution results, large data, or secrets. Use "Clear All Outputs" in VS Code or `jupyter nbconvert --clear-output --inplace <notebook.ipynb>`

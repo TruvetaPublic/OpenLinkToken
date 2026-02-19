@@ -187,7 +187,7 @@ cat output.metadata.json | jq '.HashingSecretHash'
 2. Run the interoperability test:
    ```bash
    cd tools/interoperability
-   python java_python_interoperability_test.py
+  python multi_language_interoperability_test.py
    ```
 3. Compare normalized attributes (not raw input)
 

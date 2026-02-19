@@ -1,53 +1,54 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/java
 {
-    "name": "OpenToken",
-    "build": {
-        "context": "..",
-        "dockerfile": "Dockerfile",
-        "args": {
-            "JAVA_VERSION": "21"
-        }
+  "name": "OpenToken",
+  "build": {
+    "context": "..",
+    "dockerfile": "Dockerfile",
+    "args": {
+      "JAVA_VERSION": "21"
+    }
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "configureZshAsDefaultShell": true
     },
-    "features": {
-        "ghcr.io/devcontainers/features/common-utils:2": {
-            "configureZshAsDefaultShell": true
-        },
-        "ghcr.io/devcontainers/features/java:1": {
-            "version": "21.0.9",
-            "installMaven": "true",
-            "mavenVersion": "3.8.8",
-            "installGradle": "false"
-        },
-        "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
-        "ghcr.io/devcontainers/features/git-lfs:1": {}
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "21.0.9",
+      "installMaven": "true",
+      "mavenVersion": "3.8.8",
+      "installGradle": "false"
     },
-    "customizations": {
-        "vscode": {
-            "extensions": [
-                "ms-azuretools.vscode-docker",
-                "streetsidesoftware.code-spell-checker",
-                "esbenp.prettier-vscode",
-                "DavidAnson.vscode-markdownlint",
-                "redhat.java",
-                "vscjava.vscode-java-pack",
-                "DotJoshJohnson.xml",
-                "yzhang.markdown-all-in-one",
-                "SonarSource.sonarlint-vscode",
-                "AdamViola.parquet-explorer",
-                "GitHub.vscode-pull-request-github",
-                "shengchen.vscode-checkstyle",
-                "GitHub.vscode-github-actions",
-                "GitHub.copilot-chat",
-                "ms-python.python"
-            ],
-            "settings": {
-                "sonarlint.ls.javaHome": "/usr/local/sdkman/candidates/java/21.0.9-ms"
-            }
-        }
-    },
-    "mounts": [],
-    "containerEnv": {},
-    "postCreateCommand": "",
-    "postStartCommand": ""
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
+    "ghcr.io/devcontainers/features/git-lfs:1": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-azuretools.vscode-docker",
+        "streetsidesoftware.code-spell-checker",
+        "esbenp.prettier-vscode",
+        "DavidAnson.vscode-markdownlint",
+        "redhat.java",
+        "vscjava.vscode-java-pack",
+        "DotJoshJohnson.xml",
+        "yzhang.markdown-all-in-one",
+        "SonarSource.sonarlint-vscode",
+        "AdamViola.parquet-explorer",
+        "GitHub.vscode-pull-request-github",
+        "shengchen.vscode-checkstyle",
+        "GitHub.vscode-github-actions",
+        "GitHub.copilot-chat",
+        "ms-python.python",
+        "dbaeumer.vscode-eslint"
+      ],
+      "settings": {
+        "sonarlint.ls.javaHome": "/usr/local/sdkman/candidates/java/21.0.9-ms"
+      }
+    }
+  },
+  "mounts": [],
+  "containerEnv": {},
+  "postCreateCommand": "",
+  "postStartCommand": ""
 }

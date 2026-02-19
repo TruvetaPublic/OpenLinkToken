@@ -356,27 +356,30 @@ Notebook Guides:
 - See `lib/python/opentoken-pyspark/notebooks/` for example workflows (custom tokens & overlap analysis).
 ### Multi-Language Sync Tool
 
-Java is the source of truth. The sync tool ([tools/java_language_syncer.py](https://github.com/TruvetaPublic/OpenToken/blob/main/tools/java_language_syncer.py)) evaluates changed Java files against enabled target languages (currently Python). It will fail PR workflows if any modified Java file lacks a corresponding, up-to-date target implementation.
+The sync tool ([tools/multi_language_syncer.py](https://github.com/TruvetaPublic/OpenToken/blob/main/tools/multi_language_syncer.py)) detects changes across all supported languages (Java, Python, Node.js) and produces a cross-language checklist showing which corresponding files need updating. It is bidirectional — changes originating in any language trigger sync items for the others.
 
 Key concepts:
 
-- Source-centric config: [tools/java-language-mappings.json](https://github.com/TruvetaPublic/OpenToken/blob/main/tools/java-language-mappings.json) defines `critical_java_files` (with optional priorities/manual review) and `directory_roots` for broad coverage.
-- Language overrides: Target-specific adjustments live under `target_languages.<lang>.overrides.critical_files`.
-- Auto-generation: If `auto_generate_unmapped` is true, unmapped Java files still produce inferred target paths via handlers.
-- Sync status logic: A target file is considered synced if it was modified after the Java file (timestamp) or, in simplified mode, if both were touched in the PR.
-- Disabled scaffolds: C# handlers exist; enabling them requires setting `enabled: true` and supplying base path + conventions.
+- Language paths are configured directly in `multi_language_syncer.py` under the `LANGUAGES` dict.
+- An optional [tools/multi-language-mapping.json](https://github.com/TruvetaPublic/OpenToken/blob/main/tools/multi-language-mapping.json) supplies `ignore_patterns`.
+- Sync status logic: A target file is considered up-to-date if it was modified after the source file within the same PR (commit timestamp comparison).
+- Progress is tracked across all commits in a PR so the checklist reflects incremental work.
 
 Usage examples:
 
 ```bash
-python3 tools/java_language_syncer.py --format console
-python3 tools/java_language_syncer.py --format github-checklist --since origin/main
-python3 tools/java_language_syncer.py --health-check
+python3 tools/multi_language_syncer.py --format console
+python3 tools/multi_language_syncer.py --format github-checklist --since origin/main
+python3 tools/multi_language_syncer.py --health-check
 ```
 
-CI enforcement: The GitHub Actions workflow (`java-language-sync.yml`) posts a checklist and fails if completion < total.
+CI integration: The GitHub Actions workflow (`.github/workflows/multi-language-sync.yml`) posts an informational checklist comment on PRs. It does not hard-fail; it tracks progress.
 
-When adding attributes/tokens: update Java first, run sync tool, then implement Python parity before merging.
+When adding attributes/tokens: update all applicable language implementations, run the sync tool to verify, and ensure the checklist shows complete before merging.
+
+CI integration: The GitHub Actions workflow (`.github/workflows/multi-language-sync.yml`) posts an informational checklist comment on PRs. It does not hard-fail; it tracks progress.
+
+When adding attributes/tokens: update all applicable language implementations, run the sync tool to verify, and ensure the checklist shows complete before merging.
 
 ### Cross-language Tips
 

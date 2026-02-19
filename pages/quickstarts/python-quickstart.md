@@ -169,7 +169,7 @@ OpenToken guarantees that Java and Python produce **identical tokens** for the s
 ```bash
 cd tools/interoperability
 pip install -r requirements.txt
-python java_python_interoperability_test.py
+python multi_language_interoperability_test.py
 ```
 
 The test:
