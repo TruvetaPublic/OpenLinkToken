@@ -47,8 +47,14 @@
       }
     }
   },
-  "mounts": [],
-  "containerEnv": {},
-  "postCreateCommand": "",
-  "postStartCommand": ""
+  "mounts": [
+    "type=volume,source=opentoken-venv,target=/workspaces/OpenToken/.venv"
+  ],
+  "containerEnv": {
+    "PYSPARK_SUBMIT_ARGS": "--driver-memory 8g --executor-memory 8g --conf spark.driver.maxResultSize=4g --conf spark.memory.fraction=0.7 pyspark-shell"
+  },
+  "postCreateCommand": {
+    "setup-py-env": "/bin/bash .devcontainer/scripts/setup_python_env.sh"
+  },
+  "postStartCommand": {}
 }
