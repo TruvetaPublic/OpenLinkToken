@@ -22,7 +22,7 @@ for package_name in ("pyarrow", "pandas", "csv2parquet", "cryptography"):
 hiddenimports += collect_submodules("opentoken.tokens.definitions")
 
 a = Analysis(
-    ["src/main/opentoken_cli/main.py"],
+    [os.path.join(base_dir, "src", "main", "opentoken_cli", "main.py")],
     pathex=[base_dir, os.path.join(base_dir, "src", "main")],
     binaries=binaries,
     datas=datas,

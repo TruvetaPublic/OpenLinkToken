@@ -22,7 +22,7 @@ No dependencies required. Extract and run.
 
 - **Docker**: Use `run-opentoken.sh` (Linux/Mac) or `run-opentoken.ps1` (Windows)
 - **Java**: Build from source with Maven, run `java -jar opentoken-cli-*.jar`
-- **Python**: Install via pip, run `opentoken` or `python -m opentoken_cli`
+- **Python**: Install via pip, run `opentoken` or `python -m opentoken_cli.main`
 
 For installation details, see the [CLI Quickstart](../quickstarts/cli-quickstart.md).
 
@@ -34,10 +34,22 @@ The `tokenize` subcommand is primarily used to build **internal overlap-analysis
 
 ## Command Syntax
 
+**Linux/macOS (Bash):**
 ```bash
 # Self-contained executable
-./opentoken [OPTIONS]                    # Linux/macOS
-.\opentoken.exe [OPTIONS]                # Windows
+./opentoken [OPTIONS]
+
+# Java
+java -jar opentoken-cli-*.jar <subcommand> [OPTIONS]
+
+# Python
+python -m opentoken_cli.main <subcommand> [OPTIONS]
+```
+
+**Windows (PowerShell):**
+```powershell
+# Self-contained executable
+.\opentoken.exe [OPTIONS]
 
 # Java
 java -jar opentoken-cli-*.jar <subcommand> [OPTIONS]

@@ -18,7 +18,13 @@ class TokenRegistry:
         package_name = "opentoken.tokens.definitions"
         package = importlib.import_module(package_name)
 
-        module_names = [module_info.name for module_info in pkgutil.iter_modules(package.__path__)]
+        module_names: List[str] = []
+        package_path = getattr(package, "__path__", None)
+        if package_path is not None:
+            try:
+                module_names = [module_info.name for module_info in pkgutil.iter_modules(package_path)]
+            except Exception:
+                module_names = []
 
         if not module_names:
             try:
