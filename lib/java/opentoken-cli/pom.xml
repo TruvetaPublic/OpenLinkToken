@@ -7,13 +7,13 @@
     <parent>
         <groupId>com.truveta</groupId>
         <artifactId>opentoken-parent</artifactId>
-        <version>1.12.5</version>
+        <version>1.13.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>opentoken-cli</artifactId>
     <packaging>jar</packaging>
-    <version>1.12.5</version>
+    <version>1.13.0</version>
 
     <name>opentoken-cli</name>
     <description>OpenToken CLI - Command-line interface with CSV and Parquet support for token generation</description>
