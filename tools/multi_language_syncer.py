@@ -5,9 +5,12 @@ Detects changes in any language (Java, Python, Node.js) and creates correspondin
 for the other languages.
 """
 
+import fnmatch
 import json
+import re
 import subprocess
 import argparse
+import sys
 from pathlib import Path
 
 class MultiLanguageSyncer:
@@ -20,8 +23,18 @@ class MultiLanguageSyncer:
             'extension': '.java',
             'naming': 'PascalCase'
         },
+        'java-cli': {
+            'path': 'lib/java/opentoken-cli/',
+            'extension': '.java',
+            'naming': 'PascalCase'
+        },
         'python': {
             'path': 'lib/python/opentoken/src/main/opentoken/',
+            'extension': '.py',
+            'naming': 'snake_case'
+        },
+        'python-cli': {
+            'path': 'lib/python/opentoken-cli/',
             'extension': '.py',
             'naming': 'snake_case'
         },
@@ -87,8 +100,6 @@ class MultiLanguageSyncer:
 
     def _filter_ignored_files(self, files):
         """Filter out files that match ignore patterns"""
-        import fnmatch
-        
         ignore_patterns = self.mappings.get("ignore_patterns", [])
         filtered_files = []
         
@@ -153,7 +164,6 @@ class MultiLanguageSyncer:
         # Convert naming convention
         if from_naming == 'PascalCase' and to_naming == 'snake_case':
             # Convert PascalCase to snake_case
-            import re
             base_name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', base_name)
             base_name = re.sub('([a-z0-9])([A-Z])', r'\1_\2', base_name).lower()
         elif from_naming == 'snake_case' and to_naming == 'PascalCase':
@@ -302,6 +312,11 @@ class MultiLanguageSyncer:
     def generate_sync_report(self, output_format="console", since_commit="HEAD~1", languages=None):
         """Generate a report of files that need syncing across all languages
         
+        Returns:
+            A tuple of (report: str, is_complete: bool) where is_complete indicates
+            whether all syncs are up-to-date. Returns (report, True) when no changes
+            are detected (nothing to do).
+        
         Args:
             output_format: One of 'console', 'json', or 'github-checklist'
             since_commit: The commit to compare against
@@ -323,10 +338,9 @@ class MultiLanguageSyncer:
         total_changes = sum(len(changes) for changes in all_changes.values())
         if total_changes == 0:
             if output_format == "github-checklist":
-                return "✅ All changes appear to be in sync across Java, Python, and Node.js!"
+                return ("✅ All changes appear to be in sync across Java, Python, and Node.js!", True)
             else:
-                print("No changes detected in any language.")
-                return
+                return ("No changes detected in any language.", True)
         
         # Build sync requirements
         sync_requirements = []
@@ -340,7 +354,10 @@ class MultiLanguageSyncer:
                     'corresponding': corresponding
                 })
         
-        return self.format_output(sync_requirements, all_changes, output_format, since_commit)
+        report = self.format_output(sync_requirements, all_changes, output_format, since_commit)
+        is_complete = self._check_sync_complete(sync_requirements, since_commit)
+        
+        return (report, is_complete)
 
     def format_output(self, sync_requirements, all_changes, output_format="console", since_commit="HEAD~1"):
         """Format the output based on the specified format"""
@@ -353,6 +370,18 @@ class MultiLanguageSyncer:
             }, indent=2)
         else:
             return self.format_console(sync_requirements, all_changes, since_commit)
+
+    def _check_sync_complete(self, sync_requirements, since_commit="HEAD~1"):
+        """Check if all sync requirements are complete (up-to-date)
+        
+        Returns:
+            True if all corresponding files are up-to-date, False otherwise
+        """
+        for req in sync_requirements:
+            for target_lang, target_file in req['corresponding'].items():
+                if not self.is_file_up_to_date(req['source_file'], target_file, since_commit):
+                    return False
+        return True
 
     def format_github_checklist(self, sync_requirements, all_changes, since_commit):
         """Format output as GitHub markdown checklist"""
@@ -433,7 +462,12 @@ class MultiLanguageSyncer:
 
 
 def main():
-    """Main entry point"""
+    """Main entry point
+    
+    Returns:
+        0 if successful (health check passed or sync is complete)
+        1 if sync is incomplete (corresponding files not updated)
+    """
     parser = argparse.ArgumentParser(description='Multi-language sync checker')
     parser.add_argument('--format', choices=['console', 'json', 'github-checklist'],
                        default='console', help='Output format')
@@ -453,12 +487,14 @@ def main():
     if args.health_check:
         passed, report = syncer.run_health_check()
         print(report)
-        exit(0 if passed else 1)
+        sys.exit(0 if passed else 1)
     
-    report = syncer.generate_sync_report(args.format, args.since, languages)
+    report, is_complete = syncer.generate_sync_report(args.format, args.since, languages)
     
     if report:
         print(report)
+    
+    sys.exit(0 if is_complete else 1)
 
 
 if __name__ == "__main__":
