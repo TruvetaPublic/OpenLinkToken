@@ -201,6 +201,104 @@ class MultiLanguageSyncer:
         
         return corresponding
 
+    def run_health_check(self):
+        """Run a health check to validate tool configuration and environment
+        
+        Returns:
+            A tuple of (passed: bool, report: str)
+        """
+        issues = []
+        checks = []
+        
+        # Check 1: Git is available
+        try:
+            result = subprocess.run(['git', '--version'], capture_output=True, text=True)
+            if result.returncode == 0:
+                checks.append(('✓', 'Git', f'available ({result.stdout.strip()})'))
+            else:
+                issues.append('Git is not properly configured')
+                checks.append(('✗', 'Git', 'not available'))
+        except FileNotFoundError:
+            issues.append('Git command not found on PATH')
+            checks.append(('✗', 'Git', 'not found'))
+        
+        # Check 2: Root directory is a git repository
+        try:
+            result = subprocess.run(
+                ['git', 'rev-parse', '--git-dir'],
+                capture_output=True, text=True, cwd=self.root_dir
+            )
+            if result.returncode == 0:
+                checks.append(('✓', 'Git Repository', f'found at {self.root_dir}'))
+            else:
+                issues.append(f'Root directory {self.root_dir} is not a git repository')
+                checks.append(('✗', 'Git Repository', 'not found'))
+        except subprocess.CalledProcessError:
+            issues.append(f'Cannot verify git repository at {self.root_dir}')
+            checks.append(('✗', 'Git Repository', 'verification failed'))
+        
+        # Check 3: Language paths exist
+        for lang, config in self.LANGUAGES.items():
+            lang_path = self.root_dir / config['path']
+            if lang_path.exists() and lang_path.is_dir():
+                checks.append(('✓', f'{lang.upper()} Path', str(config['path'])))
+            else:
+                issues.append(f'{lang.upper()} path does not exist: {config["path"]}')
+                checks.append(('✗', f'{lang.upper()} Path', str(config['path'])))
+        
+        # Check 4: Mapping file
+        if self.mapping_file.exists():
+            try:
+                with open(self.mapping_file, 'r') as f:
+                    json.load(f)
+                checks.append(('✓', 'Mapping File', f'{self.mapping_file.name} (valid JSON)'))
+            except json.JSONDecodeError as e:
+                issues.append(f'Mapping file contains invalid JSON: {e}')
+                checks.append(('✗', 'Mapping File', f'{self.mapping_file.name} (invalid JSON)'))
+        else:
+            checks.append(('⚠', 'Mapping File', f'not found at {self.mapping_file} (using defaults)'))
+        
+        # Check 5: Ignore patterns in mapping
+        ignore_patterns = self.mappings.get('ignore_patterns', [])
+        if ignore_patterns:
+            checks.append(('✓', 'Ignore Patterns', f'{len(ignore_patterns)} pattern(s) configured'))
+        else:
+            checks.append(('ℹ', 'Ignore Patterns', 'none configured'))
+        
+        # Check 6: Can execute git commands
+        try:
+            result = subprocess.run(
+                ['git', 'status', '--porcelain'],
+                capture_output=True, text=True, cwd=self.root_dir
+            )
+            if result.returncode == 0:
+                checks.append(('✓', 'Git Commands', 'working'))
+            else:
+                issues.append('Cannot execute git commands')
+                checks.append(('✗', 'Git Commands', 'failed'))
+        except subprocess.CalledProcessError:
+            issues.append('Failed to execute git commands')
+            checks.append(('✗', 'Git Commands', 'failed'))
+        
+        # Format report
+        output = "Multi-Language Sync Tool - Health Check Report\n"
+        output += "=" * 60 + "\n\n"
+        
+        for symbol, name, status in checks:
+            output += f"{symbol} {name:.<20} {status}\n"
+        
+        output += "\n" + "=" * 60 + "\n"
+        
+        if issues:
+            output += f"⚠️  {len(issues)} issue(s) found:\n\n"
+            for i, issue in enumerate(issues, 1):
+                output += f"  {i}. {issue}\n"
+            output += "\nStatus: ❌ FAILED\n"
+            return (False, output)
+        else:
+            output += "Status: ✅ PASSED\n"
+            return (True, output)
+
     def generate_sync_report(self, output_format="console", since_commit="HEAD~1", languages=None):
         """Generate a report of files that need syncing across all languages
         
@@ -353,8 +451,9 @@ def main():
     syncer = MultiLanguageSyncer()
     
     if args.health_check:
-        print("Health check not yet implemented for multi-language syncer")
-        return
+        passed, report = syncer.run_health_check()
+        print(report)
+        exit(0 if passed else 1)
     
     report = syncer.generate_sync_report(args.format, args.since, languages)
     

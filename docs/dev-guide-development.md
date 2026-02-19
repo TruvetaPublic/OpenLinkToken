@@ -378,8 +378,6 @@ python3 tools/multi_language_syncer.py --health-check
 
 CI integration: The GitHub Actions workflow (`.github/workflows/multi-language-sync.yml`) posts an informational checklist comment on PRs. It does not hard-fail; it tracks progress.
 
-When adding attributes/tokens: update all applicable language implementations, run the sync tool to verify, and ensure the checklist shows complete before merging.
-
 ### Cross-language Tips
 
 | Task            | Java Command                                                     | Python Command                             |

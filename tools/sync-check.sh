@@ -205,7 +205,7 @@ if [[ $CREATE_ISSUE == true ]]; then
             if [[ -n "$SYNC_RESULT" ]]; then
                 # Use the already captured result
                 gh issue create \
-                    --title "Java Multi-Language Sync Required (Auto-generated)" \
+                    --title "Multi-Language Sync Required (Auto-generated)" \
                     --body "$SYNC_RESULT" \
                     --label "language-sync-needed,auto-generated" 2>/dev/null && \
                 log_success "GitHub issue created successfully!" || \
@@ -214,7 +214,7 @@ if [[ $CREATE_ISSUE == true ]]; then
                 # Generate checklist format for issue
                 ISSUE_CONTENT=$(python3 tools/multi_language_syncer.py --format github-checklist --since "$SINCE_COMMIT" $LANG_ARGS 2>/dev/null)
                 gh issue create \
-                    --title "Java Multi-Language Sync Required (Auto-generated)" \
+                    --title "Multi-Language Sync Required (Auto-generated)" \
                     --body "$ISSUE_CONTENT" \
                     --label "language-sync-needed,auto-generated" 2>/dev/null && \
                 log_success "GitHub issue created successfully!" || \
