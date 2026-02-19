@@ -38,6 +38,7 @@ buildNumber.properties
 # Eclipse m2e generated files
 # Eclipse Core
 .project
+.settings
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
 
@@ -66,6 +67,8 @@ output/
 # Python wheel output
 dist/
 build/
+
+smoke/
 
 .coverage
 coverage.xml
