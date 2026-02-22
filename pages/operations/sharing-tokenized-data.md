@@ -4,7 +4,7 @@ layout: default
 
 # Sharing Tokenized Data Between Organizations
 
-How to securely exchange OpenToken outputs for cross-organization person matching.
+How to securely exchange OpenToken outputs for cross-organization record linkage.
 
 ---
 
@@ -227,9 +227,9 @@ See [Decrypting Tokens](decrypting-tokens.md) for details.
 
 Encrypted mode (`-e` flag) adds AES-256-GCM encryption on top of HMAC-SHA256:
 
-| Mode      | External Sharing   | Defense in Depth | Reversible              |
-| --------- | ------------------ | ---------------- | ----------------------- |
-| Encrypted | ✓ Recommended      | Yes              | To HMAC hash (with key) |
+| Mode      | External Sharing    | Defense in Depth | Reversible              |
+| --------- | ------------------- | ---------------- | ----------------------- |
+| Encrypted | ✓ Recommended       | Yes              | To HMAC hash (with key) |
 | Tokenize  | ⚠ Use with caution | No               | Not reversible          |
 
 Encrypted tokens provide an additional security layer if token files are intercepted.

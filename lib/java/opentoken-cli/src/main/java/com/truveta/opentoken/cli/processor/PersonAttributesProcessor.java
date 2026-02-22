@@ -26,6 +26,7 @@ import com.truveta.opentoken.tokens.TokenDefinition;
 import com.truveta.opentoken.tokens.TokenGenerator;
 import com.truveta.opentoken.tokens.TokenGeneratorResult;
 import com.truveta.opentoken.tokens.tokenizer.SHA256Tokenizer;
+import com.truveta.opentoken.tokens.tokenizer.Tokenizer;
 import com.truveta.opentoken.tokentransformer.JweMatchTokenFormatter;
 import com.truveta.opentoken.tokentransformer.TokenTransformer;
 
@@ -52,7 +53,7 @@ public final class PersonAttributesProcessor {
      * Reads person attributes from the input data source, generates token, and
      * write the result back to the output data source. The tokens can be optionally
      * transformed before writing.
-     * 
+     *
      * @param reader               the reader initialized with the input data
      *                             source.
      * @param writer               the writer initialized with the output data
@@ -60,7 +61,7 @@ public final class PersonAttributesProcessor {
      * @param tokenTransformerList a list of token transformers.
      * @param metadataMap          the metadata map to populate with processing statistics.
      * @throws IOException if an I/O error occurs during processing.
-     * 
+     *
      * @see com.truveta.opentoken.cli.io.PersonAttributesReader PersonAttributesReader
      * @see com.truveta.opentoken.cli.io.PersonAttributesWriter PersonAttributesWriter
      * @see com.truveta.opentoken.tokentransformer.TokenTransformer TokenTransformer
@@ -71,10 +72,29 @@ public final class PersonAttributesProcessor {
     }
 
     /**
+     * Reads person attributes from the input data source, generates tokens using
+     * the provided tokenizer, and writes the result to the output data source.
+     *
+     * <p>Use this overload when you need full control over the tokenization strategy,
+     * for example passing a {@link com.truveta.opentoken.tokens.tokenizer.PassthroughTokenizer}
+     * for demo mode.
+     *
+     * @param reader      the reader initialized with the input data source.
+     * @param writer      the writer initialized with the output data source.
+     * @param tokenizer   the tokenizer to use (e.g. SHA256Tokenizer or PassthroughTokenizer).
+     * @param metadataMap the metadata map to populate with processing statistics.
+     * @throws IOException if an I/O error occurs during processing.
+     */
+    public static void process(PersonAttributesReader reader, PersonAttributesWriter writer,
+            Tokenizer tokenizer, Map<String, Object> metadataMap) throws IOException {
+        processWithTokenizer(reader, writer, tokenizer, metadataMap, null, null);
+    }
+
+    /**
      * Reads person attributes from the input data source, generates token, and
      * write the result back to the output data source. The tokens can be optionally
      * transformed before writing and wrapped in JWE format if ring ID is provided.
-     * 
+     *
      * @param reader               the reader initialized with the input data
      *                             source.
      * @param writer               the writer initialized with the output data
@@ -84,7 +104,7 @@ public final class PersonAttributesProcessor {
      * @param encryptionKey        the encryption key for JWE wrapping (optional, null to skip JWE).
      * @param ringId               the ring ID for JWE wrapping (optional, null to skip JWE).
      * @throws IOException if an I/O error occurs during processing.
-     * 
+     *
      * @see com.truveta.opentoken.cli.io.PersonAttributesReader PersonAttributesReader
      * @see com.truveta.opentoken.cli.io.PersonAttributesWriter PersonAttributesWriter
      * @see com.truveta.opentoken.tokentransformer.TokenTransformer TokenTransformer
@@ -92,10 +112,16 @@ public final class PersonAttributesProcessor {
     public static void process(PersonAttributesReader reader, PersonAttributesWriter writer,
             List<TokenTransformer> tokenTransformerList, Map<String, Object> metadataMap,
             String encryptionKey, String ringId) throws IOException {
+        processWithTokenizer(reader, writer, new SHA256Tokenizer(tokenTransformerList),
+                metadataMap, encryptionKey, ringId);
+    }
+
+    private static void processWithTokenizer(PersonAttributesReader reader, PersonAttributesWriter writer,
+            Tokenizer tokenizer, Map<String, Object> metadataMap,
+            String encryptionKey, String ringId) throws IOException {
 
         TokenDefinition tokenDefinition = new TokenDefinition();
-        TokenGenerator tokenGenerator = new TokenGenerator(tokenDefinition,
-                new SHA256Tokenizer(tokenTransformerList));
+        TokenGenerator tokenGenerator = new TokenGenerator(tokenDefinition, tokenizer);
 
         Map<Class<? extends Attribute>, String> row;
         TokenGeneratorResult tokenGeneratorResult;
@@ -225,7 +251,7 @@ public final class PersonAttributesProcessor {
 
     /**
      * Initialize the invalid attribute count map with attributes used in the token definition set to 0.
-     * This ensures that all attribute types used in token generation appear in the metadata 
+     * This ensures that all attribute types used in token generation appear in the metadata
      * even in happy path scenarios.
      *
      * @param tokenDefinition the token definition containing all token rules and their attribute expressions

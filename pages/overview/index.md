@@ -110,7 +110,7 @@ OpenToken is implemented in **Java and Python**. Both produce **byte-identical d
 
 ## Who Uses OpenToken?
 
-- **Data Engineers**: Building person matching pipelines
+- **Data Engineers**: Building record linkage pipelines
 - **Privacy/Infra Engineers**: Securing sensitive data in regulated systems
 - **Data/Platform Teams**: Linking records across datasets while preserving privacy
 - **Researchers**: Linking datasets for cohort studies without exposing raw identifiers

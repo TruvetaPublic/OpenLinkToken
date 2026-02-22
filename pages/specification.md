@@ -6,9 +6,10 @@ layout: default
 
 ## Overview
 
-OpenToken is a privacy-preserving token generation system for deterministic person matching across datasets. This specification defines the scope, inputs, processing steps, and outputs of the token generation pipeline.
+OpenToken is a privacy-preserving token generation system for deterministic record linkage across datasets. This specification defines the scope, inputs, processing steps, and outputs of the token generation pipeline.
 
 **Purpose:** Generate cryptographically secure tokens from person attributes such that:
+
 - Identical inputs always produce identical deterministic matching values (hash-only or decrypted)
 - Tokens reveal nothing about the underlying data (one-way)
 - Matching can occur on different attribute combinations via 5 distinct token rules (T1–T5)
@@ -43,6 +44,7 @@ OpenToken is a privacy-preserving token generation system for deterministic pers
 ### File Formats
 
 **Supported input formats:**
+
 - CSV (comma-separated values, with header row)
 - Parquet (columnar binary format)
 
@@ -51,11 +53,13 @@ OpenToken is a privacy-preserving token generation system for deterministic pers
 OpenToken is designed for **streaming-style** processing: it reads records, normalizes/validates, emits up to 5 tokens, and writes output without needing to hold the full dataset in memory.
 
 **Practical constraints:**
+
 - There is **no fixed maximum file size** imposed by OpenToken itself; limits are driven by your machine/cluster resources (CPU, memory, disk) and the underlying CSV/Parquet libraries.
 - Output size is roughly **5× the number of input rows** (one row per rule per record) plus metadata.
 - For Parquet, performance and memory usage depend on row group sizing and the reader implementation.
 
 **Recommendations:**
+
 - Prefer **Parquet** for large jobs (faster parsing, smaller I/O, better parallelism).
 - Ensure disk space for outputs (tokens + `.metadata.json`).
 - For very large datasets, use the **PySpark** integration to scale horizontally.
@@ -157,6 +161,7 @@ Signature → SHA-256 → HMAC-SHA256 → Base64
 ```
 
 **Parameters required:**
+
 - `hashing_secret`: String (8+ characters recommended) used for HMAC
 - `encryption_key`: String exactly 32 characters long (or byte array 32 bytes) used for AES-256 encryption
 
@@ -183,11 +188,13 @@ Metadata is written to `.metadata.json` alongside output files.
 ### Token Output (CSV)
 
 **Schema:**
+
 ```
 RecordId,RuleId,Token
 ```
 
 **Columns:**
+
 - `RecordId`: From input (or auto-generated if omitted)
 - `RuleId`: T1, T2, T3, T4, or T5
 - `Token`: Encrypted `ot.V1.<JWE>` token in encrypted mode, or base64 HMAC token in hash-only/decrypted mode (or empty string if validation failed)
@@ -195,6 +202,7 @@ RecordId,RuleId,Token
 **Rows per input record:** 5 (one per rule); may be fewer if errors occur
 
 **Example:**
+
 ```csv
 RecordId,RuleId,Token
 ID001,T1,aB7c9Dz1e4...
@@ -221,12 +229,14 @@ Parquet format includes compression and is suitable for large datasets.
 **Filename:** `<output_basename>.metadata.json`
 
 **Contents:**
+
 - Processing statistics (record counts, invalid attributes, blank tokens)
 - System information (platform, versions, timestamps)
 - Secret hashes (SHA-256 of hashing secret and encryption key)
 - File paths (input, output, metadata)
 
 **Example:**
+
 ```json
 {
   "Platform": "Java",
@@ -281,6 +291,7 @@ This section is **non-normative** (informational) and describes likely evolution
 ### Breaking Changes
 
 Any changes to:
+
 - Normalization rules
 - Token rule definitions
 - Cryptographic algorithms

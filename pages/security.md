@@ -4,13 +4,14 @@ layout: default
 
 # Security
 
-Cryptographic building blocks, key management expectations, and security considerations for privacy-preserving person matching.
+Cryptographic building blocks, key management expectations, and security considerations for privacy-preserving record linkage.
 
 ## Overview
 
-OpenToken generates cryptographically secure tokens for privacy-preserving person matching across datasets. The system uses deterministic hashing and optional encryption to prevent re-identification while enabling matching on identical person attributes.
+OpenToken generates cryptographically secure tokens for privacy-preserving record linkage across datasets. The system uses deterministic hashing and optional encryption to prevent re-identification while enabling matching on identical person attributes.
 
 **Key security properties:**
+
 - Tokens are one-way (cannot reverse to original data without secrets)
 - Same input produces same token (deterministic matching)
 - Metadata tracks processing statistics without exposing person data
@@ -24,6 +25,7 @@ OpenToken generates cryptographically secure tokens for privacy-preserving perso
 OpenToken transforms person attributes through multiple layers:
 
 **Encryption mode (default):**
+
 ```
 Token Signature (normalized attributes)
   ↓
@@ -37,6 +39,7 @@ Base64 Encode (storable format)
 ```
 
 **`tokenize` subcommand (alternative):**
+
 ```
 Token Signature
   ↓
@@ -55,6 +58,7 @@ Base64 Encode
 - **Purpose**: Convert variable-length token signatures to fixed-size digests
 
 **Properties:**
+
 - One-way function (cannot reverse hash to input)
 - Avalanche effect (small input change produces completely different hash)
 - Deterministic (same input always produces same hash)
@@ -67,11 +71,13 @@ Base64 Encode
 - **Purpose**: Prevent rainbow table attacks and verify secret usage
 
 **Security benefits:**
+
 - Requires secret key to generate matching hashes
 - Prevents pre-computation of token values
 - Different secret produces completely different output for same input
 
 **Formula:**
+
 ```
 HMAC-SHA256(message, key) = SHA256((key ⊕ opad) || SHA256((key ⊕ ipad) || message))
 ```
@@ -84,12 +90,14 @@ HMAC-SHA256(message, key) = SHA256((key ⊕ opad) || SHA256((key ⊕ ipad) || me
 - **Purpose**: Encrypt tokens to prevent re-identification
 
 **Technical details:**
+
 - **Initialization Vector (IV)**: 12 bytes, randomly generated per token
 - **Authentication tag**: 128-bit (16-byte) GCM tag for integrity
 - **Padding**: NoPadding (GCM mode handles message length)
 - **Algorithm**: `AES/GCM/NoPadding`
 
 **Security properties:**
+
 - Authenticated encryption (detects tampering)
 - Unique IV per token prevents pattern analysis
 - Computationally infeasible to brute-force (2^256 possible keys)
@@ -228,11 +236,13 @@ python tools/hash_calculator.py \
 ### What OpenToken Protects Against
 
 **✓ Re-identification without secrets:**
+
 - Encrypted tokens cannot be reversed without encryption key
 - Hashed tokens cannot be reversed (one-way HMAC-SHA256)
 - Attacker with tokens alone cannot recover person data
 
 **✓ Rainbow table attacks:**
+
 - HMAC-SHA256 with secret prevents pre-computed lookup tables
 - Different secret produces different tokens for same input
 
@@ -242,18 +252,22 @@ Metadata captures processing statistics; data quality guidance lives in the conc
 ### What OpenToken Does NOT Protect Against
 
 **✗ Compromise of secrets:**
+
 - If attacker obtains hashing secret + encryption key, they can regenerate tokens from known person data
 - Token security depends entirely on secret protection
 
 **✗ Side-channel attacks:**
+
 - Timing attacks, memory access patterns not specifically mitigated
 - Use secure execution environments for sensitive workloads
 
 **✗ Statistical analysis with auxiliary data:**
+
 - If attacker has auxiliary demographic data and token frequency distributions, statistical attacks may be possible
 - Consider differential privacy techniques for high-risk scenarios
 
 **✗ Token distribution analysis:**
+
 - Tokens are deterministic (same person always produces same token)
 - Frequency analysis may reveal population patterns
 - Mitigate by limiting token distribution and enforcing access controls
@@ -272,12 +286,14 @@ OpenToken provides cryptographic primitives but **users are responsible for:**
 ### Threat Model Assumptions
 
 **Assumptions:**
+
 - Secrets are stored securely and not accessible to unauthorized parties
 - Execution environment is trusted (no malware or unauthorized access)
 - Token outputs are protected with access controls
 - Users validate data quality before token generation
 
 **Out of scope:**
+
 - Protection against compromised execution environments
 - Protection after decryption (decrypted tokens are plaintext hashes)
 - Protection against authorized users misusing tokens
