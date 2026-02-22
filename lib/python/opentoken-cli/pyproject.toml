@@ -1,3 +1,11 @@
 [build-system]
 requires = ["setuptools>=40.8.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+# Prepend local source directories so edits in this worktree take priority
+# over whatever version of the package is installed in the shared venv.
+pythonpath = [
+  "src/main",
+  "../opentoken/src/main",
+]
