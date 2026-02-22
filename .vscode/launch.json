@@ -5,18 +5,39 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "OpenToken-Java",
+            "name": "Java: tokenize",
             "type": "java",
             "request": "launch",
-            "mainClass": "com.truveta.opentoken.Main",
-            "projectName": "opentoken",
+            "mainClass": "com.truveta.opentoken.cli.Main",
+            "projectName": "opentoken-cli",
             "args": [
+                "tokenize",
                 "-i",
                 "resources/sample.${input:inputType}",
                 "-t",
                 "${input:inputType}",
                 "-o",
-                "lib/java/opentoken/target/output.${input:outputType}",
+                "lib/java/opentoken-cli/target/output.${input:outputType}",
+                "-ot",
+                "${input:outputType}",
+                "-h",
+                "HashingKey"
+            ]
+        },
+        {
+            "name": "Java: package",
+            "type": "java",
+            "request": "launch",
+            "mainClass": "com.truveta.opentoken.cli.Main",
+            "projectName": "opentoken-cli",
+            "args": [
+                "package",
+                "-i",
+                "resources/sample.${input:inputType}",
+                "-t",
+                "${input:inputType}",
+                "-o",
+                "lib/java/opentoken-cli/target/output.${input:outputType}",
                 "-ot",
                 "${input:outputType}",
                 "-h",
@@ -26,24 +47,131 @@
             ]
         },
         {
-            "name": "OpenToken-Python",
+            "name": "Java: encrypt",
+            "type": "java",
+            "request": "launch",
+            "mainClass": "com.truveta.opentoken.cli.Main",
+            "projectName": "opentoken-cli",
+            "args": [
+                "encrypt",
+                "-i",
+                "lib/java/opentoken-cli/target/output.${input:outputType}",
+                "-t",
+                "${input:outputType}",
+                "-o",
+                "lib/java/opentoken-cli/target/encrypted.${input:outputType}",
+                "-ot",
+                "${input:outputType}",
+                "-e",
+                "Secret-Encryption-Key-Goes-Here."
+            ]
+        },
+        {
+            "name": "Java: decrypt",
+            "type": "java",
+            "request": "launch",
+            "mainClass": "com.truveta.opentoken.cli.Main",
+            "projectName": "opentoken-cli",
+            "args": [
+                "decrypt",
+                "-i",
+                "lib/java/opentoken-cli/target/encrypted.${input:outputType}",
+                "-t",
+                "${input:outputType}",
+                "-o",
+                "lib/java/opentoken-cli/target/decrypted.${input:outputType}",
+                "-ot",
+                "${input:outputType}",
+                "-e",
+                "Secret-Encryption-Key-Goes-Here."
+            ]
+        },
+        {
+            "name": "Python: tokenize",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/lib/python/opentoken/src/main/opentoken/main.py",
+            "program": "${workspaceFolder}/lib/python/opentoken-cli/src/main/opentoken_cli/main.py",
             "env": {
-                "PYTHONPATH": "lib/python/opentoken/src/main"
+                "PYTHONPATH": "lib/python/opentoken-cli/src/main:lib/python/opentoken/src/main"
             },
             "args": [
+                "tokenize",
                 "-i",
                 "resources/sample.${input:inputType}",
                 "-t",
                 "${input:inputType}",
                 "-o",
-                "lib/python/opentoken/target/output.${input:outputType}",
+                "lib/python/opentoken-cli/target/output.${input:outputType}",
+                "-ot",
+                "${input:outputType}",
+                "-h",
+                "HashingKey"
+            ]
+        },
+        {
+            "name": "Python: package",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/lib/python/opentoken-cli/src/main/opentoken_cli/main.py",
+            "env": {
+                "PYTHONPATH": "lib/python/opentoken-cli/src/main:lib/python/opentoken/src/main"
+            },
+            "args": [
+                "package",
+                "-i",
+                "resources/sample.${input:inputType}",
+                "-t",
+                "${input:inputType}",
+                "-o",
+                "lib/python/opentoken-cli/target/output.${input:outputType}",
                 "-ot",
                 "${input:outputType}",
                 "-h",
                 "HashingKey",
+                "-e",
+                "Secret-Encryption-Key-Goes-Here."
+            ]
+        },
+        {
+            "name": "Python: encrypt",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/lib/python/opentoken-cli/src/main/opentoken_cli/main.py",
+            "env": {
+                "PYTHONPATH": "lib/python/opentoken-cli/src/main:lib/python/opentoken/src/main"
+            },
+            "args": [
+                "encrypt",
+                "-i",
+                "lib/python/opentoken-cli/target/output.${input:outputType}",
+                "-t",
+                "${input:outputType}",
+                "-o",
+                "lib/python/opentoken-cli/target/encrypted.${input:outputType}",
+                "-ot",
+                "${input:outputType}",
+                "-e",
+                "Secret-Encryption-Key-Goes-Here."
+            ]
+        },
+        {
+            "name": "Python: decrypt",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/lib/python/opentoken-cli/src/main/opentoken_cli/main.py",
+            "env": {
+                "PYTHONPATH": "lib/python/opentoken-cli/src/main:lib/python/opentoken/src/main"
+            },
+            "args": [
+                "decrypt",
+                "-i",
+                "lib/python/opentoken-cli/target/encrypted.${input:outputType}",
+                "-t",
+                "${input:outputType}",
+                "-o",
+                "lib/python/opentoken-cli/target/decrypted.${input:outputType}",
+                "-ot",
+                "${input:outputType}",
                 "-e",
                 "Secret-Encryption-Key-Goes-Here."
             ]
