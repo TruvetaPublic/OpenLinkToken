@@ -67,7 +67,7 @@ public class TokenizeCommand implements Callable<Integer> {
     private String outputType;
 
     @Option(names = {
-            "--demo-mode" }, description = "Enable demo mode: output plain SHA-256 hex tokens without HMAC hashing."
+            "--demo-mode" }, description = "Enable demo mode: output raw pipe-separated attribute signature strings with no hashing."
                     + " --hashingsecret is not required in this mode."
                     + " Demo output is NOT suitable for production or cross-organisation exchange.")
     private boolean demoMode;
@@ -85,7 +85,7 @@ public class TokenizeCommand implements Callable<Integer> {
     @Override
     public Integer call() {
         if (demoMode) {
-            logger.warn("Running in DEMO MODE - tokens are plain SHA-256 hex strings, not HMAC-hashed."
+            logger.warn("Running in DEMO MODE - tokens are raw attribute signature strings with no hashing."
                     + " Do not use demo-mode output in production or share it externally.");
         } else {
             logger.info("Running tokenize command (normal mode)");
