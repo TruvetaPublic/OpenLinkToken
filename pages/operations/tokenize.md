@@ -10,15 +10,23 @@ How to generate tokens using HMAC-SHA256 without AES encryption.
 
 ## Overview
 
-The `tokenize` subcommand generates deterministic tokens without AES encryption:
+The `tokenize` subcommand supports two modes:
 
-```
+**Normal mode** (default) — applies SHA-256 and HMAC-SHA256 to produce opaque, secret-keyed tokens:
+
+```text
 Token Signature → SHA-256 Hash → HMAC-SHA256(hash, secret) → Base64 Encode
 ```
 
-Compared to encryption mode:
+**Demo mode** (`--demo-mode`) — skips all hashing and outputs the raw pipe-separated attribute signature string:
 
+```text
+Token Signature → (passthrough) → Raw attribute signature string
 ```
+
+For reference, the full encryption pipeline used by `package` is:
+
+```text
 Token Signature → SHA-256 Hash → HMAC-SHA256(hash, secret) → AES-256-GCM Encrypt → Base64 Encode
 ```
 
@@ -28,11 +36,19 @@ Token Signature → SHA-256 Hash → HMAC-SHA256(hash, secret) → AES-256-GCM E
 
 The `tokenize` subcommand is primarily used to support **overlap analysis workflows** where you receive **encrypted tokens from an external partner** and want to build an internal dataset that can be joined against those tokens.
 
-**Use `tokenize` when:**
+**Use `tokenize` (normal mode) when:**
 
 - You are creating an internal tokenized dataset that will be matched against **encrypted tokens received from an external partner** (after decrypting their tokens to their unencrypted equivalent)
 - You need faster processing or smaller token size for **internal analytics and overlap reporting**
 - Raw data and tokens are already protected at rest within your environment
+
+**Use `tokenize --demo-mode` when:**
+
+- Exploring which attributes contribute to each token rule without managing secrets
+- Writing documentation or conducting interactive demonstrations
+- Debugging attribute normalisation or token rule logic
+
+> ⚠️ Demo mode output is **not** suitable for production or cross-organisation exchange. See [Demo Mode](#demo-mode---demo-mode) below.
 
 **Use `package` when:**
 
@@ -45,9 +61,11 @@ The `tokenize` subcommand is primarily used to support **overlap analysis workfl
 
 ## CLI Usage
 
+### Normal Mode
+
 Use the `tokenize` subcommand. Only the hashing secret is required (no encryption key).
 
-### Java
+#### Normal Mode — Java
 
 ```bash
 java -jar opentoken-cli/target/opentoken-cli-*.jar tokenize \
@@ -57,7 +75,7 @@ java -jar opentoken-cli/target/opentoken-cli-*.jar tokenize \
   -h "HashingKey"
 ```
 
-### Python
+#### Normal Mode — Python
 
 ```bash
 python -m opentoken_cli.main tokenize \
@@ -67,7 +85,7 @@ python -m opentoken_cli.main tokenize \
   -h "HashingKey"
 ```
 
-### Docker
+#### Normal Mode — Docker
 
 ```bash
 docker run --rm -v $(pwd)/resources:/app/resources \
@@ -77,6 +95,54 @@ docker run --rm -v $(pwd)/resources:/app/resources \
   -o /app/resources/hashed-output.csv \
   -h "HashingKey"
 ```
+
+### Demo Mode (`--demo-mode`)
+
+In demo mode the full hashing pipeline is skipped. No `--hashingsecret` is required.
+
+#### Demo Mode — Java
+
+```bash
+java -jar opentoken-cli/target/opentoken-cli-*.jar tokenize \
+  -i ../../resources/sample.csv \
+  -t csv \
+  -o ../../resources/demo-output.csv \
+  --demo-mode
+```
+
+#### Demo Mode — Python
+
+```bash
+python -m opentoken_cli.main tokenize \
+  -i ../../../resources/sample.csv \
+  -t csv \
+  -o ../../../resources/demo-output.csv \
+  --demo-mode
+```
+
+#### Demo Mode — Docker
+
+```bash
+docker run --rm -v $(pwd)/resources:/app/resources \
+  opentoken:latest tokenize \
+  -i /app/resources/sample.csv \
+  -t csv \
+  -o /app/resources/demo-output.csv \
+  --demo-mode
+```
+
+#### Demo Output Example
+
+For a record with first name `John`, last name `Doe`, and birth date `1980-01-15`:
+
+```csv
+RecordId,RuleId,Token
+ID001,T1,JOHN|DOE|19800115
+ID001,T2,JOHN|DOE|19800115|M
+ID001,T5,123456789
+```
+
+Each token is the raw pipe-separated list of normalised attribute values that compose that token rule — making it easy to see exactly which attributes contributed to each rule.
 
 ---
 
@@ -121,18 +187,29 @@ Tokenized (unencrypted) tokens are shorter because they don't include the AES in
 
 No `EncryptionSecretHash` field is present when using `tokenize`.
 
+### `tokenize --demo-mode` Metadata
+
+```json
+{
+  "TotalRows": 10
+}
+```
+
+neither `HashingSecretHash` nor `EncryptionSecretHash` appears in demo-mode metadata — no secret is used.
+
 ---
 
 ## Security Trade-offs
 
-| Aspect               | `package`                       | `tokenize`          |
-| -------------------- | ------------------------------- | ------------------- |
-| **Token length**     | ~80-100 chars                   | ~44-64 chars        |
-| **Processing speed** | Slower                          | Faster              |
-| **Secret required**  | Hashing secret + encryption key | Hashing secret only |
-| **Reversibility**    | Decryptable (to HMAC hash)      | Not decryptable     |
-| **External sharing** | Recommended                     | Not recommended     |
-| **Defense in depth** | Yes                             | No                  |
+| Aspect               | `package`                       | `tokenize`          | `tokenize --demo-mode`         |
+| -------------------- | ------------------------------- | ------------------- | ------------------------------ |
+| **Token length**     | ~80-100 chars                   | 44 chars (base64)   | Varies (plain text)            |
+| **Processing speed** | Slower                          | Faster              | Fastest                        |
+| **Secret required**  | Hashing secret + encryption key | Hashing secret only | None                           |
+| **Reversibility**    | Decryptable (to HMAC hash)      | Not decryptable     | Directly readable (plain text) |
+| **External sharing** | Recommended                     | Not recommended     | Never — contains raw PII       |
+| **Defense in depth** | Yes                             | No                  | No                             |
+| **Use case**         | Production / sharing            | Internal analysis   | Exploration / debugging only   |
 
 ### Security Notes
 
@@ -160,6 +237,7 @@ WHERE a.RuleId = 'T1';
 ```
 
 For encrypted tokens, either:
+
 1. Decrypt both datasets first, then match
 2. Use the same encryption key for both datasets and match encrypted tokens directly
 
@@ -172,6 +250,7 @@ For encrypted tokens, either:
 **Cause:** Different hashing secrets.
 
 **Solution:** Verify the same hashing secret is used for both runs:
+
 ```bash
 # Check metadata for secret hash
 cat output.metadata.json | jq '.HashingSecretHash'
@@ -182,6 +261,7 @@ cat output.metadata.json | jq '.HashingSecretHash'
 **Cause:** Attribute normalization differences or encoding issues.
 
 **Solution:**
+
 1. Verify secrets match exactly (including whitespace)
 2. Run the interoperability test:
    ```bash
@@ -195,6 +275,7 @@ cat output.metadata.json | jq '.HashingSecretHash'
 **Cause:** Using package mode without an encryption key.
 
 **Solution:** Use the `tokenize` subcommand to skip encryption:
+
 ```bash
 java -jar opentoken-cli-*.jar tokenize -i data.csv -t csv -o out.csv -h "Key"
 ```
@@ -206,3 +287,4 @@ java -jar opentoken-cli-*.jar tokenize -i data.csv -t csv -o out.csv -h "Key"
 - **`package` (encrypt) mode**: [Decrypting Tokens](decrypting-tokens.md)
 - **Batch processing**: [Running Batch Jobs](running-batch-jobs.md)
 - **Security guidance**: [Security](../security.md)
+- **Full flag reference**: [CLI Reference — tokenize](../reference/cli.md#tokenize)

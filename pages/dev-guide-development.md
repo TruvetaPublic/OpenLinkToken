@@ -76,6 +76,7 @@ resources/             # Sample and test data
 tools/                 # Utility scripts (hash calculator, mock data, etc.)
 docs/                  # All developer documentation (this file!)
 ```
+
 Key Docs:
 
 - Development processes below
@@ -354,6 +355,7 @@ pytest src/test
 Notebook Guides:
 
 - See `lib/python/opentoken-pyspark/notebooks/` for example workflows (custom tokens & overlap analysis).
+
 ### Multi-Language Sync Tool
 
 The sync tool ([tools/multi_language_syncer.py](https://github.com/TruvetaPublic/OpenToken/blob/main/tools/multi_language_syncer.py)) detects changes across all supported languages (Java, Python, Node.js) and produces a cross-language checklist showing which corresponding files need updating. It is bidirectional — changes originating in any language trigger sync items for the others.
@@ -394,11 +396,11 @@ Maintain the same functional behavior and normalization between languages.
 
 OpenToken supports three processing modes across Java, Python, and the PySpark bridge. These modes determine how raw token signatures are transformed:
 
-| Mode      | Secrets Required                     | Transform Pipeline                                | Output Example (T1)                  | Deterministic Across Runs | Recommended Use                                                   |
-| --------- | ------------------------------------ | ------------------------------------------------- | ------------------------------------ | ------------------------- | ----------------------------------------------------------------- |
-| Plain     | None (not currently exposed via CLI) | Concatenate normalized attribute expressions only | `DOE\|JOHN\|1990-01-15\|MALE\|98101` | Yes (given same input)    | Debugging, rule design, docs demos                                |
-| Tokenize  | Hashing secret only                  | HMAC-SHA256(signature)                            | 64 hex chars (SHA-256 digest)        | Yes                       | Internal overlap analysis against decrypted partner token outputs |
-| Encrypted | Hashing secret + encryption key      | HMAC-SHA256 → AES-256-GCM (random IV per token)   | Base64 blob (length varies)          | Yes (post-decrypt hash)   | Production / privacy-preserving use and external token exchange   |
+| Mode      | Secrets Required                | Transform Pipeline                                | Output Example (T1)                  | Deterministic Across Runs | Recommended Use                                                   |
+| --------- | ------------------------------- | ------------------------------------------------- | ------------------------------------ | ------------------------- | ----------------------------------------------------------------- |
+| Plain     | None (`tokenize --demo-mode`)   | Concatenate normalized attribute expressions only | `DOE\|JOHN\|1990-01-15\|MALE\|98101` | Yes (given same input)    | Debugging, rule design, docs demos                                |
+| Tokenize  | Hashing secret only             | HMAC-SHA256(signature)                            | 64 hex chars (SHA-256 digest)        | Yes                       | Internal overlap analysis against decrypted partner token outputs |
+| Encrypted | Hashing secret + encryption key | HMAC-SHA256 → AES-256-GCM (random IV per token)   | Base64 blob (length varies)          | Yes (post-decrypt hash)   | Production / privacy-preserving use and external token exchange   |
 
 Notes:
 
@@ -586,6 +588,6 @@ Before opening a PR:
 | Token mismatch between languages | Verify hashing & encryption secrets are identical and normalization logic unchanged |
 | Build fails on Checkstyle        | Run `mvn -q checkstyle:check` locally & fix warnings                                |
 
-
 ---
+
 Maintainers: Keep this guide updated when changing build, versioning, or extension workflows.
