@@ -8,10 +8,6 @@
     "**/*.properties",
     "**/resources/**",
     "**/__pycache__/**",
-    "**/*.pyc",
-    "**/opentoken/cli/commands/**",
-    "**/opentoken/cli/processor/**",
-    "**/opentoken_cli/commands/**",
-    "**/opentoken_cli/processor/**"
+    "**/*.pyc"
   ]
 }
