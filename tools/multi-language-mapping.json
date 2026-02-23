@@ -1,13 +1,17 @@
 {
-    "ignore_patterns": [
-        "**/package-info.java",
-        "**/target/**",
-        "**/*.class",
-        "**/.*",
-        "**/properties/**",
-        "**/*.properties",
-        "**/resources/**",
-        "**/__pycache__/**",
-        "**/*.pyc"
-    ]
+  "ignore_patterns": [
+    "**/package-info.java",
+    "**/target/**",
+    "**/*.class",
+    "**/.*",
+    "**/properties/**",
+    "**/*.properties",
+    "**/resources/**",
+    "**/__pycache__/**",
+    "**/*.pyc",
+    "**/opentoken/cli/commands/**",
+    "**/opentoken/cli/processor/**",
+    "**/opentoken_cli/commands/**",
+    "**/opentoken_cli/processor/**"
+  ]
 }
