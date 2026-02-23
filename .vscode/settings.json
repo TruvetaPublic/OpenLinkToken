@@ -34,6 +34,5 @@
   "[markdown]": {
     "editor.defaultFormatter": "yzhang.markdown-all-in-one"
   },
-  "chat.useAgentSkills": true,
-  "sonarlint.ls.javaHome": "/usr/local/sdkman/candidates/java/current"
+  "chat.useAgentSkills": true
 }

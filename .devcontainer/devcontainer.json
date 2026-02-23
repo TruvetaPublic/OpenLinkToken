@@ -45,7 +45,7 @@
         "dbaeumer.vscode-eslint"
       ],
       "settings": {
-        "sonarlint.ls.javaHome": "/usr/local/sdkman/candidates/java/21.0.9-ms"
+        "sonarlint.ls.javaHome": "/usr/local/sdkman/candidates/java/21.0.10-ms"
       }
     }
   },
