@@ -40,11 +40,15 @@ jobs:
           BASE_BRANCH="${{ github.event.pull_request.base.ref }}"
           echo "Checking sync requirements against base branch: origin/$BASE_BRANCH"
 
-          # Generate sync report with completion tracking using full PR context
+          # Generate sync report with completion tracking using full PR context.
+          # Disable exit-on-error so a non-zero exit (sync incomplete) doesn't
+          # abort the step before we can capture and report the result.
+          set +e
           SYNC_REPORT=$(python3 tools/multi_language_syncer.py \
             --format github-checklist \
             --since "origin/$BASE_BRANCH" 2>&1)
           SYNC_EXIT_CODE=$?
+          set -e
 
           echo "SYNC_REPORT<<EOF" >> $GITHUB_OUTPUT
           echo "$SYNC_REPORT" >> $GITHUB_OUTPUT
@@ -55,7 +59,7 @@ jobs:
           if echo "$SYNC_REPORT" | grep -q "completed)"; then
             COMPLETION_STATUS=$(echo "$SYNC_REPORT" | grep -o "([0-9]*/[0-9]* completed)" | head -1)
             echo "COMPLETION_STATUS=$COMPLETION_STATUS" >> $GITHUB_OUTPUT
-            
+
             # Extract numbers for progress calculation
             COMPLETED=$(echo "$COMPLETION_STATUS" | sed -nE 's/^\(([0-9]+)\/[0-9]+.*$/\1/p')
             if [ -z "$COMPLETED" ]; then
@@ -67,7 +71,7 @@ jobs:
             fi
             echo "COMPLETED=$COMPLETED" >> $GITHUB_OUTPUT
             echo "TOTAL=$TOTAL" >> $GITHUB_OUTPUT
-            
+
             if [ "$COMPLETED" -eq "$TOTAL" ]; then
               echo "SYNC_COMPLETE=true" >> $GITHUB_OUTPUT
             else
@@ -102,24 +106,24 @@ jobs:
               if (completed > 0) {
                 finalStatusLine = `**Final Status**: ${completionStatus}`;
               }
-              
+
               commentBody = `${SYNC_MARKER}
               ## Multi-Language Sync Status: Complete! ✅
               All changes in this PR are properly synchronized across Java, Python, and other implementations.
               ` + finalStatusLine;
-            } else {            
+            } else {
               commentBody = `${SYNC_MARKER}
               ## 🔄 Multi-Language Sync Progress ${completionStatus}
               ${syncReport}
               ### 📋 How to use this checklist:
               - **✓🔄** = File exists and was recently updated ✅ **COMPLETED**
-              - **✓⏳** = File exists but needs updates ⏳ **PENDING** 
+              - **✓⏳** = File exists but needs updates ⏳ **PENDING**
               - **✗⏳** = File missing and needs to be created ⏳ **PENDING**
-              
+
               ### 🌐 Languages:
               - **Java** → Python
               - **Python** → Java
-              
+
               ### Multi-commit workflow support:
               This sync tracker monitors your progress across **all commits in this PR**. As you update files, they'll automatically show as 🔄 completed in subsequent workflow runs!
               **Next steps**: Update the ⏳ pending files to complete the sync.`;
@@ -132,8 +136,8 @@ jobs:
               issue_number: context.issue.number,
             });
 
-            const syncComments = comments.data.filter(comment => 
-              comment.user.type === 'Bot' && 
+            const syncComments = comments.data.filter(comment =>
+              comment.user.type === 'Bot' &&
               comment.body.includes(SYNC_MARKER)
             );
 
