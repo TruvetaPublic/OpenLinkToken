@@ -19,6 +19,9 @@
       "mavenVersion": "3.8.8",
       "installGradle": "false"
     },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20.12.0"
+    },
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
     "ghcr.io/devcontainers/features/git-lfs:1": {},
     "ghcr.io/devcontainers/features/copilot-cli:1": {},
@@ -54,15 +57,13 @@
     "type=volume,source=opentoken-copilot,target=/home/vscode/.copilot"
   ],
   "containerEnv": {
-    "PYSPARK_SUBMIT_ARGS": "--driver-memory 8g --executor-memory 8g --conf spark.driver.maxResultSize=4g --conf spark.memory.fraction=0.7 pyspark-shell",
-    "TMPDIR": "/workspaces/${localWorkspaceFolderBasename}/.tmp"
+    "PYSPARK_SUBMIT_ARGS": "--driver-memory 8g --executor-memory 8g --conf spark.driver.maxResultSize=4g --conf spark.memory.fraction=0.7 pyspark-shell"
   },
   "postCreateCommand": {
-    "setup-py-env": "/bin/bash .devcontainer/scripts/setup_python_env.sh",
-    "clone-superpowers": "git clone --branch main --single-branch https://github.com/jsloat/superpowers-for-copilot.git ~/.copilot/superpowers-skills",
-    "create-tmp-dir": "mkdir -p \"$TMPDIR\""
+    "setup-py-env": "/bin/bash .devcontainer/scripts/setup_python_env.sh"
   },
   "postStartCommand": {
-    "fix-mount-permissions": "for d in /home/vscode/.copilot; do [ -d \"$d\" ] || continue; sudo chown -R vscode:vscode \"$d\"; done"
+    "fix-mount-permissions": "for d in /home/vscode/.copilot; do [ -d \"$d\" ] || continue; sudo chown -R vscode:vscode \"$d\"; done",
+    "clone-superpowers": "[ ! -d ~/.copilot/superpowers-skills ] && mkdir -p ~/.copilot && curl -L https://github.com/jsloat/superpowers-for-copilot/archive/refs/heads/main.tar.gz | tar -xz -C ~/.copilot -f - && mv ~/.copilot/superpowers-for-copilot-main ~/.copilot/superpowers-skills || true"
   }
 }
