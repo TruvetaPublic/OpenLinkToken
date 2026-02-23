@@ -151,7 +151,7 @@ patient_002,Jane,Smith,1975-03-22,Female,90210,987-65-4321
 **Command:**
 
 ```bash
-java -jar opentoken-cli-*.jar tokenize \
+java -jar opentoken-cli-*.jar package \
   -i sample.csv \
   -t csv \
   -o tokens.csv \
