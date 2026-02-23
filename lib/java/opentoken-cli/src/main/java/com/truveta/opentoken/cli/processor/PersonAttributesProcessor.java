@@ -82,7 +82,7 @@ public final class PersonAttributesProcessor {
      * @param reader      the reader initialized with the input data source.
      * @param writer      the writer initialized with the output data source.
      * @param tokenizer   the tokenizer to use (e.g. SHA256Tokenizer or PassthroughTokenizer).
-     * @param metadataMap the metadata map to populate with processing statistics.
+     * @param metadataMap optional metadata map to update with processing statistics.
      * @throws IOException if an I/O error occurs during processing.
      */
     public static void process(PersonAttributesReader reader, PersonAttributesWriter writer,

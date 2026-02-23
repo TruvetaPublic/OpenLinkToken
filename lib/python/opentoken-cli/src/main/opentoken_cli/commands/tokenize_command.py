@@ -102,7 +102,7 @@ class TokenizeCommand:
             default=False,
             dest="demo_mode",
             help=(
-                "Enable demo mode: output plain attribute signature strings without any hashing. "
+                "Enable demo mode: output raw pipe-separated attribute signature strings with no hashing. "
                 "--hashingsecret is not required in this mode. "
                 "Demo output is NOT suitable for production or cross-organisation exchange."
             ),
@@ -126,7 +126,7 @@ class TokenizeCommand:
 
         if demo_mode:
             logger.warning(
-                "Running in DEMO MODE - tokens are plain attribute signature strings, not HMAC-hashed. "
+                "Running in DEMO MODE - tokens are raw attribute signature strings with no hashing. "
                 "Do not use demo-mode output in production or share it externally."
             )
         else:
