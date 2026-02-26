@@ -20,7 +20,7 @@
     <url>http://www.truveta.com</url>
 
     <properties>
-        <hadoop.version>3.4.2</hadoop.version>
+        <hadoop.version>3.4.3</hadoop.version>
         <maven.deploy.skip>true</maven.deploy.skip>
     </properties>
 
