@@ -38,6 +38,7 @@ buildNumber.properties
 # Eclipse m2e generated files
 # Eclipse Core
 .project
+.settings
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
 
@@ -67,6 +68,8 @@ output/
 dist/
 build/
 
+smoke/
+
 .coverage
 coverage.xml
 coverage-*.xml
@@ -76,3 +79,4 @@ test-results-*.xml
 tools/sync-report-*.json
 demos/pprl-superhero-example/outputs/
 demos/pprl-superhero-example/datasets/
+.worktrees/

@@ -17,13 +17,14 @@ except FileNotFoundError:
 
 # Core dependencies (version-agnostic, no PySpark)
 core_requirements = [
-    "opentoken==1.13.0",
+    "opentoken==2.0.0-alpha",
     "pycryptodome>=3.18.0",
+    "jwcrypto>=1.5.6",
 ]
 
 setup(
     name="opentoken-pyspark",
-    version="1.13.0",
+    version="2.0.0-alpha",
     author="Truveta",
     description="OpenToken PySpark bridge for distributed token generation",
     long_description=long_description,

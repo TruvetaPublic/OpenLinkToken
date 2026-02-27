@@ -66,7 +66,7 @@ Generate tokens using the agreed-upon secrets.
 **Encrypted mode (recommended for external sharing):**
 
 ```bash
-java -jar opentoken-cli-*.jar \
+java -jar opentoken-cli-*.jar package \
   -i patient_data.csv \
   -t csv \
   -o tokens_for_partner.csv \
@@ -74,13 +74,12 @@ java -jar opentoken-cli-*.jar \
   -e "$SHARED_ENCRYPTION_KEY"
 ```
 
-**Hash-only mode (overlap analysis helper, internal artifact):**
+**Tokenize (overlap analysis helper, internal artifact):**
 
-Hash-only output is primarily used **inside your environment** to support overlap analysis against encrypted tokens received from a partner:
+Tokenized (unencrypted) output is primarily used **inside your environment** to support overlap analysis against encrypted tokens received from a partner:
 
 ```bash
-java -jar opentoken-cli-*.jar \
-  --hash-only \
+java -jar opentoken-cli-*.jar tokenize \
   -i local_patient_data.csv \
   -t csv \
   -o local_hash_only_tokens.csv \
@@ -90,11 +89,11 @@ java -jar opentoken-cli-*.jar \
 Typical pattern:
 
 1. Both parties exchange **encrypted tokens** only.
-2. You decrypt the partner's encrypted tokens to the hash-only equivalent (see [Decrypting Tokens](decrypting-tokens.md)).
-3. You generate **hash-only tokens** for your own dataset.
-4. You perform overlap analysis by joining the two hash-only datasets.
+2. You decrypt the partner's encrypted tokens (see [Decrypting Tokens](decrypting-tokens.md)).
+3. You run `tokenize` for your own dataset to produce unencrypted tokens.
+4. You perform overlap analysis by joining the two tokenized datasets.
 
-See [Hash-Only Mode](hash-only-mode.md) for trade-offs between encrypted and hash-only tokens.
+See [Tokenize](tokenize.md) for trade-offs between encrypted and tokenized output.
 
 ### Step 3: Review Metadata
 
@@ -174,7 +173,7 @@ Compare the output hashes with `HashingSecretHash` and `EncryptionSecretHash` in
 Run OpenToken on your local data using the **same secrets**:
 
 ```bash
-java -jar opentoken-cli-*.jar \
+java -jar opentoken-cli-*.jar package \
   -i local_patient_data.csv \
   -t csv \
   -o local_tokens.csv \
@@ -211,8 +210,7 @@ See [Matching Model](../concepts/matching-model.md) for matching strategies.
 If tokens are encrypted and you need to debug or verify:
 
 ```bash
-java -jar opentoken-cli-*.jar \
-  -d \
+java -jar opentoken-cli-*.jar decrypt \
   -i partner_tokens.csv \
   -t csv \
   -o partner_decrypted.csv \
@@ -232,7 +230,7 @@ Encrypted mode (`-e` flag) adds AES-256-GCM encryption on top of HMAC-SHA256:
 | Mode      | External Sharing   | Defense in Depth | Reversible              |
 | --------- | ------------------ | ---------------- | ----------------------- |
 | Encrypted | ✓ Recommended      | Yes              | To HMAC hash (with key) |
-| Hash-only | ⚠ Use with caution | No               | Not reversible          |
+| Tokenize  | ⚠ Use with caution | No               | Not reversible          |
 
 Encrypted tokens provide an additional security layer if token files are intercepted.
 
@@ -308,7 +306,7 @@ With only the token file, an attacker cannot identify individuals.
 
 ## Related Documentation
 
-- [Hash-Only Mode](hash-only-mode.md) — When to skip encryption
+- [Tokenize](tokenize.md) — When to skip encryption
 - [Decrypting Tokens](decrypting-tokens.md) — Reversing encrypted tokens for verification
 - [Security](../security.md) — Cryptographic details and key management
 - [Key Management & Secrets](../security.md#key-management--secrets) — Secret handling best practices

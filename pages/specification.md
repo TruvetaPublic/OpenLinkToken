@@ -9,11 +9,11 @@ layout: default
 OpenToken is a privacy-preserving token generation system for deterministic person matching across datasets. This specification defines the scope, inputs, processing steps, and outputs of the token generation pipeline.
 
 **Purpose:** Generate cryptographically secure tokens from person attributes such that:
-- Identical inputs always produce identical tokens (deterministic)
+- Identical inputs always produce identical deterministic matching values (hash-only or decrypted)
 - Tokens reveal nothing about the underlying data (one-way)
 - Matching can occur on different attribute combinations via 5 distinct token rules (T1–T5)
 
-**Applicability:** This specification applies to both Java and Python implementations. Cross-language output must be byte-identical for the same normalized inputs and secrets.
+**Applicability:** This specification applies to both Java and Python implementations. Cross-language deterministic outputs (hash-only and decrypted values) must be byte-identical for the same normalized inputs and secrets.
 
 ---
 
@@ -145,8 +145,10 @@ Each token rule signature is transformed through the cryptographic pipeline.
 **Default mode (encrypted):**
 
 ```
-Signature → SHA-256 → HMAC-SHA256 → AES-256-GCM → Base64
+Signature → SHA-256 → HMAC-SHA256 → JWE (AES-256-GCM) → Prefix `ot.V1.`
 ```
+
+Encrypted `ot.V1` token strings are intentionally non-deterministic due to randomized IVs.
 
 **Hash-only mode (optional):**
 
@@ -188,7 +190,7 @@ RecordId,RuleId,Token
 **Columns:**
 - `RecordId`: From input (or auto-generated if omitted)
 - `RuleId`: T1, T2, T3, T4, or T5
-- `Token`: Base64-encoded token (or empty string if validation failed)
+- `Token`: Encrypted `ot.V1.<JWE>` token in encrypted mode, or base64 HMAC token in hash-only/decrypted mode (or empty string if validation failed)
 
 **Rows per input record:** 5 (one per rule); may be fewer if errors occur
 
@@ -264,7 +266,7 @@ Parquet format includes compression and is suitable for large datasets.
 
 - **Java**: JDK 21+
 - **Python**: 3.10+
-- **Cross-language parity**: Java and Python implementations MUST produce byte-identical tokens for the same normalized inputs
+- **Cross-language parity**: Java and Python implementations MUST produce byte-identical deterministic values (hash-only/decrypted) for the same normalized inputs
 
 ### Future Considerations
 

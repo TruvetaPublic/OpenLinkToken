@@ -7,6 +7,8 @@ Tests for dataset overlap analyzer.
 import pytest
 from pyspark.sql import SparkSession
 from opentoken_pyspark.overlap_analyzer import OpenTokenOverlapAnalyzer
+from opentoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
+from opentoken.tokentransformer.jwe_match_token_formatter import JweMatchTokenFormatter
 
 
 @pytest.fixture(scope="module")
@@ -189,6 +191,28 @@ class TestAnalyzeOverlap:
         assert matches_df.count() == 2  # rec1-rec10, rec2-rec11
         assert "Dataset1_RecordId" in matches_df.columns
         assert "Dataset2_RecordId" in matches_df.columns
+
+    def test_decrypt_token_legacy_format(self, encryption_key):
+        """Legacy encrypted tokens decrypt to deterministic values."""
+        analyzer = OpenTokenOverlapAnalyzer(encryption_key)
+        plaintext = "deterministic-hash-value"
+        encrypted = EncryptTokenTransformer(encryption_key).transform(plaintext)
+
+        assert analyzer._decrypt_token(encrypted) == plaintext
+
+    def test_decrypt_token_v1_format(self, encryption_key):
+        """ot.V1 tokens decrypt to deterministic values for matching."""
+        analyzer = OpenTokenOverlapAnalyzer(encryption_key)
+        plaintext = "deterministic-hash-value"
+        legacy_encrypted = EncryptTokenTransformer(encryption_key).transform(plaintext)
+        v1_encrypted = JweMatchTokenFormatter(
+            encryption_key=encryption_key,
+            ring_id="ring-test",
+            rule_id="T1"
+        ).transform(legacy_encrypted)
+
+        assert v1_encrypted.startswith("ot.V1.")
+        assert analyzer._decrypt_token(v1_encrypted) == plaintext
 
 
 class TestCompareWithMultipleRules:

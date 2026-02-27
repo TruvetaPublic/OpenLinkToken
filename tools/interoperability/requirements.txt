@@ -1,3 +1,5 @@
 # Interoperability Test Requirements
 
 pyarrow
+pycryptodome
+jwcrypto>=1.5.6

@@ -15,7 +15,7 @@ This page is the single “Start here” hub for getting OpenToken running end-t
 ## What You’ll Do
 
 1. Prepare an input file with person attributes (CSV or Parquet)
-2. Run OpenToken to generate tokens (encrypted or hash-only)
+2. Run OpenToken to generate tokens (encrypted or tokenized)
 3. Inspect the token output and the `.metadata.json` audit artifact
 
 ## Choose Your Path
@@ -28,7 +28,7 @@ This page is the single “Start here” hub for getting OpenToken running end-t
 
 ## 30-Second Overview
 
-OpenToken reads person attributes (for example: first/last name, birthdate, sex, postal code, SSN) and emits deterministic tokens used for privacy-preserving matching.
+OpenToken reads person attributes (for example: first/last name, birthdate, sex, postal code, SSN) and emits deterministic token fingerprints plus, by default, encrypted `ot.V1` match tokens for privacy-preserving exchange.
 
 After you run a quickstart:
 
@@ -83,7 +83,7 @@ See [Configuration](../config/configuration.md) for detailed column mapping and 
 ## Common Issues
 
 **"Encryption key not provided"**  
-→ Either add `-e "YourKey"` or use `--hash-only` for hash-only mode.
+→ Either add `-e "YourKey"` with `package` or use `tokenize` to skip encryption.
 
 **"Invalid BirthDate"**  
 → Use YYYY-MM-DD format or one of the accepted formats. Date must be between 1910-01-01 and today.

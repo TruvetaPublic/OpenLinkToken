@@ -68,8 +68,8 @@ jobs:
           enable-python: false
 
       # Add any setup steps before running the `github/codeql-action/init` action.
-      # This includes steps like installing compilers or runtimes (`actions/setup-node`
-      # or others). This is typically only required for manual builds.
+      # This includes steps like installing compilers or runtimes.
+      # This is typically only required for manual builds.
       # - name: Setup runtime (example)
       #   uses: actions/setup-example@v1
 

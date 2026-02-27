@@ -22,4 +22,3 @@ class TokenTransformer(ABC):
         Raises:
             Exception: Error encountered while transforming the token.
         """
-        pass

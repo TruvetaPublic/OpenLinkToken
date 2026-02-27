@@ -23,13 +23,12 @@ Decryption is useful for:
 
 ## CLI Decrypt Mode
 
-Use the `-d` or `--decrypt` flag with the same encryption key used for token generation.
+Use the `decrypt` subcommand with the same encryption key used for token generation.
 
 ### Java
 
 ```bash
-java -jar opentoken-cli/target/opentoken-cli-*.jar \
-  -d \
+java -jar opentoken-cli/target/opentoken-cli-*.jar decrypt \
   -i ../../resources/output.csv \
   -t csv \
   -o ../../resources/decrypted.csv \
@@ -39,8 +38,7 @@ java -jar opentoken-cli/target/opentoken-cli-*.jar \
 ### Python
 
 ```bash
-python -m opentoken_cli.main \
-  -d \
+python -m opentoken_cli.main decrypt \
   -i ../../../resources/output.csv \
   -t csv \
   -o ../../../resources/decrypted.csv \
@@ -51,8 +49,7 @@ python -m opentoken_cli.main \
 
 ```bash
 docker run --rm -v $(pwd)/resources:/app/resources \
-  opentoken:latest \
-  -d \
+  opentoken:latest decrypt \
   -i /app/resources/output.csv \
   -t csv \
   -o /app/resources/decrypted.csv \
@@ -63,17 +60,17 @@ docker run --rm -v $(pwd)/resources:/app/resources \
 
 ## Decrypted Output Format
 
-Decrypted tokens are HMAC-SHA256 hashes (base64 encoded)—equivalent to `--hash-only` output:
+Decrypted tokens are HMAC-SHA256 hashes (base64 encoded)—equivalent to `tokenize` output:
 
 ```csv
 RecordId,RuleId,Token
 ID001,T1,abc123def456...  # Base64-encoded HMAC hash
-ID001,T2,fed456abc123...  # Same format as hash-only mode
+ID001,T2,fed456abc123...  # Same format as tokenize output
 ...
 ```
 
 This output can be used to:
-- Compare with hash-only tokens from another run
+- Compare with tokenized output from another run
 - Verify token consistency across datasets
 - Debug normalization issues
 
@@ -107,13 +104,12 @@ Tokens encrypted by Java can be decrypted by Python and vice versa:
 
 ```bash
 # Encrypt with Java
-java -jar opentoken-cli-*.jar \
+java -jar opentoken-cli-*.jar package \
   -i data.csv -t csv -o tokens.csv \
   -h "HashingKey" -e "EncryptionKey32Characters!!!!!"
 
 # Decrypt with Python
-python -m opentoken_cli.main \
-  -d \
+python -m opentoken_cli.main decrypt \
   -i tokens.csv -t csv -o decrypted.csv \
   -e "EncryptionKey32Characters!!!!!"
 ```
@@ -133,7 +129,7 @@ python -m opentoken_cli.main \
 - **Use environment variables** or secret stores:
   ```bash
   export OPENTOKEN_ENCRYPTION_KEY="YourKey32Characters!!!!!!!!!!!!"
-  java -jar opentoken-cli-*.jar -d -e "$OPENTOKEN_ENCRYPTION_KEY" ...
+  java -jar opentoken-cli-*.jar decrypt -e "$OPENTOKEN_ENCRYPTION_KEY" ...
   ```
 - **Rotate keys periodically** and re-encrypt tokens as needed
 
@@ -165,17 +161,17 @@ You **cannot** reverse the original attribute values from decrypted tokens.
 
 ## Troubleshooting
 
-| Problem                             | Solution                                                                                 |
-| ----------------------------------- | ---------------------------------------------------------------------------------------- |
-| "Decryption error"                  | Verify encryption key matches the key used for encryption                                |
-| Key length error                    | Encryption key must be exactly 32 characters                                             |
-| Blank tokens in output              | Blank tokens in input (from invalid records) remain blank                                |
-| Tokens don't match across languages | Run interoperability test: `tools/interoperability/java_python_interoperability_test.py` |
+| Problem                             | Solution                                                                                    |
+| ----------------------------------- | ------------------------------------------------------------------------------------------- |
+| "Decryption error"                  | Verify encryption key matches the key used for encryption                                   |
+| Key length error                    | Encryption key must be exactly 32 characters                                                |
+| Blank tokens in output              | Blank tokens in input (from invalid records) remain blank                                   |
+| Tokens don't match across languages | Run interoperability test: `tools/interoperability/multi_language_interoperability_test.py` |
 
 ---
 
 ## Next Steps
 
-- **Hash-only mode**: [Hash-Only Mode](hash-only-mode.md) (no encryption needed)
+- **Tokenize**: [Tokenize](tokenize.md) (no encryption needed)
 - **Batch processing**: [Running Batch Jobs](running-batch-jobs.md)
 - **Security guidance**: [Security](../security.md)

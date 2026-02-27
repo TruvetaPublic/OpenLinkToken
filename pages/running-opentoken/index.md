@@ -13,28 +13,26 @@ The OpenToken CLI accepts command-line arguments for flexible token generation. 
 ### Basic Syntax
 
 ```bash
-opentoken-cli [OPTIONS] -i <input> -t <type> -o <output> -h <hashing-secret> [-e <encryption-key>]
+opentoken <subcommand> [OPTIONS]
 ```
 
 ### Arguments
 
-#### Required
+#### Required Arguments (All Subcommands)
 
-| Argument | Alias             | Description                      | Example                  |
-| -------- | ----------------- | -------------------------------- | ------------------------ |
-| `-i`     | `--input`         | Input file path (CSV or Parquet) | `-i data.csv`            |
-| `-t`     | `--type`          | Input file type                  | `-t csv` or `-t parquet` |
-| `-o`     | `--output`        | Output file path                 | `-o tokens.csv`          |
-| `-h`     | `--hashingsecret` | HMAC-SHA256 hashing secret       | `-h "MyHashingKey"`      |
+| Argument | Alias      | Description                      | Example                  |
+| -------- | ---------- | -------------------------------- | ------------------------ |
+| `-i`     | `--input`  | Input file path (CSV or Parquet) | `-i data.csv`            |
+| `-t`     | `--type`   | Input file type                  | `-t csv` or `-t parquet` |
+| `-o`     | `--output` | Output file path                 | `-o tokens.csv`          |
 
-#### Optional
+#### Optional Arguments by Subcommand
 
-| Argument | Alias             | Description                                | Default                         | Example                |
-| -------- | ----------------- | ------------------------------------------ | ------------------------------- | ---------------------- |
-| `-e`     | `--encryptionkey` | AES-256 encryption key                     | Required (unless `--hash-only`) | `-e "MyEncryptionKey"` |
-| `-ot`    | `--output-type`   | Output file type                           | Same as input type              | `-ot parquet`          |
-|          | `--hash-only`     | Hash-only mode (no encryption)             | False                           | `--hash-only`          |
-| `-d`     | `--decrypt`       | Decrypt mode (reverse previous encryption) | False                           | `-d`                   |
+| Argument | Alias             | `package` | `tokenize` | `decrypt` | Description                       | Default            | Example                |
+| -------- | ----------------- | --------- | ---------- | --------- | --------------------------------- | ------------------ | ---------------------- |
+| `-h`     | `--hashingkey`    | ✓         | ✓          |           | HMAC-SHA256 hashing secret        | Required           | `-h "HashingKey"`      |
+| `-e`     | `--encryptionkey` | ✓         |            | ✓         | AES-256 encryption key            | Required           | `-e "MyEncryptionKey"` |
+| `-ot`    | `--output-type`   | ✓         | ✓          | ✓         | Output file type (CSV or Parquet) | Same as input type | `-ot parquet`          |
 
 ### Usage Examples
 
@@ -47,7 +45,7 @@ Generates encrypted tokens. Both hashing secret and encryption key required.
 cd lib/java
 mvn clean install -DskipTests
 
-java -jar opentoken-cli/target/opentoken-cli-*.jar \
+java -jar opentoken-cli/target/opentoken-cli-*.jar package \
   -i ../../resources/sample.csv \
   -t csv \
   -o ../../resources/output.csv \
@@ -61,7 +59,7 @@ cd lib/python/opentoken-cli
 source ../../.venv/bin/activate
 pip install -r requirements.txt -e . -e ../opentoken
 
-python -m opentoken_cli.main \
+python -m opentoken_cli.main package \
   -i ../../../resources/sample.csv \
   -t csv \
   -o ../../../resources/output.csv \
@@ -69,14 +67,13 @@ python -m opentoken_cli.main \
   -e "Secret-Encryption-Key-Goes-Here."
 ```
 
-#### Token Generation (Hash-Only Mode)
+#### Token Generation (Tokenize)
 
 Generates HMAC-SHA256 hashed tokens without AES encryption. Only hashing secret required.
 
 **Java:**
 ```bash
-java -jar opentoken-cli/target/opentoken-cli-*.jar \
-  --hash-only \
+java -jar opentoken-cli/target/opentoken-cli-*.jar tokenize \
   -i ../../resources/sample.csv \
   -t csv \
   -o ../../resources/hashed-output.csv \
@@ -85,8 +82,7 @@ java -jar opentoken-cli/target/opentoken-cli-*.jar \
 
 **Python:**
 ```bash
-python -m opentoken_cli.main \
-  --hash-only \
+python -m opentoken_cli.main tokenize \
   -i ../../../resources/sample.csv \
   -t csv \
   -o ../../../resources/hashed-output.csv \
@@ -99,8 +95,7 @@ Decrypts previously encrypted tokens. Only encryption key required.
 
 **Java:**
 ```bash
-java -jar opentoken-cli/target/opentoken-cli-*.jar \
-  -d \
+java -jar opentoken-cli/target/opentoken-cli-*.jar decrypt \
   -i ../../resources/output.csv \
   -t csv \
   -o ../../resources/decrypted.csv \
@@ -109,8 +104,7 @@ java -jar opentoken-cli/target/opentoken-cli-*.jar \
 
 **Python:**
 ```bash
-python -m opentoken_cli.main \
-  -d \
+python -m opentoken_cli.main decrypt \
   -i ../../../resources/output.csv \
   -t csv \
   -o ../../../resources/decrypted.csv \
@@ -133,7 +127,7 @@ record1,T2,pUxPgYL9+cMxkA+8928Pil+9W+dm9kISwHYPdkZS+I2nQ/bQ/8HyL3FOVf3NYPW5NKZZO
 ```json
 {
   "JavaVersion": "21.0.0",
-  "OpenTokenVersion": "1.13.0",
+  "OpenTokenVersion": "2.0.0-alpha",
   "Platform": "Java",
   "TotalRows": 1,
   "TotalRowsWithInvalidAttributes": 0,
@@ -160,7 +154,7 @@ Scripts automatically build and run the container.
 ```bash
 cd /path/to/OpenToken
 
-./run-opentoken.sh \
+./run-opentoken.sh package \
   -i ./resources/sample.csv \
   -o ./resources/output.csv \
   -t csv \
@@ -172,7 +166,7 @@ cd /path/to/OpenToken
 ```powershell
 cd C:\path\to\OpenToken
 
-.\run-opentoken.ps1 `
+.\run-opentoken.ps1 package `
   -i .\resources\sample.csv `
   -o .\resources\output.csv `
   -FileType csv `
@@ -200,7 +194,7 @@ docker build -t opentoken:latest .
 
 # Run with sample data
 docker run --rm -v $(pwd)/resources:/app/resources \
-  opentoken:latest \
+  opentoken:latest package \
   -i /app/resources/sample.csv \
   -t csv \
   -o /app/resources/output.csv \
@@ -284,11 +278,11 @@ See example notebooks in `lib/python/opentoken-pyspark/notebooks/`:
 
 ### "Encryption key not provided"
 
-**Problem**: Error when running without `-e` flag and without `--hash-only`.
+**Problem**: Error when running `package` mode without `-e`.
 
-**Solution**: Either provide encryption key `-e "YourKey"` or use `--hash-only`:
+**Solution**: Either provide encryption key `-e "YourKey"` or use `tokenize`:
 ```bash
-java -jar opentoken-cli-*.jar --hash-only -i data.csv -t csv -o output.csv -h "HashingKey"
+java -jar opentoken-cli-*.jar tokenize -i data.csv -t csv -o output.csv -h "HashingKey"
 ```
 
 ### "Invalid BirthDate" or "Date out of range"
@@ -356,7 +350,7 @@ Wrong:   1905-01-01, 2025-12-31, 01-15-80
 **Solution**:
 1. Verify secrets match exactly
 2. Check attribute normalization (see [Concepts: Normalization](../concepts/normalization-and-validation.md))
-3. Run the interoperability test suite: `tools/interoperability/java_python_interoperability_test.py`
+3. Run the interoperability test suite: `tools/interoperability/multi_language_interoperability_test.py`
 4. Decrypt and compare hashes to isolate the issue
 
 ### CSV parsing errors or column not found

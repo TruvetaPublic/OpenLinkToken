@@ -16,8 +16,8 @@ Why it matters:
 
 - Reduces the surface area of sensitive data in downstream systems by shifting matching to tokens.
 - Improves match quality by applying consistent normalization/validation before token generation.
-- Supports reproducibility and auditability via metadata and deterministic outputs.
-- Enables interoperability: Java and Python produce byte-identical tokens for the same inputs and secrets.
+- Supports reproducibility and auditability via metadata and deterministic hash/decrypted outputs.
+- Enables interoperability: Java and Python produce byte-identical deterministic values (hash-only/decrypted) for the same inputs and secrets.
 
 ## Start Here
 
@@ -48,7 +48,7 @@ This site organizes quickstarts, concepts, operations guidance, configuration, r
   - [Sharing Tokenized Data](operations/sharing-tokenized-data.md)
   - [PPRL Demo Walkthrough](operations/pprl-demo-walkthrough.md)
   - [Decrypting Tokens](operations/decrypting-tokens.md)
-  - [Hash-Only Mode](operations/hash-only-mode.md)
+  - [Tokenize](operations/tokenize.md)
   - [Mock Data Workflows](operations/mock-data-workflows.md)
 - [Configuration](config/configuration.md)
   - [Configuration](config/configuration.md)

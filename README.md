@@ -23,7 +23,7 @@ Our approach to person matching relies on building a set of matching tokens (or 
 
 - Multi-language Support
 - Cryptographically Secure encryption that prevents re-identification
-- Enables straightforward person-matching by comparing 5 deterministic and unique tokens, providing a high degree of confidence in matches
+- Enables straightforward person-matching by comparing 5 deterministic and unique hash values (after decryption), providing a high degree of confidence in matches
 
 ## Demo
 
@@ -40,9 +40,9 @@ Perfect for understanding privacy-preserving record linkage concepts before divi
 
 ## Overview
 
-- **Multi-language parity**: Java and Python implementations produce identical token outputs
-- **Deterministic tokens**: Same input always produces the same cryptographically secure token
-- **Privacy-preserving**: Tokens cannot be reversed to recover original person data
+- **Multi-language parity**: Java and Python implementations produce byte-identical hash outputs (decrypted values)
+- **Deterministic matching values**: Same input always produces the same cryptographically secure hash for matching
+- **Privacy-preserving**: Encrypted tokens cannot be reversed to recover original person data
 
 ## Why OpenToken
 
@@ -52,22 +52,44 @@ Perfect for understanding privacy-preserving record linkage concepts before divi
 
 ## Quickstart
 
-**Docker/CLI workflow:**
+**Self-contained executable (easiest):**
+
+Download the [latest release](https://github.com/TruvetaPublic/OpenToken/releases) for your platform and run:
 
 ```bash
-./run-opentoken.sh \
-  -i ./resources/sample.csv -t csv -o ./resources/output.csv \
+# Linux/macOS
+./opentoken -i ./resources/sample.csv -t csv -o ./resources/output.csv \
   -h "HashingKey" -e "Secret-Encryption-Key-Goes-Here."
+
+# Windows
+.\opentoken.exe -i .\resources\sample.csv -t csv -o .\resources\output.csv `
+  -h "HashingKey" -e "Secret-Encryption-Key-Goes-Here."
+```
+
+**Subcommand Interface:**
+
+```bash
+./run-opentoken.sh package \
+  -i ./resources/sample.csv -t csv -o ./resources/output.csv \
+  --hashingsecret "HashingKey" --encryptionkey "Secret-Encryption-Key-Goes-Here."
 ```
 
 **Java CLI:**
 
 ```bash
 cd lib/java && mvn clean install -DskipTests
-java -jar opentoken-cli/target/opentoken-cli-*.jar \
+java -jar opentoken-cli/target/opentoken-cli-*.jar package \
   -i ../../resources/sample.csv -t csv -o ../../resources/output.csv \
-  -h "HashingKey" -e "Secret-Encryption-Key-Goes-Here."
+  --hashingsecret "HashingKey" --encryptionkey "Secret-Encryption-Key-Goes-Here."
 ```
+
+**Available Commands:**
+
+- `opentoken package` - Generate and encrypt tokens in one step (recommended for most use cases)
+- `opentoken tokenize` - Generate hashed tokens only (no encryption)
+- `opentoken encrypt` - Encrypt existing hashed tokens
+- `opentoken decrypt` - Decrypt encrypted tokens
+- `opentoken help [command]` - Show help for a specific command
 
 See <a href="https://truvetapublic.github.io/OpenToken/quickstarts/" target="_blank" rel="noopener noreferrer">Quickstarts</a> for Python CLI and detailed setup instructions.
 
@@ -79,7 +101,12 @@ See <a href="https://truvetapublic.github.io/OpenToken/quickstarts/" target="_bl
 
 ## Running OpenToken
 
-- **CLI modes**: Encrypt (default), hash-only (`--hash-only`), decrypt (`-d`) — see <a href="https://truvetapublic.github.io/OpenToken/running-opentoken/" target="_blank" rel="noopener noreferrer">Running OpenToken</a>
+- **Subcommand Interface**: Modern command-based interface:
+  - `tokenize` - Hash-only token generation
+  - `encrypt` - Encrypt existing hashed tokens
+  - `decrypt` - Decrypt encrypted tokens
+  - `package` - Tokenize + encrypt in one step (recommended)
+  - See <a href="https://truvetapublic.github.io/OpenToken/running-opentoken/" target="_blank" rel="noopener noreferrer">Running OpenToken</a>
 - **Docker**: Convenience scripts for containerized runs — see <a href="https://truvetapublic.github.io/OpenToken/quickstarts/" target="_blank" rel="noopener noreferrer">Quickstarts</a>
 - **PySpark**: Distributed processing for large datasets — see <a href="https://truvetapublic.github.io/OpenToken/operations/spark-or-databricks.html" target="_blank" rel="noopener noreferrer">Spark or Databricks</a>
 
@@ -105,4 +132,3 @@ See <a href="https://truvetapublic.github.io/OpenToken/quickstarts/" target="_bl
 For issues or support, file an issue in this repository.
 
 <!-- Re-run CI checks -->
-

@@ -6,12 +6,15 @@ Dataset overlap analyzer for comparing tokenized datasets.
 
 import logging
 from typing import List, Dict, Optional, Any
+import base64
+import json
+
+from jwcrypto import jwe, jwk
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import col, count, udf
 from pyspark.sql.types import StringType
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
-import base64
 
 
 logger = logging.getLogger(__name__)
@@ -49,41 +52,33 @@ class OpenTokenOverlapAnalyzer:
             )
         self.encryption_key = encryption_key.encode('utf-8')
 
-    def _decrypt_token(self, encrypted_token: str) -> Optional[str]:
-        """
-        Decrypt an encrypted token using AES-256 GCM.
+    @staticmethod
+    def _v1_token_prefix() -> str:
+        return "ot.V1."
 
-        If the input is not an encrypted token (e.g., plain/hash-only tokens
-        used in tests), returns the original value to allow direct comparison.
+    def _decrypt_legacy_token(self, encrypted_token: str) -> Optional[str]:
+        """Decrypt legacy base64(AES-GCM) token payloads.
 
         Args:
-            encrypted_token: Base64-encoded encrypted token (IV || ciphertext || tag)
+            encrypted_token: Legacy token in base64 format (IV || ciphertext || tag).
 
         Returns:
-            Decrypted token string, or the original token if decryption is not applicable
-
-        Note:
-            Uses AES-GCM with 12-byte IV and 16-byte authentication tag,
-            matching the encryption used by OpenToken EncryptTokenTransformer.
+            Decrypted token string, or the original token if decryption is not applicable.
         """
-        if encrypted_token is None:
-            return None
         try:
-            # Attempt to base64-decode the token. If this fails, treat as plaintext.
             message_bytes = base64.b64decode(encrypted_token)
 
             # Expect at least IV (12) + tag (16) + 1 byte of ciphertext
-            IV_SIZE = 12
-            TAG_LENGTH = 16
-            minimum_length = IV_SIZE + TAG_LENGTH + 1
+            iv_size = 12
+            tag_length = 16
+            minimum_length = iv_size + tag_length + 1
             if len(message_bytes) < minimum_length:
-                # Not a valid encrypted payload; likely a plain token
                 return encrypted_token
 
-            iv_bytes = message_bytes[:IV_SIZE]
-            ciphertext_and_tag = message_bytes[IV_SIZE:]
-            ciphertext = ciphertext_and_tag[:-TAG_LENGTH]
-            tag = ciphertext_and_tag[-TAG_LENGTH:]
+            iv_bytes = message_bytes[:iv_size]
+            ciphertext_and_tag = message_bytes[iv_size:]
+            ciphertext = ciphertext_and_tag[:-tag_length]
+            tag = ciphertext_and_tag[-tag_length:]
 
             cipher = Cipher(
                 algorithms.AES(self.encryption_key),
@@ -94,8 +89,63 @@ class OpenTokenOverlapAnalyzer:
             decrypted_bytes = decryptor.update(ciphertext) + decryptor.finalize()
             return decrypted_bytes.decode('utf-8')
         except Exception:
-            # If base64 decoding or AES-GCM fails, assume plaintext and return original
+            # If base64 decoding or AES-GCM fails, assume plaintext and return original.
             return encrypted_token
+
+    def _decrypt_v1_token(self, encrypted_token: str) -> Optional[str]:
+        """Decrypt ot.V1 JWE token payloads.
+
+        Args:
+            encrypted_token: V1 token in format ot.V1.<JWE compact serialization>.
+
+        Returns:
+            Decrypted deterministic token value when possible.
+            Returns the original token if JWE decryption fails.
+        """
+        try:
+            jwe_compact = encrypted_token[len(self._v1_token_prefix()):]
+            key_b64 = base64.urlsafe_b64encode(self.encryption_key).decode('utf-8').rstrip('=')
+            jwk_key = jwk.JWK(kty="oct", k=key_b64)
+
+            jwe_token = jwe.JWE()
+            jwe_token.deserialize(jwe_compact)
+            jwe_token.decrypt(jwk_key)
+
+            payload = json.loads(jwe_token.payload.decode('utf-8'))
+            ppid_value = payload.get("ppid", [])
+            if isinstance(ppid_value, list):
+                ppid_value = ppid_value[0] if ppid_value else ""
+
+            if not ppid_value:
+                return ppid_value
+
+            return self._decrypt_legacy_token(ppid_value)
+        except Exception:
+            # Keep compatibility with existing behavior for malformed/non-encrypted values.
+            return encrypted_token
+
+    def _decrypt_token(self, encrypted_token: str) -> Optional[str]:
+        """
+        Decrypt an encrypted token for deterministic comparison.
+
+        Supports both token formats:
+        - `ot.V1.<JWE compact serialization>` (current format)
+        - Legacy base64 payload (`IV || ciphertext || tag`)
+
+        If the input is not an encrypted token (e.g., plain/hash-only tokens
+        used in tests), returns the original value to allow direct comparison.
+
+        Args:
+            encrypted_token: Encrypted token string.
+
+        Returns:
+            Decrypted token string, or the original token if decryption is not applicable
+        """
+        if encrypted_token is None:
+            return None
+        if encrypted_token.startswith(self._v1_token_prefix()):
+            return self._decrypt_v1_token(encrypted_token)
+        return self._decrypt_legacy_token(encrypted_token)
 
     def analyze_overlap(
         self,

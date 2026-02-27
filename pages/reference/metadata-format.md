@@ -108,7 +108,7 @@ Extension: .metadata.json
 **Security:**
 - Hashes are **not reversible** (SHA-256 is one-way)
 - Used for verification: calculate hash of your secret and compare to metadata
-- `EncryptionSecretHash` omitted in `--hash-only` mode (no encryption used)
+- `EncryptionSecretHash` omitted in `tokenize` mode (no encryption used)
 
 ---
 
@@ -120,7 +120,7 @@ Extension: .metadata.json
 {
   "Platform": "Java",
   "JavaVersion": "21.0.0",
-  "OpenTokenVersion": "1.13.0",
+  "OpenTokenVersion": "2.0.0-alpha",
   "TotalRows": 101,
   "TotalRowsWithInvalidAttributes": 9,
   "InvalidAttributesByType": {
@@ -142,13 +142,13 @@ Extension: .metadata.json
 }
 ```
 
-### Hash-Only Mode Example
+### `tokenize` Subcommand Example
 
 ```json
 {
   "Platform": "Python",
   "PythonVersion": "3.11.5",
-  "OpenTokenVersion": "1.13.0",
+  "OpenTokenVersion": "2.0.0-alpha",
   "TotalRows": 50,
   "TotalRowsWithInvalidAttributes": 2,
   "InvalidAttributesByType": {
@@ -161,7 +161,7 @@ Extension: .metadata.json
 }
 ```
 
-**Note:** No `EncryptionSecretHash` because `--hash-only` mode doesn't use encryption.
+**Note:** No `EncryptionSecretHash` because `tokenize` mode doesn't use encryption.
 
 ---
 

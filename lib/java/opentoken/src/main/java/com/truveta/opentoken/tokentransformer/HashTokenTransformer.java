@@ -75,7 +75,7 @@ public class HashTokenTransformer implements TokenTransformer {
         }
 
         synchronized (this.mac) {
-            byte[] dataAsBytes = token.getBytes();
+            byte[] dataAsBytes = token.getBytes(StandardCharsets.UTF_8);
             byte[] sha = this.mac.doFinal(dataAsBytes);
             return this.encoder.encodeToString(sha);
         }

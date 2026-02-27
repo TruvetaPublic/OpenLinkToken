@@ -36,7 +36,7 @@ AES-256-GCM Encrypt (symmetric encryption with encryption key)
 Base64 Encode (storable format)
 ```
 
-**Hash-only mode (alternative):**
+**`tokenize` subcommand (alternative):**
 ```
 Token Signature
   ↓
@@ -103,14 +103,12 @@ This section consolidates practical guidance for managing the cryptographic secr
 
 ### Types of Secrets
 
-OpenToken expects **two secrets** (one required, one optional depending on mode):
+OpenToken uses two secrets. Which secrets are required depends on the subcommand:
 
-| Secret             | CLI Flag                 | Purpose                                   | Requirements                                                |
-| ------------------ | ------------------------ | ----------------------------------------- | ----------------------------------------------------------- |
-| **Hashing Secret** | `-h` / `--hashingsecret` | HMAC-SHA256 key for deterministic hashing | Required in all modes; 8+ characters recommended, 16+ ideal |
-| **Encryption Key** | `-e` / `--encryptionkey` | AES-256-GCM symmetric key                 | Required for encryption mode; **exactly 32 characters**     |
-
-**Hash-only mode** (`--hash-only`) skips AES encryption; only the hashing secret is needed.
+| Secret             | CLI Flag                 | Purpose                                   | Required for subcommands        | Requirements                         |
+| ------------------ | ------------------------ | ----------------------------------------- | ------------------------------- | ------------------------------------ |
+| **Hashing Secret** | `-h` / `--hashingsecret` | HMAC-SHA256 key for deterministic hashing | `package`, `tokenize`           | 8+ characters recommended, 16+ ideal |
+| **Encryption Key** | `-e` / `--encryptionkey` | AES-256-GCM symmetric key                 | `package`, `encrypt`, `decrypt` | **Exactly 32 characters**            |
 
 ### Handling Secrets in Practice
 
@@ -120,7 +118,7 @@ Use clearly marked placeholder values:
 
 ```bash
 # Placeholder secrets for local testing only
-java -jar opentoken-cli-*.jar \
+java -jar opentoken-cli-*.jar package \
   -i sample.csv -t csv -o output.csv \
   -h "HashingKey" \
   -e "Secret-Encryption-Key-Goes-Here."
@@ -138,7 +136,7 @@ Load and use:
 
 ```bash
 source .env
-java -jar opentoken-cli-*.jar \
+java -jar opentoken-cli-*.jar package \
   -i sample.csv -t csv -o output.csv \
   -h "$OPENTOKEN_HASHING_SECRET" \
   -e "$OPENTOKEN_ENCRYPTION_KEY"
@@ -164,7 +162,7 @@ export OPENTOKEN_HASHING_SECRET=$(aws secretsmanager get-secret-value \
 export OPENTOKEN_ENCRYPTION_KEY=$(aws secretsmanager get-secret-value \
   --secret-id opentoken-enc-key --query SecretString --output text)
 
-java -jar opentoken-cli-*.jar \
+java -jar opentoken-cli-*.jar package \
   -i data.csv -t csv -o tokens.csv \
   -h "$OPENTOKEN_HASHING_SECRET" \
   -e "$OPENTOKEN_ENCRYPTION_KEY"

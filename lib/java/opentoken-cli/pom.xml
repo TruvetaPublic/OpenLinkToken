@@ -7,20 +7,21 @@
     <parent>
         <groupId>com.truveta</groupId>
         <artifactId>opentoken-parent</artifactId>
-        <version>1.13.0</version>
+        <version>2.0.0-alpha</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>opentoken-cli</artifactId>
     <packaging>jar</packaging>
-    <version>1.13.0</version>
+    <version>2.0.0-alpha</version>
 
     <name>opentoken-cli</name>
     <description>OpenToken CLI - Command-line interface with CSV and Parquet support for token generation</description>
     <url>http://www.truveta.com</url>
 
     <properties>
-        <hadoop.version>3.4.2</hadoop.version>
+        <hadoop.version>3.4.3</hadoop.version>
+        <maven.deploy.skip>true</maven.deploy.skip>
     </properties>
 
     <dependencyManagement>
@@ -87,11 +88,18 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- Args parsing -->
+        <!-- Args parsing - Picocli for subcommands -->
         <dependency>
-            <groupId>com.beust</groupId>
-            <artifactId>jcommander</artifactId>
-            <version>1.82</version>
+            <groupId>info.picocli</groupId>
+            <artifactId>picocli</artifactId>
+            <version>4.7.7</version>
+        </dependency>
+
+        <!-- JLine for terminal detection and ANSI support -->
+        <dependency>
+            <groupId>org.jline</groupId>
+            <artifactId>jline</artifactId>
+            <version>3.28.0</version>
         </dependency>
 
         <!-- CSV -->
@@ -131,7 +139,6 @@
         <dependency>
             <groupId>com.nimbusds</groupId>
             <artifactId>nimbus-jose-jwt</artifactId>
-            <version>10.6</version>
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
@@ -301,6 +308,7 @@
                                 <exec executable="java" dir="${basedir}" failonerror="true" outputproperty="csv.output">
                                     <arg value="-jar" />
                                     <arg value="${project.build.directory}/opentoken-cli-${project.version}.jar" />
+                                    <arg value="package" />
                                     <arg value="-i" />
                                     <arg value="../../../resources/sample.csv" />
                                     <arg value="-t" />
@@ -309,16 +317,23 @@
                                     <arg value="${project.build.directory}/sanity-check-output.csv" />
                                     <arg value="-ot" />
                                     <arg value="csv" />
-                                    <arg value="-h" />
+                                    <arg value="--hashingsecret" />
                                     <arg value="HashingKey" />
-                                    <arg value="-e" />
+                                    <arg value="--encryptionkey" />
                                     <arg value="Secret-Encryption-Key-Goes-Here." />
                                 </exec>
                                 <echo message="CSV output: ${csv.output}" />
-                                <fail message="CSV sanity check failed: output does not contain 'Total number of records'">
+                                <fail message="CSV sanity check failed: output file was not created">
                                     <condition>
                                         <not>
-                                            <contains string="${csv.output}" substring="Total number of records" />
+                                            <available file="${project.build.directory}/sanity-check-output.csv" />
+                                        </not>
+                                    </condition>
+                                </fail>
+                                <fail message="CSV sanity check failed: metadata file was not created">
+                                    <condition>
+                                        <not>
+                                            <available file="${project.build.directory}/sanity-check-output.metadata.json" />
                                         </not>
                                     </condition>
                                 </fail>
@@ -338,6 +353,7 @@
                                 <exec executable="java" dir="${basedir}" failonerror="true" outputproperty="parquet.output">
                                     <arg value="-jar" />
                                     <arg value="${project.build.directory}/opentoken-cli-${project.version}.jar" />
+                                    <arg value="package" />
                                     <arg value="-i" />
                                     <arg value="../../../resources/sample.parquet" />
                                     <arg value="-t" />
@@ -346,16 +362,23 @@
                                     <arg value="${project.build.directory}/sanity-check-output.parquet" />
                                     <arg value="-ot" />
                                     <arg value="parquet" />
-                                    <arg value="-h" />
+                                    <arg value="--hashingsecret" />
                                     <arg value="HashingKey" />
-                                    <arg value="-e" />
+                                    <arg value="--encryptionkey" />
                                     <arg value="Secret-Encryption-Key-Goes-Here." />
                                 </exec>
                                 <echo message="Parquet output: ${parquet.output}" />
-                                <fail message="Parquet sanity check failed: output does not contain 'Total number of records'">
+                                <fail message="Parquet sanity check failed: output file was not created">
                                     <condition>
                                         <not>
-                                            <contains string="${parquet.output}" substring="Total number of records" />
+                                            <available file="${project.build.directory}/sanity-check-output.parquet" />
+                                        </not>
+                                    </condition>
+                                </fail>
+                                <fail message="Parquet sanity check failed: metadata file was not created">
+                                    <condition>
+                                        <not>
+                                            <available file="${project.build.directory}/sanity-check-output.metadata.json" />
                                         </not>
                                     </condition>
                                 </fail>

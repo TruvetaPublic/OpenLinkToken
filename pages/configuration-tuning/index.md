@@ -112,12 +112,12 @@ ID002,T1,...
 **Columns:**
 - `RecordId`: From input (or auto-generated UUID)
 - `RuleId`: Token rule identifier (T1–T5)
-- `Token`: Base64-encoded encrypted token (or hashed token if `--hash-only`)
+- `Token`: Encrypted `ot.V1.<JWE compact serialization>` token (or base64 HMAC token when generated via `opentoken tokenize`)
 
 **Notes:**
 - **One row per rule per record**: 5 rows for each valid record
 - **Blank tokens**: If a record is invalid, tokens may be blank (logged in metadata)
-- **Token length**: Varies (typically 80–100 characters base64 encoded)
+- **Token length**: Varies by mode and payload size (encrypted `ot.V1` tokens are longer than hash-only tokens)
 
 ### Metadata Output
 
@@ -154,28 +154,29 @@ See [Reference: Metadata Format](../reference/metadata-format.md) for detailed f
 
 ### Encryption Mode (Default)
 
-Generates encrypted tokens using HMAC-SHA256 + AES-256.
+Generates encrypted `ot.V1` match tokens using HMAC-SHA256 + JWE/AES-256-GCM.
 
 ```bash
-java -jar opentoken-cli-*.jar \
+java -jar opentoken-cli-*.jar package \
   -i data.csv -t csv -o tokens.csv \
   -h "HashingKey" -e "EncryptionKey"
 ```
 
 **Process:**
 ```
-Token Signature → SHA-256 Hash → HMAC-SHA256(hash, key) → AES-256 Encrypt → Base64 Encode
+Token Signature → SHA-256 Hash → HMAC-SHA256(hash, key) → JWE (AES-256-GCM) → Prefix `ot.V1.`
 ```
 
 **Requires:** Hashing secret (`-h`) and encryption key (`-e`)
+
+Encrypted `ot.V1` tokens include randomized IVs, so ciphertext values are not deterministic across runs.
 
 ### Hash-Only Mode
 
 Generates hashed tokens without encryption. Useful for token matching scenarios where encryption overhead is unnecessary.
 
 ```bash
-java -jar opentoken-cli-*.jar \
-  --hash-only \
+java -jar opentoken-cli-*.jar tokenize \
   -i data.csv -t csv -o tokens.csv \
   -h "HashingKey"
 ```
@@ -198,13 +199,12 @@ Token Signature → SHA-256 Hash → HMAC-SHA256(hash, key) → Base64 Encode
 Reverse previous encryption to inspect or verify token generation.
 
 ```bash
-java -jar opentoken-cli-*.jar \
-  -d \
+java -jar opentoken-cli-*.jar decrypt \
   -i encrypted-tokens.csv -t csv -o decrypted-tokens.csv \
   -e "EncryptionKey"
 ```
 
-**Output:** HMAC-SHA256 hashed tokens (base64 encoded) **before** AES encryption—equivalent to `--hash-only` output.
+**Output:** HMAC-SHA256 hashed tokens (base64 encoded) **before** AES encryption—equivalent to `tokenize` output.
 
 **Use cases:**
 - Debugging attribute normalization issues
@@ -234,7 +234,7 @@ OpenToken Java and Python implementations produce **identical tokens** for the s
 **Test interoperability:**
 ```bash
 cd tools/interoperability
-python java_python_interoperability_test.py
+python multi_language_interoperability_test.py
 ```
 
 ---

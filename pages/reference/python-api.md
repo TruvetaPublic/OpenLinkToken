@@ -105,7 +105,7 @@ encryptor = EncryptTokenTransformer(
 
 signature = "DOE|J|MALE|1980-01-15"
 encrypted_token = encryptor.transform(signature)
-# Returns: Base64-encoded encrypted token
+# Returns: OpenToken encrypted match token string (ot.V1.<JWE compact serialization>)
 ```
 
 ## Complete Example
@@ -255,7 +255,7 @@ person_attributes = {
 Verify parity with:
 ```bash
 cd tools/interoperability
-python java_python_interoperability_test.py
+python multi_language_interoperability_test.py
 ```
 
 ## Error Handling

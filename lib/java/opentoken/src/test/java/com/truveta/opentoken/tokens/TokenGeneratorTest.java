@@ -14,7 +14,6 @@ import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -27,15 +26,11 @@ import com.truveta.opentoken.attributes.Attribute;
 import com.truveta.opentoken.attributes.AttributeExpression;
 import com.truveta.opentoken.attributes.person.FirstNameAttribute;
 import com.truveta.opentoken.attributes.person.LastNameAttribute;
-import com.truveta.opentoken.tokens.tokenizer.SHA256Tokenizer;
-import com.truveta.opentoken.tokentransformer.TokenTransformer;
+import com.truveta.opentoken.tokens.tokenizer.Tokenizer;
 
 class TokenGeneratorTest {
     @Mock
-    private SHA256Tokenizer tokenizer;
-
-    @Mock
-    private List<TokenTransformer> tokenTransformerList;
+    private Tokenizer tokenizer;
 
     @Mock
     private BaseTokenDefinition tokenDefinition;
@@ -46,11 +41,9 @@ class TokenGeneratorTest {
     @BeforeEach
     void setUp() {
         tokenDefinition = mock(BaseTokenDefinition.class);
-        tokenTransformerList = new ArrayList<>();
-        tokenizer = mock(SHA256Tokenizer.class);
+        tokenizer = mock(Tokenizer.class);
 
-        tokenGenerator = new TokenGenerator(tokenDefinition, new SHA256Tokenizer(tokenTransformerList));
-        tokenGenerator.setTokenizer(tokenizer); // Inject mock tokenizer
+        tokenGenerator = new TokenGenerator(tokenDefinition, tokenizer);
 
     }
 

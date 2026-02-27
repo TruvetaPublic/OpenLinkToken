@@ -133,7 +133,7 @@ Using as Maven dependencies:
 CLI usage:
 
 ```shell
-cd lib/java && java -jar opentoken-cli/target/opentoken-cli-*.jar [OPTIONS]
+cd lib/java && java -jar opentoken-cli/target/opentoken-cli-*.jar package [OPTIONS]
 ```
 
 Arguments:
@@ -148,7 +148,7 @@ Arguments:
 Example:
 
 ```shell
-cd lib/java && java -jar opentoken-cli/target/opentoken-cli-*.jar \
+cd lib/java && java -jar opentoken-cli/target/opentoken-cli-*.jar package \
   -i opentoken/src/test/resources/sample.csv -t csv -o opentoken-cli/target/output.csv \
   -h "HashingKey" -e "Secret-Encryption-Key-Goes-Here."
 ```
@@ -229,7 +229,7 @@ CLI usage (from project root):
 
 ```shell
 # After installing opentoken-cli
-python -m opentoken_cli.main [OPTIONS]
+python -m opentoken_cli.main package [OPTIONS]
 ```
 
 Arguments mirror Java implementation.
@@ -238,7 +238,7 @@ Example:
 
 ```shell
 # After installing opentoken-cli
-python -m opentoken_cli.main \
+python -m opentoken_cli.main package \
   -i resources/sample.csv -t csv -o lib/python/opentoken-cli/target/output.csv \
   -h "HashingKey" -e "Secret-Encryption-Key-Goes-Here."
 ```
@@ -356,38 +356,37 @@ Notebook Guides:
 - See `lib/python/opentoken-pyspark/notebooks/` for example workflows (custom tokens & overlap analysis).
 ### Multi-Language Sync Tool
 
-Java is the source of truth. The sync tool ([tools/java_language_syncer.py](https://github.com/TruvetaPublic/OpenToken/blob/main/tools/java_language_syncer.py)) evaluates changed Java files against enabled target languages (currently Python). It will fail PR workflows if any modified Java file lacks a corresponding, up-to-date target implementation.
+The sync tool ([tools/multi_language_syncer.py](https://github.com/TruvetaPublic/OpenToken/blob/main/tools/multi_language_syncer.py)) detects changes across all supported languages (Java, Python, Node.js) and produces a cross-language checklist showing which corresponding files need updating. It is bidirectional — changes originating in any language trigger sync items for the others.
 
 Key concepts:
 
-- Source-centric config: [tools/java-language-mappings.json](https://github.com/TruvetaPublic/OpenToken/blob/main/tools/java-language-mappings.json) defines `critical_java_files` (with optional priorities/manual review) and `directory_roots` for broad coverage.
-- Language overrides: Target-specific adjustments live under `target_languages.<lang>.overrides.critical_files`.
-- Auto-generation: If `auto_generate_unmapped` is true, unmapped Java files still produce inferred target paths via handlers.
-- Sync status logic: A target file is considered synced if it was modified after the Java file (timestamp) or, in simplified mode, if both were touched in the PR.
-- Disabled scaffolds: Node.js and C# handlers exist; enabling them requires setting `enabled: true` and supplying base path + conventions.
+- Language paths are configured directly in `multi_language_syncer.py` under the `LANGUAGES` dict.
+- An optional [tools/multi-language-mapping.json](https://github.com/TruvetaPublic/OpenToken/blob/main/tools/multi-language-mapping.json) supplies `ignore_patterns`.
+- Sync status logic: A target file is considered up-to-date if it was modified after the source file within the same PR (commit timestamp comparison).
+- Progress is tracked across all commits in a PR so the checklist reflects incremental work.
 
 Usage examples:
 
 ```bash
-python3 tools/java_language_syncer.py --format console
-python3 tools/java_language_syncer.py --format github-checklist --since origin/main
-python3 tools/java_language_syncer.py --health-check
+python3 tools/multi_language_syncer.py --format console
+python3 tools/multi_language_syncer.py --format github-checklist --since origin/main
+python3 tools/multi_language_syncer.py --health-check
 ```
 
-CI enforcement: The GitHub Actions workflow (`java-language-sync.yml`) posts a checklist and fails if completion < total.
+CI integration: The GitHub Actions workflow (`.github/workflows/multi-language-sync.yml`) posts an informational checklist comment on PRs. It does not hard-fail; it tracks progress.
 
-When adding attributes/tokens: update Java first, run sync tool, then implement Python parity before merging.
+When adding attributes/tokens: update all applicable language implementations, run the sync tool to verify, and ensure the checklist shows complete before merging.
 
 ### Cross-language Tips
 
-| Task            | Java Command                                             | Python Command                     |
-| --------------- | -------------------------------------------------------- | ---------------------------------- |
-| Build / Package | `cd lib/java && mvn clean install`                       | `pip install -e .`                 |
-| Run Tests       | `mvn test`                                               | `pytest src/test`                  |
-| Lint / Style    | `mvn checkstyle:check`                                   | (pep8 / flake8 if configured)      |
-| Run CLI         | `java -jar opentoken-cli/target/opentoken-cli-*.jar ...` | `python -m opentoken_cli.main ...` |
-| Add Token       | SPI entry & class                                        | new module in `tokens/definitions` |
-| Add Attribute   | SPI entry & class                                        | class + loader import              |
+| Task            | Java Command                                                     | Python Command                             |
+| --------------- | ---------------------------------------------------------------- | ------------------------------------------ |
+| Build / Package | `cd lib/java && mvn clean install`                               | `pip install -e .`                         |
+| Run Tests       | `mvn test`                                                       | `pytest src/test`                          |
+| Lint / Style    | `mvn checkstyle:check`                                           | (pep8 / flake8 if configured)              |
+| Run CLI         | `java -jar opentoken-cli/target/opentoken-cli-*.jar package ...` | `python -m opentoken_cli.main package ...` |
+| Add Token       | SPI entry & class                                                | new module in `tokens/definitions`         |
+| Add Attribute   | SPI entry & class                                                | class + loader import                      |
 
 Maintain the same functional behavior and normalization between languages.
 
@@ -398,15 +397,15 @@ OpenToken supports three processing modes across Java, Python, and the PySpark b
 | Mode      | Secrets Required                     | Transform Pipeline                                | Output Example (T1)                  | Deterministic Across Runs | Recommended Use                                                   |
 | --------- | ------------------------------------ | ------------------------------------------------- | ------------------------------------ | ------------------------- | ----------------------------------------------------------------- |
 | Plain     | None (not currently exposed via CLI) | Concatenate normalized attribute expressions only | `DOE\|JOHN\|1990-01-15\|MALE\|98101` | Yes (given same input)    | Debugging, rule design, docs demos                                |
-| Hash-only | Hashing secret only                  | HMAC-SHA256(signature)                            | 64 hex chars (SHA-256 digest)        | Yes                       | Internal overlap analysis against decrypted partner token outputs |
-| Encrypted | Hashing secret + encryption key      | HMAC-SHA256 f AES-256-GCM (random IV per token)  | Base64 blob (length varies)          | Yes (post-decrypt hash)   | Production / privacy-preserving use and external token exchange   |
+| Tokenize  | Hashing secret only                  | HMAC-SHA256(signature)                            | 64 hex chars (SHA-256 digest)        | Yes                       | Internal overlap analysis against decrypted partner token outputs |
+| Encrypted | Hashing secret + encryption key      | HMAC-SHA256 → AES-256-GCM (random IV per token)   | Base64 blob (length varies)          | Yes (post-decrypt hash)   | Production / privacy-preserving use and external token exchange   |
 
 Notes:
 
-- The underlying signature (before hashing) is produced by ordered attribute expressions for each token rule (e.g., T1fT5 or custom T6+). Plain mode exposes this directly for inspection.
-- Encryption uses AES-256-GCM with a random IV; identical hashed inputs yield different encrypted outputs each run. Matching encrypted tokens across datasets therefore requires either: (a) decryption with the shared key (to reach the hash-only representation) or (b) generating hash-only tokens specifically for overlap workflows. Do NOT attempt to match encrypted blobs directly.
+- The underlying signature (before hashing) is produced by ordered attribute expressions for each token rule (e.g., T1→T5 or custom T6+). Plain mode exposes this directly for inspection.
+- Encryption uses AES-256-GCM with a random IV; identical hashed inputs yield different encrypted outputs each run. Matching encrypted tokens across datasets therefore requires either: (a) decryption with the shared key (to reach the tokenized representation) or (b) using the `tokenize` subcommand specifically for overlap workflows. Do NOT attempt to match encrypted blobs directly.
 - Tokenizer polymorphism: Java & Python `TokenGenerator` accept an injectable tokenizer. Defaults to SHA-256; when plain mode is active a `PassthroughTokenizer` is used so downstream transformers (if any) receive the raw signature.
-- Security: Plain and hash-only modes reduce protection. Never use plain mode for sharing PHI; hash-only may leak structural frequency information. Encrypted mode is required for external distribution; hash-only datasets should remain internal and are typically used to join against decrypted partner tokens for overlap analysis.
+- Security: Plain and tokenized modes reduce protection. Never use plain mode for sharing PHI; tokenized output may leak structural frequency information. Encrypted mode is required for external distribution; tokenized datasets should remain internal and are typically used to join against decrypted partner tokens for overlap analysis.
 
 ## Token & Attribute Registration
 
@@ -530,10 +529,10 @@ Minimum required arguments:
 
 ```shell
 # Java
-java -jar lib/java/opentoken-cli/target/opentoken-cli-*.jar -i input.csv -t csv -o output.csv -h HashingKey -e Secret-Encryption-Key-Goes-Here.
+java -jar lib/java/opentoken-cli/target/opentoken-cli-*.jar package -i input.csv -t csv -o output.csv -h HashingKey -e Secret-Encryption-Key-Goes-Here.
 
 # Python
-python -m opentoken_cli.main -i input.csv -t csv -o output.csv -h HashingKey -e Secret-Encryption-Key-Goes-Here.
+python -m opentoken_cli.main package -i input.csv -t csv -o output.csv -h HashingKey -e Secret-Encryption-Key-Goes-Here.
 ```
 
 Arguments:

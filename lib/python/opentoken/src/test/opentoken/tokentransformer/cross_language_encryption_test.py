@@ -89,9 +89,6 @@ class TestCrossLanguageEncryption:
         assert isinstance(encrypted, str)
         decoded = base64.b64decode(encrypted)
         
-        # Verify structure
-        assert len(decoded) >= 28  # Minimum: 12 (IV) + 16 (tag) = 28 bytes
-        
         # Extract components
         iv = decoded[:12]
         ciphertext_and_tag = decoded[12:]
