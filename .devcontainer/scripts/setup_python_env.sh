@@ -42,7 +42,11 @@ pip install --no-cache-dir \
   -e opentoken \
   -e opentoken-cli \
   -e "opentoken-pyspark[spark40]" \
-  pre-commit \
+  prek \
   autoflake
+
+cd "$REPO_ROOT"
+echo "Installing prek git hooks..."
+prek install
 
 echo "✓ Python environment setup complete"
