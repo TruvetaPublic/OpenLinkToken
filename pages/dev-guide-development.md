@@ -52,13 +52,13 @@ This guide centralizes contributor-facing information. It covers local setup, la
 
 ## Prerequisites
 
-| Tool              | Recommended Version | Notes                                                                    |
-| ----------------- | ------------------- | ------------------------------------------------------------------------ |
-| Java JDK          | 21.x                | Required for Java module & CLI JAR (outputs Java 17 compatible bytecode) |
-| Maven             | 3.8+                | Build Java artifacts (`mvn clean install`)                               |
-| Python            | 3.10+               | For Python implementation & scripts                                      |
-| pip / venv        | Latest              | Manage Python dependencies                                               |
-| Docker (optional) | Latest              | Build container image                                                    |
+| Tool              | Recommended Version | Notes                                                                                    |
+| ----------------- | ------------------- | ---------------------------------------------------------------------------------------- |
+| Java JDK          | 21.x                | Required for Java module & CLI JAR (outputs Java 17 compatible bytecode)                 |
+| Maven             | 3.8+                | Build Java artifacts (`mvn clean install`)                                               |
+| Python            | 3.10+               | For Python implementation & scripts                                                      |
+| uv                | Latest              | Manage Python dependencies (install: `curl -LsSf https://astral.sh/uv/install.sh \| sh`) |
+| Docker (optional) | Latest              | Build container image                                                                    |
 
 ## Project Layout
 
@@ -195,13 +195,13 @@ Notes:
 Prerequisites:
 
 - Python 3.10+
-- pip
+- [uv](https://docs.astral.sh/uv/) (install: `curl -LsSf https://astral.sh/uv/install.sh | sh`)
 
 Create & activate virtual environment (recommended):
 
 ```shell
 cd lib/python/opentoken
-python -m venv .venv
+uv venv .venv
 source .venv/bin/activate
 ```
 
@@ -209,21 +209,21 @@ Install dependencies:
 
 ```shell
 # Core library
-pip install -r requirements.txt -r dev-requirements.txt
+uv pip install -r requirements.txt -r dev-requirements.txt
 
 # For CLI support, also install opentoken-cli
 cd ../opentoken-cli
-pip install -r requirements.txt -r dev-requirements.txt
+uv pip install -r requirements.txt -r dev-requirements.txt
 ```
 
 Editable install for local development:
 
 ```shell
 # Install core library
-cd lib/python/opentoken && pip install -e .
+cd lib/python/opentoken && uv pip install -e .
 
 # Install CLI (includes core as dependency)
-cd lib/python/opentoken-cli && pip install -e .
+cd lib/python/opentoken-cli && uv pip install -e .
 ```
 
 CLI usage (from project root):
@@ -307,8 +307,8 @@ Prerequisites:
 Install (from repo root):
 
 ```shell
-pip install -r lib/python/opentoken-pyspark/requirements.txt -r lib/python/opentoken-pyspark/dev-requirements.txt
-pip install -e lib/python/opentoken-pyspark
+uv pip install -r lib/python/opentoken-pyspark/requirements.txt -r lib/python/opentoken-pyspark/dev-requirements.txt
+uv pip install -e lib/python/opentoken-pyspark
 ```
 
 Basic Usage:
@@ -383,7 +383,7 @@ When adding attributes/tokens: update all applicable language implementations, r
 
 | Task            | Java Command                                                     | Python Command                             |
 | --------------- | ---------------------------------------------------------------- | ------------------------------------------ |
-| Build / Package | `cd lib/java && mvn clean install`                               | `pip install -e .`                         |
+| Build / Package | `cd lib/java && mvn clean install`                               | `uv pip install -e .`                      |
 | Run Tests       | `mvn test`                                                       | `pytest src/test`                          |
 | Lint / Style    | `mvn checkstyle:check`                                           | (pep8 / flake8 if configured)              |
 | Run CLI         | `java -jar opentoken-cli/target/opentoken-cli-*.jar package ...` | `python -m opentoken_cli.main package ...` |

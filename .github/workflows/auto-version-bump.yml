@@ -96,7 +96,7 @@ jobs:
 
       - name: Install bump2version
         if: steps.check_version.outputs.needs_update == 'true'
-        run: pip install bump2version
+        run: uv pip install bump2version
 
       - name: Update version
         if: steps.check_version.outputs.needs_update == 'true'
@@ -140,9 +140,9 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.issue.number,
               body: `🤖 **Version Auto-Updated**
-              
+
               Version has been automatically updated to \`${{ steps.extract_version.outputs.version }}\` based on the release branch name.
-              
+
               Updated files:
               - \`.bumpversion.cfg\`
               - \`lib/java/opentoken/pom.xml\`
@@ -151,7 +151,7 @@ jobs:
               - \`lib/python/opentoken/setup.py\`
               - \`lib/python/opentoken/src/main/opentoken/__init__.py\`
               - \`lib/python/opentoken/src/main/opentoken/metadata.py\`
-              
+
               Please review the changes before merging.`
             });
 
@@ -165,6 +165,6 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.issue.number,
               body: `✅ **Version Check Passed**
-              
+
               Version is already set to \`${{ steps.extract_version.outputs.version }}\` - no update needed.`
             });

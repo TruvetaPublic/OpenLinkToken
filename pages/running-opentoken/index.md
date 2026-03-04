@@ -41,6 +41,7 @@ opentoken <subcommand> [OPTIONS]
 Generates encrypted tokens. Both hashing secret and encryption key required.
 
 **Java:**
+
 ```bash
 cd lib/java
 mvn clean install -DskipTests
@@ -54,10 +55,11 @@ java -jar opentoken-cli/target/opentoken-cli-*.jar package \
 ```
 
 **Python:**
+
 ```bash
 cd lib/python/opentoken-cli
 source ../../.venv/bin/activate
-pip install -r requirements.txt -e . -e ../opentoken
+uv pip install -r requirements.txt -e . -e ../opentoken
 
 python -m opentoken_cli.main package \
   -i ../../../resources/sample.csv \
@@ -72,6 +74,7 @@ python -m opentoken_cli.main package \
 Generates HMAC-SHA256 hashed tokens without AES encryption. Only hashing secret required.
 
 **Java:**
+
 ```bash
 java -jar opentoken-cli/target/opentoken-cli-*.jar tokenize \
   -i ../../resources/sample.csv \
@@ -81,6 +84,7 @@ java -jar opentoken-cli/target/opentoken-cli-*.jar tokenize \
 ```
 
 **Python:**
+
 ```bash
 python -m opentoken_cli.main tokenize \
   -i ../../../resources/sample.csv \
@@ -94,6 +98,7 @@ python -m opentoken_cli.main tokenize \
 Decrypts previously encrypted tokens. Only encryption key required.
 
 **Java:**
+
 ```bash
 java -jar opentoken-cli/target/opentoken-cli-*.jar decrypt \
   -i ../../resources/output.csv \
@@ -103,6 +108,7 @@ java -jar opentoken-cli/target/opentoken-cli-*.jar decrypt \
 ```
 
 **Python:**
+
 ```bash
 python -m opentoken_cli.main decrypt \
   -i ../../../resources/output.csv \
@@ -116,6 +122,7 @@ python -m opentoken_cli.main decrypt \
 Token generation produces two files:
 
 **Tokens File** (CSV or Parquet):
+
 ```
 RecordId,RuleId,Token
 record1,T1,Gn7t1Zj16E5Qy+z9iINtczP6fRDYta6C0XFrQtpjnVQSEZ5pQXAzo02Aa9LS9oNMOog6Ssw9GZE6fvJrX2sQ/cThSkB6m91L
@@ -124,6 +131,7 @@ record1,T2,pUxPgYL9+cMxkA+8928Pil+9W+dm9kISwHYPdkZS+I2nQ/bQ/8HyL3FOVf3NYPW5NKZZO
 ```
 
 **Metadata File** (always JSON, suffixed `.metadata.json`):
+
 ```json
 {
   "JavaVersion": "21.0.0",
@@ -151,6 +159,7 @@ Use Docker for a containerized, dependency-free environment.
 Scripts automatically build and run the container.
 
 **Bash (Linux/Mac):**
+
 ```bash
 cd /path/to/OpenToken
 
@@ -163,6 +172,7 @@ cd /path/to/OpenToken
 ```
 
 **PowerShell (Windows):**
+
 ```powershell
 cd C:\path\to\OpenToken
 
@@ -207,6 +217,7 @@ cat resources/output.metadata.json
 ```
 
 **Dev Container:** If running in a dev container, use absolute path:
+
 ```bash
 docker run --rm -v /workspaces/OpenToken/resources:/app/resources \
   opentoken:latest ...
@@ -233,7 +244,7 @@ Ensure the Python root venv is active, then install:
 source /workspaces/OpenToken/.venv/bin/activate
 
 cd lib/python/opentoken-pyspark
-pip install -r requirements.txt -e .
+uv pip install -r requirements.txt -e .
 ```
 
 ### Basic Usage
@@ -281,6 +292,7 @@ See example notebooks in `lib/python/opentoken-pyspark/notebooks/`:
 **Problem**: Error when running `package` mode without `-e`.
 
 **Solution**: Either provide encryption key `-e "YourKey"` or use `tokenize`:
+
 ```bash
 java -jar opentoken-cli-*.jar tokenize -i data.csv -t csv -o output.csv -h "HashingKey"
 ```
@@ -290,11 +302,13 @@ java -jar opentoken-cli-*.jar tokenize -i data.csv -t csv -o output.csv -h "Hash
 **Problem**: BirthDate attribute fails validation.
 
 **Causes**:
+
 - Date is before January 1, 1910
 - Date is in the future
 - Format is not recognized
 
 **Solution**: Use YYYY-MM-DD format or one of the accepted formats (MM/DD/YYYY, MM-DD-YYYY, DD.MM.YYYY):
+
 ```
 Correct: 1980-01-15, 01/15/1980
 Wrong:   1905-01-01, 2025-12-31, 01-15-80
@@ -305,6 +319,7 @@ Wrong:   1905-01-01, 2025-12-31, 01-15-80
 **Problem**: SSN fails validation (area, group, or serial validation).
 
 **Causes**:
+
 - Area: 000, 666, or 900–999
 - Group: 00
 - Serial: 0000
@@ -317,6 +332,7 @@ Wrong:   1905-01-01, 2025-12-31, 01-15-80
 **Problem**: Name is rejected as placeholder or invalid.
 
 **Causes**:
+
 - Value is placeholder: "Unknown", "Test", "N/A", "Anonymous", "Missing"
 - LastName is too short (< 2 chars) without being special case ("Ng")
 - Null or empty
@@ -328,11 +344,13 @@ Wrong:   1905-01-01, 2025-12-31, 01-15-80
 **Problem**: Docker image won't build or run.
 
 **Causes**:
+
 - Docker daemon not running
 - Insufficient disk space
 - File path issues on Windows
 
 **Solution**:
+
 1. Ensure Docker is running: `docker --version`
 2. Use absolute paths, not relative: `/workspaces/OpenToken/resources`
 3. Clear Docker cache if needed: `docker system prune`
@@ -343,11 +361,13 @@ Wrong:   1905-01-01, 2025-12-31, 01-15-80
 **Problem**: Same input produces different tokens in Java vs. Python.
 
 **Causes**:
+
 - Different hashing/encryption secrets
 - Different attribute normalization
 - Unicode handling differences
 
 **Solution**:
+
 1. Verify secrets match exactly
 2. Check attribute normalization (see [Concepts: Normalization](../concepts/normalization-and-validation.md))
 3. Run the interoperability test suite: `tools/interoperability/multi_language_interoperability_test.py`
@@ -358,11 +378,13 @@ Wrong:   1905-01-01, 2025-12-31, 01-15-80
 **Problem**: "Column 'FirstName' not found" or CSV parse error.
 
 **Causes**:
+
 - Column names don't match expected aliases
 - Commas within values without quoting
 - Encoding issues (non-UTF-8)
 
 **Solution**:
+
 1. Verify column names match accepted aliases (see [Configuration](../config/configuration.md))
 2. Quote values containing commas: `"Doe, Jr."`
 3. Ensure UTF-8 encoding

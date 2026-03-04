@@ -75,7 +75,7 @@ pytest -k "test_name"     # Run tests matching pattern
 ### Installing Dependencies
 
 ```bash
-pip install -r requirements.txt -r dev-requirements.txt
+uv pip install -r requirements.txt -r dev-requirements.txt
 ```
 
 ### Test Guidelines

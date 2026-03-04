@@ -30,16 +30,16 @@ mvn clean install
 
 ```bash
 # From repo root
-python -m venv .venv
+uv venv .venv
 source .venv/bin/activate
 
 # Core library
 cd lib/python/opentoken
-pip install -r requirements.txt -e .
+uv pip install -r requirements.txt -e .
 
 # CLI
 cd ../opentoken-cli
-pip install -r requirements.txt -e .
+uv pip install -r requirements.txt -e .
 ```
 
 ### PySpark Bridge
@@ -47,7 +47,7 @@ pip install -r requirements.txt -e .
 ```bash
 source /workspaces/OpenToken/.venv/bin/activate
 cd lib/python/opentoken-pyspark
-pip install -r requirements.txt -e .
+uv pip install -r requirements.txt -e .
 ```
 
 ## Branch Workflow (Gitflow)
