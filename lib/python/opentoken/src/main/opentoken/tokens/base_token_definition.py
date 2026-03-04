@@ -21,7 +21,7 @@ class BaseTokenDefinition(ABC):
         Returns:
             The token definition version.
         """
-        pass
+        ...  # pragma: no cover
 
     @abstractmethod
     def get_token_identifiers(self) -> Set[str]:
@@ -34,7 +34,7 @@ class BaseTokenDefinition(ABC):
         Returns:
             A set of token identifiers.
         """
-        pass
+        ...  # pragma: no cover
 
     @abstractmethod
     def get_token_definition(self, token_id: str) -> List[AttributeExpression]:
@@ -47,4 +47,4 @@ class BaseTokenDefinition(ABC):
         Returns:
             A list of token/rule definition.
         """
-        pass
+        ...  # pragma: no cover
