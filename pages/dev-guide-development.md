@@ -39,6 +39,7 @@ This guide centralizes contributor-facing information. It covers local setup, la
     - [Python Registration](#python-registration)
     - [Cross-language Parity Checklist](#cross-language-parity-checklist)
     - [Quick Reference](#quick-reference)
+      - [Common Generic Attributes (ready to reuse)](#common-generic-attributes-ready-to-reuse)
   - [Building \& Testing](#building--testing)
     - [Full Multi-language Build](#full-multi-language-build)
     - [Docker Image](#docker-image)
@@ -197,10 +198,9 @@ Prerequisites:
 - Python 3.10+
 - [uv](https://docs.astral.sh/uv/) (install: `curl -LsSf https://astral.sh/uv/install.sh | sh`)
 
-Create & activate virtual environment (recommended):
+Create & activate virtual environment (at repository root):
 
 ```shell
-cd lib/python/opentoken
 uv venv .venv
 source .venv/bin/activate
 ```
@@ -209,6 +209,7 @@ Install dependencies:
 
 ```shell
 # Core library
+cd lib/python/opentoken
 uv pip install -r requirements.txt -r dev-requirements.txt
 
 # For CLI support, also install opentoken-cli
