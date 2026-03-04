@@ -103,7 +103,7 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          uv pip install -r lib/python/opentoken/requirements.txt pytest pytest-cov flake8 -e lib/python/opentoken/
+          uv pip install --system -r lib/python/opentoken/requirements.txt pytest pytest-cov flake8 -e lib/python/opentoken/
 
       - name: Lint with flake8
         run: |
@@ -173,7 +173,7 @@ jobs:
 
       - name: Install Python CLI dependencies
         run: |
-          uv pip install -r lib/python/opentoken/requirements.txt -e lib/python/opentoken/ -r lib/python/opentoken-cli/requirements.txt pytest pytest-cov flake8 -e lib/python/opentoken-cli/
+          uv pip install --system -r lib/python/opentoken/requirements.txt -e lib/python/opentoken/ -r lib/python/opentoken-cli/requirements.txt pytest pytest-cov flake8 -e lib/python/opentoken-cli/
 
       - name: Lint CLI with flake8
         run: |
@@ -264,25 +264,25 @@ jobs:
 
       - name: Install OpenToken core library
         run: |
-          uv pip install -r lib/python/opentoken/requirements.txt -e lib/python/opentoken/
+          uv pip install --system -r lib/python/opentoken/requirements.txt -e lib/python/opentoken/
 
       - name: Install PySpark bridge dependencies (Spark ${{ matrix.spark-version }})
         run: |
-          uv pip install pytest pytest-cov flake8
+          uv pip install --system pytest pytest-cov flake8
           if [ "${{ matrix.spark-version }}" = "4.0" ]; then
-            uv pip install -e "lib/python/opentoken-pyspark[spark40]"
+            uv pip install --system -e "lib/python/opentoken-pyspark[spark40]"
           elif [ "${{ matrix.spark-version }}" = "4.1" ]; then
-            uv pip install -e "lib/python/opentoken-pyspark[spark41]"
+            uv pip install --system -e "lib/python/opentoken-pyspark[spark41]"
           elif [ "${{ matrix.spark-version }}" = "3.4" ]; then
-            uv pip install -e "lib/python/opentoken-pyspark[spark34]"
+            uv pip install --system -e "lib/python/opentoken-pyspark[spark34]"
           elif [ "${{ matrix.spark-version }}" = "3.5" ]; then
-            uv pip install -e "lib/python/opentoken-pyspark[spark35]"
+            uv pip install --system -e "lib/python/opentoken-pyspark[spark35]"
           else
             echo "Unsupported Spark version for PySpark bridge: '${{ matrix.spark-version }}'."
             echo "Please update .github/workflows/ci.yml to handle this Spark version."
             exit 1
           fi
-          uv pip install -r lib/python/opentoken-pyspark/dev-requirements.txt
+          uv pip install --system -r lib/python/opentoken-pyspark/dev-requirements.txt
 
       - name: Lint with flake8
         run: |
@@ -526,13 +526,13 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          uv pip install -e lib/python/opentoken -e lib/python/opentoken-cli -e "lib/python/opentoken-pyspark[spark40]"
+          uv pip install --system -e lib/python/opentoken -e lib/python/opentoken-cli -e "lib/python/opentoken-pyspark[spark40]"
 
       - name: Install interoperability tool dependencies
         run: |
           cd tools
           if [ -f requirements.txt ]; then
-            uv pip install -r requirements.txt
+            uv pip install --system -r requirements.txt
           fi
 
       - name: Build Java artifacts

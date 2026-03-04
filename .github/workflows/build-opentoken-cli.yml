@@ -48,10 +48,10 @@ jobs:
 
       - name: Install build dependencies
         run: |
-          uv pip install -e lib/python/opentoken
-          uv pip install -r lib/python/opentoken-cli/pyinstaller-requirements.txt
-          uv pip install -r lib/python/opentoken-cli/requirements.txt
-          uv pip install -e lib/python/opentoken-cli --no-deps
+          uv pip install --system -e lib/python/opentoken
+          uv pip install --system -r lib/python/opentoken-cli/pyinstaller-requirements.txt
+          uv pip install --system -r lib/python/opentoken-cli/requirements.txt
+          uv pip install --system -e lib/python/opentoken-cli --no-deps
 
       - name: Build CLI binary
         shell: bash

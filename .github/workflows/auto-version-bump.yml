@@ -96,7 +96,7 @@ jobs:
 
       - name: Install bump2version
         if: steps.check_version.outputs.needs_update == 'true'
-        run: uv pip install bump2version
+        run: uv pip install --system bump2version
 
       - name: Update version
         if: steps.check_version.outputs.needs_update == 'true'
