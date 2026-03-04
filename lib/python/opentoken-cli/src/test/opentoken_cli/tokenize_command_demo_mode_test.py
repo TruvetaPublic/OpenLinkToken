@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 import pytest
+
 from opentoken_cli.commands.open_token_command import OpenTokenCommand
 
 # HMAC-SHA256 over 32 bytes → base64 → always exactly 44 characters
@@ -160,15 +161,13 @@ class TestTokenizeCommandDemoMode:
         assert tokens, "Expected at least one non-blank token in demo mode"
 
         # At least one multi-attribute rule should produce a pipe-separated token
-        assert any(
-            "|" in t for t in tokens
-        ), "Expected at least one pipe-separated signature token (T1-T4 rules)"
+        assert any("|" in t for t in tokens), "Expected at least one pipe-separated signature token (T1-T4 rules)"
 
         # None of the tokens should be a 44-char HMAC-SHA256 base64 string
         for token in tokens:
-            assert (
-                len(token) != NORMAL_MODE_TOKEN_LENGTH
-            ), f"Demo-mode token must not be a 44-char HMAC base64 string, got: {token}"
+            assert len(token) != NORMAL_MODE_TOKEN_LENGTH, (
+                f"Demo-mode token must not be a 44-char HMAC base64 string, got: {token}"
+            )
 
     def test_normal_mode_tokens_are_44_char_hmac_base64(self, temp_dir: Path):
         """Normal mode tokens are HMAC-SHA256 base64, always exactly 44 characters."""
@@ -191,9 +190,9 @@ class TestTokenizeCommandDemoMode:
         assert tokens, "Expected at least one non-blank token in normal mode"
 
         for token in tokens:
-            assert (
-                len(token) == NORMAL_MODE_TOKEN_LENGTH
-            ), f"Normal-mode token must be a 44-char HMAC base64 string, got: {token!r}"
+            assert len(token) == NORMAL_MODE_TOKEN_LENGTH, (
+                f"Normal-mode token must be a 44-char HMAC base64 string, got: {token!r}"
+            )
 
     def test_demo_and_normal_mode_produce_different_tokens(self, temp_dir: Path):
         """Demo-mode and normal-mode outputs must differ for the same input."""
@@ -248,9 +247,7 @@ class TestTokenizeCommandDemoMode:
         )
 
         metadata = _read_metadata(temp_dir / "output.metadata.json")
-        assert (
-            "HashingSecretHash" not in metadata
-        ), "Demo mode must not include HashingSecretHash in metadata"
+        assert "HashingSecretHash" not in metadata, "Demo mode must not include HashingSecretHash in metadata"
 
     def test_normal_mode_metadata_contains_hashing_secret_hash(self, temp_dir: Path):
         """Normal mode must write HashingSecretHash to the metadata file."""
@@ -269,9 +266,7 @@ class TestTokenizeCommandDemoMode:
         )
 
         metadata = _read_metadata(temp_dir / "output.metadata.json")
-        assert (
-            "HashingSecretHash" in metadata
-        ), "Normal mode must include HashingSecretHash in metadata"
+        assert "HashingSecretHash" in metadata, "Normal mode must include HashingSecretHash in metadata"
 
     def test_demo_mode_metadata_contains_processing_counters(self, temp_dir: Path):
         """Demo mode metadata must still record row and attribute statistics."""
@@ -289,9 +284,7 @@ class TestTokenizeCommandDemoMode:
         )
 
         metadata = _read_metadata(temp_dir / "output.metadata.json")
-        assert (
-            metadata.get("TotalRows") == 2
-        ), f"Expected TotalRows=2 but got {metadata.get('TotalRows')}"
+        assert metadata.get("TotalRows") == 2, f"Expected TotalRows=2 but got {metadata.get('TotalRows')}"
 
 
 # ---------------------------------------------------------------------------

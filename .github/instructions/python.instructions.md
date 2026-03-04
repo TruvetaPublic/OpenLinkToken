@@ -30,7 +30,7 @@ applyTo: "**/*.py"
 - Ensure lines do not exceed 120 characters (extended from PEP 8's 79 for PySpark chains).
 - Place function and class docstrings immediately after the `def` or `class` keyword.
 - Use blank lines to separate functions, classes, and code blocks where appropriate.
-- **Remove unused imports and variables**: Always clean up unused imports and variables from your code. Running `autoflake --remove-all-unused-imports --remove-unused-variables` can help automatically identify and remove these.
+- **Remove unused imports and variables**: Always clean up unused imports and variables from your code. Running `ruff check --fix` can help automatically identify and remove these.
 - Organize imports in standard order: standard library imports, third-party imports, then local application imports, with a blank line between each group.
 
 ### PySpark Import Rules (Critical)

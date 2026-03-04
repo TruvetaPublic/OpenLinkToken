@@ -3,10 +3,11 @@ Copyright (c) Truveta. All rights reserved.
 """
 
 from typing import List
+
 from opentoken.attributes.combined_attribute import CombinedAttribute
-from opentoken.attributes.serializable_attribute import SerializableAttribute
-from opentoken.attributes.person.us_postal_code_attribute import USPostalCodeAttribute
 from opentoken.attributes.person.canadian_postal_code_attribute import CanadianPostalCodeAttribute
+from opentoken.attributes.person.us_postal_code_attribute import USPostalCodeAttribute
+from opentoken.attributes.serializable_attribute import SerializableAttribute
 
 
 class PostalCodeAttribute(CombinedAttribute):
@@ -21,7 +22,7 @@ class PostalCodeAttribute(CombinedAttribute):
     standard format. Supports both US ZIP codes (3, 4, or 5 digits) and Canadian
     postal codes (3, 4, 5, or 6 characters in A1A 1A1 format). ZIP-3 codes (3 digits/characters)
     are automatically padded to full length during normalization.
-    
+
     This class instantiates postal code attributes with min_length=3 to support
     partial postal codes (ZIP-3, ZIP-4, and partial Canadian formats).
     """
@@ -30,10 +31,7 @@ class PostalCodeAttribute(CombinedAttribute):
     ALIASES = [NAME, "ZipCode", "ZIP3", "ZIP4", "ZIP5"]
 
     def __init__(self):
-        self._implementations = [
-            USPostalCodeAttribute(min_length=3),
-            CanadianPostalCodeAttribute(min_length=3)
-        ]
+        self._implementations = [USPostalCodeAttribute(min_length=3), CanadianPostalCodeAttribute(min_length=3)]
         super().__init__()
 
     def get_name(self) -> str:

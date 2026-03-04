@@ -125,13 +125,11 @@ class TestDateAttribute:
             "26.10.2023",
             "2000-01-01",
             "1990/12/31",
-            "12/31/1999"
+            "12/31/1999",
         ]
 
         for value in test_values:
-            assert date_attribute.get_name() == deserialized_attribute.get_name(), (
-                "Attribute names should match"
-            )
+            assert date_attribute.get_name() == deserialized_attribute.get_name(), "Attribute names should match"
 
             assert date_attribute.get_aliases() == deserialized_attribute.get_aliases(), (
                 "Attribute aliases should match"

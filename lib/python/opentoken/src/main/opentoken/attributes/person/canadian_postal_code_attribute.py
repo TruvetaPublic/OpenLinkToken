@@ -4,6 +4,7 @@ Copyright (c) Truveta. All rights reserved.
 
 import re
 from typing import List
+
 from opentoken.attributes.base_attribute import BaseAttribute
 from opentoken.attributes.utilities.attribute_utilities import AttributeUtilities
 from opentoken.attributes.validation.not_starts_with_validator import NotStartsWithValidator
@@ -36,20 +37,20 @@ class CanadianPostalCodeAttribute(BaseAttribute):
         "B1B 1B1",
         "C2C 2C2",
         "K1A 0A6",  # Canadian government address
-        "H0H 0H0"   # Santa Claus postal code
+        "H0H 0H0",  # Santa Claus postal code
     }
 
     # 3-character codes that are invalid when standalone (not when part of full codes)
     INVALID_ZIP3_CODES = {
         "K1A",  # Canadian government
         "M7A",  # Government of Ontario
-        "H0H"   # Santa Claus
+        "H0H",  # Santa Claus
     }
 
     def __init__(self, min_length: int = 6):
         """
         Initialize CanadianPostalCodeAttribute.
-        
+
         Args:
             min_length: Minimum length for postal codes (default: 6)
         """
@@ -97,9 +98,11 @@ class CanadianPostalCodeAttribute(BaseAttribute):
                     # Check if this is a padded partial code
                     # Padded codes end with "000" (3-char), "A0" (4-char), or "0" (5-char after last letter)
                     last_part = normalized_value[4:]  # After "K1A "
-                    if (last_part == "000" or                      # K1A → K1A 000
-                        re.match(r'\dA0$', last_part) or          # K1A1 → K1A 1A0
-                        re.match(r'\d[A-Z]0$', last_part)):       # K1A1A → K1A 1A0
+                    if (
+                        last_part == "000"  # K1A → K1A 000
+                        or re.match(r"\dA0$", last_part)  # K1A1 → K1A 1A0
+                        or re.match(r"\d[A-Z]0$", last_part)
+                    ):  # K1A1A → K1A 1A0
                         return False
 
         return True
@@ -116,9 +119,12 @@ class CanadianPostalCodeAttribute(BaseAttribute):
 
         For Canadian postal codes:
         - Codes shorter than min_length are rejected (return original)
-        - 3-character format (e.g., "J1X") is padded with " 000" to create full format (e.g., "J1X 000") if min_length <= 3
-        - 4-character format (e.g., "J1X1") is padded with "A0" to create full format (e.g., "J1X 1A0") if min_length <= 4
-        - 5-character format (e.g., "J1X1A") is padded with "0" to create full format (e.g., "J1X 1A0") if min_length <= 5
+        - 3-character format (e.g., "J1X") is padded with " 000" to create full format
+          (e.g., "J1X 000") if min_length <= 3
+        - 4-character format (e.g., "J1X1") is padded with "A0" to create full format
+          (e.g., "J1X 1A0") if min_length <= 4
+        - 5-character format (e.g., "J1X1A") is padded with "0" to create full format
+          (e.g., "J1X 1A0") if min_length <= 5
         - 6-character format returns uppercase format with space (e.g., "k1a0a6" becomes "K1A 0A6")
         If the input value is null or doesn't match Canadian postal pattern, the original
         trimmed value is returned.

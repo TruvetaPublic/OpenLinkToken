@@ -3,7 +3,7 @@ Copyright (c) Truveta. All rights reserved.
 """
 
 import logging
-from typing import Iterator, Dict
+from typing import Dict, Iterator
 
 try:
     import pyarrow.parquet as pq
@@ -12,7 +12,6 @@ except ImportError:
 
 from opentoken_cli.io.token_reader import TokenReader
 from opentoken_cli.processor.token_constants import TokenConstants
-
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +38,7 @@ class TokenParquetReader(TokenReader):
             self.table = self.parquet_file.read()
             self.current_row = 0
             self.total_rows = len(self.table)
-            
+
             # Validate required columns
             required_columns = {TokenConstants.RULE_ID, TokenConstants.TOKEN, TokenConstants.RECORD_ID}
             column_names = set(self.table.column_names)
@@ -73,7 +72,7 @@ class TokenParquetReader(TokenReader):
         row_dict = {}
         for column_name in self.table.column_names:
             value = self.table.column(column_name)[self.current_row].as_py()
-            row_dict[column_name] = str(value) if value is not None else ''
+            row_dict[column_name] = str(value) if value is not None else ""
 
         self.current_row += 1
         return row_dict

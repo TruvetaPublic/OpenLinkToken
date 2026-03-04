@@ -3,8 +3,8 @@ Tests for USPostalCodeAttribute.
 """
 
 import pickle
-import pytest
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
 from opentoken.attributes.person.us_postal_code_attribute import USPostalCodeAttribute
 
 
@@ -76,8 +76,19 @@ class TestUSPostalCodeAttribute:
     def test_validate_should_return_false_for_placeholder_zip_codes(self):
         """Test validation returns false for placeholder ZIP codes."""
         invalid_zip_codes = [
-            "12345", "54321", "01234", "98765", "00000", "11111", "22222",
-            "33333", "55555", "66666", "77777", "88888", "99999"
+            "12345",
+            "54321",
+            "01234",
+            "98765",
+            "00000",
+            "11111",
+            "22222",
+            "33333",
+            "55555",
+            "66666",
+            "77777",
+            "88888",
+            "99999",
         ]
         for zip_code in invalid_zip_codes:
             assert self.us_postal_code_attribute.validate(zip_code) is False
@@ -105,17 +116,17 @@ class TestUSPostalCodeAttribute:
         # Less than 3 digits - return trimmed original
         assert self.us_postal_code_attribute.normalize("12") == "12"
         assert self.us_postal_code_attribute.normalize("1") == "1"
-        
+
         # Null and empty
         assert self.us_postal_code_attribute.normalize(None) is None
         assert self.us_postal_code_attribute.normalize("") == ""
-        
+
         # 5+ digit codes
         assert self.us_postal_code_attribute.normalize("10001") == "10001"
         assert self.us_postal_code_attribute.normalize(" 10001") == "10001"
         assert self.us_postal_code_attribute.normalize("10001-1234") == "10001"
         assert self.us_postal_code_attribute.normalize("100011234") == "10001"
-        
+
         # Non-US formats
         assert self.us_postal_code_attribute.normalize("K1B 0A7") == "K1B 0A7"
         assert self.us_postal_code_attribute.normalize("k1b0a7") == "k1b0a7"
@@ -167,7 +178,7 @@ class TestUSPostalCodeAttribute:
         assert self.us_postal_code_attribute.validate("000") is False
         assert self.us_postal_code_attribute.validate("555") is False
         assert self.us_postal_code_attribute.validate("888") is False
-        
+
         # These should be valid (not in invalid list)
         assert self.us_postal_code_attribute.validate("111") is True
         assert self.us_postal_code_attribute.validate("222") is True
@@ -179,7 +190,7 @@ class TestUSPostalCodeAttribute:
         assert self.us_postal_code_attribute.validate("0001") is False
         assert self.us_postal_code_attribute.validate("5555") is False
         assert self.us_postal_code_attribute.validate("8888") is False
-        
+
         # These should be valid (not in invalid list)
         assert self.us_postal_code_attribute.validate("1111") is True
         assert self.us_postal_code_attribute.validate("1234") is True
@@ -191,9 +202,7 @@ class TestUSPostalCodeAttribute:
         serialized_data = pickle.dumps(self.us_postal_code_attribute)
         deserialized_attribute = pickle.loads(serialized_data)
 
-        test_values = [
-            "10001", "10001-1234", "90210-5678", "30301", "60601-2345"
-        ]
+        test_values = ["10001", "10001-1234", "90210-5678", "30301", "60601-2345"]
 
         for value in test_values:
             assert self.us_postal_code_attribute.get_name() == deserialized_attribute.get_name()

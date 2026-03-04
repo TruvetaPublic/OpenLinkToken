@@ -2,9 +2,10 @@
 Copyright (c) Truveta. All rights reserved.
 """
 
-from typing import List
 import re
 from datetime import datetime
+from typing import List
+
 from opentoken.attributes.base_attribute import BaseAttribute
 from opentoken.attributes.validation import RegexValidator
 from opentoken.attributes.validation.serializable_attribute_validator import SerializableAttributeValidator
@@ -86,12 +87,12 @@ class DateAttribute(BaseAttribute):
 
         # Try ISO 8601 timestamp formats first
         iso_formats = [
-            "%Y-%m-%dT%H:%M:%S.%fZ",      # yyyy-MM-ddTHH:mm:ss.sssZ
-            "%Y-%m-%dT%H:%M:%SZ",          # yyyy-MM-ddTHH:mm:ssZ
-            "%Y-%m-%dT%H:%M:%S.%f%z",      # yyyy-MM-ddTHH:mm:ss.sss+/-HH:MM
-            "%Y-%m-%dT%H:%M:%S%z"          # yyyy-MM-ddTHH:mm:ss+/-HH:MM
+            "%Y-%m-%dT%H:%M:%S.%fZ",  # yyyy-MM-ddTHH:mm:ss.sssZ
+            "%Y-%m-%dT%H:%M:%SZ",  # yyyy-MM-ddTHH:mm:ssZ
+            "%Y-%m-%dT%H:%M:%S.%f%z",  # yyyy-MM-ddTHH:mm:ss.sss+/-HH:MM
+            "%Y-%m-%dT%H:%M:%S%z",  # yyyy-MM-ddTHH:mm:ss+/-HH:MM
         ]
-        
+
         for fmt in iso_formats:
             try:
                 parsed_date = datetime.strptime(value, fmt)
@@ -105,7 +106,7 @@ class DateAttribute(BaseAttribute):
             "%Y/%m/%d",  # yyyy/MM/dd
             "%m/%d/%Y",  # MM/dd/yyyy
             "%m-%d-%Y",  # MM-dd-yyyy
-            "%d.%m.%Y"   # dd.MM.yyyy
+            "%d.%m.%Y",  # dd.MM.yyyy
         ]
 
         for format in date_formats:

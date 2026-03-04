@@ -3,13 +3,13 @@ Copyright (c) Truveta. All rights reserved.
 """
 
 import hashlib
-from unittest.mock import Mock, call
+from unittest.mock import Mock
 
 import pytest
 
+from opentoken.tokens.tokenizer.sha256_tokenizer import SHA256Tokenizer
 from opentoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
 from opentoken.tokentransformer.hash_token_transformer import HashTokenTransformer
-from opentoken.tokens.tokenizer.sha256_tokenizer import SHA256Tokenizer
 
 
 class TestSHA256Tokenizer:
@@ -22,10 +22,7 @@ class TestSHA256Tokenizer:
         self.encrypt_transformer_mock = Mock(spec=EncryptTokenTransformer)
 
         # List of transformers to pass to SHA256Tokenizer
-        transformers = [
-            self.hash_transformer_mock,
-            self.encrypt_transformer_mock
-        ]
+        transformers = [self.hash_transformer_mock, self.encrypt_transformer_mock]
 
         # Instantiate the tokenizer with mocked transformers
         self.tokenizer = SHA256Tokenizer(transformers)
@@ -61,13 +58,15 @@ class TestSHA256Tokenizer:
     def test_tokenize_valid_input_no_transformers_returns_raw_hash(self):
         """Test that valid input with no transformers returns raw hash."""
         input_value = "test-input"
-        
+
         tokenizer = SHA256Tokenizer([])  # Recreate tokenizer with no transformers
         expected_hash = self._calculate_sha256(input_value)  # Expected SHA-256 hash (in hex format) for "test-input"
 
         result = tokenizer.tokenize(input_value)  # Call the tokenize method
 
-        assert result == expected_hash  # Verify that the result is just the raw SHA-256 hash (no transformations applied)
+        assert (
+            result == expected_hash
+        )  # Verify that the result is just the raw SHA-256 hash (no transformations applied)
 
     def test_tokenize_valid_input_transformer_throws_exception(self):
         """Test that transformer exceptions are propagated."""
@@ -85,40 +84,40 @@ class TestSHA256Tokenizer:
     def test_tokenize_consistent_hashing(self):
         """Test that the same input always produces the same hash."""
         input_value = "consistent-test"
-        
+
         # Tokenizer with no transformers for raw hash comparison
         tokenizer = SHA256Tokenizer([])
-        
+
         result1 = tokenizer.tokenize(input_value)
         result2 = tokenizer.tokenize(input_value)
-        
+
         assert result1 == result2
         assert len(result1) == 64  # SHA-256 produces 64 char hex string
 
     def test_tokenize_different_inputs_produce_different_hashes(self):
         """Test that different inputs produce different hashes."""
         tokenizer = SHA256Tokenizer([])
-        
+
         result1 = tokenizer.tokenize("input1")
         result2 = tokenizer.tokenize("input2")
-        
+
         assert result1 != result2
 
     def test_tokenize_unicode_input(self):
         """Test tokenization with Unicode input."""
         input_value = "こんにちは"  # Japanese "hello"
         tokenizer = SHA256Tokenizer([])
-        
+
         result = tokenizer.tokenize(input_value)
-        
+
         assert result is not None
         assert len(result) == 64
-        
+
         # Verify consistency with Unicode
         result2 = tokenizer.tokenize(input_value)
         assert result == result2
 
     def _calculate_sha256(self, input_str: str) -> str:
         """Utility method to calculate SHA-256 hash for a given input string."""
-        hash_object = hashlib.sha256(input_str.encode('utf-8'))
+        hash_object = hashlib.sha256(input_str.encode("utf-8"))
         return hash_object.hexdigest()

@@ -15,7 +15,7 @@ class AttributeUtilities:
 
     # Pattern that matches any character that is not an alphabetic character (a-z or A-Z).
     # Used for removing or identifying non-alphabetic characters in strings.
-    NON_ALPHABETIC_PATTERN = re.compile(r'[^a-zA-Z]')
+    NON_ALPHABETIC_PATTERN = re.compile(r"[^a-zA-Z]")
 
     # Pattern that matches one or more whitespace characters.
     # This includes spaces, tabs, line breaks, and other Unicode whitespace.
@@ -26,7 +26,7 @@ class AttributeUtilities:
     # "\n" -> newline
     # "\r\n" -> carriage return + newline
     # "   " -> multiple spaces
-    WHITESPACE_PATTERN = re.compile(r'\s+')
+    WHITESPACE_PATTERN = re.compile(r"\s+")
 
     # Pattern that matches generational suffixes at the end of a string.
     # Matches case-insensitive suffixes after a whitespace character.
@@ -43,7 +43,7 @@ class AttributeUtilities:
     # "Robert Johnson III" -> matches " III"
     # "Thomas Wilson 2nd" -> matches " 2nd"
     GENERATIONAL_SUFFIX_PATTERN = re.compile(
-        r'(?i)\s+(jr\.?|junior|sr\.?|senior|I{1,3}|IV|V|VI{0,3}|IX|X|\d+(st|nd|rd|th))$'
+        r"(?i)\s+(jr\.?|junior|sr\.?|senior|I{1,3}|IV|V|VI{0,3}|IX|X|\d+(st|nd|rd|th))$"
     )
 
     # A set of common placeholder names used to identify non-identifying or
@@ -58,24 +58,24 @@ class AttributeUtilities:
     # These values should be treated as non-identifying data and may need special
     # handling during data processing, anonymization, or when analyzing data quality.
     COMMON_PLACEHOLDER_NAMES: Set[str] = {
-        "Unknown",              # Placeholder for unknown last names
-        "N/A",                  # Not applicable
-        "None",                 # No last name provided
-        "Test",                 # Commonly used in testing scenarios
-        "Sample",               # Sample data placeholder
-        "Donor",                # Placeholder for donor records
-        "Patient",              # Placeholder for patient records
-        "Automation Test",      # Placeholder for automation tests
-        "Automationtest",       # Another variation of automation test
-        "patient not found",    # Placeholder for cases where patient data is not found
-        "patientnotfound",      # Another variation of patient not found
-        "<masked>",             # Placeholder for masked data
-        "Anonymous",            # Placeholder for anonymous records
-        "zzztrash",             # Placeholder for test or trash data
-        "Missing",              # Placeholder for missing data
-        "Unavailable",          # Placeholder for unavailable data
-        "Not Available",        # Placeholder for data not available
-        "NotAvailable"          # Placeholder for data not available (no spaces)
+        "Unknown",  # Placeholder for unknown last names
+        "N/A",  # Not applicable
+        "None",  # No last name provided
+        "Test",  # Commonly used in testing scenarios
+        "Sample",  # Sample data placeholder
+        "Donor",  # Placeholder for donor records
+        "Patient",  # Placeholder for patient records
+        "Automation Test",  # Placeholder for automation tests
+        "Automationtest",  # Another variation of automation test
+        "patient not found",  # Placeholder for cases where patient data is not found
+        "patientnotfound",  # Another variation of patient not found
+        "<masked>",  # Placeholder for masked data
+        "Anonymous",  # Placeholder for anonymous records
+        "zzztrash",  # Placeholder for test or trash data
+        "Missing",  # Placeholder for missing data
+        "Unavailable",  # Placeholder for unavailable data
+        "Not Available",  # Placeholder for data not available
+        "NotAvailable",  # Placeholder for data not available (no spaces)
     }
 
     def __init__(self):
@@ -108,8 +108,8 @@ class AttributeUtilities:
         trimmed_value = value.strip()
 
         # Normalize to NFD (decomposed form) and filter out combining characters
-        normalized = unicodedata.normalize('NFD', trimmed_value)
-        return ''.join(c for c in normalized if unicodedata.category(c) != 'Mn')
+        normalized = unicodedata.normalize("NFD", trimmed_value)
+        return "".join(c for c in normalized if unicodedata.category(c) != "Mn")
 
     @staticmethod
     def remove_whitespace(value: str) -> str:
@@ -125,7 +125,7 @@ class AttributeUtilities:
         if value is None:
             return None
 
-        return AttributeUtilities.WHITESPACE_PATTERN.sub('', value)
+        return AttributeUtilities.WHITESPACE_PATTERN.sub("", value)
 
     @staticmethod
     def remove_non_alphabetic_characters(value: str) -> str:
@@ -141,7 +141,7 @@ class AttributeUtilities:
         if value is None:
             return None
 
-        return AttributeUtilities.NON_ALPHABETIC_PATTERN.sub('', value)
+        return AttributeUtilities.NON_ALPHABETIC_PATTERN.sub("", value)
 
     @staticmethod
     def remove_generational_suffix(value: str) -> str:
@@ -157,7 +157,7 @@ class AttributeUtilities:
         if value is None:
             return None
 
-        return AttributeUtilities.GENERATIONAL_SUFFIX_PATTERN.sub('', value).strip()
+        return AttributeUtilities.GENERATIONAL_SUFFIX_PATTERN.sub("", value).strip()
 
     @staticmethod
     def get_common_placeholder_names() -> Set[str]:

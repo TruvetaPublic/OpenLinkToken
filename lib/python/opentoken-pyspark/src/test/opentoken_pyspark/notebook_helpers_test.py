@@ -5,13 +5,14 @@ Tests for notebook helper utilities.
 """
 
 import pytest
+
 from opentoken_pyspark.notebook_helpers import (
-    TokenBuilder,
     CustomTokenDefinition,
+    TokenBuilder,
     create_token_generator,
-    quick_token,
-    list_attributes,
     expression_help,
+    list_attributes,
+    quick_token,
 )
 
 
@@ -20,10 +21,7 @@ class TestTokenBuilder:
 
     def test_build_simple_token(self):
         """Test building a simple custom token."""
-        token = TokenBuilder("T6") \
-            .add("last_name", "T|U") \
-            .add("first_name", "T|U") \
-            .build()
+        token = TokenBuilder("T6").add("last_name", "T|U").add("first_name", "T|U").build()
 
         assert token.get_identifier() == "T6"
         assert len(token.get_definition()) == 2
@@ -45,11 +43,9 @@ class TestTokenBuilder:
 
     def test_method_chaining(self):
         """Test that add() supports method chaining."""
-        token = TokenBuilder("T9") \
-            .add("last_name", "T|U") \
-            .add("first_name", "T|S(0,3)|U") \
-            .add("birth_date", "T|D") \
-            .build()
+        token = (
+            TokenBuilder("T9").add("last_name", "T|U").add("first_name", "T|S(0,3)|U").add("birth_date", "T|D").build()
+        )
 
         assert len(token.get_definition()) == 3
 
@@ -70,9 +66,7 @@ class TestCustomTokenDefinition:
         t6 = TokenBuilder("T6").add("last_name", "T|U").build()
         t7 = TokenBuilder("T7").add("first_name", "T|U").build()
 
-        definition = CustomTokenDefinition() \
-            .add_token(t6) \
-            .add_token(t7)
+        definition = CustomTokenDefinition().add_token(t6).add_token(t7)
 
         assert "T6" in definition.get_token_identifiers()
         assert "T7" in definition.get_token_identifiers()
@@ -95,10 +89,7 @@ class TestCreateTokenGenerator:
 
     def test_create_with_default_definition(self):
         """Test creating a generator with default token definition."""
-        generator = create_token_generator(
-            "test-hash-secret",
-            "12345678901234567890123456789012"
-        )
+        generator = create_token_generator("test-hash-secret", "12345678901234567890123456789012")
         assert generator is not None
 
     def test_create_with_custom_definition(self):
@@ -106,11 +97,7 @@ class TestCreateTokenGenerator:
         token = TokenBuilder("T6").add("last_name", "T|U").build()
         definition = CustomTokenDefinition().add_token(token)
 
-        generator = create_token_generator(
-            "test-hash-secret",
-            "12345678901234567890123456789012",
-            definition
-        )
+        generator = create_token_generator("test-hash-secret", "12345678901234567890123456789012", definition)
         assert generator is not None
 
 
@@ -121,26 +108,16 @@ class TestQuickToken:
         """Test creating a quick token with attribute list."""
         generator = quick_token(
             "T10",
-            [
-                ("last_name", "T|U"),
-                ("first_name", "T|S(0,3)|U"),
-                ("birth_date", "T|D")
-            ],
+            [("last_name", "T|U"), ("first_name", "T|S(0,3)|U"), ("birth_date", "T|D")],
             "test-hash-secret",
-            "12345678901234567890123456789012"
+            "12345678901234567890123456789012",
         )
         assert generator is not None
 
     def test_quick_token_with_postal_code(self):
         """Test quick token with postal code attribute."""
         generator = quick_token(
-            "T11",
-            [
-                ("postal_code", "T|S(0,3)"),
-                ("sex", "T|U")
-            ],
-            "test-hash-secret",
-            "12345678901234567890123456789012"
+            "T11", [("postal_code", "T|S(0,3)"), ("sex", "T|U")], "test-hash-secret", "12345678901234567890123456789012"
         )
         assert generator is not None
 

@@ -11,12 +11,12 @@ from opentoken.attributes.person.last_name_attribute import LastNameAttribute
 from opentoken.attributes.person.postal_code_attribute import PostalCodeAttribute
 from opentoken.attributes.person.sex_attribute import SexAttribute
 from opentoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
+from opentoken.metadata import Metadata
+from opentoken.tokentransformer.hash_token_transformer import HashTokenTransformer
+from opentoken.tokentransformer.token_transformer import TokenTransformer
 from opentoken_cli.io.person_attributes_reader import PersonAttributesReader
 from opentoken_cli.io.person_attributes_writer import PersonAttributesWriter
 from opentoken_cli.processor.person_attributes_processor import PersonAttributesProcessor
-from opentoken.tokentransformer.hash_token_transformer import HashTokenTransformer
-from opentoken.tokentransformer.token_transformer import TokenTransformer
-from opentoken.metadata import Metadata
 
 
 class TestPersonAttributesProcessor:
@@ -25,11 +25,7 @@ class TestPersonAttributesProcessor:
     def test_process_happy_path(self):
         """Test process happy path."""
         token_transformer_list = [Mock(spec=HashTokenTransformer)]
-        data = {
-            RecordIdAttribute: "TestRecordId",
-            FirstNameAttribute: "John",
-            LastNameAttribute: "Spencer"
-        }
+        data = {RecordIdAttribute: "TestRecordId", FirstNameAttribute: "John", LastNameAttribute: "Spencer"}
 
         reader = Mock(spec=PersonAttributesReader)
         writer = Mock(spec=PersonAttributesWriter)
@@ -48,11 +44,7 @@ class TestPersonAttributesProcessor:
     def test_process_io_exception_writing_attributes(self):
         """Test process with IOException writing attributes."""
         token_transformer_list = [Mock(spec=TokenTransformer)]
-        data = {
-            RecordIdAttribute: "TestRecordId",
-            FirstNameAttribute: "John",
-            LastNameAttribute: "Spencer"
-        }
+        data = {RecordIdAttribute: "TestRecordId", FirstNameAttribute: "John", LastNameAttribute: "Spencer"}
 
         reader = Mock(spec=PersonAttributesReader)
         writer = Mock(spec=PersonAttributesWriter)
@@ -75,11 +67,7 @@ class TestPersonAttributesProcessor:
     def test_metadata_map_contains_correct_values(self):
         """Test metadata map contains correct values."""
         token_transformer_list = [Mock(spec=HashTokenTransformer)]
-        data = {
-            RecordIdAttribute: "TestRecordId",
-            FirstNameAttribute: "John",
-            LastNameAttribute: "Spencer"
-        }
+        data = {RecordIdAttribute: "TestRecordId", FirstNameAttribute: "John", LastNameAttribute: "Spencer"}
 
         reader = Mock(spec=PersonAttributesReader)
         writer = Mock(spec=PersonAttributesWriter)
@@ -90,34 +78,35 @@ class TestPersonAttributesProcessor:
         PersonAttributesProcessor.process(reader, writer, token_transformer_list, metadata_map)
 
         # Check that the metadata map contains all expected keys with correct values
-        assert PersonAttributesProcessor.TOTAL_ROWS in metadata_map, \
-            "Metadata should contain totalRows key"
-        assert PersonAttributesProcessor.TOTAL_ROWS_WITH_INVALID_ATTRIBUTES in metadata_map, \
+        assert PersonAttributesProcessor.TOTAL_ROWS in metadata_map, "Metadata should contain totalRows key"
+        assert PersonAttributesProcessor.TOTAL_ROWS_WITH_INVALID_ATTRIBUTES in metadata_map, (
             "Metadata should contain totalRowsWithInvalidAttributes key"
-        assert PersonAttributesProcessor.INVALID_ATTRIBUTES_BY_TYPE in metadata_map, \
+        )
+        assert PersonAttributesProcessor.INVALID_ATTRIBUTES_BY_TYPE in metadata_map, (
             "Metadata should contain invalidAttributesByType key"
+        )
 
         # Verify values
         assert metadata_map[PersonAttributesProcessor.TOTAL_ROWS] == 1, "Total rows should be 1"
-        assert metadata_map[PersonAttributesProcessor.TOTAL_ROWS_WITH_INVALID_ATTRIBUTES] == 0, \
+        assert metadata_map[PersonAttributesProcessor.TOTAL_ROWS_WITH_INVALID_ATTRIBUTES] == 0, (
             "Total rows with invalid attributes should be 0"
-        assert PersonAttributesProcessor.BLANK_TOKENS_BY_RULE in metadata_map, \
+        )
+        assert PersonAttributesProcessor.BLANK_TOKENS_BY_RULE in metadata_map, (
             "Metadata should contain blankTokensByRule key"
+        )
 
         # The invalid attributes map should contain all attributes with zero counts
         invalid_attributes_map = metadata_map[PersonAttributesProcessor.INVALID_ATTRIBUTES_BY_TYPE]
-        assert len(invalid_attributes_map) > 0, \
-            "Invalid attributes map should contain all attributes initialized to 0"
-        
+        assert len(invalid_attributes_map) > 0, "Invalid attributes map should contain all attributes initialized to 0"
+
         # Verify all invalid attribute values are 0 (no invalid attributes in this test)
         for count in invalid_attributes_map.values():
             assert count == 0, "All attribute counts should be 0 with valid data"
-        
+
         # Verify blank tokens map contains all token rules
         blank_tokens_map = metadata_map[PersonAttributesProcessor.BLANK_TOKENS_BY_RULE]
-        assert len(blank_tokens_map) > 0, \
-            "Blank tokens map should contain all token rules initialized to 0"
-        
+        assert len(blank_tokens_map) > 0, "Blank tokens map should contain all token rules initialized to 0"
+
         # Note: This test data (FirstName, LastName only) will generate blank tokens
         # because required attributes like Sex, BirthDate, SSN, PostalCode are missing
         # So we just verify that the map is present and contains entries
@@ -134,7 +123,7 @@ class TestPersonAttributesProcessor:
             SocialSecurityNumberAttribute: "234-56-7890",
             BirthDateAttribute: "1990-01-15",
             SexAttribute: "Male",
-            PostalCodeAttribute: "98052"
+            PostalCodeAttribute: "98052",
         }
 
         reader = Mock(spec=PersonAttributesReader)
@@ -147,18 +136,16 @@ class TestPersonAttributesProcessor:
 
         # Verify invalid attributes map contains all attributes with zero counts (happy path)
         invalid_attributes_map = metadata_map[PersonAttributesProcessor.INVALID_ATTRIBUTES_BY_TYPE]
-        assert len(invalid_attributes_map) > 0, \
-            "Invalid attributes map should contain all attributes initialized to 0"
-        
+        assert len(invalid_attributes_map) > 0, "Invalid attributes map should contain all attributes initialized to 0"
+
         # Verify all invalid attribute values are 0 in the happy path
         for count in invalid_attributes_map.values():
             assert count == 0, "All attribute counts should be 0 in happy path"
-        
+
         # Verify blank tokens map contains all token rules with zero counts (happy path)
         blank_tokens_map = metadata_map[PersonAttributesProcessor.BLANK_TOKENS_BY_RULE]
-        assert len(blank_tokens_map) > 0, \
-            "Blank tokens map should contain all token rules initialized to 0"
-        
+        assert len(blank_tokens_map) > 0, "Blank tokens map should contain all token rules initialized to 0"
+
         # Verify all blank token counts are 0 in the happy path (all required attributes present)
         for count in blank_tokens_map.values():
             assert count == 0, "All token rule counts should be 0 in happy path"
@@ -168,21 +155,9 @@ class TestPersonAttributesProcessor:
         token_transformer_list = [Mock(spec=HashTokenTransformer)]
 
         # Create three data records
-        data1 = {
-            RecordIdAttribute: "TestRecordId1",
-            FirstNameAttribute: "John",
-            LastNameAttribute: "Spencer"
-        }
-        data2 = {
-            RecordIdAttribute: "TestRecordId2",
-            FirstNameAttribute: "Jane",
-            LastNameAttribute: "Doe"
-        }
-        data3 = {
-            RecordIdAttribute: "TestRecordId3",
-            FirstNameAttribute: "Alex",
-            LastNameAttribute: "Smith"
-        }
+        data1 = {RecordIdAttribute: "TestRecordId1", FirstNameAttribute: "John", LastNameAttribute: "Spencer"}
+        data2 = {RecordIdAttribute: "TestRecordId2", FirstNameAttribute: "Jane", LastNameAttribute: "Doe"}
+        data3 = {RecordIdAttribute: "TestRecordId3", FirstNameAttribute: "Alex", LastNameAttribute: "Smith"}
 
         reader = Mock(spec=PersonAttributesReader)
         writer = Mock(spec=PersonAttributesWriter)
@@ -195,17 +170,14 @@ class TestPersonAttributesProcessor:
 
         # Verify
         assert metadata_map[PersonAttributesProcessor.TOTAL_ROWS] == 3, "Total rows should be 3"
-        assert metadata_map[PersonAttributesProcessor.TOTAL_ROWS_WITH_INVALID_ATTRIBUTES] == 0, \
+        assert metadata_map[PersonAttributesProcessor.TOTAL_ROWS_WITH_INVALID_ATTRIBUTES] == 0, (
             "Total rows with invalid attributes should be 0"
+        )
 
     def test_metadata_map_preserves_existing_entries(self):
         """Test metadata map preserves existing entries."""
         token_transformer_list = [Mock(spec=HashTokenTransformer)]
-        data = {
-            RecordIdAttribute: "TestRecordId",
-            FirstNameAttribute: "John",
-            LastNameAttribute: "Spencer"
-        }
+        data = {RecordIdAttribute: "TestRecordId", FirstNameAttribute: "John", LastNameAttribute: "Spencer"}
 
         reader = Mock(spec=PersonAttributesReader)
         writer = Mock(spec=PersonAttributesWriter)

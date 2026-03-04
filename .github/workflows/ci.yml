@@ -103,12 +103,11 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          uv pip install --system -r lib/python/opentoken/requirements.txt pytest pytest-cov flake8 -e lib/python/opentoken/
+          uv pip install --system -r lib/python/opentoken/requirements.txt pytest pytest-cov ruff -e lib/python/opentoken/
 
-      - name: Lint with flake8
+      - name: Lint with ruff
         run: |
-          flake8 lib/python/opentoken/src --count --select=E9,F63,F7,F82 --show-source --statistics
-          flake8 lib/python/opentoken/src --count --exit-zero --statistics
+          ruff check lib/python/opentoken/src
 
       - name: Test with pytest
         run: |
@@ -173,12 +172,11 @@ jobs:
 
       - name: Install Python CLI dependencies
         run: |
-          uv pip install --system -r lib/python/opentoken/requirements.txt -e lib/python/opentoken/ -r lib/python/opentoken-cli/requirements.txt pytest pytest-cov flake8 -e lib/python/opentoken-cli/
+          uv pip install --system -r lib/python/opentoken/requirements.txt -e lib/python/opentoken/ -r lib/python/opentoken-cli/requirements.txt pytest pytest-cov ruff -e lib/python/opentoken-cli/
 
-      - name: Lint CLI with flake8
+      - name: Lint CLI with ruff
         run: |
-          flake8 lib/python/opentoken-cli/src --count --select=E9,F63,F7,F82 --show-source --statistics
-          flake8 lib/python/opentoken-cli/src --count --exit-zero --statistics
+          ruff check lib/python/opentoken-cli/src
 
       - name: Test CLI with pytest
         run: |
@@ -268,7 +266,7 @@ jobs:
 
       - name: Install PySpark bridge dependencies (Spark ${{ matrix.spark-version }})
         run: |
-          uv pip install --system pytest pytest-cov flake8
+          uv pip install --system pytest pytest-cov ruff
           if [ "${{ matrix.spark-version }}" = "4.0" ]; then
             uv pip install --system -e "lib/python/opentoken-pyspark[spark40]"
           elif [ "${{ matrix.spark-version }}" = "4.1" ]; then
@@ -284,10 +282,9 @@ jobs:
           fi
           uv pip install --system -r lib/python/opentoken-pyspark/dev-requirements.txt
 
-      - name: Lint with flake8
+      - name: Lint with ruff
         run: |
-          flake8 lib/python/opentoken-pyspark/src/main/opentoken_pyspark --count --select=E9,F63,F7,F82 --show-source --statistics
-          flake8 lib/python/opentoken-pyspark/src/main/opentoken_pyspark --count --exit-zero --statistics
+          ruff check lib/python/opentoken-pyspark/src/main/opentoken_pyspark
 
       - name: Test PySpark bridge
         run: |

@@ -3,6 +3,7 @@ Tests for AttributeExpression.
 """
 
 import pytest
+
 from opentoken.attributes.attribute_expression import AttributeExpression
 from opentoken.attributes.general.record_id_attribute import RecordIdAttribute
 from opentoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute

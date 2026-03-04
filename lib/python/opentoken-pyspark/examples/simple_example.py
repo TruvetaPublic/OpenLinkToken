@@ -14,6 +14,7 @@ Usage:
 """
 
 from pyspark.sql import SparkSession
+
 from opentoken_pyspark import OpenTokenProcessor
 
 
@@ -24,15 +25,16 @@ def main():
     print("Initializing Spark session...")
     # Spark 4.0.1+ provides native Java 21 support with improved Arrow integration.
     # The executorEnv.PYTHONPATH configuration ensures pandas/pyarrow are available to executors.
-    import sys
     import os
-    
-    spark = (SparkSession.builder
-             .appName("OpenTokenSimpleExample")
-             .master("local[2]")
-             .config("spark.sql.shuffle.partitions", "2")
-             .config("spark.executorEnv.PYTHONPATH", os.pathsep.join(sys.path))
-             .getOrCreate())
+    import sys
+
+    spark = (
+        SparkSession.builder.appName("OpenTokenSimpleExample")
+        .master("local[2]")
+        .config("spark.sql.shuffle.partitions", "2")
+        .config("spark.executorEnv.PYTHONPATH", os.pathsep.join(sys.path))
+        .getOrCreate()
+    )
 
     print(f"Spark version: {spark.version}\n")
 
@@ -46,7 +48,7 @@ def main():
             "PostalCode": "98004",
             "Sex": "Male",
             "BirthDate": "2000-01-01",
-            "SocialSecurityNumber": "123-45-6789"
+            "SocialSecurityNumber": "123-45-6789",
         },
         {
             "RecordId": "test-002",
@@ -55,8 +57,8 @@ def main():
             "PostalCode": "15635",
             "Sex": "Female",
             "BirthDate": "1995-06-15",
-            "SocialSecurityNumber": "987-65-4321"
-        }
+            "SocialSecurityNumber": "987-65-4321",
+        },
     ]
 
     # Create DataFrame
@@ -67,10 +69,7 @@ def main():
 
     # Initialize OpenToken processor with secrets
     print("\nInitializing OpenToken processor...")
-    processor = OpenTokenProcessor(
-        hashing_secret="HashingKey",
-        encryption_key="Secret-Encryption-Key-Goes-Here."
-    )
+    processor = OpenTokenProcessor(hashing_secret="HashingKey", encryption_key="Secret-Encryption-Key-Goes-Here.")
 
     # Generate tokens
     print("Generating tokens...")

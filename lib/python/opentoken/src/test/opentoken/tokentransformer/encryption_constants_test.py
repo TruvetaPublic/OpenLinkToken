@@ -1,6 +1,7 @@
 """
 Copyright (c) Truveta. All rights reserved.
 """
+
 from opentoken.tokentransformer.encryption_constants import EncryptionConstants
 
 
@@ -9,12 +10,12 @@ class TestEncryptionConstants:
 
     def test_encryption_constants_exist(self):
         """Test that all encryption constants exist."""
-        assert hasattr(EncryptionConstants, 'AES')
-        assert hasattr(EncryptionConstants, 'ENCRYPTION_ALGORITHM')
-        assert hasattr(EncryptionConstants, 'KEY_BYTE_LENGTH')
-        assert hasattr(EncryptionConstants, 'IV_SIZE')
-        assert hasattr(EncryptionConstants, 'TAG_LENGTH_BITS')
-        assert hasattr(EncryptionConstants, 'TAG_LENGTH_BYTES')
+        assert hasattr(EncryptionConstants, "AES")
+        assert hasattr(EncryptionConstants, "ENCRYPTION_ALGORITHM")
+        assert hasattr(EncryptionConstants, "KEY_BYTE_LENGTH")
+        assert hasattr(EncryptionConstants, "IV_SIZE")
+        assert hasattr(EncryptionConstants, "TAG_LENGTH_BITS")
+        assert hasattr(EncryptionConstants, "TAG_LENGTH_BYTES")
 
     def test_encryption_constants_values(self):
         """Test that encryption constants have correct values."""

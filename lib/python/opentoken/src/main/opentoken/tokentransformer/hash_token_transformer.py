@@ -7,8 +7,8 @@ import hashlib
 import hmac
 import logging
 import threading
-from opentoken.tokentransformer.token_transformer import TokenTransformer
 
+from opentoken.tokentransformer.token_transformer import TokenTransformer
 
 logger = logging.getLogger(__name__)
 
@@ -64,21 +64,17 @@ class HashTokenTransformer(TokenTransformer):
 
         with self._lock:
             # Create HMAC with SHA256 - token is encoded to bytes using UTF-8
-            mac = hmac.new(
-                self.hashing_secret.encode('utf-8'),
-                token.encode('utf-8'),
-                hashlib.sha256
-            )
+            mac = hmac.new(self.hashing_secret.encode("utf-8"), token.encode("utf-8"), hashlib.sha256)
 
             # Get the digest and encode to base64
             digest = mac.digest()
-            return base64.b64encode(digest).decode('utf-8')
+            return base64.b64encode(digest).decode("utf-8")
 
     def __getstate__(self):
         """Custom serialization support."""
         state = self.__dict__.copy()
         # Remove the lock as it can't be pickled
-        del state['_lock']
+        del state["_lock"]
         return state
 
     def __setstate__(self, state):

@@ -3,6 +3,7 @@ Copyright (c) Truveta. All rights reserved.
 """
 
 from typing import List, Optional
+
 from opentoken.attributes.base_attribute import BaseAttribute
 from opentoken.attributes.validation import RegexValidator
 from opentoken.attributes.validation.serializable_attribute_validator import SerializableAttributeValidator
@@ -68,9 +69,9 @@ class IntegerAttribute(BaseAttribute):
             raise ValueError("Integer value cannot be null")
         if not value:
             raise ValueError("Invalid integer format: empty or whitespace")
-            
+
         trimmed = value.strip()
-        
+
         # Validate it's a valid integer
         try:
             int_value = int(trimmed)

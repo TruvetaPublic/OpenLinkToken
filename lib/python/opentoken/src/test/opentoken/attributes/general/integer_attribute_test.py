@@ -3,6 +3,7 @@ Copyright (c) Truveta. All rights reserved.
 """
 
 import pytest
+
 from opentoken.attributes.general.integer_attribute import IntegerAttribute
 
 
