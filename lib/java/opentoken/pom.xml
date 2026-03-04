@@ -16,7 +16,7 @@
     <version>2.0.0-alpha</version>
 
     <name>opentoken</name>
-    <description>OpenToken Core Library - Privacy-preserving person matching using cryptographically secure token generation</description>
+    <description>OpenToken Core Library - Privacy-preserving record linkage using cryptographically secure token generation</description>
     <url>http://www.truveta.com</url>
 
     <properties>

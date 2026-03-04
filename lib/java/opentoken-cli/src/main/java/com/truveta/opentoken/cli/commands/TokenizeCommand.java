@@ -25,67 +25,85 @@ import com.truveta.opentoken.cli.processor.PersonAttributesProcessor;
 import com.truveta.opentoken.cli.util.StringMaskingUtil;
 import com.truveta.opentoken.tokentransformer.HashTokenTransformer;
 import com.truveta.opentoken.tokentransformer.TokenTransformer;
+import com.truveta.opentoken.tokens.tokenizer.PassthroughTokenizer;
 
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 /**
- * Tokenize command - generates hashed tokens from person attributes.
- * This is hash-only mode without encryption.
+ * Tokenize command - generates tokens from person attributes.
+ *
+ * <p>Normal mode (default): applies SHA-256 then HMAC-SHA256 hashing on the token
+ * signature, producing opaque base64 tokens. {@code --hashingsecret} is required.
+ *
+ * <p>Demo mode ({@code --demo-mode}): skips all hashing so tokens are the raw
+ * pipe-separated attribute signature strings. No secret is needed, making it easy
+ * to explore the output without managing secrets. Demo-mode output is
+ * <strong>not</strong> suitable for production or cross-organisation exchange.
  */
-@Command(
-    name = "tokenize",
-    description = "Generate hashed tokens from person attributes (hash-only mode)"
-)
+@Command(name = "tokenize", description = {
+        "Generate tokens from person attributes.",
+        "",
+        "Normal mode: tokens are HMAC-SHA256 hashed (--hashingsecret required).",
+        "Demo mode (--demo-mode): tokens are plain attribute signature strings; no secret needed."
+})
 public class TokenizeCommand implements Callable<Integer> {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(TokenizeCommand.class);
     private static final String TYPE_CSV = "csv";
     private static final String TYPE_PARQUET = "parquet";
-    
-    @Option(names = {"-i", "--input"}, required = true, 
-            description = "Input file path")
+
+    @Option(names = { "-i", "--input" }, required = true, description = "Input file path")
     private String inputPath;
-    
-    @Option(names = {"-o", "--output"}, required = true,
-            description = "Output file path")
+
+    @Option(names = { "-o", "--output" }, required = true, description = "Output file path")
     private String outputPath;
-    
-    @Option(names = {"-t", "--input-type"}, required = true,
-            description = "Input file type: csv or parquet")
+
+    @Option(names = { "-t", "--input-type" }, required = true, description = "Input file type: csv or parquet")
     private String inputType;
-    
-    @Option(names = {"-ot", "--output-type"}, 
-            description = "Output file type (defaults to input type): csv or parquet")
+
+    @Option(names = { "-ot",
+            "--output-type" }, description = "Output file type (defaults to input type): csv or parquet")
     private String outputType;
-    
-    @Option(names = {"-h", "--hashingsecret"}, required = true,
-            description = "Hashing secret for token generation")
+
+    @Option(names = {
+            "--demo-mode" }, description = "Enable demo mode: output raw pipe-separated attribute signature strings with no hashing."
+                    + " --hashingsecret is not required in this mode."
+                    + " Demo output is NOT suitable for production or cross-organisation exchange.")
+    private boolean demoMode;
+
+    @Option(names = { "-h",
+            "--hashingsecret" }, description = "Hashing secret for HMAC-SHA256 token generation (required in normal mode)")
     private String hashingSecret;
-    
-    @Option(names = {"--help"}, usageHelp = true,
-            description = "Show this help message and exit")
+
+    @Option(names = { "--help" }, usageHelp = true, description = "Show this help message and exit")
     private boolean helpRequested;
-    
-    @Option(names = {"-V", "--version"}, versionHelp = true,
-            description = "Print version information and exit")
+
+    @Option(names = { "-V", "--version" }, versionHelp = true, description = "Print version information and exit")
     private boolean versionRequested;
-    
+
     @Override
     public Integer call() {
-        logger.info("Running tokenize command (hash-only mode)");
-        
+        if (demoMode) {
+            logger.warn("Running in DEMO MODE - tokens are raw attribute signature strings with no hashing."
+                    + " Do not use demo-mode output in production or share it externally.");
+        } else {
+            logger.info("Running tokenize command (normal mode)");
+        }
+
         // Default output type to input type if not specified
         if (outputType == null || outputType.isEmpty()) {
             outputType = inputType;
         }
-        
-        // Log parameters (mask secret)
+
+        // Log parameters (mask secret only when present)
         logger.info("Input: {} ({})", inputPath, inputType);
         logger.info("Output: {} ({})", outputPath, outputType);
-        logger.info("Hashing Secret: {}", maskString(hashingSecret));
-        
-        // Validate types
+        if (!demoMode && logger.isInfoEnabled()) {
+            logger.info("Hashing Secret: {}", maskString(hashingSecret));
+        }
+
+        // Validate file types
         if (!isValidType(inputType)) {
             logger.error("Invalid input type: {}. Must be 'csv' or 'parquet'", inputType);
             return 1;
@@ -94,13 +112,13 @@ public class TokenizeCommand implements Callable<Integer> {
             logger.error("Invalid output type: {}. Must be 'csv' or 'parquet'", outputType);
             return 1;
         }
-        
-        // Validate secret
-        if (hashingSecret == null || hashingSecret.isBlank()) {
-            logger.error("Hashing secret is required");
+
+        // --hashingsecret is required in normal mode only
+        if (!demoMode && (hashingSecret == null || hashingSecret.isBlank())) {
+            logger.error("--hashingsecret is required in normal mode. Use --demo-mode to skip hashing.");
             return 1;
         }
-        
+
         try {
             processTokens();
             logger.info("Token generation completed successfully");
@@ -110,38 +128,41 @@ public class TokenizeCommand implements Callable<Integer> {
             return 1;
         }
     }
-    
+
     private void processTokens() throws IOException {
-        List<TokenTransformer> transformers = new ArrayList<>();
-        
-        try {
-            // Add only hash transformer (no encryption in tokenize mode)
-            transformers.add(new HashTokenTransformer(hashingSecret));
-        } catch (Exception e) {
-            logger.error("Error initializing hash transformer", e);
-            throw new RuntimeException("Failed to initialize transformer", e);
-        }
-        
+        Metadata metadata = new Metadata();
+        Map<String, Object> metadataMap = metadata.initialize();
+
         try (PersonAttributesReader reader = createReader(inputPath, inputType);
-             PersonAttributesWriter writer = createWriter(outputPath, outputType)) {
-            
-            // Create metadata
-            Metadata metadata = new Metadata();
-            Map<String, Object> metadataMap = metadata.initialize();
-            metadata.addHashedSecret(Metadata.HASHING_SECRET_HASH, hashingSecret);
-            
-            // Process data
-            PersonAttributesProcessor.process(reader, writer, transformers, metadataMap);
-            
-            // Write metadata
+                PersonAttributesWriter writer = createWriter(outputPath, outputType)) {
+
+            if (demoMode) {
+                // Skip SHA-256 and HMAC: use PassthroughTokenizer so tokens are the
+                // raw pipe-separated attribute signature strings.
+                PersonAttributesProcessor.process(reader, writer,
+                        new PassthroughTokenizer(List.of()), metadataMap);
+            } else {
+                // Only record the hashing-secret hash in normal mode
+                metadata.addHashedSecret(Metadata.HASHING_SECRET_HASH, hashingSecret);
+                PersonAttributesProcessor.process(reader, writer, buildHashTransformers(), metadataMap);
+            }
             MetadataWriter metadataWriter = new MetadataJsonWriter(outputPath);
             metadataWriter.write(metadataMap);
         } catch (Exception e) {
-            logger.error("Error processing tokens", e);
             throw new IOException("Failed to process tokens", e);
         }
     }
-    
+
+    private List<TokenTransformer> buildHashTransformers() throws IOException {
+        List<TokenTransformer> transformers = new ArrayList<>();
+        try {
+            transformers.add(new HashTokenTransformer(hashingSecret));
+        } catch (Exception e) {
+            throw new IOException("Failed to initialize hash transformer", e);
+        }
+        return transformers;
+    }
+
     private PersonAttributesReader createReader(String path, String type) throws IOException {
         return switch (type.toLowerCase()) {
             case TYPE_CSV -> new PersonAttributesCSVReader(path);
@@ -149,7 +170,7 @@ public class TokenizeCommand implements Callable<Integer> {
             default -> throw new IllegalArgumentException("Unsupported input type: " + type);
         };
     }
-    
+
     private PersonAttributesWriter createWriter(String path, String type) throws IOException {
         return switch (type.toLowerCase()) {
             case TYPE_CSV -> new PersonAttributesCSVWriter(path);
@@ -157,11 +178,11 @@ public class TokenizeCommand implements Callable<Integer> {
             default -> throw new IllegalArgumentException("Unsupported output type: " + type);
         };
     }
-    
+
     private boolean isValidType(String type) {
         return TYPE_CSV.equalsIgnoreCase(type) || TYPE_PARQUET.equalsIgnoreCase(type);
     }
-    
+
     private String maskString(String input) {
         return StringMaskingUtil.maskString(input);
     }

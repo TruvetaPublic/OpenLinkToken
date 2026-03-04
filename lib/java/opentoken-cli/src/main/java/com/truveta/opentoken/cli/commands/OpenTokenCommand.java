@@ -20,7 +20,7 @@ import picocli.CommandLine.HelpCommand;
  * Main entry point command for OpenToken CLI with subcommands.
  * Provides modern, subcommand-based interface for token operations.
  */
-@Command(name = "opentoken", description = "Privacy-preserving person matching via cryptographic tokens", mixinStandardHelpOptions = true, version = OpenTokenCommand.CLI_VERSION, subcommands = {
+@Command(name = "opentoken", description = "Privacy-preserving record linkage via cryptographic tokens", mixinStandardHelpOptions = true, version = OpenTokenCommand.CLI_VERSION, subcommands = {
         HelpCommand.class,
         TokenizeCommand.class,
         EncryptCommand.class,
@@ -31,7 +31,7 @@ public class OpenTokenCommand implements Callable<Integer> {
 
     private static final String VERSION = Metadata.DEFAULT_VERSION;
     public static final String CLI_VERSION = "OpenToken " + VERSION;
-    private static final String BANNER_SUBTITLE = "Privacy-Preserving Person Matching v" + VERSION;
+    private static final String BANNER_SUBTITLE = "Privacy-Preserving Record Linkage v" + VERSION;
 
     private static final Logger logger = LoggerFactory.getLogger(OpenTokenCommand.class);
 
@@ -108,7 +108,7 @@ public class OpenTokenCommand implements Callable<Integer> {
     /**
      * Execute the CLI without calling System.exit().
      * Useful for testing or when embedding the CLI in another application.
-     * 
+     *
      * @param args command-line arguments
      * @return exit code (0 for success, non-zero for errors)
      */

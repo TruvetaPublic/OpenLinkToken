@@ -34,7 +34,7 @@ This document provides comprehensive guidance for AI coding agents working on th
 
 ## Architecture Overview
 
-**OpenToken** is a dual-implementation (Java/Python) library for privacy-preserving person matching using cryptographically secure token generation. Tokens are generated from deterministic person attributes (name, birthdate, SSN, etc.) using 5 distinct token rules (T1-T5). Both implementations must produce **identical tokens** for the same normalized input.
+**OpenToken** is a dual-implementation (Java/Python) library for privacy-preserving record linkage using cryptographically secure token generation. Tokens are generated from deterministic person attributes (name, birthdate, SSN, etc.) using 5 distinct token rules (T1-T5). Both implementations must produce **identical tokens** for the same normalized input.
 
 ### Core Components
 

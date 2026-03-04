@@ -4,7 +4,7 @@ layout: default
 
 # Matching Model
 
-OpenToken uses a multi-rule tokenization strategy to enable privacy-preserving person matching across datasets that contain PII.
+OpenToken uses a multi-rule tokenization strategy to enable privacy-preserving record linkage across datasets that contain PII.
 
 ---
 
@@ -270,7 +270,7 @@ For detailed rule compositions, see [Token Rules](token-rules.md).
 | T1   | `OREILLY\|T\|M\|1995-11-03`        | `RHZiTmNYemFRd0VyWnR...` |
 | T2   | `OREILLY\|THOMAS\|1995-11-03\|303` | `S2p1aHlHdEZyRGVWd1h...` |
 | T3   | `OREILLY\|THOMAS\|M\|1995-11-03`   | `VXl0ckVXcUFzRGZHaEp...` |
-| T4   | — (SSN missing)                    | *Not generated*          |
+| T4   | — (SSN missing)                    | _Not generated_          |
 | T5   | `OREILLY\|THO\|M`                  | `QmFzZTY0UExhY2Vob2w...` |
 
 **Observation:** HOS-102 and CLN-202 can match on **T1** (first initial) even though the full first name differs (TOM vs THOMAS). They do **not** match on rules that require the full first name, and they cannot generate T4 because the SSN is missing.
@@ -279,8 +279,8 @@ For detailed rule compositions, see [Token Rules](token-rules.md).
 
 When comparing hash-only (or decrypted) token values across the two systems:
 
-| Record Pair       | T1  | T2  | T3  | T4  | T5  | Match?                |
-| ----------------- | --- | --- | --- | --- | --- | --------------------- |
+| Record Pair        | T1  | T2  | T3  | T4  | T5  | Match?                |
+| ------------------ | --- | --- | --- | --- | --- | --------------------- |
 | HOS-101 ↔ CLN-201 | ✓   | ✓   | ✓   | ✓   | ✓   | **Yes** (all rules)   |
 | HOS-102 ↔ CLN-202 | ✓   | ✗   | ✗   | —   | ✗   | **Depends** (T1 only) |
 | HOS-101 ↔ HOS-102 | ✗   | ✗   | ✗   | ✗   | ✗   | No                    |

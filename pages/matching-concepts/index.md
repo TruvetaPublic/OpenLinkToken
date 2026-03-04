@@ -4,7 +4,7 @@ layout: default
 
 # Matching Concepts
 
-Understand how OpenToken tokens work for person matching and the strategies behind the 5 token rules.
+Understand how OpenToken tokens work for record linkage and the strategies behind the 5 token rules.
 
 ## Token Generation Rules
 
@@ -25,6 +25,7 @@ OpenToken generates **5 distinct tokens (T1–T5)** per person, each combining d
 ### Example
 
 Given a person:
+
 ```
 FirstName: John
 LastName: Doe
@@ -68,12 +69,14 @@ Using **5 rules increases match confidence** by capturing different attribute co
 Suppose you have two datasets and want to find matching persons:
 
 ### Dataset A
+
 ```
 RecordId: A1, Name: John Doe, BirthDate: 2000-01-01, ...
 RecordId: A2, Name: Jane Smith, BirthDate: 1985-06-15, ...
 ```
 
 ### Dataset B
+
 ```
 RecordId: B1, Name: Jon Doe, BirthDate: 2000-01-01, ...     # Same person as A1 (typo in name)
 RecordId: B2, Name: Jane Smith, BirthDate: 1985-06-15, ...   # Same person as A2
@@ -102,10 +105,12 @@ Token(A2, T1) != Token(B3, T1)  ✗ No match for all rules
 ### Matching Strategy
 
 A **match is confirmed** when:
+
 - Tokens match across **multiple rules** (not just one)
 - The matching rules provide **high discriminative power** (not just sex + birthdate, which is common)
 
 This approach handles:
+
 - **Typos and name variations**: T3 and T5 allow first name differences
 - **Data completeness**: T4 works even if SSN is unavailable (use T1–T3 instead)
 - **High confidence**: Matching on multiple rules reduces false positives

@@ -1,13 +1,13 @@
 {
-    "ignore_patterns": [
-        "**/package-info.java",
-        "**/target/**",
-        "**/*.class",
-        "**/.*",
-        "**/properties/**",
-        "**/*.properties",
-        "**/resources/**",
-        "**/__pycache__/**",
-        "**/*.pyc"
-    ]
+  "ignore_patterns": [
+    "**/package-info.java",
+    "**/target/**",
+    "**/*.class",
+    "**/.*",
+    "**/properties/**",
+    "**/*.properties",
+    "**/resources/**",
+    "**/__pycache__/**",
+    "**/*.pyc"
+  ]
 }

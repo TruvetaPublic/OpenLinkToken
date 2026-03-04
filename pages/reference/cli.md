@@ -35,6 +35,7 @@ The `tokenize` subcommand is primarily used to build **internal overlap-analysis
 ## Command Syntax
 
 **Linux/macOS (Bash):**
+
 ```bash
 # Self-contained executable
 ./opentoken [OPTIONS]
@@ -47,6 +48,7 @@ python -m opentoken_cli.main <subcommand> [OPTIONS]
 ```
 
 **Windows (PowerShell):**
+
 ```powershell
 # Self-contained executable
 .\opentoken.exe [OPTIONS]
@@ -73,13 +75,14 @@ python -m opentoken_cli.main <subcommand> [OPTIONS]
 
 ### `tokenize` (Hashed Tokens Only)
 
-| Argument          | Short | Required | Description                              |
-| ----------------- | ----- | -------- | ---------------------------------------- |
-| `--input`         | `-i`  | Yes      | Path to input file (CSV or Parquet)      |
-| `--output`        | `-o`  | Yes      | Path to output file                      |
-| `--type`          | `-t`  | Yes      | File type: `csv` or `parquet`            |
-| `--hashingsecret` | `-h`  | Yes      | Secret key for HMAC-SHA256 hashing       |
-| `--output-type`   | `-ot` | No       | Output file type if different from input |
+| Argument          | Short | Required         | Description                                              |
+| ----------------- | ----- | ---------------- | -------------------------------------------------------- |
+| `--input`         | `-i`  | Yes              | Path to input file (CSV or Parquet)                      |
+| `--output`        | `-o`  | Yes              | Path to output file                                      |
+| `--type`          | `-t`  | Yes              | File type: `csv` or `parquet`                            |
+| `--hashingsecret` | `-h`  | Normal mode only | Secret key for HMAC-SHA256 hashing                       |
+| `--demo-mode`     |       | No               | No hashing; outputs raw attribute signatures (see below) |
+| `--output-type`   | `-ot` | No               | Output file type if different from input                 |
 
 ### `encrypt` (Encrypt Input Tokens)
 
@@ -115,6 +118,7 @@ java -jar opentoken-cli-*.jar package \
 ```
 
 **Token Pipeline:**
+
 ```
 Signature → SHA-256 → HMAC-SHA256 → AES-256-GCM → Base64
 ```
@@ -131,9 +135,48 @@ java -jar opentoken-cli-*.jar tokenize \
 ```
 
 **Token Pipeline:**
+
 ```
 Signature → SHA-256 → HMAC-SHA256 → Base64
 ```
+
+### Demo Mode (`tokenize --demo-mode`)
+
+Outputs raw attribute signature strings without any hashing. Both the SHA-256 and HMAC
+steps are skipped. No `--hashingsecret` is required, making it easy to inspect which
+attribute values compose each token for development, testing, or demos.
+
+> ⚠️ **Demo-mode output must not be used in production or shared externally.** The raw
+> signatures expose the normalised attribute values directly and provide no privacy
+> protection across trust boundaries.
+
+```bash
+java -jar opentoken-cli-*.jar tokenize \
+  -i input.csv -t csv -o output.csv \
+  --demo-mode
+```
+
+**Token Pipeline:**
+
+```text
+Signature → (passthrough) → Raw pipe-separated string
+```
+
+**Example demo token** (T1 rule, first name + last name + birth date):
+
+```text
+JOHN|DOE|19800115
+```
+
+**Differences from normal `tokenize`:**
+
+| Aspect                          | Normal mode                    | Demo mode                                  |
+| ------------------------------- | ------------------------------ | ------------------------------------------ |
+| `--hashingsecret`               | Required                       | Not required (ignored if supplied)         |
+| Token pipeline                  | SHA-256 → HMAC-SHA256 → Base64 | Passthrough → raw signature string         |
+| Token format                    | Base64-encoded HMAC-SHA256     | Pipe-separated normalised attribute values |
+| `HashingSecretHash` in metadata | Present                        | Absent                                     |
+| Safe to share                   | No (internal only)             | No (never suitable for exchange)           |
 
 ## File Format Examples
 
@@ -171,7 +214,8 @@ patient_001,T5,QpBpGBqaMhagfcHGZhVavn23ko03jkyS9Vo4...
 ### Parquet Schema
 
 **Input:**
-```
+
+```text
 RecordId: string
 FirstName: string
 LastName: string
@@ -182,7 +226,8 @@ SSN: string
 ```
 
 **Output:**
-```
+
+```text
 RecordId: string
 RuleId: string
 Token: string

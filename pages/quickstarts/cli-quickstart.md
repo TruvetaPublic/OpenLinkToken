@@ -69,6 +69,7 @@ cd opentoken-cli-2.0.0-alpha-windows-x64
 ### Verifying the Executable
 
 The self-contained executable includes:
+
 - Python 3.11 runtime (bundled)
 - All dependencies (pyarrow, pandas, cryptography)
 - OpenToken CLI and core library
@@ -109,26 +110,29 @@ cd C:\path\to\OpenToken
 
 The CLI is organized into subcommands. Choose the one that matches your workflow:
 
-| Subcommand | Description                                             | Requires   |
-| ---------- | ------------------------------------------------------- | ---------- |
-| `package`  | Tokenize and encrypt in one step — use for data sharing | `-h`, `-e` |
-| `tokenize` | Tokenize without encryption — use for internal analysis | `-h`       |
-| `encrypt`  | Encrypt previously tokenized (hashed) output            | `-e`       |
-| `decrypt`  | Decrypt encrypted tokens back to hashed form            | `-e`       |
+| Subcommand             | Description                                             | Requires   |
+| ---------------------- | ------------------------------------------------------- | ---------- |
+| `package`              | Tokenize and encrypt in one step — use for data sharing | `-h`, `-e` |
+| `tokenize`             | Tokenize without encryption — use for internal analysis | `-h`       |
+| `tokenize --demo-mode` | Output plain attribute signatures — use for exploration | none       |
+| `encrypt`              | Encrypt previously tokenized (hashed) output            | `-e`       |
+| `decrypt`              | Decrypt encrypted tokens back to hashed form            | `-e`       |
 
 For most use cases, `package` is the right starting point.
+Use `tokenize --demo-mode` to explore token output without managing secrets.
 
 ## Common Arguments
 
 These arguments are shared across all subcommands:
 
-| Argument          | Short | Description                         |
-| ----------------- | ----- | ----------------------------------- |
-| `--input`         | `-i`  | Input file path (CSV or Parquet)    |
-| `--output`        | `-o`  | Output file path                    |
-| `--type`          | `-t`  | File type: `csv` or `parquet`       |
-| `--hashingsecret` | `-h`  | Secret key for HMAC hashing         |
-| `--encryptionkey` | `-e`  | 32-character key for AES encryption |
+| Argument          | Short | Description                                                         |
+| ----------------- | ----- | ------------------------------------------------------------------- |
+| `--input`         | `-i`  | Input file path (CSV or Parquet)                                    |
+| `--output`        | `-o`  | Output file path                                                    |
+| `--type`          | `-t`  | File type: `csv` or `parquet`                                       |
+| `--hashingsecret` | `-h`  | Secret key for HMAC hashing (required unless `--demo-mode`)         |
+| `--encryptionkey` | `-e`  | 32-character key for AES encryption                                 |
+| `--demo-mode`     |       | Skip all hashing; output plain attribute signatures (tokenize only) |
 
 ## `package` Command
 

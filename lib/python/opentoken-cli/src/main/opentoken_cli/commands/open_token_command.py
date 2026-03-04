@@ -56,7 +56,7 @@ class OpenTokenCommand:
             f"{cyan}| |_| | |_) |  __/ | | | | (_) |   <  __/ | | |{reset}\n"
             f"{cyan} \\___/| .__/ \\___|_| |_|_|\\___/|_|\\_\\___|_| |_|{reset}\n"
             f"{cyan}      |_|                                       {reset}\n"
-            f"{blue}Privacy-Preserving Person Matching v{OpenTokenCommand.VERSION}{reset}\n"
+            f"{blue}Privacy-Preserving Record Linkage v{OpenTokenCommand.VERSION}{reset}\n"
         )
 
     @staticmethod
@@ -64,12 +64,14 @@ class OpenTokenCommand:
         """Create the main argument parser with subcommands."""
         parser = argparse.ArgumentParser(
             prog="opentoken",
-            description="Privacy-preserving person matching via cryptographic tokens",
+            description="Privacy-preserving record linkage via cryptographic tokens",
             formatter_class=argparse.RawDescriptionHelpFormatter,
         )
 
         parser.add_argument(
-            "--version", action="version", version=f"OpenToken {OpenTokenCommand.VERSION}"
+            "--version",
+            action="version",
+            version=f"OpenToken {OpenTokenCommand.VERSION}",
         )
 
         subparsers = parser.add_subparsers(
@@ -80,11 +82,11 @@ class OpenTokenCommand:
         )
 
         # Import command modules here to avoid circular imports
-        from opentoken_cli.commands.tokenize_command import TokenizeCommand
-        from opentoken_cli.commands.encrypt_command import EncryptCommand
         from opentoken_cli.commands.decrypt_command import DecryptCommand
-        from opentoken_cli.commands.package_command import PackageCommand
+        from opentoken_cli.commands.encrypt_command import EncryptCommand
         from opentoken_cli.commands.help_command import HelpCommand
+        from opentoken_cli.commands.package_command import PackageCommand
+        from opentoken_cli.commands.tokenize_command import TokenizeCommand
 
         # Register subcommands
         HelpCommand.register_subcommand(subparsers)
@@ -99,13 +101,13 @@ class OpenTokenCommand:
     def main(args=None):
         """Main entry point for the command-line application."""
         parser = OpenTokenCommand.create_parser()
-        
+
         # Show banner for interactive runs (not for --help or piped output)
         # Show when no args provided OR when it's not a help request
         argv = sys.argv if args is None else args
         if len(argv) == 0 or not OpenTokenCommand._is_help_request(argv):
             OpenTokenCommand.show_banner()
-        
+
         try:
             parsed_args = parser.parse_args(args)
         except SystemExit as error:
@@ -128,10 +130,10 @@ class OpenTokenCommand:
         """
         Execute the CLI without calling sys.exit().
         Useful for testing or when embedding the CLI in another application.
-        
+
         Args:
             args: Command-line arguments as a list
-            
+
         Returns:
             Exit code (0 for success, non-zero for errors)
         """

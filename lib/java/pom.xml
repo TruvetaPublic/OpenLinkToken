@@ -10,7 +10,7 @@
     <version>2.0.0-alpha</version>
 
     <name>opentoken-parent</name>
-    <description>OpenToken Parent POM - Privacy-preserving person matching library</description>
+    <description>OpenToken Parent POM - Privacy-preserving record linkage library</description>
     <url>http://www.truveta.com</url>
 
     <modules>

@@ -1,10 +1,10 @@
 # OpenToken PySpark Bridge
 
-A PySpark integration for the OpenToken library, enabling distributed privacy-preserving token generation for large-scale person matching workflows.
+A PySpark integration for the OpenToken library, enabling distributed privacy-preserving token generation for large-scale record linkage workflows.
 
 ## Overview
 
-The OpenToken PySpark Bridge provides a seamless interface between PySpark DataFrames and the OpenToken library, allowing you to generate cryptographically secure tokens for person matching in a distributed computing environment.
+The OpenToken PySpark Bridge provides a seamless interface between PySpark DataFrames and the OpenToken library, allowing you to generate cryptographically secure tokens for record linkage in a distributed computing environment.
 
 ## Features
 
@@ -33,7 +33,8 @@ OpenToken PySpark supports multiple Spark versions to accommodate different Java
 | 3.5.x         | >=3.5.0, <3.6   | >=15.0.0, <20   | >=1.5, <2.3    | 8-17         | `[spark35]`                   |
 | 3.4.x         | >=3.4.0, <3.5   | >=10.0.0, <15   | >=1.5, <2.2    | 8-17         | `[spark34]`                   |
 
-**Important:** 
+**Important:**
+
 - PySpark 3.5.x and earlier are **NOT compatible** with Java 21
 - If you're using Java 21, you **must** use PySpark 4.0.x+ or 4.1.x+ (Spark 4.0.x recommended)
 - For managed clusters (Databricks, EMR, Azure Synapse), PySpark is typically pre-installed
@@ -242,18 +243,21 @@ For more examples and interactive experimentation with custom tokens, see the [C
 See the included Jupyter notebooks for complete examples:
 
 **Basic Usage:**
+
 ```bash
 cd notebooks
 jupyter notebook OpenToken_PySpark_Example.ipynb
 ```
 
 **Custom Token Definitions:**
+
 ```bash
 cd notebooks
 jupyter notebook Custom_Token_Definition_Guide.ipynb
 ```
 
 **Dataset Overlap Analysis:**
+
 ```bash
 cd notebooks
 jupyter notebook Dataset_Overlap_Analysis_Guide.ipynb

@@ -4,7 +4,7 @@ Privacy-preserving tokenization and matching library for secure PII-based person
 
 ## Introduction
 
-Our approach to person matching relies on building a set of matching tokens (or token signatures) per person which are derived from deterministic person data but preserve privacy by using cryptographically secure hashing algorithms.
+Our approach to record linkage relies on building a set of matching tokens (or token signatures) per person which are derived from deterministic person data but preserve privacy by using cryptographically secure hashing algorithms.
 
 - [OpenToken](#opentoken)
   - [Introduction](#introduction)
