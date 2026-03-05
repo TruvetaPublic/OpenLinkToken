@@ -23,8 +23,9 @@ class RecordIdHasherTest {
     }
 
     @Test
-    void testHash_outputIsLowercaseHex64Chars() {
-        String result = RecordIdHasher.hash("test-001");
+    void testHash_producesExpectedSHA256Value() {
+        String recordId = "test-001";
+        String result = RecordIdHasher.hash(recordId);
         assertNotNull(result, "Hash must not be null");
         assertEquals(64, result.length(), "SHA-256 hex digest must be 64 characters long");
         // Must be lowercase hex

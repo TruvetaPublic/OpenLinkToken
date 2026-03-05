@@ -22,7 +22,6 @@ import com.truveta.opentoken.attributes.AttributeExpression;
 import com.truveta.opentoken.attributes.general.RecordIdAttribute;
 import com.truveta.opentoken.cli.io.PersonAttributesReader;
 import com.truveta.opentoken.cli.io.PersonAttributesWriter;
-import com.truveta.opentoken.cli.io.RecordIdMappingWriter;
 import com.truveta.opentoken.cli.util.RecordIdHasher;
 import com.truveta.opentoken.tokens.TokenDefinition;
 import com.truveta.opentoken.tokens.TokenGenerator;
@@ -70,27 +69,26 @@ public final class PersonAttributesProcessor {
      */
     public static void process(PersonAttributesReader reader, PersonAttributesWriter writer,
             List<TokenTransformer> tokenTransformerList, Map<String, Object> metadataMap) throws IOException {
-        process(reader, writer, tokenTransformerList, metadataMap, null, null, null);
+        process(reader, writer, tokenTransformerList, metadataMap, null, null, false);
     }
 
     /**
      * Reads person attributes from the input data source, generates token, and
-     * write the result back to the output data source. Record IDs are hashed
-     * when a {@link RecordIdMappingWriter} is provided.
+     * write the result back to the output data source. Record IDs are SHA-256 hashed
+     * in the output when {@code hashRecordIds} is {@code true}.
      *
      * @param reader               the reader initialized with the input data source.
      * @param writer               the writer initialized with the output data source.
      * @param tokenTransformerList a list of token transformers.
      * @param metadataMap          the metadata map to populate with processing statistics.
-     * @param mappingWriter        optional mapping writer; when non-null each record ID
-     *                             is SHA-256 hashed and the original-to-hashed mapping
-     *                             is written to the mapping file.
+     * @param hashRecordIds        when {@code true}, each record ID is SHA-256 hashed
+     *                             before being written to the output.
      * @throws IOException if an I/O error occurs during processing.
      */
     public static void process(PersonAttributesReader reader, PersonAttributesWriter writer,
             List<TokenTransformer> tokenTransformerList, Map<String, Object> metadataMap,
-            RecordIdMappingWriter mappingWriter) throws IOException {
-        process(reader, writer, tokenTransformerList, metadataMap, null, null, mappingWriter);
+            boolean hashRecordIds) throws IOException {
+        process(reader, writer, tokenTransformerList, metadataMap, null, null, hashRecordIds);
     }
 
     /**
@@ -109,7 +107,7 @@ public final class PersonAttributesProcessor {
      */
     public static void process(PersonAttributesReader reader, PersonAttributesWriter writer,
             Tokenizer tokenizer, Map<String, Object> metadataMap) throws IOException {
-        processWithTokenizer(reader, writer, tokenizer, metadataMap, null, null, null);
+        processWithTokenizer(reader, writer, tokenizer, metadataMap, null, null, false);
     }
 
     /**
@@ -134,14 +132,14 @@ public final class PersonAttributesProcessor {
     public static void process(PersonAttributesReader reader, PersonAttributesWriter writer,
             List<TokenTransformer> tokenTransformerList, Map<String, Object> metadataMap,
             String encryptionKey, String ringId) throws IOException {
-        process(reader, writer, tokenTransformerList, metadataMap, encryptionKey, ringId, null);
+        process(reader, writer, tokenTransformerList, metadataMap, encryptionKey, ringId, false);
     }
 
     /**
      * Reads person attributes from the input data source, generates token, and
      * write the result back to the output data source. The tokens can be optionally
      * transformed before writing, wrapped in JWE format, and have their record IDs
-     * hashed when a {@link RecordIdMappingWriter} is provided.
+     * SHA-256 hashed when {@code hashRecordIds} is {@code true}.
      *
      * @param reader               the reader initialized with the input data source.
      * @param writer               the writer initialized with the output data source.
@@ -149,21 +147,20 @@ public final class PersonAttributesProcessor {
      * @param metadataMap          the metadata map to populate with processing statistics.
      * @param encryptionKey        the encryption key for JWE wrapping (optional, null to skip JWE).
      * @param ringId               the ring ID for JWE wrapping (optional, null to skip JWE).
-     * @param mappingWriter        optional mapping writer; when non-null each record ID
-     *                             is SHA-256 hashed and the original-to-hashed mapping
-     *                             is written to the mapping file.
+     * @param hashRecordIds        when {@code true}, each record ID is SHA-256 hashed
+     *                             before being written to the output.
      * @throws IOException if an I/O error occurs during processing.
      */
     public static void process(PersonAttributesReader reader, PersonAttributesWriter writer,
             List<TokenTransformer> tokenTransformerList, Map<String, Object> metadataMap,
-            String encryptionKey, String ringId, RecordIdMappingWriter mappingWriter) throws IOException {
+            String encryptionKey, String ringId, boolean hashRecordIds) throws IOException {
         processWithTokenizer(reader, writer, new SHA256Tokenizer(tokenTransformerList),
-                metadataMap, encryptionKey, ringId, mappingWriter);
+                metadataMap, encryptionKey, ringId, hashRecordIds);
     }
 
     private static void processWithTokenizer(PersonAttributesReader reader, PersonAttributesWriter writer,
             Tokenizer tokenizer, Map<String, Object> metadataMap,
-            String encryptionKey, String ringId, RecordIdMappingWriter mappingWriter) throws IOException {
+            String encryptionKey, String ringId, boolean hashRecordIds) throws IOException {
 
         TokenDefinition tokenDefinition = new TokenDefinition();
         TokenGenerator tokenGenerator = new TokenGenerator(tokenDefinition, tokenizer);
@@ -190,7 +187,7 @@ public final class PersonAttributesProcessor {
             keepTrackOfBlankTokens(tokenGeneratorResult, rowCounter,
                     blankTokensByRuleCount);
 
-            writeTokens(writer, row, rowCounter, tokenGeneratorResult, jweFormatterCache, mappingWriter);
+            writeTokens(writer, row, rowCounter, tokenGeneratorResult, jweFormatterCache, hashRecordIds);
 
             if (rowCounter % 10000 == 0) {
                 logger.info(String.format("Processed \"%,d\" records", rowCounter));
@@ -225,7 +222,7 @@ public final class PersonAttributesProcessor {
     private static void writeTokens(PersonAttributesWriter writer, Map<Class<? extends Attribute>, String> row,
             long rowCounter, TokenGeneratorResult tokenGeneratorResult,
             Map<String, JweMatchTokenFormatter> jweFormatterCache,
-            RecordIdMappingWriter mappingWriter) {
+            boolean hashRecordIds) {
 
         Set<String> tokenIds = new TreeSet<>(tokenGeneratorResult.getTokens().keySet());
 
@@ -235,15 +232,9 @@ public final class PersonAttributesProcessor {
             recordId = UUID.randomUUID().toString();
         }
 
-        // Hash the record ID and write the mapping entry when requested
-        if (mappingWriter != null) {
-            String hashedRecordId = RecordIdHasher.hash(recordId);
-            try {
-                mappingWriter.writeMapping(recordId, hashedRecordId);
-            } catch (IOException e) {
-                logger.error(String.format("Error writing record ID mapping for row %,d", rowCounter), e);
-            }
-            recordId = hashedRecordId;
+        // Hash the record ID when requested (no mapping file — intentionally no traceability)
+        if (hashRecordIds) {
+            recordId = RecordIdHasher.hash(recordId);
         }
 
         for (String tokenId : tokenIds) {

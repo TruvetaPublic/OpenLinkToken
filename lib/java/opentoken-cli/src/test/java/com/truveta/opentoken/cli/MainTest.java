@@ -337,7 +337,7 @@ class MainTest {
     // ===== Hash Record IDs Tests =====
 
     @Test
-    void testTokenizeCommand_HashRecordIds_ProducesMappingFile() throws IOException {
+    void testTokenizeCommand_HashRecordIds_OutputContainsHashedIds() throws IOException {
         String[] args = {
                 "tokenize",
                 "-i", inputCsv.toString(),
@@ -349,29 +349,6 @@ class MainTest {
 
         int exitCode = OpenTokenCommand.execute(args);
         assertEquals(0, exitCode, "Command should execute successfully");
-
-        assertTrue(Files.exists(outputCsv), "Output CSV should be created");
-
-        Path mappingFile = tempDir.resolve("output.record-id-mapping.csv");
-        assertTrue(Files.exists(mappingFile), "Mapping file should be created");
-
-        String mappingContent = Files.readString(mappingFile);
-        assertTrue(mappingContent.startsWith("original_record_id,hashed_record_id"),
-                "Mapping file must start with the expected header");
-    }
-
-    @Test
-    void testTokenizeCommand_HashRecordIds_OutputContainsHashedIds() throws IOException {
-        String[] args = {
-                "tokenize",
-                "-i", inputCsv.toString(),
-                "-t", "csv",
-                "-o", outputCsv.toString(),
-                "--hashingsecret", HASHING_SECRET,
-                "--hash-record-ids"
-        };
-
-        OpenTokenCommand.execute(args);
 
         String outputContent = Files.readString(outputCsv);
         assertFalse(outputContent.contains("test-001"),
@@ -390,31 +367,7 @@ class MainTest {
     }
 
     @Test
-    void testTokenizeCommand_HashRecordIds_MappingContainsCorrectPairs() throws IOException {
-        String[] args = {
-                "tokenize",
-                "-i", inputCsv.toString(),
-                "-t", "csv",
-                "-o", outputCsv.toString(),
-                "--hashingsecret", HASHING_SECRET,
-                "--hash-record-ids"
-        };
-
-        OpenTokenCommand.execute(args);
-
-        Path mappingFile = tempDir.resolve("output.record-id-mapping.csv");
-        java.util.List<String> lines = Files.readAllLines(mappingFile);
-
-        // Header + 2 data rows (one per input record)
-        assertEquals(3, lines.size(), "Mapping file should have header + 2 rows");
-        assertTrue(lines.get(1).startsWith("test-001,"),
-                "First mapping row must start with the original record ID");
-        assertTrue(lines.get(2).startsWith("test-002,"),
-                "Second mapping row must start with the original record ID");
-    }
-
-    @Test
-    void testTokenizeCommand_WithoutHashRecordIds_NoMappingFile() throws IOException {
+    void testTokenizeCommand_WithoutHashRecordIds_OutputContainsOriginalIds() throws IOException {
         String[] args = {
                 "tokenize",
                 "-i", inputCsv.toString(),
@@ -425,12 +378,13 @@ class MainTest {
 
         OpenTokenCommand.execute(args);
 
-        Path mappingFile = tempDir.resolve("output.record-id-mapping.csv");
-        assertFalse(Files.exists(mappingFile), "Mapping file must not be created when --hash-record-ids is absent");
+        String outputContent = Files.readString(outputCsv);
+        assertTrue(outputContent.contains("test-001"), "Output should contain original record IDs");
+        assertTrue(outputContent.contains("test-002"), "Output should contain original record IDs");
     }
 
     @Test
-    void testPackageCommand_HashRecordIds_ProducesMappingFile() throws IOException {
+    void testPackageCommand_HashRecordIds_OutputContainsHashedIds() throws IOException {
         String[] args = {
                 "package",
                 "-i", inputCsv.toString(),
@@ -444,28 +398,10 @@ class MainTest {
         int exitCode = OpenTokenCommand.execute(args);
         assertEquals(0, exitCode, "Command should execute successfully");
 
-        Path mappingFile = tempDir.resolve("output.record-id-mapping.csv");
-        assertTrue(Files.exists(mappingFile), "Mapping file should be created");
-
-        String mappingContent = Files.readString(mappingFile);
-        assertTrue(mappingContent.startsWith("original_record_id,hashed_record_id"),
-                "Mapping file must start with the expected header");
-    }
-
-    @Test
-    void testPackageCommand_WithoutHashRecordIds_NoMappingFile() throws IOException {
-        String[] args = {
-                "package",
-                "-i", inputCsv.toString(),
-                "-t", "csv",
-                "-o", outputCsv.toString(),
-                "--hashingsecret", HASHING_SECRET,
-                "--encryptionkey", ENCRYPTION_KEY
-        };
-
-        OpenTokenCommand.execute(args);
-
-        Path mappingFile = tempDir.resolve("output.record-id-mapping.csv");
-        assertFalse(Files.exists(mappingFile), "Mapping file must not be created when --hash-record-ids is absent");
+        String outputContent = Files.readString(outputCsv);
+        assertFalse(outputContent.contains("test-001"),
+                "Output should not contain original record IDs");
+        assertFalse(outputContent.contains("test-002"),
+                "Output should not contain original record IDs");
     }
 }
