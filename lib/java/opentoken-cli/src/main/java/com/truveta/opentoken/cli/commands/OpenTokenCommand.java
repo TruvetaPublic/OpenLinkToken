@@ -11,10 +11,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.truveta.opentoken.Metadata;
+import com.truveta.opentoken.cli.util.VersionChecker;
 
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
+import picocli.CommandLine.Option;
 
 /**
  * Main entry point command for OpenToken CLI with subcommands.
@@ -25,7 +27,8 @@ import picocli.CommandLine.HelpCommand;
         TokenizeCommand.class,
         EncryptCommand.class,
         DecryptCommand.class,
-        PackageCommand.class
+        PackageCommand.class,
+        UpdateCommand.class
 })
 public class OpenTokenCommand implements Callable<Integer> {
 
@@ -34,6 +37,9 @@ public class OpenTokenCommand implements Callable<Integer> {
     private static final String BANNER_SUBTITLE = "Privacy-Preserving Record Linkage v" + VERSION;
 
     private static final Logger logger = LoggerFactory.getLogger(OpenTokenCommand.class);
+
+    @Option(names = { "--no-update-check" }, description = "Disable the automatic update check on startup")
+    private boolean noUpdateCheck;
 
     /**
      * Display the OpenToken banner for interactive sessions.
@@ -118,10 +124,23 @@ public class OpenTokenCommand implements Callable<Integer> {
             showBanner();
         }
 
-        CommandLine commandLine = new CommandLine(new OpenTokenCommand());
+        OpenTokenCommand rootCommand = new OpenTokenCommand();
+        CommandLine commandLine = new CommandLine(rootCommand);
         commandLine.setExecutionStrategy(new CommandLine.RunLast());
 
-        return commandLine.execute(args);
+        // Determine --no-update-check before full parse (peek at args)
+        boolean noUpdateCheck = hasFlag(args, "--no-update-check");
+
+        // Start the asynchronous version check before executing the command
+        VersionChecker versionChecker = new VersionChecker(VERSION, noUpdateCheck);
+        versionChecker.start();
+
+        int exitCode = commandLine.execute(args);
+
+        // Wait for the version check and surface any update notice after command output
+        versionChecker.waitAndNotify();
+
+        return exitCode;
     }
 
     /**
@@ -130,6 +149,22 @@ public class OpenTokenCommand implements Callable<Integer> {
     private static boolean isHelpRequest(String[] args) {
         for (String arg : args) {
             if (arg.equals("--help") || arg.equals("help")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check whether a specific flag is present in the argument list.
+     *
+     * @param args the argument array
+     * @param flag the flag to look for
+     * @return {@code true} if the flag is present
+     */
+    private static boolean hasFlag(String[] args, String flag) {
+        for (String arg : args) {
+            if (arg.equals(flag)) {
                 return true;
             }
         }
