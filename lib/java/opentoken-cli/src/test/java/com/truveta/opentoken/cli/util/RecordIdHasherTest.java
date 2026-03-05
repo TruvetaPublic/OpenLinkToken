@@ -24,10 +24,7 @@ class RecordIdHasherTest {
 
     @Test
     void testHash_producesExpectedSHA256Value() {
-        // SHA-256("test-001") = known value from standard SHA-256
         String recordId = "test-001";
-        String expected = "9a2b9dde5a4d9df3f2e1c7a7bcf6de17b6d0d3c82a69e6e6e6f5cb3b1b5d3b5d";
-        // Compute independently to verify format
         String result = RecordIdHasher.hash(recordId);
         assertNotNull(result, "Hash must not be null");
         assertEquals(64, result.length(), "SHA-256 hex digest must be 64 characters long");

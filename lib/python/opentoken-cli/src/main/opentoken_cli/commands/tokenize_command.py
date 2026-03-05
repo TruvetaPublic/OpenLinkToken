@@ -18,7 +18,6 @@ from opentoken_cli.io.parquet.person_attributes_parquet_reader import (
 from opentoken_cli.io.parquet.person_attributes_parquet_writer import (
     PersonAttributesParquetWriter,
 )
-from opentoken_cli.io.record_id_mapping_writer import RecordIdMappingWriter
 from opentoken_cli.processor.person_attributes_processor import (
     PersonAttributesProcessor,
 )
@@ -125,8 +124,8 @@ class TokenizeCommand:
             dest="hash_record_ids",
             help=(
                 "Hash input RecordId values using SHA-256 before writing to output. "
-                "A mapping file (<output>.record-id-mapping.csv) is also written "
-                "so that hashed IDs can be reconciled back to the originals."
+                "The hashed value (not the original) appears in the output file. "
+                "This is a one-way operation with no traceability."
             ),
         )
 
@@ -208,41 +207,27 @@ class TokenizeCommand:
             logger.error("Error initializing hash transformer", exc_info=e)
             raise RuntimeError("Failed to initialize transformer") from e
 
-        mapping_file_path = (
-            RecordIdMappingWriter.build_mapping_file_path(output_path) if hash_record_ids else None
-        )
-
         try:
             with TokenizeCommand._create_reader(
                 input_path, input_type
             ) as reader, TokenizeCommand._create_writer(
                 output_path, output_type
             ) as writer:
-                mapping_writer_ctx = (
-                    RecordIdMappingWriter(mapping_file_path) if hash_record_ids else None
+                metadata = Metadata()
+                metadata_map = metadata.initialize()
+                # Only record the hashing-secret hash in normal mode
+                metadata.add_hashed_secret(Metadata.HASHING_SECRET_HASH, hashing_secret)
+
+                PersonAttributesProcessor.process(
+                    reader, writer, token_transformer_list, metadata_map,
+                    hash_record_ids=hash_record_ids
                 )
-                try:
-                    metadata = Metadata()
-                    metadata_map = metadata.initialize()
-                    # Only record the hashing-secret hash in normal mode
-                    metadata.add_hashed_secret(Metadata.HASHING_SECRET_HASH, hashing_secret)
 
-                    PersonAttributesProcessor.process(
-                        reader, writer, token_transformer_list, metadata_map,
-                        mapping_writer=mapping_writer_ctx
-                    )
-
-                    MetadataJsonWriter(output_path).write(metadata_map)
-                finally:
-                    if mapping_writer_ctx is not None:
-                        mapping_writer_ctx.close()
+                MetadataJsonWriter(output_path).write(metadata_map)
 
         except Exception as e:
             logger.error("Error processing tokens", exc_info=e)
             raise
-
-        if hash_record_ids:
-            logger.info(f"Record ID mapping file written to: {mapping_file_path}")
 
     @staticmethod
     def _process_tokens_demo(

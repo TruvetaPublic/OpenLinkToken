@@ -357,8 +357,8 @@ class TestOpenTokenCommand:
 
     # ===== Hash Record IDs Tests =====
 
-    def test_tokenize_command_hash_record_ids_produces_mapping_file(self, temp_dir):
-        """--hash-record-ids on tokenize must create a mapping file."""
+    def test_tokenize_command_hash_record_ids_output_contains_hashed_ids(self, temp_dir):
+        """Output token file must contain hashed (not original) RecordId values."""
         input_csv = temp_dir / "input.csv"
         output_csv = temp_dir / "output.csv"
 
@@ -375,28 +375,6 @@ class TestOpenTokenCommand:
         assert exit_code == 0, "Command should execute successfully"
         assert output_csv.exists(), "Output CSV should be created"
 
-        mapping_file = temp_dir / "output.record-id-mapping.csv"
-        assert mapping_file.exists(), "Mapping file should be created"
-
-        first_line = mapping_file.read_text().splitlines()[0]
-        assert first_line == "original_record_id,hashed_record_id"
-
-    def test_tokenize_command_hash_record_ids_output_contains_hashed_ids(self, temp_dir):
-        """Output token file must contain hashed (not original) RecordId values."""
-        input_csv = temp_dir / "input.csv"
-        output_csv = temp_dir / "output.csv"
-
-        args = [
-            "tokenize",
-            "-i", str(input_csv),
-            "-t", "csv",
-            "-o", str(output_csv),
-            "--hashingsecret", self.HASHING_SECRET,
-            "--hash-record-ids",
-        ]
-
-        OpenTokenCommand.execute(args)
-
         content = output_csv.read_text()
         assert "test-001" not in content, "Output must not contain original record IDs"
         assert "test-002" not in content, "Output must not contain original record IDs"
@@ -410,31 +388,8 @@ class TestOpenTokenCommand:
             record_id = cols[record_id_col].strip()
             assert len(record_id) == 64, f"Hashed record ID must be 64 chars, got: {record_id!r}"
 
-    def test_tokenize_command_hash_record_ids_mapping_contains_correct_pairs(self, temp_dir):
-        """Mapping file must contain original→hashed pairs for each input record."""
-        input_csv = temp_dir / "input.csv"
-        output_csv = temp_dir / "output.csv"
-
-        args = [
-            "tokenize",
-            "-i", str(input_csv),
-            "-t", "csv",
-            "-o", str(output_csv),
-            "--hashingsecret", self.HASHING_SECRET,
-            "--hash-record-ids",
-        ]
-
-        OpenTokenCommand.execute(args)
-
-        mapping_file = temp_dir / "output.record-id-mapping.csv"
-        lines = mapping_file.read_text().splitlines()
-        # header + 2 data rows (one per input record)
-        assert len(lines) == 3, f"Expected header + 2 rows but got {len(lines)}"
-        assert lines[1].startswith("test-001,"), "First row must start with original record ID"
-        assert lines[2].startswith("test-002,"), "Second row must start with original record ID"
-
-    def test_tokenize_command_without_hash_record_ids_no_mapping_file(self, temp_dir):
-        """Without --hash-record-ids no mapping file should be created."""
+    def test_tokenize_command_without_hash_record_ids_output_contains_original_ids(self, temp_dir):
+        """Without --hash-record-ids the output must contain the original record IDs."""
         input_csv = temp_dir / "input.csv"
         output_csv = temp_dir / "output.csv"
 
@@ -448,11 +403,12 @@ class TestOpenTokenCommand:
 
         OpenTokenCommand.execute(args)
 
-        mapping_file = temp_dir / "output.record-id-mapping.csv"
-        assert not mapping_file.exists(), "Mapping file must not be created without --hash-record-ids"
+        content = output_csv.read_text()
+        assert "test-001" in content, "Output should contain original record IDs"
+        assert "test-002" in content, "Output should contain original record IDs"
 
-    def test_package_command_hash_record_ids_produces_mapping_file(self, temp_dir):
-        """--hash-record-ids on package must create a mapping file."""
+    def test_package_command_hash_record_ids_output_contains_hashed_ids(self, temp_dir):
+        """--hash-record-ids on package must produce hashed (not original) RecordId values."""
         input_csv = temp_dir / "input.csv"
         output_csv = temp_dir / "output.csv"
 
@@ -469,28 +425,7 @@ class TestOpenTokenCommand:
         exit_code = OpenTokenCommand.execute(args)
         assert exit_code == 0, "Command should execute successfully"
 
-        mapping_file = temp_dir / "output.record-id-mapping.csv"
-        assert mapping_file.exists(), "Mapping file should be created"
-
-        first_line = mapping_file.read_text().splitlines()[0]
-        assert first_line == "original_record_id,hashed_record_id"
-
-    def test_package_command_without_hash_record_ids_no_mapping_file(self, temp_dir):
-        """Without --hash-record-ids the package command must not create a mapping file."""
-        input_csv = temp_dir / "input.csv"
-        output_csv = temp_dir / "output.csv"
-
-        args = [
-            "package",
-            "-i", str(input_csv),
-            "-t", "csv",
-            "-o", str(output_csv),
-            "--hashingsecret", self.HASHING_SECRET,
-            "--encryptionkey", self.ENCRYPTION_KEY,
-        ]
-
-        OpenTokenCommand.execute(args)
-
-        mapping_file = temp_dir / "output.record-id-mapping.csv"
-        assert not mapping_file.exists(), "Mapping file must not be created without --hash-record-ids"
+        content = output_csv.read_text()
+        assert "test-001" not in content, "Output must not contain original record IDs"
+        assert "test-002" not in content, "Output must not contain original record IDs"
 

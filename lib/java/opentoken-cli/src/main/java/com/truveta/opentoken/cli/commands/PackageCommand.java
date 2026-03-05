@@ -17,7 +17,6 @@ import com.truveta.opentoken.Metadata;
 import com.truveta.opentoken.cli.io.MetadataWriter;
 import com.truveta.opentoken.cli.io.PersonAttributesReader;
 import com.truveta.opentoken.cli.io.PersonAttributesWriter;
-import com.truveta.opentoken.cli.io.RecordIdMappingWriter;
 import com.truveta.opentoken.cli.io.csv.PersonAttributesCSVReader;
 import com.truveta.opentoken.cli.io.csv.PersonAttributesCSVWriter;
 import com.truveta.opentoken.cli.io.json.MetadataJsonWriter;
@@ -74,8 +73,8 @@ public class PackageCommand implements Callable<Integer> {
 
     @Option(names = {
             "--hash-record-ids" }, description = "Hash input RecordId values using SHA-256 before writing to output."
-                    + " A mapping file (<output>.record-id-mapping.csv) is also written"
-                    + " so that hashed IDs can be reconciled back to the originals.")
+                    + " The hashed value (not the original) appears in the output file."
+                    + " This is a one-way operation with no traceability.")
     private boolean hashRecordIds;
 
     @Override
@@ -143,15 +142,8 @@ public class PackageCommand implements Callable<Integer> {
             throw new RuntimeException("Failed to initialize transformers", e);
         }
 
-        String mappingFilePath = hashRecordIds
-                ? RecordIdMappingWriter.buildMappingFilePath(outputPath)
-                : null;
-
         try (PersonAttributesReader reader = createReader(inputPath, inputType);
-                PersonAttributesWriter writer = createWriter(outputPath, outputType);
-                RecordIdMappingWriter mappingWriter = hashRecordIds
-                        ? new RecordIdMappingWriter(mappingFilePath)
-                        : null) {
+                PersonAttributesWriter writer = createWriter(outputPath, outputType)) {
 
             // Create metadata
             Metadata metadata = new Metadata();
@@ -161,7 +153,7 @@ public class PackageCommand implements Callable<Integer> {
 
             // Process data with JWE wrapping support for v1 token format
             PersonAttributesProcessor.process(reader, writer, transformers, metadataMap, encryptionKey, ringId,
-                    mappingWriter);
+                    hashRecordIds);
 
             // Write metadata
             MetadataWriter metadataWriter = new MetadataJsonWriter(outputPath);
@@ -169,10 +161,6 @@ public class PackageCommand implements Callable<Integer> {
         } catch (Exception e) {
             logger.error("Error processing tokens", e);
             throw new IOException("Failed to process tokens", e);
-        }
-
-        if (hashRecordIds) {
-            logger.info("Record ID mapping file written to: {}", mappingFilePath);
         }
     }
 
