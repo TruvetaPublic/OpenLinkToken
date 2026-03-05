@@ -125,14 +125,15 @@ Use `tokenize --demo-mode` to explore token output without managing secrets.
 
 These arguments are shared across all subcommands:
 
-| Argument          | Short | Description                                                         |
-| ----------------- | ----- | ------------------------------------------------------------------- |
-| `--input`         | `-i`  | Input file path (CSV or Parquet)                                    |
-| `--output`        | `-o`  | Output file path                                                    |
-| `--type`          | `-t`  | File type: `csv` or `parquet`                                       |
-| `--hashingsecret` | `-h`  | Secret key for HMAC hashing (required unless `--demo-mode`)         |
-| `--encryptionkey` | `-e`  | 32-character key for AES encryption                                 |
-| `--demo-mode`     |       | Skip all hashing; output plain attribute signatures (tokenize only) |
+| Argument            | Short | Description                                                                     |
+| ------------------- | ----- | ------------------------------------------------------------------------------- |
+| `--input`           | `-i`  | Input file path (CSV or Parquet)                                                |
+| `--output`          | `-o`  | Output file path                                                                |
+| `--type`            | `-t`  | File type: `csv` or `parquet`                                                   |
+| `--hashingsecret`   | `-h`  | Secret key for HMAC hashing (required unless `--demo-mode`)                     |
+| `--encryptionkey`   | `-e`  | 32-character key for AES encryption                                             |
+| `--demo-mode`       |       | Skip all hashing; output plain attribute signatures (tokenize only)             |
+| `--hash-record-ids` |       | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability; `tokenize` and `package` only) |
 
 ## `package` Command
 

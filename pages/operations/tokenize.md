@@ -96,6 +96,44 @@ docker run --rm -v $(pwd)/resources:/app/resources \
   -h "HashingKey"
 ```
 
+### Hashing Record IDs (`--hash-record-ids`)
+
+Add `--hash-record-ids` to replace each input `RecordId` with its SHA-256 hex digest in the output. This is a **one-way, irreversible operation** — the original `RecordId` is not stored or recoverable from the output. Use this when the input dataset contains raw identifiers that should not appear in any output file.
+
+The `--hash-record-ids` flag is also supported by the `package` subcommand.
+
+#### Hash Record IDs — Java
+
+```bash
+java -jar opentoken-cli/target/opentoken-cli-*.jar tokenize \
+  -i ../../resources/sample.csv \
+  -t csv \
+  -o ../../resources/hashed-output.csv \
+  -h "HashingKey" \
+  --hash-record-ids
+```
+
+#### Hash Record IDs — Python
+
+```bash
+python -m opentoken_cli.main tokenize \
+  -i ../../../resources/sample.csv \
+  -t csv \
+  -o ../../../resources/hashed-output.csv \
+  -h "HashingKey" \
+  --hash-record-ids
+```
+
+**Output (`hashed-output.csv`) with `--hash-record-ids`:**
+
+```csv
+RecordId,RuleId,Token
+390671c4d060d84284c167d382e5b7f5f61b424ae833ae11f9d6d5667b2fe223,T1,abc123def456...
+390671c4d060d84284c167d382e5b7f5f61b424ae833ae11f9d6d5667b2fe223,T2,def456ghi789...
+```
+
+Each `RecordId` is replaced with a 64-character lowercase SHA-256 hex digest. The original `RecordId` does not appear anywhere in the output.
+
 ### Demo Mode (`--demo-mode`)
 
 In demo mode the full hashing pipeline is skipped. No `--hashingsecret` is required.
