@@ -117,6 +117,7 @@ The CLI is organized into subcommands. Choose the one that matches your workflow
 | `tokenize --demo-mode` | Output plain attribute signatures — use for exploration | none       |
 | `encrypt`              | Encrypt previously tokenized (hashed) output            | `-e`       |
 | `decrypt`              | Decrypt encrypted tokens back to hashed form            | `-e`       |
+| `generate-key-pair`    | Generate an ECDH public/private key pair                | none       |
 
 For most use cases, `package` is the right starting point.
 Use `tokenize --demo-mode` to explore token output without managing secrets.
@@ -184,11 +185,32 @@ java -jar opentoken-cli-*.jar package \
 
 ## Other Subcommands
 
-For detail on `tokenize`, `encrypt`, and `decrypt`, see:
+For detail on `tokenize`, `encrypt`, `decrypt`, and `generate-key-pair`, see:
 
 - [Tokenize](../operations/tokenize.md) — `tokenize` subcommand
 - [Decrypting Tokens](../operations/decrypting-tokens.md) — `decrypt` subcommand
+- [Key Management](../security.md#key-management--secrets) — `generate-key-pair` and key guidance
 - [CLI Reference](../reference/cli.md) — full argument reference for all subcommands
+
+## `generate-key-pair` Command
+
+Generates an ECDH public/private key pair and writes the keys to `~/.opentoken/`.
+
+```bash
+opentoken generate-key-pair --curve P-256 --name my-org-key
+```
+
+This creates:
+- `~/.opentoken/my-org-key.private.pem` — PKCS#8 PEM private key (permissions `600`)
+- `~/.opentoken/my-org-key.public.pem` — SubjectPublicKeyInfo PEM public key (permissions `644`)
+
+**Options:**
+
+| Option    | Short | Description                                  | Default                   |
+| --------- | ----- | -------------------------------------------- | ------------------------- |
+| `--curve` | `-c`  | Elliptic curve: `P-256`, `P-384`, or `P-521` | `P-256`                   |
+| `--name`  | `-n`  | Base name for the output key files           | `opentoken-<ISO8601-date>` |
+| `--force` |       | Overwrite existing key files                 | false                     |
 
 ## Understanding the Output
 

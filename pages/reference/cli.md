@@ -104,6 +104,19 @@ python -m opentoken_cli.main <subcommand> [OPTIONS]
 | `--encryptionkey` | `-e`  | Yes      | 32-character key for AES-256 encryption  |
 | `--output-type`   | `-ot` | No       | Output file type if different from input |
 
+### `generate-key-pair` (ECDH Key Generation)
+
+| Argument    | Short | Required | Default                    | Description                                         |
+| ----------- | ----- | -------- | -------------------------- | --------------------------------------------------- |
+| `--curve`   | `-c`  | No       | `P-256`                    | Elliptic curve: `P-256`, `P-384`, or `P-521`        |
+| `--name`    | `-n`  | No       | `opentoken-<ISO8601-date>` | Base name for output key files                      |
+| `--force`   |       | No       | `false`                    | Overwrite existing key files if they already exist  |
+
+Writes key files to `~/.opentoken/`:
+- `~/.opentoken/<name>.private.pem` — PKCS#8 PEM private key (permissions `600`)
+- `~/.opentoken/<name>.public.pem` — SubjectPublicKeyInfo PEM public key (permissions `644`)
+- `~/.opentoken/` directory is created with permissions `700` if absent.
+
 ## Modes of Operation
 
 ### Encrypted Mode (Default)
@@ -300,6 +313,8 @@ Every run generates a `.metadata.json` file:
 | "Input file not found"                 | Invalid path                 | Check file exists                |
 | "Unknown file type"                    | Invalid `-t` value           | Use `csv` or `parquet`           |
 | "Invalid attribute: BirthDate"         | Date validation failed       | Use YYYY-MM-DD format            |
+| "Unsupported curve '…'"               | Invalid `--curve` value      | Use `P-256`, `P-384`, or `P-521` |
+| "Key files for '…' already exist"     | Name collision without force | Use `--force` to overwrite       |
 
 ## Exit Codes
 

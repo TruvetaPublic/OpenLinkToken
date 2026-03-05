@@ -25,7 +25,8 @@ import picocli.CommandLine.HelpCommand;
         TokenizeCommand.class,
         EncryptCommand.class,
         DecryptCommand.class,
-        PackageCommand.class
+        PackageCommand.class,
+        GenerateKeyPairCommand.class
 })
 public class OpenTokenCommand implements Callable<Integer> {
 

@@ -548,6 +548,24 @@ Arguments:
 | `-h, --hashingsecret` | Hashing secret for HMAC-SHA256                  |
 | `-e, --encryptionkey` | AES-256 encryption key                          |
 
+### Key Pair Generation
+
+The `generate-key-pair` subcommand generates an ECDH public/private key pair:
+
+```shell
+# Java
+java -jar lib/java/opentoken-cli/target/opentoken-cli-*.jar generate-key-pair --curve P-256 --name my-key
+
+# Python
+python -m opentoken_cli.main generate-key-pair --curve P-256 --name my-key
+```
+
+Writes:
+- `~/.opentoken/<name>.private.pem` — PKCS#8 PEM (permissions `600`)
+- `~/.opentoken/<name>.public.pem` — SubjectPublicKeyInfo PEM (permissions `644`)
+
+`--curve` options: `P-256` (default), `P-384`, `P-521`. Use `--force` to overwrite existing keys.
+
 ## Development Container
 
 A Dev Container configuration provides a reproducible environment with:

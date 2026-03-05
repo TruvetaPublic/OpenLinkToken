@@ -111,6 +111,44 @@ python -m opentoken_cli.main decrypt \
   -e "Secret-Encryption-Key-Goes-Here."
 ```
 
+#### Key Pair Generation
+
+Generates an ECDH public/private key pair and writes keys to `~/.opentoken/`.
+
+**Java:**
+```bash
+java -jar opentoken-cli/target/opentoken-cli-*.jar generate-key-pair \
+  --curve P-256 \
+  --name my-key
+```
+
+**Python:**
+```bash
+python -m opentoken_cli.main generate-key-pair \
+  --curve P-256 \
+  --name my-key
+```
+
+This writes:
+- `~/.opentoken/my-key.private.pem` — PKCS#8 PEM private key (permissions `600`)
+- `~/.opentoken/my-key.public.pem` — SubjectPublicKeyInfo PEM public key (permissions `644`)
+- `~/.opentoken/` directory is created with permissions `700` if it does not already exist.
+
+If `--name` is omitted, a timestamp-based default name is used: `opentoken-<ISO8601-date>` (e.g., `opentoken-2025-03-05`).
+
+To overwrite an existing key, add `--force`:
+```bash
+opentoken generate-key-pair --name my-key --force
+```
+
+Supported curves (`--curve` / `-c`):
+
+| Curve   | Description              |
+| ------- | ------------------------ |
+| `P-256` | NIST P-256 / secp256r1 (default) |
+| `P-384` | NIST P-384 / secp384r1   |
+| `P-521` | NIST P-521 / secp521r1   |
+
 ### Output Files
 
 Token generation produces two files:
