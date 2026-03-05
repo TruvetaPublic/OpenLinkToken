@@ -5,15 +5,11 @@ Unit tests for the VersionChecker utility.
 """
 
 import json
-import os
 import sys
 import threading
-import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-
-import pytest
 
 from opentoken_cli.util.version_checker import VersionChecker, start_version_check
 
