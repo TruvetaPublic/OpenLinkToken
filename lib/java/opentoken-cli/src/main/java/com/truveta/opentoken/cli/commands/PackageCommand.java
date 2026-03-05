@@ -17,6 +17,7 @@ import com.truveta.opentoken.Metadata;
 import com.truveta.opentoken.cli.io.MetadataWriter;
 import com.truveta.opentoken.cli.io.PersonAttributesReader;
 import com.truveta.opentoken.cli.io.PersonAttributesWriter;
+import com.truveta.opentoken.cli.io.RecordIdMappingWriter;
 import com.truveta.opentoken.cli.io.csv.PersonAttributesCSVReader;
 import com.truveta.opentoken.cli.io.csv.PersonAttributesCSVWriter;
 import com.truveta.opentoken.cli.io.json.MetadataJsonWriter;
@@ -71,6 +72,12 @@ public class PackageCommand implements Callable<Integer> {
     @Option(names = { "-V", "--version" }, versionHelp = true, description = "Print version information and exit")
     private boolean versionRequested;
 
+    @Option(names = {
+            "--hash-record-ids" }, description = "Hash input RecordId values using SHA-256 before writing to output."
+                    + " A mapping file (<output>.record-id-mapping.csv) is also written"
+                    + " so that hashed IDs can be reconciled back to the originals.")
+    private boolean hashRecordIds;
+
     @Override
     public Integer call() {
         logger.info("Running package command (tokenize + encrypt)");
@@ -90,6 +97,9 @@ public class PackageCommand implements Callable<Integer> {
         logger.info("Hashing Secret: {}", maskString(hashingSecret));
         logger.info("Encryption Key: {}", maskString(encryptionKey));
         logger.info("Ring ID: {}", ringId);
+        if (hashRecordIds) {
+            logger.info("Record ID hashing enabled");
+        }
 
         // Validate types
         if (!isValidType(inputType)) {
@@ -133,8 +143,15 @@ public class PackageCommand implements Callable<Integer> {
             throw new RuntimeException("Failed to initialize transformers", e);
         }
 
+        String mappingFilePath = hashRecordIds
+                ? RecordIdMappingWriter.buildMappingFilePath(outputPath)
+                : null;
+
         try (PersonAttributesReader reader = createReader(inputPath, inputType);
-                PersonAttributesWriter writer = createWriter(outputPath, outputType)) {
+                PersonAttributesWriter writer = createWriter(outputPath, outputType);
+                RecordIdMappingWriter mappingWriter = hashRecordIds
+                        ? new RecordIdMappingWriter(mappingFilePath)
+                        : null) {
 
             // Create metadata
             Metadata metadata = new Metadata();
@@ -143,7 +160,8 @@ public class PackageCommand implements Callable<Integer> {
             metadata.addHashedSecret(Metadata.ENCRYPTION_SECRET_HASH, encryptionKey);
 
             // Process data with JWE wrapping support for v1 token format
-            PersonAttributesProcessor.process(reader, writer, transformers, metadataMap, encryptionKey, ringId);
+            PersonAttributesProcessor.process(reader, writer, transformers, metadataMap, encryptionKey, ringId,
+                    mappingWriter);
 
             // Write metadata
             MetadataWriter metadataWriter = new MetadataJsonWriter(outputPath);
@@ -151,6 +169,10 @@ public class PackageCommand implements Callable<Integer> {
         } catch (Exception e) {
             logger.error("Error processing tokens", e);
             throw new IOException("Failed to process tokens", e);
+        }
+
+        if (hashRecordIds) {
+            logger.info("Record ID mapping file written to: {}", mappingFilePath);
         }
     }
 

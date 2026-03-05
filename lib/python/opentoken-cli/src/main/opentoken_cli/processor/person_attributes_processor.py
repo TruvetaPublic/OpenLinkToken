@@ -17,7 +17,9 @@ from opentoken.tokentransformer.jwe_match_token_formatter import JweMatchTokenFo
 from opentoken.tokentransformer.token_transformer import TokenTransformer
 from opentoken_cli.io.person_attributes_reader import PersonAttributesReader
 from opentoken_cli.io.person_attributes_writer import PersonAttributesWriter
+from opentoken_cli.io.record_id_mapping_writer import RecordIdMappingWriter
 from opentoken_cli.processor.token_constants import TokenConstants
+from opentoken_cli.util.record_id_hasher import RecordIdHasher
 
 logger = logging.getLogger(__name__)
 
@@ -47,11 +49,13 @@ class PersonAttributesProcessor:
         metadata_map: Dict[str, Any] = None,
         encryption_key: str = None,
         ring_id: str = None,
+        mapping_writer: "RecordIdMappingWriter" = None,
     ) -> None:
         """
         Read person attributes from the input data source, generate tokens, and
         write the result back to the output data source. The tokens can be optionally
         transformed before writing and wrapped in JWE format if ring ID is provided.
+        Record IDs are hashed when a mapping_writer is provided.
 
         Args:
             reader: The reader initialized with the input data source.
@@ -60,6 +64,8 @@ class PersonAttributesProcessor:
             metadata_map: Optional metadata map to update with processing statistics.
             encryption_key: Optional encryption key for JWE wrapping (None to skip JWE).
             ring_id: Optional ring ID for JWE wrapping (None to skip JWE).
+            mapping_writer: Optional mapping writer; when provided each record ID is
+                            SHA-256 hashed and the original-to-hashed mapping is written.
         """
         # TokenGenerator code
         token_definition = TokenDefinition()
@@ -71,6 +77,7 @@ class PersonAttributesProcessor:
             metadata_map,
             encryption_key,
             ring_id,
+            mapping_writer,
         )
 
     @staticmethod
@@ -107,6 +114,7 @@ class PersonAttributesProcessor:
         metadata_map: Dict[str, Any] = None,
         encryption_key: str = None,
         ring_id: str = None,
+        mapping_writer: "RecordIdMappingWriter" = None,
     ) -> None:
         """
         Core row-processing logic shared by all process() overloads.
@@ -119,6 +127,7 @@ class PersonAttributesProcessor:
             metadata_map: Optional metadata map to update with processing statistics.
             encryption_key: Optional encryption key for JWE wrapping.
             ring_id: Optional ring ID for JWE wrapping.
+            mapping_writer: Optional mapping writer for record ID hashing.
         """
         token_generator = TokenGenerator(token_definition, tokenizer)
 
@@ -172,6 +181,7 @@ class PersonAttributesProcessor:
                     encryption_key,
                     ring_id,
                     jwe_formatters,
+                    mapping_writer,
                 )
 
                 if row_counter % 10000 == 0:
@@ -224,9 +234,11 @@ class PersonAttributesProcessor:
         encryption_key: str = None,
         ring_id: str = None,
         jwe_formatters: Dict[str, JweMatchTokenFormatter] = None,
+        mapping_writer: "RecordIdMappingWriter" = None,
     ) -> None:
         """
-        Write tokens to the output writer. Optionally wraps tokens in JWE format.
+        Write tokens to the output writer. Optionally wraps tokens in JWE format
+        and hashes record IDs when a mapping_writer is provided.
 
         Args:
             writer: The writer to write tokens to.
@@ -235,6 +247,8 @@ class PersonAttributesProcessor:
             token_generator_result: The result from token generation.
             encryption_key: Optional encryption key for JWE wrapping (None to skip JWE).
             ring_id: Optional ring ID for JWE wrapping (None to skip JWE).
+            jwe_formatters: Optional cached JWE formatters.
+            mapping_writer: Optional mapping writer for record ID hashing.
         """
         # Sort token IDs for consistent output
         token_ids = sorted(token_generator_result.tokens.keys())
@@ -243,6 +257,18 @@ class PersonAttributesProcessor:
         record_id = row.get(RecordIdAttribute)
         if record_id is None or record_id == "":
             record_id = str(uuid.uuid4())
+
+        # Hash the record ID and write the mapping entry when requested
+        if mapping_writer is not None:
+            hashed_record_id = RecordIdHasher.hash(record_id)
+            try:
+                mapping_writer.write_mapping(record_id, hashed_record_id)
+            except IOError:
+                logger.error(
+                    f"Error writing record ID mapping for row {row_counter:,}",
+                    exc_info=True,
+                )
+            record_id = hashed_record_id
 
         for token_id in token_ids:
             token = token_generator_result.tokens[token_id]

@@ -18,6 +18,7 @@ from opentoken_cli.io.parquet.person_attributes_parquet_reader import (
 from opentoken_cli.io.parquet.person_attributes_parquet_writer import (
     PersonAttributesParquetWriter,
 )
+from opentoken_cli.io.record_id_mapping_writer import RecordIdMappingWriter
 from opentoken_cli.processor.person_attributes_processor import (
     PersonAttributesProcessor,
 )
@@ -117,12 +118,25 @@ class TokenizeCommand:
             help="Hashing secret for HMAC-SHA256 token generation (required in normal mode, ignored in demo mode)",
         )
 
+        parser.add_argument(
+            "--hash-record-ids",
+            action="store_true",
+            default=False,
+            dest="hash_record_ids",
+            help=(
+                "Hash input RecordId values using SHA-256 before writing to output. "
+                "A mapping file (<output>.record-id-mapping.csv) is also written "
+                "so that hashed IDs can be reconciled back to the originals."
+            ),
+        )
+
         parser.set_defaults(func=TokenizeCommand.execute)
 
     @staticmethod
     def execute(args):
         """Execute the tokenize command."""
         demo_mode = getattr(args, "demo_mode", False)
+        hash_record_ids = getattr(args, "hash_record_ids", False)
 
         if demo_mode:
             logger.warning(
@@ -141,6 +155,8 @@ class TokenizeCommand:
             logger.info(
                 f"Hashing Secret: {StringMaskingUtil.mask_string(args.hashing_secret)}"
             )
+        if hash_record_ids:
+            logger.info("Record ID hashing enabled")
 
         # --hashingsecret is required in normal mode only
         if not demo_mode:
@@ -165,6 +181,7 @@ class TokenizeCommand:
                     args.input_type,
                     output_type,
                     args.hashing_secret,
+                    hash_record_ids,
                 )
             logger.info("Token generation completed successfully")
             return 0
@@ -179,6 +196,7 @@ class TokenizeCommand:
         input_type: str,
         output_type: str,
         hashing_secret: str,
+        hash_record_ids: bool = False,
     ):
         """Process tokens in normal mode using SHA-256 + HMAC-SHA256."""
         token_transformer_list: List[TokenTransformer] = []
@@ -190,27 +208,41 @@ class TokenizeCommand:
             logger.error("Error initializing hash transformer", exc_info=e)
             raise RuntimeError("Failed to initialize transformer") from e
 
+        mapping_file_path = (
+            RecordIdMappingWriter.build_mapping_file_path(output_path) if hash_record_ids else None
+        )
+
         try:
             with TokenizeCommand._create_reader(
                 input_path, input_type
             ) as reader, TokenizeCommand._create_writer(
                 output_path, output_type
             ) as writer:
-
-                metadata = Metadata()
-                metadata_map = metadata.initialize()
-                # Only record the hashing-secret hash in normal mode
-                metadata.add_hashed_secret(Metadata.HASHING_SECRET_HASH, hashing_secret)
-
-                PersonAttributesProcessor.process(
-                    reader, writer, token_transformer_list, metadata_map
+                mapping_writer_ctx = (
+                    RecordIdMappingWriter(mapping_file_path) if hash_record_ids else None
                 )
+                try:
+                    metadata = Metadata()
+                    metadata_map = metadata.initialize()
+                    # Only record the hashing-secret hash in normal mode
+                    metadata.add_hashed_secret(Metadata.HASHING_SECRET_HASH, hashing_secret)
 
-                MetadataJsonWriter(output_path).write(metadata_map)
+                    PersonAttributesProcessor.process(
+                        reader, writer, token_transformer_list, metadata_map,
+                        mapping_writer=mapping_writer_ctx
+                    )
+
+                    MetadataJsonWriter(output_path).write(metadata_map)
+                finally:
+                    if mapping_writer_ctx is not None:
+                        mapping_writer_ctx.close()
 
         except Exception as e:
             logger.error("Error processing tokens", exc_info=e)
             raise
+
+        if hash_record_ids:
+            logger.info(f"Record ID mapping file written to: {mapping_file_path}")
 
     @staticmethod
     def _process_tokens_demo(

@@ -15,6 +15,7 @@ from opentoken_cli.io.csv.person_attributes_csv_writer import PersonAttributesCS
 from opentoken_cli.io.json.metadata_json_writer import MetadataJsonWriter
 from opentoken_cli.io.parquet.person_attributes_parquet_reader import PersonAttributesParquetReader
 from opentoken_cli.io.parquet.person_attributes_parquet_writer import PersonAttributesParquetWriter
+from opentoken_cli.io.record_id_mapping_writer import RecordIdMappingWriter
 from opentoken_cli.processor.person_attributes_processor import PersonAttributesProcessor
 from opentoken_cli.util import StringMaskingUtil
 
@@ -103,6 +104,18 @@ class PackageCommand:
             help="Ring identifier for key management. Defaults to a random UUID if not provided",
         )
 
+        parser.add_argument(
+            "--hash-record-ids",
+            action="store_true",
+            default=False,
+            dest="hash_record_ids",
+            help=(
+                "Hash input RecordId values using SHA-256 before writing to output. "
+                "A mapping file (<output>.record-id-mapping.csv) is also written "
+                "so that hashed IDs can be reconciled back to the originals."
+            ),
+        )
+
         parser.set_defaults(func=PackageCommand.execute)
 
     @staticmethod
@@ -113,6 +126,7 @@ class PackageCommand:
         # Default output type to input type if not specified
         output_type = args.output_type if args.output_type else args.input_type
         ring_id = args.ring_id if args.ring_id and args.ring_id.strip() else str(uuid.uuid4())
+        hash_record_ids = getattr(args, "hash_record_ids", False)
 
         # Log parameters (mask secrets)
         logger.info(f"Input: {args.input_path} ({args.input_type})")
@@ -120,6 +134,8 @@ class PackageCommand:
         logger.info(f"Hashing Secret: {StringMaskingUtil.mask_string(args.hashing_secret)}")
         logger.info(f"Encryption Key: {StringMaskingUtil.mask_string(args.encryption_key)}")
         logger.info(f"Ring ID: {ring_id}")
+        if hash_record_ids:
+            logger.info("Record ID hashing enabled")
 
         # Validate secrets
         if not args.hashing_secret or not args.hashing_secret.strip():
@@ -138,6 +154,7 @@ class PackageCommand:
                 args.hashing_secret,
                 args.encryption_key,
                 ring_id,
+                hash_record_ids,
             )
             logger.info("Token generation and encryption completed successfully")
             return 0
@@ -154,6 +171,7 @@ class PackageCommand:
         hashing_secret: str,
         encryption_key: str,
         ring_id: str,
+        hash_record_ids: bool = False,
     ):
         """Process tokens from person attributes."""
         token_transformer_list: List[TokenTransformer] = []
@@ -166,34 +184,48 @@ class PackageCommand:
             logger.error("Error initializing transformers", exc_info=e)
             raise RuntimeError("Failed to initialize transformers") from e
 
+        mapping_file_path = (
+            RecordIdMappingWriter.build_mapping_file_path(output_path) if hash_record_ids else None
+        )
+
         try:
             with PackageCommand._create_reader(
                 input_path, input_type
             ) as reader, PackageCommand._create_writer(output_path, output_type) as writer:
-
-                # Create metadata
-                metadata = Metadata()
-                metadata_map = metadata.initialize()
-                metadata.add_hashed_secret(Metadata.HASHING_SECRET_HASH, hashing_secret)
-                metadata.add_hashed_secret(Metadata.ENCRYPTION_SECRET_HASH, encryption_key)
-
-                # Process data with JWE wrapping support for v1 token format
-                PersonAttributesProcessor.process(
-                    reader,
-                    writer,
-                    token_transformer_list,
-                    metadata_map,
-                    encryption_key,
-                    ring_id,
+                mapping_writer_ctx = (
+                    RecordIdMappingWriter(mapping_file_path) if hash_record_ids else None
                 )
+                try:
+                    # Create metadata
+                    metadata = Metadata()
+                    metadata_map = metadata.initialize()
+                    metadata.add_hashed_secret(Metadata.HASHING_SECRET_HASH, hashing_secret)
+                    metadata.add_hashed_secret(Metadata.ENCRYPTION_SECRET_HASH, encryption_key)
 
-                # Write metadata
-                metadata_writer = MetadataJsonWriter(output_path)
-                metadata_writer.write(metadata_map)
+                    # Process data with JWE wrapping support for v1 token format
+                    PersonAttributesProcessor.process(
+                        reader,
+                        writer,
+                        token_transformer_list,
+                        metadata_map,
+                        encryption_key,
+                        ring_id,
+                        mapping_writer_ctx,
+                    )
+
+                    # Write metadata
+                    metadata_writer = MetadataJsonWriter(output_path)
+                    metadata_writer.write(metadata_map)
+                finally:
+                    if mapping_writer_ctx is not None:
+                        mapping_writer_ctx.close()
 
         except Exception as e:
             logger.error("Error processing tokens", exc_info=e)
             raise
+
+        if hash_record_ids:
+            logger.info(f"Record ID mapping file written to: {mapping_file_path}")
 
     @staticmethod
     def _create_reader(path: str, file_type: str):
