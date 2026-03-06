@@ -117,12 +117,25 @@ class TokenizeCommand:
             help="Hashing secret for HMAC-SHA256 token generation (required in normal mode, ignored in demo mode)",
         )
 
+        parser.add_argument(
+            "--hash-record-ids",
+            action="store_true",
+            default=False,
+            dest="hash_record_ids",
+            help=(
+                "Hash input RecordId values using SHA-256 before writing to output. "
+                "The hashed value (not the original) appears in the output file. "
+                "This is a one-way operation with no traceability."
+            ),
+        )
+
         parser.set_defaults(func=TokenizeCommand.execute)
 
     @staticmethod
     def execute(args):
         """Execute the tokenize command."""
         demo_mode = getattr(args, "demo_mode", False)
+        hash_record_ids = getattr(args, "hash_record_ids", False)
 
         if demo_mode:
             logger.warning(
@@ -139,6 +152,8 @@ class TokenizeCommand:
         logger.info(f"Output: {args.output_path} ({output_type})")
         if not demo_mode:
             logger.info(f"Hashing Secret: {StringMaskingUtil.mask_string(args.hashing_secret)}")
+        if hash_record_ids:
+            logger.info("Record ID hashing enabled: RecordIds will be SHA-256 hashed in output")
 
         # --hashingsecret is required in normal mode only
         if not demo_mode:
@@ -161,6 +176,7 @@ class TokenizeCommand:
                     args.input_type,
                     output_type,
                     args.hashing_secret,
+                    hash_record_ids,
                 )
             logger.info("Token generation completed successfully")
             return 0
@@ -175,6 +191,7 @@ class TokenizeCommand:
         input_type: str,
         output_type: str,
         hashing_secret: str,
+        hash_record_ids: bool = False,
     ):
         """Process tokens in normal mode using SHA-256 + HMAC-SHA256."""
         token_transformer_list: List[TokenTransformer] = []
@@ -196,7 +213,9 @@ class TokenizeCommand:
                 # Only record the hashing-secret hash in normal mode
                 metadata.add_hashed_secret(Metadata.HASHING_SECRET_HASH, hashing_secret)
 
-                PersonAttributesProcessor.process(reader, writer, token_transformer_list, metadata_map)
+                PersonAttributesProcessor.process(
+                    reader, writer, token_transformer_list, metadata_map, hash_record_ids=hash_record_ids
+                )
 
                 MetadataJsonWriter(output_path).write(metadata_map)
 

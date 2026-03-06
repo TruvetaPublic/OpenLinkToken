@@ -71,6 +71,12 @@ public class PackageCommand implements Callable<Integer> {
     @Option(names = { "-V", "--version" }, versionHelp = true, description = "Print version information and exit")
     private boolean versionRequested;
 
+    @Option(names = {
+            "--hash-record-ids" }, description = "Hash input RecordId values using SHA-256 before writing to output."
+                    + " The hashed value (not the original) appears in the output file."
+                    + " This is a one-way operation with no traceability.")
+    private boolean hashRecordIds;
+
     @Override
     public Integer call() {
         logger.info("Running package command (tokenize + encrypt)");
@@ -90,6 +96,9 @@ public class PackageCommand implements Callable<Integer> {
         logger.info("Hashing Secret: {}", maskString(hashingSecret));
         logger.info("Encryption Key: {}", maskString(encryptionKey));
         logger.info("Ring ID: {}", ringId);
+        if (hashRecordIds) {
+            logger.info("Record ID hashing enabled");
+        }
 
         // Validate types
         if (!isValidType(inputType)) {
@@ -143,7 +152,8 @@ public class PackageCommand implements Callable<Integer> {
             metadata.addHashedSecret(Metadata.ENCRYPTION_SECRET_HASH, encryptionKey);
 
             // Process data with JWE wrapping support for v1 token format
-            PersonAttributesProcessor.process(reader, writer, transformers, metadataMap, encryptionKey, ringId);
+            PersonAttributesProcessor.process(reader, writer, transformers, metadataMap, encryptionKey, ringId,
+                    hashRecordIds);
 
             // Write metadata
             MetadataWriter metadataWriter = new MetadataJsonWriter(outputPath);

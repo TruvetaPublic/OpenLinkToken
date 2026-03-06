@@ -18,6 +18,7 @@ from opentoken.tokentransformer.token_transformer import TokenTransformer
 from opentoken_cli.io.person_attributes_reader import PersonAttributesReader
 from opentoken_cli.io.person_attributes_writer import PersonAttributesWriter
 from opentoken_cli.processor.token_constants import TokenConstants
+from opentoken_cli.util.record_id_hasher import RecordIdHasher
 
 logger = logging.getLogger(__name__)
 
@@ -47,11 +48,13 @@ class PersonAttributesProcessor:
         metadata_map: Dict[str, Any] = None,
         encryption_key: str = None,
         ring_id: str = None,
+        hash_record_ids: bool = False,
     ) -> None:
         """
         Read person attributes from the input data source, generate tokens, and
         write the result back to the output data source. The tokens can be optionally
         transformed before writing and wrapped in JWE format if ring ID is provided.
+        Record IDs are SHA-256 hashed in the output when hash_record_ids is True.
 
         Args:
             reader: The reader initialized with the input data source.
@@ -60,6 +63,8 @@ class PersonAttributesProcessor:
             metadata_map: Optional metadata map to update with processing statistics.
             encryption_key: Optional encryption key for JWE wrapping (None to skip JWE).
             ring_id: Optional ring ID for JWE wrapping (None to skip JWE).
+            hash_record_ids: When True, each record ID is SHA-256 hashed before writing
+                             to the output. This is a one-way operation with no traceability.
         """
         # TokenGenerator code
         token_definition = TokenDefinition()
@@ -71,6 +76,7 @@ class PersonAttributesProcessor:
             metadata_map,
             encryption_key,
             ring_id,
+            hash_record_ids,
         )
 
     @staticmethod
@@ -105,6 +111,7 @@ class PersonAttributesProcessor:
         metadata_map: Dict[str, Any] = None,
         encryption_key: str = None,
         ring_id: str = None,
+        hash_record_ids: bool = False,
     ) -> None:
         """
         Core row-processing logic shared by all process() overloads.
@@ -117,6 +124,7 @@ class PersonAttributesProcessor:
             metadata_map: Optional metadata map to update with processing statistics.
             encryption_key: Optional encryption key for JWE wrapping.
             ring_id: Optional ring ID for JWE wrapping.
+            hash_record_ids: When True, each record ID is SHA-256 hashed before writing.
         """
         token_generator = TokenGenerator(token_definition, tokenizer)
 
@@ -164,6 +172,7 @@ class PersonAttributesProcessor:
                     encryption_key,
                     ring_id,
                     jwe_formatters,
+                    hash_record_ids,
                 )
 
                 if row_counter % 10000 == 0:
@@ -210,9 +219,11 @@ class PersonAttributesProcessor:
         encryption_key: str = None,
         ring_id: str = None,
         jwe_formatters: Dict[str, JweMatchTokenFormatter] = None,
+        hash_record_ids: bool = False,
     ) -> None:
         """
-        Write tokens to the output writer. Optionally wraps tokens in JWE format.
+        Write tokens to the output writer. Optionally wraps tokens in JWE format
+        and hashes record IDs when hash_record_ids is True.
 
         Args:
             writer: The writer to write tokens to.
@@ -221,6 +232,8 @@ class PersonAttributesProcessor:
             token_generator_result: The result from token generation.
             encryption_key: Optional encryption key for JWE wrapping (None to skip JWE).
             ring_id: Optional ring ID for JWE wrapping (None to skip JWE).
+            jwe_formatters: Optional cached JWE formatters.
+            hash_record_ids: When True, each record ID is SHA-256 hashed before writing.
         """
         # Sort token IDs for consistent output
         token_ids = sorted(token_generator_result.tokens.keys())
@@ -229,6 +242,10 @@ class PersonAttributesProcessor:
         record_id = row.get(RecordIdAttribute)
         if record_id is None or record_id == "":
             record_id = str(uuid.uuid4())
+
+        # Hash the record ID when requested (no mapping file — intentionally no traceability)
+        if hash_record_ids:
+            record_id = RecordIdHasher.hash(record_id)
 
         for token_id in token_ids:
             token = token_generator_result.tokens[token_id]

@@ -432,6 +432,98 @@ class TestOpenTokenCommand:
         exit_code = OpenTokenCommand.execute(args)
         assert exit_code != 0, "Command should fail with invalid subcommand"
 
+    # ===== Hash Record IDs Tests =====
+
+    def test_tokenize_command_hash_record_ids_output_contains_hashed_ids(
+        self, temp_dir
+    ):
+        """Output token file must contain hashed (not original) RecordId values."""
+        input_csv = temp_dir / "input.csv"
+        output_csv = temp_dir / "output.csv"
+
+        args = [
+            "tokenize",
+            "-i",
+            str(input_csv),
+            "-t",
+            "csv",
+            "-o",
+            str(output_csv),
+            "--hashingsecret",
+            self.HASHING_SECRET,
+            "--hash-record-ids",
+        ]
+
+        exit_code = OpenTokenCommand.execute(args)
+        assert exit_code == 0, "Command should execute successfully"
+        assert output_csv.exists(), "Output CSV should be created"
+
+        content = output_csv.read_text()
+        assert "test-001" not in content, "Output must not contain original record IDs"
+        assert "test-002" not in content, "Output must not contain original record IDs"
+
+        # All RecordId values should be 64-char hex strings (SHA-256)
+        lines = content.strip().splitlines()
+        headers = lines[0].split(",")
+        record_id_col = headers.index("RecordId")
+        for line in lines[1:]:
+            cols = line.split(",")
+            record_id = cols[record_id_col].strip()
+            assert (
+                len(record_id) == 64
+            ), f"Hashed record ID must be 64 chars, got: {record_id!r}"
+
+    def test_tokenize_command_without_hash_record_ids_output_contains_original_ids(
+        self, temp_dir
+    ):
+        """Without --hash-record-ids the output must contain the original record IDs."""
+        input_csv = temp_dir / "input.csv"
+        output_csv = temp_dir / "output.csv"
+
+        args = [
+            "tokenize",
+            "-i",
+            str(input_csv),
+            "-t",
+            "csv",
+            "-o",
+            str(output_csv),
+            "--hashingsecret",
+            self.HASHING_SECRET,
+        ]
+
+        OpenTokenCommand.execute(args)
+
+        content = output_csv.read_text()
+        assert "test-001" in content, "Output should contain original record IDs"
+        assert "test-002" in content, "Output should contain original record IDs"
+
+    def test_package_command_hash_record_ids_output_contains_hashed_ids(self, temp_dir):
+        """--hash-record-ids on package must produce hashed (not original) RecordId values."""
+        input_csv = temp_dir / "input.csv"
+        output_csv = temp_dir / "output.csv"
+
+        args = [
+            "package",
+            "-i",
+            str(input_csv),
+            "-t",
+            "csv",
+            "-o",
+            str(output_csv),
+            "--hashingsecret",
+            self.HASHING_SECRET,
+            "--encryptionkey",
+            self.ENCRYPTION_KEY,
+            "--hash-record-ids",
+        ]
+
+        exit_code = OpenTokenCommand.execute(args)
+        assert exit_code == 0, "Command should execute successfully"
+
+        content = output_csv.read_text()
+        assert "test-001" not in content, "Output must not contain original record IDs"
+        assert "test-002" not in content, "Output must not contain original record IDs"
 
 class TestStartupVersionCheckPolicy:
     """Tests for startup version-check behavior by parsed subcommand."""
