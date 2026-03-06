@@ -3,6 +3,7 @@ Copyright (c) Truveta. All rights reserved.
 """
 
 from typing import List
+
 from opentoken.attributes.attribute_expression import AttributeExpression
 from opentoken.attributes.person.birth_date_attribute import BirthDateAttribute
 from opentoken.attributes.person.sex_attribute import SexAttribute
@@ -26,7 +27,7 @@ class T4Token(Token):
         self._definition = [
             AttributeExpression(SocialSecurityNumberAttribute, "T|M(\\d+)"),
             AttributeExpression(SexAttribute, "T|U"),
-            AttributeExpression(BirthDateAttribute, "T|D")
+            AttributeExpression(BirthDateAttribute, "T|D"),
         ]
 
     def get_identifier(self) -> str:

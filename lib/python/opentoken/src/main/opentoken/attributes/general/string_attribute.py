@@ -48,7 +48,7 @@ class StringAttribute(BaseAttribute):
 
         Returns:
             str: The trimmed string value
-            
+
         Raises:
             ValueError: If value is None
         """

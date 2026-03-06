@@ -31,9 +31,9 @@ class HelpCommand:
     def execute(args):
         """Execute the help command."""
         from opentoken_cli.commands import OpenTokenCommand
-        
+
         parser = OpenTokenCommand.create_parser()
-        
+
         if args.subcommand:
             # Show help for specific subcommand
             # Parse with the subcommand and --help flag

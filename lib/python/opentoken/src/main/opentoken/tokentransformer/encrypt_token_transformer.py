@@ -1,14 +1,16 @@
 """
 Copyright (c) Truveta. All rights reserved.
 """
+
 import base64
 import logging
 import secrets
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.backends import default_backend
-from opentoken.tokentransformer.token_transformer import TokenTransformer
-from opentoken.tokentransformer.encryption_constants import EncryptionConstants
 
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+
+from opentoken.tokentransformer.encryption_constants import EncryptionConstants
+from opentoken.tokentransformer.token_transformer import TokenTransformer
 
 logger = logging.getLogger(__name__)
 
@@ -31,12 +33,10 @@ class EncryptTokenTransformer(TokenTransformer):
             ValueError: If the encryption key is not 32 characters long.
         """
         if len(encryption_key) != EncryptionConstants.KEY_BYTE_LENGTH:
-            logger.error(
-                f"Invalid Argument. Key must be {EncryptionConstants.KEY_BYTE_LENGTH} characters long")
-            raise ValueError(
-                f"Key must be {EncryptionConstants.KEY_BYTE_LENGTH} characters long")
+            logger.error(f"Invalid Argument. Key must be {EncryptionConstants.KEY_BYTE_LENGTH} characters long")
+            raise ValueError(f"Key must be {EncryptionConstants.KEY_BYTE_LENGTH} characters long")
 
-        self.encryption_key = encryption_key.encode('utf-8')
+        self.encryption_key = encryption_key.encode("utf-8")
 
     def transform(self, token: str) -> str:
         """
@@ -58,15 +58,11 @@ class EncryptTokenTransformer(TokenTransformer):
             iv_bytes = secrets.token_bytes(EncryptionConstants.IV_SIZE)
 
             # Create cipher
-            cipher = Cipher(
-                algorithms.AES(self.encryption_key),
-                modes.GCM(iv_bytes),
-                backend=default_backend()
-            )
+            cipher = Cipher(algorithms.AES(self.encryption_key), modes.GCM(iv_bytes), backend=default_backend())
 
             # Encrypt the token
             encryptor = cipher.encryptor()
-            encrypted_bytes = encryptor.update(token.encode('utf-8')) + encryptor.finalize()
+            encrypted_bytes = encryptor.update(token.encode("utf-8")) + encryptor.finalize()
 
             # Get the authentication tag
             tag = encryptor.tag
@@ -74,7 +70,7 @@ class EncryptTokenTransformer(TokenTransformer):
             # Combine IV + encrypted data + tag
             message_bytes = iv_bytes + encrypted_bytes + tag
 
-            return base64.b64encode(message_bytes).decode('utf-8')
+            return base64.b64encode(message_bytes).decode("utf-8")
 
         except Exception as e:
             logger.error(f"Error during token encryption: {e}")

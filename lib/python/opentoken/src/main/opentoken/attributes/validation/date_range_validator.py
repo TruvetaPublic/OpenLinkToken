@@ -2,8 +2,9 @@
 Copyright (c) Truveta. All rights reserved.
 """
 
-from datetime import datetime, date
+from datetime import date, datetime
 from typing import Optional
+
 from opentoken.attributes.validation.serializable_attribute_validator import SerializableAttributeValidator
 
 
@@ -30,12 +31,12 @@ class DateRangeValidator(SerializableAttributeValidator):
         "%Y-%m-%dT%H:%M:%S.%fZ",
         "%Y-%m-%dT%H:%M:%SZ",
         "%Y-%m-%dT%H:%M:%S.%f%z",
-        "%Y-%m-%dT%H:%M:%S%z"
+        "%Y-%m-%dT%H:%M:%S%z",
     ]
 
-    def __init__(self, min_date: Optional[date] = None, 
-                 max_date: Optional[date] = None,
-                 use_current_as_max: bool = False):
+    def __init__(
+        self, min_date: Optional[date] = None, max_date: Optional[date] = None, use_current_as_max: bool = False
+    ):
         """
         Initialize the validator with a date range.
 

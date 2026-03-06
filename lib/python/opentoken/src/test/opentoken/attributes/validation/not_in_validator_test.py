@@ -3,7 +3,6 @@ Tests for NotInValidator.
 """
 
 import pickle
-import pytest
 
 from opentoken.attributes.validation.not_in_validator import NotInValidator
 
@@ -53,9 +52,5 @@ class TestNotInValidator:
         assert validator.eval("valid") == deserialized_validator.eval("valid"), (
             "Validation results should match for 'valid'"
         )
-        assert deserialized_validator.eval("invalid1") is False, (
-            "Deserialized validator should not allow 'invalid1'"
-        )
-        assert deserialized_validator.eval("invalid2") is False, (
-            "Deserialized validator should not allow 'invalid2'"
-        )
+        assert deserialized_validator.eval("invalid1") is False, "Deserialized validator should not allow 'invalid1'"
+        assert deserialized_validator.eval("invalid2") is False, "Deserialized validator should not allow 'invalid2'"

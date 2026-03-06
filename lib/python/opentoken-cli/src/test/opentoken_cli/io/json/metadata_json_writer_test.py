@@ -5,14 +5,11 @@ Copyright (c) Truveta. All rights reserved.
 import json
 import os
 import tempfile
-from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
 
-import pytest
-
+from opentoken.metadata import Metadata
 from opentoken_cli.io.json.metadata_json_writer import MetadataJsonWriter
 from opentoken_cli.io.metadata_writer import MetadataWriter
-from opentoken.metadata import Metadata
 
 
 class TestMetadataJsonWriter:
@@ -26,11 +23,13 @@ class TestMetadataJsonWriter:
         """Set up test fixtures before each test method."""
         # Create temporary directories for testing
         self.temp_dir = tempfile.mkdtemp()
-        
+
         # Initialize default writer and path
         self.default_output_path = os.path.join(self.temp_dir, "default_output.csv")
         self.default_writer = MetadataJsonWriter(self.default_output_path)
-        self.default_metadata_file_path = os.path.join(self.temp_dir, "default_output" + Metadata.METADATA_FILE_EXTENSION)
+        self.default_metadata_file_path = os.path.join(
+            self.temp_dir, "default_output" + Metadata.METADATA_FILE_EXTENSION
+        )
 
         # Create a custom output path for testing
         self.custom_output_path = os.path.join(self.temp_dir, "custom_output.csv")
@@ -44,26 +43,23 @@ class TestMetadataJsonWriter:
             os.remove(self.default_metadata_file_path)
         if os.path.exists(self.custom_metadata_file_path):
             os.remove(self.custom_metadata_file_path)
-        
+
         # Clean up temp directory
         import shutil
+
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_write_metadata_simple_key_values(self):
         """Test writing metadata with simple key-value pairs."""
         # Create a sample metadata map
-        metadata_map: Dict[str, Any] = {
-            "key1": "value1",
-            "key2": "value2",
-            "key3": "value3"
-        }
+        metadata_map: Dict[str, Any] = {"key1": "value1", "key2": "value2", "key3": "value3"}
 
         self.default_writer.write(metadata_map)
 
         assert os.path.exists(self.default_metadata_file_path), "Metadata file should have been created"
 
         # Read the JSON file and verify its contents
-        with open(self.default_metadata_file_path, 'r', encoding='utf-8') as f:
+        with open(self.default_metadata_file_path, "r", encoding="utf-8") as f:
             root = json.load(f)
 
         # Verify all keys and values were correctly written
@@ -73,15 +69,10 @@ class TestMetadataJsonWriter:
 
     def test_write_metadata_nested_json_values(self):
         """Test writing metadata with nested dictionary values."""
-        metadata_map: Dict[str, Any] = {
-            "simpleKey": "simpleValue"
-        }
-        
+        metadata_map: Dict[str, Any] = {"simpleKey": "simpleValue"}
+
         # Create a nested dictionary object
-        invalid_attributes_map = {
-            "attr1": 10,
-            "attr2": 20
-        }
+        invalid_attributes_map = {"attr1": 10, "attr2": 20}
         metadata_map["InvalidAttributesByType"] = invalid_attributes_map
 
         self.default_writer.write(metadata_map)
@@ -89,7 +80,7 @@ class TestMetadataJsonWriter:
         assert os.path.exists(self.default_metadata_file_path), "Metadata file should have been created"
 
         # Read the JSON file and verify its contents
-        with open(self.default_metadata_file_path, 'r', encoding='utf-8') as f:
+        with open(self.default_metadata_file_path, "r", encoding="utf-8") as f:
             root = json.load(f)
 
         # Verify simple key-value was correctly written
@@ -104,15 +95,9 @@ class TestMetadataJsonWriter:
     def test_write_metadata_map_object_value(self):
         """Test writing metadata with dictionary object values."""
         # Create a metadata map with a dictionary object value
-        nested_map = {
-            "validAttribute": 5,
-            "anotherAttribute": 15
-        }
-        
-        metadata_map: Dict[str, Any] = {
-            "InvalidAttributesByType": nested_map,
-            "TotalRows": 100
-        }
+        nested_map = {"validAttribute": 5, "anotherAttribute": 15}
+
+        metadata_map: Dict[str, Any] = {"InvalidAttributesByType": nested_map, "TotalRows": 100}
 
         # Write the metadata - should not raise exception
         self.default_writer.write(metadata_map)
@@ -121,7 +106,7 @@ class TestMetadataJsonWriter:
         assert os.path.exists(self.default_metadata_file_path), "Metadata file should have been created"
 
         # Read the JSON file and verify the dictionary was handled correctly
-        with open(self.default_metadata_file_path, 'r', encoding='utf-8') as f:
+        with open(self.default_metadata_file_path, "r", encoding="utf-8") as f:
             root = json.load(f)
 
         # Verify the dictionary was stored as a proper JSON object
@@ -135,19 +120,18 @@ class TestMetadataJsonWriter:
     def test_write_metadata_custom_output_path(self):
         """Test writing metadata to a custom output path."""
         # Create a sample metadata map
-        metadata_map: Dict[str, Any] = {
-            "key1": "value1",
-            "key2": "value2"
-        }
+        metadata_map: Dict[str, Any] = {"key1": "value1", "key2": "value2"}
 
         # Write metadata using the custom writer
         self.custom_writer.write(metadata_map)
 
         # Verify the file was created at the custom location
-        assert os.path.exists(self.custom_metadata_file_path), "Metadata file should have been created at the custom location"
+        assert os.path.exists(self.custom_metadata_file_path), (
+            "Metadata file should have been created at the custom location"
+        )
 
         # Read and verify the contents
-        with open(self.custom_metadata_file_path, 'r', encoding='utf-8') as f:
+        with open(self.custom_metadata_file_path, "r", encoding="utf-8") as f:
             root = json.load(f)
 
         assert root["key1"] == "value1"
@@ -158,11 +142,11 @@ class TestMetadataJsonWriter:
         # Create a path with a non-existent directory
         nested_output_path = os.path.join(self.temp_dir, "nested", "deeper", "output.csv")
         nested_writer = MetadataJsonWriter(nested_output_path)
-        expected_metadata_path = os.path.join(self.temp_dir, "nested", "deeper", "output" + Metadata.METADATA_FILE_EXTENSION)
+        expected_metadata_path = os.path.join(
+            self.temp_dir, "nested", "deeper", "output" + Metadata.METADATA_FILE_EXTENSION
+        )
 
-        metadata_map: Dict[str, Any] = {
-            "test_key": "test_value"
-        }
+        metadata_map: Dict[str, Any] = {"test_key": "test_value"}
 
         # Write should create the directory structure
         nested_writer.write(metadata_map)
@@ -180,7 +164,7 @@ class TestMetadataJsonWriter:
             "unicode_key": "测试数据",
             "special_chars": "!@#$%^&*()",
             "newlines": "line1\nline2\nline3",
-            "quotes": 'single"double\'mixed'
+            "quotes": "single\"double'mixed",
         }
 
         self.default_writer.write(metadata_map)
@@ -188,13 +172,13 @@ class TestMetadataJsonWriter:
         assert os.path.exists(self.default_metadata_file_path), "Metadata file should have been created"
 
         # Read the JSON file and verify special characters are preserved
-        with open(self.default_metadata_file_path, 'r', encoding='utf-8') as f:
+        with open(self.default_metadata_file_path, "r", encoding="utf-8") as f:
             root = json.load(f)
 
         assert root["unicode_key"] == "测试数据"
         assert root["special_chars"] == "!@#$%^&*()"
         assert root["newlines"] == "line1\nline2\nline3"
-        assert root["quotes"] == 'single"double\'mixed'
+        assert root["quotes"] == "single\"double'mixed"
 
     def test_write_metadata_empty_map(self):
         """Test writing an empty metadata map."""
@@ -202,10 +186,12 @@ class TestMetadataJsonWriter:
 
         self.default_writer.write(metadata_map)
 
-        assert os.path.exists(self.default_metadata_file_path), "Metadata file should have been created even for empty map"
+        assert os.path.exists(self.default_metadata_file_path), (
+            "Metadata file should have been created even for empty map"
+        )
 
         # Read the JSON file and verify it's a valid empty object
-        with open(self.default_metadata_file_path, 'r', encoding='utf-8') as f:
+        with open(self.default_metadata_file_path, "r", encoding="utf-8") as f:
             root = json.load(f)
 
         assert root == {}, "Empty metadata map should result in empty JSON object"
@@ -213,5 +199,5 @@ class TestMetadataJsonWriter:
     def test_inheritance_from_metadata_writer(self):
         """Test that MetadataJsonWriter properly inherits from MetadataWriter."""
         assert isinstance(self.default_writer, MetadataWriter), "MetadataJsonWriter should inherit from MetadataWriter"
-        assert hasattr(self.default_writer, 'write'), "MetadataJsonWriter should have write method"
-        assert hasattr(self.default_writer, 'output_path'), "MetadataJsonWriter should have output_path attribute"
+        assert hasattr(self.default_writer, "write"), "MetadataJsonWriter should have write method"
+        assert hasattr(self.default_writer, "output_path"), "MetadataJsonWriter should have output_path attribute"

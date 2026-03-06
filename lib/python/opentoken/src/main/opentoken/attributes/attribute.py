@@ -8,19 +8,19 @@ class Attribute(ABC):
     @abstractmethod
     def get_name(self) -> str:
         """Get the name of the attribute."""
-        pass
+        ...  # pragma: no cover
 
     @abstractmethod
     def get_aliases(self) -> List[str]:
         """Get the aliases for the attribute."""
-        pass
+        ...  # pragma: no cover
 
     @abstractmethod
     def normalize(self, value: str) -> str:
         """Normalize the attribute value."""
-        pass
+        ...  # pragma: no cover
 
     @abstractmethod
     def validate(self, value: str) -> bool:
         """Validate the attribute value."""
-        pass
+        ...  # pragma: no cover

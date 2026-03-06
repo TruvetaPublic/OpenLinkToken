@@ -178,12 +178,12 @@ def process_csv(input_path, output_path, hashing_secret, encryption_key):
         EncryptTokenTransformer(encryption_key),
     ])
     generator = TokenGenerator(TokenDefinition(), tokenizer)
-    
+
     with open(input_path, 'r') as infile, open(output_path, 'w', newline='') as outfile:
         reader = csv.DictReader(infile)
         writer = csv.writer(outfile)
         writer.writerow(['RecordId', 'RuleId', 'Token'])
-        
+
         for row in reader:
             record_id = row.get('RecordId', '')
 
@@ -253,6 +253,7 @@ person_attributes = {
 ```
 
 Verify parity with:
+
 ```bash
 cd tools/interoperability
 python multi_language_interoperability_test.py
@@ -280,7 +281,7 @@ try:
     invalid = generator.get_invalid_person_attributes(person_attributes)
     if invalid:
         raise ValueError(f"Invalid attributes: {sorted(invalid)}")
-        
+
 except ValueError as e:
     print(f"Validation error: {e}")
 ```
@@ -290,10 +291,10 @@ except ValueError as e:
 ```bash
 # From repository
 cd lib/python/opentoken
-pip install -e .
+uv pip install -e .
 
 # Development dependencies
-pip install -r dev-requirements.txt
+uv pip install -r dev-requirements.txt
 ```
 
 ## Next Steps

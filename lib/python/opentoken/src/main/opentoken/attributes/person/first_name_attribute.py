@@ -1,5 +1,6 @@
-from typing import List
 import re
+from typing import List
+
 from opentoken.attributes.base_attribute import BaseAttribute
 from opentoken.attributes.utilities.attribute_utilities import AttributeUtilities
 from opentoken.attributes.validation.not_in_validator import NotInValidator
@@ -23,7 +24,7 @@ class FirstNameAttribute(BaseAttribute):
     TITLE_PATTERN = re.compile(
         r"(?i)^\s*(mr|mrs|ms|miss|dr|prof|capt|sir|col|gen|cmdr|lt|"
         r"rabbi|father|brother|sister|hon|honorable|reverend|rev|doctor)\.?\s+",
-        re.IGNORECASE
+        re.IGNORECASE,
     )
 
     # Pattern to match trailing periods and middle initials in names.
@@ -37,7 +38,7 @@ class FirstNameAttribute(BaseAttribute):
     #   [^\s]        Any single non-space character (middle initial)
     #   \.?          Optional period
     #   $            End of string
-    TRAILING_PERIOD_AND_INITIAL_PATTERN = re.compile(r'\s[^\s]\.?$')
+    TRAILING_PERIOD_AND_INITIAL_PATTERN = re.compile(r"\s[^\s]\.?$")
 
     def __init__(self):
         placeholder_values = AttributeUtilities.COMMON_PLACEHOLDER_NAMES
@@ -90,7 +91,7 @@ class FirstNameAttribute(BaseAttribute):
 
         normalized = AttributeUtilities.normalize_diacritics(value)
 
-        without_title = re.sub(self.TITLE_PATTERN, '', normalized).strip()
+        without_title = re.sub(self.TITLE_PATTERN, "", normalized).strip()
 
         if without_title:
             normalized = without_title
@@ -100,12 +101,12 @@ class FirstNameAttribute(BaseAttribute):
         if without_suffix:
             normalized = without_suffix
 
-        normalized = re.sub(self.TRAILING_PERIOD_AND_INITIAL_PATTERN, '', normalized).strip()
+        normalized = re.sub(self.TRAILING_PERIOD_AND_INITIAL_PATTERN, "", normalized).strip()
 
         # Remove non-alphabetic characters
-        normalized = AttributeUtilities.NON_ALPHABETIC_PATTERN.sub('', normalized)
+        normalized = AttributeUtilities.NON_ALPHABETIC_PATTERN.sub("", normalized)
 
         # Normalize whitespace
-        normalized = AttributeUtilities.WHITESPACE_PATTERN.sub(' ', normalized)
+        normalized = AttributeUtilities.WHITESPACE_PATTERN.sub(" ", normalized)
 
         return normalized

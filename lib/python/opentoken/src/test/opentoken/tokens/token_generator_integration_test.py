@@ -2,8 +2,6 @@
 Copyright (c) Truveta. All rights reserved.
 """
 
-import pytest
-
 from opentoken.attributes.person.birth_date_attribute import BirthDateAttribute
 from opentoken.attributes.person.first_name_attribute import FirstNameAttribute
 from opentoken.attributes.person.last_name_attribute import LastNameAttribute
@@ -27,7 +25,7 @@ class TestTokenGeneratorIntegration:
     def test_get_all_tokens_valid_person_attributes_generates_tokens(self):
         """Test that valid person attributes generate the expected tokens."""
         # Define token identifiers and attribute expressions
-        token_definition = TokenDefinition()
+        TokenDefinition()
 
         # Person attributes to be used for token generation
         person_attributes = {
@@ -35,7 +33,7 @@ class TestTokenGeneratorIntegration:
             LastNameAttribute: "Wonderland",
             SocialSecurityNumberAttribute: "345-54-6795",
             SexAttribute: "F",
-            BirthDateAttribute: "1993-08-10"
+            BirthDateAttribute: "1993-08-10",
         }
 
         # Generate all tokens

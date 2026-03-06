@@ -3,7 +3,6 @@ Tests for NotNullOrEmptyValidator.
 """
 
 import pickle
-import pytest
 
 from opentoken.attributes.validation.not_null_or_empty_validator import NotNullOrEmptyValidator
 

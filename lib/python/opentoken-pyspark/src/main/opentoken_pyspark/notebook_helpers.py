@@ -5,22 +5,22 @@ Notebook helpers for convenient token definition and experimentation.
 This module provides a simplified API for creating custom tokens in Jupyter notebooks.
 """
 
-from typing import List, Dict, Optional, Type, Union
+from typing import Dict, List, Optional, Type, Union
+
 from opentoken.attributes.attribute import Attribute
 from opentoken.attributes.attribute_expression import AttributeExpression
+from opentoken.attributes.general.record_id_attribute import RecordIdAttribute
+from opentoken.attributes.person.birth_date_attribute import BirthDateAttribute
 from opentoken.attributes.person.first_name_attribute import FirstNameAttribute
 from opentoken.attributes.person.last_name_attribute import LastNameAttribute
-from opentoken.attributes.person.birth_date_attribute import BirthDateAttribute
-from opentoken.attributes.person.sex_attribute import SexAttribute
 from opentoken.attributes.person.postal_code_attribute import PostalCodeAttribute
+from opentoken.attributes.person.sex_attribute import SexAttribute
 from opentoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
-from opentoken.attributes.general.record_id_attribute import RecordIdAttribute
-from opentoken.tokens.token import Token
 from opentoken.tokens.base_token_definition import BaseTokenDefinition
+from opentoken.tokens.token import Token
 from opentoken.tokens.token_generator import TokenGenerator
-from opentoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 from opentoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
-
+from opentoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 
 # Convenient attribute name mappings
 ATTRIBUTE_MAP = {
@@ -58,7 +58,7 @@ class TokenBuilder:
         self.token_id = token_id
         self.expressions: List[AttributeExpression] = []
 
-    def add(self, attribute: Union[str, Type[Attribute]], expression: str = "T") -> 'TokenBuilder':
+    def add(self, attribute: Union[str, Type[Attribute]], expression: str = "T") -> "TokenBuilder":
         """
         Add an attribute expression to the token definition.
 
@@ -74,10 +74,7 @@ class TokenBuilder:
         """
         if isinstance(attribute, str):
             if attribute not in ATTRIBUTE_MAP:
-                raise ValueError(
-                    f"Unknown attribute: {attribute}. "
-                    f"Available: {', '.join(ATTRIBUTE_MAP.keys())}"
-                )
+                raise ValueError(f"Unknown attribute: {attribute}. Available: {', '.join(ATTRIBUTE_MAP.keys())}")
             attribute_class = ATTRIBUTE_MAP[attribute]
         else:
             attribute_class = attribute
@@ -126,7 +123,7 @@ class CustomTokenDefinition(BaseTokenDefinition):
         """Initialize an empty custom token definition."""
         self.tokens: Dict[str, Token] = {}
 
-    def add_token(self, token: Token) -> 'CustomTokenDefinition':
+    def add_token(self, token: Token) -> "CustomTokenDefinition":
         """
         Add a custom token to the definition.
 
@@ -157,9 +154,7 @@ class CustomTokenDefinition(BaseTokenDefinition):
 
 
 def create_token_generator(
-    hashing_secret: str,
-    encryption_key: str,
-    token_definition: Optional[BaseTokenDefinition] = None
+    hashing_secret: str, encryption_key: str, token_definition: Optional[BaseTokenDefinition] = None
 ) -> TokenGenerator:
     """
     Create a token generator with the specified secrets and token definition.
@@ -182,22 +177,15 @@ def create_token_generator(
     """
     if token_definition is None:
         from opentoken.tokens.token_definition import TokenDefinition
+
         token_definition = TokenDefinition()
 
-    token_transformers = [
-        HashTokenTransformer(hashing_secret),
-        EncryptTokenTransformer(encryption_key)
-    ]
+    token_transformers = [HashTokenTransformer(hashing_secret), EncryptTokenTransformer(encryption_key)]
 
     return TokenGenerator.from_transformers(token_definition, token_transformers)
 
 
-def quick_token(
-    token_id: str,
-    attributes: List[tuple],
-    hashing_secret: str,
-    encryption_key: str
-) -> TokenGenerator:
+def quick_token(token_id: str, attributes: List[tuple], hashing_secret: str, encryption_key: str) -> TokenGenerator:
     """
     Create a custom token and generator in one quick call.
 

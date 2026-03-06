@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Setup script for OpenToken PySpark package."""
 
-from setuptools import setup, find_packages
 import os
+
+from setuptools import find_packages, setup
 
 # Read the contents of the project README file.
 this_directory = os.path.abspath(os.path.dirname(__file__))

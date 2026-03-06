@@ -3,6 +3,7 @@ Copyright (c) Truveta. All rights reserved.
 """
 
 from typing import Set
+
 from opentoken.attributes.validation.serializable_attribute_validator import SerializableAttributeValidator
 
 

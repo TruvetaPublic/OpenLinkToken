@@ -43,13 +43,15 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Set up UV
+        uses: astral-sh/setup-uv@v6
+
       - name: Install build dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -e lib/python/opentoken
-          pip install -r lib/python/opentoken-cli/pyinstaller-requirements.txt
-          pip install -r lib/python/opentoken-cli/requirements.txt
-          pip install -e lib/python/opentoken-cli --no-deps
+          uv pip install --system -e lib/python/opentoken
+          uv pip install --system -r lib/python/opentoken-cli/pyinstaller-requirements.txt
+          uv pip install --system -r lib/python/opentoken-cli/requirements.txt
+          uv pip install --system -e lib/python/opentoken-cli --no-deps
 
       - name: Build CLI binary
         shell: bash

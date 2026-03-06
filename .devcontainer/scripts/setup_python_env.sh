@@ -6,8 +6,16 @@ echo "=== Setting up Python environment ==="
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$SCRIPT_DIR/../.."
 
-# Create venv at repo root (handles cases where mount exists but env not yet created)
 cd "$REPO_ROOT"
+
+# Install UV if not already present
+if ! command -v uv >/dev/null 2>&1; then
+  echo "Installing UV..."
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+  export PATH="$HOME/.local/bin:$PATH"
+fi
+
+# Create venv at repo root (handles cases where mount exists but env not yet created)
 mkdir -p .venv
 if [ "$(id -u)" -eq 0 ]; then
   chown -R "$(id -u)":"$(id -g)" .venv 2>/dev/null || true
@@ -19,7 +27,7 @@ fi
 
 if [ ! -f .venv/bin/activate ]; then
   echo "Creating virtual environment..."
-  python -m venv .venv
+  uv venv .venv
 else
   echo "Virtual environment already exists"
 fi
@@ -27,14 +35,10 @@ fi
 # shellcheck disable=SC1091
 source .venv/bin/activate
 
-# Upgrade pip and install wheel to avoid build issues
-echo "Upgrading pip, wheel, and setuptools..."
-pip install --upgrade pip wheel setuptools
-
-# Install all requirements in a single pip call to reduce file handle usage
+# Install all requirements in a single uv call to reduce file handle usage
 echo "Installing Python packages..."
 cd "$REPO_ROOT/lib/python"
-pip install --no-cache-dir \
+uv pip install \
   -r opentoken/requirements.txt \
   -r opentoken-cli/requirements.txt \
   -r opentoken-pyspark/requirements.txt \
@@ -42,7 +46,11 @@ pip install --no-cache-dir \
   -e opentoken \
   -e opentoken-cli \
   -e "opentoken-pyspark[spark40]" \
-  pre-commit \
+  prek \
   autoflake
+
+cd "$REPO_ROOT"
+echo "Installing prek git hooks..."
+prek install
 
 echo "✓ Python environment setup complete"

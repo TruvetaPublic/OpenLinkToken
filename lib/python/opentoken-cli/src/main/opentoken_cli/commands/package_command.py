@@ -167,10 +167,10 @@ class PackageCommand:
             raise RuntimeError("Failed to initialize transformers") from e
 
         try:
-            with PackageCommand._create_reader(
-                input_path, input_type
-            ) as reader, PackageCommand._create_writer(output_path, output_type) as writer:
-
+            with (
+                PackageCommand._create_reader(input_path, input_type) as reader,
+                PackageCommand._create_writer(output_path, output_type) as writer,
+            ):
                 # Create metadata
                 metadata = Metadata()
                 metadata_map = metadata.initialize()

@@ -1,4 +1,5 @@
 from typing import List
+
 from opentoken.attributes.serializable_attribute import SerializableAttribute
 from opentoken.attributes.validation.not_null_or_empty_validator import NotNullOrEmptyValidator
 from opentoken.attributes.validation.serializable_attribute_validator import SerializableAttributeValidator

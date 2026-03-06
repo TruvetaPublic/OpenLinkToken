@@ -113,19 +113,10 @@ class TestBirthYearAttribute:
         deserialized_attribute = pickle.loads(serialized_data)
 
         # Test various year values with both original and deserialized attributes
-        test_values = [
-            "1910",
-            "1950",
-            "1990",
-            "2000",
-            "2020",
-            "  1980  "
-        ]
+        test_values = ["1910", "1950", "1990", "2000", "2020", "  1980  "]
 
         for value in test_values:
-            assert birth_year_attribute.get_name() == deserialized_attribute.get_name(), (
-                "Attribute names should match"
-            )
+            assert birth_year_attribute.get_name() == deserialized_attribute.get_name(), "Attribute names should match"
 
             assert birth_year_attribute.get_aliases() == deserialized_attribute.get_aliases(), (
                 "Attribute aliases should match"

@@ -20,7 +20,7 @@ Examples of attribute expressions:
 
 import re
 from datetime import datetime
-from typing import Optional, Type, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Type
 
 if TYPE_CHECKING:
     from opentoken.attributes.attribute import Attribute
@@ -33,7 +33,7 @@ class AttributeExpression:
 
     EXPRESSION_PATTERN = re.compile(r"\s*(?P<expr>[^ (]+)(?:\((?P<args>[^\)]+)\))?")
 
-    def __init__(self, attribute_class: Type['Attribute'], expressions: Optional[str]):
+    def __init__(self, attribute_class: Type["Attribute"], expressions: Optional[str]):
         """
         Initialize the AttributeExpression.
 
@@ -220,9 +220,7 @@ class AttributeExpression:
             The formatted date string.
         """
         # Supported date formats
-        possible_formats = [
-            "%Y-%m-%d"
-        ]
+        possible_formats = ["%Y-%m-%d"]
 
         for fmt in possible_formats:
             try:
