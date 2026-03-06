@@ -11,3 +11,9 @@ cryptography==46.0.5
 
 # JOSE/JWE for match token format
 jwcrypto>=1.5.6
+
+# OS-appropriate config directory paths (used by version checker cache)
+platformdirs>=3.0.0
+
+# Semantic version comparison (used by version checker and update command)
+packaging>=21.0

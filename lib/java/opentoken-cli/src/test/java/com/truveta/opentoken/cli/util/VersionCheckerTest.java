@@ -103,24 +103,24 @@ class VersionCheckerTest {
     }
 
     // ------------------------------------------------------------------
-    // Cache read / write
+    // Cache read / write (using injectable cache path via package-private constructor)
     // ------------------------------------------------------------------
 
     @Test
     void testReadCache_missingFile() {
-        VersionChecker checker = new VersionChecker("2.0.0", false);
-        // The default cache path won't exist in CI
-        Optional<String> result = readCacheFromDir(checker, tempDir.resolve("non-existent.json"));
+        Path cacheFile = tempDir.resolve("non-existent.json");
+        VersionChecker checker = new VersionChecker("2.0.0", false, cacheFile);
+        Optional<String> result = checker.readCache();
         assertTrue(result.isEmpty());
     }
 
     @Test
     void testWriteAndReadCache_roundTrip() throws IOException {
         Path cacheFile = tempDir.resolve("update-check.json");
-        VersionChecker checker = new VersionChecker("2.0.0", false);
+        VersionChecker checker = new VersionChecker("2.0.0", false, cacheFile);
 
-        writeCacheToPath(checker, "2.1.0", cacheFile);
-        Optional<String> result = readCacheFromDir(checker, cacheFile);
+        checker.writeCache("2.1.0");
+        Optional<String> result = checker.readCache();
 
         assertTrue(result.isPresent());
         assertEquals("2.1.0", result.get());
@@ -137,8 +137,8 @@ class VersionCheckerTest {
                 + "\"current_version\":\"2.0.0\"}";
         Files.writeString(cacheFile, json);
 
-        VersionChecker checker = new VersionChecker("2.0.0", false);
-        Optional<String> result = readCacheFromDir(checker, cacheFile);
+        VersionChecker checker = new VersionChecker("2.0.0", false, cacheFile);
+        Optional<String> result = checker.readCache();
         assertTrue(result.isEmpty());
     }
 
@@ -147,16 +147,16 @@ class VersionCheckerTest {
         Path cacheFile = tempDir.resolve("update-check.json");
         Files.writeString(cacheFile, "not-valid-json{{{");
 
-        VersionChecker checker = new VersionChecker("2.0.0", false);
-        Optional<String> result = readCacheFromDir(checker, cacheFile);
+        VersionChecker checker = new VersionChecker("2.0.0", false, cacheFile);
+        Optional<String> result = checker.readCache();
         assertTrue(result.isEmpty());
     }
 
     @Test
     void testWriteCache_createsParentDirectories() throws IOException {
         Path cacheFile = tempDir.resolve("nested").resolve("dir").resolve("update-check.json");
-        VersionChecker checker = new VersionChecker("2.0.0", false);
-        writeCacheToPath(checker, "2.1.0", cacheFile);
+        VersionChecker checker = new VersionChecker("2.0.0", false, cacheFile);
+        checker.writeCache("2.1.0");
         assertTrue(Files.exists(cacheFile));
     }
 
@@ -180,87 +180,5 @@ class VersionCheckerTest {
         VersionChecker checker = new VersionChecker("2.0.0", false);
         // Should not throw even though start() was never called
         checker.waitAndNotify();
-    }
-
-    // ------------------------------------------------------------------
-    // Helpers to work around package-private cache methods via reflection
-    // ------------------------------------------------------------------
-
-    /**
-     * Call {@code readCache()} after temporarily redirecting its path by replacing the
-     * cache file contents at the expected location.  Since getCachePath() is package-private
-     * static, we use the overriding approach: write to the expected location then read.
-     *
-     * <p>For unit-test isolation we use a simpler approach: we call the method directly
-     * because the test is in the same package.
-     */
-    private Optional<String> readCacheFromDir(VersionChecker checker, Path customPath) {
-        // Save and restore the real cache file so tests are independent
-        Path realPath = VersionChecker.getCachePath();
-        boolean usedReal = customPath.equals(realPath);
-
-        if (!usedReal && !Files.exists(customPath)) {
-            return Optional.empty();
-        }
-
-        // The test is in the same package so we can call the package-private method
-        // by copying the file to the real location for the duration of the call.
-        if (!usedReal) {
-            try {
-                // Temporarily swap
-                boolean parentExists = Files.exists(realPath.getParent());
-                Path backup = null;
-                if (Files.exists(realPath)) {
-                    backup = tempDir.resolve("cache-backup.json");
-                    Files.copy(realPath, backup);
-                }
-                Files.createDirectories(realPath.getParent());
-                Files.copy(customPath, realPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-                Optional<String> result = checker.readCache();
-                // Restore
-                if (backup != null) {
-                    Files.copy(backup, realPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-                } else {
-                    Files.deleteIfExists(realPath);
-                }
-                return result;
-            } catch (IOException e) {
-                return Optional.empty();
-            }
-        }
-        return checker.readCache();
-    }
-
-    private void writeCacheToPath(VersionChecker checker, String latestVersion, Path targetPath) throws IOException {
-        Path realPath = VersionChecker.getCachePath();
-        boolean usedReal = targetPath.equals(realPath);
-
-        if (!usedReal) {
-            // Override the real path temporarily: write cache to a temp location then
-            // copy to targetPath. Since writeCache() uses getCachePath() we work around
-            // by calling writeCache and then moving the result.
-            Path backup = null;
-            try {
-                if (Files.exists(realPath)) {
-                    backup = tempDir.resolve("cache-backup-w.json");
-                    Files.copy(realPath, backup);
-                }
-                checker.writeCache(latestVersion);
-                if (Files.exists(realPath)) {
-                    Files.createDirectories(targetPath.getParent());
-                    Files.copy(realPath, targetPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-                }
-                // Restore
-                if (backup != null) {
-                    Files.copy(backup, realPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-                } else {
-                    Files.deleteIfExists(realPath);
-                }
-            } catch (IOException e) {
-                throw new IOException("Could not write cache to custom path", e);
-            }
-        } else {
-            checker.writeCache(latestVersion);
-        }
     }
 }

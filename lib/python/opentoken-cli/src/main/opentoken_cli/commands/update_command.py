@@ -3,6 +3,7 @@ Copyright (c) Truveta. All rights reserved.
 """
 
 import hashlib
+import json
 import logging
 import os
 import platform
@@ -14,7 +15,6 @@ from pathlib import Path
 from typing import Optional
 from urllib.error import URLError
 from urllib.request import Request, urlopen
-import json
 
 from opentoken.metadata import Metadata
 from opentoken_cli.util.version_checker import VersionChecker
@@ -23,6 +23,9 @@ logger = logging.getLogger(__name__)
 
 _GITHUB_API_BASE = "https://api.github.com/repos/TruvetaPublic/OpenToken"
 _REQUEST_TIMEOUT_SECONDS = 30
+_OS_SYSTEM_ALIASES = {
+    "darwin": "macos",
+}
 
 
 class UpdateCommand:
@@ -218,7 +221,8 @@ class UpdateCommand:
     def _find_asset(release_info: dict) -> Optional[dict]:
         """Find the release asset that matches the current platform/architecture."""
         assets = release_info.get("assets", [])
-        system = platform.system().lower()
+        raw_system = platform.system().lower()
+        system = _OS_SYSTEM_ALIASES.get(raw_system, raw_system)
         machine = platform.machine().lower()
 
         # Normalise common machine names
@@ -288,7 +292,8 @@ class UpdateCommand:
                 if len(parts) >= 2 and parts[1].lstrip("*") == asset_name:
                     return parts[0].lower()
             return None
-        except Exception:
+        except Exception as exc:
+            logger.debug("Could not fetch checksum for %s: %s", asset_name, exc)
             return None
 
     @staticmethod
@@ -315,7 +320,30 @@ class UpdateCommand:
         # the Python interpreter; we instead look for the "opentoken" script on PATH.
         target = UpdateCommand._find_target_binary()
         if target is None:
-            target = current_executable
+            # Fallback: try to infer the CLI entrypoint from sys.argv[0], but only
+            # if it is a real file, matches the expected asset name, and is not
+            # the Python interpreter itself.
+            argv0: Optional[Path] = None
+            if sys.argv and sys.argv[0]:
+                argv0 = Path(sys.argv[0])
+            if (
+                argv0 is not None
+                and argv0.is_file()
+                and argv0.name == asset_name
+                and argv0 != Path(sys.executable)
+            ):
+                target = argv0
+            else:
+                print(
+                    "Error: Unable to locate the opentoken executable to update.\n"
+                    "The updater could not find an 'opentoken' binary on PATH and\n"
+                    "cannot safely determine which file to overwrite.\n"
+                    "Please reinstall opentoken via your package manager or download\n"
+                    "the latest release from:\n"
+                    "  https://github.com/TruvetaPublic/OpenToken/releases",
+                    file=sys.stderr,
+                )
+                return 1
 
         if not os.access(str(target.parent), os.W_OK):
             print(

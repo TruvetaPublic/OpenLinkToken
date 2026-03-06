@@ -13,6 +13,8 @@ from typing import Optional
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
+from platformdirs import user_config_dir
+
 logger = logging.getLogger(__name__)
 
 _GITHUB_API_URL = "https://api.github.com/repos/TruvetaPublic/OpenToken/releases/latest"
@@ -101,9 +103,8 @@ class VersionChecker:
             if latest:
                 self._result = latest
                 self._write_cache(latest)
-        except Exception:
-            # Never surface errors from the background check
-            pass
+        except Exception as exc:
+            logger.debug("Version check failed", exc_info=exc)
 
     def _fetch_latest_version(self) -> Optional[str]:
         """Query the GitHub Releases API and return the tag name."""
@@ -123,17 +124,7 @@ class VersionChecker:
     @staticmethod
     def _get_cache_path() -> Path:
         """Return the platform-appropriate path for the cache file."""
-        try:
-            # Use platformdirs if available, otherwise fall back to ~/.config
-            try:
-                from platformdirs import user_config_dir  # type: ignore[import]
-                base = Path(user_config_dir(_CACHE_DIR_NAME))
-            except ImportError:
-                base = Path.home() / ".config" / _CACHE_DIR_NAME
-        except Exception:
-            base = Path.home() / ".config" / _CACHE_DIR_NAME
-
-        return base / _CACHE_FILENAME
+        return Path(user_config_dir(_CACHE_DIR_NAME)) / _CACHE_FILENAME
 
     def _read_cache(self) -> Optional[str]:
         """
@@ -161,7 +152,8 @@ class VersionChecker:
                 return None
 
             return data.get("latest_version") or None
-        except Exception:
+        except Exception as exc:
+            logger.debug("Could not read version cache", exc_info=exc)
             return None
 
     def _write_cache(self, latest_version: str) -> None:
@@ -176,8 +168,8 @@ class VersionChecker:
             }
             with cache_path.open("w", encoding="utf-8") as f:
                 json.dump(payload, f)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Could not write version cache", exc_info=exc)
 
     # ------------------------------------------------------------------
     # Version comparison and notice
@@ -188,23 +180,18 @@ class VersionChecker:
         """
         Return True when *candidate* is strictly greater than *current*
         using semantic-version comparison.
-
-        Falls back to string inequality if packaging is unavailable.
         """
+        from packaging.version import Version  # type: ignore[import]
         try:
-            from packaging.version import Version  # type: ignore[import]
             return Version(candidate) > Version(current)
         except Exception:
-            return candidate != current and candidate > current
+            return False
 
     def _print_notice(self, latest_version: str) -> None:
         """
-        Write the update notice to stderr if the session is interactive.
+        Write the update notice to stderr.
         Respects the ``NO_COLOR`` environment variable.
         """
-        if not sys.stderr.isatty():
-            return
-
         use_color = not os.getenv("NO_COLOR")
         yellow = "\033[33m" if use_color else ""
         reset = "\033[0m" if use_color else ""

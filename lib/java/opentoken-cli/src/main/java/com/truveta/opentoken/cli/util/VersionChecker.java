@@ -19,8 +19,6 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-import org.jline.terminal.Terminal;
-import org.jline.terminal.TerminalBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +51,7 @@ public final class VersionChecker {
 
     private final String currentVersion;
     private final boolean noUpdateCheck;
+    private final Path cachePathOverride;
 
     private CompletableFuture<Optional<String>> future;
 
@@ -63,8 +62,20 @@ public final class VersionChecker {
      * @param noUpdateCheck  when {@code true} the checker is disabled entirely
      */
     public VersionChecker(String currentVersion, boolean noUpdateCheck) {
+        this(currentVersion, noUpdateCheck, null);
+    }
+
+    /**
+     * Package-private constructor that allows injecting a custom cache path for testing.
+     *
+     * @param currentVersion    the running version string
+     * @param noUpdateCheck     when {@code true} the checker is disabled entirely
+     * @param cachePathOverride when non-null, used instead of the default OS config path
+     */
+    VersionChecker(String currentVersion, boolean noUpdateCheck, Path cachePathOverride) {
         this.currentVersion = currentVersion;
         this.noUpdateCheck = noUpdateCheck;
+        this.cachePathOverride = cachePathOverride;
     }
 
     /**
@@ -206,7 +217,7 @@ public final class VersionChecker {
      */
     Optional<String> readCache() {
         try {
-            Path cachePath = getCachePath();
+            Path cachePath = cachePathOverride != null ? cachePathOverride : getCachePath();
             if (!Files.exists(cachePath)) {
                 return Optional.empty();
             }
@@ -241,7 +252,7 @@ public final class VersionChecker {
      */
     void writeCache(String latestVersion) {
         try {
-            Path cachePath = getCachePath();
+            Path cachePath = cachePathOverride != null ? cachePathOverride : getCachePath();
             Files.createDirectories(cachePath.getParent());
 
             ObjectMapper mapper = new ObjectMapper();
@@ -319,16 +330,12 @@ public final class VersionChecker {
     // ------------------------------------------------------------------
 
     /**
-     * Write the update notice to stderr if the session is interactive.
+     * Write the update notice to stderr.
      * Respects the {@code NO_COLOR} environment variable.
      *
      * @param latestVersion the latest available version
      */
     private void printNotice(String latestVersion) {
-        if (!isStderrInteractive()) {
-            return;
-        }
-
         boolean useColor = System.getenv("NO_COLOR") == null;
         String yellow = useColor ? "\u001B[33m" : "";
         String reset = useColor ? "\u001B[0m" : "";
@@ -342,17 +349,5 @@ public final class VersionChecker {
         err.println("   Release notes: https://github.com/TruvetaPublic/OpenToken/releases/tag/" + tag);
         err.println("   Run 'opentoken update' to upgrade, or set " + ENV_DISABLE
                 + "=1 to silence this message.");
-    }
-
-    private static boolean isStderrInteractive() {
-        try {
-            Terminal terminal = TerminalBuilder.builder()
-                    .system(true)
-                    .dumb(true)
-                    .build();
-            return terminal.getType() != Terminal.TYPE_DUMB;
-        } catch (Exception e) {
-            return false;
-        }
     }
 }

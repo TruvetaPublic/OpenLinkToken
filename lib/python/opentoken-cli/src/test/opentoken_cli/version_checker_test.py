@@ -223,27 +223,27 @@ class TestRun:
 class TestPrintNotice:
     """Tests for the update notice output."""
 
-    def test_notice_printed_to_stderr_when_tty(self, capsys, monkeypatch):
+    def test_notice_printed_to_stderr(self, capsys, monkeypatch):
         monkeypatch.delenv("NO_COLOR", raising=False)
         checker = VersionChecker(_CURRENT)
-        with patch.object(sys.stderr, "isatty", return_value=True):
-            checker._print_notice(_NEWER)
+        checker._print_notice(_NEWER)
         captured = capsys.readouterr()
         assert _NEWER in captured.err
         assert _CURRENT in captured.err
 
-    def test_notice_suppressed_when_not_tty(self, capsys):
+    def test_notice_printed_even_when_not_tty(self, capsys, monkeypatch):
+        """Notice must always go to stderr regardless of whether it is a TTY."""
+        monkeypatch.delenv("NO_COLOR", raising=False)
         checker = VersionChecker(_CURRENT)
         with patch.object(sys.stderr, "isatty", return_value=False):
             checker._print_notice(_NEWER)
         captured = capsys.readouterr()
-        assert captured.err == ""
+        assert _NEWER in captured.err
 
     def test_notice_respects_no_color(self, capsys, monkeypatch):
         monkeypatch.setenv("NO_COLOR", "1")
         checker = VersionChecker(_CURRENT)
-        with patch.object(sys.stderr, "isatty", return_value=True):
-            checker._print_notice(_NEWER)
+        checker._print_notice(_NEWER)
         captured = capsys.readouterr()
         # No ANSI escape codes in output
         assert "\033[" not in captured.err
@@ -271,8 +271,7 @@ class TestWaitAndNotify:
         checker._thread = threading.Thread(target=lambda: None)
         checker._thread.start()
 
-        with patch.object(sys.stderr, "isatty", return_value=True):
-            checker.wait_and_notify()
+        checker.wait_and_notify()
 
         captured = capsys.readouterr()
         assert _NEWER in captured.err
@@ -283,8 +282,7 @@ class TestWaitAndNotify:
         checker._thread = threading.Thread(target=lambda: None)
         checker._thread.start()
 
-        with patch.object(sys.stderr, "isatty", return_value=True):
-            checker.wait_and_notify()
+        checker.wait_and_notify()
 
         captured = capsys.readouterr()
         assert captured.err == ""
