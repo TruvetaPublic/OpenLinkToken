@@ -29,4 +29,11 @@ ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 
 USER vscode
 
-RUN pip install pytest autoflake flake8 bump2version --break-system-packages
+# Install UV and global Python CLI tools (each in an isolated uv-managed venv)
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
+    ~/.local/bin/uv tool install pytest && \
+    ~/.local/bin/uv tool install autoflake && \
+    ~/.local/bin/uv tool install flake8 && \
+    ~/.local/bin/uv tool install bump2version
+
+ENV PATH="/home/vscode/.local/bin:${PATH}"

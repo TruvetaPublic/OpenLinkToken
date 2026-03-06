@@ -3,6 +3,7 @@ Copyright (c) Truveta. All rights reserved.
 """
 
 from abc import ABC
+
 from opentoken.attributes.validation.attribute_validator import AttributeValidator
 
 
@@ -21,6 +22,7 @@ class SerializableAttributeValidator(AttributeValidator, ABC):
     but this class serves as a marker for validators that are explicitly
     designed to be serializable.
     """
+
     # This is a marker interface that combines AttributeValidator and serializable capability
     # No additional methods are required
     pass

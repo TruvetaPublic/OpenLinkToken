@@ -4,6 +4,8 @@
 package com.truveta.opentoken.cli;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -330,5 +332,76 @@ class MainTest {
 
         int exitCode = OpenTokenCommand.execute(args);
         assertTrue(exitCode != 0, "Command should exit with non-zero code for missing required parameters");
+    }
+
+    // ===== Hash Record IDs Tests =====
+
+    @Test
+    void testTokenizeCommand_HashRecordIds_OutputContainsHashedIds() throws IOException {
+        String[] args = {
+                "tokenize",
+                "-i", inputCsv.toString(),
+                "-t", "csv",
+                "-o", outputCsv.toString(),
+                "--hashingsecret", HASHING_SECRET,
+                "--hash-record-ids"
+        };
+
+        int exitCode = OpenTokenCommand.execute(args);
+        assertEquals(0, exitCode, "Command should execute successfully");
+
+        String outputContent = Files.readString(outputCsv);
+        assertFalse(outputContent.contains("test-001"),
+                "Output should not contain original record IDs");
+        assertFalse(outputContent.contains("test-002"),
+                "Output should not contain original record IDs");
+
+        // Hashed IDs are 64-char hex strings (SHA-256)
+        String[] lines = outputContent.strip().split("\n");
+        for (int i = 1; i < lines.length; i++) {
+            String[] cols = lines[i].split(",");
+            // RecordId is the last column
+            String recordId = cols[cols.length - 1].trim();
+            assertEquals(64, recordId.length(), "Hashed record ID must be 64 hex chars");
+        }
+    }
+
+    @Test
+    void testTokenizeCommand_WithoutHashRecordIds_OutputContainsOriginalIds() throws IOException {
+        String[] args = {
+                "tokenize",
+                "-i", inputCsv.toString(),
+                "-t", "csv",
+                "-o", outputCsv.toString(),
+                "--hashingsecret", HASHING_SECRET
+        };
+
+        OpenTokenCommand.execute(args);
+
+        String outputContent = Files.readString(outputCsv);
+        assertTrue(outputContent.contains("test-001"), "Output should contain original record IDs");
+        assertTrue(outputContent.contains("test-002"), "Output should contain original record IDs");
+    }
+
+    @Test
+    void testPackageCommand_HashRecordIds_OutputContainsHashedIds() throws IOException {
+        String[] args = {
+                "package",
+                "-i", inputCsv.toString(),
+                "-t", "csv",
+                "-o", outputCsv.toString(),
+                "--hashingsecret", HASHING_SECRET,
+                "--encryptionkey", ENCRYPTION_KEY,
+                "--hash-record-ids"
+        };
+
+        int exitCode = OpenTokenCommand.execute(args);
+        assertEquals(0, exitCode, "Command should execute successfully");
+
+        String outputContent = Files.readString(outputCsv);
+        assertFalse(outputContent.contains("test-001"),
+                "Output should not contain original record IDs");
+        assertFalse(outputContent.contains("test-002"),
+                "Output should not contain original record IDs");
     }
 }

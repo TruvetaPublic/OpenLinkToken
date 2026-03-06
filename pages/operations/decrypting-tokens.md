@@ -70,6 +70,7 @@ ID001,T2,fed456abc123...  # Same format as tokenize output
 ```
 
 This output can be used to:
+
 - Compare with tokenized output from another run
 - Verify token consistency across datasets
 - Debug normalization issues
@@ -82,7 +83,7 @@ A Python decryptor tool is available in `tools/decryptor/`:
 
 ```bash
 cd tools/decryptor
-pip install pycryptodome
+uv pip install pycryptodome
 
 python decryptor.py \
   -e "Secret-Encryption-Key-Goes-Here." \
@@ -115,6 +116,7 @@ python -m opentoken_cli.main decrypt \
 ```
 
 **Requirements for cross-language compatibility:**
+
 - Same encryption key (exactly 32 characters/bytes)
 - Same token file format
 - Both implementations use AES-256-GCM with identical parameters

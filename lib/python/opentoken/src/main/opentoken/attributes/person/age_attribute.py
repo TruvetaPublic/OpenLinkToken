@@ -3,6 +3,7 @@ Copyright (c) Truveta. All rights reserved.
 """
 
 from typing import List
+
 from opentoken.attributes.general.integer_attribute import IntegerAttribute
 from opentoken.attributes.validation.age_range_validator import AgeRangeValidator
 

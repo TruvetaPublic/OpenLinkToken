@@ -18,6 +18,7 @@ from opentoken.tokentransformer.token_transformer import TokenTransformer
 from opentoken_cli.io.person_attributes_reader import PersonAttributesReader
 from opentoken_cli.io.person_attributes_writer import PersonAttributesWriter
 from opentoken_cli.processor.token_constants import TokenConstants
+from opentoken_cli.util.record_id_hasher import RecordIdHasher
 
 logger = logging.getLogger(__name__)
 
@@ -47,11 +48,13 @@ class PersonAttributesProcessor:
         metadata_map: Dict[str, Any] = None,
         encryption_key: str = None,
         ring_id: str = None,
+        hash_record_ids: bool = False,
     ) -> None:
         """
         Read person attributes from the input data source, generate tokens, and
         write the result back to the output data source. The tokens can be optionally
         transformed before writing and wrapped in JWE format if ring ID is provided.
+        Record IDs are SHA-256 hashed in the output when hash_record_ids is True.
 
         Args:
             reader: The reader initialized with the input data source.
@@ -60,6 +63,8 @@ class PersonAttributesProcessor:
             metadata_map: Optional metadata map to update with processing statistics.
             encryption_key: Optional encryption key for JWE wrapping (None to skip JWE).
             ring_id: Optional ring ID for JWE wrapping (None to skip JWE).
+            hash_record_ids: When True, each record ID is SHA-256 hashed before writing
+                             to the output. This is a one-way operation with no traceability.
         """
         # TokenGenerator code
         token_definition = TokenDefinition()
@@ -71,6 +76,7 @@ class PersonAttributesProcessor:
             metadata_map,
             encryption_key,
             ring_id,
+            hash_record_ids,
         )
 
     @staticmethod
@@ -94,9 +100,7 @@ class PersonAttributesProcessor:
             metadata_map: Optional metadata map to update with processing statistics.
         """
         token_definition = TokenDefinition()
-        PersonAttributesProcessor._process_with_tokenizer(
-            reader, writer, tokenizer, token_definition, metadata_map
-        )
+        PersonAttributesProcessor._process_with_tokenizer(reader, writer, tokenizer, token_definition, metadata_map)
 
     @staticmethod
     def _process_with_tokenizer(
@@ -107,6 +111,7 @@ class PersonAttributesProcessor:
         metadata_map: Dict[str, Any] = None,
         encryption_key: str = None,
         ring_id: str = None,
+        hash_record_ids: bool = False,
     ) -> None:
         """
         Core row-processing logic shared by all process() overloads.
@@ -119,19 +124,16 @@ class PersonAttributesProcessor:
             metadata_map: Optional metadata map to update with processing statistics.
             encryption_key: Optional encryption key for JWE wrapping.
             ring_id: Optional ring ID for JWE wrapping.
+            hash_record_ids: When True, each record ID is SHA-256 hashed before writing.
         """
         token_generator = TokenGenerator(token_definition, tokenizer)
 
         row_counter = 0
-        invalid_attribute_count: Dict[str, int] = (
-            PersonAttributesProcessor._initialize_invalid_attribute_count(
-                token_definition
-            )
+        invalid_attribute_count: Dict[str, int] = PersonAttributesProcessor._initialize_invalid_attribute_count(
+            token_definition
         )
-        blank_tokens_by_rule_count: Dict[str, int] = (
-            PersonAttributesProcessor._initialize_blank_tokens_by_rule_count(
-                token_definition
-            )
+        blank_tokens_by_rule_count: Dict[str, int] = PersonAttributesProcessor._initialize_blank_tokens_by_rule_count(
+            token_definition
         )
 
         # Cache JWE formatters if encryption is enabled
@@ -143,9 +145,7 @@ class PersonAttributesProcessor:
                         encryption_key, ring_id, token_id, "truveta.opentoken"
                     )
                 except Exception as e:
-                    error_msg = (
-                        f"Failed to initialize JWE formatter for token rule {token_id}"
-                    )
+                    error_msg = f"Failed to initialize JWE formatter for token rule {token_id}"
                     logger.error(error_msg, exc_info=True)
                     raise RuntimeError(error_msg) from e
 
@@ -172,6 +172,7 @@ class PersonAttributesProcessor:
                     encryption_key,
                     ring_id,
                     jwe_formatters,
+                    hash_record_ids,
                 )
 
                 if row_counter % 10000 == 0:
@@ -185,14 +186,10 @@ class PersonAttributesProcessor:
 
         # Log invalid attribute statistics in alphabetical order
         for attribute_name, count in sorted(invalid_attribute_count.items()):
-            logger.info(
-                f"Total invalid Attribute count for [{attribute_name}]: {count:,}"
-            )
+            logger.info(f"Total invalid Attribute count for [{attribute_name}]: {count:,}")
 
         total_invalid_records = sum(invalid_attribute_count.values())
-        logger.info(
-            f"Total number of records with invalid attributes: {total_invalid_records:,}"
-        )
+        logger.info(f"Total number of records with invalid attributes: {total_invalid_records:,}")
 
         # Log blank token statistics in alphabetical order
         for rule_id, count in sorted(blank_tokens_by_rule_count.items()):
@@ -204,9 +201,7 @@ class PersonAttributesProcessor:
         # Update metadata if provided
         if metadata_map is not None:
             metadata_map[PersonAttributesProcessor.TOTAL_ROWS] = row_counter
-            metadata_map[
-                PersonAttributesProcessor.TOTAL_ROWS_WITH_INVALID_ATTRIBUTES
-            ] = total_invalid_records
+            metadata_map[PersonAttributesProcessor.TOTAL_ROWS_WITH_INVALID_ATTRIBUTES] = total_invalid_records
             # Alphabetize attribute and token rule keys for deterministic metadata output
             metadata_map[PersonAttributesProcessor.INVALID_ATTRIBUTES_BY_TYPE] = dict(
                 sorted(invalid_attribute_count.items())
@@ -224,9 +219,11 @@ class PersonAttributesProcessor:
         encryption_key: str = None,
         ring_id: str = None,
         jwe_formatters: Dict[str, JweMatchTokenFormatter] = None,
+        hash_record_ids: bool = False,
     ) -> None:
         """
-        Write tokens to the output writer. Optionally wraps tokens in JWE format.
+        Write tokens to the output writer. Optionally wraps tokens in JWE format
+        and hashes record IDs when hash_record_ids is True.
 
         Args:
             writer: The writer to write tokens to.
@@ -235,6 +232,8 @@ class PersonAttributesProcessor:
             token_generator_result: The result from token generation.
             encryption_key: Optional encryption key for JWE wrapping (None to skip JWE).
             ring_id: Optional ring ID for JWE wrapping (None to skip JWE).
+            jwe_formatters: Optional cached JWE formatters.
+            hash_record_ids: When True, each record ID is SHA-256 hashed before writing.
         """
         # Sort token IDs for consistent output
         token_ids = sorted(token_generator_result.tokens.keys())
@@ -243,6 +242,10 @@ class PersonAttributesProcessor:
         record_id = row.get(RecordIdAttribute)
         if record_id is None or record_id == "":
             record_id = str(uuid.uuid4())
+
+        # Hash the record ID when requested (no mapping file — intentionally no traceability)
+        if hash_record_ids:
+            record_id = RecordIdHasher.hash(record_id)
 
         for token_id in token_ids:
             token = token_generator_result.tokens[token_id]
@@ -287,9 +290,7 @@ class PersonAttributesProcessor:
             invalid_attribute_count: Dictionary to track invalid attribute counts.
         """
         if token_generator_result.invalid_attributes:
-            logger.info(
-                f"Invalid Attributes for row {row_counter:,}: {token_generator_result.invalid_attributes}"
-            )
+            logger.info(f"Invalid Attributes for row {row_counter:,}: {token_generator_result.invalid_attributes}")
 
             for invalid_attribute in token_generator_result.invalid_attributes:
                 invalid_attribute_count[invalid_attribute] += 1
@@ -309,9 +310,7 @@ class PersonAttributesProcessor:
             blank_tokens_by_rule_count: Dictionary to track blank token counts by rule.
         """
         if token_generator_result.blank_tokens_by_rule:
-            logger.debug(
-                f"Blank tokens for row {row_counter:,}: {token_generator_result.blank_tokens_by_rule}"
-            )
+            logger.debug(f"Blank tokens for row {row_counter:,}: {token_generator_result.blank_tokens_by_rule}")
 
             for rule_id in token_generator_result.blank_tokens_by_rule:
                 blank_tokens_by_rule_count[rule_id] += 1
@@ -347,9 +346,7 @@ class PersonAttributesProcessor:
                 attribute = attr_class()
                 invalid_attribute_count[attribute.get_name()] = 0
             except Exception as e:
-                logger.warning(
-                    f"Failed to instantiate attribute class: {attr_class.__name__}: {e}"
-                )
+                logger.warning(f"Failed to instantiate attribute class: {attr_class.__name__}: {e}")
 
         return invalid_attribute_count
 

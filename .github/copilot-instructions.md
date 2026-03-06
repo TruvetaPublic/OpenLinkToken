@@ -66,7 +66,7 @@ This document provides comprehensive guidance for AI coding agents working on th
 **The Python virtual environment (`.venv`) is located at the repository root (`/workspaces/OpenToken/.venv`).**
 
 - ❌ **NEVER** create or activate a venv in any subdirectory (e.g., `lib/python/opentoken/.venv`)
-- ❌ **NEVER** run `python -m venv .venv` from any folder other than the repo root
+- ❌ **NEVER** run `uv venv .venv` from any folder other than the repo root
 - ✅ **ALWAYS** activate the root venv: `source /workspaces/OpenToken/.venv/bin/activate`
 - ✅ **ALWAYS** use absolute path or ensure you're at repo root before activating
 
@@ -78,7 +78,7 @@ source /workspaces/OpenToken/.venv/bin/activate
 cd /workspaces/OpenToken && source .venv/bin/activate
 
 # WRONG - never do this from lib/python or any subdirectory
-cd lib/python/opentoken && python -m venv .venv  # ❌ DO NOT DO THIS
+cd lib/python/opentoken && uv venv .venv  # ❌ DO NOT DO THIS
 ```
 
 ### Build & Test
@@ -354,7 +354,7 @@ Fix style issues before running full build.
 
 ```bash
 cd lib/python/opentoken && source .venv/bin/activate
-pip install -e .
+uv pip install -e .
 ```
 
 Ensure editable install for local development.

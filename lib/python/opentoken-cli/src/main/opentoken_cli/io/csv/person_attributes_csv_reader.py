@@ -4,11 +4,11 @@ Copyright (c) Truveta. All rights reserved.
 
 import csv
 import logging
-from typing import Dict, Type, Set
-from opentoken_cli.io.person_attributes_reader import PersonAttributesReader
+from typing import Dict, Set, Type
+
 from opentoken.attributes.attribute import Attribute
 from opentoken.attributes.attribute_loader import AttributeLoader
-
+from opentoken_cli.io.person_attributes_reader import PersonAttributesReader
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ class PersonAttributesCSVReader(PersonAttributesReader):
         """
         try:
             self.file_path = file_path
-            self.file_handle = open(file_path, 'r', encoding='utf-8')
+            self.file_handle = open(file_path, "r", encoding="utf-8")
             self.csv_reader = csv.DictReader(self.file_handle)
             self.iterator = iter(self.csv_reader)
             self.attribute_map: Dict[str, Attribute] = {}

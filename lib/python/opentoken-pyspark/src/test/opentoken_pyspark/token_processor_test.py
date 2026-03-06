@@ -6,18 +6,20 @@ Tests for OpenToken PySpark token processor.
 
 import pytest
 from pyspark.sql import SparkSession
-from pyspark.sql.types import StructType, StructField, StringType
-from opentoken_pyspark import OpenTokenProcessor, OpenTokenOverlapAnalyzer
+from pyspark.sql.types import StringType, StructField, StructType
+
+from opentoken_pyspark import OpenTokenOverlapAnalyzer, OpenTokenProcessor
 
 
 @pytest.fixture(scope="module")
 def spark():
     """Create a Spark session for testing."""
-    spark = SparkSession.builder \
-        .appName("OpenTokenTest") \
-        .master("local[2]") \
-        .config("spark.sql.shuffle.partitions", "2") \
+    spark = (
+        SparkSession.builder.appName("OpenTokenTest")
+        .master("local[2]")
+        .config("spark.sql.shuffle.partitions", "2")
         .getOrCreate()
+    )
     yield spark
     spark.stop()
 
@@ -33,7 +35,7 @@ def sample_data():
             "PostalCode": "98004",
             "Sex": "Male",
             "BirthDate": "2000-01-01",
-            "SocialSecurityNumber": "123-45-6789"
+            "SocialSecurityNumber": "123-45-6789",
         },
         {
             "RecordId": "2f97f0f1-4617-40bd-8264-4d24a9adf20a",
@@ -42,8 +44,8 @@ def sample_data():
             "PostalCode": "15635",
             "Sex": "Male",
             "BirthDate": "1951-10-22",
-            "SocialSecurityNumber": "172-10-0983"
-        }
+            "SocialSecurityNumber": "172-10-0983",
+        },
     ]
 
 
@@ -104,15 +106,17 @@ class TestOpenTokenProcessor:
         processor = OpenTokenProcessor("HashingKey", "Secret-Encryption-Key-Goes-Here.")
 
         # Create DataFrame with alternative column names
-        data = [{
-            "Id": "test-123",
-            "GivenName": "John",
-            "Surname": "Doe",
-            "ZipCode": "98004",
-            "Gender": "Male",
-            "DateOfBirth": "2000-01-01",
-            "NationalIdentificationNumber": "123-45-6789"
-        }]
+        data = [
+            {
+                "Id": "test-123",
+                "GivenName": "John",
+                "Surname": "Doe",
+                "ZipCode": "98004",
+                "Gender": "Male",
+                "DateOfBirth": "2000-01-01",
+                "NationalIdentificationNumber": "123-45-6789",
+            }
+        ]
 
         df = spark.createDataFrame(data)
 
@@ -127,14 +131,16 @@ class TestOpenTokenProcessor:
         processor = OpenTokenProcessor("HashingKey", "Secret-Encryption-Key-Goes-Here.")
 
         # Create DataFrame missing SocialSecurityNumber
-        data = [{
-            "RecordId": "test-123",
-            "FirstName": "John",
-            "LastName": "Doe",
-            "PostalCode": "98004",
-            "Sex": "Male",
-            "BirthDate": "2000-01-01"
-        }]
+        data = [
+            {
+                "RecordId": "test-123",
+                "FirstName": "John",
+                "LastName": "Doe",
+                "PostalCode": "98004",
+                "Sex": "Male",
+                "BirthDate": "2000-01-01",
+            }
+        ]
 
         df = spark.createDataFrame(data)
 
@@ -189,15 +195,17 @@ class TestOpenTokenProcessor:
         processor = OpenTokenProcessor("HashingKey", "Secret-Encryption-Key-Goes-Here.")
 
         # Create DataFrame with various column names
-        data = [{
-            "RecordId": "test-1",
-            "FirstName": "John",
-            "LastName": "Doe",
-            "PostalCode": "98004",
-            "Sex": "Male",
-            "BirthDate": "2000-01-01",
-            "SocialSecurityNumber": "123-45-6789"
-        }]
+        data = [
+            {
+                "RecordId": "test-1",
+                "FirstName": "John",
+                "LastName": "Doe",
+                "PostalCode": "98004",
+                "Sex": "Male",
+                "BirthDate": "2000-01-01",
+                "SocialSecurityNumber": "123-45-6789",
+            }
+        ]
 
         df = spark.createDataFrame(data)
 
@@ -218,15 +226,17 @@ class TestOpenTokenProcessor:
         processor = OpenTokenProcessor("HashingKey", "Secret-Encryption-Key-Goes-Here.")
 
         # Create empty DataFrame with correct schema
-        schema = StructType([
-            StructField("RecordId", StringType(), True),
-            StructField("FirstName", StringType(), True),
-            StructField("LastName", StringType(), True),
-            StructField("PostalCode", StringType(), True),
-            StructField("Sex", StringType(), True),
-            StructField("BirthDate", StringType(), True),
-            StructField("SocialSecurityNumber", StringType(), True)
-        ])
+        schema = StructType(
+            [
+                StructField("RecordId", StringType(), True),
+                StructField("FirstName", StringType(), True),
+                StructField("LastName", StringType(), True),
+                StructField("PostalCode", StringType(), True),
+                StructField("Sex", StringType(), True),
+                StructField("BirthDate", StringType(), True),
+                StructField("SocialSecurityNumber", StringType(), True),
+            ]
+        )
 
         df = spark.createDataFrame([], schema)
 
@@ -239,14 +249,10 @@ class TestOpenTokenProcessor:
 
     def test_custom_token_definition(self, spark, sample_data):
         """Test using custom token definition with processor."""
-        from opentoken_pyspark.notebook_helpers import TokenBuilder, CustomTokenDefinition
+        from opentoken_pyspark.notebook_helpers import CustomTokenDefinition, TokenBuilder
 
         # Create a custom T6 token
-        t6_token = TokenBuilder("T6") \
-            .add("last_name", "T|U") \
-            .add("first_name", "T|U") \
-            .add("birth_date", "T|D") \
-            .build()
+        t6_token = TokenBuilder("T6").add("last_name", "T|U").add("first_name", "T|U").add("birth_date", "T|D").build()
 
         custom_definition = CustomTokenDefinition().add_token(t6_token)
 
@@ -254,7 +260,7 @@ class TestOpenTokenProcessor:
         processor = OpenTokenProcessor(
             hashing_secret="test-hash-secret",
             encryption_key="12345678901234567890123456789012",
-            token_definition=custom_definition
+            token_definition=custom_definition,
         )
 
         # Create DataFrame
@@ -273,28 +279,20 @@ class TestOpenTokenProcessor:
 
     def test_multiple_custom_tokens(self, spark, sample_data):
         """Test using multiple custom tokens."""
-        from opentoken_pyspark.notebook_helpers import TokenBuilder, CustomTokenDefinition
+        from opentoken_pyspark.notebook_helpers import CustomTokenDefinition, TokenBuilder
 
         # Create two custom tokens
-        t6_token = TokenBuilder("T6") \
-            .add("last_name", "T|U") \
-            .add("first_name", "T|U") \
-            .build()
+        t6_token = TokenBuilder("T6").add("last_name", "T|U").add("first_name", "T|U").build()
 
-        t7_token = TokenBuilder("T7") \
-            .add("last_name", "T|S(0,3)|U") \
-            .add("birth_date", "T|D") \
-            .build()
+        t7_token = TokenBuilder("T7").add("last_name", "T|S(0,3)|U").add("birth_date", "T|D").build()
 
-        custom_definition = CustomTokenDefinition() \
-            .add_token(t6_token) \
-            .add_token(t7_token)
+        custom_definition = CustomTokenDefinition().add_token(t6_token).add_token(t7_token)
 
         # Create processor with multiple custom tokens
         processor = OpenTokenProcessor(
             hashing_secret="test-hash-secret",
             encryption_key="12345678901234567890123456789012",
-            token_definition=custom_definition
+            token_definition=custom_definition,
         )
 
         # Create DataFrame
@@ -316,17 +314,19 @@ class TestOpenTokenProcessor:
         """Test initialization with both secrets None (plain passthrough mode)."""
         # Both None is allowed - produces plain concatenated tokens
         processor = OpenTokenProcessor(hashing_secret=None, encryption_key=None)
-        
+
         # Verify it can process a DataFrame
-        data = [{
-            "RecordId": "test-1",
-            "FirstName": "John",
-            "LastName": "Doe",
-            "PostalCode": "98004",
-            "Sex": "Male",
-            "BirthDate": "2000-01-01",
-            "SocialSecurityNumber": "123-45-6789"
-        }]
+        data = [
+            {
+                "RecordId": "test-1",
+                "FirstName": "John",
+                "LastName": "Doe",
+                "PostalCode": "98004",
+                "Sex": "Male",
+                "BirthDate": "2000-01-01",
+                "SocialSecurityNumber": "123-45-6789",
+            }
+        ]
         df = spark.createDataFrame(data)
         result = processor.process_dataframe(df)
         assert result.count() > 0
@@ -336,15 +336,12 @@ class TestOpenTokenProcessor:
         with pytest.raises(ValueError, match="Invalid secrets provided"):
             OpenTokenProcessor(
                 hashing_secret="test",
-                encryption_key="short-key"  # Not 32 bytes
+                encryption_key="short-key",  # Not 32 bytes
             )
 
     def test_passthrough_tokenizer_with_encryption_only(self, spark, sample_data):
         """Test processor with encryption but no hashing (passthrough tokenizer)."""
-        processor = OpenTokenProcessor(
-            hashing_secret=None,
-            encryption_key="12345678901234567890123456789012"
-        )
+        processor = OpenTokenProcessor(hashing_secret=None, encryption_key="12345678901234567890123456789012")
 
         df = spark.createDataFrame(sample_data)
         result = processor.process_dataframe(df)
@@ -359,19 +356,21 @@ class TestOpenTokenProcessor:
     def test_process_with_bad_data_handles_errors(self, spark):
         """Test that processor handles bad data gracefully by returning empty token lists."""
         processor = OpenTokenProcessor("HashingKey", "12345678901234567890123456789012")
-        
+
         # Create DataFrame with invalid data that will fail token generation
-        data = [{
-            "RecordId": "test-1",
-            "FirstName": "John",
-            "LastName": "Doe",
-            "PostalCode": "INVALID",
-            "Sex": "Invalid",
-            "BirthDate": "invalid-date",
-            "SocialSecurityNumber": "invalid"
-        }]
+        data = [
+            {
+                "RecordId": "test-1",
+                "FirstName": "John",
+                "LastName": "Doe",
+                "PostalCode": "INVALID",
+                "Sex": "Invalid",
+                "BirthDate": "invalid-date",
+                "SocialSecurityNumber": "invalid",
+            }
+        ]
         df = spark.createDataFrame(data)
-        
+
         # Should not crash, but may produce fewer/no tokens
         result = processor.process_dataframe(df)
         # Result exists but may have zero rows due to validation failures

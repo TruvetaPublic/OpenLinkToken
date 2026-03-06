@@ -3,7 +3,8 @@ Copyright (c) Truveta. All rights reserved.
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, Type, Iterator
+from typing import Dict, Iterator, Type
+
 from opentoken.attributes.attribute import Attribute
 
 

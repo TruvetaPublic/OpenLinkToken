@@ -5,10 +5,7 @@ Integration tests for the main module.
 Tests the end-to-end workflows for token generation and decryption using new subcommand interface.
 """
 
-import os
 import pytest
-import tempfile
-from pathlib import Path
 
 from opentoken_cli.commands.open_token_command import OpenTokenCommand
 
@@ -38,11 +35,16 @@ class TestOpenTokenCommand:
 
         args = [
             "package",
-            "-i", str(input_csv),
-            "-t", "csv",
-            "-o", str(output_csv),
-            "--hashingsecret", self.HASHING_SECRET,
-            "--encryptionkey", self.ENCRYPTION_KEY
+            "-i",
+            str(input_csv),
+            "-t",
+            "csv",
+            "-o",
+            str(output_csv),
+            "--hashingsecret",
+            self.HASHING_SECRET,
+            "--encryptionkey",
+            self.ENCRYPTION_KEY,
         ]
 
         exit_code = OpenTokenCommand.execute(args)
@@ -62,12 +64,18 @@ class TestOpenTokenCommand:
 
         args = [
             "package",
-            "-i", str(input_csv),
-            "-t", "csv",
-            "-o", str(output_parquet),
-            "-ot", "parquet",
-            "--hashingsecret", self.HASHING_SECRET,
-            "--encryptionkey", self.ENCRYPTION_KEY
+            "-i",
+            str(input_csv),
+            "-t",
+            "csv",
+            "-o",
+            str(output_parquet),
+            "-ot",
+            "parquet",
+            "--hashingsecret",
+            self.HASHING_SECRET,
+            "--encryptionkey",
+            self.ENCRYPTION_KEY,
         ]
 
         exit_code = OpenTokenCommand.execute(args)
@@ -83,10 +91,14 @@ class TestOpenTokenCommand:
 
         args = [
             "tokenize",
-            "-i", str(input_csv),
-            "-t", "csv",
-            "-o", str(output_csv),
-            "--hashingsecret", self.HASHING_SECRET
+            "-i",
+            str(input_csv),
+            "-t",
+            "csv",
+            "-o",
+            str(output_csv),
+            "--hashingsecret",
+            self.HASHING_SECRET,
         ]
 
         exit_code = OpenTokenCommand.execute(args)
@@ -104,21 +116,30 @@ class TestOpenTokenCommand:
         # First, generate encrypted tokens
         encrypt_args = [
             "package",
-            "-i", str(input_csv),
-            "-t", "csv",
-            "-o", str(output_csv),
-            "--hashingsecret", self.HASHING_SECRET,
-            "--encryptionkey", self.ENCRYPTION_KEY
+            "-i",
+            str(input_csv),
+            "-t",
+            "csv",
+            "-o",
+            str(output_csv),
+            "--hashingsecret",
+            self.HASHING_SECRET,
+            "--encryptionkey",
+            self.ENCRYPTION_KEY,
         ]
         OpenTokenCommand.execute(encrypt_args)
 
         # Now decrypt them
         decrypt_args = [
             "decrypt",
-            "-i", str(output_csv),
-            "-t", "csv",
-            "-o", str(decrypted_csv),
-            "--encryptionkey", self.ENCRYPTION_KEY
+            "-i",
+            str(output_csv),
+            "-t",
+            "csv",
+            "-o",
+            str(decrypted_csv),
+            "--encryptionkey",
+            self.ENCRYPTION_KEY,
         ]
 
         exit_code = OpenTokenCommand.execute(decrypt_args)
@@ -134,11 +155,16 @@ class TestOpenTokenCommand:
 
         args = [
             "package",
-            "-i", str(input_csv),
-            "-t", "csv",
-            "-o", str(output_csv),
-            "--hashingsecret", self.HASHING_SECRET,
-            "--encryptionkey", self.ENCRYPTION_KEY
+            "-i",
+            str(input_csv),
+            "-t",
+            "csv",
+            "-o",
+            str(output_csv),
+            "--hashingsecret",
+            self.HASHING_SECRET,
+            "--encryptionkey",
+            self.ENCRYPTION_KEY,
         ]
 
         exit_code = OpenTokenCommand.execute(args)
@@ -159,22 +185,32 @@ class TestOpenTokenCommand:
         # First create a parquet file from CSV
         create_args = [
             "package",
-            "-i", str(input_csv),
-            "-t", "csv",
-            "-o", str(temp_parquet),
-            "-ot", "parquet",
-            "--hashingsecret", self.HASHING_SECRET,
-            "--encryptionkey", self.ENCRYPTION_KEY
+            "-i",
+            str(input_csv),
+            "-t",
+            "csv",
+            "-o",
+            str(temp_parquet),
+            "-ot",
+            "parquet",
+            "--hashingsecret",
+            self.HASHING_SECRET,
+            "--encryptionkey",
+            self.ENCRYPTION_KEY,
         ]
         OpenTokenCommand.execute(create_args)
 
         # Now use parquet as input
         args = [
             "decrypt",
-            "-i", str(temp_parquet),
-            "-t", "parquet",
-            "-o", str(output_parquet),
-            "--encryptionkey", self.ENCRYPTION_KEY
+            "-i",
+            str(temp_parquet),
+            "-t",
+            "parquet",
+            "-o",
+            str(output_parquet),
+            "--encryptionkey",
+            self.ENCRYPTION_KEY,
         ]
 
         exit_code = OpenTokenCommand.execute(args)
@@ -189,22 +225,32 @@ class TestOpenTokenCommand:
         # First generate encrypted tokens
         encrypt_args = [
             "package",
-            "-i", str(input_csv),
-            "-t", "csv",
-            "-o", str(output_csv),
-            "--hashingsecret", self.HASHING_SECRET,
-            "--encryptionkey", self.ENCRYPTION_KEY
+            "-i",
+            str(input_csv),
+            "-t",
+            "csv",
+            "-o",
+            str(output_csv),
+            "--hashingsecret",
+            self.HASHING_SECRET,
+            "--encryptionkey",
+            self.ENCRYPTION_KEY,
         ]
         OpenTokenCommand.execute(encrypt_args)
 
         # Decrypt CSV to Parquet
         decrypt_args = [
             "decrypt",
-            "-i", str(output_csv),
-            "-t", "csv",
-            "-o", str(decrypted_parquet),
-            "-ot", "parquet",
-            "--encryptionkey", self.ENCRYPTION_KEY
+            "-i",
+            str(output_csv),
+            "-t",
+            "csv",
+            "-o",
+            str(decrypted_parquet),
+            "-ot",
+            "parquet",
+            "--encryptionkey",
+            self.ENCRYPTION_KEY,
         ]
 
         exit_code = OpenTokenCommand.execute(decrypt_args)
@@ -220,9 +266,12 @@ class TestOpenTokenCommand:
 
         args = [
             "tokenize",
-            "-i", str(input_csv),
-            "-t", "csv",
-            "-o", str(output_csv)
+            "-i",
+            str(input_csv),
+            "-t",
+            "csv",
+            "-o",
+            str(output_csv),
             # Missing --hashingsecret
         ]
 
@@ -236,9 +285,12 @@ class TestOpenTokenCommand:
 
         args = [
             "encrypt",
-            "-i", str(input_csv),
-            "-t", "csv",
-            "-o", str(output_csv)
+            "-i",
+            str(input_csv),
+            "-t",
+            "csv",
+            "-o",
+            str(output_csv),
             # Missing --encryptionkey
         ]
 
@@ -252,9 +304,12 @@ class TestOpenTokenCommand:
         args = [
             "tokenize",
             # Missing -i/--input
-            "-t", "csv",
-            "-o", str(output_csv),
-            "--hashingsecret", self.HASHING_SECRET
+            "-t",
+            "csv",
+            "-o",
+            str(output_csv),
+            "--hashingsecret",
+            self.HASHING_SECRET,
         ]
 
         exit_code = OpenTokenCommand.execute(args)
@@ -266,10 +321,13 @@ class TestOpenTokenCommand:
 
         args = [
             "tokenize",
-            "-i", str(input_csv),
-            "-t", "csv",
+            "-i",
+            str(input_csv),
+            "-t",
+            "csv",
             # Missing -o/--output
-            "--hashingsecret", self.HASHING_SECRET
+            "--hashingsecret",
+            self.HASHING_SECRET,
         ]
 
         exit_code = OpenTokenCommand.execute(args)
@@ -282,10 +340,14 @@ class TestOpenTokenCommand:
 
         args = [
             "tokenize",
-            "-i", str(input_csv),
-            "-t", "invalid_type",  # Invalid input type
-            "-o", str(output_csv),
-            "--hashingsecret", self.HASHING_SECRET
+            "-i",
+            str(input_csv),
+            "-t",
+            "invalid_type",  # Invalid input type
+            "-o",
+            str(output_csv),
+            "--hashingsecret",
+            self.HASHING_SECRET,
         ]
 
         exit_code = OpenTokenCommand.execute(args)
@@ -298,11 +360,16 @@ class TestOpenTokenCommand:
 
         args = [
             "tokenize",
-            "-i", str(input_csv),
-            "-t", "csv",
-            "-o", str(output_csv),
-            "-ot", "invalid_type",  # Invalid output type
-            "--hashingsecret", self.HASHING_SECRET
+            "-i",
+            str(input_csv),
+            "-t",
+            "csv",
+            "-o",
+            str(output_csv),
+            "-ot",
+            "invalid_type",  # Invalid output type
+            "--hashingsecret",
+            self.HASHING_SECRET,
         ]
 
         exit_code = OpenTokenCommand.execute(args)
@@ -315,10 +382,14 @@ class TestOpenTokenCommand:
 
         args = [
             "tokenize",
-            "-i", str(nonexistent_file),
-            "-t", "csv",
-            "-o", str(output_csv),
-            "--hashingsecret", self.HASHING_SECRET
+            "-i",
+            str(nonexistent_file),
+            "-t",
+            "csv",
+            "-o",
+            str(output_csv),
+            "--hashingsecret",
+            self.HASHING_SECRET,
         ]
 
         exit_code = OpenTokenCommand.execute(args)
@@ -331,9 +402,12 @@ class TestOpenTokenCommand:
 
         args = [
             "package",
-            "-i", str(input_csv),
-            "-t", "csv",
-            "-o", str(output_csv)
+            "-i",
+            str(input_csv),
+            "-t",
+            "csv",
+            "-o",
+            str(output_csv),
             # Missing both --hashingsecret and --encryptionkey
         ]
 
@@ -347,11 +421,106 @@ class TestOpenTokenCommand:
 
         args = [
             "invalid_command",  # Invalid subcommand
-            "-i", str(input_csv),
-            "-t", "csv",
-            "-o", str(output_csv)
+            "-i",
+            str(input_csv),
+            "-t",
+            "csv",
+            "-o",
+            str(output_csv),
         ]
 
         exit_code = OpenTokenCommand.execute(args)
         assert exit_code != 0, "Command should fail with invalid subcommand"
 
+    # ===== Hash Record IDs Tests =====
+
+    def test_tokenize_command_hash_record_ids_output_contains_hashed_ids(
+        self, temp_dir
+    ):
+        """Output token file must contain hashed (not original) RecordId values."""
+        input_csv = temp_dir / "input.csv"
+        output_csv = temp_dir / "output.csv"
+
+        args = [
+            "tokenize",
+            "-i",
+            str(input_csv),
+            "-t",
+            "csv",
+            "-o",
+            str(output_csv),
+            "--hashingsecret",
+            self.HASHING_SECRET,
+            "--hash-record-ids",
+        ]
+
+        exit_code = OpenTokenCommand.execute(args)
+        assert exit_code == 0, "Command should execute successfully"
+        assert output_csv.exists(), "Output CSV should be created"
+
+        content = output_csv.read_text()
+        assert "test-001" not in content, "Output must not contain original record IDs"
+        assert "test-002" not in content, "Output must not contain original record IDs"
+
+        # All RecordId values should be 64-char hex strings (SHA-256)
+        lines = content.strip().splitlines()
+        headers = lines[0].split(",")
+        record_id_col = headers.index("RecordId")
+        for line in lines[1:]:
+            cols = line.split(",")
+            record_id = cols[record_id_col].strip()
+            assert (
+                len(record_id) == 64
+            ), f"Hashed record ID must be 64 chars, got: {record_id!r}"
+
+    def test_tokenize_command_without_hash_record_ids_output_contains_original_ids(
+        self, temp_dir
+    ):
+        """Without --hash-record-ids the output must contain the original record IDs."""
+        input_csv = temp_dir / "input.csv"
+        output_csv = temp_dir / "output.csv"
+
+        args = [
+            "tokenize",
+            "-i",
+            str(input_csv),
+            "-t",
+            "csv",
+            "-o",
+            str(output_csv),
+            "--hashingsecret",
+            self.HASHING_SECRET,
+        ]
+
+        OpenTokenCommand.execute(args)
+
+        content = output_csv.read_text()
+        assert "test-001" in content, "Output should contain original record IDs"
+        assert "test-002" in content, "Output should contain original record IDs"
+
+    def test_package_command_hash_record_ids_output_contains_hashed_ids(self, temp_dir):
+        """--hash-record-ids on package must produce hashed (not original) RecordId values."""
+        input_csv = temp_dir / "input.csv"
+        output_csv = temp_dir / "output.csv"
+
+        args = [
+            "package",
+            "-i",
+            str(input_csv),
+            "-t",
+            "csv",
+            "-o",
+            str(output_csv),
+            "--hashingsecret",
+            self.HASHING_SECRET,
+            "--encryptionkey",
+            self.ENCRYPTION_KEY,
+            "--hash-record-ids",
+        ]
+
+        exit_code = OpenTokenCommand.execute(args)
+        assert exit_code == 0, "Command should execute successfully"
+
+        content = output_csv.read_text()
+        assert "test-001" not in content, "Output must not contain original record IDs"
+        assert "test-002" not in content, "Output must not contain original record IDs"

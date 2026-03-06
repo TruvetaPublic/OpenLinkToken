@@ -5,8 +5,6 @@ Copyright (c) Truveta. All rights reserved.
 import os
 import tempfile
 
-import pytest
-
 from opentoken.attributes.general.record_id_attribute import RecordIdAttribute
 from opentoken.attributes.person.first_name_attribute import FirstNameAttribute
 from opentoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
@@ -19,7 +17,7 @@ class TestPersonAttributesParquetWriter:
 
     def setup_method(self):
         """Set up test fixtures before each test method."""
-        self.temp_file = tempfile.NamedTemporaryFile(suffix='.parquet', delete=False)
+        self.temp_file = tempfile.NamedTemporaryFile(suffix=".parquet", delete=False)
         self.temp_file_path = self.temp_file.name
         self.temp_file.close()
         self.writer = PersonAttributesParquetWriter(self.temp_file_path)
@@ -33,11 +31,7 @@ class TestPersonAttributesParquetWriter:
 
     def test_write_single_record(self):
         """Test writing a single record to Parquet."""
-        data = {
-            "RecordId": "123",
-            "FirstName": "John",
-            "SocialSecurityNumber": "123-45-6789"
-        }
+        data = {"RecordId": "123", "FirstName": "John", "SocialSecurityNumber": "123-45-6789"}
 
         self.writer.write_attributes(data)
         self.writer.close()
@@ -51,17 +45,9 @@ class TestPersonAttributesParquetWriter:
 
     def test_write_multiple_records(self):
         """Test writing multiple records to Parquet."""
-        data1 = {
-            "RecordId": "123",
-            "FirstName": "John",
-            "SocialSecurityNumber": "123-45-6789"
-        }
+        data1 = {"RecordId": "123", "FirstName": "John", "SocialSecurityNumber": "123-45-6789"}
 
-        data2 = {
-            "RecordId": "456",
-            "FirstName": "Jane",
-            "SocialSecurityNumber": "987-65-4321"
-        }
+        data2 = {"RecordId": "456", "FirstName": "Jane", "SocialSecurityNumber": "987-65-4321"}
 
         self.writer.write_attributes(data1)
         self.writer.write_attributes(data2)

@@ -2,7 +2,6 @@
 Copyright (c) Truveta. All rights reserved.
 """
 
-import pytest
 from opentoken.attributes.attribute_loader import AttributeLoader
 from opentoken.attributes.general.record_id_attribute import RecordIdAttribute
 from opentoken.attributes.person.last_name_attribute import LastNameAttribute
@@ -16,15 +15,9 @@ class TestAttributeLoader:
         attributes_set = AttributeLoader.load()
 
         # Find RecordIdAttribute in the loaded attributes
-        record_id_attribute = next(
-            (attr for attr in attributes_set if isinstance(attr, RecordIdAttribute)),
-            None
-        )
+        record_id_attribute = next((attr for attr in attributes_set if isinstance(attr, RecordIdAttribute)), None)
         assert record_id_attribute is not None, "RecordIdAttribute should be loaded"
 
         # Find LastNameAttribute in the loaded attributes
-        last_name_attribute = next(
-            (attr for attr in attributes_set if isinstance(attr, LastNameAttribute)),
-            None
-        )
+        last_name_attribute = next((attr for attr in attributes_set if isinstance(attr, LastNameAttribute)), None)
         assert last_name_attribute is not None, "LastNameAttribute should be loaded"

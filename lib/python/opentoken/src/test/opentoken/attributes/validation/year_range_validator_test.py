@@ -68,9 +68,7 @@ class TestYearRangeValidator:
         deserialized_validator = pickle.loads(serialized_data)
 
         # Test that both validators work the same
-        test_values = [
-            "1910", "1990", "2000", "1909", str(date.today().year + 1), "abc", ""
-        ]
+        test_values = ["1910", "1990", "2000", "1909", str(date.today().year + 1), "abc", ""]
 
         for value in test_values:
             assert validator.eval(value) == deserialized_validator.eval(value), (

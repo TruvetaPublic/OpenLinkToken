@@ -12,14 +12,14 @@ from .social_security_number_attribute import SocialSecurityNumberAttribute
 from .us_postal_code_attribute import USPostalCodeAttribute
 
 __all__ = [
-	"AgeAttribute",
-	"BirthDateAttribute",
-	"BirthYearAttribute",
-	"CanadianPostalCodeAttribute",
-	"FirstNameAttribute",
-	"LastNameAttribute",
-	"PostalCodeAttribute",
-	"SexAttribute",
-	"SocialSecurityNumberAttribute",
-	"USPostalCodeAttribute",
+    "AgeAttribute",
+    "BirthDateAttribute",
+    "BirthYearAttribute",
+    "CanadianPostalCodeAttribute",
+    "FirstNameAttribute",
+    "LastNameAttribute",
+    "PostalCodeAttribute",
+    "SexAttribute",
+    "SocialSecurityNumberAttribute",
+    "USPostalCodeAttribute",
 ]

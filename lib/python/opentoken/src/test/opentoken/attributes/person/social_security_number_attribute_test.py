@@ -3,9 +3,10 @@ Copyright (c) Truveta. All rights reserved.
 """
 
 import pickle
-import pytest
-import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+import pytest
+
 from opentoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
 
 
@@ -142,14 +143,7 @@ class TestSocialSecurityNumberAttribute:
         deserialized_attribute = pickle.loads(serialized_data)
 
         # Test various SSN values with both original and deserialized attributes
-        test_values = [
-            "123456789",
-            "123-45-6789",
-            "001-23-4567",
-            "001234567",
-            "999-99-9999",
-            "999999999"
-        ]
+        test_values = ["123456789", "123-45-6789", "001-23-4567", "001234567", "999-99-9999", "999999999"]
 
         for value in test_values:
             # Test that attribute names match

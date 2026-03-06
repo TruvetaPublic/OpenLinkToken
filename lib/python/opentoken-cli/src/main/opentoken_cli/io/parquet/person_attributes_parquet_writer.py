@@ -5,6 +5,7 @@ Copyright (c) Truveta. All rights reserved.
 import logging
 import os
 from typing import Dict, Optional
+
 try:
     import pyarrow as pa
     import pyarrow.parquet as pq
@@ -12,7 +13,6 @@ except ImportError:
     raise ImportError("pyarrow is required for Parquet support. Install with: pip install pyarrow")
 
 from opentoken_cli.io.person_attributes_writer import PersonAttributesWriter
-
 
 logger = logging.getLogger(__name__)
 

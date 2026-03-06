@@ -62,7 +62,7 @@ java -jar opentoken-cli/target/opentoken-cli-*.jar package \
 ```bash
 cd lib/python/opentoken-cli
 source ../../.venv/bin/activate
-pip install -r requirements.txt -e . -e ../opentoken
+uv pip install -r requirements.txt -e . -e ../opentoken
 
 python -m opentoken_cli.main package \
   -i ../../../resources/sample.csv \
@@ -79,6 +79,7 @@ python -m opentoken_cli.main package \
 ### Convenience Scripts (Recommended)
 
 **Bash (Linux/Mac):**
+
 ```bash
 cd /path/to/OpenToken
 
@@ -91,6 +92,7 @@ cd /path/to/OpenToken
 ```
 
 **PowerShell (Windows):**
+
 ```powershell
 cd C:\path\to\OpenToken
 
@@ -192,6 +194,7 @@ java -jar opentoken-cli-*.jar package \
 ### Logging and Monitoring
 
 Check the metadata file after each run for:
+
 - `TotalRowsWithInvalidAttributes`: Records that failed validation
 - `InvalidAttributesByType`: Breakdown by attribute type
 - `BlankTokensByRule`: Rules that produced blank tokens

@@ -3,6 +3,7 @@ Copyright (c) Truveta. All rights reserved.
 """
 
 from typing import List
+
 from opentoken.tokens.token import Token
 from opentoken.tokens.tokenizer.tokenizer import Tokenizer
 from opentoken.tokentransformer.token_transformer import TokenTransformer
@@ -63,5 +64,5 @@ class PassthroughTokenizer(Tokenizer):
         # Apply transformers
         for token_transformer in self.token_transformer_list:
             transformed_token = token_transformer.transform(transformed_token)
-        
+
         return transformed_token

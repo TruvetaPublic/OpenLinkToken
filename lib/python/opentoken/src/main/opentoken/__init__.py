@@ -11,6 +11,6 @@ __version__ = "2.0.0-alpha"
 __author__ = "Truveta"
 
 __all__ = [
-	"__version__",
-	"__author__",
+    "__version__",
+    "__author__",
 ]
