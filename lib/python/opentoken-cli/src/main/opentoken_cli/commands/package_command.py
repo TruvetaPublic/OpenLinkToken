@@ -134,7 +134,7 @@ class PackageCommand:
         logger.info(f"Encryption Key: {StringMaskingUtil.mask_string(args.encryption_key)}")
         logger.info(f"Ring ID: {ring_id}")
         if hash_record_ids:
-            logger.info("Record ID hashing enabled")
+            logger.info("Record ID hashing enabled: RecordIds will be SHA-256 hashed in output")
 
         # Validate secrets
         if not args.hashing_secret or not args.hashing_secret.strip():

@@ -153,7 +153,7 @@ class TokenizeCommand:
         if not demo_mode:
             logger.info(f"Hashing Secret: {StringMaskingUtil.mask_string(args.hashing_secret)}")
         if hash_record_ids:
-            logger.info("Record ID hashing enabled")
+            logger.info("Record ID hashing enabled: RecordIds will be SHA-256 hashed in output")
 
         # --hashingsecret is required in normal mode only
         if not demo_mode:
