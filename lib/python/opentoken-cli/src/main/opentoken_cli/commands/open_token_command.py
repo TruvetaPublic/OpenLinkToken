@@ -125,16 +125,18 @@ class OpenTokenCommand:
             return error.code if isinstance(error.code, int) else 1
 
         no_update_check = getattr(parsed_args, "no_update_check", False)
+        should_start_version_check = OpenTokenCommand._should_start_version_check(parsed_args)
 
-        # Start the asynchronous version check before executing the command
-        version_checker = start_version_check(
-            OpenTokenCommand.VERSION, no_update_check=no_update_check
-        )
+        version_checker = None
+        if should_start_version_check:
+            # Start the asynchronous version check before executing the command
+            version_checker = start_version_check(OpenTokenCommand.VERSION, no_update_check=no_update_check)
 
         # If no subcommand specified, show help
         if not parsed_args.command:
             parser.print_help()
-            version_checker.wait_and_notify()
+            if version_checker is not None:
+                version_checker.wait_and_notify()
             return 0
 
         # Execute the command
@@ -145,7 +147,8 @@ class OpenTokenCommand:
             exit_code = 1
 
         # Wait for the version check and surface any update notice after command output
-        version_checker.wait_and_notify()
+        if version_checker is not None:
+            version_checker.wait_and_notify()
         return exit_code
 
     @staticmethod
@@ -171,3 +174,8 @@ class OpenTokenCommand:
             if arg in ("--help", "help"):
                 return True
         return False
+
+    @staticmethod
+    def _should_start_version_check(parsed_args: argparse.Namespace) -> bool:
+        """Return whether startup version checks should run for the parsed command."""
+        return getattr(parsed_args, "command", None) != "update"

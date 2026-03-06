@@ -128,19 +128,44 @@ public class OpenTokenCommand implements Callable<Integer> {
         CommandLine commandLine = new CommandLine(rootCommand);
         commandLine.setExecutionStrategy(new CommandLine.RunLast());
 
+        CommandLine.ParseResult parseResult = null;
+        try {
+            parseResult = commandLine.parseArgs(args);
+        } catch (CommandLine.ParameterException e) {
+            logger.debug("Could not parse command args before startup update check", e);
+        }
+
         // Determine --no-update-check before full parse (peek at args)
         boolean noUpdateCheck = hasFlag(args, "--no-update-check");
+        boolean shouldRunStartupVersionCheck = shouldRunStartupVersionCheck(parseResult);
 
-        // Start the asynchronous version check before executing the command
         VersionChecker versionChecker = new VersionChecker(VERSION, noUpdateCheck);
-        versionChecker.start();
+        if (shouldRunStartupVersionCheck) {
+            versionChecker.start();
+        }
 
-        int exitCode = commandLine.execute(args);
+        int exitCode = parseResult == null
+                ? commandLine.execute(args)
+                : commandLine.getExecutionStrategy().execute(parseResult);
 
-        // Wait for the version check and surface any update notice after command output
-        versionChecker.waitAndNotify();
+        if (shouldRunStartupVersionCheck) {
+            versionChecker.waitAndNotify();
+        }
 
         return exitCode;
+    }
+
+    /**
+     * Return whether the startup update check should run for the parsed command.
+     *
+     * @param parseResult the parsed command result
+     * @return {@code true} for non-update commands; {@code false} for update
+     */
+    static boolean shouldRunStartupVersionCheck(CommandLine.ParseResult parseResult) {
+        if (parseResult == null || parseResult.subcommand() == null) {
+            return true;
+        }
+        return !"update".equals(parseResult.subcommand().commandSpec().name());
     }
 
     /**
