@@ -1,6 +1,7 @@
 # src/opentoken/attributes/person/birth_date_attribute.py
-from typing import List
 from datetime import date
+from typing import List
+
 from opentoken.attributes.general.date_attribute import DateAttribute
 from opentoken.attributes.validation.date_range_validator import DateRangeValidator
 

@@ -2,8 +2,9 @@
 Copyright (c) Truveta. All rights reserved.
 """
 
-from typing import List
 import re
+from typing import List
+
 from opentoken.attributes.general.integer_attribute import IntegerAttribute
 from opentoken.attributes.validation import RegexValidator
 from opentoken.attributes.validation.serializable_attribute_validator import SerializableAttributeValidator

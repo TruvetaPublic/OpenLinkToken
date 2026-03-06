@@ -12,13 +12,19 @@ After installation, use the `opentoken` command directly.
 ## Prerequisites
 
 - **Python 3.10+**
-- **pip** (usually included with Python)
+- **[uv](https://docs.astral.sh/uv/)** (fast Python package manager)
+
+Install uv:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
 
 Verify your installation:
 
 ```bash
 python --version   # Should show 3.10 or higher
-pip --version
+uv --version
 ```
 
 ## Setup Virtual Environment
@@ -29,7 +35,7 @@ pip --version
 cd /path/to/OpenToken
 
 # Create virtual environment at repo root
-python -m venv .venv
+uv venv .venv
 
 # Activate (Linux/Mac)
 source .venv/bin/activate
@@ -43,11 +49,11 @@ source .venv/bin/activate
 ```bash
 # Install core library
 cd lib/python/opentoken
-pip install -r requirements.txt -e .
+uv pip install -r requirements.txt -e .
 
 # Install CLI
 cd ../opentoken-cli
-pip install -r requirements.txt -e .
+uv pip install -r requirements.txt -e .
 ```
 
 ## Run Token Generation
@@ -168,7 +174,7 @@ OpenToken guarantees that Java and Python produce **identical tokens** for the s
 
 ```bash
 cd tools/interoperability
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 python multi_language_interoperability_test.py
 ```
 
@@ -185,7 +191,7 @@ For distributed processing on Spark or Databricks:
 
 ```bash
 cd lib/python/opentoken-pyspark
-pip install -r requirements.txt -e .
+uv pip install -r requirements.txt -e .
 ```
 
 See [Spark or Databricks](../operations/spark-or-databricks.md) for usage.
@@ -213,7 +219,7 @@ source /path/to/OpenToken/.venv/bin/activate
 Reinstall the packages:
 
 ```bash
-pip install -e . --force-reinstall
+uv pip install -e . --reinstall
 ```
 
 ### "opentoken: command not found"
@@ -223,7 +229,7 @@ The console script is installed into the active environment. Re-activate your ve
 ```bash
 source /path/to/OpenToken/.venv/bin/activate
 cd /path/to/OpenToken/lib/python/opentoken-cli
-pip install -e .
+uv pip install -e .
 ```
 
 ## Development Setup
@@ -232,7 +238,7 @@ For contributing to OpenToken:
 
 ```bash
 # Install development dependencies
-pip install -r dev-requirements.txt
+uv pip install -r dev-requirements.txt
 
 # Run tests
 pytest

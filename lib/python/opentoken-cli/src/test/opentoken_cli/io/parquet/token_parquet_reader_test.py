@@ -7,8 +7,8 @@ import tempfile
 
 import pytest
 
-from opentoken_cli.io.parquet.token_parquet_writer import TokenParquetWriter
 from opentoken_cli.io.parquet.token_parquet_reader import TokenParquetReader
+from opentoken_cli.io.parquet.token_parquet_writer import TokenParquetWriter
 from opentoken_cli.processor.token_constants import TokenConstants
 
 
@@ -17,7 +17,7 @@ class TestTokenParquetReader:
 
     def setup_method(self):
         """Set up test fixtures before each test method."""
-        self.temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.parquet', delete=False)
+        self.temp_file = tempfile.NamedTemporaryFile(mode="w", suffix=".parquet", delete=False)
         self.temp_file_path = self.temp_file.name
         self.temp_file.close()
         self.reader = None
@@ -32,11 +32,7 @@ class TestTokenParquetReader:
     def test_read_single_token(self):
         """Test reading a single token from Parquet."""
         writer = TokenParquetWriter(self.temp_file_path)
-        data = {
-            TokenConstants.RULE_ID: "T1",
-            TokenConstants.TOKEN: "abc123token",
-            TokenConstants.RECORD_ID: "rec-001"
-        }
+        data = {TokenConstants.RULE_ID: "T1", TokenConstants.TOKEN: "abc123token", TokenConstants.RECORD_ID: "rec-001"}
         writer.write_token(data)
         writer.close()
 
@@ -54,16 +50,8 @@ class TestTokenParquetReader:
     def test_read_multiple_tokens(self):
         """Test reading multiple tokens from Parquet."""
         writer = TokenParquetWriter(self.temp_file_path)
-        data1 = {
-            TokenConstants.RULE_ID: "T1",
-            TokenConstants.TOKEN: "token1",
-            TokenConstants.RECORD_ID: "rec-001"
-        }
-        data2 = {
-            TokenConstants.RULE_ID: "T2",
-            TokenConstants.TOKEN: "token2",
-            TokenConstants.RECORD_ID: "rec-002"
-        }
+        data1 = {TokenConstants.RULE_ID: "T1", TokenConstants.TOKEN: "token1", TokenConstants.RECORD_ID: "rec-001"}
+        data2 = {TokenConstants.RULE_ID: "T2", TokenConstants.TOKEN: "token2", TokenConstants.RECORD_ID: "rec-002"}
         writer.write_token(data1)
         writer.write_token(data2)
         writer.close()
@@ -86,11 +74,7 @@ class TestTokenParquetReader:
     def test_read_empty_token(self):
         """Test reading a token with empty value."""
         writer = TokenParquetWriter(self.temp_file_path)
-        data = {
-            TokenConstants.RULE_ID: "T1",
-            TokenConstants.TOKEN: "",
-            TokenConstants.RECORD_ID: "rec-001"
-        }
+        data = {TokenConstants.RULE_ID: "T1", TokenConstants.TOKEN: "", TokenConstants.RECORD_ID: "rec-001"}
         writer.write_token(data)
         writer.close()
 
@@ -105,16 +89,8 @@ class TestTokenParquetReader:
     def test_iterator_interface(self):
         """Test that reader works as an iterator."""
         writer = TokenParquetWriter(self.temp_file_path)
-        data1 = {
-            TokenConstants.RULE_ID: "T1",
-            TokenConstants.TOKEN: "token1",
-            TokenConstants.RECORD_ID: "rec-001"
-        }
-        data2 = {
-            TokenConstants.RULE_ID: "T2",
-            TokenConstants.TOKEN: "token2",
-            TokenConstants.RECORD_ID: "rec-002"
-        }
+        data1 = {TokenConstants.RULE_ID: "T1", TokenConstants.TOKEN: "token1", TokenConstants.RECORD_ID: "rec-001"}
+        data2 = {TokenConstants.RULE_ID: "T2", TokenConstants.TOKEN: "token2", TokenConstants.RECORD_ID: "rec-002"}
         writer.write_token(data1)
         writer.write_token(data2)
         writer.close()

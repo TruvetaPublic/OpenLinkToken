@@ -118,10 +118,6 @@ class TestHashTokenTransformer:
         Returns:
             The base64-encoded HMAC-SHA256 hash.
         """
-        mac = hmac.new(
-            secret.encode('utf-8'),
-            token.encode('utf-8'),
-            hashlib.sha256
-        )
+        mac = hmac.new(secret.encode("utf-8"), token.encode("utf-8"), hashlib.sha256)
         expected_hash = mac.digest()
-        return base64.b64encode(expected_hash).decode('utf-8')
+        return base64.b64encode(expected_hash).decode("utf-8")

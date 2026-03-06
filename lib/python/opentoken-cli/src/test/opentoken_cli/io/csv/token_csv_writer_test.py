@@ -14,7 +14,7 @@ class TestTokenCSVWriter:
 
     def setup_method(self):
         """Set up test fixtures before each test method."""
-        self.temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False)
+        self.temp_file = tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False)
         self.temp_file_path = self.temp_file.name
         self.temp_file.close()
         self.writer = TokenCSVWriter(self.temp_file_path)
@@ -28,16 +28,12 @@ class TestTokenCSVWriter:
 
     def test_write_single_token(self):
         """Test writing a single token to CSV."""
-        data = {
-            TokenConstants.RULE_ID: "T1",
-            TokenConstants.TOKEN: "abc123token",
-            TokenConstants.RECORD_ID: "rec-001"
-        }
+        data = {TokenConstants.RULE_ID: "T1", TokenConstants.TOKEN: "abc123token", TokenConstants.RECORD_ID: "rec-001"}
 
         self.writer.write_token(data)
         self.writer.close()
 
-        with open(self.temp_file_path, 'r', encoding='utf-8') as f:
+        with open(self.temp_file_path, "r", encoding="utf-8") as f:
             lines = f.readlines()
             header = lines[0].strip()
             assert header == "RuleId,Token,RecordId"
@@ -47,23 +43,15 @@ class TestTokenCSVWriter:
 
     def test_write_multiple_tokens(self):
         """Test writing multiple tokens to CSV."""
-        data1 = {
-            TokenConstants.RULE_ID: "T1",
-            TokenConstants.TOKEN: "token1",
-            TokenConstants.RECORD_ID: "rec-001"
-        }
+        data1 = {TokenConstants.RULE_ID: "T1", TokenConstants.TOKEN: "token1", TokenConstants.RECORD_ID: "rec-001"}
 
-        data2 = {
-            TokenConstants.RULE_ID: "T2",
-            TokenConstants.TOKEN: "token2",
-            TokenConstants.RECORD_ID: "rec-002"
-        }
+        data2 = {TokenConstants.RULE_ID: "T2", TokenConstants.TOKEN: "token2", TokenConstants.RECORD_ID: "rec-002"}
 
         self.writer.write_token(data1)
         self.writer.write_token(data2)
         self.writer.close()
 
-        with open(self.temp_file_path, 'r', encoding='utf-8') as f:
+        with open(self.temp_file_path, "r", encoding="utf-8") as f:
             lines = f.readlines()
             header = lines[0].strip()
             assert header == "RuleId,Token,RecordId"
@@ -76,23 +64,15 @@ class TestTokenCSVWriter:
 
     def test_header_written_only_once(self):
         """Test that header is written only once."""
-        data1 = {
-            TokenConstants.RULE_ID: "T1",
-            TokenConstants.TOKEN: "token1",
-            TokenConstants.RECORD_ID: "rec-001"
-        }
+        data1 = {TokenConstants.RULE_ID: "T1", TokenConstants.TOKEN: "token1", TokenConstants.RECORD_ID: "rec-001"}
 
-        data2 = {
-            TokenConstants.RULE_ID: "T2",
-            TokenConstants.TOKEN: "token2",
-            TokenConstants.RECORD_ID: "rec-002"
-        }
+        data2 = {TokenConstants.RULE_ID: "T2", TokenConstants.TOKEN: "token2", TokenConstants.RECORD_ID: "rec-002"}
 
         self.writer.write_token(data1)
         self.writer.write_token(data2)
         self.writer.close()
 
-        with open(self.temp_file_path, 'r', encoding='utf-8') as f:
+        with open(self.temp_file_path, "r", encoding="utf-8") as f:
             lines = f.readlines()
             header = lines[0].strip()
             assert header == "RuleId,Token,RecordId"
@@ -108,16 +88,12 @@ class TestTokenCSVWriter:
 
     def test_write_token_with_blank_value(self):
         """Test writing a token with blank value."""
-        data = {
-            TokenConstants.RULE_ID: "T1",
-            TokenConstants.TOKEN: "",
-            TokenConstants.RECORD_ID: "rec-001"
-        }
+        data = {TokenConstants.RULE_ID: "T1", TokenConstants.TOKEN: "", TokenConstants.RECORD_ID: "rec-001"}
 
         self.writer.write_token(data)
         self.writer.close()
 
-        with open(self.temp_file_path, 'r', encoding='utf-8') as f:
+        with open(self.temp_file_path, "r", encoding="utf-8") as f:
             lines = f.readlines()
             header = lines[0].strip()
             assert header == "RuleId,Token,RecordId"

@@ -49,6 +49,7 @@ python data_generator.py 1000 0.0 unique_records.csv
 ### Default Values
 
 If no arguments provided:
+
 - `num_lines`: 100
 - `repeat_probability`: 0.05 (5%)
 - `output_file`: `test_data.csv`
@@ -161,14 +162,14 @@ Pre-generated sample files are available in [resources/](https://github.com/Truv
 The mock data generator requires:
 
 ```bash
-pip install faker
+uv pip install faker
 ```
 
 Or install from the tools requirements:
 
 ```bash
 cd tools
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 ```
 
 ---

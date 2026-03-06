@@ -5,6 +5,7 @@ Copyright (c) Truveta. All rights reserved.
 import logging
 import uuid
 
+from opentoken.tokens.token import Token
 from opentoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
 from opentoken.tokentransformer.jwe_match_token_formatter import JweMatchTokenFormatter
 from opentoken_cli.io.csv.token_csv_reader import TokenCSVReader
@@ -13,7 +14,6 @@ from opentoken_cli.io.parquet.token_parquet_reader import TokenParquetReader
 from opentoken_cli.io.parquet.token_parquet_writer import TokenParquetWriter
 from opentoken_cli.processor.token_constants import TokenConstants
 from opentoken_cli.util import StringMaskingUtil
-from opentoken.tokens.token import Token
 
 logger = logging.getLogger(__name__)
 
@@ -145,9 +145,10 @@ class EncryptCommand:
             encrypted_counter = 0
             error_counter = 0
 
-            with EncryptCommand._create_token_reader(
-                input_path, input_type
-            ) as reader, EncryptCommand._create_token_writer(output_path, output_type) as writer:
+            with (
+                EncryptCommand._create_token_reader(input_path, input_type) as reader,
+                EncryptCommand._create_token_writer(output_path, output_type) as writer,
+            ):
                 for row in reader:
                     row_counter += 1
 

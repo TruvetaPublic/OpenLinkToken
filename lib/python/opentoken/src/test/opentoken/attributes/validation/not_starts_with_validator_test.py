@@ -3,7 +3,6 @@ Tests for NotStartsWithValidator.
 """
 
 import pickle
-import pytest
 
 from opentoken.attributes.validation.not_starts_with_validator import NotStartsWithValidator
 

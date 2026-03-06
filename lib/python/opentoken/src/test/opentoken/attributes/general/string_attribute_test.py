@@ -104,19 +104,10 @@ class TestStringAttribute:
         deserialized_attribute = pickle.loads(serialized_data)
 
         # Test various string values with both original and deserialized attributes
-        test_values = [
-            "hello",
-            "  world  ",
-            "test string",
-            "123",
-            "a",
-            "  trimmed  "
-        ]
+        test_values = ["hello", "  world  ", "test string", "123", "a", "  trimmed  "]
 
         for value in test_values:
-            assert string_attribute.get_name() == deserialized_attribute.get_name(), (
-                "Attribute names should match"
-            )
+            assert string_attribute.get_name() == deserialized_attribute.get_name(), "Attribute names should match"
 
             assert string_attribute.get_aliases() == deserialized_attribute.get_aliases(), (
                 "Attribute aliases should match"

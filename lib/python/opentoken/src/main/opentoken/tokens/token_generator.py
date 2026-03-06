@@ -3,17 +3,17 @@ Copyright (c) Truveta. All rights reserved.
 """
 
 import logging
-from typing import Dict, List, Set, Type, Optional
+from typing import Dict, List, Optional, Set, Type
+
 from opentoken.attributes.attribute import Attribute
 from opentoken.attributes.attribute_loader import AttributeLoader
 from opentoken.tokens.base_token_definition import BaseTokenDefinition
+from opentoken.tokens.token import Token
+from opentoken.tokens.token_generation_exception import TokenGenerationException
+from opentoken.tokens.token_generator_result import TokenGeneratorResult
 from opentoken.tokens.tokenizer.sha256_tokenizer import SHA256Tokenizer
 from opentoken.tokens.tokenizer.tokenizer import Tokenizer
-from opentoken.tokens.token import Token
-from opentoken.tokens.token_generator_result import TokenGeneratorResult
-from opentoken.tokens.token_generation_exception import TokenGenerationException
 from opentoken.tokentransformer.token_transformer import TokenTransformer
-
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +22,9 @@ class TokenGenerator:
     """Generates both the token signature and the token itself."""
 
     @classmethod
-    def from_transformers(cls, token_definition: BaseTokenDefinition, 
-                         token_transformer_list: List[TokenTransformer]) -> 'TokenGenerator':
+    def from_transformers(
+        cls, token_definition: BaseTokenDefinition, token_transformer_list: List[TokenTransformer]
+    ) -> "TokenGenerator":
         """
         Convenience constructor that creates a TokenGenerator with SHA256Tokenizer.
 
@@ -53,8 +54,9 @@ class TokenGenerator:
 
         self.tokenizer = tokenizer
 
-    def _get_token_signature(self, token_id: str, person_attributes: Dict[Type[Attribute], str],
-                             result: TokenGeneratorResult) -> Optional[str]:
+    def _get_token_signature(
+        self, token_id: str, person_attributes: Dict[Type[Attribute], str], result: TokenGeneratorResult
+    ) -> Optional[str]:
         """
         Get the token signature for a given token identifier.
 
@@ -129,8 +131,9 @@ class TokenGenerator:
 
         return signatures
 
-    def _get_token(self, token_id: str, person_attributes: Dict[Type[Attribute], str],
-                   result: TokenGeneratorResult) -> Optional[str]:
+    def _get_token(
+        self, token_id: str, person_attributes: Dict[Type[Attribute], str], result: TokenGeneratorResult
+    ) -> Optional[str]:
         """
         Get token for a given token identifier.
 

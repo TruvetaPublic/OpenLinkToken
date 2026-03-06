@@ -4,6 +4,7 @@ Copyright (c) Truveta. All rights reserved.
 
 import re
 from typing import Pattern
+
 from opentoken.attributes.validation.serializable_attribute_validator import SerializableAttributeValidator
 
 

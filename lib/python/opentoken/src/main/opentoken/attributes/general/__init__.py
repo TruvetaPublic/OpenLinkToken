@@ -8,10 +8,10 @@ from .string_attribute import StringAttribute
 from .year_attribute import YearAttribute
 
 __all__ = [
-	"DateAttribute",
-	"DecimalAttribute",
-	"IntegerAttribute",
-	"RecordIdAttribute",
-	"StringAttribute",
-	"YearAttribute",
+    "DateAttribute",
+    "DecimalAttribute",
+    "IntegerAttribute",
+    "RecordIdAttribute",
+    "StringAttribute",
+    "YearAttribute",
 ]

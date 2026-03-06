@@ -3,7 +3,6 @@ Tests for RegexValidator.
 """
 
 import pickle
-import pytest
 
 from opentoken.attributes.validation.regex_validator import RegexValidator
 

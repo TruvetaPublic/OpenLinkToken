@@ -4,6 +4,7 @@ Copyright (c) Truveta. All rights reserved.
 
 from abc import ABC, abstractmethod
 from typing import List
+
 from opentoken.attributes.attribute_expression import AttributeExpression
 
 

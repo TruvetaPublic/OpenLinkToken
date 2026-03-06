@@ -35,9 +35,9 @@ How to use the PySpark bridge for distributed token generation on Spark clusters
 source /workspaces/OpenToken/.venv/bin/activate
 
 cd lib/python/opentoken-pyspark
-pip install -e .[spark40]  # For Java 21
+uv pip install -e .[spark40]  # For Java 21
 # or
-pip install -e .[spark35]  # For Java 8-17
+uv pip install -e .[spark35]  # For Java 8-17
 ```
 
 ### Managed Clusters (Databricks, EMR, Azure Synapse)
@@ -45,7 +45,7 @@ pip install -e .[spark35]  # For Java 8-17
 For environments where PySpark is pre-installed:
 
 ```bash
-pip install opentoken-pyspark
+uv pip install opentoken-pyspark
 ```
 
 ---
@@ -267,7 +267,7 @@ databricks secrets put --scope opentoken --key encryption_key
 Install via cluster UI or init script:
 
 ```bash
-pip install opentoken-pyspark
+uv pip install opentoken-pyspark
 ```
 
 ### Unity Catalog + Secrets (Recommended)
@@ -275,6 +275,7 @@ pip install opentoken-pyspark
 Unity Catalog (UC) is the right place to govern **data access** (tables, volumes, external locations). For **secrets** (hashing/encryption keys), you typically still use **Databricks Secret Scopes** (optionally backed by a cloud secret manager) and lock down access with ACLs and cluster policies.
 
 **Recommended pattern:**
+
 - Store secrets in a secret scope (Databricks-backed, or backed by AWS Secrets Manager / Azure Key Vault / GCP Secret Manager depending on your workspace configuration).
 - Restrict who can read secrets (scope ACLs) and which clusters can access them (cluster policies).
 - Store token outputs in UC-managed Delta tables (or UC volumes) and grant access via UC privileges.
@@ -300,6 +301,7 @@ tokens_df.write.mode("overwrite").format("delta").saveAsTable("main.pprl.person_
 ```
 
 **Notes:**
+
 - Prefer a dedicated UC schema (e.g., `main.pprl`) for tokenized outputs.
 - Consider writing to separate tables per dataset/run to support auditing and reproducibility.
 - For production: use cluster policies to prevent printing secrets, and avoid collecting token data to the driver.

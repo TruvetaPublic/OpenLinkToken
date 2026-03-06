@@ -3,6 +3,7 @@ Copyright (c) Truveta. All rights reserved.
 """
 
 import pytest
+
 from opentoken.attributes.general.decimal_attribute import DecimalAttribute
 
 

@@ -113,24 +113,12 @@ class TestAgeAttribute:
         deserialized_attribute = pickle.loads(serialized_data)
 
         # Test various age values with both original and deserialized attributes
-        test_values = [
-            "0",
-            "25",
-            "50",
-            "100",
-            "120",
-            "  42  ",
-            "65"
-        ]
+        test_values = ["0", "25", "50", "100", "120", "  42  ", "65"]
 
         for value in test_values:
-            assert age_attribute.get_name() == deserialized_attribute.get_name(), (
-                "Attribute names should match"
-            )
+            assert age_attribute.get_name() == deserialized_attribute.get_name(), "Attribute names should match"
 
-            assert age_attribute.get_aliases() == deserialized_attribute.get_aliases(), (
-                "Attribute aliases should match"
-            )
+            assert age_attribute.get_aliases() == deserialized_attribute.get_aliases(), "Attribute aliases should match"
 
             assert age_attribute.normalize(value) == deserialized_attribute.normalize(value), (
                 f"Normalization should be identical for value: {value}"

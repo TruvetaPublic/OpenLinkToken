@@ -3,6 +3,7 @@ Copyright (c) Truveta. All rights reserved.
 """
 
 from typing import List, Optional
+
 from opentoken.attributes.base_attribute import BaseAttribute
 from opentoken.attributes.validation import RegexValidator
 from opentoken.attributes.validation.serializable_attribute_validator import SerializableAttributeValidator
@@ -73,9 +74,9 @@ class DecimalAttribute(BaseAttribute):
         """
         if value is None:
             raise ValueError("Decimal value cannot be null")
-            
+
         value_stripped = value.strip() if value else ""
-        
+
         if not value_stripped:
             raise ValueError("Invalid decimal format: empty or whitespace")
 

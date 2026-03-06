@@ -15,7 +15,7 @@ class RecordIdAttribute(StringAttribute):
     attribute type.
 
     The attribute normalizes values by trimming whitespace (inherited from StringAttribute).
-    It validates that the value is not null or empty using the default BaseAttribute 
+    It validates that the value is not null or empty using the default BaseAttribute
     validation rules.
     """
 

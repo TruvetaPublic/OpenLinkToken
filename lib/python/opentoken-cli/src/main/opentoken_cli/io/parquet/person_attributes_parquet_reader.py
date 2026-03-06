@@ -3,7 +3,8 @@ Copyright (c) Truveta. All rights reserved.
 """
 
 import logging
-from typing import Dict, Type, Set
+from typing import Dict, Set, Type
+
 try:
     import pyarrow.parquet as pq
 except ImportError:
@@ -12,7 +13,6 @@ except ImportError:
 from opentoken.attributes.attribute import Attribute
 from opentoken.attributes.attribute_loader import AttributeLoader
 from opentoken_cli.io.person_attributes_reader import PersonAttributesReader
-
 
 logger = logging.getLogger(__name__)
 

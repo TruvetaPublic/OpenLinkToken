@@ -39,7 +39,7 @@ class TestTokenGeneratorBlankTokens:
             LastNameAttribute: "Doe",
             SexAttribute: "Male",
             BirthDateAttribute: "1990-01-01",
-            SocialSecurityNumberAttribute: "123456789"
+            SocialSecurityNumberAttribute: "123456789",
             # Missing PostalCodeAttribute intentionally to force T2 to generate blank token
         }
 
@@ -65,7 +65,7 @@ class TestTokenGeneratorBlankTokens:
             SexAttribute: "Male",
             BirthDateAttribute: "1990-01-01",
             SocialSecurityNumberAttribute: "111-11-1111",  # Invalid SSN from the INVALID_SSNS set
-            PostalCodeAttribute: "12345"
+            PostalCodeAttribute: "12345",
         }
 
         result = self.token_generator.get_all_tokens(person_attributes)
@@ -90,7 +90,7 @@ class TestTokenGeneratorBlankTokens:
             SexAttribute: "Male",
             BirthDateAttribute: "1990-01-01",
             SocialSecurityNumberAttribute: "223-45-6789",
-            PostalCodeAttribute: "22345"
+            PostalCodeAttribute: "22345",
         }
 
         result = self.token_generator.get_all_tokens(person_attributes)
@@ -123,7 +123,7 @@ class TestTokenGeneratorBlankTokens:
             LastNameAttribute: "Doe",
             SexAttribute: "Male",
             BirthDateAttribute: "1990-01-01",
-            SocialSecurityNumberAttribute: "111-11-1111",  # Invalid SSN 
+            SocialSecurityNumberAttribute: "111-11-1111",  # Invalid SSN
             # Missing PostalCodeAttribute - this should cause issues for T2
         }
 
@@ -131,22 +131,22 @@ class TestTokenGeneratorBlankTokens:
 
         # Verify that multiple blank tokens are tracked
         blank_tokens_by_rule = result.blank_tokens_by_rule
-        
+
         # Should have blank tokens for rules that require these attributes
         assert len(blank_tokens_by_rule) > 0, "Should have blank tokens for invalid/missing attributes"
 
     def test_blank_tokens_set_immutability(self):
         """Test that the blank tokens set behaves correctly."""
         result = TokenGeneratorResult()
-        
+
         # Get the blank tokens set
         blank_tokens_by_rule = result.blank_tokens_by_rule
-        
+
         # Add a rule ID
         blank_tokens_by_rule.add("TEST_RULE")
-        
+
         # Verify it was added
         assert "TEST_RULE" in blank_tokens_by_rule
-        
+
         # Verify the set contains the expected element
         assert len(blank_tokens_by_rule) == 1

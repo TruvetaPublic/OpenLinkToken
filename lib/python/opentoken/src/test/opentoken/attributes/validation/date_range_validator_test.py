@@ -47,6 +47,7 @@ class TestDateRangeValidator:
     def test_eval_dates_after_today_should_return_false(self, validator):
         """Test dates after today."""
         from datetime import timedelta
+
         tomorrow = date.today() + timedelta(days=1)
         next_year = date.today() + timedelta(days=365)
 
@@ -105,7 +106,7 @@ class TestDateRangeValidator:
             "2030-01-01",  # Invalid (future)
             "1990-06-15",  # Valid middle range
             "invalid-date",  # Invalid format
-            None  # Null value
+            None,  # Null value
         ]
 
         for value in test_values:
@@ -121,6 +122,7 @@ class TestDateRangeValidator:
         """Test edge cases around boundaries."""
         today = date.today()
         from datetime import timedelta
+
         yesterday = today - timedelta(days=1)
         min_date = date(1910, 1, 1)
         day_before_min_date = min_date - timedelta(days=1)
