@@ -22,6 +22,7 @@ import com.truveta.opentoken.attributes.AttributeExpression;
 import com.truveta.opentoken.attributes.general.RecordIdAttribute;
 import com.truveta.opentoken.cli.io.PersonAttributesReader;
 import com.truveta.opentoken.cli.io.PersonAttributesWriter;
+import com.truveta.opentoken.cli.util.RecordIdHasher;
 import com.truveta.opentoken.tokens.TokenDefinition;
 import com.truveta.opentoken.tokens.TokenGenerator;
 import com.truveta.opentoken.tokens.TokenGeneratorResult;
@@ -68,7 +69,26 @@ public final class PersonAttributesProcessor {
      */
     public static void process(PersonAttributesReader reader, PersonAttributesWriter writer,
             List<TokenTransformer> tokenTransformerList, Map<String, Object> metadataMap) throws IOException {
-        process(reader, writer, tokenTransformerList, metadataMap, null, null);
+        process(reader, writer, tokenTransformerList, metadataMap, null, null, false);
+    }
+
+    /**
+     * Reads person attributes from the input data source, generates token, and
+     * write the result back to the output data source. Record IDs are SHA-256 hashed
+     * in the output when {@code hashRecordIds} is {@code true}.
+     *
+     * @param reader               the reader initialized with the input data source.
+     * @param writer               the writer initialized with the output data source.
+     * @param tokenTransformerList a list of token transformers.
+     * @param metadataMap          the metadata map to populate with processing statistics.
+     * @param hashRecordIds        when {@code true}, each record ID is SHA-256 hashed
+     *                             before being written to the output.
+     * @throws IOException if an I/O error occurs during processing.
+     */
+    public static void process(PersonAttributesReader reader, PersonAttributesWriter writer,
+            List<TokenTransformer> tokenTransformerList, Map<String, Object> metadataMap,
+            boolean hashRecordIds) throws IOException {
+        process(reader, writer, tokenTransformerList, metadataMap, null, null, hashRecordIds);
     }
 
     /**
@@ -87,7 +107,7 @@ public final class PersonAttributesProcessor {
      */
     public static void process(PersonAttributesReader reader, PersonAttributesWriter writer,
             Tokenizer tokenizer, Map<String, Object> metadataMap) throws IOException {
-        processWithTokenizer(reader, writer, tokenizer, metadataMap, null, null);
+        processWithTokenizer(reader, writer, tokenizer, metadataMap, null, null, false);
     }
 
     /**
@@ -112,13 +132,35 @@ public final class PersonAttributesProcessor {
     public static void process(PersonAttributesReader reader, PersonAttributesWriter writer,
             List<TokenTransformer> tokenTransformerList, Map<String, Object> metadataMap,
             String encryptionKey, String ringId) throws IOException {
+        process(reader, writer, tokenTransformerList, metadataMap, encryptionKey, ringId, false);
+    }
+
+    /**
+     * Reads person attributes from the input data source, generates token, and
+     * write the result back to the output data source. The tokens can be optionally
+     * transformed before writing, wrapped in JWE format, and have their record IDs
+     * SHA-256 hashed when {@code hashRecordIds} is {@code true}.
+     *
+     * @param reader               the reader initialized with the input data source.
+     * @param writer               the writer initialized with the output data source.
+     * @param tokenTransformerList a list of token transformers.
+     * @param metadataMap          the metadata map to populate with processing statistics.
+     * @param encryptionKey        the encryption key for JWE wrapping (optional, null to skip JWE).
+     * @param ringId               the ring ID for JWE wrapping (optional, null to skip JWE).
+     * @param hashRecordIds        when {@code true}, each record ID is SHA-256 hashed
+     *                             before being written to the output.
+     * @throws IOException if an I/O error occurs during processing.
+     */
+    public static void process(PersonAttributesReader reader, PersonAttributesWriter writer,
+            List<TokenTransformer> tokenTransformerList, Map<String, Object> metadataMap,
+            String encryptionKey, String ringId, boolean hashRecordIds) throws IOException {
         processWithTokenizer(reader, writer, new SHA256Tokenizer(tokenTransformerList),
-                metadataMap, encryptionKey, ringId);
+                metadataMap, encryptionKey, ringId, hashRecordIds);
     }
 
     private static void processWithTokenizer(PersonAttributesReader reader, PersonAttributesWriter writer,
             Tokenizer tokenizer, Map<String, Object> metadataMap,
-            String encryptionKey, String ringId) throws IOException {
+            String encryptionKey, String ringId, boolean hashRecordIds) throws IOException {
 
         TokenDefinition tokenDefinition = new TokenDefinition();
         TokenGenerator tokenGenerator = new TokenGenerator(tokenDefinition, tokenizer);
@@ -145,7 +187,7 @@ public final class PersonAttributesProcessor {
             keepTrackOfBlankTokens(tokenGeneratorResult, rowCounter,
                     blankTokensByRuleCount);
 
-            writeTokens(writer, row, rowCounter, tokenGeneratorResult, jweFormatterCache);
+            writeTokens(writer, row, rowCounter, tokenGeneratorResult, jweFormatterCache, hashRecordIds);
 
             if (rowCounter % 10000 == 0) {
                 logger.info(String.format("Processed \"%,d\" records", rowCounter));
@@ -179,7 +221,8 @@ public final class PersonAttributesProcessor {
 
     private static void writeTokens(PersonAttributesWriter writer, Map<Class<? extends Attribute>, String> row,
             long rowCounter, TokenGeneratorResult tokenGeneratorResult,
-            Map<String, JweMatchTokenFormatter> jweFormatterCache) {
+            Map<String, JweMatchTokenFormatter> jweFormatterCache,
+            boolean hashRecordIds) {
 
         Set<String> tokenIds = new TreeSet<>(tokenGeneratorResult.getTokens().keySet());
 
@@ -187,6 +230,11 @@ public final class PersonAttributesProcessor {
         String recordId = row.get(RecordIdAttribute.class);
         if (recordId == null || recordId.isEmpty()) {
             recordId = UUID.randomUUID().toString();
+        }
+
+        // Hash the record ID when requested (no mapping file — intentionally no traceability)
+        if (hashRecordIds) {
+            recordId = RecordIdHasher.hash(recordId);
         }
 
         for (String tokenId : tokenIds) {

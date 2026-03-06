@@ -103,6 +103,18 @@ class PackageCommand:
             help="Ring identifier for key management. Defaults to a random UUID if not provided",
         )
 
+        parser.add_argument(
+            "--hash-record-ids",
+            action="store_true",
+            default=False,
+            dest="hash_record_ids",
+            help=(
+                "Hash input RecordId values using SHA-256 before writing to output. "
+                "The hashed value (not the original) appears in the output file. "
+                "This is a one-way operation with no traceability."
+            ),
+        )
+
         parser.set_defaults(func=PackageCommand.execute)
 
     @staticmethod
@@ -113,6 +125,7 @@ class PackageCommand:
         # Default output type to input type if not specified
         output_type = args.output_type if args.output_type else args.input_type
         ring_id = args.ring_id if args.ring_id and args.ring_id.strip() else str(uuid.uuid4())
+        hash_record_ids = getattr(args, "hash_record_ids", False)
 
         # Log parameters (mask secrets)
         logger.info(f"Input: {args.input_path} ({args.input_type})")
@@ -120,6 +133,8 @@ class PackageCommand:
         logger.info(f"Hashing Secret: {StringMaskingUtil.mask_string(args.hashing_secret)}")
         logger.info(f"Encryption Key: {StringMaskingUtil.mask_string(args.encryption_key)}")
         logger.info(f"Ring ID: {ring_id}")
+        if hash_record_ids:
+            logger.info("Record ID hashing enabled: RecordIds will be SHA-256 hashed in output")
 
         # Validate secrets
         if not args.hashing_secret or not args.hashing_secret.strip():
@@ -138,6 +153,7 @@ class PackageCommand:
                 args.hashing_secret,
                 args.encryption_key,
                 ring_id,
+                hash_record_ids,
             )
             logger.info("Token generation and encryption completed successfully")
             return 0
@@ -154,6 +170,7 @@ class PackageCommand:
         hashing_secret: str,
         encryption_key: str,
         ring_id: str,
+        hash_record_ids: bool = False,
     ):
         """Process tokens from person attributes."""
         token_transformer_list: List[TokenTransformer] = []
@@ -185,6 +202,7 @@ class PackageCommand:
                     metadata_map,
                     encryption_key,
                     ring_id,
+                    hash_record_ids,
                 )
 
                 # Write metadata

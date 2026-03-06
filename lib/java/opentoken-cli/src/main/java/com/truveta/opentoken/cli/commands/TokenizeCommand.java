@@ -82,6 +82,12 @@ public class TokenizeCommand implements Callable<Integer> {
     @Option(names = { "-V", "--version" }, versionHelp = true, description = "Print version information and exit")
     private boolean versionRequested;
 
+    @Option(names = {
+            "--hash-record-ids" }, description = "Hash input RecordId values using SHA-256 before writing to output."
+                    + " The hashed value (not the original) appears in the output file."
+                    + " This is a one-way operation with no traceability.")
+    private boolean hashRecordIds;
+
     @Override
     public Integer call() {
         if (demoMode) {
@@ -101,6 +107,9 @@ public class TokenizeCommand implements Callable<Integer> {
         logger.info("Output: {} ({})", outputPath, outputType);
         if (!demoMode && logger.isInfoEnabled()) {
             logger.info("Hashing Secret: {}", maskString(hashingSecret));
+        }
+        if (hashRecordIds) {
+            logger.info("Record ID hashing enabled");
         }
 
         // Validate file types
@@ -144,7 +153,8 @@ public class TokenizeCommand implements Callable<Integer> {
             } else {
                 // Only record the hashing-secret hash in normal mode
                 metadata.addHashedSecret(Metadata.HASHING_SECRET_HASH, hashingSecret);
-                PersonAttributesProcessor.process(reader, writer, buildHashTransformers(), metadataMap);
+                PersonAttributesProcessor.process(reader, writer, buildHashTransformers(), metadataMap,
+                        hashRecordIds);
             }
             MetadataWriter metadataWriter = new MetadataJsonWriter(outputPath);
             metadataWriter.write(metadataMap);
