@@ -10,9 +10,9 @@ class TestTokenConstants:
 
     def test_token_constants_exist(self):
         """Test that all token constants exist."""
-        assert hasattr(TokenConstants, 'TOKEN')
-        assert hasattr(TokenConstants, 'RULE_ID')
-        assert hasattr(TokenConstants, 'RECORD_ID')
+        assert hasattr(TokenConstants, "TOKEN")
+        assert hasattr(TokenConstants, "RULE_ID")
+        assert hasattr(TokenConstants, "RECORD_ID")
 
     def test_token_constants_values(self):
         """Test that token constants have correct values."""

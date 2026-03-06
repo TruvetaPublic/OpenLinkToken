@@ -4,18 +4,17 @@ Copyright (c) Truveta. All rights reserved.
 Dataset overlap analyzer for comparing tokenized datasets.
 """
 
-import logging
-from typing import List, Dict, Optional, Any
 import base64
 import json
+import logging
+from typing import Any, Dict, List, Optional
 
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from jwcrypto import jwe, jwk
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import col, count, udf
 from pyspark.sql.types import StringType
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.backends import default_backend
-
 
 logger = logging.getLogger(__name__)
 
@@ -45,12 +44,12 @@ class OpenTokenOverlapAnalyzer:
         """
         if not encryption_key or not encryption_key.strip():
             raise ValueError("Encryption key cannot be empty")
-        if len(encryption_key.encode('utf-8')) != 32:
+        if len(encryption_key.encode("utf-8")) != 32:
             raise ValueError(
                 "Encryption key must be exactly 32 bytes (characters) for AES-256. "
                 f"Got {len(encryption_key.encode('utf-8'))} bytes"
             )
-        self.encryption_key = encryption_key.encode('utf-8')
+        self.encryption_key = encryption_key.encode("utf-8")
 
     @staticmethod
     def _v1_token_prefix() -> str:
@@ -80,14 +79,10 @@ class OpenTokenOverlapAnalyzer:
             ciphertext = ciphertext_and_tag[:-tag_length]
             tag = ciphertext_and_tag[-tag_length:]
 
-            cipher = Cipher(
-                algorithms.AES(self.encryption_key),
-                modes.GCM(iv_bytes, tag),
-                backend=default_backend()
-            )
+            cipher = Cipher(algorithms.AES(self.encryption_key), modes.GCM(iv_bytes, tag), backend=default_backend())
             decryptor = cipher.decryptor()
             decrypted_bytes = decryptor.update(ciphertext) + decryptor.finalize()
-            return decrypted_bytes.decode('utf-8')
+            return decrypted_bytes.decode("utf-8")
         except Exception:
             # If base64 decoding or AES-GCM fails, assume plaintext and return original.
             return encrypted_token
@@ -103,15 +98,15 @@ class OpenTokenOverlapAnalyzer:
             Returns the original token if JWE decryption fails.
         """
         try:
-            jwe_compact = encrypted_token[len(self._v1_token_prefix()):]
-            key_b64 = base64.urlsafe_b64encode(self.encryption_key).decode('utf-8').rstrip('=')
+            jwe_compact = encrypted_token[len(self._v1_token_prefix()) :]
+            key_b64 = base64.urlsafe_b64encode(self.encryption_key).decode("utf-8").rstrip("=")
             jwk_key = jwk.JWK(kty="oct", k=key_b64)
 
             jwe_token = jwe.JWE()
             jwe_token.deserialize(jwe_compact)
             jwe_token.decrypt(jwk_key)
 
-            payload = json.loads(jwe_token.payload.decode('utf-8'))
+            payload = json.loads(jwe_token.payload.decode("utf-8"))
             ppid_value = payload.get("ppid", [])
             if isinstance(ppid_value, list):
                 ppid_value = ppid_value[0] if ppid_value else ""
@@ -153,7 +148,7 @@ class OpenTokenOverlapAnalyzer:
         dataset2: DataFrame,
         matching_rules: List[str],
         dataset1_name: str = "Dataset1",
-        dataset2_name: str = "Dataset2"
+        dataset2_name: str = "Dataset2",
     ) -> Dict[str, Any]:
         """
         Analyze overlap between two tokenized datasets based on matching rules.
@@ -190,10 +185,7 @@ class OpenTokenOverlapAnalyzer:
         required_cols = {"RecordId", "RuleId", "Token"}
         for df, name in [(dataset1, dataset1_name), (dataset2, dataset2_name)]:
             if not required_cols.issubset(set(df.columns)):
-                raise ValueError(
-                    f"{name} must have columns: {required_cols}. "
-                    f"Got: {set(df.columns)}"
-                )
+                raise ValueError(f"{name} must have columns: {required_cols}. Got: {set(df.columns)}")
 
         if not matching_rules:
             raise ValueError("matching_rules cannot be empty")
@@ -216,38 +208,35 @@ class OpenTokenOverlapAnalyzer:
         df2_decrypted = df2_filtered.withColumn("DecryptedToken", decrypt_udf(col("Token")))
 
         # Join on decrypted Token and RuleId to find matches
-        matches = df1_decrypted.alias("df1").join(
-            df2_decrypted.alias("df2"),
-            (col("df1.DecryptedToken") == col("df2.DecryptedToken")) & 
-            (col("df1.RuleId") == col("df2.RuleId")) &
-            (col("df1.DecryptedToken").isNotNull()) &  # Exclude failed decryptions
-            (col("df2.DecryptedToken").isNotNull()),
-            "inner"
-        ).select(
-            col("df1.RecordId").alias(f"{dataset1_name}_RecordId"),
-            col("df2.RecordId").alias(f"{dataset2_name}_RecordId"),
-            col("df1.RuleId").alias("RuleId"),
-            col("df1.Token").alias("Token")
+        matches = (
+            df1_decrypted.alias("df1")
+            .join(
+                df2_decrypted.alias("df2"),
+                (col("df1.DecryptedToken") == col("df2.DecryptedToken"))
+                & (col("df1.RuleId") == col("df2.RuleId"))
+                & (col("df1.DecryptedToken").isNotNull())  # Exclude failed decryptions
+                & (col("df2.DecryptedToken").isNotNull()),
+                "inner",
+            )
+            .select(
+                col("df1.RecordId").alias(f"{dataset1_name}_RecordId"),
+                col("df2.RecordId").alias(f"{dataset2_name}_RecordId"),
+                col("df1.RuleId").alias("RuleId"),
+                col("df1.Token").alias("Token"),
+            )
         )
 
         # Count matches per record pair
         # A valid match requires matching tokens for ALL specified rules
-        match_counts = matches.groupBy(
-            f"{dataset1_name}_RecordId",
-            f"{dataset2_name}_RecordId"
-        ).agg(
-            count("*").alias("matched_rules_count")
-        ).filter(
-            col("matched_rules_count") == len(matching_rules)
+        match_counts = (
+            matches.groupBy(f"{dataset1_name}_RecordId", f"{dataset2_name}_RecordId")
+            .agg(count("*").alias("matched_rules_count"))
+            .filter(col("matched_rules_count") == len(matching_rules))
         )
 
         # Get unique matching records
-        matching_records_df1 = match_counts.select(
-            f"{dataset1_name}_RecordId"
-        ).distinct().count()
-        matching_records_df2 = match_counts.select(
-            f"{dataset2_name}_RecordId"
-        ).distinct().count()
+        matching_records_df1 = match_counts.select(f"{dataset1_name}_RecordId").distinct().count()
+        matching_records_df2 = match_counts.select(f"{dataset2_name}_RecordId").distinct().count()
 
         # Calculate unique records
         unique_to_df1 = total_records_df1 - matching_records_df1
@@ -257,31 +246,30 @@ class OpenTokenOverlapAnalyzer:
         smaller_dataset_size = min(total_records_df1, total_records_df2)
         overlap_percentage = (
             (min(matching_records_df1, matching_records_df2) / smaller_dataset_size * 100)
-            if smaller_dataset_size > 0 else 0
+            if smaller_dataset_size > 0
+            else 0
         )
 
         # Get detailed matches
-        detailed_matches = matches.groupBy(
-            f"{dataset1_name}_RecordId",
-            f"{dataset2_name}_RecordId"
-        ).agg(
-            count("*").alias("matched_rules_count")
-        ).filter(
-            col("matched_rules_count") == len(matching_rules)
-        ).drop("matched_rules_count")
+        detailed_matches = (
+            matches.groupBy(f"{dataset1_name}_RecordId", f"{dataset2_name}_RecordId")
+            .agg(count("*").alias("matched_rules_count"))
+            .filter(col("matched_rules_count") == len(matching_rules))
+            .drop("matched_rules_count")
+        )
 
         return {
-            'total_records_dataset1': total_records_df1,
-            'total_records_dataset2': total_records_df2,
-            'matching_records_dataset1': matching_records_df1,
-            'matching_records_dataset2': matching_records_df2,
-            'unique_to_dataset1': unique_to_df1,
-            'unique_to_dataset2': unique_to_df2,
-            'overlap_percentage': overlap_percentage,
-            'matches': detailed_matches,
-            'dataset1_name': dataset1_name,
-            'dataset2_name': dataset2_name,
-            'matching_rules': matching_rules
+            "total_records_dataset1": total_records_df1,
+            "total_records_dataset2": total_records_df2,
+            "matching_records_dataset1": matching_records_df1,
+            "matching_records_dataset2": matching_records_df2,
+            "unique_to_dataset1": unique_to_df1,
+            "unique_to_dataset2": unique_to_df2,
+            "overlap_percentage": overlap_percentage,
+            "matches": detailed_matches,
+            "dataset1_name": dataset1_name,
+            "dataset2_name": dataset2_name,
+            "matching_rules": matching_rules,
         }
 
     def compare_with_multiple_rules(
@@ -290,7 +278,7 @@ class OpenTokenOverlapAnalyzer:
         dataset2: DataFrame,
         rule_sets: List[List[str]],
         dataset1_name: str = "Dataset1",
-        dataset2_name: str = "Dataset2"
+        dataset2_name: str = "Dataset2",
     ) -> List[Dict[str, Any]]:
         """
         Compare datasets using multiple different matching rule sets.
@@ -317,9 +305,7 @@ class OpenTokenOverlapAnalyzer:
         """
         results = []
         for rules in rule_sets:
-            result = self.analyze_overlap(
-                dataset1, dataset2, rules, dataset1_name, dataset2_name
-            )
+            result = self.analyze_overlap(dataset1, dataset2, rules, dataset1_name, dataset2_name)
             results.append(result)
         return results
 

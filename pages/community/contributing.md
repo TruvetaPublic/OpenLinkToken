@@ -28,11 +28,11 @@ This guide outlines how to contribute code, documentation, and bug reports to Op
    ```
 3. **Set up the Python environment** (at repo root):
    ```bash
-   python -m venv .venv
+   uv venv .venv
    source .venv/bin/activate  # Linux/Mac
    # or .venv\Scripts\activate on Windows
-   pip install -r lib/python/opentoken/requirements.txt
-   pip install -r lib/python/opentoken/dev-requirements.txt
+   uv pip install -r lib/python/opentoken/requirements.txt
+   uv pip install -r lib/python/opentoken/dev-requirements.txt
    ```
 4. **Build Java components**:
    ```bash
@@ -80,6 +80,7 @@ git checkout -b dev/your-username/feature-name
 ### Before Submitting
 
 1. **Run all tests**:
+
    ```bash
    # Java
    cd lib/java && mvn clean test
@@ -90,12 +91,14 @@ git checkout -b dev/your-username/feature-name
    ```
 
 2. **Check code style**:
+
    ```bash
    # Java (Checkstyle)
    cd lib/java && mvn checkstyle:check
    ```
 
 3. **Verify cross-language parity** (if applicable):
+
    ```bash
    python3 tools/multi_language_syncer.py
    ```
@@ -189,6 +192,7 @@ When adding a new attribute (e.g., `MiddleNameAttribute`):
 ### Cross-Language Sync
 
 After adding to both languages:
+
 ```bash
 python3 tools/multi_language_syncer.py
 ```
@@ -200,6 +204,7 @@ python3 tools/multi_language_syncer.py
 ### Bug Reports
 
 Include:
+
 - **Title**: Clear, concise description
 - **Environment**: OS, Java/Python version, OpenToken version
 - **Steps to reproduce**: Minimal example
@@ -210,6 +215,7 @@ Include:
 ### Feature Requests
 
 Include:
+
 - **Problem statement**: What problem does this solve?
 - **Proposed solution**: How should it work?
 - **Alternatives considered**: Other approaches you have thought about

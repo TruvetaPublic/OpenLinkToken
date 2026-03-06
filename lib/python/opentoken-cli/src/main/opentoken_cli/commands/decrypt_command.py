@@ -127,9 +127,10 @@ class DecryptCommand:
         try:
             decryptor = DecryptTokenTransformer(encryption_key)
 
-            with DecryptCommand._create_token_reader(
-                input_path, input_type
-            ) as reader, DecryptCommand._create_token_writer(output_path, output_type) as writer:
+            with (
+                DecryptCommand._create_token_reader(input_path, input_type) as reader,
+                DecryptCommand._create_token_writer(output_path, output_type) as writer,
+            ):
                 TokenTransformationProcessor.process(reader, writer, decryptor, "decrypted")
 
         except Exception as e:

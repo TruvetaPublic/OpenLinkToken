@@ -151,18 +151,14 @@ class TokenizeCommand:
         logger.info(f"Input: {args.input_path} ({args.input_type})")
         logger.info(f"Output: {args.output_path} ({output_type})")
         if not demo_mode:
-            logger.info(
-                f"Hashing Secret: {StringMaskingUtil.mask_string(args.hashing_secret)}"
-            )
+            logger.info(f"Hashing Secret: {StringMaskingUtil.mask_string(args.hashing_secret)}")
         if hash_record_ids:
             logger.info("Record ID hashing enabled")
 
         # --hashingsecret is required in normal mode only
         if not demo_mode:
             if not args.hashing_secret or not args.hashing_secret.strip():
-                logger.error(
-                    "--hashingsecret is required in normal mode. Use --demo-mode to skip hashing."
-                )
+                logger.error("--hashingsecret is required in normal mode. Use --demo-mode to skip hashing.")
                 return 1
 
         try:
@@ -208,11 +204,10 @@ class TokenizeCommand:
             raise RuntimeError("Failed to initialize transformer") from e
 
         try:
-            with TokenizeCommand._create_reader(
-                input_path, input_type
-            ) as reader, TokenizeCommand._create_writer(
-                output_path, output_type
-            ) as writer:
+            with (
+                TokenizeCommand._create_reader(input_path, input_type) as reader,
+                TokenizeCommand._create_writer(output_path, output_type) as writer,
+            ):
                 metadata = Metadata()
                 metadata_map = metadata.initialize()
                 # Only record the hashing-secret hash in normal mode
@@ -238,19 +233,15 @@ class TokenizeCommand:
     ):
         """Process tokens in demo mode using PassthroughTokenizer (no hashing)."""
         try:
-            with TokenizeCommand._create_reader(
-                input_path, input_type
-            ) as reader, TokenizeCommand._create_writer(
-                output_path, output_type
-            ) as writer:
-
+            with (
+                TokenizeCommand._create_reader(input_path, input_type) as reader,
+                TokenizeCommand._create_writer(output_path, output_type) as writer,
+            ):
                 metadata = Metadata()
                 metadata_map = metadata.initialize()
                 # Deliberately omit add_hashed_secret — no secret used in demo mode
 
-                PersonAttributesProcessor.process_with_tokenizer(
-                    reader, writer, PassthroughTokenizer([]), metadata_map
-                )
+                PersonAttributesProcessor.process_with_tokenizer(reader, writer, PassthroughTokenizer([]), metadata_map)
 
                 MetadataJsonWriter(output_path).write(metadata_map)
 

@@ -6,32 +6,32 @@ PySpark token processor for distributed token generation.
 
 import logging
 import uuid
-from typing import Dict, Type, Optional, Mapping, cast, Any
+from typing import Any, Dict, Mapping, Optional, Type, cast
+
+import pandas as pd
 from pyspark.sql import DataFrame
 from pyspark.sql.column import Column
-from pyspark.sql.functions import pandas_udf, col
-from pyspark.sql.types import StructType, StructField, StringType, ArrayType
-import pandas as pd
+from pyspark.sql.functions import col, pandas_udf
+from pyspark.sql.types import ArrayType, StringType, StructField, StructType
 
 # Import OpenToken core functionality
 from opentoken.attributes.attribute import Attribute
 from opentoken.attributes.attribute_loader import AttributeLoader
+from opentoken.attributes.general.record_id_attribute import RecordIdAttribute
+from opentoken.attributes.person.birth_date_attribute import BirthDateAttribute
 from opentoken.attributes.person.first_name_attribute import FirstNameAttribute
 from opentoken.attributes.person.last_name_attribute import LastNameAttribute
-from opentoken.attributes.person.birth_date_attribute import BirthDateAttribute
-from opentoken.attributes.person.sex_attribute import SexAttribute
 from opentoken.attributes.person.postal_code_attribute import PostalCodeAttribute
+from opentoken.attributes.person.sex_attribute import SexAttribute
 from opentoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
-from opentoken.attributes.general.record_id_attribute import RecordIdAttribute
-from opentoken.tokens.token_definition import TokenDefinition
 from opentoken.tokens.base_token_definition import BaseTokenDefinition
+from opentoken.tokens.token_definition import TokenDefinition
 from opentoken.tokens.token_generator import TokenGenerator
-from opentoken.tokens.tokenizer.sha256_tokenizer import SHA256Tokenizer
 from opentoken.tokens.tokenizer.passthrough_tokenizer import PassthroughTokenizer
-from opentoken.tokentransformer.hash_token_transformer import HashTokenTransformer
+from opentoken.tokens.tokenizer.sha256_tokenizer import SHA256Tokenizer
 from opentoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
+from opentoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 from opentoken.tokentransformer.jwe_match_token_formatter import JweMatchTokenFormatter
-
 
 logger = logging.getLogger(__name__)
 
@@ -74,8 +74,13 @@ class OpenTokenProcessor:
         cls.COLUMN_MAPPINGS = mappings
         return mappings
 
-    def __init__(self, hashing_secret: Optional[str] = None, encryption_key: Optional[str] = None,
-                 token_definition: Optional[BaseTokenDefinition] = None, ring_id: Optional[str] = None):
+    def __init__(
+        self,
+        hashing_secret: Optional[str] = None,
+        encryption_key: Optional[str] = None,
+        token_definition: Optional[BaseTokenDefinition] = None,
+        ring_id: Optional[str] = None,
+    ):
         """
         Initialize the OpenToken processor with secrets.
 
@@ -164,10 +169,9 @@ class OpenTokenProcessor:
         ring_id = self.ring_id
 
         # Define the schema for the output (array of structs)
-        token_schema = ArrayType(StructType([
-            StructField("RuleId", StringType(), False),
-            StructField("Token", StringType(), False)
-        ]))
+        token_schema = ArrayType(
+            StructType([StructField("RuleId", StringType(), False), StructField("Token", StringType(), False)])
+        )
 
         # Create a pandas UDF for token generation
         # Use keyword argument for return type to satisfy type checkers
@@ -179,14 +183,14 @@ class OpenTokenProcessor:
             birth_date_series: pd.Series,
             sex_series: pd.Series,
             postal_code_series: pd.Series,
-            ssn_series: pd.Series
+            ssn_series: pd.Series,
         ) -> pd.Series:
             """
             Pandas UDF to generate tokens for a batch of records.
 
             This function is executed on each partition of the DataFrame
             in parallel across the Spark cluster.
-            
+
             Note: Coverage tracking cannot instrument code executed inside Spark
             worker processes, so this function is marked with pragma: no cover.
             The logic is tested indirectly through integration tests.
@@ -194,7 +198,7 @@ class OpenTokenProcessor:
             # Initialize token transformers and tokenizer based on secrets
             token_transformer_list = []
             tokenizer = None
-            
+
             if hashing_secret is not None:
                 # Use SHA256 tokenizer with optional encryption
                 token_transformer_list.append(HashTokenTransformer(hashing_secret))
@@ -214,10 +218,7 @@ class OpenTokenProcessor:
             if encryption_key is not None:
                 for token_id in definition.get_token_identifiers():
                     jwe_formatters[token_id] = JweMatchTokenFormatter(
-                        encryption_key=encryption_key,
-                        ring_id=ring_id,
-                        rule_id=token_id,
-                        issuer="truveta.opentoken"
+                        encryption_key=encryption_key, ring_id=ring_id, rule_id=token_id, issuer="truveta.opentoken"
                     )
 
             # Initialize token generator with custom tokenizer
@@ -231,19 +232,24 @@ class OpenTokenProcessor:
                 # Allow None for missing fields locally; cast to Mapping[str] for call
                 person_attrs: Dict[Type[Attribute], Optional[str]] = {
                     RecordIdAttribute: str(record_id_series.iloc[idx])
-                    if pd.notna(record_id_series.iloc[idx]) else None,
+                    if pd.notna(record_id_series.iloc[idx])
+                    else None,
                     FirstNameAttribute: str(first_name_series.iloc[idx])
-                    if pd.notna(first_name_series.iloc[idx]) else None,
+                    if pd.notna(first_name_series.iloc[idx])
+                    else None,
                     LastNameAttribute: str(last_name_series.iloc[idx])
-                    if pd.notna(last_name_series.iloc[idx]) else None,
+                    if pd.notna(last_name_series.iloc[idx])
+                    else None,
                     BirthDateAttribute: str(birth_date_series.iloc[idx])
-                    if pd.notna(birth_date_series.iloc[idx]) else None,
-                    SexAttribute: str(sex_series.iloc[idx])
-                    if pd.notna(sex_series.iloc[idx]) else None,
+                    if pd.notna(birth_date_series.iloc[idx])
+                    else None,
+                    SexAttribute: str(sex_series.iloc[idx]) if pd.notna(sex_series.iloc[idx]) else None,
                     PostalCodeAttribute: str(postal_code_series.iloc[idx])
-                    if pd.notna(postal_code_series.iloc[idx]) else None,
+                    if pd.notna(postal_code_series.iloc[idx])
+                    else None,
                     SocialSecurityNumberAttribute: str(ssn_series.iloc[idx])
-                    if pd.notna(ssn_series.iloc[idx]) else None,
+                    if pd.notna(ssn_series.iloc[idx])
+                    else None,
                 }
 
                 # Generate tokens for this record
@@ -257,7 +263,8 @@ class OpenTokenProcessor:
                         {
                             "RuleId": rule_id,
                             "Token": jwe_formatters[rule_id].transform(token)
-                            if encryption_key is not None and token else token
+                            if encryption_key is not None and token
+                            else token,
                         }
                         for rule_id, token in token_result.tokens.items()
                     ]
@@ -281,7 +288,7 @@ class OpenTokenProcessor:
             col(column_mapping["BirthDate"]).alias("BirthDate"),
             col(column_mapping["Sex"]).alias("Sex"),
             col(column_mapping["PostalCode"]).alias("PostalCode"),
-            col(column_mapping["SocialSecurityNumber"]).alias("SocialSecurityNumber")
+            col(column_mapping["SocialSecurityNumber"]).alias("SocialSecurityNumber"),
         ).withColumn(
             "tokens",
             cast(
@@ -293,20 +300,16 @@ class OpenTokenProcessor:
                     cast(Any, col("BirthDate")),
                     cast(Any, col("Sex")),
                     cast(Any, col("PostalCode")),
-                    cast(Any, col("SocialSecurityNumber"))
-                )  # type: ignore[arg-type]
-            )
+                    cast(Any, col("SocialSecurityNumber")),
+                ),  # type: ignore[arg-type]
+            ),
         )
 
         # Explode the tokens array to get one row per token
         from pyspark.sql.functions import explode
-        result_df = tokens_df.select(
-            col("RecordId"),
-            explode(col("tokens")).alias("token_struct")
-        ).select(
-            col("RecordId"),
-            col("token_struct.RuleId").alias("RuleId"),
-            col("token_struct.Token").alias("Token")
+
+        result_df = tokens_df.select(col("RecordId"), explode(col("tokens")).alias("token_struct")).select(
+            col("RecordId"), col("token_struct.RuleId").alias("RuleId"), col("token_struct.Token").alias("Token")
         )
 
         return result_df
@@ -317,14 +320,13 @@ class OpenTokenProcessor:
 
         Raises a clear, actionable error instead of a low-level EOFError from
         the Python worker when PyArrow/Pandas are incompatible with PySpark.
-        
+
         Note: Dependency validation is difficult to unit test without manipulating
         sys.modules or creating incompatible environments. Marked pragma: no cover.
         """
         try:
-            import pyspark  # type: ignore
             import pyarrow as pa  # type: ignore
-            import pandas as _pd  # type: ignore
+            import pyspark  # type: ignore
         except Exception as e:  # pragma: no cover
             raise RuntimeError(
                 "Missing required dependencies for PySpark UDFs. Ensure pyspark, pyarrow, and pandas are installed."

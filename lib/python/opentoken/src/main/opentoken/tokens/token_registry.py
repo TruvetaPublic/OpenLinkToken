@@ -6,6 +6,7 @@ import importlib
 import pkgutil
 from importlib import resources
 from typing import Dict, List
+
 from opentoken.attributes.attribute_expression import AttributeExpression
 from opentoken.tokens.token import Token
 

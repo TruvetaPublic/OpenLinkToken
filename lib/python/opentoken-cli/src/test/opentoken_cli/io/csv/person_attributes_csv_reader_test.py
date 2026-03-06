@@ -19,7 +19,7 @@ class TestPersonAttributesCSVReader:
 
     def setup_method(self):
         """Set up test fixtures before each test method."""
-        self.temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False)
+        self.temp_file = tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False)
         self.temp_file_path = self.temp_file.name
         self.temp_file.close()
 
@@ -30,7 +30,7 @@ class TestPersonAttributesCSVReader:
 
     def test_read_valid_csv(self):
         """Test reading a valid CSV file."""
-        with open(self.temp_file_path, 'w', encoding='utf-8') as f:
+        with open(self.temp_file_path, "w", encoding="utf-8") as f:
             f.write("RecordId,SocialSecurityNumber,FirstName,LastName\n")
             f.write("1,123-45-6789,John,Doe\n")
             f.write("2,987-65-4321,Jane,Smith\n")
@@ -56,7 +56,7 @@ class TestPersonAttributesCSVReader:
 
     def test_read_empty_csv(self):
         """Test reading an empty CSV file."""
-        with open(self.temp_file_path, 'w', encoding='utf-8') as f:
+        with open(self.temp_file_path, "w", encoding="utf-8") as f:
             f.write("RecordId,SocialSecurityNumber,Name\n")
 
         with PersonAttributesCSVReader(self.temp_file_path) as reader:
@@ -65,7 +65,7 @@ class TestPersonAttributesCSVReader:
 
     def test_iterator_protocol(self):
         """Test iterator protocol."""
-        with open(self.temp_file_path, 'w', encoding='utf-8') as f:
+        with open(self.temp_file_path, "w", encoding="utf-8") as f:
             f.write("RecordId,SocialSecurityNumber,FirstName,LastName\n")
             f.write("1,123-45-6789,John,Doe\n")
 
@@ -80,7 +80,7 @@ class TestPersonAttributesCSVReader:
 
     def test_next(self):
         """Test next method."""
-        with open(self.temp_file_path, 'w', encoding='utf-8') as f:
+        with open(self.temp_file_path, "w", encoding="utf-8") as f:
             f.write("RecordId,SocialSecurityNumber,FirstName,LastName\n")
             f.write("1,123-45-6789,John,Doe\n")
 
@@ -94,7 +94,7 @@ class TestPersonAttributesCSVReader:
 
     def test_close(self):
         """Test close method."""
-        with open(self.temp_file_path, 'w', encoding='utf-8') as f:
+        with open(self.temp_file_path, "w", encoding="utf-8") as f:
             f.write("RecordId,SocialSecurityNumber,Name\n")
             f.write("1,123-45-6789,John Doe\n")
 

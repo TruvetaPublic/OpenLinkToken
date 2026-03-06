@@ -1,0 +1,22 @@
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+  "E",   # pycodestyle errors
+  "W",   # pycodestyle warnings
+  "F",   # pyflakes (includes unused imports F401, unused variables F841)
+  "I",   # isort
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/__init__.py" = ["F401"]  # intentional public re-exports
+"*.ipynb" = ["E402"]         # notebook cells don't require imports at top
+
+[tool.ruff.lint.isort]
+known-first-party = ["opentoken", "opentoken_cli", "opentoken_pyspark"]
+
+[tool.ruff.format]
+# Matches black defaults
+quote-style = "double"
+indent-style = "space"

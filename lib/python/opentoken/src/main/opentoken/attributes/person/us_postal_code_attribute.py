@@ -4,6 +4,7 @@ Copyright (c) Truveta. All rights reserved.
 
 import re
 from typing import List
+
 from opentoken.attributes.base_attribute import BaseAttribute
 from opentoken.attributes.utilities.attribute_utilities import AttributeUtilities
 from opentoken.attributes.validation.not_starts_with_validator import NotStartsWithValidator
@@ -44,20 +45,17 @@ class USPostalCodeAttribute(BaseAttribute):
         # Note: "888" invalidates "88888" and all codes starting with "888"
         "000",
         "555",
-        "888"
+        "888",
     }
 
     def __init__(self, min_length: int = 5):
         """
         Initialize USPostalCodeAttribute.
-        
+
         Args:
             min_length: Minimum length for postal codes (default: 5)
         """
-        validation_rules = [
-            RegexValidator(self.US_ZIP_REGEX),
-            NotStartsWithValidator(self.INVALID_ZIP_CODES)
-        ]
+        validation_rules = [RegexValidator(self.US_ZIP_REGEX), NotStartsWithValidator(self.INVALID_ZIP_CODES)]
         super().__init__(validation_rules)
         self.min_length = min_length
 
@@ -73,8 +71,10 @@ class USPostalCodeAttribute(BaseAttribute):
 
         For US ZIP codes:
         - Codes shorter than min_length are rejected (return original)
-        - 3-digit ZIP code (ZIP-3) is padded with "00" to create 5-digit format (e.g., "951" becomes "95100") if min_length <= 3
-        - 4-digit ZIP code (ZIP-4) is padded with "0" to create 5-digit format (e.g., "1234" becomes "12340") if min_length <= 4
+        - 3-digit ZIP code (ZIP-3) is padded with "00" to create 5-digit format
+          (e.g., "951" becomes "95100") if min_length <= 3
+        - 4-digit ZIP code (ZIP-4) is padded with "0" to create 5-digit format
+          (e.g., "1234" becomes "12340") if min_length <= 4
         - 5-digit or longer ZIP codes return the first 5 digits (e.g., "12345-6789" becomes "12345")
         If the input value is null or doesn't match US ZIP pattern, the original
         trimmed value is returned.

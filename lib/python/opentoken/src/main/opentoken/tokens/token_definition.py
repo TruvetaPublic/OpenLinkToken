@@ -2,12 +2,10 @@
 Copyright (c) Truveta. All rights reserved.
 """
 
-import importlib
-import pkgutil
 from typing import Dict, List, Set
+
 from opentoken.attributes.attribute_expression import AttributeExpression
 from opentoken.tokens.base_token_definition import BaseTokenDefinition
-from opentoken.tokens.token import Token
 
 
 class TokenDefinition(BaseTokenDefinition):
@@ -28,6 +26,7 @@ class TokenDefinition(BaseTokenDefinition):
         Loads all token definitions using TokenRegistry.
         """
         from opentoken.tokens.token_registry import TokenRegistry
+
         self.definitions: Dict[str, List[AttributeExpression]] = TokenRegistry.load_all_tokens()
 
     def get_version(self) -> str:

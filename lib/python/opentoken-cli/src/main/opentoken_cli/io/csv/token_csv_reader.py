@@ -4,11 +4,10 @@ Copyright (c) Truveta. All rights reserved.
 
 import csv
 import logging
-from typing import Iterator, Dict
+from typing import Dict, Iterator
 
 from opentoken_cli.io.token_reader import TokenReader
 from opentoken_cli.processor.token_constants import TokenConstants
-
 
 logger = logging.getLogger(__name__)
 
@@ -31,16 +30,16 @@ class TokenCSVReader(TokenReader):
         """
         try:
             self.file_path = file_path
-            self.file_handle = open(file_path, 'r', encoding='utf-8')
+            self.file_handle = open(file_path, "r", encoding="utf-8")
             self.csv_reader = csv.DictReader(self.file_handle)
-            
+
             # Validate required columns
             required_columns = {TokenConstants.RULE_ID, TokenConstants.TOKEN, TokenConstants.RECORD_ID}
             fieldnames = set(self.csv_reader.fieldnames or [])
             if not required_columns.issubset(fieldnames):
                 missing = required_columns - fieldnames
                 raise ValueError(f"Missing required columns: {missing}")
-            
+
             self.iterator = iter(self.csv_reader)
 
         except IOError as e:

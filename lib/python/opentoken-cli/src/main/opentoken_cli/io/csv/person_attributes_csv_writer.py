@@ -6,8 +6,8 @@ import csv
 import logging
 import os
 from typing import Dict
-from opentoken_cli.io.person_attributes_writer import PersonAttributesWriter
 
+from opentoken_cli.io.person_attributes_writer import PersonAttributesWriter
 
 logger = logging.getLogger(__name__)
 
@@ -34,8 +34,8 @@ class PersonAttributesCSVWriter(PersonAttributesWriter):
         # Create directory if it doesn't exist
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-        self.file_handle = open(file_path, 'w', newline='', encoding='utf-8')
-        self.csv_writer = csv.writer(self.file_handle, lineterminator='\n')
+        self.file_handle = open(file_path, "w", newline="", encoding="utf-8")
+        self.csv_writer = csv.writer(self.file_handle, lineterminator="\n")
         self.header_written = False
 
     def write_attributes(self, data: Dict[str, str]) -> None:

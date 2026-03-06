@@ -3,6 +3,7 @@ Copyright (c) Truveta. All rights reserved.
 """
 
 from typing import List
+
 from opentoken.attributes.attribute_expression import AttributeExpression
 from opentoken.attributes.person.birth_date_attribute import BirthDateAttribute
 from opentoken.attributes.person.first_name_attribute import FirstNameAttribute
@@ -28,7 +29,7 @@ class T3Token(Token):
             AttributeExpression(LastNameAttribute, "T|U"),
             AttributeExpression(FirstNameAttribute, "T|U"),
             AttributeExpression(SexAttribute, "T|U"),
-            AttributeExpression(BirthDateAttribute, "T|D")
+            AttributeExpression(BirthDateAttribute, "T|D"),
         ]
 
     def get_identifier(self) -> str:

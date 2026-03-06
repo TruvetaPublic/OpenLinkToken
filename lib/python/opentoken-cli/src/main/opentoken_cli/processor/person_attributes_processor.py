@@ -100,9 +100,7 @@ class PersonAttributesProcessor:
             metadata_map: Optional metadata map to update with processing statistics.
         """
         token_definition = TokenDefinition()
-        PersonAttributesProcessor._process_with_tokenizer(
-            reader, writer, tokenizer, token_definition, metadata_map
-        )
+        PersonAttributesProcessor._process_with_tokenizer(reader, writer, tokenizer, token_definition, metadata_map)
 
     @staticmethod
     def _process_with_tokenizer(
@@ -131,15 +129,11 @@ class PersonAttributesProcessor:
         token_generator = TokenGenerator(token_definition, tokenizer)
 
         row_counter = 0
-        invalid_attribute_count: Dict[str, int] = (
-            PersonAttributesProcessor._initialize_invalid_attribute_count(
-                token_definition
-            )
+        invalid_attribute_count: Dict[str, int] = PersonAttributesProcessor._initialize_invalid_attribute_count(
+            token_definition
         )
-        blank_tokens_by_rule_count: Dict[str, int] = (
-            PersonAttributesProcessor._initialize_blank_tokens_by_rule_count(
-                token_definition
-            )
+        blank_tokens_by_rule_count: Dict[str, int] = PersonAttributesProcessor._initialize_blank_tokens_by_rule_count(
+            token_definition
         )
 
         # Cache JWE formatters if encryption is enabled
@@ -151,9 +145,7 @@ class PersonAttributesProcessor:
                         encryption_key, ring_id, token_id, "truveta.opentoken"
                     )
                 except Exception as e:
-                    error_msg = (
-                        f"Failed to initialize JWE formatter for token rule {token_id}"
-                    )
+                    error_msg = f"Failed to initialize JWE formatter for token rule {token_id}"
                     logger.error(error_msg, exc_info=True)
                     raise RuntimeError(error_msg) from e
 
@@ -194,14 +186,10 @@ class PersonAttributesProcessor:
 
         # Log invalid attribute statistics in alphabetical order
         for attribute_name, count in sorted(invalid_attribute_count.items()):
-            logger.info(
-                f"Total invalid Attribute count for [{attribute_name}]: {count:,}"
-            )
+            logger.info(f"Total invalid Attribute count for [{attribute_name}]: {count:,}")
 
         total_invalid_records = sum(invalid_attribute_count.values())
-        logger.info(
-            f"Total number of records with invalid attributes: {total_invalid_records:,}"
-        )
+        logger.info(f"Total number of records with invalid attributes: {total_invalid_records:,}")
 
         # Log blank token statistics in alphabetical order
         for rule_id, count in sorted(blank_tokens_by_rule_count.items()):
@@ -213,9 +201,7 @@ class PersonAttributesProcessor:
         # Update metadata if provided
         if metadata_map is not None:
             metadata_map[PersonAttributesProcessor.TOTAL_ROWS] = row_counter
-            metadata_map[
-                PersonAttributesProcessor.TOTAL_ROWS_WITH_INVALID_ATTRIBUTES
-            ] = total_invalid_records
+            metadata_map[PersonAttributesProcessor.TOTAL_ROWS_WITH_INVALID_ATTRIBUTES] = total_invalid_records
             # Alphabetize attribute and token rule keys for deterministic metadata output
             metadata_map[PersonAttributesProcessor.INVALID_ATTRIBUTES_BY_TYPE] = dict(
                 sorted(invalid_attribute_count.items())
@@ -304,9 +290,7 @@ class PersonAttributesProcessor:
             invalid_attribute_count: Dictionary to track invalid attribute counts.
         """
         if token_generator_result.invalid_attributes:
-            logger.info(
-                f"Invalid Attributes for row {row_counter:,}: {token_generator_result.invalid_attributes}"
-            )
+            logger.info(f"Invalid Attributes for row {row_counter:,}: {token_generator_result.invalid_attributes}")
 
             for invalid_attribute in token_generator_result.invalid_attributes:
                 invalid_attribute_count[invalid_attribute] += 1
@@ -326,9 +310,7 @@ class PersonAttributesProcessor:
             blank_tokens_by_rule_count: Dictionary to track blank token counts by rule.
         """
         if token_generator_result.blank_tokens_by_rule:
-            logger.debug(
-                f"Blank tokens for row {row_counter:,}: {token_generator_result.blank_tokens_by_rule}"
-            )
+            logger.debug(f"Blank tokens for row {row_counter:,}: {token_generator_result.blank_tokens_by_rule}")
 
             for rule_id in token_generator_result.blank_tokens_by_rule:
                 blank_tokens_by_rule_count[rule_id] += 1
@@ -364,9 +346,7 @@ class PersonAttributesProcessor:
                 attribute = attr_class()
                 invalid_attribute_count[attribute.get_name()] = 0
             except Exception as e:
-                logger.warning(
-                    f"Failed to instantiate attribute class: {attr_class.__name__}: {e}"
-                )
+                logger.warning(f"Failed to instantiate attribute class: {attr_class.__name__}: {e}")
 
         return invalid_attribute_count
 

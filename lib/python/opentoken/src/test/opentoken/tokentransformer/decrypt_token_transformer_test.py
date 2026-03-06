@@ -9,6 +9,7 @@ import pytest
 from opentoken.tokentransformer.decrypt_token_transformer import DecryptTokenTransformer
 from opentoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
 
+
 class TestDecryptTokenTransformer:
     """Test cases for DecryptTokenTransformer."""
 
@@ -23,10 +24,10 @@ class TestDecryptTokenTransformer:
     def test_serializable(self):
         """Test that DecryptTokenTransformer is serializable and deserializable."""
         decrypt_token_transformer = DecryptTokenTransformer(self.VALID_KEY)
-        
+
         # Serialize the transformer
         serialized = pickle.dumps(decrypt_token_transformer)
-        
+
         # Deserialize the transformer
         deserialized = pickle.loads(serialized)
 
@@ -48,7 +49,7 @@ class TestDecryptTokenTransformer:
         """Test that constructor with invalid key length throws ValueError."""
         with pytest.raises(ValueError) as exc_info:
             DecryptTokenTransformer(self.INVALID_KEY)  # Key is too short
-        
+
         assert "Key must be 32 characters long" == str(exc_info.value)
 
     def test_transform_valid_encrypted_token_returns_decrypted_token(self):

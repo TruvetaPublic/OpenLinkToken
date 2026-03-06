@@ -6,6 +6,7 @@ Tests the end-to-end workflows for token generation and decryption using new sub
 """
 
 import pytest
+
 from opentoken_cli.commands.open_token_command import OpenTokenCommand
 
 

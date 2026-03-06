@@ -2,10 +2,11 @@
 Copyright (c) Truveta. All rights reserved.
 """
 
-import pytest
 from unittest.mock import Mock
+
+import pytest
+
 from opentoken.tokens.tokenizer.passthrough_tokenizer import PassthroughTokenizer
-from opentoken.tokens.token import Token
 
 
 class TestPassthroughTokenizer:

@@ -4,10 +4,10 @@ Copyright (c) Truveta. All rights reserved.
 
 import json
 import os
-from typing import Dict, Any
+from typing import Any, Dict
 
-from opentoken_cli.io.metadata_writer import MetadataWriter
 from opentoken.metadata import Metadata
+from opentoken_cli.io.metadata_writer import MetadataWriter
 
 
 class MetadataJsonWriter(MetadataWriter):
@@ -40,7 +40,7 @@ class MetadataJsonWriter(MetadataWriter):
             os.makedirs(os.path.dirname(self.metadata_file_path), exist_ok=True)
 
             # Write metadata as JSON with pretty formatting
-            with open(self.metadata_file_path, 'w', encoding='utf-8') as f:
+            with open(self.metadata_file_path, "w", encoding="utf-8") as f:
                 json.dump(metadata_map, f, indent=2, ensure_ascii=False)
 
         except Exception as e:

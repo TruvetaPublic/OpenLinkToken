@@ -4,6 +4,7 @@ Copyright (c) Truveta. All rights reserved.
 
 import hashlib
 from typing import List
+
 from opentoken.tokens.token import Token
 from opentoken.tokens.tokenizer.tokenizer import Tokenizer
 from opentoken.tokentransformer.token_transformer import TokenTransformer
@@ -56,7 +57,7 @@ class SHA256Tokenizer(Tokenizer):
             return self.EMPTY
 
         # Convert string to bytes using UTF-8 encoding
-        value_bytes = value.encode('utf-8')
+        value_bytes = value.encode("utf-8")
 
         # Create SHA-256 hash
         digest = hashlib.sha256()
@@ -69,5 +70,5 @@ class SHA256Tokenizer(Tokenizer):
         # Apply transformers
         for token_transformer in self.token_transformer_list:
             transformed_token = token_transformer.transform(transformed_token)
-        
+
         return transformed_token

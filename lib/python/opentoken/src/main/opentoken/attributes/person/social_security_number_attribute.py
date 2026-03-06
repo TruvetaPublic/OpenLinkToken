@@ -3,9 +3,10 @@
 Copyright (c) Truveta. All rights reserved.
 """
 
-import re
 import locale
+import re
 from typing import List
+
 from opentoken.attributes.base_attribute import BaseAttribute
 from opentoken.attributes.utilities.attribute_utilities import AttributeUtilities
 from opentoken.attributes.validation.not_in_validator import NotInValidator
@@ -34,9 +35,9 @@ class SocialSecurityNumberAttribute(BaseAttribute):
 
     # Get decimal separator for current locale
     try:
-        DECIMAL_SEPARATOR = locale.localeconv()['decimal_point']
+        DECIMAL_SEPARATOR = locale.localeconv()["decimal_point"]
     except Exception:
-        DECIMAL_SEPARATOR = '.'
+        DECIMAL_SEPARATOR = "."
 
     # Regular expression to validate Social Security Numbers
     SSN_REGEX = (
@@ -47,17 +48,26 @@ class SocialSecurityNumberAttribute(BaseAttribute):
     DIGITS_ONLY_PATTERN = re.compile(r"\d+")
 
     INVALID_SSNS = {
-        "111-11-1111", "222-22-2222", "333-33-3333", "444-44-4444",
-        "555-55-5555", "777-77-7777", "888-88-8888", "001-23-4567",
-        "010-10-1010", "012-34-5678", "087-65-4321", "098-76-5432",
-        "099-99-9999", "111-22-3333", "121-21-2121", "123-45-6789"
+        "111-11-1111",
+        "222-22-2222",
+        "333-33-3333",
+        "444-44-4444",
+        "555-55-5555",
+        "777-77-7777",
+        "888-88-8888",
+        "001-23-4567",
+        "010-10-1010",
+        "012-34-5678",
+        "087-65-4321",
+        "098-76-5432",
+        "099-99-9999",
+        "111-22-3333",
+        "121-21-2121",
+        "123-45-6789",
     }
 
     def __init__(self):
-        validation_rules = [
-            NotInValidator(self.INVALID_SSNS),
-            RegexValidator(self.SSN_REGEX)
-        ]
+        validation_rules = [NotInValidator(self.INVALID_SSNS), RegexValidator(self.SSN_REGEX)]
         super().__init__(validation_rules)
 
     def get_name(self) -> str:

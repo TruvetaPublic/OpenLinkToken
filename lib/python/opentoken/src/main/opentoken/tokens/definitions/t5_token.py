@@ -3,6 +3,7 @@ Copyright (c) Truveta. All rights reserved.
 """
 
 from typing import List
+
 from opentoken.attributes.attribute_expression import AttributeExpression
 from opentoken.attributes.person.first_name_attribute import FirstNameAttribute
 from opentoken.attributes.person.last_name_attribute import LastNameAttribute
@@ -26,7 +27,7 @@ class T5Token(Token):
         self._definition = [
             AttributeExpression(LastNameAttribute, "T|U"),
             AttributeExpression(FirstNameAttribute, "T|S(0,3)|U"),
-            AttributeExpression(SexAttribute, "T|U")
+            AttributeExpression(SexAttribute, "T|U"),
         ]
 
     def get_identifier(self) -> str:

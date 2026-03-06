@@ -3,6 +3,7 @@ Copyright (c) Truveta. All rights reserved.
 """
 
 from typing import List
+
 from opentoken.attributes.general.year_attribute import YearAttribute
 from opentoken.attributes.validation.year_range_validator import YearRangeValidator
 

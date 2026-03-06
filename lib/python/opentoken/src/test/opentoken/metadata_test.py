@@ -2,11 +2,10 @@
 Copyright (c) Truveta. All rights reserved.
 """
 
-from opentoken.metadata import Metadata, HashCalculationException
+from opentoken.metadata import HashCalculationException, Metadata
 
 
 class TestMetadata:
-
     def test_initialize_only(self):
         metadata = Metadata()
         result = metadata.initialize()

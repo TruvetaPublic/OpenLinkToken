@@ -10,7 +10,6 @@ from typing import Dict
 from opentoken_cli.io.token_writer import TokenWriter
 from opentoken_cli.processor.token_constants import TokenConstants
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -37,13 +36,13 @@ class TokenCSVWriter(TokenWriter):
         self.file_path = file_path
 
         # Create directory if it doesn't exist
-        os.makedirs(os.path.dirname(file_path) if os.path.dirname(file_path) else '.', exist_ok=True)
+        os.makedirs(os.path.dirname(file_path) if os.path.dirname(file_path) else ".", exist_ok=True)
 
-        self.file_handle = open(file_path, 'w', newline='', encoding='utf-8')
+        self.file_handle = open(file_path, "w", newline="", encoding="utf-8")
         self.csv_writer = csv.DictWriter(
             self.file_handle,
             fieldnames=[TokenConstants.RULE_ID, TokenConstants.TOKEN, TokenConstants.RECORD_ID],
-            lineterminator='\n'
+            lineterminator="\n",
         )
         self.csv_writer.writeheader()
 
@@ -54,11 +53,13 @@ class TokenCSVWriter(TokenWriter):
             data: Dict containing RuleId, Token, RecordId (missing keys default to empty string).
         """
         try:
-            self.csv_writer.writerow({
-                TokenConstants.RULE_ID: data.get(TokenConstants.RULE_ID, ''),
-                TokenConstants.TOKEN: data.get(TokenConstants.TOKEN, ''),
-                TokenConstants.RECORD_ID: data.get(TokenConstants.RECORD_ID, '')
-            })
+            self.csv_writer.writerow(
+                {
+                    TokenConstants.RULE_ID: data.get(TokenConstants.RULE_ID, ""),
+                    TokenConstants.TOKEN: data.get(TokenConstants.TOKEN, ""),
+                    TokenConstants.RECORD_ID: data.get(TokenConstants.RECORD_ID, ""),
+                }
+            )
             # Flush to keep behavior closer to Java's line-by-line writes
             self.file_handle.flush()
         except IOError as e:

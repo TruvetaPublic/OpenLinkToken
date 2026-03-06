@@ -3,6 +3,7 @@ Copyright (c) Truveta. All rights reserved.
 """
 
 from typing import List
+
 from opentoken.attributes.base_attribute import BaseAttribute
 from opentoken.attributes.validation.regex_validator import RegexValidator
 
@@ -26,9 +27,7 @@ class SexAttribute(BaseAttribute):
     VALIDATE_REGEX = r"^\s*([Mm](ale)?|[Ff](emale)?)\s*$"
 
     def __init__(self):
-        validation_rules = [
-            RegexValidator(self.VALIDATE_REGEX)
-        ]
+        validation_rules = [RegexValidator(self.VALIDATE_REGEX)]
         super().__init__(validation_rules)
 
     def get_name(self) -> str:
@@ -43,9 +42,9 @@ class SexAttribute(BaseAttribute):
             return None
 
         first_char = value.strip()[0].lower()
-        if first_char == 'm':
+        if first_char == "m":
             return "Male"
-        elif first_char == 'f':
+        elif first_char == "f":
             return "Female"
         else:
             return None  # Return None if can't normalize

@@ -3,6 +3,7 @@ Copyright (c) Truveta. All rights reserved.
 """
 
 from typing import List
+
 from opentoken.attributes.base_attribute import BaseAttribute
 from opentoken.attributes.utilities.attribute_utilities import AttributeUtilities
 from opentoken.attributes.validation.not_in_validator import NotInValidator
@@ -56,9 +57,7 @@ class LastNameAttribute(BaseAttribute):
 
     def __init__(self):
         """Initialize the LastNameAttribute with validation rules."""
-        validation_rules = [
-            NotInValidator(AttributeUtilities.COMMON_PLACEHOLDER_NAMES)
-        ]
+        validation_rules = [NotInValidator(AttributeUtilities.COMMON_PLACEHOLDER_NAMES)]
         super().__init__(validation_rules)
         self.regex_validator = RegexValidator(self.LAST_NAME_REGEX)
 
@@ -135,7 +134,7 @@ class LastNameAttribute(BaseAttribute):
         normalized_value = AttributeUtilities.normalize_diacritics(value)
 
         # Step 2: Remove generational suffixes (Jr, Sr, III, etc.)
-        value_without_suffix = AttributeUtilities.GENERATIONAL_SUFFIX_PATTERN.sub('', normalized_value)
+        value_without_suffix = AttributeUtilities.GENERATIONAL_SUFFIX_PATTERN.sub("", normalized_value)
 
         # If the generational suffix removal doesn't result in an empty string,
         # continue with the value without suffix, otherwise use the value with suffix
@@ -144,6 +143,6 @@ class LastNameAttribute(BaseAttribute):
             normalized_value = value_without_suffix
 
         # Step 4: Remove dashes, spaces and other non-alphanumeric characters
-        normalized_value = AttributeUtilities.NON_ALPHABETIC_PATTERN.sub('', normalized_value)
+        normalized_value = AttributeUtilities.NON_ALPHABETIC_PATTERN.sub("", normalized_value)
 
         return normalized_value

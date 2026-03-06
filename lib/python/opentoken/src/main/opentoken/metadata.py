@@ -4,7 +4,7 @@ Copyright (c) Truveta. All rights reserved.
 
 import hashlib
 import sys
-from typing import Dict, Any
+from typing import Any, Dict
 
 
 class Metadata:
@@ -85,7 +85,7 @@ class Metadata:
 
         try:
             # Create SHA-256 hash
-            hash_object = hashlib.sha256(input_str.encode('utf-8'))
+            hash_object = hashlib.sha256(input_str.encode("utf-8"))
             hex_string = hash_object.hexdigest()
             return hex_string
 

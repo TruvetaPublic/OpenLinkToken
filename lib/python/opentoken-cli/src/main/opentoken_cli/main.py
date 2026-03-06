@@ -7,7 +7,6 @@ import sys
 
 from opentoken_cli.commands import OpenTokenCommand
 
-
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 

@@ -60,9 +60,7 @@ class TestAgeRangeValidator:
         deserialized_validator = pickle.loads(serialized_data)
 
         # Test that both validators work the same
-        test_values = [
-            "0", "25", "120", "-1", "121", "abc", ""
-        ]
+        test_values = ["0", "25", "120", "-1", "121", "abc", ""]
 
         for value in test_values:
             assert validator.eval(value) == deserialized_validator.eval(value), (
