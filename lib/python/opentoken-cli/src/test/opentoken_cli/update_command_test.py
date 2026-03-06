@@ -4,16 +4,9 @@ Copyright (c) Truveta. All rights reserved.
 Unit tests for the UpdateCommand utility.
 """
 
-import hashlib
-import json
-import os
-import stat
 import sys
-import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-
-import pytest
 
 from opentoken_cli.commands.update_command import UpdateCommand
 
@@ -75,18 +68,14 @@ class TestFindAsset:
 
     def test_darwin_matches_macos(self):
         """platform.system() returns 'Darwin' on macOS; should match 'macos' assets."""
-        release = _make_release(
-            assets=[{"name": "opentoken-v2.1.0-macos-arm64", "browser_download_url": "u"}]
-        )
+        release = _make_release(assets=[{"name": "opentoken-v2.1.0-macos-arm64", "browser_download_url": "u"}])
         with patch("platform.system", return_value="Darwin"), patch("platform.machine", return_value="arm64"):
             asset = UpdateCommand._find_asset(release)
         assert asset is not None
         assert "macos" in asset["name"]
 
     def test_no_matching_asset_returns_none(self):
-        release = _make_release(
-            assets=[{"name": "opentoken-v2.1.0-windows-x86_64.exe", "browser_download_url": "u"}]
-        )
+        release = _make_release(assets=[{"name": "opentoken-v2.1.0-windows-x86_64.exe", "browser_download_url": "u"}])
         with patch("platform.system", return_value="Linux"), patch("platform.machine", return_value="x86_64"):
             asset = UpdateCommand._find_asset(release)
         assert asset is None
@@ -168,6 +157,7 @@ class TestAssetNotFound:
 class TestAlreadyUpToDate:
     def test_up_to_date_message(self, capsys):
         from opentoken.metadata import Metadata
+
         current_ver = Metadata.DEFAULT_VERSION
         same_tag = f"v{current_ver}"
         release = _make_release(
