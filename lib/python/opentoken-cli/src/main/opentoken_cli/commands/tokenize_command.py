@@ -214,8 +214,7 @@ class TokenizeCommand:
                 metadata.add_hashed_secret(Metadata.HASHING_SECRET_HASH, hashing_secret)
 
                 PersonAttributesProcessor.process(
-                    reader, writer, token_transformer_list, metadata_map,
-                    hash_record_ids=hash_record_ids
+                    reader, writer, token_transformer_list, metadata_map, hash_record_ids=hash_record_ids
                 )
 
                 MetadataJsonWriter(output_path).write(metadata_map)
