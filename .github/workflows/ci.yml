@@ -513,11 +513,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup toolchain (Python)
+      - name: Setup toolchain (Java + Python)
         uses: ./.github/actions/setup-toolchain
         with:
           python-version: "3.10"
-          enable-java: false
 
       - name: Install Python dependencies
         run: |
@@ -554,9 +553,9 @@ jobs:
             {
               echo "## Interoperability Tests Passed"
               echo
-              echo "Python CLI produces correct token output and consistent metadata."
+              echo "Java core-library parity fixtures and the Java harness both matched Python CLI output."
               echo
-              echo "**Environment:** Python 3.10 on Ubuntu"
+              echo "**Environment:** Java 21 + Python 3.10 on Ubuntu"
             } >> "$GITHUB_STEP_SUMMARY"
           else
             {

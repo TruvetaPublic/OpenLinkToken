@@ -1,17 +1,18 @@
 # Interoperability Tests
 
-This directory contains tests to ensure correct behavior of the Python CLI implementation of OpenToken.
+This directory contains interoperability checks for the Java core library and the
+Python CLI implementation of OpenToken.
 
 ## CLI Parity Tests
 
-The `cli_parity_test.py` script tests that the Python CLI provides the expected command structure and behavior.
+The `cli_parity_test.py` script tests that the Python CLI provides the expected
+command structure and behavior.
 
 **Python:**
 ```bash
-cd lib/python/opentoken
-pip install -r requirements.txt
-cd ../opentoken-cli
-pip install -r requirements.txt
+cd <repo-root>
+source .venv/bin/activate
+uv pip install -e lib/python/opentoken -e lib/python/opentoken-cli
 ```
 
 ### Running the Tests
@@ -30,4 +31,23 @@ python tools/interoperability/cli_parity_test.py
 
 ## Token Interoperability Tests
 
-The `multi_language_interoperability_test.py` script tests that the Python CLI produces correct token output and consistent metadata.
+The `multi_language_interoperability_test.py` script executes two parity checks:
+
+- **Unit-level fixture parity:** verifies that the Python library reproduces the
+  same deterministic token fixture values already asserted by the Java
+  `TokenGeneratorIntegrationTest`
+- **Java harness vs Python CLI parity:** invokes a thin Java harness built on the
+  Java core library API and compares its `tokenize`-compatible CSV output against
+  the Python CLI `tokenize` command
+
+The script also verifies that the Python CLI metadata file contains the expected
+fields for tokenized output.
+
+### Running the Tests
+
+```bash
+cd <repo-root>/lib/java
+mvn -pl opentoken -DskipTests test-compile
+cd ..
+python tools/interoperability/multi_language_interoperability_test.py
+```
