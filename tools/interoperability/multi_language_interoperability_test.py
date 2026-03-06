@@ -194,9 +194,12 @@ class TestTokenCompatibility:
             with open(python_metadata, 'r') as f:  
                 python_meta = json.load(f)
             
-            expected_fields = ['OutputFormat']
+            expected_fields = ['Platform', 'PythonVersion', 'OpenTokenVersion', 'TotalRows']
             for field in expected_fields:
                 assert field in python_meta, f"Python metadata missing expected field '{field}'"
+            
+            assert python_meta['Platform'] == 'Python', \
+                f"Expected Platform 'Python', got '{python_meta['Platform']}'"
             
             print("✅ Metadata consistency verified!")
             print("-" * 30)
