@@ -74,15 +74,6 @@ Download the [latest release](https://github.com/TruvetaPublic/OpenToken/release
   --hashingsecret "HashingKey" --encryptionkey "Secret-Encryption-Key-Goes-Here."
 ```
 
-**Java CLI:**
-
-```bash
-cd lib/java && mvn clean install -DskipTests
-java -jar opentoken-cli/target/opentoken-cli-*.jar package \
-  -i ../../resources/sample.csv -t csv -o ../../resources/output.csv \
-  --hashingsecret "HashingKey" --encryptionkey "Secret-Encryption-Key-Goes-Here."
-```
-
 **Available Commands:**
 
 - `opentoken package` - Generate and encrypt tokens in one step (recommended for most use cases)

@@ -44,7 +44,6 @@ jobs:
         with:
           files: |
             lib/java/opentoken/target/surefire-reports/*.xml
-            lib/java/opentoken-cli/target/surefire-reports/*.xml
           check_name: Java Test Results
           comment_mode: always
           compare_to_earlier_commit: false
@@ -58,14 +57,12 @@ jobs:
           name: java-code-coverage
           path: |
             lib/java/opentoken/target/site/jacoco/*
-            lib/java/opentoken-cli/target/site/jacoco/*
 
       - name: Add Java code coverage to PR
         uses: madrapps/jacoco-report@v1.7.1
         with:
           paths: |
-            lib/java/opentoken/target/site/jacoco/jacoco.xml,
-            lib/java/opentoken-cli/target/site/jacoco/jacoco.xml
+            lib/java/opentoken/target/site/jacoco/jacoco.xml
           token: ${{ secrets.GITHUB_TOKEN }}
           title: Code Coverage
           min-coverage-overall: ${{ env.MIN_COVERAGE_OVERALL }}
