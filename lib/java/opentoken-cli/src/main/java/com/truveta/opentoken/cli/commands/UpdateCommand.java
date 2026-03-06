@@ -191,11 +191,11 @@ public class UpdateCommand implements Callable<Integer> {
     // GitHub API helpers
     // ------------------------------------------------------------------
 
-    private JsonNode fetchLatestRelease() throws IOException, InterruptedException {
+    JsonNode fetchLatestRelease() throws IOException, InterruptedException {
         return getJson(GITHUB_API_BASE + "/releases/latest");
     }
 
-    private JsonNode fetchReleaseByTag(String tag) throws IOException, InterruptedException {
+    JsonNode fetchReleaseByTag(String tag) throws IOException, InterruptedException {
         return getJson(GITHUB_API_BASE + "/releases/tags/" + tag);
     }
 
@@ -220,7 +220,7 @@ public class UpdateCommand implements Callable<Integer> {
     // Asset selection
     // ------------------------------------------------------------------
 
-    private JsonNode findAsset(JsonNode releaseInfo) {
+    JsonNode findAsset(JsonNode releaseInfo) {
         JsonNode assets = releaseInfo.path("assets");
         String system = System.getProperty("os.name", "").toLowerCase();
         String arch = System.getProperty("os.arch", "").toLowerCase();
@@ -259,7 +259,7 @@ public class UpdateCommand implements Callable<Integer> {
         return null;
     }
 
-    private JsonNode findChecksumAsset(JsonNode releaseInfo, String assetName) {
+    JsonNode findChecksumAsset(JsonNode releaseInfo, String assetName) {
         for (JsonNode asset : releaseInfo.path("assets")) {
             String name = asset.path("name").asText();
             if (name.equals(assetName + ".sha256") || name.equals(assetName + ".sha256sum")) {
@@ -273,7 +273,7 @@ public class UpdateCommand implements Callable<Integer> {
     // Download and verification
     // ------------------------------------------------------------------
 
-    private boolean downloadFile(String url, Path dest) {
+    boolean downloadFile(String url, Path dest) {
         try {
             HttpClient client = HttpClient.newBuilder()
                     .connectTimeout(Duration.ofSeconds(REQUEST_TIMEOUT_SECONDS))
@@ -300,7 +300,7 @@ public class UpdateCommand implements Callable<Integer> {
         }
     }
 
-    private Optional<String> fetchChecksum(String url, String assetName) {
+    Optional<String> fetchChecksum(String url, String assetName) {
         try {
             HttpClient client = HttpClient.newBuilder()
                     .connectTimeout(Duration.ofSeconds(REQUEST_TIMEOUT_SECONDS))
@@ -325,7 +325,7 @@ public class UpdateCommand implements Callable<Integer> {
         }
     }
 
-    private String sha256File(Path path) throws Exception {
+    String sha256File(Path path) throws Exception {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         byte[] buffer = new byte[65536];
         try (InputStream in = Files.newInputStream(path)) {
@@ -346,7 +346,7 @@ public class UpdateCommand implements Callable<Integer> {
     // Binary replacement
     // ------------------------------------------------------------------
 
-    private int replaceBinary(Path src, String assetName) throws IOException {
+    int replaceBinary(Path src, String assetName) throws IOException {
         // Try to find the 'opentoken' binary on PATH
         Path target = findTargetBinary();
 
@@ -381,7 +381,7 @@ public class UpdateCommand implements Callable<Integer> {
         return 0;
     }
 
-    private Path findTargetBinary() {
+    Path findTargetBinary() {
         String pathEnv = System.getenv("PATH");
         if (pathEnv == null) {
             return null;
