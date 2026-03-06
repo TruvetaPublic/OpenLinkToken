@@ -1,18 +1,10 @@
 # Interoperability Tests
 
-This directory contains tests to ensure parity between Java and Python implementations of OpenToken.
+This directory contains tests to ensure correct behavior of the Python CLI implementation of OpenToken.
 
 ## CLI Parity Tests
 
-The `cli_parity_test.py` script tests that Java and Python CLIs provide identical command structures and behavior.
-
-- Java 21 SDK or higher (JAR output compatible with Java 17)
-
-**Java:**
-```bash
-cd lib/java
-mvn clean package -DskipTests
-```
+The `cli_parity_test.py` script tests that the Python CLI provides the expected command structure and behavior.
 
 **Python:**
 ```bash
@@ -30,12 +22,12 @@ python tools/interoperability/cli_parity_test.py
 
 ### What is Tested
 
-- Both CLIs support the same commands: `tokenize`, `encrypt`, `decrypt`, `package`, `help`
-- Both CLIs support `--help`, `--version`, and `-h` flags
-- Each command has consistent help output with required parameters
+- Python CLI supports all required commands: `tokenize`, `encrypt`, `decrypt`, `package`, `help`
+- Python CLI supports `--help`, `--version`, and `-h` flags
+- Each command has help output with required parameters
 - The `help` command works for all subcommands
-- Command recognition and error handling is consistent
+- Command recognition and error handling
 
 ## Token Interoperability Tests
 
-The `multi_language_interoperability_test.py` script tests that Java and Python produce byte-identical tokens for the same input.
+The `multi_language_interoperability_test.py` script tests that the Python CLI produces correct token output and consistent metadata.

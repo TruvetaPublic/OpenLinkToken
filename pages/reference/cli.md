@@ -21,7 +21,6 @@ No dependencies required. Extract and run.
 ### Other Options
 
 - **Docker**: Use `run-opentoken.sh` (Linux/Mac) or `run-opentoken.ps1` (Windows)
-- **Java**: Build from source with Maven, run `java -jar opentoken-cli-*.jar`
 - **Python**: Install via pip, run `opentoken` or `python -m opentoken_cli.main`
 
 For installation details, see the [CLI Quickstart](../quickstarts/cli-quickstart.md).
@@ -40,9 +39,6 @@ The `tokenize` subcommand is primarily used to build **internal overlap-analysis
 # Self-contained executable
 ./opentoken [OPTIONS]
 
-# Java
-java -jar opentoken-cli-*.jar <subcommand> [OPTIONS]
-
 # Python
 python -m opentoken_cli.main <subcommand> [OPTIONS]
 ```
@@ -52,9 +48,6 @@ python -m opentoken_cli.main <subcommand> [OPTIONS]
 ```powershell
 # Self-contained executable
 .\opentoken.exe [OPTIONS]
-
-# Java
-java -jar opentoken-cli-*.jar <subcommand> [OPTIONS]
 
 # Python
 python -m opentoken_cli.main <subcommand> [OPTIONS]
@@ -113,7 +106,7 @@ python -m opentoken_cli.main <subcommand> [OPTIONS]
 Generates fully encrypted tokens using AES-256-GCM. Tokens can be decrypted later with the encryption key.
 
 ```bash
-java -jar opentoken-cli-*.jar package \
+opentoken package \
   -i input.csv -t csv -o output.csv \
   -h "HashingSecret" \
   -e "EncryptionKey-Exactly32Chars!!"
@@ -130,7 +123,7 @@ Signature → SHA-256 → HMAC-SHA256 → AES-256-GCM → Base64
 Generates one-way hashed tokens. Faster but tokens cannot be decrypted.
 
 ```bash
-java -jar opentoken-cli-*.jar tokenize \
+opentoken tokenize \
   -i input.csv -t csv -o output.csv \
   -h "HashingSecret"
 
@@ -153,7 +146,7 @@ attribute values compose each token for development, testing, or demos.
 > protection across trust boundaries.
 
 ```bash
-java -jar opentoken-cli-*.jar tokenize \
+opentoken tokenize \
   -i input.csv -t csv -o output.csv \
   --demo-mode
 ```
@@ -241,8 +234,8 @@ Every run generates a `.metadata.json` file:
 
 ```json
 {
-  "Platform": "Java",
-  "JavaVersion": "21.0.0",
+  "Platform": "Python",
+  "PythonVersion": "3.11.0",
   "OpenTokenVersion": "2.0.0-alpha",
   "TotalRows": 100,
   "TotalRowsWithInvalidAttributes": 3,

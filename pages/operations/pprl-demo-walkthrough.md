@@ -48,7 +48,7 @@ These include person-identifier columns used for tokenization (e.g., first/last 
 
 ### Step 2 — Tokenize each dataset (separately)
 
-Each party runs OpenToken tokenization locally (demo scripts use the Java CLI):
+Each party runs OpenToken tokenization locally (demo scripts use the Python CLI):
 
 - Hospital script: `demos/pprl-superhero-example/scripts/tokenize_hospital.sh`
 - Pharmacy script: `demos/pprl-superhero-example/scripts/tokenize_pharmacy.sh`

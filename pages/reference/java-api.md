@@ -238,13 +238,6 @@ for (Map<Class<? extends Attribute>, String> personAttributes : persons) {
     <artifactId>opentoken</artifactId>
     <version>2.0.0-alpha</version>
 </dependency>
-
-<!-- For CLI/IO classes -->
-<dependency>
-    <groupId>com.truveta</groupId>
-    <artifactId>opentoken-cli</artifactId>
-    <version>2.0.0-alpha</version>
-</dependency>
 ```
 
 ## Next Steps
