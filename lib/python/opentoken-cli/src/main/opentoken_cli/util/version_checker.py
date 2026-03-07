@@ -13,8 +13,6 @@ from typing import Optional
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
-from platformdirs import user_config_dir
-
 logger = logging.getLogger(__name__)
 
 _GITHUB_API_URL = "https://api.github.com/repos/TruvetaPublic/OpenToken/releases/latest"
@@ -22,7 +20,7 @@ _CACHE_TTL_SECONDS = 24 * 60 * 60  # 24 hours
 _REQUEST_TIMEOUT_SECONDS = 2
 _ENV_DISABLE = "OPENTOKEN_DISABLE_UPDATE_CHECK"
 _CACHE_FILENAME = "update-check.json"
-_CACHE_DIR_NAME = "opentoken"
+_CACHE_DIR_NAME = ".opentoken"
 
 
 class VersionChecker:
@@ -77,7 +75,7 @@ class VersionChecker:
 
         self._thread.join(timeout=_REQUEST_TIMEOUT_SECONDS + 0.5)
 
-        if self._result and self._is_newer(self._result, self._current_version):
+        if self._result and self._is_newer(self._result, self._current_version) and self._stderr_is_interactive():
             self._print_notice(self._result)
 
     # ------------------------------------------------------------------
@@ -124,7 +122,10 @@ class VersionChecker:
     @staticmethod
     def _get_cache_path() -> Path:
         """Return the platform-appropriate path for the cache file."""
-        return Path(user_config_dir(_CACHE_DIR_NAME)) / _CACHE_FILENAME
+        appdata = os.getenv("APPDATA", "").strip()
+        if appdata:
+            return Path(appdata) / _CACHE_DIR_NAME / _CACHE_FILENAME
+        return Path.home() / _CACHE_DIR_NAME / _CACHE_FILENAME
 
     def _read_cache(self) -> Optional[str]:
         """
@@ -182,6 +183,7 @@ class VersionChecker:
         using semantic-version comparison.
         """
         from packaging.version import Version  # type: ignore[import]
+
         try:
             return Version(candidate) > Version(current)
         except Exception:
@@ -205,6 +207,12 @@ class VersionChecker:
             f"   Run 'opentoken update' to upgrade, or set {_ENV_DISABLE}=1 to silence this message.",
         ]
         print("\n".join(lines), file=sys.stderr)
+
+    @staticmethod
+    def _stderr_is_interactive() -> bool:
+        """Return whether stderr is attached to an interactive terminal."""
+        isatty = getattr(sys.stderr, "isatty", None)
+        return bool(isatty and isatty())
 
     # ------------------------------------------------------------------
     # Convenience class method for simple one-shot usage in tests

@@ -22,6 +22,7 @@ _OLDER = "1.9.0"
 # Helper: build a fake cache payload
 # ---------------------------------------------------------------------------
 
+
 def _make_cache(latest: str, age_hours: float = 0.0) -> dict:
     ts = datetime.now(timezone.utc) - timedelta(hours=age_hours)
     return {
@@ -34,6 +35,7 @@ def _make_cache(latest: str, age_hours: float = 0.0) -> dict:
 # ---------------------------------------------------------------------------
 # VersionChecker._is_newer
 # ---------------------------------------------------------------------------
+
 
 class TestIsNewer:
     """Tests for the semver comparison helper."""
@@ -64,6 +66,7 @@ class TestIsNewer:
 # ---------------------------------------------------------------------------
 # Disable logic
 # ---------------------------------------------------------------------------
+
 
 class TestIsDisabled:
     """Tests for the opt-out mechanisms."""
@@ -96,6 +99,7 @@ class TestIsDisabled:
 # ---------------------------------------------------------------------------
 # Cache read / write
 # ---------------------------------------------------------------------------
+
 
 class TestCache:
     """Tests for cache read/write behaviour."""
@@ -151,6 +155,7 @@ class TestCache:
 # _fetch_latest_version
 # ---------------------------------------------------------------------------
 
+
 class TestFetchLatestVersion:
     """Tests for the GitHub API fetch helper."""
 
@@ -168,6 +173,7 @@ class TestFetchLatestVersion:
 
     def test_returns_none_on_network_error(self):
         from urllib.error import URLError
+
         checker = VersionChecker(_CURRENT)
         with patch("opentoken_cli.util.version_checker.urlopen", side_effect=URLError("timeout")):
             assert checker._fetch_latest_version() is None
@@ -185,6 +191,7 @@ class TestFetchLatestVersion:
 # ---------------------------------------------------------------------------
 # _run integration (thread target)
 # ---------------------------------------------------------------------------
+
 
 class TestRun:
     """Tests for the background _run method."""
@@ -220,6 +227,7 @@ class TestRun:
 # _print_notice
 # ---------------------------------------------------------------------------
 
+
 class TestPrintNotice:
     """Tests for the update notice output."""
 
@@ -230,15 +238,6 @@ class TestPrintNotice:
         captured = capsys.readouterr()
         assert _NEWER in captured.err
         assert _CURRENT in captured.err
-
-    def test_notice_printed_even_when_not_tty(self, capsys, monkeypatch):
-        """Notice must always go to stderr regardless of whether it is a TTY."""
-        monkeypatch.delenv("NO_COLOR", raising=False)
-        checker = VersionChecker(_CURRENT)
-        with patch.object(sys.stderr, "isatty", return_value=False):
-            checker._print_notice(_NEWER)
-        captured = capsys.readouterr()
-        assert _NEWER in captured.err
 
     def test_notice_respects_no_color(self, capsys, monkeypatch):
         monkeypatch.setenv("NO_COLOR", "1")
@@ -252,6 +251,7 @@ class TestPrintNotice:
 # ---------------------------------------------------------------------------
 # wait_and_notify
 # ---------------------------------------------------------------------------
+
 
 class TestWaitAndNotify:
     """Tests for wait_and_notify."""
@@ -271,10 +271,24 @@ class TestWaitAndNotify:
         checker._thread = threading.Thread(target=lambda: None)
         checker._thread.start()
 
-        checker.wait_and_notify()
+        with patch.object(sys.stderr, "isatty", return_value=True):
+            checker.wait_and_notify()
 
         captured = capsys.readouterr()
         assert _NEWER in captured.err
+
+    def test_no_notice_when_stderr_is_not_tty(self, capsys, monkeypatch):
+        monkeypatch.delenv("NO_COLOR", raising=False)
+        checker = VersionChecker(_CURRENT)
+        checker._result = _NEWER
+        checker._thread = threading.Thread(target=lambda: None)
+        checker._thread.start()
+
+        with patch.object(sys.stderr, "isatty", return_value=False):
+            checker.wait_and_notify()
+
+        captured = capsys.readouterr()
+        assert captured.err == ""
 
     def test_no_notice_when_same_version(self, capsys):
         checker = VersionChecker(_CURRENT)
@@ -291,6 +305,7 @@ class TestWaitAndNotify:
 # ---------------------------------------------------------------------------
 # start_version_check convenience function
 # ---------------------------------------------------------------------------
+
 
 class TestStartVersionCheck:
     """Tests for the module-level start_version_check helper."""
@@ -315,6 +330,7 @@ class TestStartVersionCheck:
 # get_cache_path (public helper)
 # ---------------------------------------------------------------------------
 
+
 class TestGetCachePath:
     """Tests for the public cache path helper."""
 
@@ -322,3 +338,22 @@ class TestGetCachePath:
         path = VersionChecker.get_cache_path()
         assert isinstance(path, Path)
         assert path.name == "update-check.json"
+
+    def test_returns_dot_opentoken_path_under_home(self):
+        expected_path = Path("/home/tester/.opentoken/update-check.json")
+
+        with patch.object(Path, "home", return_value=Path("/home/tester")):
+            with patch.dict("os.environ", {}, clear=True):
+                path = VersionChecker.get_cache_path()
+
+        assert path == expected_path
+
+    def test_returns_dot_opentoken_path_under_appdata_on_windows(self, monkeypatch):
+        appdata = r"C:\Users\tester\AppData\Roaming"
+        expected_path = Path(appdata) / ".opentoken" / "update-check.json"
+
+        monkeypatch.setenv("APPDATA", appdata)
+
+        path = VersionChecker.get_cache_path()
+
+        assert path == expected_path

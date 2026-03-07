@@ -34,8 +34,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  * never blocks or delays normal command execution. The notice is surfaced to
  * stderr only after the primary command has completed.
  *
- * <p>Results are cached for 24 hours in an OS-appropriate configuration
- * directory to avoid hitting the GitHub API on every invocation.
+ * <p>Results are cached for 24 hours in an OpenToken-specific user directory
+ * to avoid hitting the GitHub API on every invocation.
  */
 public final class VersionChecker {
 
@@ -47,7 +47,7 @@ public final class VersionChecker {
     private static final int REQUEST_TIMEOUT_SECONDS = 2;
     private static final String ENV_DISABLE = "OPENTOKEN_DISABLE_UPDATE_CHECK";
     private static final String CACHE_FILENAME = "update-check.json";
-    private static final String CACHE_DIR_NAME = "opentoken";
+    private static final String CACHE_DIR_NAME = ".opentoken";
 
     private final String currentVersion;
     private final boolean noUpdateCheck;
@@ -113,7 +113,7 @@ public final class VersionChecker {
         }
 
         result.ifPresent(latest -> {
-            if (isNewer(latest, currentVersion)) {
+            if (isNewer(latest, currentVersion) && isStderrInteractive()) {
                 printNotice(latest);
             }
         });
@@ -199,15 +199,10 @@ public final class VersionChecker {
     static Path getCachePath() {
         String appData = System.getenv("APPDATA");
         if (appData != null && !appData.isBlank()) {
-            // Windows
             return Paths.get(appData, CACHE_DIR_NAME, CACHE_FILENAME);
         }
         String home = System.getProperty("user.home", "");
-        String os = System.getProperty("os.name", "").toLowerCase();
-        if (os.contains("mac")) {
-            return Paths.get(home, "Library", "Application Support", CACHE_DIR_NAME, CACHE_FILENAME);
-        }
-        return Paths.get(home, ".config", CACHE_DIR_NAME, CACHE_FILENAME);
+        return Paths.get(home, CACHE_DIR_NAME, CACHE_FILENAME);
     }
 
     /**
@@ -328,6 +323,10 @@ public final class VersionChecker {
     // ------------------------------------------------------------------
     // Update notice
     // ------------------------------------------------------------------
+
+    private static boolean isStderrInteractive() {
+        return System.console() != null;
+    }
 
     /**
      * Write the update notice to stderr.

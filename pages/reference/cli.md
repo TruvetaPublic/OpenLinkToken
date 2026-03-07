@@ -64,9 +64,9 @@ python -m opentoken_cli.main <subcommand> [OPTIONS]
 
 These options are accepted by the root command and apply to every invocation:
 
-| Option               | Description                                                |
-| -------------------- | ---------------------------------------------------------- |
-| `--no-update-check`  | Disable the automatic background version check for this run |
+| Option              | Description                                                 |
+| ------------------- | ----------------------------------------------------------- |
+| `--no-update-check` | Disable the automatic background version check for this run |
 
 The automatic version check can also be disabled permanently by setting the environment variable `OPENTOKEN_DISABLE_UPDATE_CHECK=1`.
 
@@ -74,26 +74,26 @@ The automatic version check can also be disabled permanently by setting the envi
 
 ### `package` (Default Encrypted Mode)
 
-| Argument            | Short | Required | Description                                                                |
-| ------------------- | ----- | -------- | -------------------------------------------------------------------------- |
-| `--input`           | `-i`  | Yes      | Path to input file (CSV or Parquet)                                        |
-| `--output`          | `-o`  | Yes      | Path to output file                                                        |
-| `--type`            | `-t`  | Yes      | File type: `csv` or `parquet`                                              |
-| `--hashingsecret`   | `-h`  | Yes      | Secret key for HMAC-SHA256 hashing                                         |
-| `--encryptionkey`   | `-e`  | Yes      | 32-character key for AES-256 encryption                                    |
-| `--output-type`     | `-ot` | No       | Output file type if different from input                                   |
+| Argument            | Short | Required | Description                                                                            |
+| ------------------- | ----- | -------- | -------------------------------------------------------------------------------------- |
+| `--input`           | `-i`  | Yes      | Path to input file (CSV or Parquet)                                                    |
+| `--output`          | `-o`  | Yes      | Path to output file                                                                    |
+| `--type`            | `-t`  | Yes      | File type: `csv` or `parquet`                                                          |
+| `--hashingsecret`   | `-h`  | Yes      | Secret key for HMAC-SHA256 hashing                                                     |
+| `--encryptionkey`   | `-e`  | Yes      | 32-character key for AES-256 encryption                                                |
+| `--output-type`     | `-ot` | No       | Output file type if different from input                                               |
 | `--hash-record-ids` |       | No       | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability) |
 
 ### `tokenize` (Hashed Tokens Only)
 
-| Argument            | Short | Required         | Description                                                                |
-| ------------------- | ----- | ---------------- | -------------------------------------------------------------------------- |
-| `--input`           | `-i`  | Yes              | Path to input file (CSV or Parquet)                                        |
-| `--output`          | `-o`  | Yes              | Path to output file                                                        |
-| `--type`            | `-t`  | Yes              | File type: `csv` or `parquet`                                              |
-| `--hashingsecret`   | `-h`  | Normal mode only | Secret key for HMAC-SHA256 hashing                                         |
-| `--demo-mode`       |       | No               | No hashing; outputs raw attribute signatures (see below)                   |
-| `--output-type`     | `-ot` | No               | Output file type if different from input                                   |
+| Argument            | Short | Required         | Description                                                                            |
+| ------------------- | ----- | ---------------- | -------------------------------------------------------------------------------------- |
+| `--input`           | `-i`  | Yes              | Path to input file (CSV or Parquet)                                                    |
+| `--output`          | `-o`  | Yes              | Path to output file                                                                    |
+| `--type`            | `-t`  | Yes              | File type: `csv` or `parquet`                                                          |
+| `--hashingsecret`   | `-h`  | Normal mode only | Secret key for HMAC-SHA256 hashing                                                     |
+| `--demo-mode`       |       | No               | No hashing; outputs raw attribute signatures (see below)                               |
+| `--output-type`     | `-ot` | No               | Output file type if different from input                                               |
 | `--hash-record-ids` |       | No               | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability) |
 
 ### `encrypt` (Encrypt Input Tokens)
@@ -120,11 +120,11 @@ The automatic version check can also be disabled permanently by setting the envi
 
 Downloads and installs the latest (or a specific) release of the OpenToken CLI in-place.
 
-| Argument      | Short | Required | Description                                               |
-| ------------- | ----- | -------- | --------------------------------------------------------- |
-| `--version`   |       | No       | Install a specific release tag (default: latest)          |
-| `--dry-run`   |       | No       | Show what would be updated without making any changes     |
-| `--yes`       | `-y`  | No       | Skip the interactive confirmation prompt                  |
+| Argument    | Short | Required | Description                                           |
+| ----------- | ----- | -------- | ----------------------------------------------------- |
+| `--version` |       | No       | Install a specific release tag (default: latest)      |
+| `--dry-run` |       | No       | Show what would be updated without making any changes |
+| `--yes`     | `-y`  | No       | Skip the interactive confirmation prompt              |
 
 ```bash
 # Update to the latest release
@@ -356,9 +356,9 @@ Every time the CLI is run, it performs a lightweight background check against th
 
 - Runs asynchronously in a background thread — it **never delays** the primary command
 - Has a 2-second timeout; network errors are silently ignored
-- Caches the result for **24 hours** in the OS config directory:
-  - Linux / macOS: `~/.config/opentoken/update-check.json`
-  - Windows: `%APPDATA%\opentoken\update-check.json`
+- Caches the result for **24 hours** in the OpenToken user cache file:
+  - Linux / macOS: `~/.opentoken/update-check.json`
+  - Windows: `%APPDATA%\.opentoken\update-check.json`
 - Prints a notice to **stderr** (not stdout) only when a newer version is found, so piped/scripted usage is unaffected
 
 **Sample notice:**
@@ -373,9 +373,9 @@ Every time the CLI is run, it performs a lightweight background check against th
 
 The version check can be disabled per-run or permanently:
 
-| Mechanism                                | Scope        |
-| ---------------------------------------- | ------------ |
-| `--no-update-check` CLI flag             | Per invocation |
+| Mechanism                                  | Scope                                       |
+| ------------------------------------------ | ------------------------------------------- |
+| `--no-update-check` CLI flag               | Per invocation                              |
 | `OPENTOKEN_DISABLE_UPDATE_CHECK=1` env var | Persistent (shell profile / CI environment) |
 
 When disabled, no network request is made and no cache is read or written.
@@ -410,13 +410,13 @@ opentoken update --yes
 
 #### Update Error Handling
 
-| Condition                       | Exit code | Message                                          |
-| ------------------------------- | --------- | ------------------------------------------------ |
-| Already on the latest version   | 0         | `OpenToken is already up to date (v2.0.0).`     |
-| Asset not found for platform    | 1         | Clear error with download link                   |
-| Checksum verification failed    | 1         | Error message; downloaded file is deleted        |
-| Insufficient write permissions  | 1         | Suggests `sudo` or manual download link          |
-| Network error / release missing | 1         | Descriptive error                                |
+| Condition                       | Exit code | Message                                     |
+| ------------------------------- | --------- | ------------------------------------------- |
+| Already on the latest version   | 0         | `OpenToken is already up to date (v2.0.0).` |
+| Asset not found for platform    | 1         | Clear error with download link              |
+| Checksum verification failed    | 1         | Error message; downloaded file is deleted   |
+| Insufficient write permissions  | 1         | Suggests `sudo` or manual download link     |
+| Network error / release missing | 1         | Descriptive error                           |
 
 ## Performance Tips
 

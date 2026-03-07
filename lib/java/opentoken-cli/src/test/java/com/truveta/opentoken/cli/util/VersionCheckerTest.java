@@ -7,9 +7,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -30,15 +33,22 @@ class VersionCheckerTest {
     Path tempDir;
 
     private PrintStream originalErr;
+    private String originalUserHome;
 
     @BeforeEach
     void setUp() {
         originalErr = System.err;
+        originalUserHome = System.getProperty("user.home");
     }
 
     @AfterEach
     void tearDown() {
         System.setErr(originalErr);
+        if (originalUserHome == null) {
+            System.clearProperty("user.home");
+        } else {
+            System.setProperty("user.home", originalUserHome);
+        }
     }
 
     // ------------------------------------------------------------------
@@ -171,6 +181,16 @@ class VersionCheckerTest {
         assertEquals("update-check.json", path.getFileName().toString());
     }
 
+    @Test
+    void testGetCachePath_usesDotOpenTokenDirectoryUnderHome() {
+        assumeTrue(System.getenv("APPDATA") == null || System.getenv("APPDATA").isBlank());
+        System.setProperty("user.home", tempDir.toString());
+
+        Path path = VersionChecker.getCachePath();
+
+        assertEquals(tempDir.resolve(".opentoken").resolve("update-check.json"), path);
+    }
+
     // ------------------------------------------------------------------
     // waitAndNotify – no thread set
     // ------------------------------------------------------------------
@@ -180,5 +200,25 @@ class VersionCheckerTest {
         VersionChecker checker = new VersionChecker("2.0.0", false);
         // Should not throw even though start() was never called
         checker.waitAndNotify();
+    }
+
+    @Test
+    void testWaitAndNotify_suppressesNoticeWhenStderrIsNotInteractive() throws IOException {
+        assumeTrue(System.console() == null);
+
+        Path cacheFile = tempDir.resolve("update-check.json");
+        String json = "{\"last_checked\":\"" + Instant.now() + "\","
+                + "\"latest_version\":\"2.1.0\","
+                + "\"current_version\":\"2.0.0\"}";
+        Files.writeString(cacheFile, json);
+
+        ByteArrayOutputStream errOutput = new ByteArrayOutputStream();
+        System.setErr(new PrintStream(errOutput, true, StandardCharsets.UTF_8));
+
+        VersionChecker checker = new VersionChecker("2.0.0", false, cacheFile);
+        checker.start();
+        checker.waitAndNotify();
+
+        assertEquals("", errOutput.toString(StandardCharsets.UTF_8));
     }
 }
