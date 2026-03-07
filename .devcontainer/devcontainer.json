@@ -64,6 +64,6 @@
   },
   "postStartCommand": {
     "fix-mount-permissions": "for d in /home/vscode/.copilot; do [ -d \"$d\" ] || continue; sudo chown -R vscode:vscode \"$d\"; done",
-    "clone-superpowers": "[ ! -d ~/.copilot/superpowers-skills ] && mkdir -p ~/.copilot && curl -L https://github.com/jsloat/superpowers-for-copilot/archive/refs/heads/main.tar.gz | tar -xz -C ~/.copilot -f - && mv ~/.copilot/superpowers-for-copilot-main ~/.copilot/superpowers-skills || true"
+    "apm-reqs": "bash -lc '${containerWorkspaceFolder}/.devcontainer/scripts/setup_apm.sh' || true"
   }
 }
