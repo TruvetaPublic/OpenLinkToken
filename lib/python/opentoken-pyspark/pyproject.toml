@@ -2,6 +2,15 @@
 name = "opentoken-pyspark"
 version = "2.0.0-alpha"
 requires-python = ">=3.10"
+dynamic = [
+  "authors",
+  "dependencies",
+  "description",
+  "entry-points",
+  "optional-dependencies",
+  "readme",
+  "urls",
+]
 
 [build-system]
 requires = ["setuptools>=40.8.0", "wheel"]
