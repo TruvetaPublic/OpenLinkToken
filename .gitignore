@@ -86,6 +86,10 @@ demos/pprl-superhero-example/datasets/
 # APM dependencies
 apm_modules/
 
+# APM integrated skills
+.github/skills/*-apm/
+# APM integrated skills
+
 # Added by apm install
 .github/skills/brainstorming/
 .github/skills/dispatching-parallel-agents/
@@ -101,3 +105,5 @@ apm_modules/
 .github/skills/verification-before-completion/
 .github/skills/writing-plans/
 .github/skills/writing-skills/
+.github/skills/documentation-writer/
+.github/skills/gh-cli/

@@ -72,3 +72,13 @@ dependencies:
   resolved_commit: e4a2375cb705ca5800f0833528ce36a3faf9017a
   virtual_path: skills/writing-skills
   is_virtual: true
+- repo_url: github/awesome-copilot
+  host: github.com
+  resolved_commit: 9ef54533f0e4e3f5f45d790d675af5f91344e821
+  virtual_path: skills/documentation-writer
+  is_virtual: true
+- repo_url: github/awesome-copilot
+  host: github.com
+  resolved_commit: 9ef54533f0e4e3f5f45d790d675af5f91344e821
+  virtual_path: skills/gh-cli
+  is_virtual: true

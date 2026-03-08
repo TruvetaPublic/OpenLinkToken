@@ -4,7 +4,6 @@ description: APM project for apm
 author: mattwise-42
 dependencies:
   apm:
-    # add individual skills since it's not integrated with APM yet.
     - obra/superpowers/skills/brainstorming
     - obra/superpowers/skills/dispatching-parallel-agents
     - obra/superpowers/skills/executing-plans
@@ -19,6 +18,7 @@ dependencies:
     - obra/superpowers/skills/verification-before-completion
     - obra/superpowers/skills/writing-plans
     - obra/superpowers/skills/writing-skills
-
+    - github/awesome-copilot/skills/documentation-writer
+    - github/awesome-copilot/skills/gh-cli
   mcp: []
 scripts: {}
