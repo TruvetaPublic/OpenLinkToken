@@ -5,7 +5,13 @@ echo "(!) Installing apm CLI"
 uv pip install apm-cli
 
 echo "(!) Setting up SSH known hosts for GitHub"
-mkdir -p ~/.ssh && chmod 700 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
+mkdir -p ~/.ssh
+chmod 700 ~/.ssh
+touch ~/.ssh/known_hosts
+chmod 600 ~/.ssh/known_hosts
+if ! ssh-keygen -F github.com -f ~/.ssh/known_hosts >/dev/null 2>&1; then
+    ssh-keyscan github.com >> ~/.ssh/known_hosts
+fi
 
 echo "(!) Running apm install"
 apm install
