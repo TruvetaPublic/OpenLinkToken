@@ -6,7 +6,6 @@ dynamic = [
   "authors",
   "dependencies",
   "description",
-  "entry-points",
   "optional-dependencies",
   "readme",
   "urls",

@@ -6,11 +6,13 @@ dynamic = [
   "authors",
   "dependencies",
   "description",
-  "entry-points",
   "optional-dependencies",
   "readme",
   "urls",
 ]
+
+[project.scripts]
+opentoken = "opentoken_cli.main:main"
 
 [build-system]
 requires = ["setuptools>=40.8.0", "wheel"]
