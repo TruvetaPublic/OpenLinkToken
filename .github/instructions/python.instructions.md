@@ -5,6 +5,16 @@ applyTo: "**/*.py"
 
 # Python Coding Conventions
 
+## Repo-Specific Runtime Rules
+
+- Use the repository virtual environment at `/workspaces/OpenToken/.venv`.
+- Never create or activate a nested `.venv` under `lib/python/...`.
+- Activate the shared environment with:
+
+```bash
+source /workspaces/OpenToken/.venv/bin/activate
+```
+
 ## Python Instructions
 
 - Prefer clear, descriptive docstrings for functions; use inline comments sparingly to explain non-obvious intent or constraints, not obvious behavior.
@@ -66,15 +76,16 @@ result_df = (
 ### Running Tests
 
 ```bash
-pytest                    # Run all tests
-pytest -v                 # Verbose mode with detailed output
-pytest tests/modes/       # Run tests in specific directory
-pytest -k "test_name"     # Run tests matching pattern
+source /workspaces/OpenToken/.venv/bin/activate
+
+cd lib/python/opentoken && pytest
+cd lib/python/opentoken-cli && pytest
 ```
 
 ### Installing Dependencies
 
 ```bash
+source /workspaces/OpenToken/.venv/bin/activate
 uv pip install -r requirements.txt -r dev-requirements.txt
 ```
 
