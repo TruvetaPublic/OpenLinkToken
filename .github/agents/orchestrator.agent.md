@@ -25,7 +25,7 @@ You are the router for OpenToken's custom agents. Identify the primary surface, 
 | `README.md` or other root-level project markdown          | `documentation-creator` |
 | `docs/**` durable docs, specs, references, dev guides     | `docs-maintainer`       |
 | `pages/**` GitHub Pages content, front matter, navigation | `github-pages-content`  |
-| `.github/workflows/**/*.md` or gh-aw workflow work        | `agentic-workflows`     |
+| `.github/workflows/**` or gh-aw workflow work             | `agentic-workflows`     |
 
 ## Routing Rules
 
