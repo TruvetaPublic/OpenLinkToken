@@ -32,7 +32,7 @@ You are the router for OpenToken's custom agents. Identify the primary surface, 
 1. **Prefer path-based ownership.** If the file path is known, use it.
 2. **If the path is not known, infer the audience.**
    - Java implementation or Maven/Checkstyle work -> `java-coder`
-   - Python implementation, pytest work, or repo-root `.venv` concerns -> `python-coder`
+   - Python implementation, pytest work, or shared Python venv concerns -> `python-coder`
    - Repo-facing or onboarding summary -> `documentation-creator`
    - Durable technical/reference content -> `docs-maintainer`
    - Public site/Jekyll content -> `github-pages-content`

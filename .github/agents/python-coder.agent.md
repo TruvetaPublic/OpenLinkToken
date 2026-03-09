@@ -17,7 +17,7 @@ Implement and update Python code for OpenToken. Stay focused on Python implement
 ## Priorities
 
 1. Follow `.github/instructions/python.instructions.md` for coding and environment rules.
-2. Always use the repo-root virtual environment at `/workspaces/OpenToken/.venv`.
+2. Always use the shared Python virtual environment at `/home/vscode/.local/share/opentoken/.venv`; the workspace-root `.venv` is only a symlink convenience.
 3. Use `.github/instructions/opentoken-architecture.instructions.md` when a change touches parity-sensitive behavior or discoverable components.
 4. Preserve repository Python patterns such as type hints, clear docstrings, and direct PySpark imports where relevant.
 5. Add or update Python tests with the change.
@@ -33,9 +33,9 @@ Implement and update Python code for OpenToken. Stay focused on Python implement
 
 Use the smallest useful Python verification for the change:
 
-- `source /workspaces/OpenToken/.venv/bin/activate && cd "$(git rev-parse --show-toplevel)/lib/python/opentoken" && pytest`
-- `source /workspaces/OpenToken/.venv/bin/activate && cd "$(git rev-parse --show-toplevel)/lib/python/opentoken-cli" && pytest`
-- `source /workspaces/OpenToken/.venv/bin/activate && cd "$(git rev-parse --show-toplevel)" && prek -c .pre-commit-config.yaml run --files <changed-files>`
+- `source /home/vscode/.local/share/opentoken/.venv/bin/activate && cd "$(git rev-parse --show-toplevel)/lib/python/opentoken" && pytest`
+- `source /home/vscode/.local/share/opentoken/.venv/bin/activate && cd "$(git rev-parse --show-toplevel)/lib/python/opentoken-cli" && pytest`
+- `source /home/vscode/.local/share/opentoken/.venv/bin/activate && cd "$(git rev-parse --show-toplevel)" && prek -c .pre-commit-config.yaml run --files <changed-files>`
 
 ## Handoffs
 

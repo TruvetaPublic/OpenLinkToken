@@ -5,7 +5,7 @@ This file is the runtime entrypoint. Keep it concise, and use the scoped instruc
 ## Always-on repo rules
 
 - **Java:** Never use fully qualified class names in Java code. Add imports and use short class names.
-- **Python:** Use the repo-root virtual environment at `/workspaces/OpenToken/.venv`. Never create or activate a nested venv under `lib/python/...`.
+- **Python:** Use the shared Python virtual environment at `/home/vscode/.local/share/opentoken/.venv` (the workspace-root `.venv` is a symlink to it after setup). Never create or activate a nested venv under `lib/python/...`.
 - **Dual implementation:** OpenToken maintains Java and Python implementations. Preserve cross-language parity for shared behavior changes.
 - **Registration:** When adding or changing attributes or tokens, update Java ServiceLoader entries and the matching Python loader/registry when required.
 - **Branches:** For new work, branch from `develop` using `dev/<github-username>/<feature-description>`.

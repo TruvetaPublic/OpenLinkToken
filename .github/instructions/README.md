@@ -4,14 +4,14 @@ This folder contains the canonical supplemental instruction modules for Copilot 
 
 ## Contents
 
-| File                                               | Purpose                                                                                           |
-| -------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `java.instructions.md`                             | Java-specific rules, including import usage, build checks, and code review expectations.          |
-| `python.instructions.md`                           | Python-specific rules, including the repo-root `.venv`, typing, formatting, and testing guidance. |
-| `opentoken-architecture.instructions.md`           | OpenToken architecture, parity-sensitive changes, and cross-language registration guidance.       |
-| `pull-request.instructions.md`                     | Branch naming, draft PR defaults, and PR readiness expectations.                                  |
-| `security-and-owasp.instructions.md`               | Security-first coding guidance based on OWASP-style concerns.                                     |
-| `self-explanatory-code-commenting.instructions.md` | Commenting guidance focused on explaining why, not what.                                          |
+| File                                               | Purpose                                                                                                                            |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `java.instructions.md`                             | Java-specific rules, including import usage, build checks, and code review expectations.                                           |
+| `python.instructions.md`                           | Python-specific rules, including the shared venv and workspace `.venv` symlink guidance, typing, formatting, and testing guidance. |
+| `opentoken-architecture.instructions.md`           | OpenToken architecture, parity-sensitive changes, and cross-language registration guidance.                                        |
+| `pull-request.instructions.md`                     | Branch naming, draft PR defaults, and PR readiness expectations.                                                                   |
+| `security-and-owasp.instructions.md`               | Security-first coding guidance based on OWASP-style concerns.                                                                      |
+| `self-explanatory-code-commenting.instructions.md` | Commenting guidance focused on explaining why, not what.                                                                           |
 
 ## Editing guidance
 

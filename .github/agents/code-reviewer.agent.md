@@ -13,9 +13,9 @@ Review OpenToken changes for material repository-specific issues. Focus on corre
 
 Flag any Java code that uses fully qualified class names instead of imports. OpenToken requires short class names plus `import` statements.
 
-### 2. Root `.venv` only
+### 2. Shared venv only
 
-Flag any instruction or workflow that creates or activates a Python virtual environment outside `/workspaces/OpenToken/.venv`.
+Flag any instruction or workflow that creates or activates a Python virtual environment outside `/home/vscode/.local/share/opentoken/.venv`, other than the workspace-root `.venv` symlink that points to it.
 
 ### 3. Cross-language parity awareness
 
@@ -44,14 +44,14 @@ Expect evidence of targeted verification before approval. Ask for the relevant b
 Evidence can stay proportional to the change, but it should match the surface:
 
 - Java changes -> relevant Maven build/test output
-- Python changes -> relevant `pytest` output run from the root `.venv`
+- Python changes -> relevant `pytest` output run from the shared venv (or the workspace-root `.venv` symlink that points to it)
 - Cross-language behavior changes -> verification on both sides plus sync/interoperability checks when parity is at risk
 - Agent/instruction/docs-only changes -> targeted markdown/config validation such as `prek run --refresh ...`
 
 ## What to Look For
 
 - Java code violating the import rule from `.github/copilot-instructions.md`
-- Python setup/docs that create a subdirectory `.venv`
+- Python setup/docs that create a nested `.venv` instead of using the shared venv
 - One-language-only changes where parity likely matters
 - Missing registration updates when adding extensibility points
 - Missing README/docs/pages follow-up for user-visible changes
