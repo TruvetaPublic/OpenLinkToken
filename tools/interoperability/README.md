@@ -9,17 +9,19 @@ The `cli_parity_test.py` script tests that Java and Python CLIs provide identica
 - Java 21 SDK or higher (JAR output compatible with Java 17)
 
 **Java:**
+
 ```bash
 cd lib/java
 mvn clean package -DskipTests
 ```
 
 **Python:**
+
 ```bash
 cd lib/python/opentoken
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 cd ../opentoken-cli
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 ```
 
 ### Running the Tests

@@ -100,11 +100,13 @@ Input columns are **case-insensitive** and support common aliases:
 ### Postal Code Formats
 
 **US ZIP Codes:**
+
 - `98004` (5 digits)
 - `98004-1234` (9 digits, dash removed)
 - `980` (ZIP-3, auto-padded to `98000`)
 
 **Canadian Postal Codes:**
+
 - `K1A 1A1` (with space)
 - `K1A1A1` (without space, auto-formatted)
 
@@ -174,9 +176,9 @@ java -jar opentoken-cli/target/opentoken-cli-*.jar package \
   -h "HashingKey" -e "EncryptionKey32Characters!!!!!"
 
 # Python
-source /workspaces/OpenToken/.venv/bin/activate
+source ../../.venv/bin/activate
 python -m opentoken_cli.main package \
-  -i ../../../resources/sample.csv -t csv -o ../../../resources/output.csv \
+  -i ../../resources/sample.csv -t csv -o ../../resources/output.csv \
   -h "HashingKey" -e "EncryptionKey32Characters!!!!!"
 ```
 

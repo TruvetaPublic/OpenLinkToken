@@ -8,7 +8,7 @@ from typing import Dict, Set, Type
 try:
     import pyarrow.parquet as pq
 except ImportError:
-    raise ImportError("pyarrow is required for Parquet support. Install with: pip install pyarrow")
+    raise ImportError("pyarrow is required for Parquet support. Install with: uv pip install pyarrow")
 
 from opentoken.attributes.attribute import Attribute
 from opentoken.attributes.attribute_loader import AttributeLoader
