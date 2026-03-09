@@ -1,8 +1,16 @@
 #!/bin/bash
 set -e
 
+VENV_DIR="/home/vscode/.local/share/opentoken/.venv"
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+
 echo "(!) Installing apm CLI"
-uv pip install apm-cli
+if [ ! -x "$VENV_DIR/bin/python" ]; then
+    echo "(!) Shared virtual environment not found at $VENV_DIR, creating it"
+    uv venv --allow-existing --seed "$VENV_DIR"
+fi
+
+"$VENV_DIR/bin/python" -m pip install apm-cli
 
 echo "(!) Setting up SSH known hosts for GitHub"
 mkdir -p ~/.ssh
@@ -16,7 +24,6 @@ fi
 echo "(!) Running apm install"
 apm install
 
-REPO_ROOT="$(git rev-parse --show-toplevel)"
 GITIGNORE="$REPO_ROOT/.gitignore"
 
 # After install, scan known apm output dirs for untracked paths and add to .gitignore.

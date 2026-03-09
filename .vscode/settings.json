@@ -34,7 +34,6 @@
   ],
   "python.testing.autoTestDiscoverOnSaveEnabled": true,
   "python.testing.pytestPath": "pytest",
-  "python.defaultInterpreterPath": "",
   "testing.showInlineOutput": true,
   "python.analysis.typeCheckingMode": "basic",
   "[markdown]": {

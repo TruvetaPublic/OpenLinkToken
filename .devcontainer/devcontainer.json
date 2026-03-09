@@ -49,24 +49,31 @@
       ],
       "settings": {
         "sonarlint.ls.javaHome": "/usr/local/sdkman/candidates/java/21.0.10-ms",
-        "python.defaultInterpreterPath": "/home/vscode/.local/share/opentoken/.venv/bin/python"
+        "python.defaultInterpreterPath": "/home/vscode/.local/share/opentoken/.venv/bin/python",
+        "python.terminal.activateEnvironment": true
       }
     }
   },
   "mounts": [
     "type=volume,source=opentoken-venv,target=/home/vscode/.local/share/opentoken/.venv",
+    "type=volume,source=opentoken-uv-cache,target=/home/vscode/.cache",
     "type=volume,source=opentoken-copilot,target=/home/vscode/.copilot"
   ],
   "containerEnv": {
     "PYSPARK_SUBMIT_ARGS": "--driver-memory 8g --executor-memory 8g --conf spark.driver.maxResultSize=4g --conf spark.memory.fraction=0.7 pyspark-shell",
     "UV_PROJECT_ENVIRONMENT": "/home/vscode/.local/share/opentoken/.venv"
   },
+  "onCreateCommand": {
+    "fix-mount-permissions": "for d in /home/vscode/.copilot /home/vscode/.cache /home/vscode/.local/share/opentoken/.venv; do [ -d \"$d\" ] || continue; sudo chown -R vscode:vscode \"$d\"; done"
+  },
   "postCreateCommand": {
-    "setup-py-env": "/bin/bash .devcontainer/scripts/setup_python_env.sh"
+    "setup-py-env": "bash -lc '${containerWorkspaceFolder}/.devcontainer/scripts/setup_python_env.sh'"
   },
   "postStartCommand": {
-    "fix-mount-permissions": "for d in /home/vscode/.copilot; do [ -d \"$d\" ] || continue; sudo chown -R vscode:vscode \"$d\"; done",
-    "refresh-py-env": "/bin/bash .devcontainer/scripts/setup_python_env.sh --refresh-workspace",
+    "refresh-py-env": "bash -lc '${containerWorkspaceFolder}/.devcontainer/scripts/setup_python_env.sh --refresh-workspace'",
     "apm-reqs": "bash -lc '${containerWorkspaceFolder}/.devcontainer/scripts/setup_apm.sh' || true"
+  },
+  "postAttachCommand": {
+    "auto-activate-venv": "echo 'source /home/vscode/.local/share/opentoken/.venv/bin/activate 2>/dev/null || true' >> ~/.bashrc && echo 'source /home/vscode/.local/share/opentoken/.venv/bin/activate 2>/dev/null || true' >> ~/.zshrc || true"
   }
 }

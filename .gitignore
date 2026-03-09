@@ -81,6 +81,7 @@ demos/pprl-superhero-example/outputs/
 demos/pprl-superhero-example/datasets/
 .worktrees/
 .tmp/
+.venv
 .ruff_cache/
 
 # APM dependencies
