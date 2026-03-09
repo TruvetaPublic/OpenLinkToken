@@ -18,10 +18,10 @@
   "files.trimFinalNewlines": true,
   "files.eol": "\n",
   "files.exclude": {
-    ".worktree/**": true
+    ".worktrees/**": true
   },
   "files.watcherExclude": {
-    ".worktree/**": true
+    ".worktrees/**": true
   },
   "chat.tools.autoApprove": true,
   "chat.mcp.access": "all",
