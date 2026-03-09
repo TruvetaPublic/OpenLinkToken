@@ -32,7 +32,8 @@ How to use the PySpark bridge for distributed token generation on Spark clusters
 ### Local Development
 
 ```bash
-source /workspaces/OpenToken/.venv/bin/activate
+# From repo root
+source .venv/bin/activate
 
 cd lib/python/opentoken-pyspark
 uv pip install -e .[spark40]  # For Java 21

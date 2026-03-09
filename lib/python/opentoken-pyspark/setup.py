@@ -76,5 +76,4 @@ setup(
             "ipykernel",
         ],
     },
-    entry_points={},
 )

@@ -48,22 +48,25 @@
         "dbaeumer.vscode-eslint"
       ],
       "settings": {
-        "sonarlint.ls.javaHome": "/usr/local/sdkman/candidates/java/21.0.10-ms"
+        "sonarlint.ls.javaHome": "/usr/local/sdkman/candidates/java/21.0.10-ms",
+        "python.defaultInterpreterPath": "/home/vscode/.local/share/opentoken/.venv/bin/python"
       }
     }
   },
   "mounts": [
-    "type=volume,source=opentoken-venv,target=${containerWorkspaceFolder}/.venv",
+    "type=volume,source=opentoken-venv,target=/home/vscode/.local/share/opentoken/.venv",
     "type=volume,source=opentoken-copilot,target=/home/vscode/.copilot"
   ],
   "containerEnv": {
-    "PYSPARK_SUBMIT_ARGS": "--driver-memory 8g --executor-memory 8g --conf spark.driver.maxResultSize=4g --conf spark.memory.fraction=0.7 pyspark-shell"
+    "PYSPARK_SUBMIT_ARGS": "--driver-memory 8g --executor-memory 8g --conf spark.driver.maxResultSize=4g --conf spark.memory.fraction=0.7 pyspark-shell",
+    "UV_PROJECT_ENVIRONMENT": "/home/vscode/.local/share/opentoken/.venv"
   },
   "postCreateCommand": {
     "setup-py-env": "/bin/bash .devcontainer/scripts/setup_python_env.sh"
   },
   "postStartCommand": {
-    "fix-mount-permissions": "for d in /home/vscode/.copilot; do [ -d \"$d\" ] || continue; sudo chown -R vscode:vscode \"$d\"; done",
+    "fix-mount-permissions": "for d in /home/vscode/.copilot /home/vscode/.local/share/opentoken/.venv; do [ -d \"$d\" ] || continue; sudo chown -R vscode:vscode \"$d\"; done",
+    "refresh-py-env": "/bin/bash .devcontainer/scripts/setup_python_env.sh --refresh-workspace",
     "clone-superpowers": "[ ! -d ~/.copilot/superpowers-skills ] && mkdir -p ~/.copilot && curl -L https://github.com/jsloat/superpowers-for-copilot/archive/refs/heads/main.tar.gz | tar -xz -C ~/.copilot -f - && mv ~/.copilot/superpowers-for-copilot-main ~/.copilot/superpowers-skills || true"
   }
 }

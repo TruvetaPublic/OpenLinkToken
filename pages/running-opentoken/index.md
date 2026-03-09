@@ -201,7 +201,8 @@ For large-scale distributed token generation and dataset overlap analysis, use t
 Ensure the Python root venv is active, then install:
 
 ```bash
-source /workspaces/OpenToken/.venv/bin/activate
+cd /path/to/OpenToken
+source .venv/bin/activate
 
 cd lib/python/opentoken-pyspark
 uv pip install -r requirements.txt -e .

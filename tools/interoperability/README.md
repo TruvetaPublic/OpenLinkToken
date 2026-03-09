@@ -9,10 +9,12 @@ The `cli_parity_test.py` script tests that the Python CLI provides the expected
 command structure and behavior.
 
 **Python:**
+
 ```bash
-cd <repo-root>
-source .venv/bin/activate
-uv pip install -e lib/python/opentoken -e lib/python/opentoken-cli
+cd lib/python/opentoken
+uv pip install -r requirements.txt
+cd ../opentoken-cli
+uv pip install -r requirements.txt
 ```
 
 ### Running the Tests

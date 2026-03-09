@@ -6,8 +6,10 @@ This script shows how to use the OpenToken PySpark bridge to generate
 tokens from person data in a PySpark DataFrame.
 
 Prerequisites:
-    pip install -e ../opentoken-pyspark
-    pip install -e .
+    cd /path/to/OpenToken/lib/python/opentoken
+    uv pip install -e .
+    cd ../opentoken-pyspark
+    uv pip install -e .[spark40]
 
 Usage:
     python simple_example.py

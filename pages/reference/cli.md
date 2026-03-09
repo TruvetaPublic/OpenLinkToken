@@ -21,7 +21,7 @@ No dependencies required. Extract and run.
 ### Other Options
 
 - **Docker**: Use `run-opentoken.sh` (Linux/Mac) or `run-opentoken.ps1` (Windows)
-- **Python**: Install via pip, run `opentoken` or `python -m opentoken_cli.main`
+- **Python**: Install with `uv pip install opentoken-cli`, then run `opentoken` or `python -m opentoken_cli.main`
 
 For installation details, see the [CLI Quickstart](../quickstarts/cli-quickstart.md).
 
@@ -57,26 +57,26 @@ python -m opentoken_cli.main <subcommand> [OPTIONS]
 
 ### `package` (Default Encrypted Mode)
 
-| Argument            | Short | Required | Description                                                                |
-| ------------------- | ----- | -------- | -------------------------------------------------------------------------- |
-| `--input`           | `-i`  | Yes      | Path to input file (CSV or Parquet)                                        |
-| `--output`          | `-o`  | Yes      | Path to output file                                                        |
-| `--type`            | `-t`  | Yes      | File type: `csv` or `parquet`                                              |
-| `--hashingsecret`   | `-h`  | Yes      | Secret key for HMAC-SHA256 hashing                                         |
-| `--encryptionkey`   | `-e`  | Yes      | 32-character key for AES-256 encryption                                    |
-| `--output-type`     | `-ot` | No       | Output file type if different from input                                   |
+| Argument            | Short | Required | Description                                                                            |
+| ------------------- | ----- | -------- | -------------------------------------------------------------------------------------- |
+| `--input`           | `-i`  | Yes      | Path to input file (CSV or Parquet)                                                    |
+| `--output`          | `-o`  | Yes      | Path to output file                                                                    |
+| `--type`            | `-t`  | Yes      | File type: `csv` or `parquet`                                                          |
+| `--hashingsecret`   | `-h`  | Yes      | Secret key for HMAC-SHA256 hashing                                                     |
+| `--encryptionkey`   | `-e`  | Yes      | 32-character key for AES-256 encryption                                                |
+| `--output-type`     | `-ot` | No       | Output file type if different from input                                               |
 | `--hash-record-ids` |       | No       | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability) |
 
 ### `tokenize` (Hashed Tokens Only)
 
-| Argument            | Short | Required         | Description                                                                |
-| ------------------- | ----- | ---------------- | -------------------------------------------------------------------------- |
-| `--input`           | `-i`  | Yes              | Path to input file (CSV or Parquet)                                        |
-| `--output`          | `-o`  | Yes              | Path to output file                                                        |
-| `--type`            | `-t`  | Yes              | File type: `csv` or `parquet`                                              |
-| `--hashingsecret`   | `-h`  | Normal mode only | Secret key for HMAC-SHA256 hashing                                         |
-| `--demo-mode`       |       | No               | No hashing; outputs raw attribute signatures (see below)                   |
-| `--output-type`     | `-ot` | No               | Output file type if different from input                                   |
+| Argument            | Short | Required         | Description                                                                            |
+| ------------------- | ----- | ---------------- | -------------------------------------------------------------------------------------- |
+| `--input`           | `-i`  | Yes              | Path to input file (CSV or Parquet)                                                    |
+| `--output`          | `-o`  | Yes              | Path to output file                                                                    |
+| `--type`            | `-t`  | Yes              | File type: `csv` or `parquet`                                                          |
+| `--hashingsecret`   | `-h`  | Normal mode only | Secret key for HMAC-SHA256 hashing                                                     |
+| `--demo-mode`       |       | No               | No hashing; outputs raw attribute signatures (see below)                               |
+| `--output-type`     | `-ot` | No               | Output file type if different from input                                               |
 | `--hash-record-ids` |       | No               | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability) |
 
 ### `encrypt` (Encrypt Input Tokens)

@@ -45,10 +45,16 @@ else
 fi
 
 # Ensure required Python deps for analysis
+ANALYZE_OVERLAP_COMMAND=(python "${DEMO_DIR}/scripts/analyze_overlap.py")
 if ! python -c "import cryptography" >/dev/null 2>&1; then
-  echo -e "${YELLOW}Python package 'cryptography' not found. Installing...${NC}"
-  python -m pip install --upgrade pip >/dev/null
-  python -m pip install cryptography >/dev/null
+  if ! command -v uv >/dev/null 2>&1; then
+    echo -e "${RED}Python package 'cryptography' not found and uv is unavailable.${NC}"
+    echo -e "${RED}Install uv or activate a virtual environment with cryptography before rerunning.${NC}"
+    exit 1
+  fi
+
+  echo -e "${YELLOW}Python package 'cryptography' not found. Using uv-managed dependency for overlap analysis...${NC}"
+  ANALYZE_OVERLAP_COMMAND=(uv run --isolated --with cryptography python "${DEMO_DIR}/scripts/analyze_overlap.py")
 fi
 
 # Step 1: Generate datasets
@@ -67,7 +73,7 @@ echo ""
 
 # Step 3: Analyze overlap (decrypt + compare)
 echo -e "${BLUE}Step 3/3: Analyzing overlap (decrypting and comparing tokens)...${NC}"
-python "${DEMO_DIR}/scripts/analyze_overlap.py"
+"${ANALYZE_OVERLAP_COMMAND[@]}"
 echo ""
 
 echo "============================================================"
