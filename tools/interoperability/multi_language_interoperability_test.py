@@ -33,6 +33,27 @@ EXPECTED_TOKENS = {
     "T5": "3756556f2323148cb57e1e13b1abcd457e1c1706a84ae83d522a3fc0ad43506d",
 }
 
+EXPECTED_SAMPLE_METADATA = {
+    "HashingSecretHash": "3fd6f3558ba532410658f8eb0d80b25db01b129b1b04c7c0e4a4a50e26921124",
+    "TotalRows": 105,
+    "TotalRowsWithInvalidAttributes": 12,
+    "InvalidAttributesByType": {
+        "BirthDate": 3,
+        "FirstName": 1,
+        "LastName": 2,
+        "PostalCode": 2,
+        "Sex": 0,
+        "SocialSecurityNumber": 4,
+    },
+    "BlankTokensByRule": {
+        "T1": 6,
+        "T2": 8,
+        "T3": 6,
+        "T4": 7,
+        "T5": 3,
+    },
+}
+
 
 class InteroperabilityTooling:
     """Shared paths and test credentials for interoperability checks."""
@@ -43,17 +64,64 @@ class InteroperabilityTooling:
     def __init__(self):
         self.project_root = PROJECT_ROOT
         self.sample_csv = self.project_root / "resources/sample.csv"
-        self.python_main = self.project_root / "lib/python/opentoken-cli/src/main/opentoken_cli/main.py"
 
 
 class PythonCLI(InteroperabilityTooling):
     """Command-line wrapper for the Python OpenToken CLI."""
 
+    @staticmethod
+    def _python_executable() -> str:
+        """Use the active virtualenv interpreter when available."""
+        virtual_env = os.environ.get("VIRTUAL_ENV")
+        if virtual_env:
+            virtual_env_python = Path(virtual_env) / "bin/python"
+            if virtual_env_python.exists():
+                return str(virtual_env_python)
+        return sys.executable
+
+    def _build_env(self) -> Dict[str, str]:
+        """Build the environment needed to execute the Python CLI module."""
+        pythonpath_entries = [
+            str(self.project_root / "lib/python/opentoken/src/main"),
+            str(self.project_root / "lib/python/opentoken-cli/src/main"),
+        ]
+        existing_pythonpath = os.environ.get("PYTHONPATH")
+        if existing_pythonpath:
+            pythonpath_entries.append(existing_pythonpath)
+
+        return {
+            **os.environ,
+            "PYTHONPATH": os.pathsep.join(pythonpath_entries),
+        }
+
+    def run(self, *args: str) -> subprocess.CompletedProcess:
+        """Run the Python CLI through its module entrypoint."""
+        cmd = [
+            self._python_executable(),
+            "-m",
+            "opentoken_cli.main",
+            *args,
+        ]
+
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            cwd=self.project_root,
+            env=self._build_env(),
+            check=False,
+        )
+
+        if result.returncode != 0:
+            print(f"OpenToken-Python stderr: {result.stderr}")
+            print(f"OpenToken-Python stdout: {result.stdout}")
+            raise RuntimeError(f"OpenToken-Python failed with return code {result.returncode}: {result.stderr}")
+
+        return result
+
     def generate_tokenized_output(self, input_file: Path, output_file: Path) -> subprocess.CompletedProcess:
         """Run the Python CLI `tokenize` command and write CSV output."""
-        cmd = [
-            "python3",
-            str(self.python_main),
+        return self.run(
             "tokenize",
             "-i",
             str(input_file),
@@ -65,24 +133,7 @@ class PythonCLI(InteroperabilityTooling):
             "csv",
             "--hashingsecret",
             self.HASHING_KEY,
-        ]
-
-        env = {
-            **os.environ,
-            "PYTHONPATH": (
-                f"{self.project_root / 'lib/python/opentoken/src/main'}:"
-                f"{self.project_root / 'lib/python/opentoken-cli/src/main'}"
-            ),
-        }
-
-        result = subprocess.run(cmd, capture_output=True, text=True, cwd=self.project_root, env=env, check=False)
-
-        if result.returncode != 0:
-            print(f"OpenToken-Python stderr: {result.stderr}")
-            print(f"OpenToken-Python stdout: {result.stdout}")
-            raise RuntimeError(f"OpenToken-Python failed with return code {result.returncode}: {result.stderr}")
-
-        return result
+        )
 
 
 class JavaLibraryHarness(InteroperabilityTooling):
@@ -219,6 +270,38 @@ class TestTokenCompatibility:
         tokens = token_generator.get_all_tokens(person_attributes).tokens
         assert tokens == EXPECTED_TOKENS
 
+    def test_python_cli_module_entrypoint_tokenize_flow(self):
+        """Verify the Python CLI tokenize flow works through the module entrypoint."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            python_output = temp_path / "python_module_output.csv"
+
+            result = self.python_cli.generate_tokenized_output(self.python_cli.sample_csv, python_output)
+
+            assert result.args[1:3] == ["-m", "opentoken_cli.main"], result.args
+            assert python_output.exists(), f"Python CLI output file {python_output} not found"
+
+            python_tokens = self.validator.load_csv_tokens(python_output)
+            assert python_tokens, "Python CLI output should contain token rows"
+            assert len(python_tokens) == EXPECTED_SAMPLE_METADATA["TotalRows"], python_tokens
+
+            python_metadata = python_output.with_suffix(".metadata.json")
+            assert python_metadata.exists(), f"Python metadata file {python_metadata} not found"
+
+            with open(python_metadata, "r", encoding="utf-8") as file_handle:
+                python_meta = json.load(file_handle)
+
+            assert python_meta["Platform"] == "Python", python_meta
+            assert python_meta["OpenTokenVersion"], python_meta
+            assert python_meta["HashingSecretHash"] == EXPECTED_SAMPLE_METADATA["HashingSecretHash"], python_meta
+            assert python_meta["TotalRows"] == EXPECTED_SAMPLE_METADATA["TotalRows"], python_meta
+            assert (
+                python_meta["TotalRowsWithInvalidAttributes"]
+                == EXPECTED_SAMPLE_METADATA["TotalRowsWithInvalidAttributes"]
+            ), python_meta
+            assert python_meta["InvalidAttributesByType"] == EXPECTED_SAMPLE_METADATA["InvalidAttributesByType"]
+            assert python_meta["BlankTokensByRule"] == EXPECTED_SAMPLE_METADATA["BlankTokensByRule"]
+
     def test_java_library_harness_matches_python_cli_tokenize_output(self):
         """Compare Java library output with Python CLI tokenize output for the sample CSV."""
         print("\nTesting Java library harness against Python CLI tokenize output")
@@ -263,9 +346,7 @@ class TestTokenCompatibility:
             for field in expected_fields:
                 assert field in python_meta, f"Python metadata missing expected field '{field}'"
 
-            assert python_meta["Platform"] == "Python", (
-                f"Expected Platform 'Python', got '{python_meta['Platform']}'"
-            )
+            assert python_meta["Platform"] == "Python", f"Expected Platform 'Python', got '{python_meta['Platform']}'"
 
             print("✅ Metadata consistency verified!")
             print("-" * 30)
@@ -277,6 +358,7 @@ if __name__ == "__main__":
 
     try:
         test.test_python_library_matches_known_java_fixture_values()
+        test.test_python_cli_module_entrypoint_tokenize_flow()
         test.test_java_library_harness_matches_python_cli_tokenize_output()
         test.test_metadata_consistency()
         print("\n✅ ALL TESTS PASSED!")

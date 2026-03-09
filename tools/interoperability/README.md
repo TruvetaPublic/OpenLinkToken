@@ -50,6 +50,6 @@ fields for tokenized output.
 ```bash
 cd <repo-root>/lib/java
 mvn -pl opentoken -DskipTests test-compile
-cd ..
+cd <repo-root>
 python tools/interoperability/multi_language_interoperability_test.py
 ```

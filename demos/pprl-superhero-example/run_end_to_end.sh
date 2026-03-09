@@ -2,7 +2,7 @@
 #
 # Run the Superhero PPRL example end-to-end:
 #  1) Generate datasets
-#  2) Tokenize with OpenToken (builds Java if needed)
+#  2) Tokenize with the Python OpenToken CLI
 #  3) Decrypt-and-compare tokens to measure overlap
 #
 set -euo pipefail
@@ -20,7 +20,6 @@ DEMO_DIR="${SCRIPT_DIR}"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 DATASETS_DIR="${DEMO_DIR}/datasets"
 OUTPUTS_DIR="${DEMO_DIR}/outputs"
-JAVA_DIR="${PROJECT_ROOT}/lib/java/opentoken"
 VENV_ACTIVATE="${PROJECT_ROOT}/.venv/bin/activate"
 
 # Keys (keep in sync with tokenization scripts and analyze_overlap.py)
@@ -63,7 +62,7 @@ mkdir -p "${DATASETS_DIR}"
 python "${DEMO_DIR}/scripts/generate_superhero_datasets.py"
 echo ""
 
-# Step 2: Tokenize datasets (builds Java if needed)
+# Step 2: Tokenize datasets with the Python CLI
 echo -e "${BLUE}Step 2/3: Tokenizing datasets with OpenToken...${NC}"
 chmod +x "${DEMO_DIR}/scripts/tokenize_hospital.sh" || true
 chmod +x "${DEMO_DIR}/scripts/tokenize_pharmacy.sh" || true

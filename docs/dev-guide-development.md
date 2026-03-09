@@ -54,13 +54,13 @@ This guide centralizes contributor-facing information. It covers local setup, la
 
 ## Prerequisites
 
-| Tool              | Recommended Version | Notes                                                                                    |
-| ----------------- | ------------------- | ---------------------------------------------------------------------------------------- |
-| Java JDK          | 21.x                | Required for Java module & CLI JAR (outputs Java 17 compatible bytecode)                 |
-| Maven             | 3.8+                | Build Java artifacts (`mvn clean install`)                                               |
-| Python            | 3.10+               | For Python implementation & scripts                                                      |
-| uv                | Latest              | Manage Python dependencies (install: `curl -LsSf https://astral.sh/uv/install.sh \| sh`) |
-| Docker (optional) | Latest              | Build container image                                                                    |
+| Tool              | Recommended Version | Notes                                                                                                |
+| ----------------- | ------------------- | ---------------------------------------------------------------------------------------------------- |
+| Java JDK          | 21.x                | Required for Java core library builds (outputs Java 17 compatible bytecode); the CLI is Python-based |
+| Maven             | 3.8+                | Build Java artifacts (`mvn clean install`)                                                           |
+| Python            | 3.10+               | For Python implementation & scripts                                                                  |
+| uv                | Latest              | Manage Python dependencies (install: `curl -LsSf https://astral.sh/uv/install.sh \| sh`)             |
+| Docker (optional) | Latest              | Build container image                                                                                |
 
 ## Project Layout
 
@@ -90,7 +90,7 @@ This section combines the previous standalone Java and Python development sectio
 
 Prerequisites:
 
-- Java 21 SDK or higher (JAR output is Java 17 compatible)
+- Java 21 SDK or higher (core library JAR output is Java 17 compatible)
 - Maven 3.8.8 or higher
 
 Build all modules (from `lib/java`):
