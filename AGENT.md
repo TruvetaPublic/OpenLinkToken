@@ -22,7 +22,7 @@ This file is the repo-level registry for OpenToken's custom agent architecture. 
 | `documentation-creator` | Root-level project-facing markdown                       | `README.md`, contributor-facing root docs, high-level project messaging       | Hands off `docs/**` and `pages/**` work                                                                                      |
 | `docs-maintainer`       | `docs/**`                                                | Durable specs, developer/reference docs, behavior-aligned guidance            | Hands off repo-root summary content and site presentation                                                                    |
 | `github-pages-content`  | `pages/**`                                               | GitHub Pages content, front matter, navigation, intra-site links, readability | Hands off durable reference/spec content and repo-root summaries                                                             |
-| `agentic-workflows`     | `.github/workflows/**/*.md`, related gh-aw workflow docs | gh-aw workflow authoring, debugging, upgrades, shared workflow components     | Uses gh-aw prompt routing for workflow-specific operations                                                                   |
+| `agentic-workflows`     | `.github/workflows/**`, related gh-aw workflow docs      | gh-aw workflow authoring, debugging, upgrades, shared workflow components     | Uses gh-aw prompt routing for workflow-specific operations                                                                   |
 
 ## Documentation Ownership
 

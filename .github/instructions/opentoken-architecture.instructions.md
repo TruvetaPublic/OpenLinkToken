@@ -1,6 +1,6 @@
 ---
 description: "OpenToken architecture, parity, and registration guidance"
-applyTo: "{lib,tools}/**/*.{java,py}"
+applyTo: "**"
 ---
 
 # OpenToken Architecture and Parity Guidance

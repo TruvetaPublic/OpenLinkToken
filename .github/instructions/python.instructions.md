@@ -86,7 +86,8 @@ cd lib/python/opentoken-cli && pytest
 
 ```bash
 source /workspaces/OpenToken/.venv/bin/activate
-uv pip install -r requirements.txt -r dev-requirements.txt
+cd lib/python/opentoken && uv pip install -r requirements.txt -r dev-requirements.txt
+cd lib/python/opentoken-cli && uv pip install -r requirements.txt -r dev-requirements.txt
 ```
 
 ### Test Guidelines
