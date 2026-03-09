@@ -25,12 +25,6 @@ class MultiLanguageSyncer:
             "naming": "PascalCase",
             "group": "core",
         },
-        "java-cli": {
-            "path": "lib/java/opentoken-cli/src/main/java/com/truveta/opentoken/cli/",
-            "extension": ".java",
-            "naming": "PascalCase",
-            "group": "cli",
-        },
         "python": {
             "path": "lib/python/opentoken/src/main/opentoken/",
             "extension": ".py",

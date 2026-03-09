@@ -1,19 +1,12 @@
 # Interoperability Tests
 
-This directory contains tests to ensure parity between Java and Python implementations of OpenToken.
+This directory contains interoperability checks for the Java core library and the
+Python CLI implementation of OpenToken.
 
 ## CLI Parity Tests
 
-The `cli_parity_test.py` script tests that Java and Python CLIs provide identical command structures and behavior.
-
-- Java 21 SDK or higher (JAR output compatible with Java 17)
-
-**Java:**
-
-```bash
-cd lib/java
-mvn clean package -DskipTests
-```
+The `cli_parity_test.py` script tests that the Python CLI provides the expected
+command structure and behavior.
 
 **Python:**
 
@@ -32,12 +25,31 @@ python tools/interoperability/cli_parity_test.py
 
 ### What is Tested
 
-- Both CLIs support the same commands: `tokenize`, `encrypt`, `decrypt`, `package`, `help`
-- Both CLIs support `--help`, `--version`, and `-h` flags
-- Each command has consistent help output with required parameters
+- Python CLI supports all required commands: `tokenize`, `encrypt`, `decrypt`, `package`, `help`
+- Python CLI supports `--help`, `--version`, and `-h` flags
+- Each command has help output with required parameters
 - The `help` command works for all subcommands
-- Command recognition and error handling is consistent
+- Command recognition and error handling
 
 ## Token Interoperability Tests
 
-The `multi_language_interoperability_test.py` script tests that Java and Python produce byte-identical tokens for the same input.
+The `multi_language_interoperability_test.py` script executes two parity checks:
+
+- **Unit-level fixture parity:** verifies that the Python library reproduces the
+  same deterministic token fixture values already asserted by the Java
+  `TokenGeneratorIntegrationTest`
+- **Java harness vs Python CLI parity:** invokes a thin Java harness built on the
+  Java core library API and compares its `tokenize`-compatible CSV output against
+  the Python CLI `tokenize` command
+
+The script also verifies that the Python CLI metadata file contains the expected
+fields for tokenized output.
+
+### Running the Tests
+
+```bash
+cd <repo-root>/lib/java
+mvn -pl opentoken -DskipTests test-compile
+cd <repo-root>
+python tools/interoperability/multi_language_interoperability_test.py
+```

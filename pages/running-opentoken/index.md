@@ -8,7 +8,7 @@ Guides for generating tokens in different environments and use cases.
 
 ## CLI Guide
 
-The OpenToken CLI accepts command-line arguments for flexible token generation. Both Java and Python CLIs support identical options.
+The OpenToken CLI accepts command-line arguments for flexible token generation.
 
 ### Basic Syntax
 
@@ -40,28 +40,12 @@ opentoken <subcommand> [OPTIONS]
 
 Generates encrypted tokens. Both hashing secret and encryption key required.
 
-**Java:**
-
-```bash
-cd lib/java
-mvn clean install -DskipTests
-
-java -jar opentoken-cli/target/opentoken-cli-*.jar package \
-  -i ../../resources/sample.csv \
-  -t csv \
-  -o ../../resources/output.csv \
-  -h "HashingKey" \
-  -e "Secret-Encryption-Key-Goes-Here."
-```
-
-**Python:**
-
 ```bash
 cd lib/python/opentoken-cli
 source ../../.venv/bin/activate
 uv pip install -r requirements.txt -e . -e ../opentoken
 
-python -m opentoken_cli.main package \
+opentoken package \
   -i ../../../resources/sample.csv \
   -t csv \
   -o ../../../resources/output.csv \
@@ -73,20 +57,8 @@ python -m opentoken_cli.main package \
 
 Generates HMAC-SHA256 hashed tokens without AES encryption. Only hashing secret required.
 
-**Java:**
-
 ```bash
-java -jar opentoken-cli/target/opentoken-cli-*.jar tokenize \
-  -i ../../resources/sample.csv \
-  -t csv \
-  -o ../../resources/hashed-output.csv \
-  -h "HashingKey"
-```
-
-**Python:**
-
-```bash
-python -m opentoken_cli.main tokenize \
+opentoken tokenize \
   -i ../../../resources/sample.csv \
   -t csv \
   -o ../../../resources/hashed-output.csv \
@@ -97,20 +69,8 @@ python -m opentoken_cli.main tokenize \
 
 Decrypts previously encrypted tokens. Only encryption key required.
 
-**Java:**
-
 ```bash
-java -jar opentoken-cli/target/opentoken-cli-*.jar decrypt \
-  -i ../../resources/output.csv \
-  -t csv \
-  -o ../../resources/decrypted.csv \
-  -e "Secret-Encryption-Key-Goes-Here."
-```
-
-**Python:**
-
-```bash
-python -m opentoken_cli.main decrypt \
+opentoken decrypt \
   -i ../../../resources/output.csv \
   -t csv \
   -o ../../../resources/decrypted.csv \
@@ -295,7 +255,7 @@ See example notebooks in `lib/python/opentoken-pyspark/notebooks/`:
 **Solution**: Either provide encryption key `-e "YourKey"` or use `tokenize`:
 
 ```bash
-java -jar opentoken-cli-*.jar tokenize -i data.csv -t csv -o output.csv -h "HashingKey"
+opentoken tokenize -i data.csv -t csv -o output.csv -h "HashingKey"
 ```
 
 ### "Invalid BirthDate" or "Date out of range"
@@ -357,9 +317,9 @@ Wrong:   1905-01-01, 2025-12-31, 01-15-80
 3. Clear Docker cache if needed: `docker system prune`
 4. Check file permissions: `ls -la resources/sample.csv`
 
-### Tokens don't match across Java/Python
+### Tokens produce unexpected results
 
-**Problem**: Same input produces different tokens in Java vs. Python.
+**Problem**: Same input produces different tokens across runs or environments.
 
 **Causes**:
 

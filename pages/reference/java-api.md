@@ -175,43 +175,19 @@ public class TokenGenerator {
 }
 ```
 
-## I/O Classes (CLI Module)
+## Data Integration
 
-For file processing, use classes from the CLI module:
+The Java library focuses on in-memory token generation. It does not include CSV, Parquet, or other file I/O helper classes.
 
-```java
-import java.util.Map;
-
-import com.truveta.opentoken.attributes.Attribute;
-import com.truveta.opentoken.cli.io.PersonAttributesReader;
-import com.truveta.opentoken.cli.io.PersonAttributesWriter;
-import com.truveta.opentoken.cli.io.csv.PersonAttributesCSVReader;
-import com.truveta.opentoken.cli.io.csv.PersonAttributesCSVWriter;
-import com.truveta.opentoken.cli.io.parquet.PersonAttributesParquetReader;
-import com.truveta.opentoken.cli.io.parquet.PersonAttributesParquetWriter;
-```
-
-### CSV Example
+Use your application's reader or writer layer to map each record into `Map<Class<? extends Attribute>, String>`, then pass that map to `TokenGenerator`.
 
 ```java
-try (PersonAttributesReader reader = new PersonAttributesCSVReader("input.csv")) {
-    while (reader.hasNext()) {
-        Map<Class<? extends Attribute>, String> person = reader.next();
-        // Process person...
-    }
-}
-```
+Map<Class<? extends Attribute>, String> personAttributes = new HashMap<>();
+personAttributes.put(FirstNameAttribute.class, row.get("FirstName"));
+personAttributes.put(LastNameAttribute.class, row.get("LastName"));
+// ...populate the remaining attributes needed for your token rules
 
-### Writing Output Rows
-
-```java
-try (PersonAttributesWriter writer = new PersonAttributesCSVWriter("output.csv")) {
-    writer.writeAttributes(Map.of(
-        "RecordId", "patient_001",
-        "RuleId", "T1",
-        "Token", "..."
-    ));
-}
+TokenGeneratorResult result = generator.getAllTokens(personAttributes);
 ```
 
 ## Thread Safety
@@ -236,13 +212,6 @@ for (Map<Class<? extends Attribute>, String> personAttributes : persons) {
 <dependency>
     <groupId>com.truveta</groupId>
     <artifactId>opentoken</artifactId>
-    <version>2.0.0-alpha</version>
-</dependency>
-
-<!-- For CLI/IO classes -->
-<dependency>
-    <groupId>com.truveta</groupId>
-    <artifactId>opentoken-cli</artifactId>
     <version>2.0.0-alpha</version>
 </dependency>
 ```

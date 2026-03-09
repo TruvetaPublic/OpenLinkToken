@@ -180,7 +180,7 @@ python multi_language_interoperability_test.py
 
 The test:
 
-1. Generates tokens using Java CLI
+1. Generates tokens using the Java core library
 2. Generates tokens using Python CLI
 3. Compares all tokens byte-by-byte
 4. Fails if any mismatch is found

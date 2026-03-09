@@ -125,9 +125,9 @@ Always JSON format, suffixed `.metadata.json` (e.g., `output.metadata.json`):
 
 ```json
 {
-  "JavaVersion": "21.0.0",
+  "PythonVersion": "3.11.0",
   "OpenTokenVersion": "1.0.0",
-  "Platform": "Java",
+  "Platform": "Python",
   "TotalRows": 3,
   "TotalRowsWithInvalidAttributes": 1,
   "InvalidAttributesByType": {
@@ -157,7 +157,7 @@ See [Reference: Metadata Format](../reference/metadata-format.md) for detailed f
 Generates encrypted `ot.V1` match tokens using HMAC-SHA256 + JWE/AES-256-GCM.
 
 ```bash
-java -jar opentoken-cli-*.jar package \
+opentoken package \
   -i data.csv -t csv -o tokens.csv \
   -h "HashingKey" -e "EncryptionKey"
 ```
@@ -176,7 +176,7 @@ Encrypted `ot.V1` tokens include randomized IVs, so ciphertext values are not de
 Generates hashed tokens without encryption. Useful for token matching scenarios where encryption overhead is unnecessary.
 
 ```bash
-java -jar opentoken-cli-*.jar tokenize \
+opentoken tokenize \
   -i data.csv -t csv -o tokens.csv \
   -h "HashingKey"
 ```
@@ -192,14 +192,14 @@ Token Signature → SHA-256 Hash → HMAC-SHA256(hash, key) → Base64 Encode
 - Faster processing
 - Smaller output (shorter tokens)
 - Suitable for internal matching where raw data is already protected
-- Java/Python cross-language compatibility guaranteed
+- Cross-language compatibility guaranteed
 
 ### Decryption Mode
 
 Reverse previous encryption to inspect or verify token generation.
 
 ```bash
-java -jar opentoken-cli-*.jar decrypt \
+opentoken decrypt \
   -i encrypted-tokens.csv -t csv -o decrypted-tokens.csv \
   -e "EncryptionKey"
 ```
@@ -223,7 +223,7 @@ To define custom token rules beyond T1–T5, see:
 
 ## Cross-Language Compatibility
 
-OpenToken Java and Python implementations produce **identical tokens** for the same input and secrets.
+OpenToken produces **identical tokens** for the same input and secrets across integrations.
 
 **Verified for:**
 - Attribute normalization

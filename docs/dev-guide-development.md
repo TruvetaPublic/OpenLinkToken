@@ -6,10 +6,10 @@ This guide centralizes contributor-facing information. It covers local setup, la
 
 ## At a Glance
 
-- Four packages: Java core (Maven), Java CLI (Maven), Python core, Python CLI, plus PySpark bridge
+- Three packages: Java core (Maven), Python core, Python CLI, plus PySpark bridge
 - Java uses multi-module Maven structure with parent POM at `lib/java/pom.xml`
 - Core packages (`opentoken`) contain pure tokenization logic with minimal dependencies
-- CLI packages (`opentoken-cli`) contain I/O implementations (CSV, Parquet, JSON) and command-line interface
+- Python CLI package (`opentoken-cli`) contains I/O implementations (CSV, Parquet, JSON) and command-line interface
 - Deterministic token generation logic is equivalent across languages
 - PySpark bridge enables large-scale distributed token generation & overlap analysis
 - Use this guide for environment setup & day-to-day development
@@ -29,6 +29,10 @@ This guide centralizes contributor-facing information. It covers local setup, la
     - [Multi-Language Sync Tool](#multi-language-sync-tool)
     - [Cross-language Tips](#cross-language-tips)
   - [Coding Standards](#coding-standards)
+    - [Java Style Guidelines](#java-style-guidelines)
+    - [Python Style Guidelines](#python-style-guidelines)
+    - [Self-Explanatory Code \& Comments](#self-explanatory-code--comments)
+    - [Security Best Practices](#security-best-practices)
   - [Token Processing Modes](#token-processing-modes)
   - [Token \& Attribute Registration](#token--attribute-registration)
     - [When to Use](#when-to-use)
@@ -50,13 +54,13 @@ This guide centralizes contributor-facing information. It covers local setup, la
 
 ## Prerequisites
 
-| Tool              | Recommended Version | Notes                                                                                    |
-| ----------------- | ------------------- | ---------------------------------------------------------------------------------------- |
-| Java JDK          | 21.x                | Required for Java module & CLI JAR (outputs Java 17 compatible bytecode)                 |
-| Maven             | 3.8+                | Build Java artifacts (`mvn clean install`)                                               |
-| Python            | 3.10+               | For Python implementation & scripts                                                      |
-| uv                | Latest              | Manage Python dependencies (install: `curl -LsSf https://astral.sh/uv/install.sh \| sh`) |
-| Docker (optional) | Latest              | Build container image                                                                    |
+| Tool              | Recommended Version | Notes                                                                                                |
+| ----------------- | ------------------- | ---------------------------------------------------------------------------------------------------- |
+| Java JDK          | 21.x                | Required for Java core library builds (outputs Java 17 compatible bytecode); the CLI is Python-based |
+| Maven             | 3.8+                | Build Java artifacts (`mvn clean install`)                                                           |
+| Python            | 3.10+               | For Python implementation & scripts                                                                  |
+| uv                | Latest              | Manage Python dependencies (install: `curl -LsSf https://astral.sh/uv/install.sh \| sh`)             |
+| Docker (optional) | Latest              | Build container image                                                                                |
 
 ## Project Layout
 
@@ -65,7 +69,6 @@ lib/
   java/
     pom.xml            # Parent POM (multi-module Maven build)
     opentoken/         # Core tokenization library (pure logic, minimal dependencies)
-    opentoken-cli/     # CLI application with I/O support (CSV, Parquet, JSON)
   python/
     opentoken/         # Core tokenization library
     opentoken-cli/     # CLI application with I/O support
@@ -87,7 +90,7 @@ This section combines the previous standalone Java and Python development sectio
 
 Prerequisites:
 
-- Java 21 SDK or higher (JAR output is Java 17 compatible)
+- Java 21 SDK or higher (core library JAR output is Java 17 compatible)
 - Maven 3.8.8 or higher
 
 Build all modules (from `lib/java`):
@@ -101,15 +104,11 @@ Build individual modules:
 ```shell
 # Core library only
 cd lib/java/opentoken && mvn clean install
-
-# CLI only (requires core to be installed first)
-cd lib/java/opentoken-cli && mvn clean install
 ```
 
 Resulting JARs:
 
 - Core library: `lib/java/opentoken/target/opentoken-*.jar`
-- CLI application: `lib/java/opentoken-cli/target/opentoken-cli-*.jar`
 
 Using as Maven dependencies:
 
@@ -120,36 +119,6 @@ Using as Maven dependencies:
   <artifactId>opentoken</artifactId>
   <version>${opentoken.version}</version>
 </dependency>
-
-<!-- CLI with I/O support (includes core as transitive dependency) -->
-<dependency>
-  <groupId>com.truveta</groupId>
-  <artifactId>opentoken-cli</artifactId>
-  <version>${opentoken.version}</version>
-</dependency>
-```
-
-CLI usage:
-
-```shell
-cd lib/java && java -jar opentoken-cli/target/opentoken-cli-*.jar package [OPTIONS]
-```
-
-Arguments:
-
-- `-i, --input <path>` Input file
-- `-t, --type <csv|parquet>` Input type
-- `-o, --output <path>` Output file
-- `-ot, --output-type <type>` Optional output type
-- `-h, --hashingsecret <secret>` HMAC-SHA256 secret
-- `-e, --encryptionkey <key>` AES-256 key
-
-Example:
-
-```shell
-cd lib/java && java -jar opentoken-cli/target/opentoken-cli-*.jar package \
-  -i opentoken/src/test/resources/sample.csv -t csv -o opentoken-cli/target/output.csv \
-  -h "HashingKey" -e "Secret-Encryption-Key-Goes-Here."
 ```
 
 Programmatic API (simplified):
@@ -159,10 +128,8 @@ List<TokenTransformer> transformers = Arrays.asList(
   new HashTokenTransformer("your-hashing-secret"),
   new EncryptTokenTransformer("your-encryption-key")
 );
-try (PersonAttributesReader reader = new PersonAttributesCSVReader("input.csv");
-     PersonAttributesWriter writer = new PersonAttributesCSVWriter("output.csv")) {
-  PersonAttributesProcessor.process(reader, writer, transformers, metadata);
-}
+TokenGenerator generator = new TokenGenerator(new TokenDefinition(), new SHA256Tokenizer(transformers));
+TokenGeneratorResult result = generator.getAllTokens(personAttributes);
 ```
 
 Testing:
@@ -173,7 +140,7 @@ cd lib/java && mvn test
 
 # Test with coverage report
 cd lib/java && mvn clean test jacoco:report
-# Coverage reports: opentoken/target/site/jacoco/index.html and opentoken-cli/target/site/jacoco/index.html
+# Coverage report: opentoken/target/site/jacoco/index.html
 ```
 
 Style & docs:
@@ -185,7 +152,6 @@ mvn clean javadoc:javadoc
 
 Notes:
 
-- Large inputs may require additional heap (`-Xmx4g`).
 - Unicode normalized to ASCII equivalents.
 
 ### Python
@@ -231,14 +197,14 @@ CLI usage (from project root):
 python -m opentoken_cli.main package [OPTIONS]
 ```
 
-Arguments mirror Java implementation.
+Arguments are consistent with the Java core library's tokenization logic.
 
 Example:
 
 ```shell
 # After installing opentoken-cli
 python -m opentoken_cli.main package \
-  -i resources/sample.csv -t csv -o lib/python/opentoken-cli/target/output.csv \
+  -i resources/sample.csv -t csv -o resources/output.csv \
   -h "HashingKey" -e "Secret-Encryption-Key-Goes-Here."
 ```
 
@@ -279,7 +245,7 @@ Parity notes:
 Contributing notes:
 
 - Follow PEP 8, add type hints.
-- Keep tests in sync with Java changes.
+- Keep normalization and token logic in sync with Java core library.
 
 ### PySpark Bridge
 
@@ -379,14 +345,14 @@ When adding attributes/tokens: update all applicable language implementations, r
 
 ### Cross-language Tips
 
-| Task            | Java Command                                                     | Python Command                             |
-| --------------- | ---------------------------------------------------------------- | ------------------------------------------ |
-| Build / Package | `cd lib/java && mvn clean install`                               | `uv pip install -e .`                      |
-| Run Tests       | `mvn test`                                                       | `pytest src/test`                          |
-| Lint / Style    | `mvn checkstyle:check`                                           | (pep8 / flake8 if configured)              |
-| Run CLI         | `java -jar opentoken-cli/target/opentoken-cli-*.jar package ...` | `python -m opentoken_cli.main package ...` |
-| Add Token       | SPI entry & class                                                | new module in `tokens/definitions`         |
-| Add Attribute   | SPI entry & class                                                | class + loader import                      |
+| Task            | Java Command                       | Python Command                     |
+| --------------- | ---------------------------------- | ---------------------------------- |
+| Build / Package | `cd lib/java && mvn clean install` | `uv pip install -e .`              |
+| Run Tests       | `mvn test`                         | `pytest src/test`                  |
+| Lint / Style    | `mvn checkstyle:check`             | (pep8 / flake8 if configured)      |
+| Run CLI         | N/A (use Python CLI)               | `opentoken package ...`            |
+| Add Token       | SPI entry & class                  | new module in `tokens/definitions` |
+| Add Attribute   | SPI entry & class                  | class + loader import              |
 
 Maintain the same functional behavior and normalization between languages.
 
@@ -640,7 +606,7 @@ Available in both Java and Python for custom rules:
 (Useful in CI or before PR submission.)
 
 ```shell
-# Java (builds both core and CLI modules)
+# Java (builds core module)
 (cd lib/java && mvn clean install)
 
 # Python core
@@ -661,14 +627,11 @@ docker build . -t opentoken
 
 ## Running the Tool (CLI)
 
-The CLI is provided by the `opentoken-cli` package in both Java and Python.
+The CLI is provided by the Python `opentoken-cli` package.
 
 Minimum required arguments:
 
 ```shell
-# Java
-java -jar lib/java/opentoken-cli/target/opentoken-cli-*.jar package -i input.csv -t csv -o output.csv -h HashingKey -e Secret-Encryption-Key-Goes-Here.
-
 # Python
 python -m opentoken_cli.main package -i input.csv -t csv -o output.csv -h HashingKey -e Secret-Encryption-Key-Goes-Here.
 ```
