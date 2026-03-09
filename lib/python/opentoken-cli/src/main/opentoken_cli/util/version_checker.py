@@ -64,18 +64,26 @@ class VersionChecker:
 
     def wait_and_notify(self) -> None:
         """
-        Wait for the background check to finish and, if a newer version is
-        available and stderr is an interactive TTY, print an update notice.
+        Wait briefly for the background check to finish and, if a newer version
+        is available, print an update notice to stderr.
 
         This method should be called **after** the primary command has completed
-        so it never adds latency to the critical path.
+        so it never adds latency to the critical path or noticeably delays
+        process termination. If the background check is still running after a
+        non-blocking check, no notice is printed.
         """
         if self._thread is None:
             return
 
-        self._thread.join(timeout=_REQUEST_TIMEOUT_SECONDS + 0.5)
+        # Use a very short timeout to avoid delaying CLI termination.
+        # If the background thread is still running, skip printing the notice
+        # rather than blocking.
+        self._thread.join(timeout=0.0)
 
-        if self._result and self._is_newer(self._result, self._current_version) and self._stderr_is_interactive():
+        if self._thread.is_alive():
+            return
+
+        if self._result and self._is_newer(self._result, self._current_version):
             self._print_notice(self._result)
 
     # ------------------------------------------------------------------

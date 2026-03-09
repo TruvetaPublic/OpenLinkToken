@@ -94,8 +94,7 @@ class UpdateCommand:
 
         if release_info is None:
             print(
-                "Error: Could not fetch release information from GitHub. "
-                "Please check your network connection.",
+                "Error: Could not fetch release information from GitHub. Please check your network connection.",
                 file=sys.stderr,
             )
             return 1
@@ -135,9 +134,7 @@ class UpdateCommand:
         # Confirmation prompt (skip when --yes or non-interactive)
         if not skip_confirm and sys.stdin.isatty():
             try:
-                answer = input(
-                    f"Update OpenToken from v{current_version} to {tag}? [y/N] "
-                ).strip().lower()
+                answer = input(f"Update OpenToken from v{current_version} to {tag}? [y/N] ").strip().lower()
             except (EOFError, KeyboardInterrupt):
                 answer = ""
             if answer not in ("y", "yes"):
@@ -157,24 +154,23 @@ class UpdateCommand:
             # Verify checksum if available
             if checksum_asset:
                 print("Verifying checksum...")
-                expected = UpdateCommand._fetch_checksum(
-                    checksum_asset["browser_download_url"], asset_name
-                )
+                expected = UpdateCommand._fetch_checksum(checksum_asset["browser_download_url"], asset_name)
                 if expected:
                     actual = UpdateCommand._sha256_file(tmp_path)
                     if actual != expected:
                         print(
-                            f"Error: Checksum verification failed.\n"
-                            f"  Expected: {expected}\n"
-                            f"  Actual  : {actual}",
+                            f"Error: Checksum verification failed.\n  Expected: {expected}\n  Actual  : {actual}",
                             file=sys.stderr,
                         )
                         tmp_path.unlink(missing_ok=True)
                         return 1
 
             # Replace current installation
-            current_executable = Path(sys.executable)
-            result = UpdateCommand._replace_binary(tmp_path, current_executable, asset_name)
+            # Derive a likely entrypoint name (e.g. "opentoken" from
+            # "opentoken-linux-amd64") so we are not tightly coupled to the
+            # full release asset filename.
+            expected_entrypoint_name = asset_name.split("-", 1)[0] if asset_name else ""
+            result = UpdateCommand._replace_binary(tmp_path, expected_entrypoint_name)
             if result != 0:
                 tmp_path.unlink(missing_ok=True)
                 return result
@@ -310,27 +306,28 @@ class UpdateCommand:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _replace_binary(src: Path, current_executable: Path, asset_name: str) -> int:
+    def _replace_binary(src: Path, expected_entrypoint_name: str) -> int:
         """
         Replace the current executable with *src*.
 
         Returns 0 on success, non-zero on failure.
         """
+        python_interpreter = Path(sys.executable).resolve()
         # Determine target path: for a wheel-installed script the executable is
         # the Python interpreter; we instead look for the "opentoken" script on PATH.
         target = UpdateCommand._find_target_binary()
         if target is None:
             # Fallback: try to infer the CLI entrypoint from sys.argv[0], but only
-            # if it is a real file, matches the expected asset name, and is not
+            # if it is a real file, matches the expected entrypoint name, and is not
             # the Python interpreter itself.
             argv0: Optional[Path] = None
             if sys.argv and sys.argv[0]:
-                argv0 = Path(sys.argv[0])
+                argv0 = Path(sys.argv[0]).resolve()
             if (
                 argv0 is not None
                 and argv0.is_file()
-                and argv0.name == asset_name
-                and argv0 != Path(sys.executable)
+                and argv0.name == expected_entrypoint_name
+                and argv0 != python_interpreter
             ):
                 target = argv0
             else:
