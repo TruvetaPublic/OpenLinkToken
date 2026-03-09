@@ -74,6 +74,6 @@
     "apm-reqs": "bash -lc '${containerWorkspaceFolder}/.devcontainer/scripts/setup_apm.sh' || true"
   },
   "postAttachCommand": {
-    "auto-activate-venv": "echo 'source /home/vscode/.local/share/opentoken/.venv/bin/activate 2>/dev/null || true' >> ~/.bashrc && echo 'source /home/vscode/.local/share/opentoken/.venv/bin/activate 2>/dev/null || true' >> ~/.zshrc || true"
+    "auto-activate-venv": "grep -qF 'opentoken/.venv/bin/activate' ~/.bashrc 2>/dev/null || echo 'source /home/vscode/.local/share/opentoken/.venv/bin/activate 2>/dev/null || true' >> ~/.bashrc; grep -qF 'opentoken/.venv/bin/activate' ~/.zshrc 2>/dev/null || echo 'source /home/vscode/.local/share/opentoken/.venv/bin/activate 2>/dev/null || true' >> ~/.zshrc; true"
   }
 }
