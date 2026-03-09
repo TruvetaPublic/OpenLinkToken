@@ -31,6 +31,9 @@ git push -u origin "dev/<github-username>/<feature-description>"
 ## Creating Pull Requests
 
 - Prefer repository-integrated PR tooling when available instead of `gh pr create`.
+- Use `.github/pull_request_template.md` as the default PR body when creating or refreshing a PR description, unless a different structure is explicitly requested.
+- Assign the PR to the current GitHub user after creation.
+- Add all fitting repository labels based on the surfaces touched by the change (for example `documentation`, `copilot`, `java`, `python`, `cli`, `pyspark`, `testing`, `devops`, or `release`).
 - Always set `draft: true` when opening a PR.
 - If a PR is accidentally opened as ready for review, move it back to draft immediately.
 - Do not convert a PR out of draft automatically; wait for explicit user direction or confirmed readiness.
@@ -60,25 +63,8 @@ Before converting a PR from draft to ready for review, ensure:
 
 Types: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`
 
-**Body Template:**
+Use the repository PR body scaffold in `.github/pull_request_template.md`. It is designed to capture the minimum reviewer context for OpenToken:
 
-```markdown
-## Summary
-
-Brief overview of changes and motivation
-
-## Changes
-
-- Detailed change 1
-- Detailed change 2
-
-## Testing
-
-- [ ] Test item 1
-- [ ] Test item 2
-
-## Files Changed
-
-- `path/to/file1` (X lines)
-- `path/to/file2` (Y lines)
-```
+- concise summary and related issue linkage
+- affected surfaces (Java, Python, CLI, docs, workflows, release flow)
+- the most important implementation details plus any intentional trade-offs or follow-up work
