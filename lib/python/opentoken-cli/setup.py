@@ -43,9 +43,4 @@ setup(
         ],
         "test": ["pytest"],
     },
-    entry_points={
-        "console_scripts": [
-            "opentoken=opentoken_cli.main:main",
-        ],
-    },
 )
