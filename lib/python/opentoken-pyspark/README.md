@@ -46,7 +46,7 @@ OpenToken PySpark supports multiple Spark versions to accommodate different Java
 For local development or clusters with Java 21:
 
 ```bash
-pip install opentoken-pyspark[spark40]
+uv pip install opentoken-pyspark[spark40]
 ```
 
 #### Option 2: Spark 3.5.x (Java 8-17)
@@ -54,7 +54,7 @@ pip install opentoken-pyspark[spark40]
 For clusters still using Java 8-17 and Spark 3.5.x:
 
 ```bash
-pip install opentoken-pyspark[spark35]
+uv pip install opentoken-pyspark[spark35]
 ```
 
 #### Option 3: Spark 3.4.x (Legacy)
@@ -62,7 +62,7 @@ pip install opentoken-pyspark[spark35]
 For older Spark 3.4.x clusters:
 
 ```bash
-pip install opentoken-pyspark[spark34]
+uv pip install opentoken-pyspark[spark34]
 ```
 
 #### Option 4: Managed Cluster Environments
@@ -70,7 +70,7 @@ pip install opentoken-pyspark[spark34]
 For environments where PySpark is pre-installed (Databricks, EMR, etc.):
 
 ```bash
-pip install opentoken-pyspark
+uv pip install opentoken-pyspark
 ```
 
 This installs only the core dependencies without PySpark. You'll use the cluster's PySpark installation.
@@ -82,11 +82,11 @@ For local development with editable install:
 ```bash
 # Install OpenToken core library first
 cd lib/python/opentoken
-pip install -e .
+uv pip install -e .
 
 # Install PySpark bridge with Spark 4.0 dependencies
 cd ../opentoken-pyspark
-pip install -e .[spark40,dev]
+uv pip install -e .[spark40,dev]
 ```
 
 The `dev` extra includes testing and notebook dependencies (pytest, jupyter, etc.).
@@ -159,7 +159,7 @@ tokens_df = processor.process_dataframe(df)
 tokens_df.show()
 ```
 
-**Note:** Ensure you have PyArrow <20 installed: `pip install 'pyarrow>=15.0.0,<20'`
+**Note:** Ensure you have PyArrow <20 installed: `uv pip install 'pyarrow>=15.0.0,<20'`
 
 ### Databricks Example
 

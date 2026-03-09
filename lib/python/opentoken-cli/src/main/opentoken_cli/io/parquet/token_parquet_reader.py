@@ -8,7 +8,7 @@ from typing import Dict, Iterator
 try:
     import pyarrow.parquet as pq
 except ImportError:
-    raise ImportError("pyarrow is required for Parquet support. Install with: pip install pyarrow")
+    raise ImportError("pyarrow is required for Parquet support. Install with: uv pip install pyarrow")
 
 from opentoken_cli.io.token_reader import TokenReader
 from opentoken_cli.processor.token_constants import TokenConstants

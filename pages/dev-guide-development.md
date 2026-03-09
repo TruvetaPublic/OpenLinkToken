@@ -32,6 +32,7 @@ This guide centralizes contributor-facing information. It covers local setup, la
     - [PySpark Bridge](#pyspark-bridge)
     - [Multi-Language Sync Tool](#multi-language-sync-tool)
     - [Cross-language Tips](#cross-language-tips)
+  - [Coding Standards](#coding-standards)
   - [Token Processing Modes](#token-processing-modes)
   - [Token \& Attribute Registration](#token--attribute-registration)
     - [When to Use](#when-to-use)
@@ -393,6 +394,144 @@ When adding attributes/tokens: update all applicable language implementations, r
 
 Maintain the same functional behavior and normalization between languages.
 
+## Coding Standards
+
+This project follows established coding conventions to ensure consistency, maintainability, and security across the
+codebase. Detailed guidelines are maintained in `.github/instructions/` and automatically applied by AI coding
+assistants.
+
+### Java Style Guidelines
+
+**Core Principles:**
+
+- **Always use direct imports**: Never use fully qualified class names in code (e.g., `new SHA256Tokenizer()` instead
+  of `new com.truveta.opentoken.tokens.tokenizer.SHA256Tokenizer()`). Add import statements at the top of the file.
+- **Follow Google's Java Style Guide**: Use `UpperCamelCase` for classes, `lowerCamelCase` for methods/variables,
+  `UPPER_SNAKE_CASE` for constants, `lowercase` for packages.
+- **Leverage Lombok**: Use `@Builder`, `@NonNull`, `@Data`, `@Value`, `@Slf4j` to reduce boilerplate.
+- **Prefer immutability**: Make classes and fields `final` where possible. Use `List.of()`, `Map.of()`,
+  `Stream.toList()` for immutable collections.
+- **Use modern Java features**: Pattern matching for `instanceof`, `var` for local variables (when type is clear),
+  `Optional<T>` instead of null.
+
+**Verification:**
+
+```bash
+# Run Checkstyle checks
+cd lib/java && mvn checkstyle:check
+
+# Generate Javadoc
+mvn clean javadoc:javadoc
+```
+
+**Common Issues:**
+
+- Resource management: Always use try-with-resources for closeable resources
+- Equality checks: Use `.equals()` or `Objects.equals()` for object comparison (not `==`)
+- Avoid magic numbers: Extract repeated values to named constants
+
+**See:** [`.github/instructions/java.instructions.md`](../.github/instructions/java.instructions.md) for complete
+guidelines.
+
+### Python Style Guidelines
+
+**Core Principles:**
+
+- **Follow PEP 8**: Maximum line length 120 characters (extended for PySpark chains), 4-space indentation.
+- **Type hints required**: Use `typing` module for all function signatures (e.g., `List[str]`, `Dict[str, int]`,
+  `Optional[T]`).
+- **Docstrings required**: Follow PEP 257 conventions with Args, Returns, and Raises sections.
+- **Clean imports**: Remove unused imports/variables, organize in groups (standard library → third-party → local).
+- **PySpark-specific**: Always use direct imports (`from pyspark.sql.functions import col, lit, when`) instead of
+  `import pyspark.sql.functions as F`.
+
+**PySpark Method Chaining:**
+
+```python
+# CORRECT - additional indentation for chained methods
+result_df = (
+    source_df
+        .select(USER_ID, ORDER_ID, PRODUCT_ID)
+        .withColumn(STATUS_CODE, lit(DEFAULT_STATUS))
+        .filter(col(IS_ACTIVE) == True)
+)
+```
+
+**Verification:**
+
+```bash
+# Run tests with coverage
+cd lib/python/opentoken && pytest --cov=opentoken --cov-report=term
+
+# Auto-remove unused imports (if needed)
+autoflake --remove-all-unused-imports --remove-unused-variables --in-place file.py
+```
+
+**See:** [`.github/instructions/python.instructions.md`](../.github/instructions/python.instructions.md) for complete
+guidelines.
+
+### Self-Explanatory Code & Comments
+
+**Core Principle:** Write code that speaks for itself. Comment only when necessary to explain WHY, not WHAT.
+
+**When to comment:**
+
+- ✅ **Complex business logic** — Explain the reasoning behind non-obvious calculations or algorithms
+- ✅ **Regex patterns** — Describe what the pattern matches
+- ✅ **API constraints** — Document external limitations or gotchas
+- ✅ **Public APIs** — Use JavaDoc/docstrings for all public methods
+- ✅ **Annotations** — Use `TODO`, `FIXME`, `SECURITY`, `WARNING`, etc. for important notes
+
+**When NOT to comment:**
+
+- ❌ **Obvious statements** — Don't repeat what the code clearly does
+- ❌ **Redundant explanations** — If a good variable/method name makes it clear, no comment needed
+- ❌ **Outdated information** — Remove comments that no longer match the code
+- ❌ **Dead code** — Delete commented-out code instead of leaving it in
+- ❌ **Changelog entries** — Use git history, not inline comments
+
+**Examples:**
+
+```java
+// GOOD: Explains WHY this specific calculation
+// Apply progressive tax brackets: 10% up to 10k, 20% above
+final tax = calculateProgressiveTax(income, List.of(0.1, 0.2), List.of(10000));
+
+// BAD: States the obvious
+counter++; // Increment counter by one
+```
+
+**See:** [`.github/instructions/self-explanatory-code-commenting.instructions.md`](../.github/instructions/self-explanatory-code-commenting.instructions.md) for detailed examples.
+
+### Security Best Practices
+
+**Based on OWASP Top 10:**
+
+1. **Access Control (A01):** Deny by default, enforce least privilege, validate all access checks
+2. **Cryptographic Failures (A02):**
+   - Use Argon2/bcrypt for password hashing (never MD5/SHA-1)
+   - Always use HTTPS for network requests
+   - Encrypt data at rest with AES-256
+   - **Never hardcode secrets** — Use environment variables or secrets management services
+3. **Injection (A03):**
+   - Use parameterized queries for SQL (never string concatenation)
+   - Sanitize command-line input
+   - Context-aware output encoding for XSS prevention (prefer `.textContent` over `.innerHTML`)
+4. **Security Misconfiguration (A05-A06):**
+   - Disable verbose error messages in production
+   - Set security headers: `Content-Security-Policy`, `Strict-Transport-Security`, `X-Content-Type-Options`
+   - Keep dependencies up-to-date, run vulnerability scanners (`npm audit`, `pip-audit`, Snyk)
+5. **Authentication Failures (A07):** Secure session management, rate limiting, account lockout
+6. **Data Integrity (A08):** Avoid insecure deserialization, validate untrusted data
+
+**OpenToken-specific:**
+
+- Hashing and encryption keys must only appear in test files with dummy values
+- SSN validation logic is public, but never log actual SSN values
+- Metadata files contain SHA-256 hashes of secrets (for audit), not the secrets themselves
+
+**See:** [`.github/instructions/security-and-owasp.instructions.md`](../.github/instructions/security-and-owasp.instructions.md) for comprehensive security guidelines.
+
 ## Token Processing Modes
 
 OpenToken supports three processing modes across Java, Python, and the PySpark bridge. These modes determine how raw token signatures are transformed:
@@ -576,7 +715,9 @@ Before opening a PR:
 - [ ] Code compiles (`mvn clean install` for Java)
 - [ ] Tests pass (Java & Python where changes apply)
 - [ ] Added/updated docs if behavior changed
-- [ ] Followed style guidelines (Checkstyle / Python conventions)
+- [ ] Followed [Coding Standards](#coding-standards) (see also [PR Guidelines](../.github/instructions/pull-request.instructions.md))
+  - [ ] Java: Direct imports, Checkstyle passing, Javadoc for public APIs
+  - [ ] Python: PEP 8, type hints, docstrings, no unused imports
 - [ ] Added registration entries (Java SPI files) or loader entries (Python) if new Token/Attribute
 - [ ] Bumped version with `bump2version`
 
@@ -588,6 +729,7 @@ Before opening a PR:
 | Python attribute not loaded      | Ensure it is imported & added in `attribute_loader.py`                              |
 | Token mismatch between languages | Verify hashing & encryption secrets are identical and normalization logic unchanged |
 | Build fails on Checkstyle        | Run `mvn -q checkstyle:check` locally & fix warnings                                |
+| Import errors or style issues    | See [Coding Standards](#coding-standards) for language-specific guidelines          |
 
 ---
 
