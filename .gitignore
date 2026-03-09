@@ -83,6 +83,7 @@ demos/pprl-superhero-example/datasets/
 .tmp/
 .venv
 .ruff_cache/
+apm.lock
 
 # APM dependencies
 apm_modules/
