@@ -63,19 +63,19 @@ This document provides comprehensive guidance for AI coding agents working on th
 
 ### ⚠️ CRITICAL PYTHON ENVIRONMENT RULE
 
-**The Python virtual environment (`.venv`) is located at the repository root (`/workspaces/OpenToken/.venv`).**
+**In the devcontainer, the workspace-root `.venv` is a symlink to the shared environment at `/home/vscode/.local/share/opentoken/.venv`.**
 
 - ❌ **NEVER** create or activate a venv in any subdirectory (e.g., `lib/python/opentoken/.venv`)
-- ❌ **NEVER** run `uv venv .venv` from any folder other than the repo root
-- ✅ **ALWAYS** activate the root venv: `source /workspaces/OpenToken/.venv/bin/activate`
-- ✅ **ALWAYS** use absolute path or ensure you're at repo root before activating
+- ❌ **NEVER** run `uv venv .venv` from any folder other than the repo or worktree root
+- ✅ **ALWAYS** activate the workspace-root venv: `cd "$(git rev-parse --show-toplevel)" && source .venv/bin/activate`
+- ✅ **ALWAYS** treat `/home/vscode/.local/share/opentoken/.venv` as the canonical devcontainer location and `.venv` as its compatibility symlink
 
 ```bash
-# CORRECT - activate from anywhere using absolute path
-source /workspaces/OpenToken/.venv/bin/activate
+# CORRECT - activate from anywhere in the repo or worktree
+cd "$(git rev-parse --show-toplevel)" && source .venv/bin/activate
 
-# CORRECT - navigate to repo root first
-cd /workspaces/OpenToken && source .venv/bin/activate
+# CORRECT - use the shared devcontainer path directly when needed
+source /home/vscode/.local/share/opentoken/.venv/bin/activate
 
 # WRONG - never do this from lib/python or any subdirectory
 cd lib/python/opentoken && uv venv .venv  # ❌ DO NOT DO THIS
@@ -88,14 +88,14 @@ cd lib/python/opentoken && uv venv .venv  # ❌ DO NOT DO THIS
 # Builds both opentoken (core) and opentoken-cli modules
 cd lib/java && mvn clean install
 
-# Python: Activate root venv first, then run tests from package directories
-source /workspaces/OpenToken/.venv/bin/activate
+# Python: Activate the workspace-root venv first, then run tests from package directories
+cd "$(git rev-parse --show-toplevel)" && source .venv/bin/activate
 
 # Python core library tests:
-cd /workspaces/OpenToken/lib/python/opentoken && pytest
+cd lib/python/opentoken && pytest
 
 # Python CLI tests:
-cd /workspaces/OpenToken/lib/python/opentoken-cli && pytest
+cd ../opentoken-cli && pytest
 
 # Note: No unified build script exists - build each language separately
 ```
@@ -353,7 +353,7 @@ Fix style issues before running full build.
 **Python import errors:**
 
 ```bash
-cd lib/python/opentoken && source .venv/bin/activate
+cd "$(git rev-parse --show-toplevel)" && source .venv/bin/activate && cd lib/python/opentoken
 uv pip install -e .
 ```
 
@@ -396,7 +396,7 @@ cd lib/java/opentoken && mvn verify
 # Open target/site/jacoco/index.html in browser
 
 # Python: Generate and view coverage report
-cd lib/python/opentoken && source .venv/bin/activate
+cd "$(git rev-parse --show-toplevel)" && source .venv/bin/activate && cd lib/python/opentoken
 pytest --cov=opentoken --cov-report=html --cov-report=term
 # Open htmlcov/index.html in browser
 ```
