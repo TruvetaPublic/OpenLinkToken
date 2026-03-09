@@ -27,7 +27,7 @@ counter++; // Increment counter by one
 ```javascript
 // Bad: Comment repeats the code
 function getUserName() {
-    return user.name; // Return the user's name
+  return user.name; // Return the user's name
 }
 ```
 
@@ -36,8 +36,7 @@ function getUserName() {
 ```javascript
 // Bad: Comment doesn't match the code
 // Calculate tax at 5% rate
-const tax =
-    price * 0.08; // Actually 8%
+const tax = price * 0.08; // Actually 8%
 ```
 
 ### ✅ WRITE These Comment Types
@@ -47,12 +46,7 @@ const tax =
 ```javascript
 // Good: Explains WHY this specific calculation
 // Apply progressive tax brackets: 10% up to 10k, 20% above
-const tax =
-    calculateProgressiveTax(
-        income,
-        [0.1, 0.2],
-        [10000],
-    );
+const tax = calculateProgressiveTax(income, [0.1, 0.2], [10000]);
 ```
 
 **Non-obvious Algorithms**
@@ -61,26 +55,12 @@ const tax =
 // Good: Explains the algorithm choice
 // Using Floyd-Warshall for all-pairs shortest paths
 // because we need distances between all nodes
-for (
-    let k = 0;
-    k < vertices;
-    k++
-) {
-    for (
-        let i = 0;
-        i <
-        vertices;
-        i++
-    ) {
-        for (
-            let j = 0;
-            j <
-            vertices;
-            j++
-        ) {
-            // ... implementation
-        }
+for (let k = 0; k < vertices; k++) {
+  for (let i = 0; i < vertices; i++) {
+    for (let j = 0; j < vertices; j++) {
+      // ... implementation
     }
+  }
 }
 ```
 
@@ -89,8 +69,7 @@ for (
 ```javascript
 // Good: Explains what the regex matches
 // Match email format: username@domain.extension
-const emailPattern =
-    /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 ```
 
 **API Constraints or Gotchas**
@@ -99,10 +78,7 @@ const emailPattern =
 // Good: Explains external constraint
 // GitHub API rate limit: 5000 requests/hour for authenticated users
 await rateLimiter.wait();
-const response =
-    await fetch(
-        githubApiUrl,
-    );
+const response = await fetch(githubApiUrl);
 ```
 
 ## Decision Framework
@@ -129,12 +105,12 @@ Before writing a comment, ask:
  * @returns {number} Final amount after compound interest
  */
 function calculateCompoundInterest(
-    principal,
-    rate,
-    time,
-    compoundFrequency = 1,
+  principal,
+  rate,
+  time,
+  compoundFrequency = 1,
 ) {
-    // ... implementation
+  // ... implementation
 }
 ```
 
@@ -178,7 +154,7 @@ const newFunction = () => { ... };
 // Modified by John on 2023-01-15
 // Fixed bug reported by Sarah on 2023-02-03
 function processData() {
-    // ... implementation
+  // ... implementation
 }
 ```
 
