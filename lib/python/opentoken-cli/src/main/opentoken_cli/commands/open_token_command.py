@@ -113,11 +113,8 @@ class OpenTokenCommand:
         """Main entry point for the command-line application."""
         parser = OpenTokenCommand.create_parser()
 
-        # Show banner for interactive runs (not for --help or piped output)
-        # Show when no args provided OR when it's not a help request
-        argv = sys.argv if args is None else args
-        if len(argv) == 0 or not OpenTokenCommand._is_help_request(argv):
-            OpenTokenCommand.show_banner()
+        # Show banner for interactive runs.
+        OpenTokenCommand.show_banner()
 
         try:
             parsed_args = parser.parse_args(args)

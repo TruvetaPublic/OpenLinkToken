@@ -17,6 +17,12 @@
   },
   "files.trimFinalNewlines": true,
   "files.eol": "\n",
+  "files.exclude": {
+    ".worktrees/**": true
+  },
+  "files.watcherExclude": {
+    ".worktrees/**": true
+  },
   "chat.tools.autoApprove": true,
   "chat.mcp.access": "all",
   "python.testing.pytestEnabled": true,

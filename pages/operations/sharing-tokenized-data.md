@@ -66,7 +66,7 @@ Generate tokens using the agreed-upon secrets.
 **Encrypted mode (recommended for external sharing):**
 
 ```bash
-java -jar opentoken-cli-*.jar package \
+opentoken package \
   -i patient_data.csv \
   -t csv \
   -o tokens_for_partner.csv \
@@ -79,7 +79,7 @@ java -jar opentoken-cli-*.jar package \
 Tokenized (unencrypted) output is primarily used **inside your environment** to support overlap analysis against encrypted tokens received from a partner:
 
 ```bash
-java -jar opentoken-cli-*.jar tokenize \
+opentoken tokenize \
   -i local_patient_data.csv \
   -t csv \
   -o local_hash_only_tokens.csv \
@@ -173,7 +173,7 @@ Compare the output hashes with `HashingSecretHash` and `EncryptionSecretHash` in
 Run OpenToken on your local data using the **same secrets**:
 
 ```bash
-java -jar opentoken-cli-*.jar package \
+opentoken package \
   -i local_patient_data.csv \
   -t csv \
   -o local_tokens.csv \
@@ -210,7 +210,7 @@ See [Matching Model](../concepts/matching-model.md) for matching strategies.
 If tokens are encrypted and you need to debug or verify:
 
 ```bash
-java -jar opentoken-cli-*.jar decrypt \
+opentoken decrypt \
   -i partner_tokens.csv \
   -t csv \
   -o partner_decrypted.csv \

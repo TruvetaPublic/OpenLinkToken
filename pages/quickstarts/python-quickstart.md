@@ -180,7 +180,7 @@ python multi_language_interoperability_test.py
 
 The test:
 
-1. Generates tokens using Java CLI
+1. Generates tokens using the Java core library
 2. Generates tokens using Python CLI
 3. Compares all tokens byte-by-byte
 4. Fails if any mismatch is found
@@ -211,7 +211,8 @@ OpenToken requires Python 3.10+. Check with `python --version`.
 If commands fail, ensure venv is active:
 
 ```bash
-source /path/to/OpenToken/.venv/bin/activate
+cd /path/to/OpenToken
+source .venv/bin/activate
 ```
 
 ### Import Errors After Updates
@@ -227,8 +228,9 @@ uv pip install -e . --reinstall
 The console script is installed into the active environment. Re-activate your venv and reinstall the CLI package:
 
 ```bash
-source /path/to/OpenToken/.venv/bin/activate
-cd /path/to/OpenToken/lib/python/opentoken-cli
+cd /path/to/OpenToken
+source .venv/bin/activate
+cd lib/python/opentoken-cli
 uv pip install -e .
 ```
 

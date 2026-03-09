@@ -1,0 +1,24 @@
+name: OpenToken
+version: 1.0.0
+description: APM project for apm
+author: mattwise-42
+dependencies:
+  apm:
+    - obra/superpowers/skills/brainstorming
+    - obra/superpowers/skills/dispatching-parallel-agents
+    - obra/superpowers/skills/executing-plans
+    - obra/superpowers/skills/finishing-a-development-branch
+    - obra/superpowers/skills/receiving-code-review
+    - obra/superpowers/skills/requesting-code-review
+    - obra/superpowers/skills/subagent-driven-development
+    - obra/superpowers/skills/systematic-debugging
+    - obra/superpowers/skills/test-driven-development
+    - obra/superpowers/skills/using-git-worktrees
+    - obra/superpowers/skills/using-superpowers
+    - obra/superpowers/skills/verification-before-completion
+    - obra/superpowers/skills/writing-plans
+    - obra/superpowers/skills/writing-skills
+    - github/awesome-copilot/skills/documentation-writer
+    - github/awesome-copilot/skills/gh-cli
+  mcp: []
+scripts: {}

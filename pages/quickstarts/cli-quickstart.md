@@ -14,7 +14,6 @@ Choose one of:
 
 - **Self-contained executable** (easiest) - Download and run, zero dependencies
 - **Docker** (recommended for reproducibility) - No other dependencies needed
-- **Java 21+** and Maven 3.8+
 - **Python 3.10+**
 
 ## Quick Start with Self-Contained Executable
@@ -80,7 +79,7 @@ No installation or setup required — just download, extract, and run.
 
 ## Quick Start with Docker
 
-The fastest way to get started. No Java or Python installation required.
+The fastest way to get started. No Python installation required.
 
 ### Linux/Mac
 
@@ -155,7 +154,7 @@ patient_002,Jane,Smith,1975-03-22,Female,90210,987-65-4321
 **Command:**
 
 ```bash
-java -jar opentoken-cli-*.jar package \
+opentoken package \
   -i sample.csv \
   -t csv \
   -o tokens.csv \
@@ -178,7 +177,7 @@ patient_002,T1,...
 ### Example: Parquet Input
 
 ```bash
-java -jar opentoken-cli-*.jar package \
+opentoken package \
   -i input.parquet \
   -t parquet \
   -o tokens.parquet \
@@ -212,9 +211,9 @@ A `.metadata.json` file is created alongside the output:
 
 ```json
 {
-  "Platform": "Java",
-  "JavaVersion": "21.0.0",
-  "OpenTokenVersion": "1.7.0",
+  "Platform": "Python",
+  "PythonVersion": "3.11.0",
+  "OpenTokenVersion": "2.0.0",
   "TotalRows": 2,
   "TotalRowsWithInvalidAttributes": 0,
   "InvalidAttributesByType": {},
@@ -281,7 +280,7 @@ The updater downloads the correct platform asset, verifies its SHA-256 checksum 
 
 ## Next Steps
 
-- [Java Quickstart](java-quickstart.md) - Build from source
+- [Java API Quickstart](java-quickstart.md) - Use the Java library directly
 - [Python Quickstart](python-quickstart.md) - Use Python CLI
 - [Configuration](../config/configuration.md) - Advanced options
 - [Token Rules](../concepts/token-rules.md) - Understand T1-T5

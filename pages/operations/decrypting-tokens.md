@@ -15,7 +15,7 @@ Decryption is useful for:
 - **Debugging**: Verifying attribute normalization produced expected token signatures
 - **Verification**: Confirming tokens match between datasets
 - **Re-encryption**: Decrypting tokens to re-encrypt with a different key
-- **Cross-language validation**: Ensuring Java and Python produce identical tokens
+- **Cross-language validation**: Ensuring consistent tokens across implementations
 
 **Note:** Decryption produces HMAC-SHA256 hashed tokens (base64 encoded), **not** the original attribute values. Token generation is one-way.
 
@@ -25,23 +25,13 @@ Decryption is useful for:
 
 Use the `decrypt` subcommand with the same encryption key used for token generation.
 
-### Java
+### OpenToken CLI (Python)
 
 ```bash
-java -jar opentoken-cli/target/opentoken-cli-*.jar decrypt \
+opentoken decrypt \
   -i ../../resources/output.csv \
   -t csv \
   -o ../../resources/decrypted.csv \
-  -e "Secret-Encryption-Key-Goes-Here."
-```
-
-### Python
-
-```bash
-python -m opentoken_cli.main decrypt \
-  -i ../../../resources/output.csv \
-  -t csv \
-  -o ../../../resources/decrypted.csv \
   -e "Secret-Encryption-Key-Goes-Here."
 ```
 
@@ -101,16 +91,16 @@ python decryptor.py \
 
 ## Cross-Language Decryption
 
-Tokens encrypted by Java can be decrypted by Python and vice versa:
+Tokens can be encrypted by one OpenToken implementation and decrypted by another—all implementations use AES-256-GCM with identical parameters:
 
 ```bash
-# Encrypt with Java
-java -jar opentoken-cli-*.jar package \
+# Encrypt with OpenToken CLI
+opentoken package \
   -i data.csv -t csv -o tokens.csv \
   -h "HashingKey" -e "EncryptionKey32Characters!!!!!"
 
-# Decrypt with Python
-python -m opentoken_cli.main decrypt \
+# Decrypt with OpenToken CLI
+opentoken decrypt \
   -i tokens.csv -t csv -o decrypted.csv \
   -e "EncryptionKey32Characters!!!!!"
 ```
@@ -131,7 +121,7 @@ python -m opentoken_cli.main decrypt \
 - **Use environment variables** or secret stores:
   ```bash
   export OPENTOKEN_ENCRYPTION_KEY="YourKey32Characters!!!!!!!!!!!!"
-  java -jar opentoken-cli-*.jar decrypt -e "$OPENTOKEN_ENCRYPTION_KEY" ...
+  opentoken decrypt -e "$OPENTOKEN_ENCRYPTION_KEY" ...
   ```
 - **Rotate keys periodically** and re-encrypt tokens as needed
 
