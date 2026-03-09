@@ -2,37 +2,48 @@ name: Build OpenToken CLI (PyInstaller)
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to build/release (e.g., 1.12.5)"
+        required: false
+        type: string
   push:
     branches:
       - main
+  release:
+    types: [created, published]
+  workflow_run:
+    workflows: ["Create Release on Merge"]
+    types: [completed]
 
 permissions:
   contents: read
 
 jobs:
-  version:
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.get-version.outputs.version }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Get version
-        id: get-version
-        run: |
-          version=$(sed -n '/^\[bumpversion\]/,/^\[/p' .bumpversion.cfg | grep "^current_version" | sed 's/^current_version = //')
-          echo "version=${version}" >> $GITHUB_OUTPUT
-          echo "Detected version: ${version}"
+  release-info:
+    uses: ./.github/workflows/release-context.yml
+    secrets: inherit
+    with:
+      lookup-release: ${{ github.event_name != 'push' }}
+      release-tag: ${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.version && format('v{0}', github.event.inputs.version) || '' }}
 
   build:
-    needs: version
+    needs: release-info
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     name: Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+
+    env:
+      VERSION: ${{ needs.release-info.outputs.version }}
+      TAG: ${{ needs.release-info.outputs.tag }}
+      RELEASE_FOUND: ${{ needs.release-info.outputs['release-found'] }}
+      RELEASE_ID: ${{ needs.release-info.outputs['release-id'] }}
 
     steps:
       - name: Checkout
@@ -78,42 +89,79 @@ jobs:
           Copy-Item resources\sample.csv smoke\input.csv
           .\dist\opentoken.exe tokenize -i smoke\input.csv -t csv -o smoke\out.csv -h secret
 
-      - name: Prepare and zip artifact
+      - name: Prepare release assets
         shell: bash
         run: |
           set -euo pipefail
-          VERSION="${{ needs.version.outputs.version }}"
+          python -m opentoken_cli.util.release_assets \
+            --version "${VERSION}" \
+            --runner-os "${{ runner.os }}" \
+            --dist-dir dist \
+            --output-dir release-assets
 
-          # Determine platform name
-          case "${{ runner.os }}" in
-            Linux)   PLATFORM="linux-x64" ;;
-            macOS)   PLATFORM="macos-universal" ;;
-            Windows) PLATFORM="windows-x64" ;;
-          esac
-
-          # Create versioned directory
-          PACKAGE_NAME="opentoken-cli-${VERSION}-${PLATFORM}"
-          mkdir -p "${PACKAGE_NAME}"
-
-          # Copy executable
-          if [[ "${{ runner.os }}" == "Windows" ]]; then
-            cp "dist/opentoken.exe" "${PACKAGE_NAME}/"
-          else
-            cp "dist/opentoken" "${PACKAGE_NAME}/"
-          fi
-
-          # Create zip file
-          if [[ "${{ runner.os }}" == "Windows" ]]; then
-            powershell -Command "Compress-Archive -Path '${PACKAGE_NAME}' -DestinationPath '${PACKAGE_NAME}.zip'"
-          else
-            zip -r "${PACKAGE_NAME}.zip" "${PACKAGE_NAME}"
-          fi
-
-          echo "Created ${PACKAGE_NAME}.zip"
-
-      - name: Upload artifact
+      - name: Upload workflow artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: opentoken-cli-${{ needs.version.outputs.version }}-${{ matrix.os }}
-          path: opentoken-cli-*.zip
+          name: opentoken-cli-${{ env.VERSION }}-${{ matrix.os }}
+          path: release-assets/*
           if-no-files-found: error
+
+      - name: Upload release assets
+        if: env.RELEASE_FOUND == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const assetDir = 'release-assets';
+            const tag = '${{ env.TAG }}';
+            let releaseId = '${{ env.RELEASE_ID }}';
+
+            if (!releaseId) {
+              const release = await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag,
+              });
+              releaseId = release.data.id;
+            }
+
+            const files = fs.readdirSync(assetDir)
+              .map((name) => path.join(assetDir, name))
+              .filter((filePath) => fs.statSync(filePath).isFile());
+
+            if (files.length === 0) {
+              throw new Error(`No CLI release assets found in ${assetDir}`);
+            }
+
+            const release = await github.rest.repos.getRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: releaseId,
+            });
+            const existingAssets = new Map(release.data.assets.map((asset) => [asset.name, asset.id]));
+
+            for (const filePath of files) {
+              const name = path.basename(filePath);
+              const size = fs.statSync(filePath).size;
+              const existingAssetId = existingAssets.get(name);
+
+              if (existingAssetId) {
+                await github.rest.repos.deleteReleaseAsset({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  asset_id: existingAssetId,
+                });
+              }
+
+              await github.rest.repos.uploadReleaseAsset({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: releaseId,
+                name,
+                data: fs.readFileSync(filePath),
+              });
+
+              console.log(`Uploaded ${name} (${size} bytes)`);
+            }

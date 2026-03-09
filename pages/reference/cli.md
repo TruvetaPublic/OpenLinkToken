@@ -140,7 +140,7 @@ opentoken update --dry-run
 opentoken update --yes
 ```
 
-If the SHA-256 checksum is published alongside the release asset, it is verified automatically before the binary is replaced. The command exits non-zero if the checksum does not match.
+Release assets are published with SHA-256 sidecars, and `opentoken update` verifies the matching checksum automatically before the binary is replaced. The command exits non-zero if the checksum does not match.
 
 ## Modes of Operation
 
@@ -403,7 +403,7 @@ opentoken update --yes
 1. Fetches release information from the GitHub Releases API
 2. Selects the correct platform asset for the current OS and architecture
 3. Downloads the asset to a temporary location
-4. Verifies the SHA-256 checksum if published with the release
+4. Verifies the published SHA-256 checksum before replacing the binary
 5. Prompts for confirmation (skipped with `--yes` or when stdin is non-interactive)
 6. Replaces the installed binary in-place
 7. Prints the new version on success
