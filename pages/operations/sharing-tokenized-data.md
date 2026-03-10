@@ -46,7 +46,108 @@ Organizations often need to identify overlapping individuals across datasets wit
 
 ---
 
-## Sender Workflow
+## ECDH Bootstrap Workflow (Recommended)
+
+The two-command ECDH bootstrap workflow lets partners establish a shared hashing secret without transmitting it in plaintext. Only the JSON exchange config — containing the **encrypted** secret — needs to leave the sender's environment.
+
+### Overview
+
+```text
+Recipient                                   Sender
+─────────────────────────────────────────────────────
+generate-key-pair                                │
+  → recipient.public.pem ──────────────────────►│
+                                                 │
+                                         initiate-exchange
+                                           --public-key recipient.public.pem
+                                           → sender.exchange.json
+                                           → sender.private.pem (local only)
+                                                 │
+                              ◄──────────────────┤ sender.exchange.json
+                                                 │ (contains encrypted secret)
+Recover hashing secret
+from sender's local public key
++ own private key (ECDH)
+```
+
+### Step 1 — Recipient generates a key pair
+
+```bash
+opentoken generate-key-pair --name recipient-org
+```
+
+This writes:
+
+- `~/.opentoken/recipient-org.private.pem` — keep this secret, never share it
+- `~/.opentoken/recipient-org.public.pem` — share this with the sender
+
+### Step 2 — Sender initiates the exchange
+
+```bash
+opentoken initiate-exchange \
+  --name sender-q2 \
+  --public-key ./recipient-org.public.pem \
+  --output ./sender-q2.exchange.json
+```
+
+This:
+
+1. Generates a local ECDH key pair for the sender under `~/.opentoken/`.
+2. Generates a secure random hashing secret (or accepts one via `--hashingsecret`).
+3. Derives a shared secret via ECDH from the sender's private key and the recipient's public key.
+4. Expands the shared secret into an AES-256 key via HKDF.
+5. Encrypts the hashing secret with AES-256-GCM and writes `sender-q2.exchange.json`.
+
+The exchange config **never** contains the sender's private key or the plaintext hashing secret.
+
+### Step 3 — Sender transfers the exchange config
+
+Transfer `sender-q2.exchange.json` to the recipient over any channel. The hashing secret inside is encrypted; only a holder of the matching private key can recover it.
+
+### Step 4 — Recipient recovers the hashing secret
+
+The recipient uses the sender's local public key (embedded in the exchange config) together with their own private key to derive the same shared secret and decrypt the hashing secret:
+
+```python
+import base64, json
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric.ec import ECDH
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from cryptography.hazmat.primitives.serialization import load_pem_private_key, load_pem_public_key
+from pathlib import Path
+
+config = json.loads(Path("sender-q2.exchange.json").read_text())
+recipient_private = load_pem_private_key(
+    Path("~/.opentoken/recipient-org.private.pem").expanduser().read_bytes(), password=None
+)
+sender_public = load_pem_public_key(config["local_public_key"].encode())
+
+shared_secret = recipient_private.exchange(ECDH(), sender_public)
+hkdf = HKDF(algorithm=hashes.SHA256(), length=32, salt=None, info=b"opentoken-exchange-v1")
+aes_key = hkdf.derive(shared_secret)
+
+nonce = base64.b64decode(config["encryption"]["nonce"])
+ciphertext = base64.b64decode(config["encrypted_hashing_secret"])
+hashing_secret = AESGCM(aes_key).decrypt(nonce, ciphertext, None)
+print("Recovered hashing secret:", hashing_secret.decode())
+```
+
+### Step 5 — Both parties tokenize using the recovered secret
+
+Once both parties have the hashing secret they run `opentoken package` as normal:
+
+```bash
+opentoken package \
+  -i patient_data.csv -t csv \
+  -o tokens_for_partner.csv \
+  -h "$HASHING_SECRET" \
+  -e "$ENCRYPTION_KEY"
+```
+
+---
+
+## Sender Workflow (manual secret agreement)
 
 The sending organization prepares tokenized data for sharing.
 

@@ -125,6 +125,42 @@ Writes key files to `~/.opentoken/`:
 - `~/.opentoken/<name>.public.pem` — SubjectPublicKeyInfo PEM public key (permissions `644`)
 - `~/.opentoken/` directory is created with permissions `700` if absent.
 
+### `initiate-exchange` (ECDH Key-Exchange Bootstrap)
+
+Available in the Python CLI.
+
+Generates a local key pair, derives a shared secret from the partner's public key via ECDH + HKDF, encrypts a hashing secret with AES-256-GCM, and writes a portable JSON exchange config.
+
+| Argument            | Short | Required | Default                          | Description                                                       |
+| ------------------- | ----- | -------- | -------------------------------- | ----------------------------------------------------------------- |
+| `--public-key`      |       | **Yes**  |                                  | Path to the partner's public key (PEM/SPKI format)                |
+| `--name`            | `-n`  | No       | `opentoken-<ISO8601-date>`       | Base name for local key files                                     |
+| `--output`          | `-o`  | No       | `./<name>.exchange.json`         | Output path for the exchange config JSON                          |
+| `--hashingsecret`   |       | No       | randomly generated               | Hashing secret to encrypt (omit to auto-generate a secure value)  |
+| `--curve`           | `-c`  | No       | `P-256`                          | Elliptic curve: `P-256`, `P-384`, or `P-521`                      |
+| `--force`           |       | No       | `false`                          | Overwrite existing key files and exchange config                  |
+
+**Outputs:**
+
+- `~/.opentoken/<name>.private.pem` — local private key (permissions `600`, never stored in the config)
+- `~/.opentoken/<name>.public.pem` — local public key (permissions `644`)
+- `<output>` — versioned JSON exchange config containing the encrypted hashing secret
+
+**Example:**
+
+```bash
+# Step 1 – recipient generates their key pair and shares the public key
+opentoken generate-key-pair --name recipient-org
+
+# Step 2 – sender initiates the exchange using the recipient's public key
+opentoken initiate-exchange \
+  --name sender-q2 \
+  --public-key ./recipient-org.public.pem \
+  --output ./sender-q2.exchange.json
+```
+
+See [Sharing Tokenized Data](../operations/sharing-tokenized-data.md) for the full two-command ECDH bootstrap workflow.
+
 ### `update` (Self-Update CLI)
 
 Downloads and installs the latest (or a specific) release of the OpenToken CLI in-place.

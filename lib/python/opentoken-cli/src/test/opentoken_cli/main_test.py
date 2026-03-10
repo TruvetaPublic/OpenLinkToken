@@ -531,6 +531,52 @@ class TestOpenTokenCommand:
         assert "test-002" not in content, "Output must not contain original record IDs"
 
 
+class TestInitiateExchangeViaMain:
+    """Smoke tests for initiate-exchange wired through OpenTokenCommand.execute."""
+
+    def test_initiate_exchange_appears_in_help(self, capsys):
+        """initiate-exchange is listed in the top-level help output."""
+        exit_code = OpenTokenCommand.execute(["--help"])
+        captured = capsys.readouterr()
+        assert "initiate-exchange" in captured.out
+
+    def test_initiate_exchange_succeeds_with_valid_inputs(self, tmp_path):
+        """initiate-exchange returns 0 for a complete valid invocation."""
+        from unittest.mock import patch
+
+        from opentoken_cli.util.ec_key_utils import generate_key_pair
+
+        _, partner_public_pem = generate_key_pair("P-256")
+        partner_pem_path = tmp_path / "partner.public.pem"
+        partner_pem_path.write_bytes(partner_public_pem)
+        output_path = tmp_path / "smoke.exchange.json"
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "smoke",
+                    "--public-key",
+                    str(partner_pem_path),
+                    "--output",
+                    str(output_path),
+                ]
+            )
+
+        assert exit_code == 0
+        assert output_path.exists()
+
+    def test_initiate_exchange_missing_public_key_fails(self, tmp_path):
+        """initiate-exchange exits non-zero when --public-key is omitted."""
+        from unittest.mock import patch
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenTokenCommand.execute(["initiate-exchange", "--name", "no-pk"])
+
+        assert exit_code != 0
+
+
 class TestStartupVersionCheckPolicy:
     """Tests for startup version-check behavior by parsed subcommand."""
 
