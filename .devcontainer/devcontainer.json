@@ -69,11 +69,10 @@
   "postCreateCommand": {
     "setup-py-env": "bash -lc '${containerWorkspaceFolder}/.devcontainer/scripts/setup_python_env.sh'"
   },
-  "postStartCommand": {
-    "refresh-py-env": "bash -lc '${containerWorkspaceFolder}/.devcontainer/scripts/setup_python_env.sh --refresh-workspace'",
-    "apm-reqs": "bash -lc '${containerWorkspaceFolder}/.devcontainer/scripts/setup_apm.sh' || true"
-  },
+  "postStartCommand": {},
   "postAttachCommand": {
-    "auto-activate-venv": "grep -qF 'opentoken/.venv/bin/activate' ~/.bashrc 2>/dev/null || echo 'source /home/vscode/.local/share/opentoken/.venv/bin/activate 2>/dev/null || true' >> ~/.bashrc; grep -qF 'opentoken/.venv/bin/activate' ~/.zshrc 2>/dev/null || echo 'source /home/vscode/.local/share/opentoken/.venv/bin/activate 2>/dev/null || true' >> ~/.zshrc; true"
+    "refresh-py-env": "bash -lc '${containerWorkspaceFolder}/.devcontainer/scripts/setup_python_env.sh --refresh-workspace'",
+    "apm-reqs": "bash -lc '${containerWorkspaceFolder}/.devcontainer/scripts/setup_apm.sh' || true",
+    "auto-activate-venv": "bash -lc '${containerWorkspaceFolder}/.devcontainer/scripts/activate-venv.sh'"
   }
 }
