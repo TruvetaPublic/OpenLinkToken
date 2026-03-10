@@ -53,6 +53,16 @@ python -m opentoken_cli.main <subcommand> [OPTIONS]
 python -m opentoken_cli.main <subcommand> [OPTIONS]
 ```
 
+## Global Options
+
+These options are accepted by the root command and apply to every invocation:
+
+| Option              | Description                                                 |
+| ------------------- | ----------------------------------------------------------- |
+| `--no-update-check` | Disable the automatic background version check for this run |
+
+The automatic version check can also be disabled permanently by setting the environment variable `OPENTOKEN_DISABLE_UPDATE_CHECK=1`.
+
 ## Arguments by Subcommand
 
 ### `package` (Default Encrypted Mode)
@@ -98,6 +108,32 @@ python -m opentoken_cli.main <subcommand> [OPTIONS]
 | `--type`          | `-t`  | Yes      | File type: `csv` or `parquet`            |
 | `--encryptionkey` | `-e`  | Yes      | 32-character key for AES-256 encryption  |
 | `--output-type`   | `-ot` | No       | Output file type if different from input |
+
+### `update` (Self-Update CLI)
+
+Downloads and installs the latest (or a specific) release of the OpenToken CLI in-place.
+
+| Argument    | Short | Required | Description                                           |
+| ----------- | ----- | -------- | ----------------------------------------------------- |
+| `--version` |       | No       | Install a specific release tag (default: latest)      |
+| `--dry-run` |       | No       | Show what would be updated without making any changes |
+| `--yes`     | `-y`  | No       | Skip the interactive confirmation prompt              |
+
+```bash
+# Update to the latest release
+opentoken update
+
+# Update to a specific version
+opentoken update --version v2.1.0
+
+# Preview what would change (no-op)
+opentoken update --dry-run
+
+# Update without prompting for confirmation
+opentoken update --yes
+```
+
+Release assets are published with SHA-256 sidecars, and `opentoken update` verifies the matching checksum automatically before the binary is replaced. The command exits non-zero if the checksum does not match.
 
 ## Modes of Operation
 
@@ -304,6 +340,76 @@ Every run generates a `.metadata.json` file:
 | 1    | Invalid arguments |
 | 2    | File not found    |
 | 3    | Processing error  |
+
+## Version Check & Updates
+
+### Automatic Version Check on Startup
+
+Every time the CLI is run, it performs a lightweight background check against the GitHub Releases API to determine whether a newer version is available. This check:
+
+- Runs asynchronously in a background thread — it **never delays** the primary command
+- Has a 2-second timeout; network errors are silently ignored
+- Caches the result for **24 hours** in the OpenToken user cache file:
+  - Linux / macOS: `~/.opentoken/update-check.json`
+  - Windows: `%APPDATA%\.opentoken\update-check.json`
+- Prints a notice to **stderr** (not stdout) only when a newer version is found, so piped/scripted usage is unaffected
+
+**Sample notice:**
+
+```
+⚠ A new version of OpenToken is available: v2.1.0 (you have v2.0.0)
+   Release notes: https://github.com/TruvetaPublic/OpenToken/releases/tag/v2.1.0
+   Run 'opentoken update' to upgrade, or set OPENTOKEN_DISABLE_UPDATE_CHECK=1 to silence this message.
+```
+
+### Opting Out
+
+The version check can be disabled per-run or permanently:
+
+| Mechanism                                  | Scope                                       |
+| ------------------------------------------ | ------------------------------------------- |
+| `--no-update-check` CLI flag               | Per invocation                              |
+| `OPENTOKEN_DISABLE_UPDATE_CHECK=1` env var | Persistent (shell profile / CI environment) |
+
+When disabled, no network request is made and no cache is read or written.
+
+### Self-Updating (`opentoken update`)
+
+Use the `update` subcommand to upgrade the CLI in-place:
+
+```bash
+# Upgrade to the latest release
+opentoken update
+
+# Upgrade to a specific release
+opentoken update --version v2.1.0
+
+# Preview what would change without applying it
+opentoken update --dry-run
+
+# Skip confirmation prompt (for scripts / CI)
+opentoken update --yes
+```
+
+#### Update Behaviour
+
+1. Fetches release information from the GitHub Releases API
+2. Selects the correct platform asset for the current OS and architecture
+3. Downloads the asset to a temporary location
+4. Verifies the published SHA-256 checksum before replacing the binary
+5. Prompts for confirmation (skipped with `--yes` or when stdin is non-interactive)
+6. Replaces the installed binary in-place
+7. Prints the new version on success
+
+#### Update Error Handling
+
+| Condition                       | Exit code | Message                                     |
+| ------------------------------- | --------- | ------------------------------------------- |
+| Already on the latest version   | 0         | `OpenToken is already up to date (v2.0.0).` |
+| Asset not found for platform    | 1         | Clear error with download link              |
+| Checksum verification failed    | 1         | Error message; downloaded file is deleted   |
+| Insufficient write permissions  | 1         | Suggests `sudo` or manual download link     |
+| Network error / release missing | 1         | Descriptive error                           |
 
 ## Performance Tips
 

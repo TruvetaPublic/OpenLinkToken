@@ -28,6 +28,8 @@ Download the appropriate executable for your platform from the [latest release](
 - **macOS**: `opentoken-cli-{version}-macos-universal.zip` (works on both Intel and Apple Silicon)
 - **Windows**: `opentoken-cli-{version}-windows-x64.zip`
 
+Each downloadable ZIP is also published with a matching `.sha256` sidecar for manual verification.
+
 ### Extract and Run
 
 **Linux/macOS:**
@@ -116,6 +118,7 @@ The CLI is organized into subcommands. Choose the one that matches your workflow
 | `tokenize --demo-mode` | Output plain attribute signatures — use for exploration | none       |
 | `encrypt`              | Encrypt previously tokenized (hashed) output            | `-e`       |
 | `decrypt`              | Decrypt encrypted tokens back to hashed form            | `-e`       |
+| `update`               | Upgrade the CLI to the latest (or a specific) release   | none       |
 
 For most use cases, `package` is the right starting point.
 Use `tokenize --demo-mode` to explore token output without managing secrets.
@@ -124,14 +127,14 @@ Use `tokenize --demo-mode` to explore token output without managing secrets.
 
 These arguments are shared across all subcommands:
 
-| Argument            | Short | Description                                                                     |
-| ------------------- | ----- | ------------------------------------------------------------------------------- |
-| `--input`           | `-i`  | Input file path (CSV or Parquet)                                                |
-| `--output`          | `-o`  | Output file path                                                                |
-| `--type`            | `-t`  | File type: `csv` or `parquet`                                                   |
-| `--hashingsecret`   | `-h`  | Secret key for HMAC hashing (required unless `--demo-mode`)                     |
-| `--encryptionkey`   | `-e`  | 32-character key for AES encryption                                             |
-| `--demo-mode`       |       | Skip all hashing; output plain attribute signatures (tokenize only)             |
+| Argument            | Short | Description                                                                                                           |
+| ------------------- | ----- | --------------------------------------------------------------------------------------------------------------------- |
+| `--input`           | `-i`  | Input file path (CSV or Parquet)                                                                                      |
+| `--output`          | `-o`  | Output file path                                                                                                      |
+| `--type`            | `-t`  | File type: `csv` or `parquet`                                                                                         |
+| `--hashingsecret`   | `-h`  | Secret key for HMAC hashing (required unless `--demo-mode`)                                                           |
+| `--encryptionkey`   | `-e`  | 32-character key for AES encryption                                                                                   |
+| `--demo-mode`       |       | Skip all hashing; output plain attribute signatures (tokenize only)                                                   |
 | `--hash-record-ids` |       | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability; `tokenize` and `package` only) |
 
 ## `package` Command
@@ -237,6 +240,43 @@ Check that input file path is correct and file exists.
 ### "Invalid SSN"
 
 SSN must be 9 digits. Area code cannot be 000, 666, or 900-999.
+
+## Keeping the CLI Up to Date
+
+### Automatic Version Check
+
+Each time you run the CLI it silently checks (in the background) whether a newer release is available. If one is found, a notice is printed to **stderr** after the command completes:
+
+```
+⚠ A new version of OpenToken is available: v2.1.0 (you have v2.0.0)
+   Release notes: https://github.com/TruvetaPublic/OpenToken/releases/tag/v2.1.0
+   Run 'opentoken update' to upgrade, or set OPENTOKEN_DISABLE_UPDATE_CHECK=1 to silence this message.
+```
+
+The check never blocks or delays the primary command and is cached for 24 hours. To disable it:
+
+```bash
+# Disable for a single run
+opentoken --no-update-check package ...
+
+# Disable permanently (add to your shell profile)
+export OPENTOKEN_DISABLE_UPDATE_CHECK=1
+```
+
+### Self-Update with `opentoken update`
+
+```bash
+# Upgrade to the latest release
+opentoken update
+
+# Upgrade to a specific version
+opentoken update --version v2.1.0
+
+# Preview changes without applying them
+opentoken update --dry-run
+```
+
+The updater downloads the correct platform asset, verifies its SHA-256 checksum when available, prompts for confirmation, and replaces the binary in-place.
 
 ## Next Steps
 

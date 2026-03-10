@@ -529,3 +529,15 @@ class TestOpenTokenCommand:
         content = output_csv.read_text()
         assert "test-001" not in content, "Output must not contain original record IDs"
         assert "test-002" not in content, "Output must not contain original record IDs"
+
+
+class TestStartupVersionCheckPolicy:
+    """Tests for startup version-check behavior by parsed subcommand."""
+
+    def test_should_start_version_check_false_for_update_command(self):
+        parsed_args = type("ParsedArgs", (), {"command": "update"})
+        assert not OpenTokenCommand._should_start_version_check(parsed_args)
+
+    def test_should_start_version_check_true_for_non_update_command(self):
+        parsed_args = type("ParsedArgs", (), {"command": "tokenize"})
+        assert OpenTokenCommand._should_start_version_check(parsed_args)
