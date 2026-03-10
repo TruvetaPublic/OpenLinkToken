@@ -7,8 +7,8 @@ pycryptodome>=3.18.0
 # Spark-related dependencies (pyspark, pandas, pyarrow) are intentionally
 # not pinned here. Please install opentoken-pyspark with the appropriate
 # extras for your Spark environment, for example:
-#   pip install "opentoken-pyspark[spark40]"  # Spark 4.0+ (Java 21, requires pandas 2.0+)
-#   pip install "opentoken-pyspark[spark35]"  # Spark 3.5.x (Java 8-17)
-#   pip install "opentoken-pyspark[spark34]"  # Spark 3.4.x (legacy)
+#   uv pip install "opentoken-pyspark[spark40]"  # Spark 4.0+ (Java 21, requires pandas 2.0+)
+#   uv pip install "opentoken-pyspark[spark35]"  # Spark 3.5.x (Java 8-17)
+#   uv pip install "opentoken-pyspark[spark34]"  # Spark 3.4.x (legacy)
 # This avoids requirements.txt forcing a specific Spark version and keeps
 # behavior aligned with setup.py extras_require.

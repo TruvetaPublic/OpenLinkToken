@@ -43,28 +43,14 @@ opentoken <subcommand> [OPTIONS]
 |          | `tokenize`        | Tokenize without encryption | Subcommand                 |
 |          | `decrypt`         | Decrypt mode                | Subcommand                 |
 
-### Java CLI Example
-
-```bash
-cd lib/java
-mvn clean install -DskipTests
-
-java -jar opentoken-cli/target/opentoken-cli-*.jar package \
-  -i ../../resources/sample.csv \
-  -t csv \
-  -o ../../resources/output.csv \
-  -h "HashingKey" \
-  -e "Secret-Encryption-Key-Goes-Here."
-```
-
-### Python CLI Example
+### CLI Example
 
 ```bash
 cd lib/python/opentoken-cli
 source ../../.venv/bin/activate
 uv pip install -r requirements.txt -e . -e ../opentoken
 
-python -m opentoken_cli.main package \
+opentoken package \
   -i ../../../resources/sample.csv \
   -t csv \
   -o ../../../resources/output.csv \
@@ -185,7 +171,7 @@ See [Reference: Metadata Format](../reference/metadata-format.md) for complete f
 export OPENTOKEN_HASHING_SECRET="MyHashingKey"
 export OPENTOKEN_ENCRYPTION_KEY="MyEncryptionKey32CharactersLong"
 
-java -jar opentoken-cli-*.jar package \
+opentoken package \
   -i data.csv -t csv -o tokens.csv \
   -h "$OPENTOKEN_HASHING_SECRET" \
   -e "$OPENTOKEN_ENCRYPTION_KEY"

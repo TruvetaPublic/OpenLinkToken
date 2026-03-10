@@ -432,11 +432,20 @@ class TestOpenTokenCommand:
         exit_code = OpenTokenCommand.execute(args)
         assert exit_code != 0, "Command should fail with invalid subcommand"
 
+    def test_help_shows_banner_for_interactive_runs(self, monkeypatch, capsys):
+        """Interactive help output should include the OpenToken banner."""
+        monkeypatch.setattr("sys.stdout.isatty", lambda: True)
+
+        exit_code = OpenTokenCommand.execute(["--help"])
+
+        captured = capsys.readouterr()
+        assert exit_code == 0, "Help should exit successfully"
+        assert "Privacy-Preserving Record Linkage v" in captured.out
+        assert "usage: opentoken" in captured.out
+
     # ===== Hash Record IDs Tests =====
 
-    def test_tokenize_command_hash_record_ids_output_contains_hashed_ids(
-        self, temp_dir
-    ):
+    def test_tokenize_command_hash_record_ids_output_contains_hashed_ids(self, temp_dir):
         """Output token file must contain hashed (not original) RecordId values."""
         input_csv = temp_dir / "input.csv"
         output_csv = temp_dir / "output.csv"
@@ -469,13 +478,9 @@ class TestOpenTokenCommand:
         for line in lines[1:]:
             cols = line.split(",")
             record_id = cols[record_id_col].strip()
-            assert (
-                len(record_id) == 64
-            ), f"Hashed record ID must be 64 chars, got: {record_id!r}"
+            assert len(record_id) == 64, f"Hashed record ID must be 64 chars, got: {record_id!r}"
 
-    def test_tokenize_command_without_hash_record_ids_output_contains_original_ids(
-        self, temp_dir
-    ):
+    def test_tokenize_command_without_hash_record_ids_output_contains_original_ids(self, temp_dir):
         """Without --hash-record-ids the output must contain the original record IDs."""
         input_csv = temp_dir / "input.csv"
         output_csv = temp_dir / "output.csv"

@@ -15,7 +15,6 @@
 
     <modules>
         <module>opentoken</module>
-        <module>opentoken-cli</module>
     </modules>
 
     <distributionManagement>

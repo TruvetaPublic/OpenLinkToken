@@ -5,11 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Java: tokenize",
-            "type": "java",
+            "name": "Python: tokenize",
+            "type": "debugpy",
             "request": "launch",
-            "mainClass": "com.truveta.opentoken.cli.Main",
-            "projectName": "opentoken-cli",
+            "program": "${workspaceFolder}/lib/python/opentoken-cli/src/main/opentoken_cli/main.py",
+            "env": {
+                "PYTHONPATH": "lib/python/opentoken-cli/src/main:lib/python/opentoken/src/main"
+            },
             "args": [
                 "tokenize",
                 "-i",
@@ -17,7 +19,7 @@
                 "-t",
                 "${input:inputType}",
                 "-o",
-                "lib/java/opentoken-cli/target/output.${input:outputType}",
+                "lib/python/opentoken-cli/target/output.${input:outputType}",
                 "-ot",
                 "${input:outputType}",
                 "-h",
@@ -25,11 +27,13 @@
             ]
         },
         {
-            "name": "Java: package",
-            "type": "java",
+            "name": "Python: package",
+            "type": "debugpy",
             "request": "launch",
-            "mainClass": "com.truveta.opentoken.cli.Main",
-            "projectName": "opentoken-cli",
+            "program": "${workspaceFolder}/lib/python/opentoken-cli/src/main/opentoken_cli/main.py",
+            "env": {
+                "PYTHONPATH": "lib/python/opentoken-cli/src/main:lib/python/opentoken/src/main"
+            },
             "args": [
                 "package",
                 "-i",
@@ -37,7 +41,7 @@
                 "-t",
                 "${input:inputType}",
                 "-o",
-                "lib/java/opentoken-cli/target/output.${input:outputType}",
+                "lib/python/opentoken-cli/target/output.${input:outputType}",
                 "-ot",
                 "${input:outputType}",
                 "-h",
@@ -47,19 +51,21 @@
             ]
         },
         {
-            "name": "Java: encrypt",
-            "type": "java",
+            "name": "Python: encrypt",
+            "type": "debugpy",
             "request": "launch",
-            "mainClass": "com.truveta.opentoken.cli.Main",
-            "projectName": "opentoken-cli",
+            "program": "${workspaceFolder}/lib/python/opentoken-cli/src/main/opentoken_cli/main.py",
+            "env": {
+                "PYTHONPATH": "lib/python/opentoken-cli/src/main:lib/python/opentoken/src/main"
+            },
             "args": [
                 "encrypt",
                 "-i",
-                "lib/java/opentoken-cli/target/output.${input:outputType}",
+                "lib/python/opentoken-cli/target/output.${input:outputType}",
                 "-t",
                 "${input:outputType}",
                 "-o",
-                "lib/java/opentoken-cli/target/encrypted.${input:outputType}",
+                "lib/python/opentoken-cli/target/encrypted.${input:outputType}",
                 "-ot",
                 "${input:outputType}",
                 "-e",
@@ -67,27 +73,51 @@
             ]
         },
         {
-            "name": "Java: decrypt",
-            "type": "java",
+            "name": "Python: decrypt",
+            "type": "debugpy",
             "request": "launch",
-            "mainClass": "com.truveta.opentoken.cli.Main",
-            "projectName": "opentoken-cli",
+            "program": "${workspaceFolder}/lib/python/opentoken-cli/src/main/opentoken_cli/main.py",
+            "env": {
+                "PYTHONPATH": "lib/python/opentoken-cli/src/main:lib/python/opentoken/src/main"
+            },
             "args": [
                 "decrypt",
                 "-i",
-                "lib/java/opentoken-cli/target/encrypted.${input:outputType}",
+                "lib/python/opentoken-cli/target/encrypted.${input:outputType}",
                 "-t",
                 "${input:outputType}",
                 "-o",
-                "lib/java/opentoken-cli/target/decrypted.${input:outputType}",
+                "lib/python/opentoken-cli/target/decrypted.${input:outputType}",
                 "-ot",
                 "${input:outputType}",
                 "-e",
                 "Secret-Encryption-Key-Goes-Here."
             ]
+        }
+    ],
+    "inputs": [
+        {
+            "id": "inputType",
+            "type": "pickString",
+            "description": "Select input type",
+            "options": [
+                "csv",
+                "parquet"
+            ],
+            "default": "csv"
         },
         {
-            "name": "Python: tokenize",
+            "id": "outputType",
+            "type": "pickString",
+            "description": "Select output type",
+            "options": [
+                "csv",
+                "parquet"
+            ],
+            "default": "csv"
+        }
+    ]
+}
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/lib/python/opentoken-cli/src/main/opentoken_cli/main.py",

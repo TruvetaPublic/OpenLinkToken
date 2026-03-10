@@ -24,7 +24,7 @@ This page is the single “Start here” hub for getting OpenToken running end-t
 | ------------------------------------ | ----------------------------------------- | ----------------------------------------------------- |
 | The fastest “just run it” experience | [CLI Quickstart](cli-quickstart.md)       | Uses Docker scripts (recommended) or the CLI directly |
 | Python-first workflow or integration | [Python Quickstart](python-quickstart.md) | Uses the Python CLI and shows programmatic API usage  |
-| Java-first workflow or integration   | [Java Quickstart](java-quickstart.md)     | Builds the Java CLI and shows programmatic API usage  |
+| Java API integration                 | [Java API Quickstart](java-quickstart.md) | Java library programmatic usage and Maven dependency  |
 
 ## 30-Second Overview
 

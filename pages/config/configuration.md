@@ -10,7 +10,7 @@ Configuration options for OpenToken inputs, outputs, secrets, and runtime behavi
 
 ## CLI Arguments
 
-OpenToken can be run from Java or Python CLIs, or via the helper shell/PowerShell scripts.
+OpenToken can be run from the Python CLI or via the helper shell/PowerShell scripts.
 
 At a high level you must always specify:
 
@@ -32,7 +32,7 @@ Secrets can be passed via environment variables for security:
 export OPENTOKEN_HASHING_SECRET="MyHashingKey"
 export OPENTOKEN_ENCRYPTION_KEY="MyEncryptionKey32CharactersLong"
 
-java -jar opentoken-cli-*.jar package \
+opentoken package \
   -i data.csv -t csv -o tokens.csv \
   -h "$OPENTOKEN_HASHING_SECRET" \
   -e "$OPENTOKEN_ENCRYPTION_KEY"
@@ -100,11 +100,13 @@ Input columns are **case-insensitive** and support common aliases:
 ### Postal Code Formats
 
 **US ZIP Codes:**
+
 - `98004` (5 digits)
 - `98004-1234` (9 digits, dash removed)
 - `980` (ZIP-3, auto-padded to `98000`)
 
 **Canadian Postal Codes:**
+
 - `K1A 1A1` (with space)
 - `K1A1A1` (without space, auto-formatted)
 
@@ -118,7 +120,7 @@ Use `-ot` to specify a different output format:
 
 ```bash
 # Input CSV, output Parquet
-java -jar opentoken-cli-*.jar package \
+opentoken package \
   -i data.csv -t csv \
   -o tokens.parquet -ot parquet \
   -h "HashingKey" -e "EncryptionKey"
@@ -166,17 +168,10 @@ For the exact CLI flags that enable each mode, see the [CLI Reference](../refere
 ### Local Development
 
 ```bash
-# Java
-cd lib/java
-mvn clean install -DskipTests
-java -jar opentoken-cli/target/opentoken-cli-*.jar package \
-  -i ../../resources/sample.csv -t csv -o ../../resources/output.csv \
-  -h "HashingKey" -e "EncryptionKey32Characters!!!!!"
-
 # Python
-source /workspaces/OpenToken/.venv/bin/activate
+source ../../.venv/bin/activate
 python -m opentoken_cli.main package \
-  -i ../../../resources/sample.csv -t csv -o ../../../resources/output.csv \
+  -i ../../resources/sample.csv -t csv -o ../../resources/output.csv \
   -h "HashingKey" -e "EncryptionKey32Characters!!!!!"
 ```
 

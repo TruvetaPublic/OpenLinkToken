@@ -4,7 +4,15 @@ set -euo pipefail
 echo "=== Setting up Python environment ==="
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$SCRIPT_DIR/../.."
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+REFRESH_WORKSPACE_ONLY=0
+VENV_DIR="${UV_PROJECT_ENVIRONMENT:-/home/vscode/.local/share/opentoken/.venv}"
+
+if [ "${1:-}" = "--refresh-workspace" ]; then
+  REFRESH_WORKSPACE_ONLY=1
+fi
+
+WORKSPACE_VENV_DIR="$REPO_ROOT/.venv"
 
 cd "$REPO_ROOT"
 
@@ -15,42 +23,55 @@ if ! command -v uv >/dev/null 2>&1; then
   export PATH="$HOME/.local/bin:$PATH"
 fi
 
-# Create venv at repo root (handles cases where mount exists but env not yet created)
-mkdir -p .venv
+DEFAULT_UV_CACHE_DIR="/home/vscode/.cache/uv"
+if mkdir -p "$DEFAULT_UV_CACHE_DIR" 2>/dev/null && [ -w "$DEFAULT_UV_CACHE_DIR" ]; then
+  export UV_CACHE_DIR="$DEFAULT_UV_CACHE_DIR"
+else
+  export UV_CACHE_DIR="$REPO_ROOT/.cache/uv"
+  mkdir -p "$UV_CACHE_DIR"
+fi
+
+mkdir -p "$VENV_DIR"
 if [ "$(id -u)" -eq 0 ]; then
-  chown -R "$(id -u)":"$(id -g)" .venv 2>/dev/null || true
+  chown -R "$(id -u)":"$(id -g)" "$VENV_DIR" 2>/dev/null || true
 else
   if command -v sudo >/dev/null 2>&1; then
-    sudo chown -R "$(id -u)":"$(id -g)" .venv 2>/dev/null || true
+    sudo chown -R "$(id -u)":"$(id -g)" "$VENV_DIR" 2>/dev/null || true
   fi
 fi
 
-if [ ! -f .venv/bin/activate ]; then
-  echo "Creating virtual environment..."
-  uv venv .venv
-else
-  echo "Virtual environment already exists"
+echo "Creating virtual environment at $VENV_DIR"
+uv venv --allow-existing --seed "$VENV_DIR"
+
+if [ "$WORKSPACE_VENV_DIR" != "$VENV_DIR" ]; then
+  if [ -e "$WORKSPACE_VENV_DIR" ] && [ ! -L "$WORKSPACE_VENV_DIR" ]; then
+    echo "Replacing workspace-local .venv with symlink to shared environment..."
+    rm -rf "$WORKSPACE_VENV_DIR"
+  fi
+
+  if [ ! -L "$WORKSPACE_VENV_DIR" ] || [ "$(readlink -f "$WORKSPACE_VENV_DIR")" != "$VENV_DIR" ]; then
+    ln -sfn "$VENV_DIR" "$WORKSPACE_VENV_DIR"
+  fi
 fi
 
+export UV_PROJECT_ENVIRONMENT="$VENV_DIR"
+
 # shellcheck disable=SC1091
-source .venv/bin/activate
+source "$VENV_DIR/bin/activate"
 
-# Install all requirements in a single uv call to reduce file handle usage
-echo "Installing Python packages..."
-cd "$REPO_ROOT/lib/python"
-uv pip install \
-  -r opentoken/requirements.txt \
-  -r opentoken-cli/requirements.txt \
-  -r opentoken-pyspark/requirements.txt \
-  -r dev-requirements.txt \
-  -e opentoken \
-  -e opentoken-cli \
-  -e "opentoken-pyspark[spark40]" \
-  prek \
-  autoflake
-
+echo "Installing all workspace packages and dependencies"
 cd "$REPO_ROOT"
-echo "Installing prek git hooks..."
-prek install
+uv sync --all-packages --dev
 
-echo "✓ Python environment setup complete"
+if [ "$REFRESH_WORKSPACE_ONLY" -eq 1 ]; then
+  echo "Refreshing workspace packages complete"
+else
+  echo "Installing prek (this may take a few minutes)"
+  "$VENV_DIR/bin/pip" install prek
+
+  echo "Installing prek hooks and environments (long-running operation)"
+  "$VENV_DIR/bin/prek" install --install-hooks || echo "Warning: Could not install prek hooks (this is normal if git is not initialized)"
+fi
+
+echo "✓ Python environment setup complete at $VENV_DIR"
+echo "To activate manually, run: source $VENV_DIR/bin/activate"

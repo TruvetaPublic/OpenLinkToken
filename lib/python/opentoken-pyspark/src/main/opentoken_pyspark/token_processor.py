@@ -349,7 +349,7 @@ class OpenTokenProcessor:
             if pa_major < 17:
                 raise RuntimeError(
                     f"Incompatible PyArrow {pa.__version__} detected with PySpark {pyspark.__version__}. "
-                    "PySpark 4.0+ requires PyArrow 17+: pip install 'pyarrow>=17.0.0'"
+                    "PySpark 4.0+ requires PyArrow 17+: uv pip install 'pyarrow>=17.0.0'"
                 )
         elif spark_ver == (3, 5):
             # Spark 3.5.x has issues with PyArrow 20+ on Java 21
@@ -357,7 +357,7 @@ class OpenTokenProcessor:
                 raise RuntimeError(
                     f"Incompatible PyArrow {pa.__version__} detected with PySpark {pyspark.__version__}. "
                     "PySpark 3.5.x requires PyArrow <20 or upgrade to PySpark 4.0.1+: "
-                    "pip install 'pyarrow>=17.0.0,<20' or pip install 'pyspark>=4.0.1' 'pyarrow>=17.0.0'"
+                    "uv pip install 'pyarrow>=17.0.0,<20' or uv pip install 'pyspark>=4.0.1' 'pyarrow>=17.0.0'"
                 )
 
     @classmethod

@@ -124,10 +124,8 @@ Hospital (overlap analysis in this demo)
 
 - **Hospital Dataset**: 100 super hero patients with hospital-specific information
   - Columns: RecordId, FirstName, LastName, Sex, BirthDate, SocialSecurityNumber, PostalCode, Department, VisitReason
-  
 - **Pharmacy Dataset**: 120 super hero patients with pharmacy-specific information
   - Columns: RecordId, FirstName, LastName, Sex, BirthDate, SocialSecurityNumber, PostalCode, MedicationType, PrescriptionType
-  
 - **Expected Overlap**: 40 patients (40% of hospital dataset) appear in both datasets with identical person attributes
 
 ## Tokenization basics
@@ -181,9 +179,8 @@ This demonstration shows how to properly compare tokens from two organizations t
 
 ### Prerequisites <!-- omit in toc -->
 
-- Java 17 or higher
-- Maven 3.6 or higher
-- Python 3.7+ (for data generation and analysis)
+- Python 3.10+
+- [`uv`](https://docs.astral.sh/uv/) (used by the tokenization scripts to install the Python CLI if needed)
 
 ### Quick Start Guide <!-- omit in toc -->
 
@@ -208,7 +205,7 @@ chmod +x run_end_to_end.sh
 ./run_end_to_end.sh
 ```
 
-This runs dataset generation, tokenization (building Java if needed), and overlap analysis.
+This runs dataset generation, tokenization with the Python OpenToken CLI, and overlap analysis.
 
 ### What the script does (step-by-step) <!-- omit in toc -->
 
@@ -302,42 +299,42 @@ This demo creates files under `datasets/` (raw synthetic data) and `outputs/` (t
 
 1. **Raw synthetic datasets** (created by the data generation step)
 
-    - `datasets/hospital_superhero_data.csv`: The hospital’s source dataset (includes identifiers + hospital fields).
-    - `datasets/pharmacy_superhero_data.csv`: The pharmacy’s source dataset (includes identifiers + pharmacy fields).
+   - `datasets/hospital_superhero_data.csv`: The hospital’s source dataset (includes identifiers + hospital fields).
+   - `datasets/pharmacy_superhero_data.csv`: The pharmacy’s source dataset (includes identifiers + pharmacy fields).
 
 1. **Encrypted token files** (created by the tokenization step)
 
-    - `outputs/hospital_tokens.csv`
-    - `outputs/pharmacy_tokens.csv`
+   - `outputs/hospital_tokens.csv`
+   - `outputs/pharmacy_tokens.csv`
 
-    Each row is one token for one record. Each record should have 5 rows (T1–T5).
+   Each row is one token for one record. Each record should have 5 rows (T1–T5).
 
-    | Column   | Description                                    |
-    | -------- | ---------------------------------------------- |
-    | RuleId   | Token type (T1, T2, T3, T4, or T5)             |
-    | Token    | Encrypted match token (ot.V1 format)           |
-    | RecordId | The original record ID from the source dataset |
+   | Column   | Description                                    |
+   | -------- | ---------------------------------------------- |
+   | RuleId   | Token type (T1, T2, T3, T4, or T5)             |
+   | Token    | Encrypted match token (ot.V1 format)           |
+   | RecordId | The original record ID from the source dataset |
 
 1. **Metadata JSON files** (created alongside tokenization)
 
-    - `outputs/hospital_tokens.metadata.json`
-    - `outputs/pharmacy_tokens.metadata.json`
+   - `outputs/hospital_tokens.metadata.json`
+   - `outputs/pharmacy_tokens.metadata.json`
 
-    These include counts (processed/valid/invalid), a timestamp/version, and SHA-256 hashes of the secrets used (but not the secrets themselves).
+   These include counts (processed/valid/invalid), a timestamp/version, and SHA-256 hashes of the secrets used (but not the secrets themselves).
 
 1. **Matching results** (created by the overlap analysis step)
 
-    - `outputs/matching_records.csv`: The strict match results (expects all 5 tokens to match).
-    - `outputs/matching_records_alt.csv`: An alternate match output (if you run a relaxed rule set).
+   - `outputs/matching_records.csv`: The strict match results (expects all 5 tokens to match).
+   - `outputs/matching_records_alt.csv`: An alternate match output (if you run a relaxed rule set).
 
-    `matching_records.csv` has one row per matching pair:
+   `matching_records.csv` has one row per matching pair:
 
-    | Column           | Description                                                      |
-    | ---------------- | ---------------------------------------------------------------- |
-    | HospitalRecordId | Record ID from the hospital dataset                              |
-    | PharmacyRecordId | Record ID from the pharmacy dataset                              |
-    | MatchingTokens   | Which tokens matched (for strict matching: `T1\|T2\|T3\|T4\|T5`) |
-    | TokenCount       | Number of matching tokens (for strict matching: `5`)             |
+   | Column           | Description                                                      |
+   | ---------------- | ---------------------------------------------------------------- |
+   | HospitalRecordId | Record ID from the hospital dataset                              |
+   | PharmacyRecordId | Record ID from the pharmacy dataset                              |
+   | MatchingTokens   | Which tokens matched (for strict matching: `T1\|T2\|T3\|T4\|T5`) |
+   | TokenCount       | Number of matching tokens (for strict matching: `5`)             |
 
 ### Simple checks you can do (no special tools) <!-- omit in toc -->
 
@@ -408,16 +405,19 @@ For matching: We decrypt to the HMAC layer, which is deterministic and comparabl
 ### Security Best Practices <!-- omit in toc -->
 
 1. **Key Management**:
+
    - Use strong, cryptographically random keys (not the demo keys!)
    - Share keys only through secure channels (encrypted email, key management systems)
    - Rotate keys periodically (requires re-tokenization)
 
 2. **Access Control**:
+
    - Limit decryption capability to authorized matching systems only
    - Log all decryption and matching operations
    - Use separate environments for tokenization vs. matching
 
 3. **Data Governance**:
+
    - Establish data use agreements before sharing tokens
    - Define permitted uses of matching results
    - Implement audit trails for all token operations
@@ -519,18 +519,18 @@ matches = find_matches(hospital_tokens, pharmacy_tokens, required_token_matches=
 
 **Solution**: This is expected. OpenToken validates data (e.g., SSN format, birthdate ranges) and skips invalid records. Check the metadata file for details.
 
-### Build errors <!-- omit in toc -->
+### CLI setup errors <!-- omit in toc -->
 
-**Cause**: Maven or Java not installed/configured.
+**Cause**: Python or `uv` is not installed/configured, or the `opentoken` CLI could not be installed.
 
 **Solution**:
 
 ```bash
-# Check Java
-java -version  # Should be 11+
+# Check Python
+python --version  # Should be 3.10+
 
-# Check Maven
-mvn -version   # Should be 3.6+
+# Check uv
+uv --version
 ```
 
 ### Real-World Applications <!-- omit in toc -->

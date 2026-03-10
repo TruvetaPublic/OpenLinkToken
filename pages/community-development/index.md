@@ -45,7 +45,8 @@ uv pip install -r requirements.txt -e .
 ### PySpark Bridge
 
 ```bash
-source /workspaces/OpenToken/.venv/bin/activate
+# From repo root
+source .venv/bin/activate
 cd lib/python/opentoken-pyspark
 uv pip install -r requirements.txt -e .
 ```

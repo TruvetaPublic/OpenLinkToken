@@ -133,7 +133,6 @@ graph TB
    - Updates all version files:
      - `.bumpversion.cfg`
      - `lib/java/opentoken/pom.xml` (core module)
-     - `lib/java/opentoken-cli/pom.xml` (CLI module)
      - `lib/java/pom.xml` (parent POM)
      - `Dockerfile`
      - `lib/java/opentoken/src/main/java/com/truveta/opentoken/Metadata.java`

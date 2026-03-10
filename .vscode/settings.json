@@ -17,6 +17,12 @@
   },
   "files.trimFinalNewlines": true,
   "files.eol": "\n",
+  "files.exclude": {
+    ".worktrees/**": true
+  },
+  "files.watcherExclude": {
+    ".worktrees/**": true
+  },
   "chat.tools.autoApprove": true,
   "chat.mcp.access": "all",
   "python.testing.pytestEnabled": true,
@@ -28,7 +34,6 @@
   ],
   "python.testing.autoTestDiscoverOnSaveEnabled": true,
   "python.testing.pytestPath": "pytest",
-  "python.defaultInterpreterPath": "",
   "testing.showInlineOutput": true,
   "python.analysis.typeCheckingMode": "basic",
   "[markdown]": {

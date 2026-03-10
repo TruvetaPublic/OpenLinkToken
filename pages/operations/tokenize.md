@@ -65,23 +65,11 @@ The `tokenize` subcommand is primarily used to support **overlap analysis workfl
 
 Use the `tokenize` subcommand. Only the hashing secret is required (no encryption key).
 
-#### Normal Mode — Java
-
 ```bash
-java -jar opentoken-cli/target/opentoken-cli-*.jar tokenize \
-  -i ../../resources/sample.csv \
+opentoken tokenize \
+  -i resources/sample.csv \
   -t csv \
-  -o ../../resources/hashed-output.csv \
-  -h "HashingKey"
-```
-
-#### Normal Mode — Python
-
-```bash
-python -m opentoken_cli.main tokenize \
-  -i ../../../resources/sample.csv \
-  -t csv \
-  -o ../../../resources/hashed-output.csv \
+  -o resources/hashed-output.csv \
   -h "HashingKey"
 ```
 
@@ -102,24 +90,11 @@ Add `--hash-record-ids` to replace each input `RecordId` with its SHA-256 hex di
 
 The `--hash-record-ids` flag is also supported by the `package` subcommand.
 
-#### Hash Record IDs — Java
-
 ```bash
-java -jar opentoken-cli/target/opentoken-cli-*.jar tokenize \
-  -i ../../resources/sample.csv \
+opentoken tokenize \
+  -i resources/sample.csv \
   -t csv \
-  -o ../../resources/hashed-output.csv \
-  -h "HashingKey" \
-  --hash-record-ids
-```
-
-#### Hash Record IDs — Python
-
-```bash
-python -m opentoken_cli.main tokenize \
-  -i ../../../resources/sample.csv \
-  -t csv \
-  -o ../../../resources/hashed-output.csv \
+  -o resources/hashed-output.csv \
   -h "HashingKey" \
   --hash-record-ids
 ```
@@ -138,23 +113,11 @@ Each `RecordId` is replaced with a 64-character lowercase SHA-256 hex digest. Th
 
 In demo mode the full hashing pipeline is skipped. No `--hashingsecret` is required.
 
-#### Demo Mode — Java
-
 ```bash
-java -jar opentoken-cli/target/opentoken-cli-*.jar tokenize \
-  -i ../../resources/sample.csv \
+opentoken tokenize \
+  -i resources/sample.csv \
   -t csv \
-  -o ../../resources/demo-output.csv \
-  --demo-mode
-```
-
-#### Demo Mode — Python
-
-```bash
-python -m opentoken_cli.main tokenize \
-  -i ../../../resources/sample.csv \
-  -t csv \
-  -o ../../../resources/demo-output.csv \
+  -o resources/demo-output.csv \
   --demo-mode
 ```
 
@@ -253,7 +216,6 @@ neither `HashingSecretHash` nor `EncryptionSecretHash` appears in demo-mode meta
 
 - **Both modes are one-way**: Original attributes cannot be recovered from either token type
 - **Same hashing secret = same tokens**: Tokenized output from different runs with the same secret will match
-- **Cross-language parity**: Java and Python produce identical tokenized output for the same input
 
 ---
 
@@ -294,20 +256,6 @@ For encrypted tokens, either:
 cat output.metadata.json | jq '.HashingSecretHash'
 ```
 
-### Tokens Don't Match Between Java and Python
-
-**Cause:** Attribute normalization differences or encoding issues.
-
-**Solution:**
-
-1. Verify secrets match exactly (including whitespace)
-2. Run the interoperability test:
-   ```bash
-   cd tools/interoperability
-   python multi_language_interoperability_test.py
-   ```
-3. Compare normalized attributes (not raw input)
-
 ### "Encryption key not provided" Error
 
 **Cause:** Using package mode without an encryption key.
@@ -315,7 +263,7 @@ cat output.metadata.json | jq '.HashingSecretHash'
 **Solution:** Use the `tokenize` subcommand to skip encryption:
 
 ```bash
-java -jar opentoken-cli-*.jar tokenize -i data.csv -t csv -o out.csv -h "Key"
+opentoken tokenize -i data.csv -t csv -o out.csv -h "Key"
 ```
 
 ---

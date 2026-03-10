@@ -21,8 +21,7 @@ No dependencies required. Extract and run.
 ### Other Options
 
 - **Docker**: Use `run-opentoken.sh` (Linux/Mac) or `run-opentoken.ps1` (Windows)
-- **Java**: Build from source with Maven, run `java -jar opentoken-cli-*.jar`
-- **Python**: Install via pip, run `opentoken` or `python -m opentoken_cli.main`
+- **Python**: Install with `uv pip install opentoken-cli`, then run `opentoken` or `python -m opentoken_cli.main`
 
 For installation details, see the [CLI Quickstart](../quickstarts/cli-quickstart.md).
 
@@ -40,9 +39,6 @@ The `tokenize` subcommand is primarily used to build **internal overlap-analysis
 # Self-contained executable
 ./opentoken [OPTIONS]
 
-# Java
-java -jar opentoken-cli-*.jar <subcommand> [OPTIONS]
-
 # Python
 python -m opentoken_cli.main <subcommand> [OPTIONS]
 ```
@@ -53,9 +49,6 @@ python -m opentoken_cli.main <subcommand> [OPTIONS]
 # Self-contained executable
 .\opentoken.exe [OPTIONS]
 
-# Java
-java -jar opentoken-cli-*.jar <subcommand> [OPTIONS]
-
 # Python
 python -m opentoken_cli.main <subcommand> [OPTIONS]
 ```
@@ -64,26 +57,26 @@ python -m opentoken_cli.main <subcommand> [OPTIONS]
 
 ### `package` (Default Encrypted Mode)
 
-| Argument            | Short | Required | Description                                                                |
-| ------------------- | ----- | -------- | -------------------------------------------------------------------------- |
-| `--input`           | `-i`  | Yes      | Path to input file (CSV or Parquet)                                        |
-| `--output`          | `-o`  | Yes      | Path to output file                                                        |
-| `--type`            | `-t`  | Yes      | File type: `csv` or `parquet`                                              |
-| `--hashingsecret`   | `-h`  | Yes      | Secret key for HMAC-SHA256 hashing                                         |
-| `--encryptionkey`   | `-e`  | Yes      | 32-character key for AES-256 encryption                                    |
-| `--output-type`     | `-ot` | No       | Output file type if different from input                                   |
+| Argument            | Short | Required | Description                                                                            |
+| ------------------- | ----- | -------- | -------------------------------------------------------------------------------------- |
+| `--input`           | `-i`  | Yes      | Path to input file (CSV or Parquet)                                                    |
+| `--output`          | `-o`  | Yes      | Path to output file                                                                    |
+| `--type`            | `-t`  | Yes      | File type: `csv` or `parquet`                                                          |
+| `--hashingsecret`   | `-h`  | Yes      | Secret key for HMAC-SHA256 hashing                                                     |
+| `--encryptionkey`   | `-e`  | Yes      | 32-character key for AES-256 encryption                                                |
+| `--output-type`     | `-ot` | No       | Output file type if different from input                                               |
 | `--hash-record-ids` |       | No       | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability) |
 
 ### `tokenize` (Hashed Tokens Only)
 
-| Argument            | Short | Required         | Description                                                                |
-| ------------------- | ----- | ---------------- | -------------------------------------------------------------------------- |
-| `--input`           | `-i`  | Yes              | Path to input file (CSV or Parquet)                                        |
-| `--output`          | `-o`  | Yes              | Path to output file                                                        |
-| `--type`            | `-t`  | Yes              | File type: `csv` or `parquet`                                              |
-| `--hashingsecret`   | `-h`  | Normal mode only | Secret key for HMAC-SHA256 hashing                                         |
-| `--demo-mode`       |       | No               | No hashing; outputs raw attribute signatures (see below)                   |
-| `--output-type`     | `-ot` | No               | Output file type if different from input                                   |
+| Argument            | Short | Required         | Description                                                                            |
+| ------------------- | ----- | ---------------- | -------------------------------------------------------------------------------------- |
+| `--input`           | `-i`  | Yes              | Path to input file (CSV or Parquet)                                                    |
+| `--output`          | `-o`  | Yes              | Path to output file                                                                    |
+| `--type`            | `-t`  | Yes              | File type: `csv` or `parquet`                                                          |
+| `--hashingsecret`   | `-h`  | Normal mode only | Secret key for HMAC-SHA256 hashing                                                     |
+| `--demo-mode`       |       | No               | No hashing; outputs raw attribute signatures (see below)                               |
+| `--output-type`     | `-ot` | No               | Output file type if different from input                                               |
 | `--hash-record-ids` |       | No               | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability) |
 
 ### `encrypt` (Encrypt Input Tokens)
@@ -108,6 +101,8 @@ python -m opentoken_cli.main <subcommand> [OPTIONS]
 
 ### `generate-key-pair` (ECDH Key Generation)
 
+Available in the Python CLI.
+
 | Argument    | Short | Required | Default                    | Description                                         |
 | ----------- | ----- | -------- | -------------------------- | --------------------------------------------------- |
 | `--curve`   | `-c`  | No       | `P-256`                    | Elliptic curve: `P-256`, `P-384`, or `P-521`        |
@@ -126,7 +121,7 @@ Writes key files to `~/.opentoken/`:
 Generates fully encrypted tokens using AES-256-GCM. Tokens can be decrypted later with the encryption key.
 
 ```bash
-java -jar opentoken-cli-*.jar package \
+opentoken package \
   -i input.csv -t csv -o output.csv \
   -h "HashingSecret" \
   -e "EncryptionKey-Exactly32Chars!!"
@@ -143,7 +138,7 @@ Signature → SHA-256 → HMAC-SHA256 → AES-256-GCM → Base64
 Generates one-way hashed tokens. Faster but tokens cannot be decrypted.
 
 ```bash
-java -jar opentoken-cli-*.jar tokenize \
+opentoken tokenize \
   -i input.csv -t csv -o output.csv \
   -h "HashingSecret"
 
@@ -166,7 +161,7 @@ attribute values compose each token for development, testing, or demos.
 > protection across trust boundaries.
 
 ```bash
-java -jar opentoken-cli-*.jar tokenize \
+opentoken tokenize \
   -i input.csv -t csv -o output.csv \
   --demo-mode
 ```
@@ -254,8 +249,8 @@ Every run generates a `.metadata.json` file:
 
 ```json
 {
-  "Platform": "Java",
-  "JavaVersion": "21.0.0",
+  "Platform": "Python",
+  "PythonVersion": "3.11.0",
   "OpenTokenVersion": "2.0.0-alpha",
   "TotalRows": 100,
   "TotalRowsWithInvalidAttributes": 3,

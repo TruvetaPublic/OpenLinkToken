@@ -104,11 +104,8 @@ class OpenTokenCommand:
         """Main entry point for the command-line application."""
         parser = OpenTokenCommand.create_parser()
 
-        # Show banner for interactive runs (not for --help or piped output)
-        # Show when no args provided OR when it's not a help request
-        argv = sys.argv if args is None else args
-        if len(argv) == 0 or not OpenTokenCommand._is_help_request(argv):
-            OpenTokenCommand.show_banner()
+        # Show banner for interactive runs.
+        OpenTokenCommand.show_banner()
 
         try:
             parsed_args = parser.parse_args(args)
@@ -140,13 +137,3 @@ class OpenTokenCommand:
             Exit code (0 for success, non-zero for errors)
         """
         return OpenTokenCommand.main(args)
-
-    @staticmethod
-    def _is_help_request(args):
-        """Check if the command is a help request."""
-        if not args:
-            return False
-        for arg in args:
-            if arg in ("--help", "help"):
-                return True
-        return False
