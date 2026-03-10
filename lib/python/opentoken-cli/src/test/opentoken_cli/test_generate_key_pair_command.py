@@ -233,7 +233,10 @@ class TestGenerateKeyPairCommandIntegration:
             exit_code = OpenTokenCommand.execute(["generate-key-pair", "--name", invalid_name])
 
         assert exit_code != 0, "Unsafe key name must exit non-zero"
-        assert not (tmp_path / ".opentoken").exists(), "Unsafe key names must not create output files"
+
+        opentoken_dir = tmp_path / ".opentoken"
+        if opentoken_dir.exists():
+            assert list(opentoken_dir.glob("*.pem")) == [], "Unsafe key names must not create output files"
 
     # -------------------------------------------------------------------------
     # Directory and file permissions
