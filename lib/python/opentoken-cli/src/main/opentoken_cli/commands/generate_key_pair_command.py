@@ -130,7 +130,12 @@ class GenerateKeyPairCommand:
 
     @staticmethod
     def generate_key_pair(curve: str) -> Tuple[bytes, bytes]:
-        """Generate an EC key pair for the specified curve."""
+        """Generate an EC key pair for the specified curve.
+
+        .. deprecated::
+            Call ``opentoken_cli.util.ec_key_utils.generate_key_pair`` directly.
+            This shim exists only for backward compatibility.
+        """
         return generate_key_pair(curve)
 
     @staticmethod

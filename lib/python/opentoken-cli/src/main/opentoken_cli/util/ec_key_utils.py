@@ -15,12 +15,6 @@ logger = logging.getLogger(__name__)
 
 SUPPORTED_CURVES = ["P-256", "P-384", "P-521"]
 
-_CURVE_MAP_NAMES = {
-    "P-256": "SECP256R1",
-    "P-384": "SECP384R1",
-    "P-521": "SECP521R1",
-}
-
 HKDF_INFO = b"opentoken-exchange-v1"
 
 
