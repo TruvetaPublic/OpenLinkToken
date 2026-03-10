@@ -232,7 +232,7 @@ class TestReplaceBinary:
         target.write_bytes(b"old content")
 
         with patch.object(UpdateCommand, "_find_target_binary", return_value=target):
-            rc = UpdateCommand._replace_binary(src, Path(sys.executable), "opentoken")
+            rc = UpdateCommand._replace_binary(src, "opentoken")
 
         assert rc == 0
         assert target.read_bytes() == b"new content"
@@ -246,7 +246,7 @@ class TestReplaceBinary:
             patch.object(UpdateCommand, "_find_target_binary", return_value=None),
             patch.object(Path, "is_file", return_value=False),
         ):
-            rc = UpdateCommand._replace_binary(src, Path(sys.executable), "opentoken")
+            rc = UpdateCommand._replace_binary(src, "opentoken")
 
         assert rc != 0
         assert "Unable to locate" in capsys.readouterr().err
@@ -261,7 +261,7 @@ class TestReplaceBinary:
             patch.object(UpdateCommand, "_find_target_binary", return_value=None),
             patch.object(sys, "argv", [str(fake_entrypoint)]),
         ):
-            rc = UpdateCommand._replace_binary(src, Path(sys.executable), "opentoken")
+            rc = UpdateCommand._replace_binary(src, "opentoken")
 
         assert rc == 0
         assert fake_entrypoint.read_bytes() == b"new content"
@@ -276,7 +276,7 @@ class TestReplaceBinary:
             patch.object(UpdateCommand, "_find_target_binary", return_value=target),
             patch("shutil.copy2", side_effect=OSError("Permission denied")),
         ):
-            rc = UpdateCommand._replace_binary(src, Path(sys.executable), "opentoken")
+            rc = UpdateCommand._replace_binary(src, "opentoken")
 
         assert rc != 0
 

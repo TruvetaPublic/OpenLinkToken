@@ -83,6 +83,9 @@ class VersionChecker:
         if self._thread.is_alive():
             return
 
+        if not self._stderr_is_interactive():
+            return
+
         if self._result and self._is_newer(self._result, self._current_version):
             self._print_notice(self._result)
 
