@@ -8,6 +8,7 @@ import os
 import sys
 
 from opentoken.metadata import Metadata
+from opentoken_cli.util.version_checker import start_version_check
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +75,14 @@ class OpenTokenCommand:
             version=f"OpenToken {OpenTokenCommand.VERSION}",
         )
 
+        parser.add_argument(
+            "--no-update-check",
+            action="store_true",
+            default=False,
+            dest="no_update_check",
+            help="Disable the automatic update check on startup",
+        )
+
         subparsers = parser.add_subparsers(
             title="commands",
             description="Available commands",
@@ -88,6 +97,7 @@ class OpenTokenCommand:
         from opentoken_cli.commands.help_command import HelpCommand
         from opentoken_cli.commands.package_command import PackageCommand
         from opentoken_cli.commands.tokenize_command import TokenizeCommand
+        from opentoken_cli.commands.update_command import UpdateCommand
 
         # Register subcommands
         HelpCommand.register_subcommand(subparsers)
@@ -96,6 +106,7 @@ class OpenTokenCommand:
         DecryptCommand.register_subcommand(subparsers)
         PackageCommand.register_subcommand(subparsers)
         GenerateKeyPairCommand.register_subcommand(subparsers)
+        UpdateCommand.register_subcommand(subparsers)
 
         return parser
 
@@ -112,17 +123,32 @@ class OpenTokenCommand:
         except SystemExit as error:
             return error.code if isinstance(error.code, int) else 1
 
+        no_update_check = getattr(parsed_args, "no_update_check", False)
+        should_start_version_check = OpenTokenCommand._should_start_version_check(parsed_args)
+
+        version_checker = None
+        if should_start_version_check:
+            # Start the asynchronous version check before executing the command
+            version_checker = start_version_check(OpenTokenCommand.VERSION, no_update_check=no_update_check)
+
         # If no subcommand specified, show help
         if not parsed_args.command:
             parser.print_help()
+            if version_checker is not None:
+                version_checker.wait_and_notify()
             return 0
 
         # Execute the command
         try:
-            return parsed_args.func(parsed_args)
+            exit_code = parsed_args.func(parsed_args)
         except Exception as e:
             logger.error(f"Command execution failed: {e}", exc_info=True)
-            return 1
+            exit_code = 1
+
+        # Wait for the version check and surface any update notice after command output
+        if version_checker is not None:
+            version_checker.wait_and_notify()
+        return exit_code
 
     @staticmethod
     def execute(args):
@@ -137,3 +163,18 @@ class OpenTokenCommand:
             Exit code (0 for success, non-zero for errors)
         """
         return OpenTokenCommand.main(args)
+
+    @staticmethod
+    def _is_help_request(args):
+        """Check if the command is a help request."""
+        if not args:
+            return False
+        for arg in args:
+            if arg in ("--help", "help"):
+                return True
+        return False
+
+    @staticmethod
+    def _should_start_version_check(parsed_args: argparse.Namespace) -> bool:
+        """Return whether startup version checks should run for the parsed command."""
+        return getattr(parsed_args, "command", None) != "update"
