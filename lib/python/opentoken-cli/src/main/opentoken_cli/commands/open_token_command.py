@@ -93,6 +93,7 @@ class OpenTokenCommand:
         # Import command modules here to avoid circular imports
         from opentoken_cli.commands.decrypt_command import DecryptCommand
         from opentoken_cli.commands.encrypt_command import EncryptCommand
+        from opentoken_cli.commands.generate_key_pair_command import GenerateKeyPairCommand
         from opentoken_cli.commands.help_command import HelpCommand
         from opentoken_cli.commands.package_command import PackageCommand
         from opentoken_cli.commands.tokenize_command import TokenizeCommand
@@ -104,6 +105,7 @@ class OpenTokenCommand:
         EncryptCommand.register_subcommand(subparsers)
         DecryptCommand.register_subcommand(subparsers)
         PackageCommand.register_subcommand(subparsers)
+        GenerateKeyPairCommand.register_subcommand(subparsers)
         UpdateCommand.register_subcommand(subparsers)
 
         return parser

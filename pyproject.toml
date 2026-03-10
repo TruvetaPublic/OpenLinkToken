@@ -35,7 +35,6 @@ dev = [
   "prek",
   "autoflake",
 ]
-
 [tool.ruff]
 line-length = 120
 fix = true

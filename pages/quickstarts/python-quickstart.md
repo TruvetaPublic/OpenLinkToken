@@ -100,6 +100,17 @@ opentoken decrypt \
   -e "YourEncryptionKey-32Chars-Here!"
 ```
 
+### Generate ECDH Key Pair
+
+```bash
+opentoken generate-key-pair \
+  --curve P-256 \
+  --name my-key
+```
+
+This writes `~/.opentoken/my-key.private.pem` and `~/.opentoken/my-key.public.pem`. Add `--force` to overwrite
+existing files.
+
 ## Getting Help
 
 ```bash
