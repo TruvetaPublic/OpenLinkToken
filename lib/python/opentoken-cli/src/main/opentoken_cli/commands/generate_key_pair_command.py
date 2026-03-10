@@ -3,11 +3,10 @@ Copyright (c) Truveta. All rights reserved.
 """
 
 import logging
-import ntpath
 import os
 import stat
 from datetime import date
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Optional, Tuple
 
 logger = logging.getLogger(__name__)
@@ -106,10 +105,10 @@ class GenerateKeyPairCommand:
             GenerateKeyPairCommand._write_key(private_key_path, private_pem, 0o600, overwrite=force)
             GenerateKeyPairCommand._write_key(public_key_path, public_pem, 0o644, overwrite=force)
         except (OSError, ValueError) as error:
-            logger.error("Failed to generate key pair: %s", error)
+            logger.error("Validation or file system error while generating key pair: %s", error)
             return 1
         except Exception as e:
-            logger.error("Failed to generate key pair: %s", e, exc_info=True)
+            logger.error("Unexpected error while generating key pair: %s", e, exc_info=True)
             return 1
 
         print(f"Private key: {private_key_path.resolve()}")
@@ -129,7 +128,7 @@ class GenerateKeyPairCommand:
             or "\\" in candidate
             or ":" in candidate
             or candidate != Path(candidate).name
-            or ntpath.splitdrive(candidate)[0]
+            or PureWindowsPath(candidate).drive
         ):
             raise ValueError(
                 "Key name must be a simple file basename without path separators, traversal, or drive prefixes."
@@ -232,5 +231,3 @@ class GenerateKeyPairCommand:
             os.chmod(path, mode)
         except (NotImplementedError, PermissionError) as e:
             logger.warning("Could not set file permissions on %s: %s", path, e)
-        except Exception:
-            raise
