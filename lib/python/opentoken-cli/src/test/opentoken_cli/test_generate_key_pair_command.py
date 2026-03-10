@@ -7,11 +7,11 @@ Unit and integration tests for GenerateKeyPairCommand.
 import os
 import stat
 import sys
-import pytest
-from pathlib import Path
 from unittest.mock import patch
 
-from opentoken_cli.commands.generate_key_pair_command import GenerateKeyPairCommand, SUPPORTED_CURVES
+import pytest
+
+from opentoken_cli.commands.generate_key_pair_command import SUPPORTED_CURVES, GenerateKeyPairCommand
 from opentoken_cli.commands.open_token_command import OpenTokenCommand
 
 
@@ -27,14 +27,12 @@ class TestGenerateKeyPairCommandUnit:
         """generate_key_pair returns valid PEM bytes for all supported curves."""
         private_pem, public_pem = GenerateKeyPairCommand.generate_key_pair(curve)
 
-        assert private_pem.startswith(b"-----BEGIN PRIVATE KEY-----"), \
+        assert private_pem.startswith(b"-----BEGIN PRIVATE KEY-----"), (
             f"Private key PEM header missing for curve {curve}"
-        assert b"-----END PRIVATE KEY-----" in private_pem, \
-            f"Private key PEM footer missing for curve {curve}"
-        assert public_pem.startswith(b"-----BEGIN PUBLIC KEY-----"), \
-            f"Public key PEM header missing for curve {curve}"
-        assert b"-----END PUBLIC KEY-----" in public_pem, \
-            f"Public key PEM footer missing for curve {curve}"
+        )
+        assert b"-----END PRIVATE KEY-----" in private_pem, f"Private key PEM footer missing for curve {curve}"
+        assert public_pem.startswith(b"-----BEGIN PUBLIC KEY-----"), f"Public key PEM header missing for curve {curve}"
+        assert b"-----END PUBLIC KEY-----" in public_pem, f"Public key PEM footer missing for curve {curve}"
 
     def test_generate_key_pair_unsupported_curve_raises(self):
         """generate_key_pair raises ValueError for unsupported curve names."""
@@ -66,6 +64,28 @@ class TestGenerateKeyPairCommandUnit:
         target = tmp_path / "existing_dir"
         target.mkdir()
         GenerateKeyPairCommand._ensure_directory(target)  # Must not raise
+
+    def test_ensure_directory_rejects_symlink(self, tmp_path):
+        """_ensure_directory rejects symlink targets."""
+        target = tmp_path / "dir-link"
+        target.symlink_to(tmp_path, target_is_directory=True)
+
+        with pytest.raises(OSError, match="must not be a symbolic link"):
+            GenerateKeyPairCommand._ensure_directory(target)
+
+    def test_ensure_directory_tightens_existing_permissions(self, tmp_path):
+        """_ensure_directory resets an existing directory to owner-only permissions on POSIX."""
+        if sys.platform == "win32":
+            pytest.skip("POSIX permission test skipped on Windows")
+
+        target = tmp_path / "existing-wide-open"
+        target.mkdir()
+        os.chmod(target, 0o755)
+
+        GenerateKeyPairCommand._ensure_directory(target)
+
+        mode = stat.S_IMODE(os.stat(target).st_mode)
+        assert mode == 0o700, f"Expected 700 but got {oct(mode)}"
 
     # -------------------------------------------------------------------------
     # _write_key: writes bytes and sets permissions
@@ -101,6 +121,16 @@ class TestGenerateKeyPairCommandUnit:
         mode = stat.S_IMODE(os.stat(path).st_mode)
         assert mode == 0o644, f"Expected 644 but got {oct(mode)}"
 
+    def test_write_key_rejects_symlink_path(self, tmp_path):
+        """_write_key rejects symlink targets to avoid writing through links."""
+        target = tmp_path / "real.pem"
+        target.write_text("original")
+        link_path = tmp_path / "linked.pem"
+        link_path.symlink_to(target)
+
+        with pytest.raises(OSError, match="must not be a symbolic link"):
+            GenerateKeyPairCommand._write_key(link_path, b"data", 0o600)
+
 
 class TestGenerateKeyPairCommandIntegration:
     """Integration tests that exercise the full CLI path via OpenTokenCommand.execute."""
@@ -115,11 +145,15 @@ class TestGenerateKeyPairCommandIntegration:
         key_name = f"test-{curve.replace('-', '').lower()}"
         with patch.dict(os.environ, {}):
             with patch("pathlib.Path.home", return_value=tmp_path):
-                exit_code = OpenTokenCommand.execute([
-                    "generate-key-pair",
-                    "--curve", curve,
-                    "--name", key_name,
-                ])
+                exit_code = OpenTokenCommand.execute(
+                    [
+                        "generate-key-pair",
+                        "--curve",
+                        curve,
+                        "--name",
+                        key_name,
+                    ]
+                )
 
         opentoken_dir = tmp_path / ".opentoken"
         assert exit_code == 0, f"generate-key-pair should succeed for curve {curve}"
@@ -174,9 +208,7 @@ class TestGenerateKeyPairCommandIntegration:
         key_name = "force-key"
         with patch("pathlib.Path.home", return_value=tmp_path):
             OpenTokenCommand.execute(["generate-key-pair", "--name", key_name])
-            exit_code = OpenTokenCommand.execute([
-                "generate-key-pair", "--name", key_name, "--force"
-            ])
+            exit_code = OpenTokenCommand.execute(["generate-key-pair", "--name", key_name, "--force"])
 
         assert exit_code == 0, "--force overwrite should succeed"
         opentoken_dir = tmp_path / ".opentoken"
@@ -193,6 +225,15 @@ class TestGenerateKeyPairCommandIntegration:
             exit_code = OpenTokenCommand.execute(["generate-key-pair", "--curve", "P-192"])
 
         assert exit_code != 0, "Unsupported curve must exit non-zero"
+
+    @pytest.mark.parametrize("invalid_name", ["../escape", "nested/key", r"nested\\key", "C:\\temp\\key"])
+    def test_invalid_name_exits_nonzero(self, tmp_path, invalid_name):
+        """Unsafe key basenames must be rejected."""
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenTokenCommand.execute(["generate-key-pair", "--name", invalid_name])
+
+        assert exit_code != 0, "Unsafe key name must exit non-zero"
+        assert not (tmp_path / ".opentoken").exists(), "Unsafe key names must not create output files"
 
     # -------------------------------------------------------------------------
     # Directory and file permissions

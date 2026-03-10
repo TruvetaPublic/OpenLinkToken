@@ -3,6 +3,7 @@ Copyright (c) Truveta. All rights reserved.
 """
 
 import logging
+import ntpath
 import os
 import stat
 from datetime import date
@@ -77,37 +78,36 @@ class GenerateKeyPairCommand:
         curve: str = getattr(args, "curve", "P-256")
         force: bool = getattr(args, "force", False)
 
-        # Resolve default name
-        if not name or not name.strip():
-            name = f"opentoken-{date.today().isoformat()}"
-
-        # Validate curve
-        if curve not in SUPPORTED_CURVES:
-            logger.error(
-                "Unsupported curve '%s'. Valid options are: %s",
-                curve,
-                ", ".join(SUPPORTED_CURVES),
-            )
-            return 1
-
-        opentoken_dir = Path.home() / ".opentoken"
-        private_key_path = opentoken_dir / f"{name}.private.pem"
-        public_key_path = opentoken_dir / f"{name}.public.pem"
-
-        # Guard against silent overwrite
-        if not force and (private_key_path.exists() or public_key_path.exists()):
-            logger.error(
-                "Key files for '%s' already exist in %s. Use --force to overwrite.",
-                name,
-                opentoken_dir,
-            )
-            return 1
-
         try:
+            name = GenerateKeyPairCommand._resolve_key_name(name)
+
+            if curve not in SUPPORTED_CURVES:
+                logger.error(
+                    "Unsupported curve '%s'. Valid options are: %s",
+                    curve,
+                    ", ".join(SUPPORTED_CURVES),
+                )
+                return 1
+
+            opentoken_dir = Path.home() / ".opentoken"
+            private_key_path = opentoken_dir / f"{name}.private.pem"
+            public_key_path = opentoken_dir / f"{name}.public.pem"
+
+            if not force and (private_key_path.exists() or public_key_path.exists()):
+                logger.error(
+                    "Key files for '%s' already exist in %s. Use --force to overwrite.",
+                    name,
+                    opentoken_dir,
+                )
+                return 1
+
             GenerateKeyPairCommand._ensure_directory(opentoken_dir)
             private_pem, public_pem = GenerateKeyPairCommand.generate_key_pair(curve)
-            GenerateKeyPairCommand._write_key(private_key_path, private_pem, 0o600)
-            GenerateKeyPairCommand._write_key(public_key_path, public_pem, 0o644)
+            GenerateKeyPairCommand._write_key(private_key_path, private_pem, 0o600, overwrite=force)
+            GenerateKeyPairCommand._write_key(public_key_path, public_pem, 0o644, overwrite=force)
+        except (OSError, ValueError) as error:
+            logger.error("Failed to generate key pair: %s", error)
+            return 1
         except Exception as e:
             logger.error("Failed to generate key pair: %s", e, exc_info=True)
             return 1
@@ -115,6 +115,27 @@ class GenerateKeyPairCommand:
         print(f"Private key: {private_key_path.resolve()}")
         print(f"Public key:  {public_key_path.resolve()}")
         return 0
+
+    @staticmethod
+    def _resolve_key_name(name: Optional[str]) -> str:
+        """Resolve and validate the requested key basename."""
+        if not name or not name.strip():
+            return f"opentoken-{date.today().isoformat()}"
+
+        candidate = name.strip()
+        if (
+            candidate in {".", ".."}
+            or "/" in candidate
+            or "\\" in candidate
+            or ":" in candidate
+            or candidate != Path(candidate).name
+            or ntpath.splitdrive(candidate)[0]
+        ):
+            raise ValueError(
+                "Key name must be a simple file basename without path separators, traversal, or drive prefixes."
+            )
+
+        return candidate
 
     @staticmethod
     def generate_key_pair(curve: str) -> Tuple[bytes, bytes]:
@@ -167,29 +188,49 @@ class GenerateKeyPairCommand:
 
     @staticmethod
     def _ensure_directory(directory: Path) -> None:
-        """Create the directory with 700 permissions if it does not exist.
+        """Ensure the directory exists, is not a symlink, and has 700 permissions.
 
         Args:
-            directory: The directory path to create.
+            directory: The directory path to create or validate.
         """
         if not directory.exists():
             directory.mkdir(parents=True, exist_ok=True)
-            try:
-                os.chmod(directory, stat.S_IRWXU)  # 700
-            except (NotImplementedError, PermissionError) as e:
-                logger.warning("Could not set directory permissions: %s", e)
+
+        if directory.is_symlink():
+            raise OSError(f"Key directory {directory} must not be a symbolic link.")
+
+        if not directory.is_dir():
+            raise NotADirectoryError(f"Key directory path {directory} exists and is not a directory.")
+
+        try:
+            os.chmod(directory, stat.S_IRWXU)  # 700
+        except (NotImplementedError, PermissionError) as e:
+            logger.warning("Could not set directory permissions on %s: %s", directory, e)
 
     @staticmethod
-    def _write_key(path: Path, pem_bytes: bytes, mode: int) -> None:
-        """Write PEM bytes to a file and set the specified permissions.
+    def _write_key(path: Path, pem_bytes: bytes, mode: int, overwrite: bool = True) -> None:
+        """Write PEM bytes to a file using secure creation flags and set the specified permissions.
 
         Args:
             path:      The target file path.
             pem_bytes: The PEM-encoded key bytes.
             mode:      Octal file permission mode (e.g., ``0o600``).
+            overwrite: When false, require exclusive creation instead of truncating an existing file.
         """
-        path.write_bytes(pem_bytes)
+        if path.is_symlink():
+            raise OSError(f"Key file path {path} must not be a symbolic link.")
+
+        flags = os.O_WRONLY | os.O_CREAT
+        flags |= os.O_TRUNC if overwrite else os.O_EXCL
+        if hasattr(os, "O_NOFOLLOW"):
+            flags |= os.O_NOFOLLOW
+
+        file_descriptor = os.open(path, flags, mode)
         try:
+            with os.fdopen(file_descriptor, "wb") as file_handle:
+                file_handle.write(pem_bytes)
             os.chmod(path, mode)
         except (NotImplementedError, PermissionError) as e:
             logger.warning("Could not set file permissions on %s: %s", path, e)
+        except Exception:
+            raise
