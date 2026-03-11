@@ -10,6 +10,8 @@ if [ ! -x "$VENV_DIR/bin/python" ]; then
     uv venv --allow-existing --seed "$VENV_DIR"
 fi
 
+source "$VENV_DIR/bin/activate"
+
 "$VENV_DIR/bin/python" -m pip install apm-cli
 
 echo "(!) Setting up SSH known hosts for GitHub"

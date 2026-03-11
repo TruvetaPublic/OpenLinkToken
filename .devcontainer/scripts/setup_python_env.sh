@@ -63,6 +63,9 @@ echo "Installing all workspace packages and dependencies"
 cd "$REPO_ROOT"
 uv sync --all-packages --dev
 
+echo "Installing default PySpark bridge runtime (Spark 4.0)"
+uv pip install -e "lib/python/opentoken-pyspark[spark40]"
+
 if [ "$REFRESH_WORKSPACE_ONLY" -eq 1 ]; then
   echo "Refreshing workspace packages complete"
 else

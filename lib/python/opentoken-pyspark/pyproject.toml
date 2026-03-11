@@ -15,6 +15,34 @@ dynamic = [
 requires = ["setuptools>=40.8.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[tool.uv]
+conflicts = [
+  [
+    { extra = "spark34" },
+    { extra = "spark35" },
+  ],
+  [
+    { extra = "spark34" },
+    { extra = "spark40" },
+  ],
+  [
+    { extra = "spark34" },
+    { extra = "spark41" },
+  ],
+  [
+    { extra = "spark35" },
+    { extra = "spark40" },
+  ],
+  [
+    { extra = "spark35" },
+    { extra = "spark41" },
+  ],
+  [
+    { extra = "spark40" },
+    { extra = "spark41" },
+  ],
+]
+
 [tool.pytest.ini_options]
 testpaths = ["src/test"]
 python_files = ["*_test.py"]
