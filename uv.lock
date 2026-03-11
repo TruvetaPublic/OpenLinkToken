@@ -7,6 +7,25 @@ resolution-markers = [
     "python_full_version == '3.11.*'",
     "python_full_version < '3.11'",
 ]
+conflicts = [[
+    { package = "opentoken-pyspark", extra = "spark34" },
+    { package = "opentoken-pyspark", extra = "spark35" },
+], [
+    { package = "opentoken-pyspark", extra = "spark34" },
+    { package = "opentoken-pyspark", extra = "spark40" },
+], [
+    { package = "opentoken-pyspark", extra = "spark34" },
+    { package = "opentoken-pyspark", extra = "spark41" },
+], [
+    { package = "opentoken-pyspark", extra = "spark35" },
+    { package = "opentoken-pyspark", extra = "spark40" },
+], [
+    { package = "opentoken-pyspark", extra = "spark35" },
+    { package = "opentoken-pyspark", extra = "spark41" },
+], [
+    { package = "opentoken-pyspark", extra = "spark40" },
+    { package = "opentoken-pyspark", extra = "spark41" },
+]]
 
 [manifest]
 members = [
@@ -21,9 +40,9 @@ name = "anyio"
 version = "4.12.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "exceptiongroup", marker = "python_full_version < '3.11'" },
+    { name = "exceptiongroup", marker = "python_full_version < '3.11' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
     { name = "idna" },
-    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/96/f0/5eb65b2bb0d09ac6776f2eb54adee6abe8228ea05b20a5ad0e4945de8aac/anyio-4.12.1.tar.gz", hash = "sha256:41cfcc3a4c85d3f05c932da7c26d0201ac36f72abd4435ba90d0464a3ffed703", size = 228685, upload-time = "2026-01-06T11:45:21.246Z" }
 wheels = [
@@ -114,7 +133,7 @@ name = "async-lru"
 version = "2.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/05/8a/ca724066c32a53fa75f59e0f21aa822fdaa8a0dffa112d223634e3caabf9/async_lru-2.2.0.tar.gz", hash = "sha256:80abae2a237dbc6c60861d621619af39f0d920aea306de34cb992c879e01370c", size = 14654, upload-time = "2026-02-20T19:11:43.848Z" }
 wheels = [
@@ -136,7 +155,7 @@ version = "2.3.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pyflakes" },
-    { name = "tomli", marker = "python_full_version < '3.11'" },
+    { name = "tomli", marker = "python_full_version < '3.11' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/c3/0b/70c277eef225133763bf05c02c88df182e57d5c5c0730d3998958096a82e/autoflake-2.3.3.tar.gz", hash = "sha256:c24809541e23999f7a7b0d2faadf15deb0bc04cdde49728a2fd943a0c8055504", size = 16515, upload-time = "2026-02-20T05:01:43.448Z" }
 wheels = [
@@ -196,7 +215,7 @@ name = "cffi"
 version = "2.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pycparser", marker = "implementation_name != 'PyPy'" },
+    { name = "pycparser", marker = "implementation_name != 'PyPy' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/eb/56/b1ba7935a17738ae8453301356628e8147c79dbb825bcbc73dc7401f9846/cffi-2.0.0.tar.gz", hash = "sha256:44d1b5909021139fe36001ae048dbdde8214afa20200eda0f64c068cac5d5529", size = 523588, upload-time = "2025-09-08T23:24:04.541Z" }
 wheels = [
@@ -495,7 +514,7 @@ wheels = [
 
 [package.optional-dependencies]
 toml = [
-    { name = "tomli", marker = "python_full_version <= '3.11'" },
+    { name = "tomli", marker = "python_full_version <= '3.11' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
 ]
 
 [[package]]
@@ -503,8 +522,8 @@ name = "cryptography"
 version = "46.0.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "cffi", marker = "platform_python_implementation != 'PyPy'" },
-    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
+    { name = "cffi", marker = "platform_python_implementation != 'PyPy' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/60/04/ee2a9e8542e4fa2773b81771ff8349ff19cdd56b7258a0cc442639052edb/cryptography-46.0.5.tar.gz", hash = "sha256:abace499247268e3757271b2f1e244b36b06f8515cf27c4d49468fc9eb16e93d", size = 750064, upload-time = "2026-02-10T19:18:38.255Z" }
 wheels = [
@@ -619,7 +638,7 @@ name = "exceptiongroup"
 version = "1.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/50/79/66800aadf48771f6b62f7eb014e352e5d06856655206165d775e675a02c9/exceptiongroup-1.3.1.tar.gz", hash = "sha256:8b412432c6055b0b7d14c310000ae93352ed6754f70fa8f7c34141f91c4e3219", size = 30371, upload-time = "2025-11-21T23:01:54.787Z" }
 wheels = [
@@ -642,6 +661,20 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/20/b5/23b216d9d985a956623b6bd12d4086b60f0059b27799f23016af04a74ea1/fastjsonschema-2.21.2.tar.gz", hash = "sha256:b1eb43748041c880796cd077f1a07c3d94e93ae84bba5ed36800a33554ae05de", size = 374130, upload-time = "2025-08-14T18:49:36.666Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/cb/a8/20d0723294217e47de6d9e2e40fd4a9d2f7c4b6ef974babd482a59743694/fastjsonschema-2.21.2-py3-none-any.whl", hash = "sha256:1c797122d0a86c5cace2e54bf4e819c36223b552017172f32c5c024a6b77e463", size = 24024, upload-time = "2025-08-14T18:49:34.776Z" },
+]
+
+[[package]]
+name = "flake8"
+version = "7.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "mccabe" },
+    { name = "pycodestyle" },
+    { name = "pyflakes" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/9b/af/fbfe3c4b5a657d79e5c47a2827a362f9e1b763336a52f926126aa6dc7123/flake8-7.3.0.tar.gz", hash = "sha256:fe044858146b9fc69b551a4b490d69cf960fcb78ad1edcb84e7fbb1b4a8e3872", size = 48326, upload-time = "2025-06-20T19:31:35.838Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9f/56/13ab06b4f93ca7cac71078fbe37fcea175d3216f31f85c3168a6bbd0bb9a/flake8-7.3.0-py2.py3-none-any.whl", hash = "sha256:b9696257b9ce8beb888cdbe31cf885c90d31928fe202be0889a7cdafad32f01e", size = 57922, upload-time = "2025-06-20T19:31:34.425Z" },
 ]
 
 [[package]]
@@ -713,12 +746,12 @@ name = "ipykernel"
 version = "7.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "appnope", marker = "sys_platform == 'darwin'" },
+    { name = "appnope", marker = "sys_platform == 'darwin' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
     { name = "comm" },
     { name = "debugpy" },
-    { name = "ipython", version = "8.38.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "ipython", version = "9.10.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.11.*'" },
-    { name = "ipython", version = "9.11.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "ipython", version = "8.38.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "ipython", version = "9.10.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.11.*' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "ipython", version = "9.11.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
     { name = "jupyter-client" },
     { name = "jupyter-core" },
     { name = "matplotlib-inline" },
@@ -742,17 +775,17 @@ resolution-markers = [
     "python_full_version < '3.11'",
 ]
 dependencies = [
-    { name = "colorama", marker = "python_full_version < '3.11' and sys_platform == 'win32'" },
-    { name = "decorator", marker = "python_full_version < '3.11'" },
-    { name = "exceptiongroup", marker = "python_full_version < '3.11'" },
-    { name = "jedi", marker = "python_full_version < '3.11'" },
-    { name = "matplotlib-inline", marker = "python_full_version < '3.11'" },
-    { name = "pexpect", marker = "python_full_version < '3.11' and sys_platform != 'emscripten' and sys_platform != 'win32'" },
-    { name = "prompt-toolkit", marker = "python_full_version < '3.11'" },
-    { name = "pygments", marker = "python_full_version < '3.11'" },
-    { name = "stack-data", marker = "python_full_version < '3.11'" },
-    { name = "traitlets", marker = "python_full_version < '3.11'" },
-    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
+    { name = "colorama", marker = "(python_full_version < '3.11' and sys_platform == 'win32') or (python_full_version >= '3.11' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (python_full_version >= '3.11' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (python_full_version >= '3.11' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (python_full_version >= '3.11' and extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (python_full_version >= '3.11' and extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (python_full_version >= '3.11' and extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41') or (sys_platform != 'win32' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (sys_platform != 'win32' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (sys_platform != 'win32' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (sys_platform != 'win32' and extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (sys_platform != 'win32' and extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (sys_platform != 'win32' and extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "decorator", marker = "python_full_version < '3.11' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "exceptiongroup", marker = "python_full_version < '3.11' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "jedi", marker = "python_full_version < '3.11' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "matplotlib-inline", marker = "python_full_version < '3.11' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "pexpect", marker = "(python_full_version < '3.11' and sys_platform != 'emscripten' and sys_platform != 'win32') or (python_full_version >= '3.11' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (python_full_version >= '3.11' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (python_full_version >= '3.11' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (python_full_version >= '3.11' and extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (python_full_version >= '3.11' and extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (python_full_version >= '3.11' and extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41') or (sys_platform == 'emscripten' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (sys_platform == 'emscripten' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (sys_platform == 'emscripten' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (sys_platform == 'emscripten' and extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (sys_platform == 'emscripten' and extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (sys_platform == 'emscripten' and extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41') or (sys_platform == 'win32' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (sys_platform == 'win32' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (sys_platform == 'win32' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (sys_platform == 'win32' and extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (sys_platform == 'win32' and extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (sys_platform == 'win32' and extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "prompt-toolkit", marker = "python_full_version < '3.11' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "pygments", marker = "python_full_version < '3.11' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "stack-data", marker = "python_full_version < '3.11' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "traitlets", marker = "python_full_version < '3.11' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/e5/61/1810830e8b93c72dcd3c0f150c80a00c3deb229562d9423807ec92c3a539/ipython-8.38.0.tar.gz", hash = "sha256:9cfea8c903ce0867cc2f23199ed8545eb741f3a69420bfcf3743ad1cec856d39", size = 5513996, upload-time = "2026-01-05T10:59:06.901Z" }
 wheels = [
@@ -767,17 +800,17 @@ resolution-markers = [
     "python_full_version == '3.11.*'",
 ]
 dependencies = [
-    { name = "colorama", marker = "python_full_version == '3.11.*' and sys_platform == 'win32'" },
-    { name = "decorator", marker = "python_full_version == '3.11.*'" },
-    { name = "ipython-pygments-lexers", marker = "python_full_version == '3.11.*'" },
-    { name = "jedi", marker = "python_full_version == '3.11.*'" },
-    { name = "matplotlib-inline", marker = "python_full_version == '3.11.*'" },
-    { name = "pexpect", marker = "python_full_version == '3.11.*' and sys_platform != 'emscripten' and sys_platform != 'win32'" },
-    { name = "prompt-toolkit", marker = "python_full_version == '3.11.*'" },
-    { name = "pygments", marker = "python_full_version == '3.11.*'" },
-    { name = "stack-data", marker = "python_full_version == '3.11.*'" },
-    { name = "traitlets", marker = "python_full_version == '3.11.*'" },
-    { name = "typing-extensions", marker = "python_full_version == '3.11.*'" },
+    { name = "colorama", marker = "(python_full_version == '3.11.*' and sys_platform == 'win32') or (python_full_version != '3.11.*' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (python_full_version != '3.11.*' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (python_full_version != '3.11.*' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (python_full_version != '3.11.*' and extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (python_full_version != '3.11.*' and extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (python_full_version != '3.11.*' and extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41') or (sys_platform != 'win32' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (sys_platform != 'win32' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (sys_platform != 'win32' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (sys_platform != 'win32' and extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (sys_platform != 'win32' and extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (sys_platform != 'win32' and extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "decorator", marker = "python_full_version == '3.11.*' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "ipython-pygments-lexers", marker = "python_full_version == '3.11.*' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "jedi", marker = "python_full_version == '3.11.*' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "matplotlib-inline", marker = "python_full_version == '3.11.*' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "pexpect", marker = "(python_full_version == '3.11.*' and sys_platform != 'emscripten' and sys_platform != 'win32') or (python_full_version != '3.11.*' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (python_full_version != '3.11.*' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (python_full_version != '3.11.*' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (python_full_version != '3.11.*' and extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (python_full_version != '3.11.*' and extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (python_full_version != '3.11.*' and extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41') or (sys_platform == 'emscripten' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (sys_platform == 'emscripten' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (sys_platform == 'emscripten' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (sys_platform == 'emscripten' and extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (sys_platform == 'emscripten' and extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (sys_platform == 'emscripten' and extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41') or (sys_platform == 'win32' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (sys_platform == 'win32' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (sys_platform == 'win32' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (sys_platform == 'win32' and extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (sys_platform == 'win32' and extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (sys_platform == 'win32' and extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "prompt-toolkit", marker = "python_full_version == '3.11.*' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "pygments", marker = "python_full_version == '3.11.*' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "stack-data", marker = "python_full_version == '3.11.*' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "traitlets", marker = "python_full_version == '3.11.*' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "typing-extensions", marker = "python_full_version == '3.11.*' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/a6/60/2111715ea11f39b1535bed6024b7dec7918b71e5e5d30855a5b503056b50/ipython-9.10.0.tar.gz", hash = "sha256:cd9e656be97618a0676d058134cd44e6dc7012c0e5cb36a9ce96a8c904adaf77", size = 4426526, upload-time = "2026-02-02T10:00:33.594Z" }
 wheels = [
@@ -793,16 +826,16 @@ resolution-markers = [
     "python_full_version >= '3.12' and python_full_version < '3.14'",
 ]
 dependencies = [
-    { name = "colorama", marker = "python_full_version >= '3.12' and sys_platform == 'win32'" },
-    { name = "decorator", marker = "python_full_version >= '3.12'" },
-    { name = "ipython-pygments-lexers", marker = "python_full_version >= '3.12'" },
-    { name = "jedi", marker = "python_full_version >= '3.12'" },
-    { name = "matplotlib-inline", marker = "python_full_version >= '3.12'" },
-    { name = "pexpect", marker = "python_full_version >= '3.12' and sys_platform != 'emscripten' and sys_platform != 'win32'" },
-    { name = "prompt-toolkit", marker = "python_full_version >= '3.12'" },
-    { name = "pygments", marker = "python_full_version >= '3.12'" },
-    { name = "stack-data", marker = "python_full_version >= '3.12'" },
-    { name = "traitlets", marker = "python_full_version >= '3.12'" },
+    { name = "colorama", marker = "(python_full_version >= '3.12' and sys_platform == 'win32') or (python_full_version < '3.12' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (python_full_version < '3.12' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (python_full_version < '3.12' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (python_full_version < '3.12' and extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (python_full_version < '3.12' and extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (python_full_version < '3.12' and extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41') or (sys_platform != 'win32' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (sys_platform != 'win32' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (sys_platform != 'win32' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (sys_platform != 'win32' and extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (sys_platform != 'win32' and extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (sys_platform != 'win32' and extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "decorator", marker = "python_full_version >= '3.12' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "ipython-pygments-lexers", marker = "python_full_version >= '3.12' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "jedi", marker = "python_full_version >= '3.12' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "matplotlib-inline", marker = "python_full_version >= '3.12' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "pexpect", marker = "(python_full_version >= '3.12' and sys_platform != 'emscripten' and sys_platform != 'win32') or (python_full_version < '3.12' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (python_full_version < '3.12' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (python_full_version < '3.12' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (python_full_version < '3.12' and extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (python_full_version < '3.12' and extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (python_full_version < '3.12' and extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41') or (sys_platform == 'emscripten' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (sys_platform == 'emscripten' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (sys_platform == 'emscripten' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (sys_platform == 'emscripten' and extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (sys_platform == 'emscripten' and extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (sys_platform == 'emscripten' and extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41') or (sys_platform == 'win32' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (sys_platform == 'win32' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (sys_platform == 'win32' and extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (sys_platform == 'win32' and extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (sys_platform == 'win32' and extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (sys_platform == 'win32' and extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "prompt-toolkit", marker = "python_full_version >= '3.12' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "pygments", marker = "python_full_version >= '3.12' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "stack-data", marker = "python_full_version >= '3.12' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "traitlets", marker = "python_full_version >= '3.12' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/86/28/a4698eda5a8928a45d6b693578b135b753e14fa1c2b36ee9441e69a45576/ipython-9.11.0.tar.gz", hash = "sha256:2a94bc4406b22ecc7e4cb95b98450f3ea493a76bec8896cda11b78d7752a6667", size = 4427354, upload-time = "2026-03-05T08:57:30.549Z" }
 wheels = [
@@ -814,7 +847,7 @@ name = "ipython-pygments-lexers"
 version = "1.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pygments", marker = "python_full_version >= '3.11'" },
+    { name = "pygments", marker = "python_full_version >= '3.11' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/ef/4c/5dd1d8af08107f88c7f741ead7a40854b8ac24ddf9ae850afbcf698aa552/ipython_pygments_lexers-1.1.1.tar.gz", hash = "sha256:09c0138009e56b6854f9535736f4171d855c8c08a563a0dcd8022f78355c7e81", size = 8393, upload-time = "2025-01-17T11:24:34.505Z" }
 wheels = [
@@ -827,9 +860,9 @@ version = "8.1.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "comm" },
-    { name = "ipython", version = "8.38.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "ipython", version = "9.10.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.11.*'" },
-    { name = "ipython", version = "9.11.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "ipython", version = "8.38.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "ipython", version = "9.10.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.11.*' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "ipython", version = "9.11.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
     { name = "jupyterlab-widgets" },
     { name = "traitlets" },
     { name = "widgetsnbextension" },
@@ -972,9 +1005,9 @@ version = "6.6.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ipykernel" },
-    { name = "ipython", version = "8.38.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "ipython", version = "9.10.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.11.*'" },
-    { name = "ipython", version = "9.11.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "ipython", version = "8.38.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "ipython", version = "9.10.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.11.*' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "ipython", version = "9.11.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
     { name = "jupyter-client" },
     { name = "jupyter-core" },
     { name = "prompt-toolkit" },
@@ -1045,10 +1078,10 @@ dependencies = [
     { name = "jupyter-server-terminals" },
     { name = "nbconvert" },
     { name = "nbformat" },
-    { name = "overrides", marker = "python_full_version < '3.12'" },
+    { name = "overrides", marker = "python_full_version < '3.12' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
     { name = "packaging" },
     { name = "prometheus-client" },
-    { name = "pywinpty", marker = "os_name == 'nt'" },
+    { name = "pywinpty", marker = "os_name == 'nt' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
     { name = "pyzmq" },
     { name = "send2trash" },
     { name = "terminado" },
@@ -1066,7 +1099,7 @@ name = "jupyter-server-terminals"
 version = "0.5.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pywinpty", marker = "os_name == 'nt'" },
+    { name = "pywinpty", marker = "os_name == 'nt' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
     { name = "terminado" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/f4/a7/bcd0a9b0cbba88986fe944aaaf91bfda603e5a50bda8ed15123f381a3b2f/jupyter_server_terminals-0.5.4.tar.gz", hash = "sha256:bbda128ed41d0be9020349f9f1f2a4ab9952a73ed5f5ac9f1419794761fb87f5", size = 31770, upload-time = "2026-01-14T16:53:20.213Z" }
@@ -1090,7 +1123,7 @@ dependencies = [
     { name = "notebook-shim" },
     { name = "packaging" },
     { name = "setuptools" },
-    { name = "tomli", marker = "python_full_version < '3.11'" },
+    { name = "tomli", marker = "python_full_version < '3.11' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
     { name = "tornado" },
     { name = "traitlets" },
 ]
@@ -1255,11 +1288,20 @@ wheels = [
 ]
 
 [[package]]
+name = "mccabe"
+version = "0.7.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e7/ff/0ffefdcac38932a54d2b5eed4e0ba8a408f215002cd178ad1df0f2806ff8/mccabe-0.7.0.tar.gz", hash = "sha256:348e0240c33b60bbdf4e523192ef919f28cb2c3d7d5c7794f74009290f236325", size = 9658, upload-time = "2022-01-24T01:14:51.113Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/27/1a/1f68f9ba0c207934b35b86a8ca3aad8395a3d6dd7921c0686e23853ff5a9/mccabe-0.7.0-py2.py3-none-any.whl", hash = "sha256:6c2d30ab6be0e4a46919781807b4f0d834ebdd6c6e3dca0bda5a15f863427b6e", size = 7350, upload-time = "2022-01-24T01:14:49.62Z" },
+]
+
+[[package]]
 name = "mistune"
 version = "3.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/9d/55/d01f0c4b45ade6536c51170b9043db8b2ec6ddf4a35c7ea3f5f559ac935b/mistune-3.2.0.tar.gz", hash = "sha256:708487c8a8cdd99c9d90eb3ed4c3ed961246ff78ac82f03418f5183ab70e398a", size = 95467, upload-time = "2025-12-23T11:36:34.994Z" }
 wheels = [
@@ -1356,6 +1398,44 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/54/d2/92fa3243712b9a3e8bafaf60aac366da1cada3639ca767ff4b5b3654ec28/notebook_shim-0.2.4.tar.gz", hash = "sha256:b4b2cfa1b65d98307ca24361f5b30fe785b53c3fd07b7a47e89acb5e6ac638cb", size = 13167, upload-time = "2024-02-14T23:35:18.353Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f9/33/bd5b9137445ea4b680023eb0469b2bb969d61303dedb2aac6560ff3d14a1/notebook_shim-0.2.4-py3-none-any.whl", hash = "sha256:411a5be4e9dc882a074ccbcae671eda64cceb068767e9a3419096986560e1cef", size = 13307, upload-time = "2024-02-14T23:35:16.286Z" },
+]
+
+[[package]]
+name = "numpy"
+version = "1.26.4"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.14'",
+    "python_full_version >= '3.12' and python_full_version < '3.14'",
+    "python_full_version == '3.11.*'",
+    "python_full_version < '3.11'",
+]
+sdist = { url = "https://files.pythonhosted.org/packages/65/6e/09db70a523a96d25e115e71cc56a6f9031e7b8cd166c1ac8438307c14058/numpy-1.26.4.tar.gz", hash = "sha256:2a02aba9ed12e4ac4eb3ea9421c420301a0c6460d9830d74a9df87efa4912010", size = 15786129, upload-time = "2024-02-06T00:26:44.495Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a7/94/ace0fdea5241a27d13543ee117cbc65868e82213fb31a8eb7fe9ff23f313/numpy-1.26.4-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:9ff0f4f29c51e2803569d7a51c2304de5554655a60c5d776e35b4a41413830d0", size = 20631468, upload-time = "2024-02-05T23:48:01.194Z" },
+    { url = "https://files.pythonhosted.org/packages/20/f7/b24208eba89f9d1b58c1668bc6c8c4fd472b20c45573cb767f59d49fb0f6/numpy-1.26.4-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:2e4ee3380d6de9c9ec04745830fd9e2eccb3e6cf790d39d7b98ffd19b0dd754a", size = 13966411, upload-time = "2024-02-05T23:48:29.038Z" },
+    { url = "https://files.pythonhosted.org/packages/fc/a5/4beee6488160798683eed5bdb7eead455892c3b4e1f78d79d8d3f3b084ac/numpy-1.26.4-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:d209d8969599b27ad20994c8e41936ee0964e6da07478d6c35016bc386b66ad4", size = 14219016, upload-time = "2024-02-05T23:48:54.098Z" },
+    { url = "https://files.pythonhosted.org/packages/4b/d7/ecf66c1cd12dc28b4040b15ab4d17b773b87fa9d29ca16125de01adb36cd/numpy-1.26.4-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ffa75af20b44f8dba823498024771d5ac50620e6915abac414251bd971b4529f", size = 18240889, upload-time = "2024-02-05T23:49:25.361Z" },
+    { url = "https://files.pythonhosted.org/packages/24/03/6f229fe3187546435c4f6f89f6d26c129d4f5bed40552899fcf1f0bf9e50/numpy-1.26.4-cp310-cp310-musllinux_1_1_aarch64.whl", hash = "sha256:62b8e4b1e28009ef2846b4c7852046736bab361f7aeadeb6a5b89ebec3c7055a", size = 13876746, upload-time = "2024-02-05T23:49:51.983Z" },
+    { url = "https://files.pythonhosted.org/packages/39/fe/39ada9b094f01f5a35486577c848fe274e374bbf8d8f472e1423a0bbd26d/numpy-1.26.4-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:a4abb4f9001ad2858e7ac189089c42178fcce737e4169dc61321660f1a96c7d2", size = 18078620, upload-time = "2024-02-05T23:50:22.515Z" },
+    { url = "https://files.pythonhosted.org/packages/d5/ef/6ad11d51197aad206a9ad2286dc1aac6a378059e06e8cf22cd08ed4f20dc/numpy-1.26.4-cp310-cp310-win32.whl", hash = "sha256:bfe25acf8b437eb2a8b2d49d443800a5f18508cd811fea3181723922a8a82b07", size = 5972659, upload-time = "2024-02-05T23:50:35.834Z" },
+    { url = "https://files.pythonhosted.org/packages/19/77/538f202862b9183f54108557bfda67e17603fc560c384559e769321c9d92/numpy-1.26.4-cp310-cp310-win_amd64.whl", hash = "sha256:b97fe8060236edf3662adfc2c633f56a08ae30560c56310562cb4f95500022d5", size = 15808905, upload-time = "2024-02-05T23:51:03.701Z" },
+    { url = "https://files.pythonhosted.org/packages/11/57/baae43d14fe163fa0e4c47f307b6b2511ab8d7d30177c491960504252053/numpy-1.26.4-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:4c66707fabe114439db9068ee468c26bbdf909cac0fb58686a42a24de1760c71", size = 20630554, upload-time = "2024-02-05T23:51:50.149Z" },
+    { url = "https://files.pythonhosted.org/packages/1a/2e/151484f49fd03944c4a3ad9c418ed193cfd02724e138ac8a9505d056c582/numpy-1.26.4-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:edd8b5fe47dab091176d21bb6de568acdd906d1887a4584a15a9a96a1dca06ef", size = 13997127, upload-time = "2024-02-05T23:52:15.314Z" },
+    { url = "https://files.pythonhosted.org/packages/79/ae/7e5b85136806f9dadf4878bf73cf223fe5c2636818ba3ab1c585d0403164/numpy-1.26.4-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:7ab55401287bfec946ced39700c053796e7cc0e3acbef09993a9ad2adba6ca6e", size = 14222994, upload-time = "2024-02-05T23:52:47.569Z" },
+    { url = "https://files.pythonhosted.org/packages/3a/d0/edc009c27b406c4f9cbc79274d6e46d634d139075492ad055e3d68445925/numpy-1.26.4-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:666dbfb6ec68962c033a450943ded891bed2d54e6755e35e5835d63f4f6931d5", size = 18252005, upload-time = "2024-02-05T23:53:15.637Z" },
+    { url = "https://files.pythonhosted.org/packages/09/bf/2b1aaf8f525f2923ff6cfcf134ae5e750e279ac65ebf386c75a0cf6da06a/numpy-1.26.4-cp311-cp311-musllinux_1_1_aarch64.whl", hash = "sha256:96ff0b2ad353d8f990b63294c8986f1ec3cb19d749234014f4e7eb0112ceba5a", size = 13885297, upload-time = "2024-02-05T23:53:42.16Z" },
+    { url = "https://files.pythonhosted.org/packages/df/a0/4e0f14d847cfc2a633a1c8621d00724f3206cfeddeb66d35698c4e2cf3d2/numpy-1.26.4-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:60dedbb91afcbfdc9bc0b1f3f402804070deed7392c23eb7a7f07fa857868e8a", size = 18093567, upload-time = "2024-02-05T23:54:11.696Z" },
+    { url = "https://files.pythonhosted.org/packages/d2/b7/a734c733286e10a7f1a8ad1ae8c90f2d33bf604a96548e0a4a3a6739b468/numpy-1.26.4-cp311-cp311-win32.whl", hash = "sha256:1af303d6b2210eb850fcf03064d364652b7120803a0b872f5211f5234b399f20", size = 5968812, upload-time = "2024-02-05T23:54:26.453Z" },
+    { url = "https://files.pythonhosted.org/packages/3f/6b/5610004206cf7f8e7ad91c5a85a8c71b2f2f8051a0c0c4d5916b76d6cbb2/numpy-1.26.4-cp311-cp311-win_amd64.whl", hash = "sha256:cd25bcecc4974d09257ffcd1f098ee778f7834c3ad767fe5db785be9a4aa9cb2", size = 15811913, upload-time = "2024-02-05T23:54:53.933Z" },
+    { url = "https://files.pythonhosted.org/packages/95/12/8f2020a8e8b8383ac0177dc9570aad031a3beb12e38847f7129bacd96228/numpy-1.26.4-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:b3ce300f3644fb06443ee2222c2201dd3a89ea6040541412b8fa189341847218", size = 20335901, upload-time = "2024-02-05T23:55:32.801Z" },
+    { url = "https://files.pythonhosted.org/packages/75/5b/ca6c8bd14007e5ca171c7c03102d17b4f4e0ceb53957e8c44343a9546dcc/numpy-1.26.4-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:03a8c78d01d9781b28a6989f6fa1bb2c4f2d51201cf99d3dd875df6fbd96b23b", size = 13685868, upload-time = "2024-02-05T23:55:56.28Z" },
+    { url = "https://files.pythonhosted.org/packages/79/f8/97f10e6755e2a7d027ca783f63044d5b1bc1ae7acb12afe6a9b4286eac17/numpy-1.26.4-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:9fad7dcb1aac3c7f0584a5a8133e3a43eeb2fe127f47e3632d43d677c66c102b", size = 13925109, upload-time = "2024-02-05T23:56:20.368Z" },
+    { url = "https://files.pythonhosted.org/packages/0f/50/de23fde84e45f5c4fda2488c759b69990fd4512387a8632860f3ac9cd225/numpy-1.26.4-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:675d61ffbfa78604709862923189bad94014bef562cc35cf61d3a07bba02a7ed", size = 17950613, upload-time = "2024-02-05T23:56:56.054Z" },
+    { url = "https://files.pythonhosted.org/packages/4c/0c/9c603826b6465e82591e05ca230dfc13376da512b25ccd0894709b054ed0/numpy-1.26.4-cp312-cp312-musllinux_1_1_aarch64.whl", hash = "sha256:ab47dbe5cc8210f55aa58e4805fe224dac469cde56b9f731a4c098b91917159a", size = 13572172, upload-time = "2024-02-05T23:57:21.56Z" },
+    { url = "https://files.pythonhosted.org/packages/76/8c/2ba3902e1a0fc1c74962ea9bb33a534bb05984ad7ff9515bf8d07527cadd/numpy-1.26.4-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:1dda2e7b4ec9dd512f84935c5f126c8bd8b9f2fc001e9f54af255e8c5f16b0e0", size = 17786643, upload-time = "2024-02-05T23:57:56.585Z" },
+    { url = "https://files.pythonhosted.org/packages/28/4a/46d9e65106879492374999e76eb85f87b15328e06bd1550668f79f7b18c6/numpy-1.26.4-cp312-cp312-win32.whl", hash = "sha256:50193e430acfc1346175fcbdaa28ffec49947a06918b7b92130744e81e640110", size = 5677803, upload-time = "2024-02-05T23:58:08.963Z" },
+    { url = "https://files.pythonhosted.org/packages/16/2e/86f24451c2d530c88daf997cb8d6ac622c1d40d19f5a031ed68a4b73a374/numpy-1.26.4-cp312-cp312-win_amd64.whl", hash = "sha256:08beddf13648eb95f8d867350f6a018a4be2e5ad54c8d8caed89ebca558b2818", size = 15517754, upload-time = "2024-02-05T23:58:36.364Z" },
 ]
 
 [[package]]
@@ -1511,16 +1591,135 @@ wheels = [
 name = "opentoken"
 version = "2.0.0a0"
 source = { editable = "lib/python/opentoken" }
+dependencies = [
+    { name = "cryptography" },
+    { name = "jwcrypto" },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "cryptography" },
+    { name = "pycryptodome" },
+]
+test = [
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "cryptography", specifier = "==46.0.5" },
+    { name = "cryptography", marker = "extra == 'dev'" },
+    { name = "jwcrypto", specifier = ">=1.5.6" },
+    { name = "pycryptodome", marker = "extra == 'dev'" },
+    { name = "pytest", marker = "extra == 'test'" },
+]
+provides-extras = ["dev", "test"]
 
 [[package]]
 name = "opentoken-cli"
 version = "2.0.0a0"
 source = { editable = "lib/python/opentoken-cli" }
+dependencies = [
+    { name = "cryptography" },
+    { name = "csv2parquet" },
+    { name = "jwcrypto" },
+    { name = "opentoken" },
+    { name = "packaging" },
+    { name = "pandas", version = "2.1.4", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-17-opentoken-pyspark-spark34' or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "pandas", version = "2.2.3", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-17-opentoken-pyspark-spark35' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "pandas", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-17-opentoken-pyspark-spark40' or extra == 'extra-17-opentoken-pyspark-spark41' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra != 'extra-17-opentoken-pyspark-spark34' and extra != 'extra-17-opentoken-pyspark-spark35')" },
+    { name = "pyarrow" },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+]
+test = [
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "cryptography", specifier = "==46.0.5" },
+    { name = "csv2parquet" },
+    { name = "jwcrypto", specifier = ">=1.5.6" },
+    { name = "opentoken", editable = "lib/python/opentoken" },
+    { name = "packaging", specifier = ">=21.0" },
+    { name = "pandas" },
+    { name = "pyarrow" },
+    { name = "pytest", marker = "extra == 'dev'" },
+    { name = "pytest", marker = "extra == 'test'" },
+    { name = "pytest-cov", marker = "extra == 'dev'" },
+]
+provides-extras = ["dev", "test"]
 
 [[package]]
 name = "opentoken-pyspark"
 version = "2.0.0a0"
 source = { editable = "lib/python/opentoken-pyspark" }
+dependencies = [
+    { name = "jwcrypto" },
+    { name = "opentoken" },
+    { name = "pycryptodome" },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "flake8" },
+    { name = "ipykernel" },
+    { name = "jupyter" },
+    { name = "notebook" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+]
+spark34 = [
+    { name = "pandas", version = "2.1.4", source = { registry = "https://pypi.org/simple" } },
+    { name = "pyarrow" },
+    { name = "pyspark", version = "3.4.4", source = { registry = "https://pypi.org/simple" } },
+]
+spark35 = [
+    { name = "pandas", version = "2.2.3", source = { registry = "https://pypi.org/simple" } },
+    { name = "pyarrow" },
+    { name = "pyspark", version = "3.5.8", source = { registry = "https://pypi.org/simple" } },
+]
+spark40 = [
+    { name = "pandas", version = "2.3.3", source = { registry = "https://pypi.org/simple" } },
+    { name = "pyarrow" },
+    { name = "pyspark", version = "4.0.2", source = { registry = "https://pypi.org/simple" } },
+]
+spark41 = [
+    { name = "pandas", version = "2.3.3", source = { registry = "https://pypi.org/simple" } },
+    { name = "pyarrow" },
+    { name = "pyspark", version = "4.1.1", source = { registry = "https://pypi.org/simple" } },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "flake8", marker = "extra == 'dev'" },
+    { name = "ipykernel", marker = "extra == 'dev'" },
+    { name = "jupyter", marker = "extra == 'dev'" },
+    { name = "jwcrypto", specifier = ">=1.5.6" },
+    { name = "notebook", marker = "extra == 'dev'" },
+    { name = "opentoken", editable = "lib/python/opentoken" },
+    { name = "pandas", marker = "extra == 'spark34'", specifier = ">=1.5,<2.2" },
+    { name = "pandas", marker = "extra == 'spark35'", specifier = ">=1.5,<2.3" },
+    { name = "pandas", marker = "extra == 'spark40'", specifier = ">=2.0.0,<2.4" },
+    { name = "pandas", marker = "extra == 'spark41'", specifier = ">=2.0.0,<2.4" },
+    { name = "pyarrow", marker = "extra == 'spark34'", specifier = ">=10.0.0,<23" },
+    { name = "pyarrow", marker = "extra == 'spark35'", specifier = ">=15.0.0,<20" },
+    { name = "pyarrow", marker = "extra == 'spark40'", specifier = ">=17.0.0,<18.0" },
+    { name = "pyarrow", marker = "extra == 'spark41'", specifier = ">=17.0.0,<18.0" },
+    { name = "pycryptodome", specifier = ">=3.18.0" },
+    { name = "pyspark", marker = "extra == 'spark34'", specifier = ">=3.4.0,<3.5" },
+    { name = "pyspark", marker = "extra == 'spark35'", specifier = ">=3.5.0,<3.6" },
+    { name = "pyspark", marker = "extra == 'spark40'", specifier = ">=4.0.1,<4.1" },
+    { name = "pyspark", marker = "extra == 'spark41'", specifier = ">=4.1.0,<4.2" },
+    { name = "pytest", marker = "extra == 'dev'" },
+    { name = "pytest-cov", marker = "extra == 'dev'" },
+]
+provides-extras = ["spark41", "spark40", "spark35", "spark34", "dev"]
 
 [[package]]
 name = "opentoken-workspace"
@@ -1536,11 +1735,8 @@ dev = [
     { name = "jupyter" },
     { name = "jwcrypto" },
     { name = "notebook" },
-    { name = "pandas" },
     { name = "prek" },
-    { name = "pyarrow" },
     { name = "pycryptodome" },
-    { name = "pyspark" },
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "ruff" },
@@ -1557,11 +1753,8 @@ dev = [
     { name = "jupyter", specifier = ">=1.0.0" },
     { name = "jwcrypto", specifier = ">=1.5.6" },
     { name = "notebook", specifier = ">=7.0.0" },
-    { name = "pandas", specifier = ">=2.0.0,<2.4" },
     { name = "prek" },
-    { name = "pyarrow", specifier = ">=17.0.0,<18.0" },
     { name = "pycryptodome", specifier = ">=3.18.0" },
-    { name = "pyspark", specifier = ">=4.0.1,<4.1" },
     { name = "pytest", specifier = ">=7.0.0" },
     { name = "pytest-cov" },
     { name = "ruff", specifier = ">=0.9.0" },
@@ -1587,14 +1780,113 @@ wheels = [
 
 [[package]]
 name = "pandas"
+version = "2.1.4"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.14'",
+    "python_full_version >= '3.12' and python_full_version < '3.14'",
+    "python_full_version == '3.11.*'",
+    "python_full_version < '3.11'",
+]
+dependencies = [
+    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-17-opentoken-pyspark-spark34' or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "python-dateutil", marker = "extra == 'extra-17-opentoken-pyspark-spark34' or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "pytz", marker = "extra == 'extra-17-opentoken-pyspark-spark34' or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "tzdata", marker = "extra == 'extra-17-opentoken-pyspark-spark34' or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/6f/41/eb562668eaf93790762f600536b28c97b45803cba9253cd8e436cda96aef/pandas-2.1.4.tar.gz", hash = "sha256:fcb68203c833cc735321512e13861358079a96c174a61f5116a1de89c58c0ef7", size = 4274800, upload-time = "2023-12-08T15:38:29.713Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e3/cc/ad068419c245c504315ace4e19cc17b1205e162ad51957485b048ffadb80/pandas-2.1.4-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:bdec823dc6ec53f7a6339a0e34c68b144a7a1fd28d80c260534c39c62c5bf8c9", size = 11724786, upload-time = "2023-12-08T15:37:00.781Z" },
+    { url = "https://files.pythonhosted.org/packages/fd/16/40c7c588f8199520e173014c614178f6083868f5af1033c52079270cd266/pandas-2.1.4-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:294d96cfaf28d688f30c918a765ea2ae2e0e71d3536754f4b6de0ea4a496d034", size = 10912401, upload-time = "2023-12-08T15:37:06.13Z" },
+    { url = "https://files.pythonhosted.org/packages/15/83/4a164e69d08c271be303acb471a38172ae55d77db58d29f99cf186b80434/pandas-2.1.4-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:6b728fb8deba8905b319f96447a27033969f3ea1fea09d07d296c9030ab2ed1d", size = 14812171, upload-time = "2023-12-08T15:37:10.786Z" },
+    { url = "https://files.pythonhosted.org/packages/b1/67/aca1f6e215d957d24d0a290321f368503305480268f9617bf625243e9dea/pandas-2.1.4-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:00028e6737c594feac3c2df15636d73ace46b8314d236100b57ed7e4b9ebe8d9", size = 12265858, upload-time = "2023-12-08T15:37:14.928Z" },
+    { url = "https://files.pythonhosted.org/packages/fa/8c/de2896a7167c4f9001790703ce8134f65db21c163033ae62be3615fc8a1f/pandas-2.1.4-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:426dc0f1b187523c4db06f96fb5c8d1a845e259c99bda74f7de97bd8a3bb3139", size = 13068680, upload-time = "2023-12-08T15:37:18.142Z" },
+    { url = "https://files.pythonhosted.org/packages/b3/70/56da2b82f848baf34bfd8c35e606ce45049b371ffaaaa7f0427093d29950/pandas-2.1.4-cp310-cp310-win_amd64.whl", hash = "sha256:f237e6ca6421265643608813ce9793610ad09b40154a3344a088159590469e46", size = 10668573, upload-time = "2023-12-08T15:37:22.204Z" },
+    { url = "https://files.pythonhosted.org/packages/6e/48/892f8835774dd5a84fff3e890f31d1da3dfba2ee1571ac739589b14af66d/pandas-2.1.4-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:b7d852d16c270e4331f6f59b3e9aa23f935f5c4b0ed2d0bc77637a8890a5d092", size = 11621200, upload-time = "2023-12-08T15:37:25.564Z" },
+    { url = "https://files.pythonhosted.org/packages/3e/89/cbca600319463a91ae6a46e537d548900ddf2114df66c902344c4fe6bb4c/pandas-2.1.4-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:bd7d5f2f54f78164b3d7a40f33bf79a74cdee72c31affec86bfcabe7e0789821", size = 10780136, upload-time = "2023-12-08T15:37:29.278Z" },
+    { url = "https://files.pythonhosted.org/packages/12/3c/f21ca75cc511c606b8b4de2a03927f7c181ac70aa3eb8d563a93a54b1563/pandas-2.1.4-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:0aa6e92e639da0d6e2017d9ccff563222f4eb31e4b2c3cf32a2a392fc3103c0d", size = 14822123, upload-time = "2023-12-08T15:37:33.952Z" },
+    { url = "https://files.pythonhosted.org/packages/f8/8c/9ad173c5cd2c7178c84075c02ec37b5d1d53fb1d015f51ea3e623ea9c31c/pandas-2.1.4-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d797591b6846b9db79e65dc2d0d48e61f7db8d10b2a9480b4e3faaddc421a171", size = 12234407, upload-time = "2023-12-08T15:37:37.818Z" },
+    { url = "https://files.pythonhosted.org/packages/ff/e9/4950bc4502c187df621c0a48f7d10bd61ae41663ce97bc489b5d94cc02c6/pandas-2.1.4-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:d2d3e7b00f703aea3945995ee63375c61b2e6aa5aa7871c5d622870e5e137623", size = 13067655, upload-time = "2023-12-08T15:37:41.443Z" },
+    { url = "https://files.pythonhosted.org/packages/11/17/fb1a34f3e73debbc2fd15a01ea17eaab3717943d08463ff4979a4f024b3f/pandas-2.1.4-cp311-cp311-win_amd64.whl", hash = "sha256:dc9bf7ade01143cddc0074aa6995edd05323974e6e40d9dbde081021ded8510e", size = 10614628, upload-time = "2023-12-08T15:37:45.071Z" },
+    { url = "https://files.pythonhosted.org/packages/f5/16/64109832ed426d5c3e9f6b791e64a2b78d785823657640afb8f416ed1dc9/pandas-2.1.4-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:482d5076e1791777e1571f2e2d789e940dedd927325cc3cb6d0800c6304082f6", size = 11357488, upload-time = "2023-12-08T15:37:48.717Z" },
+    { url = "https://files.pythonhosted.org/packages/0b/e0/8d97c7ecd73624f4cd5755578990b3cfbc6bbe350b8e017ede3580173a6f/pandas-2.1.4-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:8a706cfe7955c4ca59af8c7a0517370eafbd98593155b48f10f9811da440248b", size = 10613199, upload-time = "2023-12-08T15:37:51.808Z" },
+    { url = "https://files.pythonhosted.org/packages/54/be/98b894bef9acfc310de70fc03524473a9695981e1e87c7afa56ada08f016/pandas-2.1.4-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b0513a132a15977b4a5b89aabd304647919bc2169eac4c8536afb29c07c23540", size = 14288250, upload-time = "2023-12-08T15:37:55.263Z" },
+    { url = "https://files.pythonhosted.org/packages/5b/5f/076b1ce74f80df0a9db244d30e30c4d4dee45342cbfa5f3e01f64cadf663/pandas-2.1.4-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e9f17f2b6fc076b2a0078862547595d66244db0f41bf79fc5f64a5c4d635bead", size = 11673138, upload-time = "2023-12-08T15:37:59.209Z" },
+    { url = "https://files.pythonhosted.org/packages/cc/a8/13dced3276ea4514909a80c8dd08b43ab23007b4949701e3d7ae2a8ccd2d/pandas-2.1.4-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:45d63d2a9b1b37fa6c84a68ba2422dc9ed018bdaa668c7f47566a01188ceeec1", size = 12389903, upload-time = "2023-12-08T15:38:02.655Z" },
+    { url = "https://files.pythonhosted.org/packages/ae/d9/3741b344f57484b423cd22194025a8489992ad9962196a62721ef9980045/pandas-2.1.4-cp312-cp312-win_amd64.whl", hash = "sha256:f69b0c9bb174a2342818d3e2778584e18c740d56857fc5cdb944ec8bbe4082cf", size = 10498689, upload-time = "2023-12-08T15:38:05.834Z" },
+]
+
+[[package]]
+name = "pandas"
+version = "2.2.3"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.14'",
+    "python_full_version >= '3.12' and python_full_version < '3.14'",
+    "python_full_version == '3.11.*'",
+    "python_full_version < '3.11'",
+]
+dependencies = [
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.11' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "numpy", version = "2.4.2", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.11' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "python-dateutil", marker = "extra == 'extra-17-opentoken-pyspark-spark35' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "pytz", marker = "extra == 'extra-17-opentoken-pyspark-spark35' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "tzdata", marker = "extra == 'extra-17-opentoken-pyspark-spark35' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/9c/d6/9f8431bacc2e19dca897724cd097b1bb224a6ad5433784a44b587c7c13af/pandas-2.2.3.tar.gz", hash = "sha256:4f18ba62b61d7e192368b84517265a99b4d7ee8912f8708660fb4a366cc82667", size = 4399213, upload-time = "2024-09-20T13:10:04.827Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/aa/70/c853aec59839bceed032d52010ff5f1b8d87dc3114b762e4ba2727661a3b/pandas-2.2.3-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:1948ddde24197a0f7add2bdc4ca83bf2b1ef84a1bc8ccffd95eda17fd836ecb5", size = 12580827, upload-time = "2024-09-20T13:08:42.347Z" },
+    { url = "https://files.pythonhosted.org/packages/99/f2/c4527768739ffa4469b2b4fff05aa3768a478aed89a2f271a79a40eee984/pandas-2.2.3-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:381175499d3802cde0eabbaf6324cce0c4f5d52ca6f8c377c29ad442f50f6348", size = 11303897, upload-time = "2024-09-20T13:08:45.807Z" },
+    { url = "https://files.pythonhosted.org/packages/ed/12/86c1747ea27989d7a4064f806ce2bae2c6d575b950be087837bdfcabacc9/pandas-2.2.3-cp310-cp310-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:d9c45366def9a3dd85a6454c0e7908f2b3b8e9c138f5dc38fed7ce720d8453ed", size = 66480908, upload-time = "2024-09-20T18:37:13.513Z" },
+    { url = "https://files.pythonhosted.org/packages/44/50/7db2cd5e6373ae796f0ddad3675268c8d59fb6076e66f0c339d61cea886b/pandas-2.2.3-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:86976a1c5b25ae3f8ccae3a5306e443569ee3c3faf444dfd0f41cda24667ad57", size = 13064210, upload-time = "2024-09-20T13:08:48.325Z" },
+    { url = "https://files.pythonhosted.org/packages/61/61/a89015a6d5536cb0d6c3ba02cebed51a95538cf83472975275e28ebf7d0c/pandas-2.2.3-cp310-cp310-musllinux_1_2_aarch64.whl", hash = "sha256:b8661b0238a69d7aafe156b7fa86c44b881387509653fdf857bebc5e4008ad42", size = 16754292, upload-time = "2024-09-20T19:01:54.443Z" },
+    { url = "https://files.pythonhosted.org/packages/ce/0d/4cc7b69ce37fac07645a94e1d4b0880b15999494372c1523508511b09e40/pandas-2.2.3-cp310-cp310-musllinux_1_2_x86_64.whl", hash = "sha256:37e0aced3e8f539eccf2e099f65cdb9c8aa85109b0be6e93e2baff94264bdc6f", size = 14416379, upload-time = "2024-09-20T13:08:50.882Z" },
+    { url = "https://files.pythonhosted.org/packages/31/9e/6ebb433de864a6cd45716af52a4d7a8c3c9aaf3a98368e61db9e69e69a9c/pandas-2.2.3-cp310-cp310-win_amd64.whl", hash = "sha256:56534ce0746a58afaf7942ba4863e0ef81c9c50d3f0ae93e9497d6a41a057645", size = 11598471, upload-time = "2024-09-20T13:08:53.332Z" },
+    { url = "https://files.pythonhosted.org/packages/a8/44/d9502bf0ed197ba9bf1103c9867d5904ddcaf869e52329787fc54ed70cc8/pandas-2.2.3-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:66108071e1b935240e74525006034333f98bcdb87ea116de573a6a0dccb6c039", size = 12602222, upload-time = "2024-09-20T13:08:56.254Z" },
+    { url = "https://files.pythonhosted.org/packages/52/11/9eac327a38834f162b8250aab32a6781339c69afe7574368fffe46387edf/pandas-2.2.3-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:7c2875855b0ff77b2a64a0365e24455d9990730d6431b9e0ee18ad8acee13dbd", size = 11321274, upload-time = "2024-09-20T13:08:58.645Z" },
+    { url = "https://files.pythonhosted.org/packages/45/fb/c4beeb084718598ba19aa9f5abbc8aed8b42f90930da861fcb1acdb54c3a/pandas-2.2.3-cp311-cp311-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:cd8d0c3be0515c12fed0bdbae072551c8b54b7192c7b1fda0ba56059a0179698", size = 15579836, upload-time = "2024-09-20T19:01:57.571Z" },
+    { url = "https://files.pythonhosted.org/packages/cd/5f/4dba1d39bb9c38d574a9a22548c540177f78ea47b32f99c0ff2ec499fac5/pandas-2.2.3-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c124333816c3a9b03fbeef3a9f230ba9a737e9e5bb4060aa2107a86cc0a497fc", size = 13058505, upload-time = "2024-09-20T13:09:01.501Z" },
+    { url = "https://files.pythonhosted.org/packages/b9/57/708135b90391995361636634df1f1130d03ba456e95bcf576fada459115a/pandas-2.2.3-cp311-cp311-musllinux_1_2_aarch64.whl", hash = "sha256:63cc132e40a2e084cf01adf0775b15ac515ba905d7dcca47e9a251819c575ef3", size = 16744420, upload-time = "2024-09-20T19:02:00.678Z" },
+    { url = "https://files.pythonhosted.org/packages/86/4a/03ed6b7ee323cf30404265c284cee9c65c56a212e0a08d9ee06984ba2240/pandas-2.2.3-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:29401dbfa9ad77319367d36940cd8a0b3a11aba16063e39632d98b0e931ddf32", size = 14440457, upload-time = "2024-09-20T13:09:04.105Z" },
+    { url = "https://files.pythonhosted.org/packages/ed/8c/87ddf1fcb55d11f9f847e3c69bb1c6f8e46e2f40ab1a2d2abadb2401b007/pandas-2.2.3-cp311-cp311-win_amd64.whl", hash = "sha256:3fc6873a41186404dad67245896a6e440baacc92f5b716ccd1bc9ed2995ab2c5", size = 11617166, upload-time = "2024-09-20T13:09:06.917Z" },
+    { url = "https://files.pythonhosted.org/packages/17/a3/fb2734118db0af37ea7433f57f722c0a56687e14b14690edff0cdb4b7e58/pandas-2.2.3-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:b1d432e8d08679a40e2a6d8b2f9770a5c21793a6f9f47fdd52c5ce1948a5a8a9", size = 12529893, upload-time = "2024-09-20T13:09:09.655Z" },
+    { url = "https://files.pythonhosted.org/packages/e1/0c/ad295fd74bfac85358fd579e271cded3ac969de81f62dd0142c426b9da91/pandas-2.2.3-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:a5a1595fe639f5988ba6a8e5bc9649af3baf26df3998a0abe56c02609392e0a4", size = 11363475, upload-time = "2024-09-20T13:09:14.718Z" },
+    { url = "https://files.pythonhosted.org/packages/c6/2a/4bba3f03f7d07207481fed47f5b35f556c7441acddc368ec43d6643c5777/pandas-2.2.3-cp312-cp312-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:5de54125a92bb4d1c051c0659e6fcb75256bf799a732a87184e5ea503965bce3", size = 15188645, upload-time = "2024-09-20T19:02:03.88Z" },
+    { url = "https://files.pythonhosted.org/packages/38/f8/d8fddee9ed0d0c0f4a2132c1dfcf0e3e53265055da8df952a53e7eaf178c/pandas-2.2.3-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:fffb8ae78d8af97f849404f21411c95062db1496aeb3e56f146f0355c9989319", size = 12739445, upload-time = "2024-09-20T13:09:17.621Z" },
+    { url = "https://files.pythonhosted.org/packages/20/e8/45a05d9c39d2cea61ab175dbe6a2de1d05b679e8de2011da4ee190d7e748/pandas-2.2.3-cp312-cp312-musllinux_1_2_aarch64.whl", hash = "sha256:6dfcb5ee8d4d50c06a51c2fffa6cff6272098ad6540aed1a76d15fb9318194d8", size = 16359235, upload-time = "2024-09-20T19:02:07.094Z" },
+    { url = "https://files.pythonhosted.org/packages/1d/99/617d07a6a5e429ff90c90da64d428516605a1ec7d7bea494235e1c3882de/pandas-2.2.3-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:062309c1b9ea12a50e8ce661145c6aab431b1e99530d3cd60640e255778bd43a", size = 14056756, upload-time = "2024-09-20T13:09:20.474Z" },
+    { url = "https://files.pythonhosted.org/packages/29/d4/1244ab8edf173a10fd601f7e13b9566c1b525c4f365d6bee918e68381889/pandas-2.2.3-cp312-cp312-win_amd64.whl", hash = "sha256:59ef3764d0fe818125a5097d2ae867ca3fa64df032331b7e0917cf5d7bf66b13", size = 11504248, upload-time = "2024-09-20T13:09:23.137Z" },
+    { url = "https://files.pythonhosted.org/packages/64/22/3b8f4e0ed70644e85cfdcd57454686b9057c6c38d2f74fe4b8bc2527214a/pandas-2.2.3-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:f00d1345d84d8c86a63e476bb4955e46458b304b9575dcf71102b5c705320015", size = 12477643, upload-time = "2024-09-20T13:09:25.522Z" },
+    { url = "https://files.pythonhosted.org/packages/e4/93/b3f5d1838500e22c8d793625da672f3eec046b1a99257666c94446969282/pandas-2.2.3-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:3508d914817e153ad359d7e069d752cdd736a247c322d932eb89e6bc84217f28", size = 11281573, upload-time = "2024-09-20T13:09:28.012Z" },
+    { url = "https://files.pythonhosted.org/packages/f5/94/6c79b07f0e5aab1dcfa35a75f4817f5c4f677931d4234afcd75f0e6a66ca/pandas-2.2.3-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:22a9d949bfc9a502d320aa04e5d02feab689d61da4e7764b62c30b991c42c5f0", size = 15196085, upload-time = "2024-09-20T19:02:10.451Z" },
+    { url = "https://files.pythonhosted.org/packages/e8/31/aa8da88ca0eadbabd0a639788a6da13bb2ff6edbbb9f29aa786450a30a91/pandas-2.2.3-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f3a255b2c19987fbbe62a9dfd6cff7ff2aa9ccab3fc75218fd4b7530f01efa24", size = 12711809, upload-time = "2024-09-20T13:09:30.814Z" },
+    { url = "https://files.pythonhosted.org/packages/ee/7c/c6dbdb0cb2a4344cacfb8de1c5808ca885b2e4dcfde8008266608f9372af/pandas-2.2.3-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:800250ecdadb6d9c78eae4990da62743b857b470883fa27f652db8bdde7f6659", size = 16356316, upload-time = "2024-09-20T19:02:13.825Z" },
+    { url = "https://files.pythonhosted.org/packages/57/b7/8b757e7d92023b832869fa8881a992696a0bfe2e26f72c9ae9f255988d42/pandas-2.2.3-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:6374c452ff3ec675a8f46fd9ab25c4ad0ba590b71cf0656f8b6daa5202bca3fb", size = 14022055, upload-time = "2024-09-20T13:09:33.462Z" },
+    { url = "https://files.pythonhosted.org/packages/3b/bc/4b18e2b8c002572c5a441a64826252ce5da2aa738855747247a971988043/pandas-2.2.3-cp313-cp313-win_amd64.whl", hash = "sha256:61c5ad4043f791b61dd4752191d9f07f0ae412515d59ba8f005832a532f8736d", size = 11481175, upload-time = "2024-09-20T13:09:35.871Z" },
+    { url = "https://files.pythonhosted.org/packages/76/a3/a5d88146815e972d40d19247b2c162e88213ef51c7c25993942c39dbf41d/pandas-2.2.3-cp313-cp313t-macosx_10_13_x86_64.whl", hash = "sha256:3b71f27954685ee685317063bf13c7709a7ba74fc996b84fc6821c59b0f06468", size = 12615650, upload-time = "2024-09-20T13:09:38.685Z" },
+    { url = "https://files.pythonhosted.org/packages/9c/8c/f0fd18f6140ddafc0c24122c8a964e48294acc579d47def376fef12bcb4a/pandas-2.2.3-cp313-cp313t-macosx_11_0_arm64.whl", hash = "sha256:38cf8125c40dae9d5acc10fa66af8ea6fdf760b2714ee482ca691fc66e6fcb18", size = 11290177, upload-time = "2024-09-20T13:09:41.141Z" },
+    { url = "https://files.pythonhosted.org/packages/ed/f9/e995754eab9c0f14c6777401f7eece0943840b7a9fc932221c19d1abee9f/pandas-2.2.3-cp313-cp313t-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:ba96630bc17c875161df3818780af30e43be9b166ce51c9a18c1feae342906c2", size = 14651526, upload-time = "2024-09-20T19:02:16.905Z" },
+    { url = "https://files.pythonhosted.org/packages/25/b0/98d6ae2e1abac4f35230aa756005e8654649d305df9a28b16b9ae4353bff/pandas-2.2.3-cp313-cp313t-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1db71525a1538b30142094edb9adc10be3f3e176748cd7acc2240c2f2e5aa3a4", size = 11871013, upload-time = "2024-09-20T13:09:44.39Z" },
+    { url = "https://files.pythonhosted.org/packages/cc/57/0f72a10f9db6a4628744c8e8f0df4e6e21de01212c7c981d31e50ffc8328/pandas-2.2.3-cp313-cp313t-musllinux_1_2_aarch64.whl", hash = "sha256:15c0e1e02e93116177d29ff83e8b1619c93ddc9c49083f237d4312337a61165d", size = 15711620, upload-time = "2024-09-20T19:02:20.639Z" },
+    { url = "https://files.pythonhosted.org/packages/ab/5f/b38085618b950b79d2d9164a711c52b10aefc0ae6833b96f626b7021b2ed/pandas-2.2.3-cp313-cp313t-musllinux_1_2_x86_64.whl", hash = "sha256:ad5b65698ab28ed8d7f18790a0dc58005c7629f227be9ecc1072aa74c0c1d43a", size = 13098436, upload-time = "2024-09-20T13:09:48.112Z" },
+]
+
+[[package]]
+name = "pandas"
 version = "2.3.3"
 source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.14'",
+    "python_full_version >= '3.12' and python_full_version < '3.14'",
+    "python_full_version == '3.11.*'",
+    "python_full_version < '3.11'",
+]
 dependencies = [
-    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "numpy", version = "2.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "python-dateutil" },
-    { name = "pytz" },
-    { name = "tzdata" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.11' and extra != 'extra-17-opentoken-pyspark-spark34' and extra != 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "numpy", version = "2.4.2", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.11' and extra != 'extra-17-opentoken-pyspark-spark34' and extra != 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "python-dateutil", marker = "extra == 'extra-17-opentoken-pyspark-spark40' or extra == 'extra-17-opentoken-pyspark-spark41' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra != 'extra-17-opentoken-pyspark-spark34' and extra != 'extra-17-opentoken-pyspark-spark35')" },
+    { name = "pytz", marker = "extra == 'extra-17-opentoken-pyspark-spark40' or extra == 'extra-17-opentoken-pyspark-spark41' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra != 'extra-17-opentoken-pyspark-spark34' and extra != 'extra-17-opentoken-pyspark-spark35')" },
+    { name = "tzdata", marker = "extra == 'extra-17-opentoken-pyspark-spark40' or extra == 'extra-17-opentoken-pyspark-spark41' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra != 'extra-17-opentoken-pyspark-spark34' and extra != 'extra-17-opentoken-pyspark-spark35')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/33/01/d40b85317f86cf08d853a4f495195c73815fdf205eef3993821720274518/pandas-2.3.3.tar.gz", hash = "sha256:e05e1af93b977f7eafa636d043f9f94c7ee3ac81af99c13508215942e64c993b", size = 4495223, upload-time = "2025-09-29T23:34:51.853Z" }
 wheels = [
@@ -1788,8 +2080,29 @@ wheels = [
 
 [[package]]
 name = "py4j"
+version = "0.10.9.7"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.14'",
+    "python_full_version >= '3.12' and python_full_version < '3.14'",
+    "python_full_version == '3.11.*'",
+    "python_full_version < '3.11'",
+]
+sdist = { url = "https://files.pythonhosted.org/packages/1e/f2/b34255180c72c36ff7097f7c2cdca02abcbd89f5eebf7c7c41262a9a0637/py4j-0.10.9.7.tar.gz", hash = "sha256:0b6e5315bb3ada5cf62ac651d107bb2ebc02def3dee9d9548e3baac644ea8dbb", size = 1508234, upload-time = "2022-08-12T22:49:09.792Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/10/30/a58b32568f1623aaad7db22aa9eafc4c6c194b429ff35bdc55ca2726da47/py4j-0.10.9.7-py2.py3-none-any.whl", hash = "sha256:85defdfd2b2376eb3abf5ca6474b51ab7e0de341c75a02f46dc9b5976f5a5c1b", size = 200481, upload-time = "2022-08-12T22:49:07.05Z" },
+]
+
+[[package]]
+name = "py4j"
 version = "0.10.9.9"
 source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.14'",
+    "python_full_version >= '3.12' and python_full_version < '3.14'",
+    "python_full_version == '3.11.*'",
+    "python_full_version < '3.11'",
+]
 sdist = { url = "https://files.pythonhosted.org/packages/38/31/0b210511177070c8d5d3059556194352e5753602fa64b85b7ab81ec1a009/py4j-0.10.9.9.tar.gz", hash = "sha256:f694cad19efa5bd1dee4f3e5270eb406613c974394035e5bfc4ec1aba870b879", size = 761089, upload-time = "2025-01-15T03:53:18.624Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/bd/db/ea0203e495be491c85af87b66e37acfd3bf756fd985f87e46fc5e3bf022c/py4j-0.10.9.9-py2.py3-none-any.whl", hash = "sha256:c7c26e4158defb37b0bb124933163641a2ff6e3a3913f7811b0ddbe07ed61533", size = 203008, upload-time = "2025-01-15T03:53:15.648Z" },
@@ -1800,8 +2113,9 @@ name = "pyarrow"
 version = "17.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "numpy", version = "2.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-17-opentoken-pyspark-spark34' or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.11' and extra != 'extra-17-opentoken-pyspark-spark34') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "numpy", version = "2.4.2", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.11' and extra != 'extra-17-opentoken-pyspark-spark34') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/27/4e/ea6d43f324169f8aec0e57569443a38bab4b398d09769ca64f7b4d467de3/pyarrow-17.0.0.tar.gz", hash = "sha256:4beca9521ed2c0921c1023e68d097d0299b62c362639ea315572a58f3f50fd28", size = 1112479, upload-time = "2024-07-17T10:41:25.092Z" }
 wheels = [
@@ -1826,6 +2140,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/f6/b0/b9164a8bc495083c10c281cc65064553ec87b7537d6f742a89d5953a2a3e/pyarrow-17.0.0-cp312-cp312-manylinux_2_28_aarch64.whl", hash = "sha256:9ba11c4f16976e89146781a83833df7f82077cdab7dc6232c897789343f7891a", size = 38715172, upload-time = "2024-07-16T10:31:25.965Z" },
     { url = "https://files.pythonhosted.org/packages/f1/c4/9625418a1413005e486c006e56675334929fad864347c5ae7c1b2e7fe639/pyarrow-17.0.0-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:b0c6ac301093b42d34410b187bba560b17c0330f64907bfa4f7f7f2444b0cf9b", size = 39874508, upload-time = "2024-07-16T10:31:33.721Z" },
     { url = "https://files.pythonhosted.org/packages/ae/49/baafe2a964f663413be3bd1cf5c45ed98c5e42e804e2328e18f4570027c1/pyarrow-17.0.0-cp312-cp312-win_amd64.whl", hash = "sha256:392bc9feabc647338e6c89267635e111d71edad5fcffba204425a7c8d13610d7", size = 25099235, upload-time = "2024-07-16T10:31:40.893Z" },
+]
+
+[[package]]
+name = "pycodestyle"
+version = "2.14.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/11/e0/abfd2a0d2efe47670df87f3e3a0e2edda42f055053c85361f19c0e2c1ca8/pycodestyle-2.14.0.tar.gz", hash = "sha256:c4b5b517d278089ff9d0abdec919cd97262a3367449ea1c8b49b91529167b783", size = 39472, upload-time = "2025-06-20T18:49:48.75Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d7/27/a58ddaf8c588a3ef080db9d0b7e0b97215cee3a45df74f3a94dbbf5c893a/pycodestyle-2.14.0-py2.py3-none-any.whl", hash = "sha256:dd6bf7cb4ee77f8e016f9c8e74a35ddd9f67e1d5fd4184d86c3b98e07099f42d", size = 31594, upload-time = "2025-06-20T18:49:47.491Z" },
 ]
 
 [[package]]
@@ -1892,25 +2215,76 @@ wheels = [
 
 [[package]]
 name = "pyspark"
+version = "3.4.4"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.14'",
+    "python_full_version >= '3.12' and python_full_version < '3.14'",
+    "python_full_version == '3.11.*'",
+    "python_full_version < '3.11'",
+]
+dependencies = [
+    { name = "py4j", version = "0.10.9.7", source = { registry = "https://pypi.org/simple" } },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/46/6c/48fdd43909f6f0425b068cb676c7510694a56a323a83a696f429760f598c/pyspark-3.4.4.tar.gz", hash = "sha256:b831a99c1aeb058bc4a2498665de10006b899b2438ba15470cc88f577755ebf8", size = 311408584, upload-time = "2024-10-25T08:14:53.449Z" }
+
+[[package]]
+name = "pyspark"
+version = "3.5.8"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.14'",
+    "python_full_version >= '3.12' and python_full_version < '3.14'",
+    "python_full_version == '3.11.*'",
+    "python_full_version < '3.11'",
+]
+dependencies = [
+    { name = "py4j", version = "0.10.9.9", source = { registry = "https://pypi.org/simple" } },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/80/5a/3806f44eb47387e8af803508cdd6bbc0df784febf4dc010700be04a1ff89/pyspark-3.5.8.tar.gz", hash = "sha256:54cca0767b21b40e3953ad1d30f8601c53abf9cbda763653289cdcfcac52313c", size = 317817299, upload-time = "2026-01-15T11:46:14.487Z" }
+
+[[package]]
+name = "pyspark"
 version = "4.0.2"
 source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.14'",
+    "python_full_version >= '3.12' and python_full_version < '3.14'",
+    "python_full_version == '3.11.*'",
+    "python_full_version < '3.11'",
+]
 dependencies = [
-    { name = "py4j" },
+    { name = "py4j", version = "0.10.9.9", source = { registry = "https://pypi.org/simple" } },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/96/89/408b42c803db71f4a4d8a3f1ab0745a40dfe41aeacdfc453545665a171f4/pyspark-4.0.2.tar.gz", hash = "sha256:938b4a1883383374d331ebfcb5d92debfa1891cf3d7a6d730520a1a2d23f1a90", size = 434209940, upload-time = "2026-02-05T19:31:13.6Z" }
+
+[[package]]
+name = "pyspark"
+version = "4.1.1"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.14'",
+    "python_full_version >= '3.12' and python_full_version < '3.14'",
+    "python_full_version == '3.11.*'",
+    "python_full_version < '3.11'",
+]
+dependencies = [
+    { name = "py4j", version = "0.10.9.9", source = { registry = "https://pypi.org/simple" } },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/19/bf/58ee13add151469c25825b7125bbf62c3bdcec05eec4d458fcb5c5516066/pyspark-4.1.1.tar.gz", hash = "sha256:77f78984aa84fbe865c717dd37b49913b4e5c97d76ef6824f932f1aefa6621ec", size = 455359625, upload-time = "2026-01-09T09:38:38.28Z" }
 
 [[package]]
 name = "pytest"
 version = "9.0.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32'" },
-    { name = "exceptiongroup", marker = "python_full_version < '3.11'" },
+    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "exceptiongroup", marker = "python_full_version < '3.11' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
     { name = "iniconfig" },
     { name = "packaging" },
     { name = "pluggy" },
     { name = "pygments" },
-    { name = "tomli", marker = "python_full_version < '3.11'" },
+    { name = "tomli", marker = "python_full_version < '3.11' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/d1/db/7ef3487e0fb0049ddb5ce41d3a49c235bf9ad299b6a25d5780a89f19230f/pytest-9.0.2.tar.gz", hash = "sha256:75186651a92bd89611d1d9fc20f0b4345fd827c41ccd5c299a868a05d70edf11", size = 1568901, upload-time = "2025-12-06T21:30:51.014Z" }
 wheels = [
@@ -2052,7 +2426,7 @@ name = "pyzmq"
 version = "27.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "cffi", marker = "implementation_name == 'pypy'" },
+    { name = "cffi", marker = "implementation_name == 'pypy' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/04/0b/3c9baedbdf613ecaa7aa07027780b8867f57b6293b6ee50de316c9f3222b/pyzmq-27.1.0.tar.gz", hash = "sha256:ac0765e3d44455adb6ddbf4417dcce460fc40a05978c08efdf2948072f6db540", size = 281750, upload-time = "2025-09-08T23:10:18.157Z" }
 wheels = [
@@ -2127,7 +2501,7 @@ source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
     { name = "rpds-py" },
-    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/22/f5/df4e9027acead3ecc63e50fe1e36aca1523e1719559c499951bb4b53188f/referencing-0.37.0.tar.gz", hash = "sha256:44aefc3142c5b842538163acb373e24cce6632bd54bdb01b21ad5863489f50d8", size = 78036, upload-time = "2025-10-13T15:30:48.871Z" }
 wheels = [
@@ -2384,8 +2758,8 @@ name = "terminado"
 version = "0.18.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "ptyprocess", marker = "os_name != 'nt'" },
-    { name = "pywinpty", marker = "os_name == 'nt'" },
+    { name = "ptyprocess", marker = "os_name != 'nt' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
+    { name = "pywinpty", marker = "os_name == 'nt' or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark35') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark34' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark40') or (extra == 'extra-17-opentoken-pyspark-spark35' and extra == 'extra-17-opentoken-pyspark-spark41') or (extra == 'extra-17-opentoken-pyspark-spark40' and extra == 'extra-17-opentoken-pyspark-spark41')" },
     { name = "tornado" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/8a/11/965c6fd8e5cc254f1fe142d547387da17a8ebfd75a3455f637c663fb38a0/terminado-0.18.1.tar.gz", hash = "sha256:de09f2c4b85de4765f7714688fff57d3e75bad1f909b589fde880460c753fd2e", size = 32701, upload-time = "2024-03-12T14:34:39.026Z" }
