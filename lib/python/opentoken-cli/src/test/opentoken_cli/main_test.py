@@ -536,7 +536,7 @@ class TestInitiateExchangeViaMain:
 
     def test_initiate_exchange_appears_in_help(self, capsys):
         """initiate-exchange is listed in the top-level help output."""
-        exit_code = OpenTokenCommand.execute(["--help"])
+        OpenTokenCommand.execute(["--help"])
         captured = capsys.readouterr()
         assert "initiate-exchange" in captured.out
 
