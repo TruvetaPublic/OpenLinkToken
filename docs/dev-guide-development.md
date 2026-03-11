@@ -190,6 +190,64 @@ cd lib/python/opentoken && uv pip install -e .
 cd lib/python/opentoken-cli && uv pip install -e .
 ```
 
+#### Build a Self-Contained CLI Locally
+
+For parity with the release artifacts, build the PyInstaller executable with Python 3.11. PyInstaller bundles the
+interpreter used at build time, and `.github/workflows/build-opentoken-cli.yml` currently builds the published
+artifacts with Python 3.11.
+
+From the repository root, activate your virtual environment (`.\.venv\Scripts\Activate.ps1` on Windows PowerShell)
+and install the build dependencies:
+
+```shell
+uv pip install -e lib/python/opentoken
+uv pip install -r lib/python/opentoken-cli/pyinstaller-requirements.txt
+uv pip install -r lib/python/opentoken-cli/requirements.txt
+uv pip install -e lib/python/opentoken-cli --no-deps
+```
+
+Build the executable:
+
+```shell
+# Linux / Windows
+pyinstaller --clean --noconfirm lib/python/opentoken-cli/opentoken-cli.spec
+
+# macOS universal2 (Intel + Apple Silicon)
+pyinstaller --clean --noconfirm --target-arch universal2 lib/python/opentoken-cli/opentoken-cli.spec
+```
+
+The built executable is written to `dist/opentoken` (`dist/opentoken.exe` on Windows). Intermediate files are written
+to `build/`.
+
+Smoke-test the local build before packaging it:
+
+```shell
+mkdir -p smoke
+cp resources/sample.csv smoke/input.csv
+./dist/opentoken tokenize -i smoke/input.csv -t csv -o smoke/out.csv -h secret
+```
+
+On Windows PowerShell:
+
+```powershell
+New-Item -ItemType Directory -Force -Path smoke | Out-Null
+Copy-Item resources\sample.csv smoke\input.csv
+.\dist\opentoken.exe tokenize -i smoke\input.csv -t csv -o smoke\out.csv -h secret
+```
+
+If you also want the same ZIP and checksum bundle produced by the release workflow, run:
+
+```shell
+python -m opentoken_cli.util.release_assets \
+  --version 2.0.0-alpha \
+  --runner-os Linux \
+  --dist-dir dist \
+  --output-dir release-assets
+```
+
+Use `--runner-os macOS` or `--runner-os Windows` for those platforms. The helper writes the updater-ready raw binary,
+the downloadable ZIP, and `.sha256` sidecars to `release-assets/`.
+
 CLI usage (from project root):
 
 ```shell
@@ -656,6 +714,7 @@ opentoken generate-key-pair --curve P-256 --name my-key
 ```
 
 Writes:
+
 - `~/.opentoken/<name>.private.pem` — PKCS#8 PEM (permissions `600`)
 - `~/.opentoken/<name>.public.pem` — SubjectPublicKeyInfo PEM (permissions `644`)
 

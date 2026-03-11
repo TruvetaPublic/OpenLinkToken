@@ -131,14 +131,14 @@ Available in the Python CLI.
 
 Generates a local key pair, derives a shared secret from the partner's public key via ECDH + HKDF, encrypts a hashing secret with AES-256-GCM, and writes a portable JSON exchange config.
 
-| Argument            | Short | Required | Default                          | Description                                                       |
-| ------------------- | ----- | -------- | -------------------------------- | ----------------------------------------------------------------- |
-| `--public-key`      |       | **Yes**  |                                  | Path to the partner's public key (PEM/SPKI format)                |
-| `--name`            | `-n`  | No       | `opentoken-<ISO8601-date>`       | Base name for local key files                                     |
-| `--output`          | `-o`  | No       | `./<name>.exchange.json`         | Output path for the exchange config JSON                          |
-| `--hashingsecret`   |       | No       | randomly generated               | Hashing secret to encrypt (omit to auto-generate a secure value)  |
-| `--curve`           | `-c`  | No       | `P-256`                          | Elliptic curve: `P-256`, `P-384`, or `P-521`                      |
-| `--force`           |       | No       | `false`                          | Overwrite existing key files and exchange config                  |
+| Argument          | Short | Required | Default                    | Description                                                      |
+| ----------------- | ----- | -------- | -------------------------- | ---------------------------------------------------------------- |
+| `--public-key`    |       | **Yes**  |                            | Path to the partner's public key (PEM/SPKI format)               |
+| `--name`          | `-n`  | No       | `opentoken-<ISO8601-date>` | Base name for local key files                                    |
+| `--output`        | `-o`  | No       | `./<name>.exchange.json`   | Output path for the exchange config JSON                         |
+| `--hashingsecret` |       | No       | randomly generated         | Hashing secret to encrypt (omit to auto-generate a secure value) |
+| `--curve`         | `-c`  | No       | `P-256`                    | Elliptic curve: `P-256`, `P-384`, or `P-521`                     |
+| `--force`         |       | No       | `false`                    | Overwrite existing key files and exchange config                 |
 
 **Outputs:**
 
