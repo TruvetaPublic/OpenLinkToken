@@ -108,5 +108,5 @@ The `partnerKey` object keeps the partner public key together with its fingerpri
 
 - Older exchange bundles may store legacy snake_case field names and older
   top-level local key fields instead of the current camelCase names.
-- `tools/validate_exchange_secret.py` remains backward-compatible with those
+- `tools/exchange/validate_exchange_secret.py` remains backward-compatible with those
   earlier bundles.

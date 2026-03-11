@@ -1,6 +1,11 @@
 # Development Tools
 
 - [Development Tools](#development-tools)
+  - [Decryptor Tools](#decryptor-tools)
+  - [Exchange Tools](#exchange-tools)
+  - [Hash Tools](#hash-tools)
+  - [Mock Data Tools](#mock-data-tools)
+  - [Interoperability Tools](#interoperability-tools)
   - [Multi-Language Sync Tool](#multi-language-sync-tool)
     - [Overview](#overview)
     - [Usage](#usage)
@@ -14,6 +19,115 @@
       - [JSON Format](#json-format)
     - [Workflow Integration](#workflow-integration)
     - [Related Files](#related-files)
+
+## Decryptor Tools
+
+### CSV Token Decryptor
+
+Use `tools/decryptor/decryptor.py` to decrypt token CSV files for inspection or
+interoperability checks. The script supports both legacy base64 AES-GCM tokens
+and `ot.V1.` JWE-wrapped tokens.
+
+```bash
+python tools/decryptor/decryptor.py \
+  --encryption-key "$ENCRYPTION_KEY" \
+  --input-file encrypted_tokens.csv \
+  --output-file decrypted_tokens.csv
+```
+
+Input CSV files are expected to contain `RuleId`, `Token`, and `RecordId`
+columns. The tool depends on `pycryptodome`, and JWE token support also
+requires `jwcrypto`.
+
+## Exchange Tools
+
+### Exchange Secret Validation
+
+Use `tools/exchange/validate_exchange_secret.py` to verify that an
+`opentoken initiate-exchange` bundle can actually be decrypted with the
+bundled or supplied key material.
+
+```bash
+# Validate a self-contained exchange bundle
+python tools/exchange/validate_exchange_secret.py \
+  --exchange-config sender-q2.exchange.json
+
+# Validate an older bundle with an external private key
+python tools/exchange/validate_exchange_secret.py \
+  --exchange-config sender-q2.exchange.json \
+  --private-key ~/.opentoken/recipient-org.private.pem
+```
+
+The helper also supports `--expected-secret` for explicit pass/fail checks and
+`--counterparty-public-key` for older exchange bundles that predate embedded
+partner public-key material.
+
+## Hash Tools
+
+### Secret Hash Calculator
+
+Use `tools/hash/hash_calculator.py` to compute the SHA-256 secret hashes that
+OpenToken includes in metadata output.
+
+```bash
+python tools/hash/hash_calculator.py \
+  --hashing-secret "$HASHING_SECRET" \
+  --encryption-key "$ENCRYPTION_KEY" \
+  --output-format json
+```
+
+Supported output formats are `table`, `json`, and `simple`. The companion
+`tools/hash/test_hash_calculator.py` script exercises the calculator against
+known values and command-line execution behavior.
+
+## Mock Data Tools
+
+### CSV Test Data Generator
+
+Use `tools/mockdata/data_generator.py` to generate CSV files with realistic
+person-like records for local testing.
+
+```bash
+python tools/mockdata/data_generator.py 1000 0.05 test_data.csv
+```
+
+Arguments are:
+
+- number of rows to generate
+- repeat probability for duplicate-person scenarios
+- output CSV path
+
+For the default quick-start flow, `tools/mockdata/generate.sh` runs the
+generator through `uv` with `faker` provided automatically.
+
+## Interoperability Tools
+
+The `tools/interoperability/` directory contains cross-language validation
+checks for the Java core library and the Python implementation.
+
+### CLI Parity Test
+
+Use `tools/interoperability/cli_parity_test.py` to confirm the Python CLI still
+exposes the expected commands, help output, and version behavior.
+
+```bash
+python tools/interoperability/cli_parity_test.py
+```
+
+### Multi-Language Token Interoperability Test
+
+Use `tools/interoperability/multi_language_interoperability_test.py` to compare
+Python tokenization output against the Java core-library harness and verify
+known deterministic fixture values.
+
+```bash
+cd lib/java
+mvn -pl opentoken -DskipTests test-compile
+cd ..
+python tools/interoperability/multi_language_interoperability_test.py
+```
+
+For more detail on these checks, see `tools/interoperability/README.md`.
 
 ## Multi-Language Sync Tool
 
@@ -123,6 +237,7 @@ Source: lib/java/opentoken/src/main/java/com/truveta/opentoken/TokenGenerator.ja
 ### 🔹 From JAVA
 
 #### 📁 `lib/java/opentoken/src/.../TokenGenerator.java`
+
 - [x] **✓🔄 PYTHON**: `lib/python/opentoken/src/main/opentoken/token_generator.py`
 - [ ] **✗⏳ NODEJS**: `lib/nodejs/opentoken/src/TokenGenerator.ts`
 

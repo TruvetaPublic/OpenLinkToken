@@ -121,14 +121,14 @@ Transfer `sender-q2.exchange.json` to the recipient over any channel. The hashin
 The self-contained bundle can be validated with the JSON alone:
 
 ```bash
-python tools/validate_exchange_secret.py \
+python tools/exchange/validate_exchange_secret.py \
   --exchange-config sender-q2.exchange.json
 ```
 
 You can still validate with an external matching private key if you prefer:
 
 ```bash
-python tools/validate_exchange_secret.py \
+python tools/exchange/validate_exchange_secret.py \
   --exchange-config sender-q2.exchange.json \
   --private-key ~/.opentoken/recipient-org.private.pem
 ```
@@ -136,7 +136,7 @@ python tools/validate_exchange_secret.py \
 If the sender provided a known plaintext via `opentoken initiate-exchange --hashingsecret ...`, the recipient can also perform an explicit pass/fail check:
 
 ```bash
-python tools/validate_exchange_secret.py \
+python tools/exchange/validate_exchange_secret.py \
   --exchange-config sender-q2.exchange.json \
   --private-key ~/.opentoken/recipient-org.private.pem \
   --expected-secret "$HASHING_SECRET"
@@ -147,7 +147,7 @@ Successful AES-GCM decryption proves the available key material matches the exch
 For exchange JSON files generated before `partnerKey.publicKey` was embedded, sender-side validation needs the original partner public key too:
 
 ```bash
-python tools/validate_exchange_secret.py \
+python tools/exchange/validate_exchange_secret.py \
   --exchange-config sender-q2.exchange.json \
   --private-key ~/.opentoken/sender-q2.private.pem \
   --counterparty-public-key ./recipient-org.public.pem
