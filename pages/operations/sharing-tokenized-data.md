@@ -56,14 +56,14 @@ The two-command ECDH bootstrap workflow lets partners establish a shared hashing
 Recipient                                   Sender
 ─────────────────────────────────────────────────────
 generate-key-pair                                │
-  → recipient.public.pem ──────────────────────►│
+  → recipient.public.pem ──────────────────────► │
                                                  │
                                          initiate-exchange
                                            --public-key recipient.public.pem
                                            → sender.exchange.json
                                            → sender.private.pem (local only)
                                                  │
-                              ◄──────────────────┤ sender.exchange.json
+                        ◄────────────────────────┤ sender.exchange.json
                                                  │ (contains encrypted secret)
 Recover hashing secret
 from sender's local public key
@@ -98,39 +98,59 @@ This:
 4. Expands the shared secret into an AES-256 key via HKDF.
 5. Encrypts the hashing secret with AES-256-GCM and writes `sender-q2.exchange.json`.
 
-The exchange config **never** contains the sender's private key or the plaintext hashing secret.
+By default, the exchange config contains a nested `localKey` object with the sender's local EC public key, public-key fingerprint, private key, private-key fingerprint, and basename, plus a nested `partnerKey` object with the partner public key and fingerprint.
+
+This makes `sender-q2.exchange.json` a self-contained bundle that can be moved to another system with no local key files, but it also means the JSON is a secret-bearing artifact and must be protected accordingly.
+
+If you want to control which local private key is embedded instead of generating a new one, use `--local-private-key`:
+
+```bash
+opentoken initiate-exchange \
+  --name sender-q2 \
+  --public-key ./recipient-org.public.pem \
+  --local-private-key ~/.opentoken/sender-q2.private.pem \
+  --output ./sender-q2.exchange.json
+```
 
 ### Step 3 — Sender transfers the exchange config
 
-Transfer `sender-q2.exchange.json` to the recipient over any channel. The hashing secret inside is encrypted; only a holder of the matching private key can recover it.
+Transfer `sender-q2.exchange.json` to the recipient over any channel. The hashing secret inside is encrypted, and the JSON carries the key material needed to recover it on another system. For a field-by-field format reference, see `docs/exchange-config-format.md`.
 
 ### Step 4 — Recipient recovers the hashing secret
 
-The recipient uses the sender's local public key (embedded in the exchange config) together with their own private key to derive the same shared secret and decrypt the hashing secret:
+The self-contained bundle can be validated with the JSON alone:
 
-```python
-import base64, json
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric.ec import ECDH
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from cryptography.hazmat.primitives.kdf.hkdf import HKDF
-from cryptography.hazmat.primitives.serialization import load_pem_private_key, load_pem_public_key
-from pathlib import Path
+```bash
+python tools/validate_exchange_secret.py \
+  --exchange-config sender-q2.exchange.json
+```
 
-config = json.loads(Path("sender-q2.exchange.json").read_text())
-recipient_private = load_pem_private_key(
-    Path("~/.opentoken/recipient-org.private.pem").expanduser().read_bytes(), password=None
-)
-sender_public = load_pem_public_key(config["local_public_key"].encode())
+You can still validate with an external matching private key if you prefer:
 
-shared_secret = recipient_private.exchange(ECDH(), sender_public)
-hkdf = HKDF(algorithm=hashes.SHA256(), length=32, salt=None, info=b"opentoken-exchange-v1")
-aes_key = hkdf.derive(shared_secret)
+```bash
+python tools/validate_exchange_secret.py \
+  --exchange-config sender-q2.exchange.json \
+  --private-key ~/.opentoken/recipient-org.private.pem
+```
 
-nonce = base64.b64decode(config["encryption"]["nonce"])
-ciphertext = base64.b64decode(config["encrypted_hashing_secret"])
-hashing_secret = AESGCM(aes_key).decrypt(nonce, ciphertext, None)
-print("Recovered hashing secret:", hashing_secret.decode())
+If the sender provided a known plaintext via `opentoken initiate-exchange --hashingsecret ...`, the recipient can also perform an explicit pass/fail check:
+
+```bash
+python tools/validate_exchange_secret.py \
+  --exchange-config sender-q2.exchange.json \
+  --private-key ~/.opentoken/recipient-org.private.pem \
+  --expected-secret "$HASHING_SECRET"
+```
+
+Successful AES-GCM decryption proves the available key material matches the exchange config. If decryption fails, the key material does not correspond to that exchange.
+
+For exchange JSON files generated before `partnerKey.publicKey` was embedded, sender-side validation needs the original partner public key too:
+
+```bash
+python tools/validate_exchange_secret.py \
+  --exchange-config sender-q2.exchange.json \
+  --private-key ~/.opentoken/sender-q2.private.pem \
+  --counterparty-public-key ./recipient-org.public.pem
 ```
 
 ### Step 5 — Both parties tokenize using the recovered secret

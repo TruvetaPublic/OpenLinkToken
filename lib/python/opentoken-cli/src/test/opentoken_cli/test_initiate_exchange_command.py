@@ -18,7 +18,7 @@ from opentoken_cli.commands.initiate_exchange_command import (
     InitiateExchangeCommand,
 )
 from opentoken_cli.commands.open_token_command import OpenTokenCommand
-from opentoken_cli.util.ec_key_utils import SUPPORTED_CURVES, generate_key_pair
+from opentoken_cli.util.ec_key_utils import SUPPORTED_CURVES, generate_key_pair, public_key_fingerprint
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -126,35 +126,54 @@ class TestInitiateExchangeCommandUnit:
     def test_build_config_contains_required_keys(self):
         """_build_config produces a dict with all required top-level keys."""
         _, local_public_pem = generate_key_pair("P-256")
+        _, partner_public_pem = generate_key_pair("P-256")
         config = InitiateExchangeCommand._build_config(
             name="test",
             curve="P-256",
             local_public_pem=local_public_pem,
+            partner_public_pem=partner_public_pem,
             partner_fingerprint="AA:BB:CC",
             encrypted_payload={"nonce": "abc", "ciphertext": "def"},
         )
 
         required_keys = {
             "version",
-            "exchange_name",
-            "key_agreement",
+            "exchangeName",
+            "keyAgreement",
             "curve",
-            "local_key_basename",
-            "local_public_key",
-            "partner_public_key_fingerprint",
+            "localKey",
+            "partnerKey",
             "kdf",
             "encryption",
-            "encrypted_hashing_secret",
+            "encryptedHashingSecret",
         }
         assert required_keys.issubset(config.keys())
+
+    def test_build_config_can_omit_private_key_when_internal_callers_pass_none(self):
+        """_build_config still omits private key material when internal callers explicitly pass none."""
+        _, local_public_pem = generate_key_pair("P-256")
+        _, partner_public_pem = generate_key_pair("P-256")
+        config = InitiateExchangeCommand._build_config(
+            name="test",
+            curve="P-256",
+            local_public_pem=local_public_pem,
+            partner_public_pem=partner_public_pem,
+            partner_fingerprint="AA:BB:CC",
+            encrypted_payload={"nonce": "abc", "ciphertext": "def"},
+        )
+
+        assert "privateKey" not in config["localKey"]
+        assert "privateKeyFingerprint" not in config["localKey"]
 
     def test_build_config_version(self):
         """Config version matches EXCHANGE_CONFIG_VERSION."""
         _, local_public_pem = generate_key_pair("P-256")
+        _, partner_public_pem = generate_key_pair("P-256")
         config = InitiateExchangeCommand._build_config(
             name="v",
             curve="P-256",
             local_public_pem=local_public_pem,
+            partner_public_pem=partner_public_pem,
             partner_fingerprint="FP",
             encrypted_payload={"nonce": "n", "ciphertext": "c"},
         )
@@ -163,11 +182,13 @@ class TestInitiateExchangeCommandUnit:
     def test_build_config_never_contains_private_key(self):
         """Config must not contain any private key material."""
         private_pem, local_public_pem = generate_key_pair("P-256")
+        _, partner_public_pem = generate_key_pair("P-256")
         config_str = json.dumps(
             InitiateExchangeCommand._build_config(
                 name="check",
                 curve="P-256",
                 local_public_pem=local_public_pem,
+                partner_public_pem=partner_public_pem,
                 partner_fingerprint="FP",
                 encrypted_payload={"nonce": "n", "ciphertext": "c"},
             )
@@ -175,16 +196,94 @@ class TestInitiateExchangeCommandUnit:
         assert "PRIVATE KEY" not in config_str, "Config must never contain private key material"
 
     def test_build_config_local_public_key_is_pem(self):
-        """The local_public_key field must contain a PEM-encoded public key."""
+        """The local_key.public_key field must contain a PEM-encoded public key."""
         _, local_public_pem = generate_key_pair("P-256")
+        _, partner_public_pem = generate_key_pair("P-256")
         config = InitiateExchangeCommand._build_config(
             name="k",
             curve="P-256",
             local_public_pem=local_public_pem,
+            partner_public_pem=partner_public_pem,
             partner_fingerprint="FP",
             encrypted_payload={"nonce": "n", "ciphertext": "c"},
         )
-        assert "-----BEGIN PUBLIC KEY-----" in config["local_public_key"]
+        assert "-----BEGIN PUBLIC KEY-----" in config["localKey"]["publicKey"]
+
+    def test_build_config_local_key_contains_public_key_fingerprint(self):
+        """The localKey object carries the local public key fingerprint."""
+        _, local_public_pem = generate_key_pair("P-256")
+        _, partner_public_pem = generate_key_pair("P-256")
+        config = InitiateExchangeCommand._build_config(
+            name="k",
+            curve="P-256",
+            local_public_pem=local_public_pem,
+            partner_public_pem=partner_public_pem,
+            partner_fingerprint="FP",
+            encrypted_payload={"nonce": "n", "ciphertext": "c"},
+        )
+
+        assert config["localKey"]["publicKeyFingerprint"] == public_key_fingerprint(local_public_pem)
+
+    def test_build_config_partner_public_key_is_pem(self):
+        """The partnerKey.publicKey field must contain a PEM-encoded public key."""
+        _, local_public_pem = generate_key_pair("P-256")
+        _, partner_public_pem = generate_key_pair("P-256")
+        config = InitiateExchangeCommand._build_config(
+            name="k",
+            curve="P-256",
+            local_public_pem=local_public_pem,
+            partner_public_pem=partner_public_pem,
+            partner_fingerprint="FP",
+            encrypted_payload={"nonce": "n", "ciphertext": "c"},
+        )
+        assert "-----BEGIN PUBLIC KEY-----" in config["partnerKey"]["publicKey"]
+
+    def test_build_config_partner_key_contains_fingerprint(self):
+        """The partnerKey object carries the partner public key fingerprint."""
+        _, local_public_pem = generate_key_pair("P-256")
+        _, partner_public_pem = generate_key_pair("P-256")
+        config = InitiateExchangeCommand._build_config(
+            name="k",
+            curve="P-256",
+            local_public_pem=local_public_pem,
+            partner_public_pem=partner_public_pem,
+            partner_fingerprint="FP",
+            encrypted_payload={"nonce": "n", "ciphertext": "c"},
+        )
+
+        assert config["partnerKey"]["publicKeyFingerprint"] == "FP"
+
+    def test_build_config_local_key_contains_basename(self):
+        """The local_key object carries the bundle's basename alongside key material."""
+        _, local_public_pem = generate_key_pair("P-256")
+        _, partner_public_pem = generate_key_pair("P-256")
+        config = InitiateExchangeCommand._build_config(
+            name="bundle-name",
+            curve="P-256",
+            local_public_pem=local_public_pem,
+            partner_public_pem=partner_public_pem,
+            partner_fingerprint="FP",
+            encrypted_payload={"nonce": "n", "ciphertext": "c"},
+        )
+
+        assert config["localKey"]["basename"] == "bundle-name"
+
+    def test_build_config_includes_private_key_and_fingerprint_when_requested(self):
+        """_build_config includes the local private key and fingerprint when explicitly requested."""
+        local_private_pem, local_public_pem = generate_key_pair("P-256")
+        _, partner_public_pem = generate_key_pair("P-256")
+        config = InitiateExchangeCommand._build_config(
+            name="k",
+            curve="P-256",
+            local_public_pem=local_public_pem,
+            partner_public_pem=partner_public_pem,
+            partner_fingerprint="FP",
+            encrypted_payload={"nonce": "n", "ciphertext": "c"},
+            local_private_pem=local_private_pem,
+        )
+
+        assert "-----BEGIN PRIVATE KEY-----" in config["localKey"]["privateKey"]
+        assert config["localKey"]["privateKeyFingerprint"] == public_key_fingerprint(local_public_pem)
 
     # -------------------------------------------------------------------------
     # _write_config
@@ -283,24 +382,23 @@ class TestInitiateExchangeCommandIntegration:
         config = json.loads(output_path.read_text())
         required = {
             "version",
-            "exchange_name",
-            "key_agreement",
+            "exchangeName",
+            "keyAgreement",
             "curve",
-            "local_key_basename",
-            "local_public_key",
-            "partner_public_key_fingerprint",
+            "localKey",
+            "partnerKey",
             "kdf",
             "encryption",
-            "encrypted_hashing_secret",
+            "encryptedHashingSecret",
         }
         assert required.issubset(config.keys())
         assert config["version"] == EXCHANGE_CONFIG_VERSION
         assert config["curve"] == "P-256"
-        assert config["key_agreement"] == "ECDH"
-        assert "-----BEGIN PUBLIC KEY-----" in config["local_public_key"]
+        assert config["keyAgreement"] == "ECDH"
+        assert "-----BEGIN PUBLIC KEY-----" in config["localKey"]["publicKey"]
 
-    def test_exchange_config_never_contains_private_key(self, tmp_path):
-        """The exchange config must never contain private key material."""
+    def test_exchange_config_includes_private_key_by_default(self, tmp_path):
+        """The exchange config includes private key material by default for self-contained bundles."""
         partner_pem = _partner_key_pem(tmp_path)
         output_path = tmp_path / "security.exchange.json"
 
@@ -318,7 +416,42 @@ class TestInitiateExchangeCommandIntegration:
             )
 
         raw = output_path.read_text()
-        assert "PRIVATE KEY" not in raw, "Exchange config must never contain private key material"
+        assert "PRIVATE KEY" in raw
+        config = json.loads(raw)
+        assert config["localKey"]["publicKeyFingerprint"]
+        assert config["localKey"]["privateKeyFingerprint"]
+
+    def test_exchange_config_can_use_provided_local_private_key(self, tmp_path):
+        """The CLI can use and embed a caller-supplied local private key instead of generating one."""
+        partner_pem = _partner_key_pem(tmp_path)
+        output_path = tmp_path / "self-contained.exchange.json"
+        local_private_pem, local_public_pem = generate_key_pair("P-256")
+        local_private_key_path = tmp_path / "provided.private.pem"
+        local_private_key_path.write_bytes(local_private_pem)
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "self-contained",
+                    "--public-key",
+                    str(partner_pem),
+                    "--output",
+                    str(output_path),
+                    "--local-private-key",
+                    str(local_private_key_path),
+                ]
+            )
+
+        assert exit_code == 0
+        config = json.loads(output_path.read_text())
+        assert config["localKey"]["privateKey"] == local_private_pem.decode()
+        assert config["localKey"]["publicKey"] == local_public_pem.decode()
+        assert config["localKey"]["publicKeyFingerprint"] == public_key_fingerprint(local_public_pem)
+        assert config["localKey"]["privateKeyFingerprint"]
+        assert (tmp_path / ".opentoken" / "self-contained.private.pem").read_bytes() == local_private_pem
+        assert (tmp_path / ".opentoken" / "self-contained.public.pem").read_bytes() == local_public_pem
 
     # -------------------------------------------------------------------------
     # All supported curves

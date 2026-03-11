@@ -106,6 +106,31 @@ def generate_key_pair(curve: str) -> Tuple[bytes, bytes]:
     return private_pem, public_pem
 
 
+def _curve_name_from_private_key(private_key) -> str:
+    """Map a cryptography EC private key's curve to an OpenToken curve name."""
+    curve_name_map = {
+        "secp256r1": "P-256",
+        "secp384r1": "P-384",
+        "secp521r1": "P-521",
+    }
+    curve_name = curve_name_map.get(private_key.curve.name)
+    if curve_name is None:
+        raise ValueError(f"Unsupported EC private key curve '{private_key.curve.name}'.")
+    return curve_name
+
+
+def derive_public_key_from_private_pem(private_pem: bytes) -> Tuple[bytes, str]:
+    """Load an EC private key PEM and return its public key PEM plus OpenToken curve name."""
+    from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat, load_pem_private_key
+
+    private_key = load_pem_private_key(private_pem, password=None)
+    public_pem = private_key.public_key().public_bytes(
+        encoding=Encoding.PEM,
+        format=PublicFormat.SubjectPublicKeyInfo,
+    )
+    return public_pem, _curve_name_from_private_key(private_key)
+
+
 def ensure_directory(directory: Path) -> None:
     """Ensure the directory exists, is not a symlink, and has 700 permissions.
 

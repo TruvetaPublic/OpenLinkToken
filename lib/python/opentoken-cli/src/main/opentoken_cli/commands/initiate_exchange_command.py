@@ -13,6 +13,7 @@ from typing import Optional
 from opentoken_cli.util.ec_key_utils import (
     HKDF_INFO,
     SUPPORTED_CURVES,
+    derive_public_key_from_private_pem,
     ensure_directory,
     generate_key_pair,
     public_key_fingerprint,
@@ -46,7 +47,7 @@ class InitiateExchangeCommand:
             help="Initiate an ECDH key exchange and produce a portable exchange config",
             description=(
                 "Initiate an ECDH key exchange with a partner.\n\n"
-                "Generates (or reuses) a local key pair in ~/.opentoken/, derives a shared\n"
+                "Generates or uses a local key pair in ~/.opentoken/, derives a shared\n"
                 "secret from the partner's public key via ECDH + HKDF, and writes a versioned\n"
                 "JSON exchange config containing the encrypted hashing secret."
             ),
@@ -89,7 +90,7 @@ class InitiateExchangeCommand:
             "-c",
             "--curve",
             dest="curve",
-            default="P-256",
+            default=None,
             help="Elliptic curve for key generation. Supported: P-256, P-384, P-521 (default: P-256)",
         )
 
@@ -99,6 +100,14 @@ class InitiateExchangeCommand:
             default=False,
             dest="force",
             help="Overwrite existing local key files and exchange config if they already exist",
+        )
+
+        parser.add_argument(
+            "--local-private-key",
+            dest="local_private_key",
+            default=None,
+            metavar="PATH",
+            help="Path to an existing local private key PEM to use and embed instead of generating a new one",
         )
 
         parser.set_defaults(func=InitiateExchangeCommand.execute)
@@ -117,13 +126,14 @@ class InitiateExchangeCommand:
         public_key_path_str: str = getattr(args, "public_key", "")
         output_path_str: Optional[str] = getattr(args, "output", None)
         hashing_secret: Optional[str] = getattr(args, "hashing_secret", None)
-        curve: str = getattr(args, "curve", "P-256")
+        curve: Optional[str] = getattr(args, "curve", None)
         force: bool = getattr(args, "force", False)
+        local_private_key_path_str: Optional[str] = getattr(args, "local_private_key", None)
 
         try:
             name = resolve_key_name(name)
 
-            if curve not in SUPPORTED_CURVES:
+            if curve is not None and curve not in SUPPORTED_CURVES:
                 logger.error(
                     "Unsupported curve '%s'. Valid options are: %s",
                     curve,
@@ -160,7 +170,25 @@ class InitiateExchangeCommand:
             partner_public_pem = partner_public_key_path.read_bytes()
 
             ensure_directory(opentoken_dir)
-            private_pem, local_public_pem = generate_key_pair(curve)
+            if local_private_key_path_str:
+                local_private_key_path = Path(local_private_key_path_str)
+                if not local_private_key_path.exists():
+                    logger.error("Local private key file not found: %s", local_private_key_path)
+                    return 1
+
+                private_pem = local_private_key_path.read_bytes()
+                local_public_pem, resolved_curve = derive_public_key_from_private_pem(private_pem)
+                if curve is not None and curve != resolved_curve:
+                    logger.error(
+                        "Local private key curve '%s' does not match requested --curve '%s'.",
+                        resolved_curve,
+                        curve,
+                    )
+                    return 1
+            else:
+                resolved_curve = curve or "P-256"
+                private_pem, local_public_pem = generate_key_pair(resolved_curve)
+
             write_key(private_key_path, private_pem, 0o600, overwrite=force)
             write_key(public_key_path_local, local_public_pem, 0o644, overwrite=force)
 
@@ -172,10 +200,12 @@ class InitiateExchangeCommand:
 
             config = InitiateExchangeCommand._build_config(
                 name=name,
-                curve=curve,
+                curve=resolved_curve,
                 local_public_pem=local_public_pem,
+                partner_public_pem=partner_public_pem,
                 partner_fingerprint=partner_fingerprint,
                 encrypted_payload=encrypted_payload,
+                local_private_pem=private_pem,
             )
 
             InitiateExchangeCommand._write_config(output_path, config, overwrite=force)
@@ -260,8 +290,10 @@ class InitiateExchangeCommand:
         name: str,
         curve: str,
         local_public_pem: bytes,
+        partner_public_pem: bytes,
         partner_fingerprint: str,
         encrypted_payload: dict,
+        local_private_pem: Optional[bytes] = None,
     ) -> dict:
         """Assemble the versioned JSON exchange config dictionary.
 
@@ -269,20 +301,28 @@ class InitiateExchangeCommand:
             name:                Exchange/key basename.
             curve:               Elliptic curve name (e.g. ``P-256``).
             local_public_pem:    PEM-encoded local public key bytes.
+            partner_public_pem:  PEM-encoded partner public key bytes.
             partner_fingerprint: SHA-256 fingerprint of the partner's public key.
             encrypted_payload:   Dict with ``nonce`` and ``ciphertext`` (base64 strings).
+            local_private_pem:   Optional PEM-encoded local private key bytes for self-contained bundles.
 
         Returns:
             A dict ready to be serialized as JSON.
         """
-        return {
+        config = {
             "version": EXCHANGE_CONFIG_VERSION,
-            "exchange_name": name,
-            "key_agreement": "ECDH",
+            "exchangeName": name,
+            "keyAgreement": "ECDH",
             "curve": curve,
-            "local_key_basename": name,
-            "local_public_key": local_public_pem.decode(),
-            "partner_public_key_fingerprint": partner_fingerprint,
+            "localKey": {
+                "basename": name,
+                "publicKey": local_public_pem.decode(),
+                "publicKeyFingerprint": public_key_fingerprint(local_public_pem),
+            },
+            "partnerKey": {
+                "publicKey": partner_public_pem.decode(),
+                "publicKeyFingerprint": partner_fingerprint,
+            },
             "kdf": {
                 "algorithm": "HKDF",
                 "hash": "SHA-256",
@@ -290,12 +330,18 @@ class InitiateExchangeCommand:
             },
             "encryption": {
                 "algorithm": "AES-GCM",
-                "key_length": 256,
-                "nonce_encoding": "base64",
+                "keyLength": 256,
+                "nonceEncoding": "base64",
                 "nonce": encrypted_payload["nonce"],
             },
-            "encrypted_hashing_secret": encrypted_payload["ciphertext"],
+            "encryptedHashingSecret": encrypted_payload["ciphertext"],
         }
+
+        if local_private_pem is not None:
+            config["localKey"]["privateKey"] = local_private_pem.decode()
+            config["localKey"]["privateKeyFingerprint"] = public_key_fingerprint(local_public_pem)
+
+        return config
 
     @staticmethod
     def _write_config(path: Path, config: dict, overwrite: bool = True) -> None:

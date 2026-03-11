@@ -129,22 +129,25 @@ Writes key files to `~/.opentoken/`:
 
 Available in the Python CLI.
 
-Generates a local key pair, derives a shared secret from the partner's public key via ECDH + HKDF, encrypts a hashing secret with AES-256-GCM, and writes a portable JSON exchange config.
+Generates or uses a local key pair, derives a shared secret from the partner's public key via ECDH + HKDF, encrypts a hashing secret with AES-256-GCM, and writes a self-contained JSON exchange config containing nested `localKey` and `partnerKey` objects plus the encrypted hashing secret.
 
-| Argument          | Short | Required | Default                    | Description                                                      |
-| ----------------- | ----- | -------- | -------------------------- | ---------------------------------------------------------------- |
-| `--public-key`    |       | **Yes**  |                            | Path to the partner's public key (PEM/SPKI format)               |
-| `--name`          | `-n`  | No       | `opentoken-<ISO8601-date>` | Base name for local key files                                    |
-| `--output`        | `-o`  | No       | `./<name>.exchange.json`   | Output path for the exchange config JSON                         |
-| `--hashingsecret` |       | No       | randomly generated         | Hashing secret to encrypt (omit to auto-generate a secure value) |
-| `--curve`         | `-c`  | No       | `P-256`                    | Elliptic curve: `P-256`, `P-384`, or `P-521`                     |
-| `--force`         |       | No       | `false`                    | Overwrite existing key files and exchange config                 |
+| Argument              | Short | Required | Default                    | Description                                                                          |
+| --------------------- | ----- | -------- | -------------------------- | ------------------------------------------------------------------------------------ |
+| `--public-key`        |       | **Yes**  |                            | Path to the partner's public key (PEM/SPKI format)                                   |
+| `--name`              | `-n`  | No       | `opentoken-<ISO8601-date>` | Base name for local key files                                                        |
+| `--output`            | `-o`  | No       | `./<name>.exchange.json`   | Output path for the exchange config JSON                                             |
+| `--hashingsecret`     |       | No       | randomly generated         | Hashing secret to encrypt (omit to auto-generate a secure value)                     |
+| `--curve`             | `-c`  | No       | `P-256`                    | Elliptic curve for generated keys: `P-256`, `P-384`, or `P-521`                      |
+| `--force`             |       | No       | `false`                    | Overwrite existing key files and exchange config                                     |
+| `--local-private-key` |       | No       |                            | Use and embed an existing local private key PEM instead of generating a new key pair |
 
 **Outputs:**
 
-- `~/.opentoken/<name>.private.pem` — local private key (permissions `600`, never stored in the config)
+- `~/.opentoken/<name>.private.pem` — local private key (permissions `600`)
 - `~/.opentoken/<name>.public.pem` — local public key (permissions `644`)
-- `<output>` — versioned JSON exchange config containing the encrypted hashing secret
+- `<output>` — versioned JSON exchange config containing nested `localKey` and `partnerKey` objects plus the encrypted hashing secret
+
+`<output>` is a secret-bearing bundle. Protect it accordingly.
 
 **Example:**
 
@@ -159,7 +162,18 @@ opentoken initiate-exchange \
   --output ./sender-q2.exchange.json
 ```
 
+To use and embed an existing local private key instead of generating a new one:
+
+```bash
+opentoken initiate-exchange \
+  --name sender-q2 \
+  --public-key ./recipient-org.public.pem \
+  --local-private-key ~/.opentoken/sender-q2.private.pem \
+  --output ./sender-q2.exchange.json
+```
+
 See [Sharing Tokenized Data](../operations/sharing-tokenized-data.md) for the full two-command ECDH bootstrap workflow.
+For a field-by-field format reference, see `docs/exchange-config-format.md`.
 
 ### `update` (Self-Update CLI)
 
