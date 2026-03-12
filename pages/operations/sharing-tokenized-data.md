@@ -121,7 +121,7 @@ opentoken initiate-exchange \
 This:
 
 1. Generates a local ECDH key pair for the sender under `~/.opentoken/`, reuses one supplied with `--sender-private-key`, or derives one from `--sender-private-key-env`.
-2. Generates a secure random hashing secret (or accepts one via `--hashingsecret`).
+2. Generates a secure random hashing secret by default, or accepts an existing one via `--hashingsecret-env`, `--hashingsecret-stdin`, or `--hashingsecret`.
 3. Encrypts the hashing secret into a multi-recipient JWE JSON envelope.
 4. Adds one JWE recipient entry for the sender's public key and one for the recipient's public key.
 5. Writes `sender-q2.exchange.json` without embedding any private key material.
@@ -139,6 +139,18 @@ opentoken initiate-exchange \
   --name sender-q2 \
   --public-key ./recipient-org.public.pem \
   --sender-private-key ~/.opentoken/sender-q2.private.pem \
+  --output ./sender-q2.exchange.json
+```
+
+If you need to supply a pre-existing hashing secret, prefer an environment-variable or stdin-based input so the secret does not appear in shell history or process listings:
+
+```bash
+export OT_HASHING_SECRET="$(az keyvault secret show --vault-name my-vault --name hashing-secret --query value -o tsv)"
+
+opentoken initiate-exchange \
+  --name sender-q2 \
+  --public-key ./recipient-org.public.pem \
+  --hashingsecret-env OT_HASHING_SECRET \
   --output ./sender-q2.exchange.json
 ```
 
@@ -180,7 +192,7 @@ cat ~/.opentoken/recipient-org.private.pem | \
     --private-key-stdin
 ```
 
-If the sender provided a known plaintext via `opentoken initiate-exchange --hashingsecret ...`, the recipient can also perform an explicit pass/fail check:
+If the sender provided a known plaintext via `opentoken initiate-exchange --hashingsecret-env ...`, `--hashingsecret-stdin`, or `--hashingsecret ...`, the recipient can also perform an explicit pass/fail check:
 
 ```bash
 python tools/exchange/validate_exchange_secret.py \

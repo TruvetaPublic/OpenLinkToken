@@ -274,6 +274,130 @@ class TestInitiateExchangeCommandIntegration:
             },
         )
 
+    def test_basic_exchange_accepts_hashing_secret_from_env(self, tmp_path, monkeypatch):
+        """initiate-exchange accepts --hashingsecret-env as a safe alternative to argv input."""
+        partner_private_pem, partner_public_pem = generate_key_pair("P-256")
+        partner_pem_path = tmp_path / "partner.public.pem"
+        partner_pem_path.write_bytes(partner_public_pem)
+        output_path = tmp_path / "hashingsecret-env.exchange.json"
+        plaintext_secret = "HashingSecretFromEnv"
+        monkeypatch.setenv("OT_HASHING_SECRET", plaintext_secret)
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "hashingsecret-env",
+                    "--public-key",
+                    str(partner_pem_path),
+                    "--output",
+                    str(output_path),
+                    "--hashingsecret-env",
+                    "OT_HASHING_SECRET",
+                ]
+            )
+
+        assert exit_code == 0
+        config = json.loads(output_path.read_text())
+        recipient_payload = json.loads(decrypt_exchange_envelope(config, partner_private_pem))
+        expected_hashing_secret = base64.urlsafe_b64encode(plaintext_secret.encode()).decode().rstrip("=")
+        assert recipient_payload["hashingSecret"] == expected_hashing_secret
+
+    def test_basic_exchange_accepts_hashing_secret_from_stdin(self, tmp_path, monkeypatch):
+        """initiate-exchange accepts --hashingsecret-stdin as a safe alternative to argv input."""
+        partner_private_pem, partner_public_pem = generate_key_pair("P-256")
+        partner_pem_path = tmp_path / "partner.public.pem"
+        partner_pem_path.write_bytes(partner_public_pem)
+        output_path = tmp_path / "hashingsecret-stdin.exchange.json"
+        plaintext_secret = "HashingSecretFromStdin"
+        monkeypatch.setattr(
+            sys,
+            "stdin",
+            io.TextIOWrapper(io.BytesIO(plaintext_secret.encode()), encoding="utf-8"),
+        )
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "hashingsecret-stdin",
+                    "--public-key",
+                    str(partner_pem_path),
+                    "--output",
+                    str(output_path),
+                    "--hashingsecret-stdin",
+                ]
+            )
+
+        assert exit_code == 0
+        config = json.loads(output_path.read_text())
+        recipient_payload = json.loads(decrypt_exchange_envelope(config, partner_private_pem))
+        expected_hashing_secret = base64.urlsafe_b64encode(plaintext_secret.encode()).decode().rstrip("=")
+        assert recipient_payload["hashingSecret"] == expected_hashing_secret
+
+    def test_basic_exchange_strips_one_trailing_newline_from_hashing_secret_stdin(self, tmp_path, monkeypatch):
+        """A typical echo-style stdin newline should not change the hashing secret bytes."""
+        partner_private_pem, partner_public_pem = generate_key_pair("P-256")
+        partner_pem_path = tmp_path / "partner.public.pem"
+        partner_pem_path.write_bytes(partner_public_pem)
+        output_path = tmp_path / "hashingsecret-stdin-newline.exchange.json"
+        plaintext_secret = "HashingSecretFromStdin"
+        monkeypatch.setattr(
+            sys, "stdin", io.TextIOWrapper(io.BytesIO(f"{plaintext_secret}\n".encode()), encoding="utf-8")
+        )
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "hashingsecret-stdin-newline",
+                    "--public-key",
+                    str(partner_pem_path),
+                    "--output",
+                    str(output_path),
+                    "--hashingsecret-stdin",
+                ]
+            )
+
+        assert exit_code == 0
+        config = json.loads(output_path.read_text())
+        recipient_payload = json.loads(decrypt_exchange_envelope(config, partner_private_pem))
+        assert recipient_payload["hashingSecret"] == base64.urlsafe_b64encode(
+            plaintext_secret.encode()
+        ).decode().rstrip("=")
+
+    def test_basic_exchange_rejects_conflicting_stdin_inputs(self, tmp_path, monkeypatch, caplog):
+        """The command should reject multiple stdin-consuming flags with a clear error."""
+        output_path = tmp_path / "conflicting-stdin.exchange.json"
+        monkeypatch.setattr(
+            sys,
+            "stdin",
+            io.TextIOWrapper(
+                io.BytesIO(b"-----BEGIN PUBLIC KEY-----\nplaceholder\n-----END PUBLIC KEY-----\n"), encoding="utf-8"
+            ),
+        )
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "conflicting-stdin",
+                    "--public-key-stdin",
+                    "--hashingsecret-stdin",
+                    "--output",
+                    str(output_path),
+                ]
+            )
+
+        assert exit_code == 1
+        assert "stdin" in caplog.text.lower()
+        assert "both consume stdin" in caplog.text.lower()
+        assert not output_path.exists()
+
     def test_basic_exchange_rejects_empty_partner_public_key_from_stdin(self, tmp_path, monkeypatch, caplog):
         """initiate-exchange fails clearly when --public-key-stdin receives no key bytes."""
         output_path = tmp_path / "empty-stdin.exchange.json"
@@ -341,6 +465,33 @@ class TestInitiateExchangeCommandIntegration:
         assert exit_code == 1
         assert "OT_MISSING_SENDER_PRIVATE_KEY" in caplog.text
         assert not output_path.exists()
+
+    def test_basic_exchange_rejects_missing_hashing_secret_env_without_writing_keys(self, tmp_path, caplog):
+        """Missing hashing-secret env input should fail before new local key files are written."""
+        partner_pem = _partner_key_pem(tmp_path)
+        output_path = tmp_path / "missing-hashing-secret-env.exchange.json"
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "missing-hashing-secret-env",
+                    "--public-key",
+                    str(partner_pem),
+                    "--output",
+                    str(output_path),
+                    "--hashingsecret-env",
+                    "OT_MISSING_HASHING_SECRET",
+                ]
+            )
+
+        assert exit_code == 1
+        assert "OT_MISSING_HASHING_SECRET" in caplog.text
+        assert not output_path.exists()
+        opentoken_dir = tmp_path / ".opentoken"
+        assert not (opentoken_dir / "missing-hashing-secret-env.private.pem").exists()
+        assert not (opentoken_dir / "missing-hashing-secret-env.public.pem").exists()
 
     # -------------------------------------------------------------------------
     # Exchange config structure

@@ -93,12 +93,27 @@ class InitiateExchangeCommand:
             help="Output path for the exchange config JSON (default: ./<name>.exchange.json)",
         )
 
-        parser.add_argument(
+        hashing_secret_group = parser.add_mutually_exclusive_group(required=False)
+        hashing_secret_group.add_argument(
             "--hashingsecret",
             dest="hashing_secret",
             default=None,
             metavar="SECRET",
             help="Hashing secret to encrypt (default: randomly generated)",
+        )
+        hashing_secret_group.add_argument(
+            "--hashingsecret-stdin",
+            dest="hashing_secret_stdin",
+            action="store_true",
+            default=False,
+            help="Read the hashing secret from stdin instead of passing it on the command line",
+        )
+        hashing_secret_group.add_argument(
+            "--hashingsecret-env",
+            dest="hashing_secret_env",
+            default=None,
+            metavar="ENV_VAR",
+            help="Read the hashing secret from the named environment variable",
         )
 
         parser.add_argument(
@@ -153,6 +168,8 @@ class InitiateExchangeCommand:
         public_key_env_name: Optional[str] = getattr(args, "public_key_env", None)
         output_path_str: Optional[str] = getattr(args, "output", None)
         hashing_secret: Optional[str] = getattr(args, "hashing_secret", None)
+        hashing_secret_stdin: bool = getattr(args, "hashing_secret_stdin", False)
+        hashing_secret_env_name: Optional[str] = getattr(args, "hashing_secret_env", None)
         curve: Optional[str] = getattr(args, "curve", None)
         force: bool = getattr(args, "force", False)
         local_private_key_path_str: Optional[str] = getattr(args, "local_private_key", None)
@@ -166,6 +183,13 @@ class InitiateExchangeCommand:
                     "Unsupported curve '%s'. Valid options are: %s",
                     curve,
                     ", ".join(SUPPORTED_CURVES),
+                )
+                return 1
+
+            if public_key_stdin and hashing_secret_stdin:
+                logger.error(
+                    "Cannot combine --public-key-stdin and --hashingsecret-stdin because both consume stdin. "
+                    "Use an environment-variable or file-based input for one of them."
                 )
                 return 1
 
@@ -232,6 +256,12 @@ class InitiateExchangeCommand:
                 resolved_curve = curve or "P-256"
                 private_pem, local_public_pem = generate_key_pair(resolved_curve)
 
+            resolved_hashing_secret = InitiateExchangeCommand._resolve_hashing_secret(
+                hashing_secret,
+                hashing_secret_stdin=hashing_secret_stdin,
+                hashing_secret_env_name=hashing_secret_env_name,
+            )
+
             if persist_local_key_files:
                 if not force and (private_key_path.exists() or public_key_path_local.exists()):
                     logger.error(
@@ -245,7 +275,6 @@ class InitiateExchangeCommand:
                 write_key(private_key_path, private_pem, 0o600, overwrite=force)
                 write_key(public_key_path_local, local_public_pem, 0o644, overwrite=force)
 
-            resolved_hashing_secret = InitiateExchangeCommand._resolve_hashing_secret(hashing_secret)
             config = build_exchange_envelope(
                 exchange_name=name,
                 hashing_secret=resolved_hashing_secret,
@@ -274,15 +303,34 @@ class InitiateExchangeCommand:
         return 0
 
     @staticmethod
-    def _resolve_hashing_secret(hashing_secret: Optional[str]) -> bytes:
+    def _resolve_hashing_secret(
+        hashing_secret: Optional[str],
+        hashing_secret_stdin: bool = False,
+        hashing_secret_env_name: Optional[str] = None,
+    ) -> bytes:
         """Return the provided hashing secret as bytes, or generate a secure random one.
 
         Args:
             hashing_secret: Caller-supplied secret string, or ``None`` to auto-generate.
+            hashing_secret_stdin: When true, read the hashing secret bytes from stdin.
+            hashing_secret_env_name: Environment variable name containing the hashing secret.
 
         Returns:
             The hashing secret as raw bytes.
         """
+        if hashing_secret_stdin:
+            hashing_secret_bytes = read_required_stdin_bytes("--hashingsecret-stdin", "hashing secret")
+            if hashing_secret_bytes.endswith(b"\r\n"):
+                return hashing_secret_bytes[:-2]
+            if hashing_secret_bytes.endswith(b"\n"):
+                return hashing_secret_bytes[:-1]
+            return hashing_secret_bytes
+        if hashing_secret_env_name:
+            return read_required_env_bytes(
+                "--hashingsecret-env",
+                hashing_secret_env_name,
+                "hashing secret",
+            )
         if hashing_secret:
             return hashing_secret.encode()
         return secrets.token_bytes(32)

@@ -138,7 +138,9 @@ Generates, reuses, or derives a sender key pair, encrypts a hashing secret into 
 | `--public-key-env`         |       | Yes\*    |                            | Read the partner's public key PEM from the named environment variable                                             |
 | `--name`                   | `-n`  | No       | `opentoken-<ISO8601-date>` | Base name for local key files                                                                                     |
 | `--output`                 | `-o`  | No       | `./<name>.exchange.json`   | Output path for the exchange config JSON                                                                          |
-| `--hashingsecret`          |       | No       | randomly generated         | Hashing secret to encrypt (omit to auto-generate a secure value)                                                  |
+| `--hashingsecret`          |       | No\*\*   | randomly generated         | Hashing secret to encrypt when you intentionally pass it on the command line                                      |
+| `--hashingsecret-stdin`    |       | No\*\*   | `false`                    | Read the hashing secret from stdin instead of passing it on the command line                                      |
+| `--hashingsecret-env`      |       | No\*\*   |                            | Read the hashing secret from the named environment variable                                                       |
 | `--curve`                  | `-c`  | No       | `P-256`                    | Elliptic curve for generated keys: `P-256`, `P-384`, or `P-521`                                                   |
 | `--force`                  |       | No       | `false`                    | Overwrite existing key files and exchange config                                                                  |
 | `--sender-private-key`     |       | No       |                            | Reuse an existing sender private key PEM for the sender-side recipient entry instead of generating a new key pair |
@@ -153,6 +155,8 @@ Generates, reuses, or derives a sender key pair, encrypts a hashing secret into 
 `<output>` can be decrypted by either side with its own matching private key. The JSON is still sensitive, but it does **not** contain private key material.
 
 \* Provide one of `--public-key`, `--public-key-stdin`, or `--public-key-env`.
+
+\*\* Provide at most one of `--hashingsecret`, `--hashingsecret-stdin`, or `--hashingsecret-env`. If you omit all three, OpenToken generates a secure random hashing secret. For pre-existing secrets, prefer `--hashingsecret-env` or `--hashingsecret-stdin` so the secret does not appear in shell history or process arguments. Because stdin can only be consumed once per command, `--hashingsecret-stdin` cannot be combined with `--public-key-stdin`.
 
 **Example:**
 
@@ -183,6 +187,18 @@ To read the partner public key from stdin as an alternative to `--public-key`:
 cat ./recipient-org.public.pem | opentoken initiate-exchange \
   --name sender-q2 \
   --public-key-stdin \
+  --output ./sender-q2.exchange.json
+```
+
+To provide an existing hashing secret without exposing it in the process argument list:
+
+```bash
+export OT_HASHING_SECRET="$(az keyvault secret show --vault-name my-vault --name hashing-secret --query value -o tsv)"
+
+opentoken initiate-exchange \
+  --name sender-q2 \
+  --public-key ./recipient-org.public.pem \
+  --hashingsecret-env OT_HASHING_SECRET \
   --output ./sender-q2.exchange.json
 ```
 

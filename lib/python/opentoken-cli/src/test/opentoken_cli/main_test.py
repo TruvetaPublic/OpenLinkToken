@@ -568,6 +568,15 @@ class TestInitiateExchangeViaMain:
         assert "--public-key-env" in captured.out
         assert "--sender-private-key-env" in captured.out
 
+    def test_initiate_exchange_help_lists_safe_hashing_secret_inputs(self, capsys):
+        """Subcommand help should advertise non-argv hashing-secret input modes."""
+        exit_code = OpenTokenCommand.execute(["initiate-exchange", "--help"])
+
+        captured = capsys.readouterr()
+        assert exit_code == 0
+        assert "--hashingsecret-env" in captured.out
+        assert "--hashingsecret-stdin" in captured.out
+
     def test_initiate_exchange_succeeds_with_valid_inputs(self, tmp_path):
         """initiate-exchange returns 0 for a complete valid invocation."""
         from unittest.mock import patch

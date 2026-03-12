@@ -64,6 +64,13 @@ opentoken initiate-exchange \
   --public-key-env OT_PARTNER_PUBLIC_KEY \
   --sender-private-key-env OT_SENDER_PRIVATE_KEY \
   --name sender-q2
+
+# Read a pre-existing hashing secret from an environment variable instead of argv
+OT_HASHING_SECRET="$(az keyvault secret show --vault-name my-vault --name hashing-secret --query value -o tsv)" \
+opentoken initiate-exchange \
+  --public-key partner.public.pem \
+  --hashingsecret-env OT_HASHING_SECRET \
+  --name sender-q2
 ```
 
 `--public-key-stdin` is an alternative to `--public-key PATH`, not a
@@ -73,6 +80,11 @@ replacement for the existing file-based flow.
 two independent key references in one command without relying on a shared stdin
 stream. When `--sender-private-key-env` is used, the sender key stays in memory
 for the command run and OpenToken does not write local sender key files.
+
+For pre-existing hashing secrets, prefer `--hashingsecret-env ENV_VAR` or
+`--hashingsecret-stdin` over `--hashingsecret` so the secret does not appear in
+shell history or process arguments. Because stdin can only be consumed once per
+command, `--hashingsecret-stdin` cannot be combined with `--public-key-stdin`.
 
 ### Exchange Secret Validation
 
