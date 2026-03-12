@@ -17,6 +17,7 @@ import pytest
 from opentoken_cli.commands.initiate_exchange_command import InitiateExchangeCommand
 from opentoken_cli.commands.open_token_command import OpenTokenCommand
 from opentoken_cli.util.ec_key_utils import SUPPORTED_CURVES, generate_key_pair, public_key_fingerprint
+from opentoken_cli.util.exchange_jwe import decrypt_exchange_envelope
 from opentoken_cli.util.stdin_utils import read_required_env_bytes
 
 # ---------------------------------------------------------------------------
@@ -76,6 +77,11 @@ def _assert_recipient_headers(config: dict, curve: str, expected_kids: set[str])
         assert isinstance(epk["y"], str)
         assert epk["y"]
         assert "d" not in epk
+
+
+def _recipient_headers_by_kid(config: dict) -> dict[str, dict]:
+    """Return recipient headers indexed by recipient kid."""
+    return {entry["header"]["kid"]: entry["header"] for entry in config["recipients"]}
 
 
 # ---------------------------------------------------------------------------
@@ -465,6 +471,49 @@ class TestInitiateExchangeCommandIntegration:
 
         assert (tmp_path / ".opentoken" / "provided-local.private.pem").read_bytes() == local_private_pem
         assert (tmp_path / ".opentoken" / "provided-local.public.pem").read_bytes() == local_public_pem
+
+    def test_exchange_config_supports_mixed_sender_and_recipient_curves(self, tmp_path):
+        """Different sender and recipient curves can decrypt the same exchange payload."""
+        partner_private_pem, partner_public_pem = generate_key_pair("P-256")
+        partner_pem_path = tmp_path / "partner-p256.public.pem"
+        partner_pem_path.write_bytes(partner_public_pem)
+        output_path = tmp_path / "mixed-curves.exchange.json"
+        plaintext_secret = "mixed-curve-secret"
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "mixed-curves",
+                    "--public-key",
+                    str(partner_pem_path),
+                    "--output",
+                    str(output_path),
+                    "--curve",
+                    "P-384",
+                    "--hashingsecret",
+                    plaintext_secret,
+                ]
+            )
+
+        assert exit_code == 0
+
+        config = json.loads(output_path.read_text())
+        sender_private_pem = (tmp_path / ".opentoken" / "mixed-curves.private.pem").read_bytes()
+        sender_public_pem = (tmp_path / ".opentoken" / "mixed-curves.public.pem").read_bytes()
+
+        sender_payload = json.loads(decrypt_exchange_envelope(config, sender_private_pem))
+        recipient_payload = json.loads(decrypt_exchange_envelope(config, partner_private_pem))
+
+        assert sender_payload == recipient_payload
+        assert sender_payload["curve"] == "P-384"
+        assert sender_payload["senderKeyFingerprint"] == public_key_fingerprint(sender_public_pem)
+        assert sender_payload["recipientKeyFingerprint"] == public_key_fingerprint(partner_public_pem)
+
+        recipient_headers = _recipient_headers_by_kid(config)
+        assert recipient_headers[_fingerprint_to_kid(sender_public_pem)]["epk"]["crv"] == "P-384"
+        assert recipient_headers[_fingerprint_to_kid(partner_public_pem)]["epk"]["crv"] == "P-256"
 
     def test_exchange_config_rejects_removed_local_private_key_flag(self, tmp_path):
         """The unreleased --local-private-key flag is rejected now that sender terminology is canonical."""
