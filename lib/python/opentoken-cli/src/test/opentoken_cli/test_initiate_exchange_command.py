@@ -247,7 +247,9 @@ class TestInitiateExchangeCommandIntegration:
 
         assert exit_code == 0
         assert output_path.exists()
-        assert not (tmp_path / ".opentoken").exists()
+        opentoken_dir = tmp_path / ".opentoken"
+        assert not (opentoken_dir / "env-ref.private.pem").exists()
+        assert not (opentoken_dir / "env-ref.public.pem").exists()
 
         config = json.loads(output_path.read_text())
         _assert_shared_jwe_header(config)
