@@ -181,8 +181,8 @@ class TokenizeCommand:
             else:
                 exchange = resolve_exchange_config(
                     args.exchange_config,
-                    private_key_path=getattr(args, "private_key", None),
-                    private_key_env=getattr(args, "private_key_env", None),
+                    private_key_path=args.private_key,
+                    private_key_env=args.private_key_env,
                 )
                 logger.info(f"Exchange config: {exchange.path}")
                 TokenizeCommand._process_tokens(

@@ -143,8 +143,8 @@ class PackageCommand:
         try:
             exchange = resolve_exchange_config(
                 args.exchange_config,
-                private_key_path=getattr(args, "private_key", None),
-                private_key_env=getattr(args, "private_key_env", None),
+                private_key_path=args.private_key,
+                private_key_env=args.private_key_env,
             )
             encryption_key = derive_transport_encryption_key(exchange)
             logger.info(f"Exchange config: {exchange.path}")

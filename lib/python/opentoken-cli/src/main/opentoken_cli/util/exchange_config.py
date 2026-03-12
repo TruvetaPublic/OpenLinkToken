@@ -46,7 +46,21 @@ def resolve_exchange_config(
     private_key_path: str | None = None,
     private_key_env: str | None = None,
 ) -> ResolvedExchangeConfig:
-    """Load, validate, and decrypt an exchange config plus its hashing secret."""
+    """Load, validate, and decrypt an exchange config plus its hashing secret.
+
+    Args:
+        exchange_config_path: Explicit exchange-config path, or ``None`` to use the
+            default date-based filename in the current working directory.
+        private_key_path: Optional path to a PEM private key used to decrypt the
+            JWE envelope.
+        private_key_env: Optional environment variable containing the PEM private
+            key. Mutually exclusive with ``private_key_path``.
+
+    Returns:
+        A ``ResolvedExchangeConfig`` containing the parsed envelope, decrypted
+        payload, resolved private key material, resolved participant role, and the
+        decoded raw hashing secret bytes.
+    """
     config_path = Path(exchange_config_path) if exchange_config_path else default_exchange_config_path()
     if not config_path.exists():
         raise FileNotFoundError(
@@ -89,7 +103,22 @@ def resolve_exchange_config(
 
 
 def derive_transport_encryption_key(exchange: ResolvedExchangeConfig) -> bytes:
-    """Derive the shared 32-byte transport key defined by the exchange config contract."""
+    """Derive the shared 32-byte transport key defined by the exchange config contract.
+
+    The resolved private key identifies which participant role is active. This
+    helper then selects the opposite public key from the version 2 exchange
+    payload, performs raw ECDH, and expands the shared secret with HKDF-SHA256
+    using the exchange identifier as the salt and the OpenToken transport-key
+    context string as HKDF info.
+
+    Args:
+        exchange: Resolved exchange-config state returned by
+            :func:`resolve_exchange_config`.
+
+    Returns:
+        The derived 32-byte symmetric transport key used by ``package``,
+        ``encrypt``, and ``decrypt``.
+    """
     sender_public_key = exchange.payload.get("senderPublicKey")
     recipient_public_key = exchange.payload.get("recipientPublicKey")
     exchange_id = exchange.payload.get("exchangeId")

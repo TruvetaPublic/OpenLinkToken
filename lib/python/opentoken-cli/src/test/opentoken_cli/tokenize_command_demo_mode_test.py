@@ -35,7 +35,7 @@ class TestTokenizeCommandDemoMode:
         return tmp_path
 
     def _create_exchange_config(self, temp_dir: Path, name: str = "demo-mode") -> tuple[Path, Path]:
-        """Create an exchange config for tokenize normal-mode tests."""
+        """Create an exchange config and return ``(exchange_config_path, private_key_path)``."""
         _, partner_public_pem = generate_key_pair("P-256")
         partner_public_key_path = temp_dir / f"{name}.partner.public.pem"
         partner_public_key_path.write_bytes(partner_public_pem)
