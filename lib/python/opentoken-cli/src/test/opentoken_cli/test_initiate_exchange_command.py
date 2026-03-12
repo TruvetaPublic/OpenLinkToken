@@ -161,6 +161,18 @@ class TestInitiateExchangeCommandUnit:
         InitiateExchangeCommand._write_config(path, {"ok": True})
         assert path.exists()
 
+    def test_write_config_rejects_symlink_output_path(self, tmp_path):
+        """_write_config rejects a symbolic-link output path instead of following it."""
+        target_path = tmp_path / "target.exchange.json"
+        target_path.write_text('{"target": true}', encoding="utf-8")
+        symlink_path = tmp_path / "link.exchange.json"
+        symlink_path.symlink_to(target_path)
+
+        with pytest.raises(OSError, match="must not be a symbolic link"):
+            InitiateExchangeCommand._write_config(symlink_path, {"new": True})
+
+        assert json.loads(target_path.read_text(encoding="utf-8")) == {"target": True}
+
 
 # ---------------------------------------------------------------------------
 # Integration tests via OpenTokenCommand.execute

@@ -5,6 +5,7 @@ Copyright (c) Truveta. All rights reserved.
 import argparse
 import json
 import logging
+import os
 import secrets
 from datetime import datetime, timezone
 from pathlib import Path
@@ -308,8 +309,19 @@ class InitiateExchangeCommand:
         Raises:
             FileExistsError: If the file exists and ``overwrite`` is ``False``.
         """
+        if path.is_symlink():
+            raise OSError(f"Exchange config path {path} must not be a symbolic link.")
+
         if not overwrite and path.exists():
             raise FileExistsError(f"Exchange config '{path}' already exists. Use --force to overwrite.")
 
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
+        flags = os.O_WRONLY | os.O_CREAT
+        flags |= os.O_TRUNC if overwrite else os.O_EXCL
+        if hasattr(os, "O_NOFOLLOW"):
+            flags |= os.O_NOFOLLOW
+
+        file_descriptor = os.open(path, flags, 0o600)
+        with os.fdopen(file_descriptor, "w", encoding="utf-8") as file_handle:
+            json.dump(config, file_handle, indent=2)
+            file_handle.write("\n")
