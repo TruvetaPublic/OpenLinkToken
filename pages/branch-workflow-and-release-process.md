@@ -260,10 +260,10 @@ A: No! The `auto-version-bump` workflow extracts the version from your `release/
 3. Open a PR to `main`.
 4. After merge, the `auto-release` workflow will:
 
-- Tag the release
-- Create the GitHub release
-- Open a sync PR from `main` → `develop` so the hotfix is also available in `develop`
-  This is equivalent to Gitflow’s `hotfix/*` flow (hotfix from `main`, merged back to both `main` and `develop`), but implemented using `release/*` naming plus automation.
+    - Tag the release
+    - Create the GitHub release
+    - Open a sync PR from `main` → `develop` so the hotfix is also available in `develop`
+    This is equivalent to Gitflow’s `hotfix/*` flow (hotfix from `main`, merged back to both `main` and `develop`), but implemented using `release/*` naming plus automation.
 
 **Q: Can I bypass branch protection?**
 A: Repository admins can override branch protection, but it's strongly discouraged. Follow the release process to maintain code quality and stability.
