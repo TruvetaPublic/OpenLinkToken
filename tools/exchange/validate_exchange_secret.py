@@ -194,7 +194,7 @@ def main() -> int:
         print(f"Failed to decrypt exchange secret: {error}", file=sys.stderr)
         return 1
 
-    print(f"Recovered hashing secret (base64): {base64.b64encode(plaintext_secret).decode('ascii')}")
+    print(f"Recovered hashing secret ({len(plaintext_secret)} bytes).")
     if args.expected_secret is not None:
         if plaintext_secret != args.expected_secret.encode("utf-8"):
             print("Recovered secret does not match expected secret.", file=sys.stderr)
