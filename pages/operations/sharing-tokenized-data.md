@@ -50,6 +50,11 @@ Organizations often need to identify overlapping individuals across datasets wit
 
 The two-command ECDH bootstrap workflow lets partners establish a shared hashing secret without transmitting it in plaintext. Only the JSON exchange config — containing the **encrypted** secret — needs to leave the sender's environment.
 
+For this workflow:
+
+- `sender` means the party that runs `opentoken initiate-exchange` and creates the exchange artifact
+- `recipient` means the counterparty whose public key is supplied to `initiate-exchange` and who later decrypts with the matching private key
+
 ### Overview
 
 ```text
@@ -90,47 +95,89 @@ opentoken initiate-exchange \
   --output ./sender-q2.exchange.json
 ```
 
+To provide the same partner public key via stdin instead of `--public-key`:
+
+```bash
+cat ./recipient-org.public.pem | \
+  opentoken initiate-exchange \
+    --name sender-q2 \
+    --public-key-stdin \
+    --output ./sender-q2.exchange.json
+```
+
+To provide both the recipient public key and the sender private key by
+reference in one command, use environment variables:
+
+```bash
+OT_RECIPIENT_PUBLIC_KEY="$(az keyvault secret show --vault-name my-vault --name recipient-public-key --query value -o tsv)" \
+OT_SENDER_PRIVATE_KEY="$(az keyvault secret show --vault-name my-vault --name sender-private-key --query value -o tsv)" \
+opentoken initiate-exchange \
+  --name sender-q2 \
+  --public-key-env OT_RECIPIENT_PUBLIC_KEY \
+  --sender-private-key-env OT_SENDER_PRIVATE_KEY \
+  --output ./sender-q2.exchange.json
+```
+
 This:
 
-1. Generates a local ECDH key pair for the sender under `~/.opentoken/`.
+1. Generates a local ECDH key pair for the sender under `~/.opentoken/`, reuses one supplied with `--sender-private-key`, or derives one from `--sender-private-key-env`.
 2. Generates a secure random hashing secret (or accepts one via `--hashingsecret`).
-3. Derives a shared secret via ECDH from the sender's private key and the recipient's public key.
-4. Expands the shared secret into an AES-256 key via HKDF.
-5. Encrypts the hashing secret with AES-256-GCM and writes `sender-q2.exchange.json`.
+3. Encrypts the hashing secret into a multi-recipient JWE JSON envelope.
+4. Adds one JWE recipient entry for the sender's public key and one for the recipient's public key.
+5. Writes `sender-q2.exchange.json` without embedding any private key material.
 
-By default, the exchange config contains a nested `localKey` object with the sender's local EC public key, public-key fingerprint, private key, private-key fingerprint, and basename, plus a nested `partnerKey` object with the partner public key and fingerprint.
+This means the same exchange artifact can be decrypted by either side with its own private key, but the JSON alone is not enough to recover the hashing secret.
 
-This makes `sender-q2.exchange.json` a self-contained bundle that can be moved to another system with no local key files, but it also means the JSON is a secret-bearing artifact and must be protected accordingly.
+When `--sender-private-key-env` is used, OpenToken derives the sender public key
+from the referenced private key in memory and skips writing sender key files to
+`~/.opentoken/`.
 
-If you want to control which local private key is embedded instead of generating a new one, use `--local-private-key`:
+If you want to keep using an existing sender private key instead of generating a new one, use `--sender-private-key`:
 
 ```bash
 opentoken initiate-exchange \
   --name sender-q2 \
   --public-key ./recipient-org.public.pem \
-  --local-private-key ~/.opentoken/sender-q2.private.pem \
+  --sender-private-key ~/.opentoken/sender-q2.private.pem \
   --output ./sender-q2.exchange.json
 ```
 
 ### Step 3 — Sender transfers the exchange config
 
-Transfer `sender-q2.exchange.json` to the recipient over any channel. The hashing secret inside is encrypted, and the JSON carries the key material needed to recover it on another system. For a field-by-field format reference, see `docs/exchange-config-format.md`.
+Transfer `sender-q2.exchange.json` to the recipient over any channel. The hashing secret inside is encrypted, and the file can be decrypted by the sender or recipient only if the matching private key is available locally. For a field-by-field format reference, see `docs/exchange-config-format.md`.
 
-### Step 4 — Recipient recovers the hashing secret
+### Step 4 — Sender or recipient recovers the hashing secret
 
-The self-contained bundle can be validated with the JSON alone:
+Either side can decrypt the same exchange artifact with its own private key. If a matching key already exists under `~/.opentoken/`, the validator can resolve it automatically:
 
 ```bash
 python tools/exchange/validate_exchange_secret.py \
   --exchange-config sender-q2.exchange.json
 ```
 
-You can still validate with an external matching private key if you prefer:
+You can also point at a specific private key file with `--private-key`. For example, the recipient can validate with its private key:
 
 ```bash
 python tools/exchange/validate_exchange_secret.py \
   --exchange-config sender-q2.exchange.json \
   --private-key ~/.opentoken/recipient-org.private.pem
+```
+
+The sender can do the same with the sender private key:
+
+```bash
+python tools/exchange/validate_exchange_secret.py \
+  --exchange-config sender-q2.exchange.json \
+  --private-key ~/.opentoken/sender-q2.private.pem
+```
+
+To provide the same private key via stdin instead of `--private-key`, pipe the PEM into `--private-key-stdin`:
+
+```bash
+cat ~/.opentoken/recipient-org.private.pem | \
+  python tools/exchange/validate_exchange_secret.py \
+    --exchange-config sender-q2.exchange.json \
+    --private-key-stdin
 ```
 
 If the sender provided a known plaintext via `opentoken initiate-exchange --hashingsecret ...`, the recipient can also perform an explicit pass/fail check:
@@ -142,16 +189,7 @@ python tools/exchange/validate_exchange_secret.py \
   --expected-secret "$HASHING_SECRET"
 ```
 
-Successful AES-GCM decryption proves the available key material matches the exchange config. If decryption fails, the key material does not correspond to that exchange.
-
-For exchange JSON files generated before `partnerKey.publicKey` was embedded, sender-side validation needs the original partner public key too:
-
-```bash
-python tools/exchange/validate_exchange_secret.py \
-  --exchange-config sender-q2.exchange.json \
-  --private-key ~/.opentoken/sender-q2.private.pem \
-  --counterparty-public-key ./recipient-org.public.pem
-```
+Successful AES-GCM decryption proves the available key material matches one of the JWE recipient entries in the exchange config. If decryption fails, the key material does not correspond to that exchange.
 
 ### Step 5 — Both parties tokenize using the recovered secret
 

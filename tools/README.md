@@ -41,26 +41,70 @@ requires `jwcrypto`.
 
 ## Exchange Tools
 
+### Initiating an Exchange
+
+Use `opentoken initiate-exchange` to create an encrypted exchange artifact for
+the sender key and the partner's public key.
+
+```bash
+# Read the partner public key from a file
+opentoken initiate-exchange \
+  --public-key partner.public.pem \
+  --name sender-q2
+
+# Read the same partner public key from stdin instead
+cat partner.public.pem | opentoken initiate-exchange \
+  --public-key-stdin \
+  --name sender-q2
+
+# Read both keys by environment-variable reference in one command
+OT_PARTNER_PUBLIC_KEY="$(az keyvault secret show --vault-name my-vault --name partner-public-key --query value -o tsv)" \
+OT_SENDER_PRIVATE_KEY="$(az keyvault secret show --vault-name my-vault --name sender-private-key --query value -o tsv)" \
+opentoken initiate-exchange \
+  --public-key-env OT_PARTNER_PUBLIC_KEY \
+  --sender-private-key-env OT_SENDER_PRIVATE_KEY \
+  --name sender-q2
+```
+
+`--public-key-stdin` is an alternative to `--public-key PATH`, not a
+replacement for the existing file-based flow.
+
+`--public-key-env ENV_VAR` and `--sender-private-key-env ENV_VAR` let you pass
+two independent key references in one command without relying on a shared stdin
+stream. When `--sender-private-key-env` is used, the sender key stays in memory
+for the command run and OpenToken does not write local sender key files.
+
 ### Exchange Secret Validation
 
 Use `tools/exchange/validate_exchange_secret.py` to verify that an
-`opentoken initiate-exchange` bundle can actually be decrypted with the
-bundled or supplied key material.
+`opentoken initiate-exchange` exchange artifact can actually be decrypted with
+either matching private key.
 
 ```bash
-# Validate a self-contained exchange bundle
+# Let the validator resolve a matching sender or recipient private key from ~/.opentoken/
 python tools/exchange/validate_exchange_secret.py \
   --exchange-config sender-q2.exchange.json
 
-# Validate an older bundle with an external private key
+# Validate with an explicit sender or recipient private key PEM
 python tools/exchange/validate_exchange_secret.py \
   --exchange-config sender-q2.exchange.json \
   --private-key ~/.opentoken/recipient-org.private.pem
+
+# Validate with the same private key PEM provided on stdin instead
+cat ~/.opentoken/recipient-org.private.pem | \
+  python tools/exchange/validate_exchange_secret.py \
+    --exchange-config sender-q2.exchange.json \
+    --private-key-stdin
 ```
 
-The helper also supports `--expected-secret` for explicit pass/fail checks and
-`--counterparty-public-key` for older exchange bundles that predate embedded
-partner public-key material.
+The exchange artifact is a version 1 multi-recipient JWE JSON envelope with
+top-level `version`, `protected`, `iv`, `ciphertext`, `tag`, and `recipients`
+fields.
+The validator accepts `--expected-secret` for an explicit pass/fail comparison
+after decryption. If `--private-key` is omitted, it scans `~/.opentoken/` for a
+private key whose fingerprint-derived `kid` matches one of the JWE recipients.
+`--private-key-stdin` is an alternative to `--private-key PATH`, so both the
+existing file-based option and stdin-based secret handling remain supported.
 
 ## Hash Tools
 

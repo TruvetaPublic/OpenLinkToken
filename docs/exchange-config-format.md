@@ -2,111 +2,179 @@
 
 ## Overview
 
-The exchange config is a JSON bundle produced by `opentoken initiate-exchange`.
+`opentoken initiate-exchange` writes a single JSON exchange artifact that contains:
 
-Its purpose is to carry the encrypted hashing secret plus the key material needed
-to recover that secret on another system. In the current format, the bundle is
-self-contained by default and is therefore a **secret-bearing artifact**.
+- a top-level `version` field with value `1`
+- a JSON JWE envelope with shared ciphertext fields
+- two JWE recipients: one for the sender's local key and one for the partner's key
+
+Both sides can decrypt the same file because both public keys are included as JWE
+recipients when the artifact is created. The file does **not** embed any private
+key material.
+
+## Roles
+
+- `sender`: the party that runs `opentoken initiate-exchange`, creates the
+  exchange artifact, and contributes the local sender key entry written into
+  `recipients`
+- `recipient`: the counterparty whose public key is supplied to
+  `opentoken initiate-exchange` and whose matching private key can decrypt the
+  recipient entry in `recipients`
 
 ## Top-Level Structure
 
-The file is JSON with these top-level fields:
+The exchange config is a JSON object with these fields:
 
-| Field                    | Type    | Description                                                                               |
-| ------------------------ | ------- | ----------------------------------------------------------------------------------------- |
-| `version`                | integer | Format version for the exchange bundle.                                                   |
-| `exchangeName`           | string  | Logical name of the exchange, usually matching the local key basename.                    |
-| `keyAgreement`           | string  | Key agreement mechanism used to derive the wrapping key. Currently `ECDH`.                |
-| `curve`                  | string  | Elliptic curve used by the local key pair. Currently one of `P-256`, `P-384`, or `P-521`. |
-| `localKey`               | object  | Nested local key material for the bundle. See below.                                      |
-| `partnerKey`             | object  | Nested partner key material for the bundle. See below.                                    |
-| `kdf`                    | object  | Parameters used to derive the AES key from the ECDH shared secret.                        |
-| `encryption`             | object  | Parameters used to encrypt the hashing secret.                                            |
-| `encryptedHashingSecret` | string  | Base64-encoded AES-GCM ciphertext for the hashing secret.                                 |
+| Field        | Type    | Description                                                                         |
+| ------------ | ------- | ----------------------------------------------------------------------------------- |
+| `version`    | integer | Artifact format marker. Current value: `1`.                                         |
+| `protected`  | string  | Base64url-encoded protected JOSE header shared by all recipients.                   |
+| `iv`         | string  | Base64url AES-GCM initialization vector for the ciphertext.                         |
+| `ciphertext` | string  | Base64url ciphertext for the encrypted payload.                                     |
+| `tag`        | string  | Base64url AES-GCM authentication tag.                                               |
+| `recipients` | array   | Per-recipient JWE entries. OpenToken writes one sender entry and one partner entry. |
 
-## `localKey`
+This is a JWE JSON serialization with shared ciphertext fields and per-recipient
+key-wrapping metadata.
 
-The `localKey` object keeps the local public and private key material together.
+## Protected Header
 
-| Field                   | Type   | Description                                                                             |
-| ----------------------- | ------ | --------------------------------------------------------------------------------------- |
-| `basename`              | string | Base name used for the local key files under `~/.opentoken/`.                           |
-| `publicKey`             | string | PEM-encoded public key corresponding to `privateKey`.                                   |
-| `publicKeyFingerprint`  | string | SHA-256 fingerprint of `publicKey` in colon-separated uppercase hex.                    |
-| `privateKey`            | string | PEM-encoded local private key used for ECDH and embedded for self-contained bundle use. |
-| `privateKeyFingerprint` | string | SHA-256 fingerprint of the embedded private key's corresponding public key.             |
+The `protected` value decodes to a JSON object shared by all recipients:
 
-## `partnerKey`
+| Field | Type   | Description                                                                 |
+| ----- | ------ | --------------------------------------------------------------------------- |
+| `typ` | string | JWE type marker. Current value: `opentoken-exchange+jwe`.                   |
+| `cty` | string | Payload content type. Current value: `application/opentoken-exchange+json`. |
+| `enc` | string | Content-encryption algorithm. Current value: `A256GCM`.                     |
 
-The `partnerKey` object keeps the partner public key together with its fingerprint.
+Example decoded protected header:
 
-| Field                  | Type   | Description                                                          |
-| ---------------------- | ------ | -------------------------------------------------------------------- |
-| `publicKey`            | string | PEM-encoded public key supplied for the exchange partner.            |
-| `publicKeyFingerprint` | string | SHA-256 fingerprint of `publicKey` in colon-separated uppercase hex. |
+```json
+{
+  "typ": "opentoken-exchange+jwe",
+  "cty": "application/opentoken-exchange+json",
+  "enc": "A256GCM"
+}
+```
 
-## `kdf`
+## Recipient Entries
 
-| Field       | Type   | Description                                           |
-| ----------- | ------ | ----------------------------------------------------- |
-| `algorithm` | string | Key derivation function. Currently `HKDF`.            |
-| `hash`      | string | Digest used by HKDF. Currently `SHA-256`.             |
-| `info`      | string | HKDF `info` value. Currently `opentoken-exchange-v1`. |
+Each item in `recipients` contains the wrapped key for one decrypting party.
 
-## `encryption`
+| Field           | Type   | Description                                                  |
+| --------------- | ------ | ------------------------------------------------------------ |
+| `encrypted_key` | string | Base64url wrapped content-encryption key for this recipient. |
+| `header`        | object | Recipient-specific JOSE header.                              |
 
-| Field           | Type    | Description                                          |
-| --------------- | ------- | ---------------------------------------------------- |
-| `algorithm`     | string  | Symmetric encryption algorithm. Currently `AES-GCM`. |
-| `keyLength`     | integer | AES key length in bits. Currently `256`.             |
-| `nonceEncoding` | string  | Encoding used for the nonce. Currently `base64`.     |
-| `nonce`         | string  | Base64-encoded AES-GCM nonce.                        |
+### Recipient Header
 
-## Example
+| Field | Type   | Description                                                                      |
+| ----- | ------ | -------------------------------------------------------------------------------- |
+| `alg` | string | Key management algorithm. Current value: `ECDH-ES+A256KW`.                       |
+| `kid` | string | Portable recipient identifier derived from the recipient public-key fingerprint. |
+| `epk` | object | Ephemeral EC public key used for this recipient's JWE key agreement.             |
+
+`kid` is not a friendly key name. OpenToken derives it from the public-key
+fingerprint and writes it in `sha256:<lowercase-hyphenated-hex>` form.
+Friendly names such as `sender-q2` remain local operator-facing names for files in
+`~/.opentoken/`; they are not the portable identifiers embedded in the artifact.
+
+Example recipient entry:
+
+```json
+{
+  "encrypted_key": "Base64UrlWrappedKeyHere",
+  "header": {
+    "alg": "ECDH-ES+A256KW",
+    "kid": "sha256:11-22-33-44-55-66-77-88-99-aa-bb-cc-dd-ee-ff-00",
+    "epk": {
+      "kty": "EC",
+      "crv": "P-256",
+      "x": "...",
+      "y": "..."
+    }
+  }
+}
+```
+
+## Encrypted Payload
+
+After decryption, the payload is JSON with these fields:
+
+| Field                     | Type   | Description                                                  |
+| ------------------------- | ------ | ------------------------------------------------------------ |
+| `exchangeName`            | string | Logical exchange name recorded in the payload.               |
+| `hashingSecret`           | string | Hashing secret encoded as unpadded base64url text.           |
+| `hashingSecretEncoding`   | string | Encoding marker. Current value: `base64url`.                 |
+| `senderKeyFingerprint`    | string | SHA-256 fingerprint of the sender public key.                |
+| `recipientKeyFingerprint` | string | SHA-256 fingerprint of the partner public key.               |
+| `curve`                   | string | OpenToken curve name for the exchange keys, such as `P-256`. |
+| `createdAt`               | string | UTC creation timestamp in ISO 8601 `Z` form.                 |
+| `exchangeId`              | string | Random UUID used to identify the exchange artifact.          |
+
+Example decrypted payload:
+
+```json
+{
+  "exchangeName": "sender-q2",
+  "hashingSecret": "R2VuZXJhdGVkU2VjcmV0Qnl0ZXMwMTIzNDU2Nzg5MDE",
+  "hashingSecretEncoding": "base64url",
+  "senderKeyFingerprint": "AA:BB:CC:DD:EE:FF",
+  "recipientKeyFingerprint": "11:22:33:44:55:66",
+  "curve": "P-256",
+  "createdAt": "2026-03-11T21:00:00Z",
+  "exchangeId": "0f3d5f8a-3f2a-4c2f-b69d-cb1f9d08d4ab"
+}
+```
+
+## Example Serialized Artifact
 
 ```json
 {
   "version": 1,
-  "exchangeName": "sender-q2",
-  "keyAgreement": "ECDH",
-  "curve": "P-256",
-  "localKey": {
-    "basename": "sender-q2",
-    "publicKey": "-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----\n",
-    "publicKeyFingerprint": "AA:BB:CC:DD:EE:FF",
-    "privateKey": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n",
-    "privateKeyFingerprint": "AA:BB:CC:DD:EE:FF"
-  },
-  "partnerKey": {
-    "publicKey": "-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----\n",
-    "publicKeyFingerprint": "11:22:33:44:55:66"
-  },
-  "kdf": {
-    "algorithm": "HKDF",
-    "hash": "SHA-256",
-    "info": "opentoken-exchange-v1"
-  },
-  "encryption": {
-    "algorithm": "AES-GCM",
-    "keyLength": 256,
-    "nonceEncoding": "base64",
-    "nonce": "Base64NonceHere"
-  },
-  "encryptedHashingSecret": "Base64CiphertextHere"
+  "protected": "eyJ0eXAiOiJvcGVudG9rZW4tZXhjaGFuZ2UrandlIiwiY3R5IjoiYXBwbGljYXRpb24vb3BlbnRva2VuLWV4Y2hhbmdlK2pzb24iLCJlbmMiOiJBMjU2R0NNIn0",
+  "iv": "Base64UrlIvHere",
+  "ciphertext": "Base64UrlCiphertextHere",
+  "tag": "Base64UrlTagHere",
+  "recipients": [
+    {
+      "encrypted_key": "Base64UrlWrappedKeyForSenderHere",
+      "header": {
+        "alg": "ECDH-ES+A256KW",
+        "kid": "sha256:aa-bb-cc-dd-ee-ff",
+        "epk": {
+          "kty": "EC",
+          "crv": "P-256",
+          "x": "...",
+          "y": "..."
+        }
+      }
+    },
+    {
+      "encrypted_key": "Base64UrlWrappedKeyForRecipientHere",
+      "header": {
+        "alg": "ECDH-ES+A256KW",
+        "kid": "sha256:11-22-33-44-55-66",
+        "epk": {
+          "kty": "EC",
+          "crv": "P-256",
+          "x": "...",
+          "y": "..."
+        }
+      }
+    }
+  ]
 }
 ```
 
-## Security Notes
+## Decryption and Validation Notes
 
-- This file now contains `localKey.privateKey`, so possession of the file is
-  sufficient to recover the hashing secret.
-- Treat the exchange config like any other secret-bearing credential bundle.
-- If you need to control which private key is embedded, use
-  `opentoken initiate-exchange --local-private-key <path>`.
-
-## Compatibility Notes
-
-- Older exchange bundles may store legacy snake_case field names and older
-  top-level local key fields instead of the current camelCase names.
-- `tools/exchange/validate_exchange_secret.py` remains backward-compatible with those
-  earlier bundles.
+- The sender and recipient can both decrypt the artifact because each side appears in
+  `recipients`.
+- The artifact alone is not enough to recover the hashing secret; the matching private
+  key must be available locally.
+- A validator or other tool can resolve a private key by the fingerprint-derived
+  `kid`, even when operators primarily know the key by a friendly local filename.
+- `tools/exchange/validate_exchange_secret.py` decrypts the payload, checks that a
+  supplied private key matches one of the recipient `kid` values, or otherwise tries to
+  resolve a matching private key from `~/.opentoken/`.

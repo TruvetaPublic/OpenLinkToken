@@ -15,8 +15,6 @@ logger = logging.getLogger(__name__)
 
 SUPPORTED_CURVES = ["P-256", "P-384", "P-521"]
 
-HKDF_INFO = b"opentoken-exchange-v1"
-
 
 def get_curve_class(curve: str):
     """Return the cryptography EC curve class for the named curve.
@@ -205,3 +203,23 @@ def public_key_fingerprint(public_pem: bytes) -> str:
     der = key.public_bytes(encoding=Encoding.DER, format=PublicFormat.SubjectPublicKeyInfo)
     digest = hashlib.sha256(der).hexdigest().upper()
     return ":".join(digest[i : i + 2] for i in range(0, len(digest), 2))
+
+
+def fingerprint_to_kid(fingerprint: str) -> str:
+    """Convert a SHA-256 public-key fingerprint into the portable JWE recipient id.
+
+    Args:
+        fingerprint: Colon-delimited hexadecimal fingerprint text.
+
+    Returns:
+        A ``kid`` value prefixed with ``sha256:`` and normalized to lowercase
+        hyphen-delimited hex.
+
+    Raises:
+        ValueError: If the fingerprint is empty after trimming whitespace.
+    """
+    normalized = fingerprint.strip()
+    if not normalized:
+        raise ValueError("Fingerprint must not be empty.")
+
+    return f"sha256:{normalized.lower().replace(':', '-')}"

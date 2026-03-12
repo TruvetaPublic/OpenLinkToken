@@ -540,6 +540,34 @@ class TestInitiateExchangeViaMain:
         captured = capsys.readouterr()
         assert "initiate-exchange" in captured.out
 
+    def test_initiate_exchange_help_describes_sender_private_key_without_embedding(self, capsys):
+        """Subcommand help should prefer --sender-private-key without implying embedding."""
+        exit_code = OpenTokenCommand.execute(["initiate-exchange", "--help"])
+
+        captured = capsys.readouterr()
+        assert exit_code == 0
+        assert "--sender-private-key" in captured.out
+        assert "--local-private-key" not in captured.out
+        assert "Reuse an existing sender private key PEM" in captured.out
+        assert "embed" not in captured.out.lower()
+
+    def test_initiate_exchange_help_lists_public_key_stdin(self, capsys):
+        """Subcommand help should advertise --public-key-stdin as an input alternative."""
+        exit_code = OpenTokenCommand.execute(["initiate-exchange", "--help"])
+
+        captured = capsys.readouterr()
+        assert exit_code == 0
+        assert "--public-key-stdin" in captured.out
+
+    def test_initiate_exchange_help_lists_env_key_references(self, capsys):
+        """Subcommand help should advertise env-var references for both partner and sender keys."""
+        exit_code = OpenTokenCommand.execute(["initiate-exchange", "--help"])
+
+        captured = capsys.readouterr()
+        assert exit_code == 0
+        assert "--public-key-env" in captured.out
+        assert "--sender-private-key-env" in captured.out
+
     def test_initiate_exchange_succeeds_with_valid_inputs(self, tmp_path):
         """initiate-exchange returns 0 for a complete valid invocation."""
         from unittest.mock import patch
