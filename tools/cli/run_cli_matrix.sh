@@ -1,0 +1,397 @@
+#!/usr/bin/env bash
+
+set -u -o pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+CLI_SOURCE_ROOT="$REPO_ROOT/lib/python/opentoken-cli/src/main"
+CORE_SOURCE_ROOT="$REPO_ROOT/lib/python/opentoken/src/main"
+
+DEFAULT_HASHING_SECRET="LocalHarnessHashingSecret"
+DEFAULT_ENCRYPTION_KEY="0123456789abcdef0123456789abcdef"
+
+PAUSE_SECONDS="0.25"
+INCLUDE_LIVE_UPDATE="false"
+AUTO_CONTINUE="false"
+DRY_RUN="false"
+KEEP_WORKSPACE="false"
+WORKSPACE_ROOT=""
+STOP_REQUESTED="false"
+
+declare -a STEP_NAMES=()
+declare -a STEP_CODES=()
+declare -a STEP_DURATIONS=()
+declare -a STEP_STDOUT_FILES=()
+declare -a STEP_STDERR_FILES=()
+
+show_usage() {
+    cat <<'EOF'
+Usage: tools/cli/run_cli_matrix.sh [OPTIONS]
+
+Run a local OpenToken CLI command matrix against the current worktree.
+The script prints each exact command before it runs, pauses between commands,
+and summarizes pass/fail counts plus the slowest command at the end.
+
+Options:
+  --pause-seconds N       Pause after each non-final command (default: 0.25)
+  --include-live-update   Also run `update --dry-run --yes` after `update --help`
+  --auto-continue         Skip confirmation prompts and run the full matrix
+  --dry-run               Print the planned commands without executing them
+  --keep-workspace        Preserve the temporary workspace after completion
+  --workspace PATH        Use a specific workspace directory instead of mktemp
+  --help                  Show this help text
+EOF
+}
+
+parse_args() {
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --pause-seconds)
+                PAUSE_SECONDS="${2:-}"
+                shift 2
+                ;;
+            --include-live-update)
+                INCLUDE_LIVE_UPDATE="true"
+                shift
+                ;;
+            --auto-continue)
+                AUTO_CONTINUE="true"
+                shift
+                ;;
+            --dry-run)
+                DRY_RUN="true"
+                shift
+                ;;
+            --keep-workspace)
+                KEEP_WORKSPACE="true"
+                shift
+                ;;
+            --workspace)
+                WORKSPACE_ROOT="${2:-}"
+                shift 2
+                ;;
+            --help)
+                show_usage
+                exit 0
+                ;;
+            *)
+                echo "Unknown option: $1" >&2
+                show_usage >&2
+                exit 1
+                ;;
+        esac
+    done
+
+    if ! python - "$PAUSE_SECONDS" <<'PY'
+import sys
+value = float(sys.argv[1])
+if value < 0:
+    raise ValueError("pause must be non-negative")
+PY
+    then
+        echo "--pause-seconds must be a non-negative number" >&2
+        exit 1
+    fi
+}
+
+setup_workspace() {
+    if [[ -n "$WORKSPACE_ROOT" ]]; then
+        mkdir -p "$WORKSPACE_ROOT"
+    else
+        WORKSPACE_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/opentoken-cli-matrix.XXXXXX")"
+    fi
+
+    INPUT_DIR="$WORKSPACE_ROOT/inputs"
+    OUTPUT_DIR="$WORKSPACE_ROOT/outputs"
+    LOG_DIR="$WORKSPACE_ROOT/logs"
+    HOME_DIR="$WORKSPACE_ROOT/home"
+    mkdir -p "$INPUT_DIR" "$OUTPUT_DIR" "$LOG_DIR" "$HOME_DIR"
+
+    PERSON_CSV="$INPUT_DIR/people.csv"
+    TOKENIZED_DEMO_CSV="$OUTPUT_DIR/tokenized-demo.csv"
+    TOKENIZED_HASH_CSV="$OUTPUT_DIR/tokenized-hash.csv"
+    ENCRYPTED_CSV="$OUTPUT_DIR/encrypted.csv"
+    DECRYPTED_CSV="$OUTPUT_DIR/decrypted.csv"
+    PACKAGED_CSV="$OUTPUT_DIR/packaged.csv"
+    EXCHANGE_JSON="$OUTPUT_DIR/local.exchange.json"
+    RECIPIENT_PUBLIC_KEY="$HOME_DIR/.opentoken/recipient.public.pem"
+
+    cat > "$PERSON_CSV" <<'EOF'
+RecordId,FirstName,LastName,PostalCode,Sex,BirthDate,SocialSecurityNumber
+demo-001,John,Doe,98004,Male,2000-01-01,123-45-6789
+demo-002,Jane,Smith,12345,Female,1990-05-15,234-56-7890
+EOF
+
+    export HOME="$HOME_DIR"
+    export PYTHONPATH="$CLI_SOURCE_ROOT:$CORE_SOURCE_ROOT${PYTHONPATH:+:$PYTHONPATH}"
+    export NO_COLOR="1"
+}
+
+cleanup() {
+    local had_failures="false"
+    local index
+    for index in "${!STEP_CODES[@]}"; do
+        if [[ "${STEP_CODES[$index]}" != "0" ]]; then
+            had_failures="true"
+            break
+        fi
+    done
+
+    if [[ "$KEEP_WORKSPACE" == "true" || "$had_failures" == "true" ]]; then
+        echo "Workspace preserved at: $WORKSPACE_ROOT"
+        return
+    fi
+
+    if [[ -n "$WORKSPACE_ROOT" && -d "$WORKSPACE_ROOT" ]]; then
+        rm -rf "$WORKSPACE_ROOT"
+    fi
+}
+
+quote_command() {
+    local quoted=""
+    local part
+    for part in "$@"; do
+        quoted+=" $(printf '%q' "$part")"
+    done
+    printf '%s' "${quoted# }"
+}
+
+duration_seconds() {
+    python - "$1" "$2" <<'PY'
+import sys
+start_ns = int(sys.argv[1])
+end_ns = int(sys.argv[2])
+print(f"{(end_ns - start_ns) / 1_000_000_000:.2f}")
+PY
+}
+
+run_step() {
+    local name="$1"
+    local pause_after="$2"
+    shift 2
+    local stdout_file="$LOG_DIR/${name}.stdout.log"
+    local stderr_file="$LOG_DIR/${name}.stderr.log"
+    local command_text
+    command_text="$(quote_command "$@")"
+
+    echo
+    echo "=== $name ==="
+    echo "command: $command_text"
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        STEP_NAMES+=("$name")
+        STEP_CODES+=("0")
+        STEP_DURATIONS+=("0.00")
+        STEP_STDOUT_FILES+=("")
+        STEP_STDERR_FILES+=("")
+        return
+    fi
+
+    local start_ns
+    start_ns="$(date +%s%N)"
+
+    "$@" >"$stdout_file" 2>"$stderr_file"
+    local rc=$?
+
+    local end_ns
+    end_ns="$(date +%s%N)"
+    local duration
+    duration="$(duration_seconds "$start_ns" "$end_ns")"
+
+    STEP_NAMES+=("$name")
+    STEP_CODES+=("$rc")
+    STEP_DURATIONS+=("$duration")
+    STEP_STDOUT_FILES+=("$stdout_file")
+    STEP_STDERR_FILES+=("$stderr_file")
+
+    echo "result: rc=$rc duration=${duration}s"
+    if [[ -s "$stdout_file" ]]; then
+        sed 's/^/  stdout | /' "$stdout_file"
+    fi
+    if [[ -s "$stderr_file" ]]; then
+        sed 's/^/  stderr | /' "$stderr_file"
+    fi
+
+}
+
+maybe_pause() {
+    local pause_after="$1"
+
+    if [[ "$pause_after" != "0" && "$pause_after" != "0.0" && "$pause_after" != "0.00" ]]; then
+        echo "pause: ${pause_after}s"
+        sleep "$pause_after"
+    fi
+}
+
+confirm_before_next_step() {
+    local next_step="$1"
+    local pause_after="$2"
+    local response=""
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        return 0
+    fi
+
+    if [[ "$AUTO_CONTINUE" == "true" ]]; then
+        maybe_pause "$pause_after"
+        return 0
+    fi
+
+    printf "Press Enter to continue to %s, or type 'q' to stop: " "$next_step"
+    if ! IFS= read -r response; then
+        echo
+        echo "Stopping because no confirmation was received."
+        STOP_REQUESTED="true"
+        return 1
+    fi
+
+    if [[ "$response" == "q" || "$response" == "quit" || "$response" == "n" || "$response" == "no" ]]; then
+        echo "Stopping at user request."
+        STOP_REQUESTED="true"
+        return 1
+    fi
+
+    maybe_pause "$pause_after"
+    return 0
+}
+
+print_summary() {
+    local total="${#STEP_NAMES[@]}"
+    local passed=0
+    local failed=0
+    local slowest_name="n/a"
+    local slowest_duration="-1"
+    local index
+
+    for index in "${!STEP_NAMES[@]}"; do
+        if [[ "${STEP_CODES[$index]}" == "0" ]]; then
+            ((passed+=1))
+        else
+            ((failed+=1))
+        fi
+
+        if python - "${STEP_DURATIONS[$index]}" "$slowest_duration" <<'PY'
+import sys
+current = float(sys.argv[1])
+slowest = float(sys.argv[2])
+sys.exit(0 if current > slowest else 1)
+PY
+        then
+            slowest_duration="${STEP_DURATIONS[$index]}"
+            slowest_name="${STEP_NAMES[$index]}"
+        fi
+    done
+
+    echo
+    echo "OpenToken CLI matrix summary"
+    echo "Commands run: $total"
+    echo "Passed: $passed"
+    echo "Failed: $failed"
+    echo "Slowest command: $slowest_name (${slowest_duration}s)"
+    echo
+    echo "Per-command results:"
+
+    for index in "${!STEP_NAMES[@]}"; do
+        local status="PASS"
+        if [[ "${STEP_CODES[$index]}" != "0" ]]; then
+            status="FAIL"
+        fi
+        printf '  %-4s %-28s %6ss  rc=%s\n' \
+            "$status" \
+            "${STEP_NAMES[$index]}" \
+            "${STEP_DURATIONS[$index]}" \
+            "${STEP_CODES[$index]}"
+    done
+}
+
+run_matrix() {
+    local -a python_cmd=(python -m opentoken_cli.main --no-update-check)
+
+    run_step "root-help" "$PAUSE_SECONDS" "${python_cmd[@]}" --help
+    confirm_before_next_step "help-overview" "$PAUSE_SECONDS" || return 0
+    run_step "help-overview" "$PAUSE_SECONDS" "${python_cmd[@]}" help
+    confirm_before_next_step "help-package" "$PAUSE_SECONDS" || return 0
+    run_step "help-package" "$PAUSE_SECONDS" "${python_cmd[@]}" help package
+    confirm_before_next_step "tokenize-help" "$PAUSE_SECONDS" || return 0
+    run_step "tokenize-help" "$PAUSE_SECONDS" "${python_cmd[@]}" tokenize --help
+    confirm_before_next_step "tokenize-demo" "$PAUSE_SECONDS" || return 0
+    run_step "tokenize-demo" "$PAUSE_SECONDS" \
+        "${python_cmd[@]}" tokenize -i "$PERSON_CSV" -t csv -o "$TOKENIZED_DEMO_CSV" --demo-mode
+    confirm_before_next_step "tokenize-hash" "$PAUSE_SECONDS" || return 0
+    run_step "tokenize-hash" "$PAUSE_SECONDS" \
+        "${python_cmd[@]}" tokenize -i "$PERSON_CSV" -t csv -o "$TOKENIZED_HASH_CSV" \
+        --hashingsecret "$DEFAULT_HASHING_SECRET"
+    confirm_before_next_step "encrypt-help" "$PAUSE_SECONDS" || return 0
+    run_step "encrypt-help" "$PAUSE_SECONDS" "${python_cmd[@]}" encrypt --help
+    confirm_before_next_step "encrypt-tokenized-output" "$PAUSE_SECONDS" || return 0
+    run_step "encrypt-tokenized-output" "$PAUSE_SECONDS" \
+        "${python_cmd[@]}" encrypt -i "$TOKENIZED_HASH_CSV" -t csv -o "$ENCRYPTED_CSV" \
+        --encryptionkey "$DEFAULT_ENCRYPTION_KEY"
+    confirm_before_next_step "decrypt-help" "$PAUSE_SECONDS" || return 0
+    run_step "decrypt-help" "$PAUSE_SECONDS" "${python_cmd[@]}" decrypt --help
+    confirm_before_next_step "decrypt-encrypted-output" "$PAUSE_SECONDS" || return 0
+    run_step "decrypt-encrypted-output" "$PAUSE_SECONDS" \
+        "${python_cmd[@]}" decrypt -i "$ENCRYPTED_CSV" -t csv -o "$DECRYPTED_CSV" \
+        --encryptionkey "$DEFAULT_ENCRYPTION_KEY"
+    confirm_before_next_step "package-help" "$PAUSE_SECONDS" || return 0
+    run_step "package-help" "$PAUSE_SECONDS" "${python_cmd[@]}" package --help
+    confirm_before_next_step "package-csv" "$PAUSE_SECONDS" || return 0
+    run_step "package-csv" "$PAUSE_SECONDS" \
+        "${python_cmd[@]}" package -i "$PERSON_CSV" -t csv -o "$PACKAGED_CSV" \
+        --hashingsecret "$DEFAULT_HASHING_SECRET" \
+        --encryptionkey "$DEFAULT_ENCRYPTION_KEY"
+    confirm_before_next_step "generate-key-pair-help" "$PAUSE_SECONDS" || return 0
+    run_step "generate-key-pair-help" "$PAUSE_SECONDS" "${python_cmd[@]}" generate-key-pair --help
+    confirm_before_next_step "generate-key-pair-recipient" "$PAUSE_SECONDS" || return 0
+    run_step "generate-key-pair-recipient" "$PAUSE_SECONDS" \
+        "${python_cmd[@]}" generate-key-pair --name recipient --force
+    confirm_before_next_step "generate-key-pair-p384" "$PAUSE_SECONDS" || return 0
+    run_step "generate-key-pair-p384" "$PAUSE_SECONDS" \
+        "${python_cmd[@]}" generate-key-pair --name recipient-p384 --curve P-384 --force
+    confirm_before_next_step "generate-key-pair-p521" "$PAUSE_SECONDS" || return 0
+    run_step "generate-key-pair-p521" "$PAUSE_SECONDS" \
+        "${python_cmd[@]}" generate-key-pair --name recipient-p521 --curve P-521 --force
+    confirm_before_next_step "initiate-exchange-help" "$PAUSE_SECONDS" || return 0
+    run_step "initiate-exchange-help" "$PAUSE_SECONDS" "${python_cmd[@]}" initiate-exchange --help
+    confirm_before_next_step "initiate-exchange-local" "$PAUSE_SECONDS" || return 0
+    run_step "initiate-exchange-local" "$PAUSE_SECONDS" \
+        "${python_cmd[@]}" initiate-exchange --name sender-local \
+        --public-key "$RECIPIENT_PUBLIC_KEY" \
+        --output "$EXCHANGE_JSON" \
+        --hashingsecret "$DEFAULT_HASHING_SECRET" \
+        --force
+    confirm_before_next_step "update-help" "$PAUSE_SECONDS" || return 0
+    run_step "update-help" "0" "${python_cmd[@]}" update --help
+
+    if [[ "$INCLUDE_LIVE_UPDATE" == "true" ]]; then
+        confirm_before_next_step "update-dry-run" "$PAUSE_SECONDS" || return 0
+        run_step "update-dry-run" "0" "${python_cmd[@]}" update --dry-run --yes
+    fi
+}
+
+main() {
+    parse_args "$@"
+    setup_workspace
+    trap cleanup EXIT
+
+    echo "Using workspace: $WORKSPACE_ROOT"
+    if [[ "$DRY_RUN" == "true" ]]; then
+        echo "Dry run: printing planned commands only."
+    fi
+
+    run_matrix
+    print_summary
+
+    if [[ "$STOP_REQUESTED" == "true" ]]; then
+        return 0
+    fi
+
+    local index
+    for index in "${!STEP_CODES[@]}"; do
+        if [[ "${STEP_CODES[$index]}" != "0" ]]; then
+            return 1
+        fi
+    done
+    return 0
+}
+
+main "$@"

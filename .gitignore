@@ -84,6 +84,7 @@ demos/pprl-superhero-example/datasets/
 .tmp/
 .venv
 .ruff_cache/
+*.exchange.json
 apm.lock
 
 # APM dependencies

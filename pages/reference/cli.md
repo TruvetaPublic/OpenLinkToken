@@ -125,6 +125,102 @@ Writes key files to `~/.opentoken/`:
 - `~/.opentoken/<name>.public.pem` — SubjectPublicKeyInfo PEM public key (permissions `644`)
 - `~/.opentoken/` directory is created with permissions `700` if absent.
 
+### `initiate-exchange` (ECDH Key-Exchange Bootstrap)
+
+Available in the Python CLI.
+
+Generates, reuses, or derives a sender key pair, encrypts a hashing secret into a versioned multi-recipient JWE JSON exchange artifact, and writes recipient entries for both the sender and the partner. The artifact does **not** embed any private keys.
+
+| Argument                   | Short | Required | Default                    | Description                                                                                                       |
+| -------------------------- | ----- | -------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `--public-key`             |       | Yes\*    |                            | Path to the partner's public key (PEM/SPKI format)                                                                |
+| `--public-key-stdin`       |       | Yes\*    | `false`                    | Read the partner's public key PEM from stdin instead of `--public-key`                                            |
+| `--public-key-env`         |       | Yes\*    |                            | Read the partner's public key PEM from the named environment variable                                             |
+| `--name`                   | `-n`  | No       | `opentoken-<ISO8601-date>` | Base name for local key files                                                                                     |
+| `--output`                 | `-o`  | No       | `./<name>.exchange.json`   | Output path for the exchange config JSON                                                                          |
+| `--hashingsecret`          |       | No\*\*   | randomly generated         | Hashing secret to encrypt when you intentionally pass it on the command line                                      |
+| `--hashingsecret-stdin`    |       | No\*\*   | `false`                    | Read the hashing secret from stdin instead of passing it on the command line                                      |
+| `--hashingsecret-env`      |       | No\*\*   |                            | Read the hashing secret from the named environment variable                                                       |
+| `--curve`                  | `-c`  | No       | `P-256`                    | Elliptic curve for generated keys: `P-256`, `P-384`, or `P-521`                                                   |
+| `--force`                  |       | No       | `false`                    | Overwrite existing key files and exchange config                                                                  |
+| `--sender-private-key`     |       | No       |                            | Reuse an existing sender private key PEM for the sender-side recipient entry instead of generating a new key pair |
+| `--sender-private-key-env` |       | No       |                            | Read the sender private key PEM from the named environment variable without writing local sender key files        |
+
+**Outputs:**
+
+- `~/.opentoken/<name>.private.pem` — local private key (permissions `600`) when OpenToken generates a sender key or reuses `--sender-private-key`
+- `~/.opentoken/<name>.public.pem` — local public key (permissions `644`) when OpenToken generates a sender key or reuses `--sender-private-key`
+- `<output>` — versioned multi-recipient JWE JSON exchange artifact containing the encrypted hashing secret
+
+`<output>` can be decrypted by either side with its own matching private key. The JSON is still sensitive, but it does **not** contain private key material.
+
+\* Provide one of `--public-key`, `--public-key-stdin`, or `--public-key-env`.
+
+\*\* Provide at most one of `--hashingsecret`, `--hashingsecret-stdin`, or `--hashingsecret-env`. If you omit all three, OpenToken generates a secure random hashing secret. For pre-existing secrets, prefer `--hashingsecret-env` or `--hashingsecret-stdin` so the secret does not appear in shell history or process arguments. Because stdin can only be consumed once per command, `--hashingsecret-stdin` cannot be combined with `--public-key-stdin`.
+
+**Example:**
+
+```bash
+# Step 1 – recipient generates their key pair and shares the public key
+opentoken generate-key-pair --name recipient-org
+
+# Step 2 – sender initiates the exchange using the recipient's public key
+opentoken initiate-exchange \
+  --name sender-q2 \
+  --public-key ./recipient-org.public.pem \
+  --output ./sender-q2.exchange.json
+```
+
+To reuse an existing sender private key instead of generating a new one:
+
+```bash
+opentoken initiate-exchange \
+  --name sender-q2 \
+  --public-key ./recipient-org.public.pem \
+  --sender-private-key ~/.opentoken/sender-q2.private.pem \
+  --output ./sender-q2.exchange.json
+```
+
+To read the partner public key from stdin as an alternative to `--public-key`:
+
+```bash
+cat ./recipient-org.public.pem | opentoken initiate-exchange \
+  --name sender-q2 \
+  --public-key-stdin \
+  --output ./sender-q2.exchange.json
+```
+
+To provide an existing hashing secret without exposing it in the process argument list:
+
+```bash
+export OT_HASHING_SECRET="$(az keyvault secret show --vault-name my-vault --name hashing-secret --query value -o tsv)"
+
+opentoken initiate-exchange \
+  --name sender-q2 \
+  --public-key ./recipient-org.public.pem \
+  --hashingsecret-env OT_HASHING_SECRET \
+  --output ./sender-q2.exchange.json
+```
+
+To supply both the partner public key and the sender private key by reference in
+one command, use environment-variable references instead of stdin:
+
+```bash
+OT_PARTNER_PUBLIC_KEY="$(az keyvault secret show --vault-name my-vault --name recipient-public-key --query value -o tsv)" \
+OT_SENDER_PRIVATE_KEY="$(az keyvault secret show --vault-name my-vault --name sender-private-key --query value -o tsv)" \
+opentoken initiate-exchange \
+  --name sender-q2 \
+  --public-key-env OT_PARTNER_PUBLIC_KEY \
+  --sender-private-key-env OT_SENDER_PRIVATE_KEY \
+  --output ./sender-q2.exchange.json
+```
+
+When `--sender-private-key-env` is used, OpenToken derives the sender public key
+in memory and does not write local sender key files under `~/.opentoken/`.
+
+See [Sharing Tokenized Data](../operations/sharing-tokenized-data.md) for the full two-command ECDH bootstrap workflow.
+For a field-by-field format reference, see `docs/exchange-config-format.md`.
+
 ### `update` (Self-Update CLI)
 
 Downloads and installs the latest (or a specific) release of the OpenToken CLI in-place.

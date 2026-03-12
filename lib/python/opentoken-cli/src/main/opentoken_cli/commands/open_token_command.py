@@ -95,6 +95,7 @@ class OpenTokenCommand:
         from opentoken_cli.commands.encrypt_command import EncryptCommand
         from opentoken_cli.commands.generate_key_pair_command import GenerateKeyPairCommand
         from opentoken_cli.commands.help_command import HelpCommand
+        from opentoken_cli.commands.initiate_exchange_command import InitiateExchangeCommand
         from opentoken_cli.commands.package_command import PackageCommand
         from opentoken_cli.commands.tokenize_command import TokenizeCommand
         from opentoken_cli.commands.update_command import UpdateCommand
@@ -106,6 +107,7 @@ class OpenTokenCommand:
         DecryptCommand.register_subcommand(subparsers)
         PackageCommand.register_subcommand(subparsers)
         GenerateKeyPairCommand.register_subcommand(subparsers)
+        InitiateExchangeCommand.register_subcommand(subparsers)
         UpdateCommand.register_subcommand(subparsers)
 
         return parser

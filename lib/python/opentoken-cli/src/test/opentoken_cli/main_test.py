@@ -531,6 +531,89 @@ class TestOpenTokenCommand:
         assert "test-002" not in content, "Output must not contain original record IDs"
 
 
+class TestInitiateExchangeViaMain:
+    """Smoke tests for initiate-exchange wired through OpenTokenCommand.execute."""
+
+    def test_initiate_exchange_appears_in_help(self, capsys):
+        """initiate-exchange is listed in the top-level help output."""
+        OpenTokenCommand.execute(["--help"])
+        captured = capsys.readouterr()
+        assert "initiate-exchange" in captured.out
+
+    def test_initiate_exchange_help_describes_sender_private_key_without_embedding(self, capsys):
+        """Subcommand help should prefer --sender-private-key without implying embedding."""
+        exit_code = OpenTokenCommand.execute(["initiate-exchange", "--help"])
+
+        captured = capsys.readouterr()
+        assert exit_code == 0
+        assert "--sender-private-key" in captured.out
+        assert "--local-private-key" not in captured.out
+        assert "Reuse an existing sender private key PEM" in captured.out
+        assert "embed" not in captured.out.lower()
+
+    def test_initiate_exchange_help_lists_public_key_stdin(self, capsys):
+        """Subcommand help should advertise --public-key-stdin as an input alternative."""
+        exit_code = OpenTokenCommand.execute(["initiate-exchange", "--help"])
+
+        captured = capsys.readouterr()
+        assert exit_code == 0
+        assert "--public-key-stdin" in captured.out
+
+    def test_initiate_exchange_help_lists_env_key_references(self, capsys):
+        """Subcommand help should advertise env-var references for both partner and sender keys."""
+        exit_code = OpenTokenCommand.execute(["initiate-exchange", "--help"])
+
+        captured = capsys.readouterr()
+        assert exit_code == 0
+        assert "--public-key-env" in captured.out
+        assert "--sender-private-key-env" in captured.out
+
+    def test_initiate_exchange_help_lists_safe_hashing_secret_inputs(self, capsys):
+        """Subcommand help should advertise non-argv hashing-secret input modes."""
+        exit_code = OpenTokenCommand.execute(["initiate-exchange", "--help"])
+
+        captured = capsys.readouterr()
+        assert exit_code == 0
+        assert "--hashingsecret-env" in captured.out
+        assert "--hashingsecret-stdin" in captured.out
+
+    def test_initiate_exchange_succeeds_with_valid_inputs(self, tmp_path):
+        """initiate-exchange returns 0 for a complete valid invocation."""
+        from unittest.mock import patch
+
+        from opentoken_cli.util.ec_key_utils import generate_key_pair
+
+        _, partner_public_pem = generate_key_pair("P-256")
+        partner_pem_path = tmp_path / "partner.public.pem"
+        partner_pem_path.write_bytes(partner_public_pem)
+        output_path = tmp_path / "smoke.exchange.json"
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "smoke",
+                    "--public-key",
+                    str(partner_pem_path),
+                    "--output",
+                    str(output_path),
+                ]
+            )
+
+        assert exit_code == 0
+        assert output_path.exists()
+
+    def test_initiate_exchange_missing_public_key_fails(self, tmp_path):
+        """initiate-exchange exits non-zero when --public-key is omitted."""
+        from unittest.mock import patch
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenTokenCommand.execute(["initiate-exchange", "--name", "no-pk"])
+
+        assert exit_code != 0
+
+
 class TestStartupVersionCheckPolicy:
     """Tests for startup version-check behavior by parsed subcommand."""
 
