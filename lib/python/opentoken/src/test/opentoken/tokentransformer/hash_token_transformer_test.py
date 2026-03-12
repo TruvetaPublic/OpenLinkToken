@@ -107,6 +107,18 @@ class TestHashTokenTransformer:
 
         assert hash1 == hash2  # The hashed value should be consistent
 
+    def test_transform_supports_raw_byte_secrets(self):
+        """Raw byte secrets must be hashed without UTF-8 re-encoding."""
+        raw_secret = b"\xff\x00sample-secret-material"
+        transformer = HashTokenTransformer(raw_secret)
+
+        hashed_token = transformer.transform(self.VALID_TOKEN)
+
+        expected_hashed_token = base64.b64encode(
+            hmac.new(raw_secret, self.VALID_TOKEN.encode("utf-8"), hashlib.sha256).digest()
+        ).decode("utf-8")
+        assert expected_hashed_token == hashed_token
+
     def _calculate_expected_hash(self, secret: str, token: str) -> str:
         """
         Calculate the expected HMAC-SHA256 hash for validation.

@@ -51,7 +51,7 @@ class InitiateExchangeCommand:
                 "Initiate an ECDH key exchange with a partner.\n\n"
                 "Generates, reuses, or derives a sender key pair, encrypts the\n"
                 "exchange payload into a multi-recipient JWE envelope, and writes a\n"
-                "version 1 encrypted exchange config JSON file."
+                f"version {EXCHANGE_CONFIG_VERSION} encrypted exchange config JSON file."
             ),
         )
 

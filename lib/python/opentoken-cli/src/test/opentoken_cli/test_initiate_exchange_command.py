@@ -541,8 +541,34 @@ class TestInitiateExchangeCommandIntegration:
         config = json.loads(output_path.read_text())
         required = {"version", "protected", "iv", "ciphertext", "tag", "recipients"}
         assert required.issubset(config.keys())
-        assert config["version"] == 1
+        assert config["version"] == 2
         _assert_shared_jwe_header(config)
+
+    def test_exchange_config_payload_includes_both_public_keys(self, tmp_path):
+        """Version 2 payloads retain both public keys for later transport-key derivation."""
+        partner_private_pem, partner_public_pem = generate_key_pair("P-256")
+        partner_pem_path = tmp_path / "partner.public.pem"
+        partner_pem_path.write_bytes(partner_public_pem)
+        output_path = tmp_path / "payload-keys.exchange.json"
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "payload-keys",
+                    "--public-key",
+                    str(partner_pem_path),
+                    "--output",
+                    str(output_path),
+                ]
+            )
+
+        assert exit_code == 0
+        config = json.loads(output_path.read_text())
+        payload = json.loads(decrypt_exchange_envelope(config, partner_private_pem))
+        assert payload["senderPublicKey"] == (tmp_path / ".opentoken" / "payload-keys.public.pem").read_text()
+        assert payload["recipientPublicKey"] == partner_public_pem.decode("utf-8")
 
     def test_exchange_config_recipients_use_kids_and_epk_headers(self, tmp_path):
         """Each JWE recipient must carry the expected kid and epk header shape."""
@@ -675,6 +701,8 @@ class TestInitiateExchangeCommandIntegration:
         assert sender_payload["curve"] == "P-384"
         assert sender_payload["senderKeyFingerprint"] == public_key_fingerprint(sender_public_pem)
         assert sender_payload["recipientKeyFingerprint"] == public_key_fingerprint(partner_public_pem)
+        assert sender_payload["senderPublicKey"] == sender_public_pem.decode("utf-8")
+        assert sender_payload["recipientPublicKey"] == partner_public_pem.decode("utf-8")
 
         recipient_headers = _recipient_headers_by_kid(config)
         assert recipient_headers[_fingerprint_to_kid(sender_public_pem)]["epk"]["crv"] == "P-384"

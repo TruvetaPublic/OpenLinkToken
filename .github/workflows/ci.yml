@@ -209,7 +209,9 @@ jobs:
         run: |
           cd lib/python/opentoken-cli
           mkdir -p target
-          opentoken package -i ../../../resources/sample.csv -t csv -o target/output.csv --hashingsecret "HashingKey" --encryptionkey "Secret-Encryption-Key-Goes-Here."
+          opentoken generate-key-pair --name recipient --force
+          opentoken initiate-exchange --name smoke --public-key "$HOME/.opentoken/recipient.public.pem" --output target/smoke.exchange.json --hashingsecret "HashingKey"
+          opentoken package -i ../../../resources/sample.csv -t csv -o target/output.csv --exchange-config target/smoke.exchange.json --private-key "$HOME/.opentoken/smoke.private.pem"
 
       - name: Validate CLI output files
         run: |

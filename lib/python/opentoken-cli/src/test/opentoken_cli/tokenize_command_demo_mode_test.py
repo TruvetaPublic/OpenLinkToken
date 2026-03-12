@@ -4,10 +4,12 @@ Copyright (c) Truveta. All rights reserved.
 
 import json
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
 from opentoken_cli.commands.open_token_command import OpenTokenCommand
+from opentoken_cli.util.ec_key_utils import generate_key_pair
 
 # HMAC-SHA256 over 32 bytes → base64 → always exactly 44 characters
 NORMAL_MODE_TOKEN_LENGTH = 44
@@ -32,12 +34,37 @@ class TestTokenizeCommandDemoMode:
         )
         return tmp_path
 
+    def _create_exchange_config(self, temp_dir: Path, name: str = "demo-mode") -> tuple[Path, Path]:
+        """Create an exchange config for tokenize normal-mode tests."""
+        _, partner_public_pem = generate_key_pair("P-256")
+        partner_public_key_path = temp_dir / f"{name}.partner.public.pem"
+        partner_public_key_path.write_bytes(partner_public_pem)
+        exchange_config_path = temp_dir / f"{name}.exchange.json"
+
+        with patch("pathlib.Path.home", return_value=temp_dir):
+            exit_code = OpenTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    name,
+                    "--public-key",
+                    str(partner_public_key_path),
+                    "--output",
+                    str(exchange_config_path),
+                    "--hashingsecret",
+                    self.HASHING_SECRET,
+                ]
+            )
+
+        assert exit_code == 0
+        return exchange_config_path, temp_dir / ".opentoken" / f"{name}.private.pem"
+
     # ------------------------------------------------------------------
     # Mode selection
     # ------------------------------------------------------------------
 
-    def test_demo_mode_succeeds_without_hashing_secret(self, temp_dir: Path):
-        """Demo mode should not require --hashingsecret."""
+    def test_demo_mode_succeeds_without_exchange_config(self, temp_dir: Path):
+        """Demo mode should not require an exchange config."""
         args = [
             "tokenize",
             "-i",
@@ -51,8 +78,8 @@ class TestTokenizeCommandDemoMode:
         exit_code = OpenTokenCommand.execute(args)
         assert exit_code == 0
 
-    def test_normal_mode_fails_without_hashing_secret(self, temp_dir: Path):
-        """Normal mode must reject execution when --hashingsecret is absent."""
+    def test_normal_mode_fails_without_exchange_config(self, temp_dir: Path):
+        """Normal mode must reject execution when no exchange config can be resolved."""
         args = [
             "tokenize",
             "-i",
@@ -65,8 +92,9 @@ class TestTokenizeCommandDemoMode:
         exit_code = OpenTokenCommand.execute(args)
         assert exit_code != 0
 
-    def test_demo_mode_accepts_optional_hashing_secret(self, temp_dir: Path):
-        """Demo mode should succeed even when --hashingsecret is provided (ignored)."""
+    def test_demo_mode_rejects_exchange_config(self, temp_dir: Path):
+        """Demo mode should reject --exchange-config to keep the contract explicit."""
+        exchange_config, _ = self._create_exchange_config(temp_dir, "demo-with-config")
         args = [
             "tokenize",
             "-i",
@@ -76,14 +104,15 @@ class TestTokenizeCommandDemoMode:
             "-o",
             str(temp_dir / "output.csv"),
             "--demo-mode",
-            "--hashingsecret",
-            self.HASHING_SECRET,
+            "--exchange-config",
+            str(exchange_config),
         ]
         exit_code = OpenTokenCommand.execute(args)
-        assert exit_code == 0
+        assert exit_code != 0
 
-    def test_normal_mode_succeeds_with_hashing_secret(self, temp_dir: Path):
-        """Normal mode should succeed when --hashingsecret is provided."""
+    def test_normal_mode_succeeds_with_exchange_config(self, temp_dir: Path):
+        """Normal mode should succeed when the exchange config is provided."""
+        exchange_config, private_key = self._create_exchange_config(temp_dir, "normal-mode")
         args = [
             "tokenize",
             "-i",
@@ -92,8 +121,10 @@ class TestTokenizeCommandDemoMode:
             "csv",
             "-o",
             str(temp_dir / "output.csv"),
-            "--hashingsecret",
-            self.HASHING_SECRET,
+            "--exchange-config",
+            str(exchange_config),
+            "--private-key",
+            str(private_key),
         ]
         exit_code = OpenTokenCommand.execute(args)
         assert exit_code == 0
@@ -102,8 +133,9 @@ class TestTokenizeCommandDemoMode:
     # Input validation
     # ------------------------------------------------------------------
 
-    def test_normal_mode_fails_with_blank_hashing_secret(self, temp_dir: Path):
-        """A blank (whitespace-only) hashing secret must be rejected in normal mode."""
+    def test_normal_mode_fails_with_missing_private_key(self, temp_dir: Path):
+        """Normal mode must reject an unreadable private key reference."""
+        exchange_config, _ = self._create_exchange_config(temp_dir, "missing-private-key")
         args = [
             "tokenize",
             "-i",
@@ -112,8 +144,10 @@ class TestTokenizeCommandDemoMode:
             "csv",
             "-o",
             str(temp_dir / "output.csv"),
-            "--hashingsecret",
-            "   ",
+            "--exchange-config",
+            str(exchange_config),
+            "--private-key",
+            str(temp_dir / "missing.private.pem"),
         ]
         exit_code = OpenTokenCommand.execute(args)
         assert exit_code != 0
@@ -172,6 +206,7 @@ class TestTokenizeCommandDemoMode:
     def test_normal_mode_tokens_are_44_char_hmac_base64(self, temp_dir: Path):
         """Normal mode tokens are HMAC-SHA256 base64, always exactly 44 characters."""
         output_csv = temp_dir / "output.csv"
+        exchange_config, private_key = self._create_exchange_config(temp_dir, "normal-token-shape")
         OpenTokenCommand.execute(
             [
                 "tokenize",
@@ -181,8 +216,10 @@ class TestTokenizeCommandDemoMode:
                 "csv",
                 "-o",
                 str(output_csv),
-                "--hashingsecret",
-                self.HASHING_SECRET,
+                "--exchange-config",
+                str(exchange_config),
+                "--private-key",
+                str(private_key),
             ]
         )
 
@@ -198,6 +235,7 @@ class TestTokenizeCommandDemoMode:
         """Demo-mode and normal-mode outputs must differ for the same input."""
         demo_output = temp_dir / "demo_output.csv"
         normal_output = temp_dir / "normal_output.csv"
+        exchange_config, private_key = self._create_exchange_config(temp_dir, "demo-vs-normal")
 
         OpenTokenCommand.execute(
             [
@@ -220,8 +258,10 @@ class TestTokenizeCommandDemoMode:
                 "csv",
                 "-o",
                 str(normal_output),
-                "--hashingsecret",
-                self.HASHING_SECRET,
+                "--exchange-config",
+                str(exchange_config),
+                "--private-key",
+                str(private_key),
             ]
         )
 
@@ -251,6 +291,7 @@ class TestTokenizeCommandDemoMode:
 
     def test_normal_mode_metadata_contains_hashing_secret_hash(self, temp_dir: Path):
         """Normal mode must write HashingSecretHash to the metadata file."""
+        exchange_config, private_key = self._create_exchange_config(temp_dir, "metadata-normal")
         OpenTokenCommand.execute(
             [
                 "tokenize",
@@ -260,8 +301,10 @@ class TestTokenizeCommandDemoMode:
                 "csv",
                 "-o",
                 str(temp_dir / "output.csv"),
-                "--hashingsecret",
-                self.HASHING_SECRET,
+                "--exchange-config",
+                str(exchange_config),
+                "--private-key",
+                str(private_key),
             ]
         )
 

@@ -50,7 +50,7 @@ class Metadata:
 
         return self.metadata_map
 
-    def add_hashed_secret(self, secret_key: str, secret_to_hash: str) -> Dict[str, Any]:
+    def add_hashed_secret(self, secret_key: str, secret_to_hash: str | bytes | None) -> Dict[str, Any]:
         """
         Set the secret and add its hash to the metadata.
 
@@ -61,12 +61,15 @@ class Metadata:
         Returns:
             The metadata map for method chaining
         """
-        if secret_to_hash and secret_to_hash.strip():
+        if isinstance(secret_to_hash, bytes):
+            if secret_to_hash:
+                self.metadata_map[secret_key] = self.calculate_secure_hash(secret_to_hash)
+        elif secret_to_hash and secret_to_hash.strip():
             self.metadata_map[secret_key] = self.calculate_secure_hash(secret_to_hash)
         return self.metadata_map
 
     @staticmethod
-    def calculate_secure_hash(input_str: str) -> str:
+    def calculate_secure_hash(input_str: str | bytes | None) -> str:
         """
         Calculate a secure SHA-256 hash of the given input.
         The hash is returned as a hexadecimal string.
@@ -84,8 +87,8 @@ class Metadata:
             return None
 
         try:
-            # Create SHA-256 hash
-            hash_object = hashlib.sha256(input_str.encode("utf-8"))
+            hash_input = input_str if isinstance(input_str, bytes) else input_str.encode("utf-8")
+            hash_object = hashlib.sha256(hash_input)
             hex_string = hash_object.hexdigest()
             return hex_string
 

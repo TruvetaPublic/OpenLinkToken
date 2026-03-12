@@ -49,11 +49,13 @@ def test_build_exchange_envelope_round_trips_for_either_private_key():
         "hashingSecret": "c2hhcmVkLWhhc2hpbmctc2VjcmV0",
         "hashingSecretEncoding": "base64url",
         "recipientKeyFingerprint": public_key_fingerprint(recipient_public_pem),
+        "recipientPublicKey": recipient_public_pem.decode("utf-8"),
         "senderKeyFingerprint": public_key_fingerprint(sender_public_pem),
+        "senderPublicKey": sender_public_pem.decode("utf-8"),
     }
 
     recipient_headers = [entry["header"] for entry in envelope["recipients"]]
-    assert envelope["version"] == 1
+    assert envelope["version"] == 2
     assert {header["kid"] for header in recipient_headers} == {
         "sha256:" + public_key_fingerprint(sender_public_pem).lower().replace(":", "-"),
         "sha256:" + public_key_fingerprint(recipient_public_pem).lower().replace(":", "-"),

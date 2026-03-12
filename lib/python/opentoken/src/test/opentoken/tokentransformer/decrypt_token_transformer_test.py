@@ -134,3 +134,13 @@ class TestDecryptTokenTransformer:
         # Should throw an exception
         with pytest.raises(Exception):
             wrong_decryptor.transform(encrypted_token)
+
+    def test_constructor_accepts_raw_32_byte_key(self):
+        """Raw byte keys should decrypt tokens generated with the same raw key."""
+        raw_key = b"12345678901234567890123456789012"
+        encryptor = EncryptTokenTransformer(raw_key)
+        decryptor = DecryptTokenTransformer(raw_key)
+
+        encrypted_token = encryptor.transform("mySecretToken")
+
+        assert decryptor.transform(encrypted_token) == "mySecretToken"

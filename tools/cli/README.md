@@ -17,19 +17,19 @@ The command lines below are the exact CLI invocations that the script executes.
 3. `python -m opentoken_cli.main --no-update-check help package`
 4. `python -m opentoken_cli.main --no-update-check tokenize --help`
 5. `python -m opentoken_cli.main --no-update-check tokenize -i <WORKSPACE>/inputs/people.csv -t csv -o <WORKSPACE>/outputs/tokenized-demo.csv --demo-mode`
-6. `python -m opentoken_cli.main --no-update-check tokenize -i <WORKSPACE>/inputs/people.csv -t csv -o <WORKSPACE>/outputs/tokenized-hash.csv --hashingsecret LocalHarnessHashingSecret`
-7. `python -m opentoken_cli.main --no-update-check encrypt --help`
-8. `python -m opentoken_cli.main --no-update-check encrypt -i <WORKSPACE>/outputs/tokenized-hash.csv -t csv -o <WORKSPACE>/outputs/encrypted.csv --encryptionkey 0123456789abcdef0123456789abcdef`
-9. `python -m opentoken_cli.main --no-update-check decrypt --help`
-10. `python -m opentoken_cli.main --no-update-check decrypt -i <WORKSPACE>/outputs/encrypted.csv -t csv -o <WORKSPACE>/outputs/decrypted.csv --encryptionkey 0123456789abcdef0123456789abcdef`
-11. `python -m opentoken_cli.main --no-update-check package --help`
-12. `python -m opentoken_cli.main --no-update-check package -i <WORKSPACE>/inputs/people.csv -t csv -o <WORKSPACE>/outputs/packaged.csv --hashingsecret LocalHarnessHashingSecret --encryptionkey 0123456789abcdef0123456789abcdef`
-13. `python -m opentoken_cli.main --no-update-check generate-key-pair --help`
-14. `python -m opentoken_cli.main --no-update-check generate-key-pair --name recipient --force`
-15. `python -m opentoken_cli.main --no-update-check generate-key-pair --name recipient-p384 --curve P-384 --force`
-16. `python -m opentoken_cli.main --no-update-check generate-key-pair --name recipient-p521 --curve P-521 --force`
-17. `python -m opentoken_cli.main --no-update-check initiate-exchange --help`
-18. `python -m opentoken_cli.main --no-update-check initiate-exchange --name sender-local --public-key <WORKSPACE>/home/.opentoken/recipient.public.pem --output <WORKSPACE>/outputs/local.exchange.json --hashingsecret LocalHarnessHashingSecret --force`
+6. `python -m opentoken_cli.main --no-update-check generate-key-pair --help`
+7. `python -m opentoken_cli.main --no-update-check generate-key-pair --name recipient --force`
+8. `python -m opentoken_cli.main --no-update-check generate-key-pair --name recipient-p384 --curve P-384 --force`
+9. `python -m opentoken_cli.main --no-update-check generate-key-pair --name recipient-p521 --curve P-521 --force`
+10. `python -m opentoken_cli.main --no-update-check initiate-exchange --help`
+11. `python -m opentoken_cli.main --no-update-check initiate-exchange --name sender-local --public-key <WORKSPACE>/home/.opentoken/recipient.public.pem --output <WORKSPACE>/outputs/local.exchange.json --hashingsecret LocalHarnessHashingSecret --force`
+12. `python -m opentoken_cli.main --no-update-check tokenize -i <WORKSPACE>/inputs/people.csv -t csv -o <WORKSPACE>/outputs/tokenized-hash.csv --exchange-config <WORKSPACE>/outputs/local.exchange.json --private-key <WORKSPACE>/home/.opentoken/sender-local.private.pem`
+13. `python -m opentoken_cli.main --no-update-check encrypt --help`
+14. `python -m opentoken_cli.main --no-update-check encrypt -i <WORKSPACE>/outputs/tokenized-hash.csv -t csv -o <WORKSPACE>/outputs/encrypted.csv --exchange-config <WORKSPACE>/outputs/local.exchange.json --private-key <WORKSPACE>/home/.opentoken/sender-local.private.pem`
+15. `python -m opentoken_cli.main --no-update-check decrypt --help`
+16. `python -m opentoken_cli.main --no-update-check decrypt -i <WORKSPACE>/outputs/encrypted.csv -t csv -o <WORKSPACE>/outputs/decrypted.csv --exchange-config <WORKSPACE>/outputs/local.exchange.json --private-key <WORKSPACE>/home/.opentoken/sender-local.private.pem`
+17. `python -m opentoken_cli.main --no-update-check package --help`
+18. `python -m opentoken_cli.main --no-update-check package -i <WORKSPACE>/inputs/people.csv -t csv -o <WORKSPACE>/outputs/packaged.csv --exchange-config <WORKSPACE>/outputs/local.exchange.json --private-key <WORKSPACE>/home/.opentoken/sender-local.private.pem`
 19. `python -m opentoken_cli.main --no-update-check update --help`
 
 ## Optional command

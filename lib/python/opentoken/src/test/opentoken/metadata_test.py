@@ -140,6 +140,14 @@ class TestMetadata:
         hash2 = Metadata.calculate_secure_hash(input_str)
         assert hash_result == hash2
 
+    def test_calculate_secure_hash_with_raw_bytes(self):
+        input_bytes = b"\xff\x00bytes"
+
+        hash_result = Metadata.calculate_secure_hash(input_bytes)
+
+        assert hash_result is not None
+        assert len(hash_result) == 64
+
     def test_metadata_constants(self):
         # Verify that the new constants are properly defined
         assert Metadata.ENCRYPTION_SECRET_HASH is not None

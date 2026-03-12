@@ -16,7 +16,7 @@ from opentoken_cli.io.json.metadata_json_writer import MetadataJsonWriter
 from opentoken_cli.io.parquet.person_attributes_parquet_reader import PersonAttributesParquetReader
 from opentoken_cli.io.parquet.person_attributes_parquet_writer import PersonAttributesParquetWriter
 from opentoken_cli.processor.person_attributes_processor import PersonAttributesProcessor
-from opentoken_cli.util import StringMaskingUtil
+from opentoken_cli.util.exchange_config import derive_transport_encryption_key, resolve_exchange_config
 
 logger = logging.getLogger(__name__)
 
@@ -35,9 +35,9 @@ class PackageCommand:
         """Register the package subcommand with the argument parser."""
         parser = subparsers.add_parser(
             "package",
-            help="Generate and encrypt tokens in one step (tokenize + encrypt)",
-            description="Generate and encrypt tokens in one step",
-            add_help=False,  # Disable automatic -h for help to allow -h for hashingsecret
+            help="Generate and encrypt tokens in one step using the exchange config",
+            description="Generate and encrypt tokens in one step using the exchange config",
+            add_help=False,
         )
 
         # Manually add --help (without -h short form)
@@ -81,19 +81,25 @@ class PackageCommand:
         )
 
         parser.add_argument(
-            "-h",
-            "--hashingsecret",
-            required=True,
-            dest="hashing_secret",
-            help="Hashing secret for token generation",
+            "--exchange-config",
+            required=False,
+            dest="exchange_config",
+            metavar="PATH",
+            help="Path to the exchange config JSON (default: ./opentoken-YYYY-MM-DD.exchange.json)",
         )
 
-        parser.add_argument(
-            "-e",
-            "--encryptionkey",
-            required=True,
-            dest="encryption_key",
-            help="Encryption key for token encryption",
+        private_key_group = parser.add_mutually_exclusive_group(required=False)
+        private_key_group.add_argument(
+            "--private-key",
+            dest="private_key",
+            metavar="PATH",
+            help="Path to the private key PEM used to decrypt the exchange config and derive the transport key",
+        )
+        private_key_group.add_argument(
+            "--private-key-env",
+            dest="private_key_env",
+            metavar="ENV_VAR",
+            help="Read the private key PEM from the named environment variable",
         )
 
         parser.add_argument(
@@ -130,28 +136,25 @@ class PackageCommand:
         # Log parameters (mask secrets)
         logger.info(f"Input: {args.input_path} ({args.input_type})")
         logger.info(f"Output: {args.output_path} ({output_type})")
-        logger.info(f"Hashing Secret: {StringMaskingUtil.mask_string(args.hashing_secret)}")
-        logger.info(f"Encryption Key: {StringMaskingUtil.mask_string(args.encryption_key)}")
         logger.info(f"Ring ID: {ring_id}")
         if hash_record_ids:
             logger.info("Record ID hashing enabled: RecordIds will be SHA-256 hashed in output")
 
-        # Validate secrets
-        if not args.hashing_secret or not args.hashing_secret.strip():
-            logger.error("Hashing secret is required")
-            return 1
-        if not args.encryption_key or not args.encryption_key.strip():
-            logger.error("Encryption key is required")
-            return 1
-
         try:
+            exchange = resolve_exchange_config(
+                args.exchange_config,
+                private_key_path=getattr(args, "private_key", None),
+                private_key_env=getattr(args, "private_key_env", None),
+            )
+            encryption_key = derive_transport_encryption_key(exchange)
+            logger.info(f"Exchange config: {exchange.path}")
             PackageCommand._process_tokens(
                 args.input_path,
                 args.output_path,
                 args.input_type,
                 output_type,
-                args.hashing_secret,
-                args.encryption_key,
+                exchange.hashing_secret,
+                encryption_key,
                 ring_id,
                 hash_record_ids,
             )
@@ -167,8 +170,8 @@ class PackageCommand:
         output_path: str,
         input_type: str,
         output_type: str,
-        hashing_secret: str,
-        encryption_key: str,
+        hashing_secret: str | bytes,
+        encryption_key: bytes,
         ring_id: str,
         hash_record_ids: bool = False,
     ):

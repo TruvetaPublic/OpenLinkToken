@@ -7,6 +7,7 @@ import hashlib
 import hmac
 import logging
 import threading
+from typing import Union
 
 from opentoken.tokentransformer.token_transformer import TokenTransformer
 
@@ -21,7 +22,7 @@ class HashTokenTransformer(TokenTransformer):
     See: https://datatracker.ietf.org/doc/html/rfc4868 (HMACSHA256)
     """
 
-    def __init__(self, hashing_secret: str):
+    def __init__(self, hashing_secret: Union[str, bytes, None]):
         """
         Initializes the underlying MAC with the secret key.
 
@@ -31,12 +32,15 @@ class HashTokenTransformer(TokenTransformer):
         Raises:
             ValueError: If the hashing secret is None or empty.
         """
-        self.hashing_secret = hashing_secret
         self._lock = threading.Lock()
-
-        if not hashing_secret or hashing_secret.strip() == "":
+        if isinstance(hashing_secret, bytes):
+            self.hashing_secret = hashing_secret
+            self._mac_available = len(hashing_secret) > 0
+        elif not hashing_secret or hashing_secret.strip() == "":
+            self.hashing_secret = b""
             self._mac_available = False
         else:
+            self.hashing_secret = hashing_secret.encode("utf-8")
             self._mac_available = True
 
     def transform(self, token: str) -> str:
@@ -63,8 +67,7 @@ class HashTokenTransformer(TokenTransformer):
             raise RuntimeError("HMAC is not properly initialized due to empty hashing secret.")
 
         with self._lock:
-            # Create HMAC with SHA256 - token is encoded to bytes using UTF-8
-            mac = hmac.new(self.hashing_secret.encode("utf-8"), token.encode("utf-8"), hashlib.sha256)
+            mac = hmac.new(self.hashing_secret, token.encode("utf-8"), hashlib.sha256)
 
             # Get the digest and encode to base64
             digest = mac.digest()

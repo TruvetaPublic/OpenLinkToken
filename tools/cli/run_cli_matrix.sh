@@ -7,7 +7,6 @@ CLI_SOURCE_ROOT="$REPO_ROOT/lib/python/opentoken-cli/src/main"
 CORE_SOURCE_ROOT="$REPO_ROOT/lib/python/opentoken/src/main"
 
 DEFAULT_HASHING_SECRET="LocalHarnessHashingSecret"
-DEFAULT_ENCRYPTION_KEY="0123456789abcdef0123456789abcdef"
 
 PAUSE_SECONDS="0.25"
 INCLUDE_LIVE_UPDATE="false"
@@ -114,6 +113,7 @@ setup_workspace() {
     PACKAGED_CSV="$OUTPUT_DIR/packaged.csv"
     EXCHANGE_JSON="$OUTPUT_DIR/local.exchange.json"
     RECIPIENT_PUBLIC_KEY="$HOME_DIR/.opentoken/recipient.public.pem"
+    SENDER_PRIVATE_KEY="$HOME_DIR/.opentoken/sender-local.private.pem"
 
     cat > "$PERSON_CSV" <<'EOF'
 RecordId,FirstName,LastName,PostalCode,Sex,BirthDate,SocialSecurityNumber
@@ -316,29 +316,6 @@ run_matrix() {
     confirm_before_next_step "tokenize-demo" "$PAUSE_SECONDS" || return 0
     run_step "tokenize-demo" "$PAUSE_SECONDS" \
         "${python_cmd[@]}" tokenize -i "$PERSON_CSV" -t csv -o "$TOKENIZED_DEMO_CSV" --demo-mode
-    confirm_before_next_step "tokenize-hash" "$PAUSE_SECONDS" || return 0
-    run_step "tokenize-hash" "$PAUSE_SECONDS" \
-        "${python_cmd[@]}" tokenize -i "$PERSON_CSV" -t csv -o "$TOKENIZED_HASH_CSV" \
-        --hashingsecret "$DEFAULT_HASHING_SECRET"
-    confirm_before_next_step "encrypt-help" "$PAUSE_SECONDS" || return 0
-    run_step "encrypt-help" "$PAUSE_SECONDS" "${python_cmd[@]}" encrypt --help
-    confirm_before_next_step "encrypt-tokenized-output" "$PAUSE_SECONDS" || return 0
-    run_step "encrypt-tokenized-output" "$PAUSE_SECONDS" \
-        "${python_cmd[@]}" encrypt -i "$TOKENIZED_HASH_CSV" -t csv -o "$ENCRYPTED_CSV" \
-        --encryptionkey "$DEFAULT_ENCRYPTION_KEY"
-    confirm_before_next_step "decrypt-help" "$PAUSE_SECONDS" || return 0
-    run_step "decrypt-help" "$PAUSE_SECONDS" "${python_cmd[@]}" decrypt --help
-    confirm_before_next_step "decrypt-encrypted-output" "$PAUSE_SECONDS" || return 0
-    run_step "decrypt-encrypted-output" "$PAUSE_SECONDS" \
-        "${python_cmd[@]}" decrypt -i "$ENCRYPTED_CSV" -t csv -o "$DECRYPTED_CSV" \
-        --encryptionkey "$DEFAULT_ENCRYPTION_KEY"
-    confirm_before_next_step "package-help" "$PAUSE_SECONDS" || return 0
-    run_step "package-help" "$PAUSE_SECONDS" "${python_cmd[@]}" package --help
-    confirm_before_next_step "package-csv" "$PAUSE_SECONDS" || return 0
-    run_step "package-csv" "$PAUSE_SECONDS" \
-        "${python_cmd[@]}" package -i "$PERSON_CSV" -t csv -o "$PACKAGED_CSV" \
-        --hashingsecret "$DEFAULT_HASHING_SECRET" \
-        --encryptionkey "$DEFAULT_ENCRYPTION_KEY"
     confirm_before_next_step "generate-key-pair-help" "$PAUSE_SECONDS" || return 0
     run_step "generate-key-pair-help" "$PAUSE_SECONDS" "${python_cmd[@]}" generate-key-pair --help
     confirm_before_next_step "generate-key-pair-recipient" "$PAUSE_SECONDS" || return 0
@@ -359,6 +336,32 @@ run_matrix() {
         --output "$EXCHANGE_JSON" \
         --hashingsecret "$DEFAULT_HASHING_SECRET" \
         --force
+    confirm_before_next_step "tokenize-hash" "$PAUSE_SECONDS" || return 0
+    run_step "tokenize-hash" "$PAUSE_SECONDS" \
+        "${python_cmd[@]}" tokenize -i "$PERSON_CSV" -t csv -o "$TOKENIZED_HASH_CSV" \
+        --exchange-config "$EXCHANGE_JSON" \
+        --private-key "$SENDER_PRIVATE_KEY"
+    confirm_before_next_step "encrypt-help" "$PAUSE_SECONDS" || return 0
+    run_step "encrypt-help" "$PAUSE_SECONDS" "${python_cmd[@]}" encrypt --help
+    confirm_before_next_step "encrypt-tokenized-output" "$PAUSE_SECONDS" || return 0
+    run_step "encrypt-tokenized-output" "$PAUSE_SECONDS" \
+        "${python_cmd[@]}" encrypt -i "$TOKENIZED_HASH_CSV" -t csv -o "$ENCRYPTED_CSV" \
+        --exchange-config "$EXCHANGE_JSON" \
+        --private-key "$SENDER_PRIVATE_KEY"
+    confirm_before_next_step "decrypt-help" "$PAUSE_SECONDS" || return 0
+    run_step "decrypt-help" "$PAUSE_SECONDS" "${python_cmd[@]}" decrypt --help
+    confirm_before_next_step "decrypt-encrypted-output" "$PAUSE_SECONDS" || return 0
+    run_step "decrypt-encrypted-output" "$PAUSE_SECONDS" \
+        "${python_cmd[@]}" decrypt -i "$ENCRYPTED_CSV" -t csv -o "$DECRYPTED_CSV" \
+        --exchange-config "$EXCHANGE_JSON" \
+        --private-key "$SENDER_PRIVATE_KEY"
+    confirm_before_next_step "package-help" "$PAUSE_SECONDS" || return 0
+    run_step "package-help" "$PAUSE_SECONDS" "${python_cmd[@]}" package --help
+    confirm_before_next_step "package-csv" "$PAUSE_SECONDS" || return 0
+    run_step "package-csv" "$PAUSE_SECONDS" \
+        "${python_cmd[@]}" package -i "$PERSON_CSV" -t csv -o "$PACKAGED_CSV" \
+        --exchange-config "$EXCHANGE_JSON" \
+        --private-key "$SENDER_PRIVATE_KEY"
     confirm_before_next_step "update-help" "$PAUSE_SECONDS" || return 0
     run_step "update-help" "0" "${python_cmd[@]}" update --help
 

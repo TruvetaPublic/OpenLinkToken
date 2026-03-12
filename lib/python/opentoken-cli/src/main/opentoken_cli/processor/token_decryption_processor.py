@@ -44,7 +44,7 @@ class TokenDecryptionProcessor:
         reader: TokenReader,
         writer: TokenWriter,
         decryptor: DecryptTokenTransformer,
-        encryption_key: str | None,
+        encryption_key: str | bytes | None,
     ):
         """
         Reads encrypted tokens from the input data source, decrypts them, and
@@ -93,7 +93,7 @@ class TokenDecryptionProcessor:
     def _decrypt_token(
         token: str,
         decryptor: DecryptTokenTransformer,
-        encryption_key: str | None,
+        encryption_key: str | bytes | None,
     ) -> str:
         if token.startswith(V1_TOKEN_PREFIX):
             return TokenDecryptionProcessor._decrypt_v1_token(token, decryptor, encryption_key)
@@ -109,7 +109,7 @@ class TokenDecryptionProcessor:
             raise ValueError("Encryption key is required for JWE token decryption")
 
         jwe_compact = token[len(V1_TOKEN_PREFIX) :]
-        key_bytes = encryption_key.encode("utf-8")
+        key_bytes = encryption_key if isinstance(encryption_key, bytes) else encryption_key.encode("utf-8")
         key_b64 = base64.urlsafe_b64encode(key_bytes).decode("utf-8").rstrip("=")
         jwk_key = jwk.JWK(kty="oct", k=key_b64)
 

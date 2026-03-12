@@ -203,16 +203,16 @@ python tools/exchange/validate_exchange_secret.py \
 
 Successful AES-GCM decryption proves the available key material matches one of the JWE recipient entries in the exchange config. If decryption fails, the key material does not correspond to that exchange.
 
-### Step 5 — Both parties tokenize using the recovered secret
+### Step 5 — Both parties tokenize using the exchange config
 
-Once both parties have the hashing secret they run `opentoken package` as normal:
+Once both parties have the exchange artifact and the matching private key, they run the consumer commands directly against the exchange config:
 
 ```bash
 opentoken package \
   -i patient_data.csv -t csv \
   -o tokens_for_partner.csv \
-  -h "$HASHING_SECRET" \
-  -e "$ENCRYPTION_KEY"
+  --exchange-config sender-q2.exchange.json \
+  --private-key ~/.opentoken/sender-q2.private.pem
 ```
 
 ---

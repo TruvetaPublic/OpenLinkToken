@@ -123,6 +123,15 @@ class TestEncryptTokenTransformer:
         assert decrypted1 == token
         assert decrypted2 == token
 
+    def test_constructor_accepts_raw_32_byte_key(self):
+        """Raw byte keys should be accepted for exchange-derived transport secrets."""
+        raw_key = b"12345678901234567890123456789012"
+        transformer = EncryptTokenTransformer(raw_key)
+
+        encrypted_token = transformer.transform("mySecretToken")
+
+        assert encrypted_token
+
     def _decrypt_token(self, encrypted_token: str) -> str:
         """
         Helper method to decrypt an encrypted token.

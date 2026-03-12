@@ -9,8 +9,8 @@ from opentoken_cli.io.csv.token_csv_reader import TokenCSVReader
 from opentoken_cli.io.csv.token_csv_writer import TokenCSVWriter
 from opentoken_cli.io.parquet.token_parquet_reader import TokenParquetReader
 from opentoken_cli.io.parquet.token_parquet_writer import TokenParquetWriter
-from opentoken_cli.processor.token_transformation_processor import TokenTransformationProcessor
-from opentoken_cli.util import StringMaskingUtil
+from opentoken_cli.processor.token_decryption_processor import TokenDecryptionProcessor
+from opentoken_cli.util.exchange_config import derive_transport_encryption_key, resolve_exchange_config
 
 logger = logging.getLogger(__name__)
 
@@ -28,9 +28,9 @@ class DecryptCommand:
         """Register the decrypt subcommand with the argument parser."""
         parser = subparsers.add_parser(
             "decrypt",
-            help="Decrypt encrypted tokens using encryption key",
-            description="Decrypt encrypted tokens using encryption key",
-            add_help=False,  # Disable automatic -h for help to allow -e for encryptionkey
+            help="Decrypt encrypted tokens using the exchange config",
+            description="Decrypt encrypted tokens using the exchange config",
+            add_help=False,
         )
 
         # Manually add --help (without -h short form)
@@ -74,11 +74,25 @@ class DecryptCommand:
         )
 
         parser.add_argument(
-            "-e",
-            "--encryptionkey",
-            required=True,
-            dest="encryption_key",
-            help="Encryption key for token decryption",
+            "--exchange-config",
+            required=False,
+            dest="exchange_config",
+            metavar="PATH",
+            help="Path to the exchange config JSON (default: ./opentoken-YYYY-MM-DD.exchange.json)",
+        )
+
+        private_key_group = parser.add_mutually_exclusive_group(required=False)
+        private_key_group.add_argument(
+            "--private-key",
+            dest="private_key",
+            metavar="PATH",
+            help="Path to the private key PEM used to decrypt the exchange config and derive the transport key",
+        )
+        private_key_group.add_argument(
+            "--private-key-env",
+            dest="private_key_env",
+            metavar="ENV_VAR",
+            help="Read the private key PEM from the named environment variable",
         )
 
         parser.set_defaults(func=DecryptCommand.execute)
@@ -94,20 +108,21 @@ class DecryptCommand:
         # Log parameters (mask key)
         logger.info(f"Input: {args.input_path} ({args.input_type})")
         logger.info(f"Output: {args.output_path} ({output_type})")
-        logger.info(f"Encryption Key: {StringMaskingUtil.mask_string(args.encryption_key)}")
-
-        # Validate key
-        if not args.encryption_key or not args.encryption_key.strip():
-            logger.error("Encryption key is required")
-            return 1
 
         try:
+            exchange = resolve_exchange_config(
+                args.exchange_config,
+                private_key_path=getattr(args, "private_key", None),
+                private_key_env=getattr(args, "private_key_env", None),
+            )
+            encryption_key = derive_transport_encryption_key(exchange)
+            logger.info(f"Exchange config: {exchange.path}")
             DecryptCommand._decrypt_tokens(
                 args.input_path,
                 args.output_path,
                 args.input_type,
                 output_type,
-                args.encryption_key,
+                encryption_key,
             )
             logger.info("Token decryption completed successfully")
             return 0
@@ -121,7 +136,7 @@ class DecryptCommand:
         output_path: str,
         input_type: str,
         output_type: str,
-        encryption_key: str,
+        encryption_key: bytes,
     ):
         """Decrypt tokens from input file."""
         try:
@@ -131,7 +146,7 @@ class DecryptCommand:
                 DecryptCommand._create_token_reader(input_path, input_type) as reader,
                 DecryptCommand._create_token_writer(output_path, output_type) as writer,
             ):
-                TokenTransformationProcessor.process(reader, writer, decryptor, "decrypted")
+                TokenDecryptionProcessor.process_with_key(reader, writer, decryptor, encryption_key)
 
         except Exception as e:
             logger.error(f"Error during token decryption: {e}", exc_info=True)

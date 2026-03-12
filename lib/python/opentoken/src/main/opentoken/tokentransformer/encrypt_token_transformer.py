@@ -5,6 +5,7 @@ Copyright (c) Truveta. All rights reserved.
 import base64
 import logging
 import secrets
+from typing import Union
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -22,7 +23,7 @@ class EncryptTokenTransformer(TokenTransformer):
     See: https://datatracker.ietf.org/doc/html/rfc3826 (AES)
     """
 
-    def __init__(self, encryption_key: str):
+    def __init__(self, encryption_key: Union[str, bytes]):
         """
         Initializes the underlying cipher (AES) with the encryption secret.
 
@@ -32,11 +33,16 @@ class EncryptTokenTransformer(TokenTransformer):
         Raises:
             ValueError: If the encryption key is not 32 characters long.
         """
-        if len(encryption_key) != EncryptionConstants.KEY_BYTE_LENGTH:
-            logger.error(f"Invalid Argument. Key must be {EncryptionConstants.KEY_BYTE_LENGTH} characters long")
-            raise ValueError(f"Key must be {EncryptionConstants.KEY_BYTE_LENGTH} characters long")
-
-        self.encryption_key = encryption_key.encode("utf-8")
+        if isinstance(encryption_key, bytes):
+            if len(encryption_key) != EncryptionConstants.KEY_BYTE_LENGTH:
+                logger.error(f"Invalid Argument. Key must be {EncryptionConstants.KEY_BYTE_LENGTH} bytes long")
+                raise ValueError(f"Key must be {EncryptionConstants.KEY_BYTE_LENGTH} bytes long")
+            self.encryption_key = encryption_key
+        else:
+            if len(encryption_key) != EncryptionConstants.KEY_BYTE_LENGTH:
+                logger.error(f"Invalid Argument. Key must be {EncryptionConstants.KEY_BYTE_LENGTH} characters long")
+                raise ValueError(f"Key must be {EncryptionConstants.KEY_BYTE_LENGTH} characters long")
+            self.encryption_key = encryption_key.encode("utf-8")
 
     def transform(self, token: str) -> str:
         """

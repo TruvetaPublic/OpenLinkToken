@@ -13,7 +13,7 @@ from jwcrypto import jwe, jwk
 
 from opentoken_cli.util.ec_key_utils import fingerprint_to_kid, public_key_fingerprint
 
-EXCHANGE_JWE_VERSION = 1
+EXCHANGE_JWE_VERSION = 2
 EXCHANGE_JWE_TYPE = "opentoken-exchange+jwe"
 EXCHANGE_JWE_CONTENT_TYPE = "application/opentoken-exchange+json"
 EXCHANGE_JWE_ENCRYPTION = "A256GCM"
@@ -49,6 +49,8 @@ def build_exchange_envelope(
         "hashingSecretEncoding": "base64url",
         "senderKeyFingerprint": public_key_fingerprint(sender_public_pem),
         "recipientKeyFingerprint": public_key_fingerprint(recipient_public_pem),
+        "senderPublicKey": sender_public_pem.decode("utf-8"),
+        "recipientPublicKey": recipient_public_pem.decode("utf-8"),
         "curve": curve,
         "createdAt": created_at,
         "exchangeId": exchange_id,
