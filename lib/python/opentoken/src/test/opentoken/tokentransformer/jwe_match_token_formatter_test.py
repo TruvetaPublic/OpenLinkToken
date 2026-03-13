@@ -35,13 +35,13 @@ class TestJweMatchTokenFormatter(unittest.TestCase):
         """Test that constructor raises error with null encryption key."""
         with self.assertRaises(ValueError) as context:
             JweMatchTokenFormatter(None, self.TEST_RING_ID, self.TEST_RULE_ID, self.TEST_ISSUER)
-        self.assertIn("32 characters", str(context.exception))
+        self.assertIn("32 bytes", str(context.exception))
 
     def test_constructor_with_invalid_key_length(self):
         """Test that constructor raises error with invalid key length."""
         with self.assertRaises(ValueError) as context:
             JweMatchTokenFormatter("short", self.TEST_RING_ID, self.TEST_RULE_ID, self.TEST_ISSUER)
-        self.assertIn("32 characters", str(context.exception))
+        self.assertIn("32 bytes", str(context.exception))
 
     def test_constructor_with_null_ring_id(self):
         """Test that constructor raises error with null ring ID."""
