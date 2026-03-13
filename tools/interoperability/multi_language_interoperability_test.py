@@ -103,6 +103,7 @@ class PythonCLI(InteroperabilityTooling):
             self._python_executable(),
             "-m",
             "opentoken_cli.main",
+            "--no-update-check",
             *args,
         ]
 
