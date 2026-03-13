@@ -148,7 +148,7 @@ step_install_apm_cli() {
   skip_if_complete "apm-cli-installed" "APM CLI installation" && return 0
 
   echo "→ Installing apm CLI"
-  "$VENV_DIR/bin/pip" install apm-cli
+  uv pip install apm-cli
   mark_complete "apm-cli-installed"
 }
 
