@@ -88,7 +88,7 @@ step_symlink_venv() {
       rm -rf "$WORKSPACE_VENV_DIR"
     fi
 
-    if [ ! -L "$WORKSPACE_VENV_DIR" ] || [ "$(readlink -f "$WORKSPACE_VENV_DIR")" != "$VENV_DIR" ]; then
+    if [ ! -L "$WORKSPACE_VENV_DIR" ] || [ "$(readlink "$WORKSPACE_VENV_DIR" 2>/dev/null || true)" != "$VENV_DIR" ]; then
       ln -sfn "$VENV_DIR" "$WORKSPACE_VENV_DIR"
     fi
   fi
@@ -115,17 +115,12 @@ step_install_packages() {
 }
 
 step_activate_shell_init() {
-  skip_if_complete "shell-init" "shell initialization setup" && return 0
-
   echo "→ Adding venv activation to shell rc files"
+  local activation_line="source $VENV_DIR/bin/activate 2>/dev/null || true"
 
-  grep -qF 'opentoken/.venv/bin/activate' ~/.bashrc 2>/dev/null || \
-    echo 'source /home/vscode/.local/share/opentoken/.venv/bin/activate 2>/dev/null || true' >> ~/.bashrc
+  grep -qF "$activation_line" ~/.bashrc 2>/dev/null || echo "$activation_line" >> ~/.bashrc
 
-  grep -qF 'opentoken/.venv/bin/activate' ~/.zshrc 2>/dev/null || \
-    echo 'source /home/vscode/.local/share/opentoken/.venv/bin/activate 2>/dev/null || true' >> ~/.zshrc
-
-  mark_complete "shell-init"
+  grep -qF "$activation_line" ~/.zshrc 2>/dev/null || echo "$activation_line" >> ~/.zshrc
 }
 
 # ============================================================================
@@ -206,15 +201,26 @@ step_refresh_packages() {
 # Main execution logic
 # ============================================================================
 
-run_all_steps() {
+run_core_setup() {
   step_install_uv
   step_setup_cache_dir
   step_create_venv
   step_symlink_venv
   step_activate_venv
+}
+
+run_full_setup() {
+  run_core_setup
   step_install_packages
   step_activate_shell_init
   step_install_prek
+  step_setup_apm
+}
+
+run_refresh_setup() {
+  run_core_setup
+  step_refresh_packages
+  step_activate_shell_init
   step_setup_apm
 }
 
@@ -222,7 +228,21 @@ main() {
   cd "$REPO_ROOT"
 
   echo "Phase: $PHASE"
-  run_all_steps
+  case "$PHASE" in
+    full|post-create)
+      run_full_setup
+      ;;
+    post-start)
+      run_core_setup
+      ;;
+    post-attach)
+      run_refresh_setup
+      ;;
+    *)
+      echo "Unknown setup phase: $PHASE" >&2
+      exit 1
+      ;;
+  esac
 
   echo ""
   echo "✓ Setup complete (phase: $PHASE)"
