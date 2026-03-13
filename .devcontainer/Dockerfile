@@ -29,6 +29,13 @@ ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 
 USER vscode
 
+# Pre-create VS Code server volume mount points owned by vscode so Docker initializes
+# the named volumes with vscode:vscode ownership rather than root, preventing permission
+# errors when VS Code tries to install its server on first container start.
+RUN mkdir -p /home/vscode/.vscode-server \
+             /home/vscode/.vscode-server-insiders \
+             /home/vscode/.copilot
+
 # Install UV and global Python CLI tools (each in an isolated uv-managed venv)
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
     ~/.local/bin/uv tool install pytest && \
