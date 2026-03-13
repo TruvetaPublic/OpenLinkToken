@@ -141,15 +141,18 @@ step_install_prek() {
 }
 
 # ============================================================================
-# APM setup (idempotent, only if git initialized)
+# APM setup
 # ============================================================================
 
-step_setup_apm() {
-  skip_if_complete "apm-setup" "APM configuration" && return 0
+step_install_apm_cli() {
+  skip_if_complete "apm-cli-installed" "APM CLI installation" && return 0
 
   echo "→ Installing apm CLI"
   "$VENV_DIR/bin/pip" install apm-cli
+  mark_complete "apm-cli-installed"
+}
 
+step_setup_apm() {
   echo "→ Setting up SSH known hosts for GitHub"
   mkdir -p ~/.ssh
   chmod 700 ~/.ssh
@@ -182,8 +185,6 @@ step_setup_apm() {
       done < <(git -C "$REPO_ROOT" ls-files --others --directory --exclude-standard .github/skills/ .github/prompts/ 2>/dev/null || true)
     fi
   fi
-
-  mark_complete "apm-setup"
 }
 
 # ============================================================================
@@ -214,6 +215,7 @@ run_full_setup() {
   step_install_packages
   step_activate_shell_init
   step_install_prek
+  step_install_apm_cli
   step_setup_apm
 }
 
@@ -221,6 +223,7 @@ run_refresh_setup() {
   run_core_setup
   step_refresh_packages
   step_activate_shell_init
+  step_install_apm_cli
   step_setup_apm
 }
 
