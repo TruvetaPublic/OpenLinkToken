@@ -129,6 +129,10 @@ class TestMetadata:
         hash_result = Metadata.calculate_secure_hash("")
         assert hash_result is None
 
+    def test_calculate_secure_hash_return_type_allows_none_for_empty_input(self):
+        hash_result: str | None = Metadata.calculate_secure_hash("")
+        assert hash_result is None
+
     def test_calculate_secure_hash_with_unicode_input(self):
         input_str = "こんにちは"  # Japanese "hello"
         hash_result = Metadata.calculate_secure_hash(input_str)

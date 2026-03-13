@@ -53,7 +53,16 @@ class TestEncryptTokenTransformer:
         with pytest.raises(ValueError) as exc_info:
             EncryptTokenTransformer(self.INVALID_KEY)  # Key is too short
 
-        assert "Key must be 32 characters long" == str(exc_info.value)
+        assert "Key must be 32 bytes long" == str(exc_info.value)
+
+    def test_constructor_rejects_non_ascii_string_with_32_characters_but_more_than_32_bytes(self):
+        """UTF-8 multi-byte key strings must be rejected before AES initialization."""
+        invalid_key = "é" * 32
+
+        with pytest.raises(ValueError) as exc_info:
+            EncryptTokenTransformer(invalid_key)
+
+        assert "Key must be 32 bytes long" == str(exc_info.value)
 
     def test_transform_valid_token_returns_encrypted_token(self):
         """Test that transforming a valid token returns an encrypted token."""

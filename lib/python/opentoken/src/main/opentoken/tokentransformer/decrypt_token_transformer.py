@@ -29,10 +29,10 @@ class DecryptTokenTransformer(TokenTransformer):
         Initializes the underlying cipher (AES) with the decryption secret.
 
         Args:
-            encryption_key: The encryption key. The key must be 32 characters long.
+            encryption_key: The encryption key. The UTF-8 encoded key material must be exactly 32 bytes long.
 
         Raises:
-            ValueError: If the encryption key is not 32 characters long.
+            ValueError: If the encryption key material is not exactly 32 bytes long.
         """
         if isinstance(encryption_key, bytes):
             if len(encryption_key) != EncryptionConstants.KEY_BYTE_LENGTH:
@@ -40,10 +40,11 @@ class DecryptTokenTransformer(TokenTransformer):
                 raise ValueError(f"Key must be {EncryptionConstants.KEY_BYTE_LENGTH} bytes long")
             self.encryption_key = encryption_key
         else:
-            if len(encryption_key) != EncryptionConstants.KEY_BYTE_LENGTH:
-                logger.error(f"Invalid Argument. Key must be {EncryptionConstants.KEY_BYTE_LENGTH} characters long")
-                raise ValueError(f"Key must be {EncryptionConstants.KEY_BYTE_LENGTH} characters long")
-            self.encryption_key = encryption_key.encode("utf-8")
+            encryption_key_bytes = encryption_key.encode("utf-8")
+            if len(encryption_key_bytes) != EncryptionConstants.KEY_BYTE_LENGTH:
+                logger.error(f"Invalid Argument. Key must be {EncryptionConstants.KEY_BYTE_LENGTH} bytes long")
+                raise ValueError(f"Key must be {EncryptionConstants.KEY_BYTE_LENGTH} bytes long")
+            self.encryption_key = encryption_key_bytes
 
     def transform(self, token: str) -> str:
         """Decrypt a base64 encoded token produced by the encrypt transformer.

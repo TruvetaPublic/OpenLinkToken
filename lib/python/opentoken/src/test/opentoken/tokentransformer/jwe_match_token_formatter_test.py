@@ -43,6 +43,12 @@ class TestJweMatchTokenFormatter(unittest.TestCase):
             JweMatchTokenFormatter("short", self.TEST_RING_ID, self.TEST_RULE_ID, self.TEST_ISSUER)
         self.assertIn("32 bytes", str(context.exception))
 
+    def test_constructor_rejects_non_ascii_string_with_32_characters_but_more_than_32_bytes(self):
+        """UTF-8 multi-byte key strings must be rejected before JWE setup."""
+        with self.assertRaises(ValueError) as context:
+            JweMatchTokenFormatter("é" * 32, self.TEST_RING_ID, self.TEST_RULE_ID, self.TEST_ISSUER)
+        self.assertIn("32 bytes", str(context.exception))
+
     def test_constructor_with_null_ring_id(self):
         """Test that constructor raises error with null ring ID."""
         with self.assertRaises(ValueError) as context:

@@ -69,16 +69,16 @@ class Metadata:
         return self.metadata_map
 
     @staticmethod
-    def calculate_secure_hash(input_str: str | bytes | None) -> str:
+    def calculate_secure_hash(input_str: str | bytes | None) -> str | None:
         """
         Calculate a secure SHA-256 hash of the given input.
-        The hash is returned as a hexadecimal string.
+        The hash is returned as a hexadecimal string, or ``None`` for empty input.
 
         Args:
             input_str: The input string to hash
 
         Returns:
-            The SHA-256 hash as a hexadecimal string
+            The SHA-256 hash as a hexadecimal string, or ``None`` when the input is empty
 
         Raises:
             HashCalculationException: If there's an error calculating the hash
