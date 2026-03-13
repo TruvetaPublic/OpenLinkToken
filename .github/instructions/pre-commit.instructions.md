@@ -11,10 +11,6 @@ After making any code changes, always run pre-commit hooks before considering th
 prek run --files <changed-files>
 ```
 
-Or to run against all staged changes:
+In this repository, prefer `--files` with the exact changed paths for the current task. Do not run `prek run` across all files unless the user explicitly asks for repo-wide verification.
 
-```bash
-prek run
-```
-
-If prek reports any failures (formatting, linting, type errors), fix them and re-run until all hooks pass. Do not mark work as done while prek hooks are failing.
+If prek reports any failures (formatting, linting, type errors), fix them and re-run against the changed files until all hooks pass. Do not mark work as done while prek hooks are failing.

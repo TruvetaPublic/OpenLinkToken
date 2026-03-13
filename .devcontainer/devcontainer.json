@@ -55,24 +55,20 @@
     }
   },
   "mounts": [
-    "type=volume,source=opentoken-venv,target=/home/vscode/.local/share/opentoken/.venv",
-    "type=volume,source=opentoken-uv-cache,target=/home/vscode/.cache",
-    "type=volume,source=opentoken-copilot,target=/home/vscode/.copilot"
+    "type=volume,source=opentoken-local,target=/home/vscode/.local",
+    "type=volume,source=opentoken-cache,target=/home/vscode/.cache",
+    "type=volume,source=opentoken-copilot,target=/home/vscode/.copilot",
+    "type=volume,source=opentoken-vscode-server,target=/home/vscode/.vscode-server",
+    "type=volume,source=opentoken-vscode-insiders,target=/home/vscode/.vscode-server-insiders"
   ],
   "containerEnv": {
     "PYSPARK_SUBMIT_ARGS": "--driver-memory 8g --executor-memory 8g --conf spark.driver.maxResultSize=4g --conf spark.memory.fraction=0.7 pyspark-shell",
     "UV_PROJECT_ENVIRONMENT": "/home/vscode/.local/share/opentoken/.venv"
   },
-  "onCreateCommand": {
-    "fix-mount-permissions": "for d in /home/vscode/.copilot /home/vscode/.cache /home/vscode/.local/share/opentoken/.venv; do [ -d \"$d\" ] || continue; sudo chown -R vscode:vscode \"$d\"; done"
+  "updateContentCommand": {
+    "fix-mount-permissions": "for d in /home/vscode/.copilot /home/vscode/.cache /home/vscode/.local /home/vscode/.vscode-server /home/vscode/.vscode-server-insiders; do [ -d \"$d\" ] || continue; sudo chown -R vscode:vscode \"$d\"; done"
   },
-  "postCreateCommand": {
-    "setup-py-env": "bash -lc '${containerWorkspaceFolder}/.devcontainer/scripts/setup_python_env.sh'"
-  },
-  "postStartCommand": {},
-  "postAttachCommand": {
-    "refresh-py-env": "bash -lc '${containerWorkspaceFolder}/.devcontainer/scripts/setup_python_env.sh --refresh-workspace'",
-    "apm-reqs": "bash -lc '${containerWorkspaceFolder}/.devcontainer/scripts/setup_apm.sh' || true",
-    "auto-activate-venv": "bash -lc '${containerWorkspaceFolder}/.devcontainer/scripts/activate-venv.sh'"
-  }
+  "postCreateCommand": "bash -lc '${containerWorkspaceFolder}/.devcontainer/scripts/unified-setup.sh post-create'",
+  "postStartCommand": "bash -lc '${containerWorkspaceFolder}/.devcontainer/scripts/unified-setup.sh post-start'",
+  "postAttachCommand": "bash -lc '${containerWorkspaceFolder}/.devcontainer/scripts/unified-setup.sh post-attach'"
 }
