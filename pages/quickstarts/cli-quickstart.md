@@ -117,13 +117,13 @@ The CLI is organized into subcommands. Choose the one that matches your workflow
 
 | Subcommand             | Description                                             | Requires                      |
 | ---------------------- | ------------------------------------------------------- | ----------------------------- |
+| `decrypt`              | Decrypt encrypted tokens back to hashed form            | exchange config + private key |
+| `encrypt`              | Encrypt previously tokenized (hashed) output            | exchange config + private key |
+| `generate-key-pair`    | Generate an ECDH public/private key pair                | none                          |
+| `initiate-exchange`    | Create the exchange config used by later commands       | recipient public key          |
 | `package`              | Tokenize and encrypt in one step — use for data sharing | exchange config + private key |
 | `tokenize`             | Tokenize without encryption — use for internal analysis | exchange config + private key |
 | `tokenize --demo-mode` | Output plain attribute signatures — use for exploration | none                          |
-| `encrypt`              | Encrypt previously tokenized (hashed) output            | exchange config + private key |
-| `decrypt`              | Decrypt encrypted tokens back to hashed form            | exchange config + private key |
-| `generate-key-pair`    | Generate an ECDH public/private key pair                | none                          |
-| `initiate-exchange`    | Create the exchange config used by later commands       | recipient public key          |
 | `update`               | Upgrade the CLI to the latest (or a specific) release   | none                          |
 
 For most use cases, `package` is the right starting point.
