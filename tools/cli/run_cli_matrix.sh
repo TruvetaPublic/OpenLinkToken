@@ -7,6 +7,9 @@ CLI_SOURCE_ROOT="$REPO_ROOT/lib/python/opentoken-cli/src/main"
 CORE_SOURCE_ROOT="$REPO_ROOT/lib/python/opentoken/src/main"
 
 DEFAULT_HASHING_SECRET="LocalHarnessHashingSecret"
+HASHING_SECRET_ENV_VAR="OPENTOKEN_MATRIX_HASHING_SECRET"
+RECIPIENT_PUBLIC_KEY_ENV_VAR="OPENTOKEN_MATRIX_RECIPIENT_PUBLIC_KEY_PEM"
+SENDER_PRIVATE_KEY_ENV_VAR="OPENTOKEN_MATRIX_SENDER_PRIVATE_KEY_PEM"
 
 PAUSE_SECONDS="0.25"
 INCLUDE_LIVE_UPDATE="false"
@@ -162,6 +165,26 @@ start_ns = int(sys.argv[1])
 end_ns = int(sys.argv[2])
 print(f"{(end_ns - start_ns) / 1_000_000_000:.2f}")
 PY
+}
+
+set_matrix_env_value() {
+    local name="$1"
+    local value="$2"
+    printf -v "$name" '%s' "$value"
+    export "$name"
+}
+
+set_matrix_env_from_file() {
+    local name="$1"
+    local path="$2"
+    local placeholder="$3"
+    local value="$placeholder"
+
+    if [[ -f "$path" ]]; then
+        value="$(<"$path")"
+    fi
+
+    set_matrix_env_value "$name" "$value"
 }
 
 run_step() {
@@ -329,39 +352,42 @@ run_matrix() {
         "${python_cmd[@]}" generate-key-pair --name recipient-p521 --curve P-521 --force
     confirm_before_next_step "initiate-exchange-help" "$PAUSE_SECONDS" || return 0
     run_step "initiate-exchange-help" "$PAUSE_SECONDS" "${python_cmd[@]}" initiate-exchange --help
+    set_matrix_env_value "$HASHING_SECRET_ENV_VAR" "$DEFAULT_HASHING_SECRET"
+    set_matrix_env_from_file "$RECIPIENT_PUBLIC_KEY_ENV_VAR" "$RECIPIENT_PUBLIC_KEY" "invalid-recipient-public-key"
     confirm_before_next_step "initiate-exchange-local" "$PAUSE_SECONDS" || return 0
     run_step "initiate-exchange-local" "$PAUSE_SECONDS" \
         "${python_cmd[@]}" initiate-exchange --name sender-local \
-        --public-key "$RECIPIENT_PUBLIC_KEY" \
+        --public-key-env "$RECIPIENT_PUBLIC_KEY_ENV_VAR" \
         --output "$EXCHANGE_JSON" \
-        --hashingsecret "$DEFAULT_HASHING_SECRET" \
+        --hashingsecret-env "$HASHING_SECRET_ENV_VAR" \
         --force
+    set_matrix_env_from_file "$SENDER_PRIVATE_KEY_ENV_VAR" "$SENDER_PRIVATE_KEY" "invalid-sender-private-key"
     confirm_before_next_step "tokenize-hash" "$PAUSE_SECONDS" || return 0
     run_step "tokenize-hash" "$PAUSE_SECONDS" \
         "${python_cmd[@]}" tokenize -i "$PERSON_CSV" -t csv -o "$TOKENIZED_HASH_CSV" \
         --exchange-config "$EXCHANGE_JSON" \
-        --private-key "$SENDER_PRIVATE_KEY"
+        --private-key-env "$SENDER_PRIVATE_KEY_ENV_VAR"
     confirm_before_next_step "encrypt-help" "$PAUSE_SECONDS" || return 0
     run_step "encrypt-help" "$PAUSE_SECONDS" "${python_cmd[@]}" encrypt --help
     confirm_before_next_step "encrypt-tokenized-output" "$PAUSE_SECONDS" || return 0
     run_step "encrypt-tokenized-output" "$PAUSE_SECONDS" \
         "${python_cmd[@]}" encrypt -i "$TOKENIZED_HASH_CSV" -t csv -o "$ENCRYPTED_CSV" \
         --exchange-config "$EXCHANGE_JSON" \
-        --private-key "$SENDER_PRIVATE_KEY"
+        --private-key-env "$SENDER_PRIVATE_KEY_ENV_VAR"
     confirm_before_next_step "decrypt-help" "$PAUSE_SECONDS" || return 0
     run_step "decrypt-help" "$PAUSE_SECONDS" "${python_cmd[@]}" decrypt --help
     confirm_before_next_step "decrypt-encrypted-output" "$PAUSE_SECONDS" || return 0
     run_step "decrypt-encrypted-output" "$PAUSE_SECONDS" \
         "${python_cmd[@]}" decrypt -i "$ENCRYPTED_CSV" -t csv -o "$DECRYPTED_CSV" \
         --exchange-config "$EXCHANGE_JSON" \
-        --private-key "$SENDER_PRIVATE_KEY"
+        --private-key-env "$SENDER_PRIVATE_KEY_ENV_VAR"
     confirm_before_next_step "package-help" "$PAUSE_SECONDS" || return 0
     run_step "package-help" "$PAUSE_SECONDS" "${python_cmd[@]}" package --help
     confirm_before_next_step "package-csv" "$PAUSE_SECONDS" || return 0
     run_step "package-csv" "$PAUSE_SECONDS" \
         "${python_cmd[@]}" package -i "$PERSON_CSV" -t csv -o "$PACKAGED_CSV" \
         --exchange-config "$EXCHANGE_JSON" \
-        --private-key "$SENDER_PRIVATE_KEY"
+        --private-key-env "$SENDER_PRIVATE_KEY_ENV_VAR"
     confirm_before_next_step "update-help" "$PAUSE_SECONDS" || return 0
     run_step "update-help" "0" "${python_cmd[@]}" update --help
 
