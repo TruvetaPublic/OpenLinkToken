@@ -55,12 +55,25 @@ public class Metadata {
 
     /**
      * Sets the hashing secret and adds its hash to the metadata.
-     * 
+     *
      * @param secretToHash the secret to hash
      * @return the metadata map for method chaining
      */
     public Map<String, Object> addHashedSecret(String secretKey, String secretToHash) {
         if (secretToHash != null && !secretToHash.isEmpty()) {
+            metadataMap.put(secretKey, calculateSecureHash(secretToHash));
+        }
+        return metadataMap;
+    }
+
+    /**
+     * Sets a raw-byte secret and adds its hash to the metadata.
+     *
+     * @param secretToHash the raw secret bytes to hash
+     * @return the metadata map for method chaining
+     */
+    public Map<String, Object> addHashedSecret(String secretKey, byte[] secretToHash) {
+        if (secretToHash != null && secretToHash.length > 0) {
             metadataMap.put(secretKey, calculateSecureHash(secretToHash));
         }
         return metadataMap;
@@ -79,9 +92,25 @@ public class Metadata {
             return null;
         }
 
+        return calculateSecureHash(input.getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Calculates a secure SHA-256 hash of the given raw bytes.
+     * The hash is returned as a hexadecimal string.
+     *
+     * @param input the input bytes to hash
+     * @return the SHA-256 hash as a hexadecimal string
+     * @throws HashCalculationException if SHA-256 algorithm is not available
+     */
+    public static String calculateSecureHash(byte[] input) {
+        if (input == null || input.length == 0) {
+            return null;
+        }
+
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hashBytes = digest.digest(input.getBytes(StandardCharsets.UTF_8));
+            byte[] hashBytes = digest.digest(input);
 
             // Convert bytes to hexadecimal string
             StringBuilder hexString = new StringBuilder();

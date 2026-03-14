@@ -20,6 +20,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -27,10 +28,10 @@ import java.util.Map;
 /**
  * Formats tokens in the JWE-based match token format (ot.V1.&lt;JWE&gt;).
  * <p>
- * This transformer wraps the privacy-protected identifier (PPID) in a 
+ * This transformer wraps the privacy-protected identifier (PPID) in a
  * self-contained JWE structure with all necessary metadata for versioning
  * and cryptographic agility.
- * 
+ *
  * @see <a href="https://datatracker.ietf.org/doc/html/rfc7516">RFC 7516 - JSON Web Encryption (JWE)</a>
  */
 public class JweMatchTokenFormatter implements TokenTransformer {
@@ -40,12 +41,12 @@ public class JweMatchTokenFormatter implements TokenTransformer {
     private final String ringId;
     private final String ruleId;
     private final String issuer;
-    private final String encryptionKey;
+    private final byte[] encryptionKey;
     private transient DirectEncrypter encrypter;
 
     /**
      * Initializes the JWE match token formatter.
-     * 
+     *
      * @param encryptionKey the encryption key (must be 32 bytes for AES-256)
      * @param ringId the ring identifier for key management
      * @param ruleId the token rule identifier (e.g., "T1", "T2", etc.)
@@ -54,9 +55,21 @@ public class JweMatchTokenFormatter implements TokenTransformer {
      */
     public JweMatchTokenFormatter(String encryptionKey, String ringId, String ruleId, String issuer)
             throws JOSEException {
-        if (encryptionKey == null || encryptionKey.length() != 32) {
-            throw new IllegalArgumentException("Encryption key must be exactly 32 characters (256 bits)");
-        }
+        this(encryptionKey == null ? null : encryptionKey.getBytes(StandardCharsets.UTF_8), ringId, ruleId, issuer);
+    }
+
+    /**
+     * Initializes the JWE match token formatter using raw encryption key bytes.
+     *
+     * @param encryptionKey the raw encryption key (must be exactly 32 bytes for AES-256)
+     * @param ringId the ring identifier for key management
+     * @param ruleId the token rule identifier (e.g., "T1", "T2", etc.)
+     * @param issuer the issuer identifier (optional, defaults to "truveta.opentoken")
+     * @throws JOSEException if the encrypter cannot be initialized
+     */
+    public JweMatchTokenFormatter(byte[] encryptionKey, String ringId, String ruleId, String issuer)
+            throws JOSEException {
+        byte[] keyBytes = validateEncryptionKey(encryptionKey);
         if (ringId == null || ringId.isEmpty()) {
             throw new IllegalArgumentException("Ring ID must not be null or empty");
         }
@@ -67,14 +80,8 @@ public class JweMatchTokenFormatter implements TokenTransformer {
         this.ringId = ringId;
         this.ruleId = ruleId;
         this.issuer = (issuer != null && !issuer.isEmpty()) ? issuer : "truveta.opentoken";
-        this.encryptionKey = encryptionKey;
-
-        // Create a 256-bit key from the encryption key
-        byte[] keyBytes = encryptionKey.getBytes(StandardCharsets.UTF_8);
-        OctetSequenceKey jwk = new OctetSequenceKey.Builder(keyBytes).build();
-
-        // Initialize direct encrypter for AES-256-GCM
-        this.encrypter = new DirectEncrypter(jwk);
+        this.encryptionKey = keyBytes;
+        this.encrypter = createEncrypter(this.encryptionKey);
     }
 
     private void writeObject(ObjectOutputStream oos) throws IOException {
@@ -84,12 +91,22 @@ public class JweMatchTokenFormatter implements TokenTransformer {
     private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
         ois.defaultReadObject();
         try {
-            byte[] keyBytes = encryptionKey.getBytes(StandardCharsets.UTF_8);
-            OctetSequenceKey jwk = new OctetSequenceKey.Builder(keyBytes).build();
-            this.encrypter = new DirectEncrypter(jwk);
+            this.encrypter = createEncrypter(this.encryptionKey);
         } catch (JOSEException e) {
             throw new IOException("Failed to reconstruct JWE encrypter", e);
         }
+    }
+
+    private static byte[] validateEncryptionKey(byte[] encryptionKey) {
+        if (encryptionKey == null || encryptionKey.length != 32) {
+            throw new IllegalArgumentException("Encryption key must be exactly 32 bytes (256 bits)");
+        }
+        return Arrays.copyOf(encryptionKey, encryptionKey.length);
+    }
+
+    private static DirectEncrypter createEncrypter(byte[] encryptionKey) throws JOSEException {
+        OctetSequenceKey jwk = new OctetSequenceKey.Builder(encryptionKey).build();
+        return new DirectEncrypter(jwk);
     }
 
     /**
@@ -97,7 +114,7 @@ public class JweMatchTokenFormatter implements TokenTransformer {
      * <p>
      * The input token should be the base64-encoded HMAC output from previous transformers.
      * This method wraps it in a JWE structure with metadata and prepends the "ot.V1." prefix.
-     * 
+     *
      * @param token the privacy-protected identifier (PPID) to wrap in JWE format
      * @return the formatted match token: ot.V1.&lt;JWE compact serialization&gt;
      * @throws Exception if JWE encryption or serialization fails

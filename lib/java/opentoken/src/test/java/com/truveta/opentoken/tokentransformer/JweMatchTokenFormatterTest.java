@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWEObject;
+import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -34,9 +35,19 @@ class JweMatchTokenFormatterTest {
     }
 
     @Test
+    void testConstructorWithRaw32ByteKey() throws JOSEException {
+        JweMatchTokenFormatter formatter = new JweMatchTokenFormatter(
+                TEST_ENCRYPTION_KEY.getBytes(StandardCharsets.UTF_8),
+                TEST_RING_ID,
+                TEST_RULE_ID,
+                "test.issuer");
+        assertNotNull(formatter);
+    }
+
+    @Test
     void testConstructorWithNullEncryptionKey() {
         assertThrows(IllegalArgumentException.class, () -> {
-            new JweMatchTokenFormatter(null, TEST_RING_ID, TEST_RULE_ID, "test.issuer");
+            new JweMatchTokenFormatter((String) null, TEST_RING_ID, TEST_RULE_ID, "test.issuer");
         });
     }
 
@@ -45,6 +56,14 @@ class JweMatchTokenFormatterTest {
         assertThrows(IllegalArgumentException.class, () -> {
             new JweMatchTokenFormatter("short", TEST_RING_ID, TEST_RULE_ID, "test.issuer");
         });
+    }
+
+    @Test
+    void testConstructorWithNonAscii32CharacterKey() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            new JweMatchTokenFormatter("é".repeat(32), TEST_RING_ID, TEST_RULE_ID, "test.issuer");
+        });
+        assertEquals("Encryption key must be exactly 32 bytes (256 bits)", exception.getMessage());
     }
 
     @Test

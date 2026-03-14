@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.security.SecureRandom;
 import java.util.Base64;
 import javax.crypto.BadPaddingException;
@@ -21,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Transforms the token using a AES-256 symmetric encryption.
- * 
+ *
  * @see <a href=https://datatracker.ietf.org/doc/html/rfc3826>AES</a>
  */
 public class EncryptTokenTransformer implements TokenTransformer {
@@ -35,9 +36,9 @@ public class EncryptTokenTransformer implements TokenTransformer {
 
     /**
      * Initializes the underlying cipher (AES) with the encryption secret.
-     * 
-     * @param encryptionKey the encryption key. The key must be 32 characters long.
-     * 
+     *
+     * @param encryptionKey the encryption key. The UTF-8 encoded key material must be exactly 32 bytes long.
+     *
      * @throws java.security.InvalidKeyException                invalid encryption
      *                                                          key.
      * @throws java.security.InvalidAlgorithmParameterException invalid encryption
@@ -46,15 +47,32 @@ public class EncryptTokenTransformer implements TokenTransformer {
      */
     public EncryptTokenTransformer(String encryptionKey)
             throws InvalidKeyException, InvalidAlgorithmParameterException {
-        if (encryptionKey.length() != EncryptionConstants.KEY_BYTE_LENGTH) {
-            logger.error("Invalid Argument. Key must be {} characters long", EncryptionConstants.KEY_BYTE_LENGTH);
-            throw new InvalidKeyException(
-                    String.format("Key must be %s characters long", EncryptionConstants.KEY_BYTE_LENGTH));
-        }
+        this(toValidatedKeyBytes(encryptionKey));
+    }
 
+    /**
+     * Initializes the underlying cipher (AES) with raw encryption key material.
+     *
+     * @param encryptionKey the raw encryption key bytes. The key must be exactly 32 bytes long.
+     * @throws java.security.InvalidKeyException                invalid encryption key.
+     * @throws java.security.InvalidAlgorithmParameterException invalid encryption algorithm parameters.
+     */
+    public EncryptTokenTransformer(byte[] encryptionKey)
+            throws InvalidKeyException, InvalidAlgorithmParameterException {
         secureRandom = new SecureRandom();
+        this.secretKey = new SecretKeySpec(toValidatedKeyBytes(encryptionKey), EncryptionConstants.AES);
+    }
 
-        this.secretKey = new SecretKeySpec(encryptionKey.getBytes(StandardCharsets.UTF_8), EncryptionConstants.AES);
+    private static byte[] toValidatedKeyBytes(String encryptionKey) throws InvalidKeyException {
+        return toValidatedKeyBytes(encryptionKey == null ? null : encryptionKey.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static byte[] toValidatedKeyBytes(byte[] encryptionKey) throws InvalidKeyException {
+        if (encryptionKey == null || encryptionKey.length != EncryptionConstants.KEY_BYTE_LENGTH) {
+            logger.error("Invalid Argument. Key must be {} bytes long", EncryptionConstants.KEY_BYTE_LENGTH);
+            throw new InvalidKeyException(String.format("Key must be %s bytes long", EncryptionConstants.KEY_BYTE_LENGTH));
+        }
+        return Arrays.copyOf(encryptionKey, encryptionKey.length);
     }
 
     /**

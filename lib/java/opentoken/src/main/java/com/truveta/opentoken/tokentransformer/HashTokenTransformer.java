@@ -9,20 +9,20 @@ import java.io.ObjectOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Base64.Encoder;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Transforms the token using a cryptographic hash function with
  * a secret key.
- * 
+ *
  * @see <a href=https://datatracker.ietf.org/doc/html/rfc4868>HMACSHA256</a>
  */
 public class HashTokenTransformer implements TokenTransformer {
@@ -31,7 +31,7 @@ public class HashTokenTransformer implements TokenTransformer {
 
     private transient Mac mac;
     private transient Encoder encoder;
-    private final String hashingSecret;
+    private final byte[] hashingSecret;
 
     /**
      * Initializes the underlying MAC with the secret key.
@@ -44,15 +44,19 @@ public class HashTokenTransformer implements TokenTransformer {
      *                                                initializing this HMAC.
      */
     public HashTokenTransformer(String hashingSecret) throws NoSuchAlgorithmException, InvalidKeyException {
-        this.hashingSecret = hashingSecret;
-        if (StringUtils.isEmpty(this.hashingSecret)) {
-            this.mac = null;
-            this.encoder = null;
-            return;
-        }
-        this.mac = Mac.getInstance("HmacSHA256");
-        this.mac.init(new SecretKeySpec(this.hashingSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
-        this.encoder = Base64.getEncoder();
+        this(hashingSecret == null ? null : hashingSecret.getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Initializes the underlying MAC with raw key bytes.
+     *
+     * @param hashingSecret the cryptographic secret key bytes.
+     * @throws java.security.NoSuchAlgorithmException invalid HMAC algorithm.
+     * @throws java.security.InvalidKeyException      if the given key is inappropriate for initializing this HMAC.
+     */
+    public HashTokenTransformer(byte[] hashingSecret) throws NoSuchAlgorithmException, InvalidKeyException {
+        this.hashingSecret = hashingSecret == null ? null : Arrays.copyOf(hashingSecret, hashingSecret.length);
+        rebuildMac();
     }
 
     /**
@@ -61,7 +65,7 @@ public class HashTokenTransformer implements TokenTransformer {
      * The token is transformed using HMAC SHA256 algorithm.
      *
      * @return hashed token in <code>base64</code> format.
-     * 
+     *
      * @throws java.lang.IllegalArgumentException <code>null</code> or blank token
      *                                            provided.
      * @throws java.lang.IllegalStateException    if the HMAC is not initialized
@@ -90,17 +94,21 @@ public class HashTokenTransformer implements TokenTransformer {
             throws IOException, ClassNotFoundException {
         ois.defaultReadObject(); // Deserializes hashingSecret
         try {
-            if (StringUtils.isEmpty(this.hashingSecret)) {
-                this.mac = null;
-                this.encoder = null;
-                return;
-            }
-            this.mac = Mac.getInstance("HmacSHA256");
-            this.mac.init(new SecretKeySpec(this.hashingSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
-            this.encoder = Base64.getEncoder();
+            rebuildMac();
         } catch (NoSuchAlgorithmException | InvalidKeyException e) {
             throw new IOException("Failed to reconstruct MAC", e);
         }
+    }
+
+    private void rebuildMac() throws NoSuchAlgorithmException, InvalidKeyException {
+        if (this.hashingSecret == null || this.hashingSecret.length == 0) {
+            this.mac = null;
+            this.encoder = null;
+            return;
+        }
+        this.mac = Mac.getInstance("HmacSHA256");
+        this.mac.init(new SecretKeySpec(this.hashingSecret, "HmacSHA256"));
+        this.encoder = Base64.getEncoder();
     }
 
 }
