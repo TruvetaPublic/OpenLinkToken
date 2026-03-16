@@ -48,44 +48,86 @@ class TestRegisterSubcommand:
 
         assert "hello-world" in subparsers.choices
 
-    def test_greet_sub_subcommand_present(self):
-        """The 'greet' sub-subcommand is accessible under 'hello-world'."""
+    def test_hello_sub_subcommand_present(self):
+        """The 'hello' sub-subcommand is accessible under 'hello-world'."""
         root = argparse.ArgumentParser()
         subparsers = root.add_subparsers(dest="command")
         ext = HelloWorldExtension()
         ext.register_subcommand(subparsers)
 
         assert "hello-world" in subparsers.choices
-        # Parse a greet invocation — should not raise.
-        parsed = root.parse_args(["hello-world", "greet", "--name", "Alice"])
+        # Parse a hello invocation — should not raise.
+        parsed = root.parse_args(["hello-world", "hello", "--name", "Alice"])
+        assert parsed.name == "Alice"
+
+    def test_bye_sub_subcommand_present(self):
+        """The 'bye' sub-subcommand is accessible under 'hello-world'."""
+        root = argparse.ArgumentParser()
+        subparsers = root.add_subparsers(dest="command")
+        ext = HelloWorldExtension()
+        ext.register_subcommand(subparsers)
+
+        assert "hello-world" in subparsers.choices
+        # Parse a bye invocation — should not raise.
+        parsed = root.parse_args(["hello-world", "bye", "--name", "Alice"])
         assert parsed.name == "Alice"
 
 
 # ---------------------------------------------------------------------------
-# Tests: _greet dispatch
+# Tests: _hello dispatch
 # ---------------------------------------------------------------------------
 
 
-class TestGreetDispatch:
-    """Tests for HelloWorldExtension._greet static method."""
+class TestHelloDispatch:
+    """Tests for HelloWorldExtension._hello static method."""
 
-    def test_greet_output(self, capsys):
-        """_greet prints the expected greeting to stdout."""
+    def test_hello_output(self, capsys):
+        """_hello prints the expected greeting to stdout."""
         args = MagicMock()
         args.name = "Alice"
 
-        result = HelloWorldExtension._greet(args)
+        result = HelloWorldExtension._hello(args)
 
         assert result == 0
         out = capsys.readouterr().out
-        assert out.strip() == "Hello, Alice! — from OpenToken hello-world extension"
+        assert out.strip() == "Hello, Alice"
 
-    def test_greet_different_name(self, capsys):
-        """_greet uses the provided name in the output."""
+    def test_hello_different_name(self, capsys):
+        """_hello uses the provided name in the output."""
         args = MagicMock()
         args.name = "Bob"
 
-        HelloWorldExtension._greet(args)
+        HelloWorldExtension._hello(args)
+
+        out = capsys.readouterr().out
+        assert "Bob" in out
+
+
+# ---------------------------------------------------------------------------
+# Tests: _bye dispatch
+# ---------------------------------------------------------------------------
+
+
+class TestByeDispatch:
+    """Tests for HelloWorldExtension._bye static method."""
+
+    def test_bye_output(self, capsys):
+        """_bye prints the expected farewell to stdout."""
+        args = MagicMock()
+        args.name = "Alice"
+
+        result = HelloWorldExtension._bye(args)
+
+        assert result == 0
+        out = capsys.readouterr().out
+        assert out.strip() == "Bye, Alice"
+
+    def test_bye_different_name(self, capsys):
+        """_bye uses the provided name in the output."""
+        args = MagicMock()
+        args.name = "Bob"
+
+        HelloWorldExtension._bye(args)
 
         out = capsys.readouterr().out
         assert "Bob" in out

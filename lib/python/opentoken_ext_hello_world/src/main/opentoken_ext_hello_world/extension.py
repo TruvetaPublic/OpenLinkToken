@@ -30,14 +30,24 @@ class HelloWorldExtension(OpenTokenExtension):
         parser = subparsers.add_parser(self.command_name, help=self.description)
         sub = parser.add_subparsers(dest="hello_world_subcommand")
 
-        greet = sub.add_parser("greet", help="Print a greeting")
-        greet.add_argument("--name", required=True, help="Name to greet")
-        greet.set_defaults(func=HelloWorldExtension._greet)
+        hello = sub.add_parser("hello", help="Print a hello greeting")
+        hello.add_argument("--name", required=True, help="Name to greet")
+        hello.set_defaults(func=HelloWorldExtension._hello)
+
+        bye = sub.add_parser("bye", help="Print a goodbye greeting")
+        bye.add_argument("--name", required=True, help="Name to bid farewell")
+        bye.set_defaults(func=HelloWorldExtension._bye)
 
         parser.set_defaults(func=lambda args: (parser.print_help(), 0)[1])
 
     @staticmethod
-    def _greet(args) -> int:
-        """Print a personalised greeting and return exit code 0."""
-        print(f"Hello, {args.name}! — from OpenToken hello-world extension")
+    def _hello(args) -> int:
+        """Print a personalised hello greeting and return exit code 0."""
+        print(f"Hello, {args.name}")
+        return 0
+
+    @staticmethod
+    def _bye(args) -> int:
+        """Print a personalised goodbye greeting and return exit code 0."""
+        print(f"Bye, {args.name}")
         return 0
