@@ -205,3 +205,42 @@ class TestExtensionInstall:
         registry = json.loads((tmp_path / "registry.json").read_text())
         assert "hello-world" in registry
         assert registry["hello-world"]["version"] == "1.0.0"
+
+    def test_install_non_interactive_without_yes_fails(self, tmp_path, capsys):
+        """Without --yes and in a non-TTY context, install must fail with a clear error."""
+        args = _make_args(url="file:///nonexistent.whl", yes=False)
+        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+            with patch("sys.stdin") as mock_stdin:
+                mock_stdin.isatty.return_value = False
+                result = ExtensionCommand._install(args)
+                mock_stdin.isatty.assert_called_once()
+
+        assert result == 1
+        err = capsys.readouterr().err
+        assert "--yes" in err
+
+    def test_install_rejects_non_https_url(self, tmp_path, capsys):
+        """install must reject URLs with schemes other than https:// or file://."""
+        args = _make_args(url="http://example.com/ext.whl", yes=True)
+        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+            result = ExtensionCommand._install(args)
+
+        assert result == 1
+        err = capsys.readouterr().err
+        assert "Unsupported URL scheme" in err
+
+    def test_install_pip_uses_upgrade_no_deps(self, tmp_path, capsys):
+        """install passes --upgrade --no-deps to pip so the package is updated without re-downloading unchanged deps."""
+        whl = _make_wheel(tmp_path)
+        args = _make_args(url=f"file://{whl}", yes=True)
+
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+
+        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+            with patch("subprocess.run", return_value=mock_result) as mock_pip:
+                ExtensionCommand._install(args)
+
+        call_args = mock_pip.call_args[0][0]
+        assert "--upgrade" in call_args
+        assert "--no-deps" in call_args

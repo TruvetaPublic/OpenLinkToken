@@ -71,8 +71,8 @@ class OpenTokenExtension(ABC):
           your parser.
         * Call ``set_defaults(func=<handler>)`` on every leaf parser so the
           CLI dispatcher can invoke the correct handler.
-        * Leaf parsers that omit ``set_defaults(func=...)`` will raise a
-          ``NotImplementedError`` at dispatch time.
+        * Leaf parsers that omit ``set_defaults(func=...)`` will raise an
+          ``AttributeError`` at dispatch time.
         """
 ```
 
@@ -80,7 +80,7 @@ class OpenTokenExtension(ABC):
 
 ```python
 # opentoken_ext_hello_world/extension.py
-from opentoken.extension import OpenTokenExtension
+from opentoken_cli.extension import OpenTokenExtension
 
 
 class HelloWorldExtension(OpenTokenExtension):
@@ -101,21 +101,27 @@ class HelloWorldExtension(OpenTokenExtension):
             self.command_name,
             help=self.description,
         )
-        parser.set_defaults(func=self._run_default)
+        parser.set_defaults(func=lambda args: (parser.print_help(), 0)[1])
 
         sub = parser.add_subparsers()
 
-        greet = sub.add_parser("greet", help="Greet a named person")
-        greet.add_argument("--name", required=True, help="Name to greet")
-        greet.set_defaults(func=self._run_greet)
+        hello = sub.add_parser("hello", help="Greet a named person")
+        hello.add_argument("--name", required=True, help="Name to greet")
+        hello.set_defaults(func=self._run_hello)
+
+        bye = sub.add_parser("bye", help="Say goodbye to a named person")
+        bye.add_argument("--name", required=True, help="Name to say goodbye to")
+        bye.set_defaults(func=self._run_bye)
 
     # --- handlers ---
 
-    def _run_default(self, args) -> None:
-        print("Hello, world! — from OpenToken hello-world extension")
+    def _run_hello(self, args) -> int:
+        print(f"Hello, {args.name}")
+        return 0
 
-    def _run_greet(self, args) -> None:
-        print(f"Hello, {args.name}! — from OpenToken hello-world extension")
+    def _run_bye(self, args) -> int:
+        print(f"Bye, {args.name}")
+        return 0
 ```
 
 ---
@@ -153,7 +159,7 @@ install → discover → load → register → invoke → uninstall
 ## Conflict Rules
 
 - **Command name uniqueness**: `command_name` must not duplicate a built-in subcommand name or another installed extension's `command_name`.
-- **Conflict at load time**: If two installed extensions declare the same `command_name`, the CLI prints a warning and loads the extension that was installed first. The conflicting extension is skipped.
+- **Conflict at load time**: If two installed extensions declare the same `command_name`, the CLI prints a warning and loads the extension that sorts first alphabetically by `command_name`. The conflicting extension is skipped.
 - **Built-in precedence**: Built-in subcommands always take precedence. An extension whose `command_name` matches a built-in is skipped with a warning.
 - **Registry records source**: `registry.json` stores the source URL for each installed extension, which is shown in `opentoken extension list` to help diagnose conflicts.
 
@@ -196,8 +202,6 @@ The pre-built OpenToken binary is a PyInstaller-frozen executable. Extensions th
 
 **Recommendation:** Keep extensions at Tier 1 whenever possible. Tier 1 extensions work under both the binary and a Python package install.
 
-To check which packages are bundled, run `opentoken --bundled-packages` (binary only). If your extension imports a package not in that list, it is Tier 3.
-
 `opentoken extension install` aborts with a clear error when it detects a Tier-3 extension under the binary:
 
 ```
@@ -232,19 +236,19 @@ Under the binary, `opentoken extension install` writes each extension's package 
 
 ```json
 {
-  "extensions": [
-    {
-      "name": "hello-world",
-      "version": "1.0.0",
-      "module": "opentoken_ext_hello_world.extension",
-      "class": "HelloWorldExtension",
-      "path": "/home/user/.opentoken/extensions/opentoken_ext_hello_world-1.0.0",
-      "source": "file:///home/user/dist/opentoken_ext_hello_world-1.0.0-py3-none-any.whl",
-      "installed_at": "2024-11-01T12:00:00Z"
-    }
-  ]
+  "hello-world": {
+    "version": "1.0.0",
+    "source_url": "file:///home/user/dist/opentoken_ext_hello_world-1.0.0-py3-none-any.whl",
+    "source_path": "/home/user/.opentoken/extensions/hello-world/src",
+    "module": "opentoken_ext_hello_world.extension",
+    "class": "HelloWorldExtension",
+    "command_name": "hello-world",
+    "dist_name": "opentoken-ext-hello-world"
+  }
 }
 ```
+
+The top-level keys are the extension `command_name` values. Each value is a metadata object with the fields shown above.
 
 ---
 

@@ -20,13 +20,13 @@ The CLI prints a security warning and prompts for confirmation before installing
 
 ### From a Local File
 
-Use the `file://` scheme to install from a local `.whl` or `.tar.gz` file:
+Use the `file://` scheme to install from a local `.whl` file:
 
 ```bash
 opentoken extension install file:///path/to/opentoken_ext_hello_world-1.0.0-py3-none-any.whl
 ```
 
-Relative paths are not supported. Use an absolute path in the `file://` URL.
+Use an absolute path in the `file://` URL.
 
 ### Skipping Confirmation
 

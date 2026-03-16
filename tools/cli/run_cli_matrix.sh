@@ -426,12 +426,19 @@ run_matrix() {
     run_step "extension-help" "$PAUSE_SECONDS" "${python_cmd[@]}" extension --help
     confirm_before_next_step "extension-list" "$PAUSE_SECONDS" || return 0
     run_step "extension-list" "$PAUSE_SECONDS" "${python_cmd[@]}" extension list
-    confirm_before_next_step "extension-hello-world-help" "$PAUSE_SECONDS" || return 0
-    run_step "extension-hello-world-help" "$PAUSE_SECONDS" "${python_cmd[@]}" hello-world --help
-    confirm_before_next_step "extension-hello-world-hello" "$PAUSE_SECONDS" || return 0
-    run_step "extension-hello-world-hello" "$PAUSE_SECONDS" "${python_cmd[@]}" hello-world hello --name Alice
-    confirm_before_next_step "extension-hello-world-bye" "$PAUSE_SECONDS" || return 0
-    run_step "extension-hello-world-bye" "0" "${python_cmd[@]}" hello-world bye --name Bob
+
+    # hello-world steps only run when the reference extension is already installed
+    # in the active Python environment (entry-point discovery must resolve it).
+    if [[ "$EXT_HELLO_WORLD_WAS_INSTALLED" == "true" ]]; then
+        confirm_before_next_step "extension-hello-world-help" "$PAUSE_SECONDS" || return 0
+        run_step "extension-hello-world-help" "$PAUSE_SECONDS" "${python_cmd[@]}" hello-world --help
+        confirm_before_next_step "extension-hello-world-hello" "$PAUSE_SECONDS" || return 0
+        run_step "extension-hello-world-hello" "$PAUSE_SECONDS" "${python_cmd[@]}" hello-world hello --name Alice
+        confirm_before_next_step "extension-hello-world-bye" "$PAUSE_SECONDS" || return 0
+        run_step "extension-hello-world-bye" "0" "${python_cmd[@]}" hello-world bye --name Bob
+    else
+        echo "Skipping hello-world steps (opentoken-ext-hello-world not installed; use --include-extension-install to test the full install/run/uninstall round-trip)"
+    fi
 
     if [[ "$INCLUDE_EXTENSION_INSTALL" == "true" ]]; then
         # Build the hello-world wheel into the isolated workspace.

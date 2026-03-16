@@ -459,7 +459,7 @@ Downloads and installs an extension from a URL or `file://` path.
 
 | Option  | Description                                                            |
 | ------- | ---------------------------------------------------------------------- |
-| `<url>` | Source URL or `file://` absolute path to a `.whl` or `.tar.gz` package |
+| `<url>` | Source URL (`https://`) or `file://` absolute path to a `.whl` package |
 | `--yes` | Skip the security confirmation prompt                                  |
 
 A security warning is always printed before installing. Confirmation is required unless `--yes` is passed. The CLI aborts with an error if the extension requires packages not bundled in the binary (Tier-3 extensions are not supported under the binary install).

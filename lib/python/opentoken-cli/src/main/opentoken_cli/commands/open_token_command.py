@@ -100,7 +100,7 @@ class OpenTokenCommand:
         from opentoken_cli.commands.package_command import PackageCommand
         from opentoken_cli.commands.tokenize_command import TokenizeCommand
         from opentoken_cli.commands.update_command import UpdateCommand
-        from opentoken_cli.extension.extension_loader import ExtensionLoader
+        from opentoken_cli.extension.extension_loader import BUILTIN_COMMANDS, ExtensionLoader
 
         # Register subcommands in alphabetical order by command name
         DecryptCommand.register_subcommand(subparsers)
@@ -114,26 +114,22 @@ class OpenTokenCommand:
         UpdateCommand.register_subcommand(subparsers)
 
         # Load installed extensions (entry points or registry).
-        _BUILTIN_COMMANDS = {
-            "help",
-            "tokenize",
-            "encrypt",
-            "decrypt",
-            "package",
-            "generate-key-pair",
-            "initiate-exchange",
-            "update",
-            "extension",
-        }
-        ExtensionLoader.load_extensions(subparsers, _BUILTIN_COMMANDS)
+        # BUILTIN_COMMANDS is the authoritative set of reserved command names.
+        ExtensionLoader.load_extensions(subparsers, BUILTIN_COMMANDS)
 
-        # Sort all subcommands (built-ins and extensions) alphabetically in-place.
-        # _name_parser_map drives dispatch and the choices {…} display;
-        # _choices_actions drives the per-command description table in --help.
-        sorted_items = sorted(subparsers._name_parser_map.items())
-        subparsers._name_parser_map.clear()
-        subparsers._name_parser_map.update(sorted_items)
-        subparsers._choices_actions.sort(key=lambda a: a.dest)
+        # Sort all subcommands (built-ins and extensions) alphabetically.
+        # Uses private argparse internals that may not exist in all Python versions;
+        # sorting is skipped gracefully if those attributes are absent.
+        if hasattr(subparsers, "_name_parser_map") and hasattr(subparsers, "_choices_actions"):
+            sorted_items = sorted(subparsers._name_parser_map.items())
+            subparsers._name_parser_map.clear()
+            subparsers._name_parser_map.update(sorted_items)
+            subparsers._choices_actions.sort(key=lambda a: a.dest)
+        else:
+            logger.debug(
+                "Subcommand alphabetical sorting skipped: argparse internals "
+                "(_name_parser_map / _choices_actions) not available on this Python version."
+            )
 
         return parser
 
