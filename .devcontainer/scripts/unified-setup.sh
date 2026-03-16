@@ -141,10 +141,8 @@ step_install_prek() {
 # ============================================================================
 
 step_install_apm_cli() {
-  skip_if_complete "apm-cli-installed" "apm CLI installation" && return 0
   echo "→ Installing apm CLI"
   uv pip install apm-cli
-  mark_complete "apm-cli-installed"
 }
 
 step_setup_apm() {
