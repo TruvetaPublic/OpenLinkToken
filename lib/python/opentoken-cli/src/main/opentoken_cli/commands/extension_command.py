@@ -219,7 +219,7 @@ class ExtensionCommand:
                         for ep in eps:
                             if ep.name == name:
                                 name_from_meta = ep.dist.metadata.get("Name")
-                                dist_name = name_from_meta if name_from_meta else (ep.dist.name if ep.dist.name else name)
+                                dist_name = name_from_meta or ep.dist.name or name
                                 break
                     except Exception:
                         pass
