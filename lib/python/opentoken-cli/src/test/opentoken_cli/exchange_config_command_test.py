@@ -9,26 +9,26 @@ from unittest.mock import patch
 
 from jwcrypto import jwe, jwk
 
-from opentoken_cli.commands.open_token_command import OpenTokenCommand
-from opentoken_cli.util.ec_key_utils import fingerprint_to_kid, generate_key_pair, public_key_fingerprint
-from opentoken_cli.util.exchange_config import default_exchange_config_path
-from opentoken_cli.util.exchange_jwe import (
+from opentoken.exchange_jwe import (
     EXCHANGE_JWE_CONTENT_TYPE,
     EXCHANGE_JWE_ENCRYPTION,
     EXCHANGE_JWE_RECIPIENT_ALGORITHM,
     EXCHANGE_JWE_TYPE,
     build_exchange_envelope,
 )
+from opentoken_cli.commands.open_token_command import OpenTokenCommand
+from opentoken_cli.util.ec_key_utils import fingerprint_to_kid, generate_key_pair, public_key_fingerprint
+from opentoken_cli.util.exchange_config import default_exchange_config_path
 
 
 class TestExchangeConfigCommands:
     """Focused command tests for exchange-config-driven secret resolution."""
 
-    def test_tokenize_supports_legacy_v1_exchange_config(self, tmp_path: Path) -> None:
-        """Tokenize should keep working with legacy v1 configs that only carry the hashing secret."""
+    def test_tokenize_rejects_future_v2_exchange_config(self, tmp_path: Path, caplog) -> None:
+        """Tokenize should reject unsupported v2 configs during exchange-config loading."""
         input_csv = _write_input_csv(tmp_path)
         output_csv = tmp_path / "output.csv"
-        exchange_config_path, private_key_path = _write_legacy_v1_exchange_config(tmp_path)
+        exchange_config_path, private_key_path = _write_future_v2_exchange_config(tmp_path)
 
         exit_code = OpenTokenCommand.execute(
             [
@@ -46,14 +46,14 @@ class TestExchangeConfigCommands:
             ]
         )
 
-        assert exit_code == 0
-        assert output_csv.exists()
+        assert exit_code != 0
+        assert "Unsupported exchange config version '2'. Supported versions: 1." in caplog.text
 
-    def test_encrypt_rejects_legacy_v1_exchange_config_with_regeneration_message(self, tmp_path: Path, caplog) -> None:
-        """Encrypt should fail clearly when the config lacks reusable public keys."""
+    def test_encrypt_rejects_future_v2_exchange_config(self, tmp_path: Path, caplog) -> None:
+        """Encrypt should reject unsupported v2 configs during exchange-config loading."""
         input_csv = _write_tokenized_csv(tmp_path)
         output_csv = tmp_path / "encrypted.csv"
-        exchange_config_path, private_key_path = _write_legacy_v1_exchange_config(tmp_path)
+        exchange_config_path, private_key_path = _write_future_v2_exchange_config(tmp_path)
 
         exit_code = OpenTokenCommand.execute(
             [
@@ -72,7 +72,7 @@ class TestExchangeConfigCommands:
         )
 
         assert exit_code != 0
-        assert "Regenerate it with 'opentoken initiate-exchange'" in caplog.text
+        assert "Unsupported exchange config version '2'. Supported versions: 1." in caplog.text
 
     def test_tokenize_uses_default_date_based_exchange_config_path(self, tmp_path: Path) -> None:
         """Consumer commands should use the same date-based default config name as initiate-exchange."""
@@ -231,7 +231,7 @@ def _write_current_exchange_config(exchange_config_path: Path, tmp_path: Path) -
     return private_key_path
 
 
-def _write_legacy_v1_exchange_config(tmp_path: Path) -> tuple[Path, Path]:
+def _write_future_v2_exchange_config(tmp_path: Path) -> tuple[Path, Path]:
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     _, recipient_public_pem = generate_key_pair("P-256")
     payload = {
@@ -265,13 +265,13 @@ def _write_legacy_v1_exchange_config(tmp_path: Path) -> tuple[Path, Path]:
             ),
         )
 
-    exchange_config_path = tmp_path / "legacy.exchange.json"
+    exchange_config_path = tmp_path / "future.exchange.json"
     serialized = json.loads(envelope.serialize(compact=False))
-    serialized["version"] = 1
+    serialized["version"] = 2
     exchange_config_path.write_text(json.dumps(serialized), encoding="utf-8")
 
-    private_key_path = tmp_path / ".opentoken" / "legacy.private.pem"
-    public_key_path = tmp_path / ".opentoken" / "legacy.public.pem"
+    private_key_path = tmp_path / ".opentoken" / "future.private.pem"
+    public_key_path = tmp_path / ".opentoken" / "future.public.pem"
     public_key_path.parent.mkdir(parents=True, exist_ok=True)
     private_key_path.write_bytes(sender_private_pem)
     public_key_path.write_bytes(sender_public_pem)

@@ -4,9 +4,15 @@ Copyright (c) Truveta. All rights reserved.
 Tests for dataset overlap analyzer.
 """
 
+import json
+from pathlib import Path
+
 import pytest
 from pyspark.sql import SparkSession
 
+from opentoken.ec_key_utils import generate_key_pair
+from opentoken.exchange_config import derive_transport_encryption_key, resolve_exchange_config_inputs
+from opentoken.exchange_jwe import build_exchange_envelope
 from opentoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
 from opentoken.tokentransformer.jwe_match_token_formatter import JweMatchTokenFormatter
 from opentoken_pyspark.overlap_analyzer import OpenTokenOverlapAnalyzer
@@ -76,6 +82,71 @@ class TestOpenTokenOverlapAnalyzerInit:
         """Test initialization with wrong key length raises ValueError."""
         with pytest.raises(ValueError, match="must be exactly 32 bytes"):
             OpenTokenOverlapAnalyzer("short-key")
+
+    def test_init_rejects_whitespace_only_bytes_key(self):
+        """Byte keys that only contain whitespace should be rejected."""
+        with pytest.raises(ValueError, match="Encryption key cannot be empty"):
+            OpenTokenOverlapAnalyzer(b" " * 32)
+
+    def test_from_exchange_config_uses_derived_transport_key(self, tmp_path, monkeypatch):
+        """Factory should resolve and use the exchange-derived transport key."""
+        exchange_config_path, sender_private_pem = _write_exchange_config(tmp_path)
+        monkeypatch.setenv("OPENTOKEN_TEST_PRIVATE_KEY", sender_private_pem.decode("utf-8"))
+        resolved_exchange = resolve_exchange_config_inputs(
+            exchange_config_path,
+            private_key_env="OPENTOKEN_TEST_PRIVATE_KEY",
+        )
+
+        analyzer = OpenTokenOverlapAnalyzer.from_exchange_config(
+            exchange_config_path=exchange_config_path,
+            private_key_env="OPENTOKEN_TEST_PRIVATE_KEY",
+        )
+
+        assert analyzer.encryption_key == derive_transport_encryption_key(resolved_exchange)
+
+    def test_from_exchange_config_decrypts_v1_tokens(self, tmp_path):
+        """Factory-created analyzers should decrypt ot.V1 tokens with the derived key."""
+        exchange_config_path, sender_private_pem = _write_exchange_config(tmp_path)
+        private_key_path = tmp_path / "sender.private.pem"
+        private_key_path.write_bytes(sender_private_pem)
+        resolved_exchange = resolve_exchange_config_inputs(exchange_config_path, private_key_path=private_key_path)
+        transport_key = derive_transport_encryption_key(resolved_exchange)
+
+        analyzer = OpenTokenOverlapAnalyzer.from_exchange_config(
+            exchange_config_path=exchange_config_path,
+            private_key_path=private_key_path,
+        )
+        plaintext = "deterministic-hash-value"
+        legacy_encrypted = EncryptTokenTransformer(transport_key).transform(plaintext)
+        v1_encrypted = JweMatchTokenFormatter(
+            encryption_key=transport_key,
+            ring_id="ring-test",
+            rule_id="T1",
+        ).transform(legacy_encrypted)
+
+        assert analyzer._decrypt_token(v1_encrypted) == plaintext
+
+    def test_from_exchange_config_accepts_direct_exchange_config_and_private_key_values(self, tmp_path):
+        """Direct exchange-config JSON and private-key PEM values should configure the analyzer."""
+        exchange_config_path, sender_private_pem = _write_exchange_config(tmp_path)
+        private_key_path = tmp_path / "sender.private.pem"
+        private_key_path.write_bytes(sender_private_pem)
+        resolved_exchange = resolve_exchange_config_inputs(exchange_config_path, private_key_path=private_key_path)
+        transport_key = derive_transport_encryption_key(resolved_exchange)
+
+        analyzer = OpenTokenOverlapAnalyzer.from_exchange_config(
+            exchange_config_value=exchange_config_path.read_text(encoding="utf-8"),
+            private_key_value=sender_private_pem.decode("utf-8"),
+        )
+        plaintext = "deterministic-hash-value"
+        legacy_encrypted = EncryptTokenTransformer(transport_key).transform(plaintext)
+        v1_encrypted = JweMatchTokenFormatter(
+            encryption_key=transport_key,
+            ring_id="ring-test",
+            rule_id="T1",
+        ).transform(legacy_encrypted)
+
+        assert analyzer._decrypt_token(v1_encrypted) == plaintext
 
 
 class TestAnalyzeOverlap:
@@ -243,3 +314,25 @@ class TestPrintSummary:
         assert "Total records:" in captured.out
         assert "Matching records:" in captured.out
         assert "Overlap Percentage:" in captured.out
+
+
+def _write_exchange_config(tmp_path: Path) -> tuple[Path, bytes]:
+    """Create a version 1 exchange config and matching sender private key."""
+    sender_private_pem, sender_public_pem = generate_key_pair("P-256")
+    _, recipient_public_pem = generate_key_pair("P-256")
+    exchange_config_path = tmp_path / "test.exchange.json"
+    exchange_config_path.write_text(
+        json.dumps(
+            build_exchange_envelope(
+                exchange_name="shared-exchange",
+                hashing_secret=b"shared-hashing-secret",
+                sender_public_pem=sender_public_pem,
+                recipient_public_pem=recipient_public_pem,
+                curve="P-256",
+                created_at="2026-03-12T00:00:00Z",
+                exchange_id="exchange-123",
+            )
+        ),
+        encoding="utf-8",
+    )
+    return exchange_config_path, sender_private_pem

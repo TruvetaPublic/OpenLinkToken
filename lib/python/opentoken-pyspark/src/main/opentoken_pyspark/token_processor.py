@@ -6,12 +6,13 @@ PySpark token processor for distributed token generation.
 
 import logging
 import uuid
+from pathlib import Path
 from typing import Any, Dict, Mapping, Optional, Type, cast
 
 import pandas as pd
 from pyspark.sql import DataFrame
 from pyspark.sql.column import Column
-from pyspark.sql.functions import col, pandas_udf
+from pyspark.sql.functions import col, explode, pandas_udf
 from pyspark.sql.types import ArrayType, StringType, StructField, StructType
 
 # Import OpenToken core functionality
@@ -24,6 +25,7 @@ from opentoken.attributes.person.last_name_attribute import LastNameAttribute
 from opentoken.attributes.person.postal_code_attribute import PostalCodeAttribute
 from opentoken.attributes.person.sex_attribute import SexAttribute
 from opentoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
+from opentoken.exchange_config import derive_transport_encryption_key, resolve_exchange_config_inputs
 from opentoken.tokens.base_token_definition import BaseTokenDefinition
 from opentoken.tokens.token_definition import TokenDefinition
 from opentoken.tokens.token_generator import TokenGenerator
@@ -76,17 +78,19 @@ class OpenTokenProcessor:
 
     def __init__(
         self,
-        hashing_secret: Optional[str] = None,
-        encryption_key: Optional[str] = None,
-        token_definition: Optional[BaseTokenDefinition] = None,
-        ring_id: Optional[str] = None,
+        hashing_secret: str | bytes | None = None,
+        encryption_key: str | bytes | None = None,
+        token_definition: BaseTokenDefinition | None = None,
+        ring_id: str | None = None,
     ):
         """
         Initialize the OpenToken processor with secrets.
 
         Args:
             hashing_secret: Optional secret for HMAC-SHA256 hashing. If None, tokens will be plain concatenated strings.
+                            String inputs are encoded as UTF-8 at the Spark worker boundary.
             encryption_key: Optional key for AES-256 encryption. If None, tokens will not be encrypted.
+                            String inputs are encoded as UTF-8 at the Spark worker boundary.
             token_definition: Optional custom token definition. If None, uses default tokens (T1-T5).
                              Use this to pass custom tokens created with TokenBuilder or CustomTokenDefinition.
             ring_id: Optional ring identifier used in ot.V1 token wrapping when encryption is enabled.
@@ -111,10 +115,16 @@ class OpenTokenProcessor:
             >>> custom_def = CustomTokenDefinition().add_token(custom_token)
             >>> processor = OpenTokenProcessor("hash-secret", "encryption-key-32-chars!!", custom_def)
         """
-        if hashing_secret is not None and (not hashing_secret or not hashing_secret.strip()):
-            raise ValueError("Hashing secret cannot be empty or whitespace-only (use None to skip hashing)")
-        if encryption_key is not None and (not encryption_key or not encryption_key.strip()):
-            raise ValueError("Encryption key cannot be empty or whitespace-only (use None to skip encryption)")
+        self._validate_secret_value(
+            secret=hashing_secret,
+            secret_name="Hashing secret",
+            none_hint="use None to skip hashing",
+        )
+        self._validate_secret_value(
+            secret=encryption_key,
+            secret_name="Encryption key",
+            none_hint="use None to skip encryption",
+        )
 
         self.hashing_secret = hashing_secret
         self.encryption_key = encryption_key
@@ -130,9 +140,49 @@ class OpenTokenProcessor:
                 HashTokenTransformer(hashing_secret)
             if encryption_key is not None:
                 EncryptTokenTransformer(encryption_key)
-        except Exception as e:
-            logger.error("Error initializing token transformers", exc_info=e)
-            raise ValueError(f"Invalid secrets provided: {e}")
+        except ValueError as error:
+            raise ValueError(f"Invalid secrets provided: {error}") from error
+
+    @classmethod
+    def from_exchange_config(
+        cls,
+        exchange_config_path: str | Path | None = None,
+        exchange_config_value: str | bytes | Mapping[str, Any] | None = None,
+        private_key_path: str | Path | None = None,
+        private_key_env: str | None = None,
+        private_key_value: str | bytes | None = None,
+        token_definition: BaseTokenDefinition | None = None,
+        ring_id: str | None = None,
+    ) -> "OpenTokenProcessor":
+        """
+        Build a processor from an initiate-exchange config plus private key material.
+
+        Args:
+            exchange_config_path: Optional path to the exchange config JSON file.
+            exchange_config_value: Optional in-memory exchange config JSON or decoded mapping.
+            private_key_path: Optional path to the participant private key PEM.
+            private_key_env: Optional environment variable name containing private key PEM data.
+            private_key_value: Optional in-memory participant private key PEM text or bytes.
+            token_definition: Optional custom token definition to use during processing.
+            ring_id: Optional ring identifier for ot.V1 wrapping. If omitted, a UUID is generated.
+
+        Returns:
+            A processor configured with resolved hashing-secret bytes and the
+            derived transport encryption key bytes.
+        """
+        exchange = resolve_exchange_config_inputs(
+            exchange_config_path=exchange_config_path,
+            exchange_config_value=exchange_config_value,
+            private_key_path=private_key_path,
+            private_key_env=private_key_env,
+            private_key_value=private_key_value,
+        )
+        return cls(
+            hashing_secret=exchange.hashing_secret,
+            encryption_key=derive_transport_encryption_key(exchange),
+            token_definition=token_definition,
+            ring_id=ring_id,
+        )
 
     def process_dataframe(self, df: DataFrame) -> DataFrame:
         """
@@ -162,9 +212,9 @@ class OpenTokenProcessor:
         # Validate input DataFrame
         self._validate_dataframe(df)
 
-        # Get the secrets and token definition for the UDF
-        hashing_secret = self.hashing_secret
-        encryption_key = self.encryption_key
+        # Resolve secrets on the driver so Spark workers receive only the final byte payloads.
+        hashing_secret_bytes = self._resolve_secret_bytes(self.hashing_secret)
+        encryption_key_bytes = self._resolve_secret_bytes(self.encryption_key)
         token_definition = self.token_definition
         ring_id = self.ring_id
 
@@ -199,26 +249,29 @@ class OpenTokenProcessor:
             token_transformer_list = []
             tokenizer = None
 
-            if hashing_secret is not None:
+            if hashing_secret_bytes is not None:
                 # Use SHA256 tokenizer with optional encryption
-                token_transformer_list.append(HashTokenTransformer(hashing_secret))
-                if encryption_key is not None:
-                    token_transformer_list.append(EncryptTokenTransformer(encryption_key))
+                token_transformer_list.append(HashTokenTransformer(hashing_secret_bytes))
+                if encryption_key_bytes is not None:
+                    token_transformer_list.append(EncryptTokenTransformer(encryption_key_bytes))
                 tokenizer = SHA256Tokenizer(token_transformer_list)
             else:
                 # Use passthrough tokenizer (plain text) with optional encryption
-                if encryption_key is not None:
-                    token_transformer_list.append(EncryptTokenTransformer(encryption_key))
+                if encryption_key_bytes is not None:
+                    token_transformer_list.append(EncryptTokenTransformer(encryption_key_bytes))
                 tokenizer = PassthroughTokenizer(token_transformer_list)
 
             # Use custom token definition if provided, otherwise use default
             definition = token_definition if token_definition is not None else TokenDefinition()
 
             jwe_formatters: Dict[str, JweMatchTokenFormatter] = {}
-            if encryption_key is not None:
+            if encryption_key_bytes is not None:
                 for token_id in definition.get_token_identifiers():
                     jwe_formatters[token_id] = JweMatchTokenFormatter(
-                        encryption_key=encryption_key, ring_id=ring_id, rule_id=token_id, issuer="truveta.opentoken"
+                        encryption_key=encryption_key_bytes,
+                        ring_id=ring_id,
+                        rule_id=token_id,
+                        issuer="truveta.opentoken",
                     )
 
             # Initialize token generator with custom tokenizer
@@ -263,7 +316,7 @@ class OpenTokenProcessor:
                         {
                             "RuleId": rule_id,
                             "Token": jwe_formatters[rule_id].transform(token)
-                            if encryption_key is not None and token
+                            if encryption_key_bytes is not None and token
                             else token,
                         }
                         for rule_id, token in token_result.tokens.items()
@@ -306,13 +359,29 @@ class OpenTokenProcessor:
         )
 
         # Explode the tokens array to get one row per token
-        from pyspark.sql.functions import explode
-
         result_df = tokens_df.select(col("RecordId"), explode(col("tokens")).alias("token_struct")).select(
             col("RecordId"), col("token_struct.RuleId").alias("RuleId"), col("token_struct.Token").alias("Token")
         )
 
         return result_df
+
+    @staticmethod
+    def _resolve_secret_bytes(secret: str | bytes | None) -> bytes | None:
+        """Resolve secret inputs into byte payloads for Spark worker transport."""
+        if secret is None:
+            return None
+        if isinstance(secret, bytes):
+            return secret
+        return secret.encode("utf-8")
+
+    @staticmethod
+    def _validate_secret_value(secret: str | bytes | None, secret_name: str, none_hint: str) -> None:
+        """Validate optional secret values while preserving constructor compatibility."""
+        if secret is None:
+            return
+
+        if not secret.strip():
+            raise ValueError(f"{secret_name} cannot be empty or whitespace-only ({none_hint})")
 
     def _validate_python_env(self) -> None:  # pragma: no cover
         """

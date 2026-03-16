@@ -1,7 +1,7 @@
 """
 Copyright (c) Truveta. All rights reserved.
 
-Helpers for building and decrypting exchange-config JWE envelopes.
+Shared helpers for building and decrypting exchange-config JWE envelopes.
 """
 
 import base64
@@ -11,9 +11,9 @@ from typing import Any, Mapping
 
 from jwcrypto import jwe, jwk
 
-from opentoken_cli.util.ec_key_utils import fingerprint_to_kid, public_key_fingerprint
+from opentoken.ec_key_utils import fingerprint_to_kid, public_key_fingerprint
 
-EXCHANGE_JWE_VERSION = 2
+EXCHANGE_JWE_VERSION = 1
 EXCHANGE_JWE_TYPE = "opentoken-exchange+jwe"
 EXCHANGE_JWE_CONTENT_TYPE = "application/opentoken-exchange+json"
 EXCHANGE_JWE_ENCRYPTION = "A256GCM"
@@ -29,20 +29,7 @@ def build_exchange_envelope(
     created_at: str,
     exchange_id: str,
 ) -> dict[str, Any]:
-    """Build a multi-recipient JWE exchange envelope.
-
-    Args:
-        exchange_name: Exchange display name stored in the encrypted payload.
-        hashing_secret: Plaintext hashing secret bytes.
-        sender_public_pem: Sender public key in PEM/SPKI form.
-        recipient_public_pem: Recipient public key in PEM/SPKI form.
-        curve: OpenToken curve name associated with the envelope.
-        created_at: Creation timestamp string to include in the payload.
-        exchange_id: Stable exchange identifier to include in the payload.
-
-    Returns:
-        A general JWE JSON serialization dictionary with a top-level ``version``.
-    """
+    """Build a multi-recipient JWE exchange envelope."""
     payload = {
         "exchangeName": exchange_name,
         "hashingSecret": _base64url_encode(hashing_secret),
@@ -80,15 +67,7 @@ def build_exchange_envelope(
 
 
 def decrypt_exchange_envelope(exchange_config: Mapping[str, Any], private_pem: bytes) -> bytes:
-    """Decrypt an exchange JWE envelope with a matching private key PEM.
-
-    Args:
-        exchange_config: Parsed exchange-config envelope mapping.
-        private_pem: Recipient private key in PEM/PKCS8 form.
-
-    Returns:
-        The decrypted payload bytes.
-    """
+    """Decrypt an exchange JWE envelope with a matching private key PEM."""
     envelope = jwe.JWE()
     envelope.deserialize(json.dumps(dict(exchange_config)))
     envelope.decrypt(jwk.JWK.from_pem(private_pem))
@@ -96,18 +75,7 @@ def decrypt_exchange_envelope(exchange_config: Mapping[str, Any], private_pem: b
 
 
 def resolve_private_key_by_kid(opentoken_dir: Path, kid: str) -> bytes:
-    """Resolve a private key by matching a fingerprint-derived recipient ``kid``.
-
-    Args:
-        opentoken_dir: Directory containing ``*.public.pem`` and ``*.private.pem`` files.
-        kid: Fingerprint-derived recipient identifier.
-
-    Returns:
-        The PEM bytes for the matching private key.
-
-    Raises:
-        FileNotFoundError: If no matching public/private key pair is found.
-    """
+    """Resolve a private key by matching a fingerprint-derived recipient ``kid``."""
     for public_key_path in sorted(opentoken_dir.glob("*.public.pem")):
         public_pem = public_key_path.read_bytes()
         if fingerprint_to_kid(public_key_fingerprint(public_pem)) != kid:

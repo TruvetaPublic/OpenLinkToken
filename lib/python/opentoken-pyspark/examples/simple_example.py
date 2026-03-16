@@ -13,11 +13,81 @@ Prerequisites:
 
 Usage:
     python simple_example.py
+
+Recommended environment variables:
+    OPENTOKEN_EXCHANGE_CONFIG_PATH=/path/to/initiate-exchange-config.json
+    OPENTOKEN_PRIVATE_KEY_PATH=/path/to/participant-private-key.pem
+
+Azure Key Vault pattern:
+    Keep Azure Key Vault lookups on the driver. Fetch the initiate-exchange
+    config JSON and participant private key from Key Vault, then pass those
+    resolved values directly to ``from_exchange_config(...)``. The sender and
+    recipient public keys belong in the generated exchange config; if you also
+    store them in Key Vault, use them for
+    exchange creation, rotation, or validation rather than passing them directly
+    to the PySpark bridge.
+
+    Example:
+        import os
+
+        from azure.identity import DefaultAzureCredential
+        from azure.keyvault.secrets import SecretClient
+
+        vault = SecretClient(
+            vault_url=os.environ["AZURE_KEY_VAULT_URL"],
+            credential=DefaultAzureCredential(),
+        )
+        exchange_config_json = vault.get_secret("opentoken-initiate-exchange-config").value
+        participant_private_key_pem = vault.get_secret("opentoken-participant-private-key-pem").value
+
+        # Optional: public keys can stay in Key Vault for exchange management.
+        sender_public_key_pem = vault.get_secret("opentoken-sender-public-key-pem").value
+        recipient_public_key_pem = vault.get_secret("opentoken-recipient-public-key-pem").value
+
+        processor = OpenTokenProcessor.from_exchange_config(
+            exchange_config_value=exchange_config_json,
+            private_key_value=participant_private_key_pem,
+        )
+
+Optional direct-secret environment variables:
+    OPENTOKEN_HASHING_SECRET=...
+    OPENTOKEN_ENCRYPTION_KEY=...
 """
+
+import os
+import sys
 
 from pyspark.sql import SparkSession
 
 from opentoken_pyspark import OpenTokenProcessor
+
+
+def create_processor() -> OpenTokenProcessor:
+    """Create a processor using exchange-config inputs when available."""
+    exchange_config_path = os.environ.get("OPENTOKEN_EXCHANGE_CONFIG_PATH")
+    private_key_path = os.environ.get("OPENTOKEN_PRIVATE_KEY_PATH")
+    private_key_env = "OPENTOKEN_PRIVATE_KEY" if os.environ.get("OPENTOKEN_PRIVATE_KEY") else None
+
+    if exchange_config_path or private_key_path or private_key_env:
+        print(
+            "Using exchange-config flow; secrets are resolved on the driver before Spark workers receive derived bytes."
+        )
+        return OpenTokenProcessor.from_exchange_config(
+            exchange_config_path=exchange_config_path,
+            private_key_path=private_key_path,
+            private_key_env=private_key_env,
+        )
+
+    hashing_secret = os.environ.get("OPENTOKEN_HASHING_SECRET")
+    encryption_key = os.environ.get("OPENTOKEN_ENCRYPTION_KEY")
+    if hashing_secret:
+        print("Using direct-secret flow from environment variables.")
+        return OpenTokenProcessor(hashing_secret=hashing_secret, encryption_key=encryption_key)
+
+    raise RuntimeError(
+        "Set OPENTOKEN_EXCHANGE_CONFIG_PATH with OPENTOKEN_PRIVATE_KEY_PATH or OPENTOKEN_PRIVATE_KEY. "
+        "For direct-secret usage, set OPENTOKEN_HASHING_SECRET and OPENTOKEN_ENCRYPTION_KEY."
+    )
 
 
 def main():
@@ -27,9 +97,6 @@ def main():
     print("Initializing Spark session...")
     # Spark 4.0.1+ provides native Java 21 support with improved Arrow integration.
     # The executorEnv.PYTHONPATH configuration ensures pandas/pyarrow are available to executors.
-    import os
-    import sys
-
     spark = (
         SparkSession.builder.appName("OpenTokenSimpleExample")
         .master("local[2]")
@@ -69,9 +136,9 @@ def main():
     print("Input DataFrame:")
     df.show(truncate=False)
 
-    # Initialize OpenToken processor with secrets
+    # Initialize OpenToken processor
     print("\nInitializing OpenToken processor...")
-    processor = OpenTokenProcessor(hashing_secret="HashingKey", encryption_key="Secret-Encryption-Key-Goes-Here.")
+    processor = create_processor()
 
     # Generate tokens
     print("Generating tokens...")

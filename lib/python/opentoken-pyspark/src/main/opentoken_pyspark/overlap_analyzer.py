@@ -7,7 +7,8 @@ Dataset overlap analyzer for comparing tokenized datasets.
 import base64
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from pathlib import Path
+from typing import Any, Dict, List, Mapping, Optional, Union
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -15,6 +16,8 @@ from jwcrypto import jwe, jwk
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import col, count, udf
 from pyspark.sql.types import StringType
+
+from opentoken.exchange_config import derive_transport_encryption_key, resolve_exchange_config_inputs
 
 logger = logging.getLogger(__name__)
 
@@ -28,13 +31,13 @@ class OpenTokenOverlapAnalyzer:
     token types (T1-T5 or custom tokens).
     """
 
-    def __init__(self, encryption_key: str):
+    def __init__(self, encryption_key: Union[str, bytes]):
         """
         Initialize the overlap analyzer with encryption key.
 
         Args:
             encryption_key: The same AES-256 encryption key used to encrypt tokens.
-                           Required to decrypt tokens for comparison.
+                            Required to decrypt tokens for comparison.
 
         Raises:
             ValueError: If encryption key is empty or invalid length
@@ -42,14 +45,61 @@ class OpenTokenOverlapAnalyzer:
         Example:
             >>> analyzer = OpenTokenOverlapAnalyzer("encryption-key-32-characters!!")
         """
+        self.encryption_key = self._normalize_encryption_key(encryption_key)
+
+    @classmethod
+    def from_exchange_config(
+        cls,
+        exchange_config_path: Union[str, Path, None] = None,
+        exchange_config_value: Union[str, bytes, Mapping[str, Any], None] = None,
+        private_key_path: Union[str, Path, None] = None,
+        private_key_env: Optional[str] = None,
+        private_key_value: Union[str, bytes, None] = None,
+    ) -> "OpenTokenOverlapAnalyzer":
+        """
+        Create an analyzer from exchange-config inputs and the derived transport key.
+
+        Args:
+            exchange_config_path: Optional exchange-config path. Uses the default path when omitted.
+            exchange_config_value: Optional in-memory exchange-config JSON or decoded mapping.
+            private_key_path: Optional private-key PEM path.
+            private_key_env: Optional environment-variable name containing private-key PEM text.
+            private_key_value: Optional in-memory private-key PEM text or bytes.
+
+        Returns:
+            An overlap analyzer configured with the exchange-derived transport key.
+        """
+        exchange = resolve_exchange_config_inputs(
+            exchange_config_path=exchange_config_path,
+            exchange_config_value=exchange_config_value,
+            private_key_path=private_key_path,
+            private_key_env=private_key_env,
+            private_key_value=private_key_value,
+        )
+        return cls(derive_transport_encryption_key(exchange))
+
+    @staticmethod
+    def _normalize_encryption_key(encryption_key: Union[str, bytes]) -> bytes:
+        """Validate and normalize string or byte encryption keys to raw bytes."""
+        if isinstance(encryption_key, bytes):
+            if len(encryption_key) == 0 or not encryption_key.strip():
+                raise ValueError("Encryption key cannot be empty")
+            if len(encryption_key) != 32:
+                raise ValueError(
+                    f"Encryption key must be exactly 32 bytes (characters) for AES-256. Got {len(encryption_key)} bytes"
+                )
+            return encryption_key
+
         if not encryption_key or not encryption_key.strip():
             raise ValueError("Encryption key cannot be empty")
-        if len(encryption_key.encode("utf-8")) != 32:
+
+        encryption_key_bytes = encryption_key.encode("utf-8")
+        if len(encryption_key_bytes) != 32:
             raise ValueError(
                 "Encryption key must be exactly 32 bytes (characters) for AES-256. "
-                f"Got {len(encryption_key.encode('utf-8'))} bytes"
+                f"Got {len(encryption_key_bytes)} bytes"
             )
-        self.encryption_key = encryption_key.encode("utf-8")
+        return encryption_key_bytes
 
     @staticmethod
     def _v1_token_prefix() -> str:

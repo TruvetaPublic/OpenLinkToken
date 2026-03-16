@@ -5,7 +5,8 @@ Notebook helpers for convenient token definition and experimentation.
 This module provides a simplified API for creating custom tokens in Jupyter notebooks.
 """
 
-from typing import Dict, List, Optional, Type, Union
+from pathlib import Path
+from typing import Any, Dict, List, Mapping, Optional, Type, Union
 
 from opentoken.attributes.attribute import Attribute
 from opentoken.attributes.attribute_expression import AttributeExpression
@@ -16,6 +17,7 @@ from opentoken.attributes.person.last_name_attribute import LastNameAttribute
 from opentoken.attributes.person.postal_code_attribute import PostalCodeAttribute
 from opentoken.attributes.person.sex_attribute import SexAttribute
 from opentoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
+from opentoken.exchange_config import derive_transport_encryption_key, resolve_exchange_config_inputs
 from opentoken.tokens.base_token_definition import BaseTokenDefinition
 from opentoken.tokens.token import Token
 from opentoken.tokens.token_generator import TokenGenerator
@@ -154,7 +156,9 @@ class CustomTokenDefinition(BaseTokenDefinition):
 
 
 def create_token_generator(
-    hashing_secret: str, encryption_key: str, token_definition: Optional[BaseTokenDefinition] = None
+    hashing_secret: Union[str, bytes, None],
+    encryption_key: Union[str, bytes],
+    token_definition: Optional[BaseTokenDefinition] = None,
 ) -> TokenGenerator:
     """
     Create a token generator with the specified secrets and token definition.
@@ -185,7 +189,48 @@ def create_token_generator(
     return TokenGenerator.from_transformers(token_definition, token_transformers)
 
 
-def quick_token(token_id: str, attributes: List[tuple], hashing_secret: str, encryption_key: str) -> TokenGenerator:
+def create_token_generator_from_exchange_config(
+    exchange_config_path: Union[str, Path, None] = None,
+    exchange_config_value: Union[str, bytes, Mapping[str, Any], None] = None,
+    private_key_path: Union[str, Path, None] = None,
+    private_key_env: Optional[str] = None,
+    private_key_value: Union[str, bytes, None] = None,
+    token_definition: Optional[BaseTokenDefinition] = None,
+) -> TokenGenerator:
+    """
+    Create a token generator from an exchange config and private-key inputs.
+
+    Args:
+        exchange_config_path: Optional exchange-config path. Uses the default path when omitted.
+        exchange_config_value: Optional in-memory exchange-config JSON or decoded mapping.
+        private_key_path: Optional private-key PEM path.
+        private_key_env: Optional environment-variable name containing private-key PEM text.
+        private_key_value: Optional in-memory private-key PEM text or bytes.
+        token_definition: Optional custom token definition. If None, uses default tokens.
+
+    Returns:
+        A configured TokenGenerator instance using the exchange hashing secret and transport key.
+    """
+    exchange = resolve_exchange_config_inputs(
+        exchange_config_path=exchange_config_path,
+        exchange_config_value=exchange_config_value,
+        private_key_path=private_key_path,
+        private_key_env=private_key_env,
+        private_key_value=private_key_value,
+    )
+    return create_token_generator(
+        hashing_secret=exchange.hashing_secret,
+        encryption_key=derive_transport_encryption_key(exchange),
+        token_definition=token_definition,
+    )
+
+
+def quick_token(
+    token_id: str,
+    attributes: List[tuple],
+    hashing_secret: Union[str, bytes, None],
+    encryption_key: Union[str, bytes],
+) -> TokenGenerator:
     """
     Create a custom token and generator in one quick call.
 
@@ -220,6 +265,47 @@ def quick_token(token_id: str, attributes: List[tuple], hashing_secret: str, enc
     definition = CustomTokenDefinition().add_token(token)
 
     return create_token_generator(hashing_secret, encryption_key, definition)
+
+
+def quick_token_from_exchange_config(
+    token_id: str,
+    attributes: List[tuple],
+    exchange_config_path: Union[str, Path, None] = None,
+    exchange_config_value: Union[str, bytes, Mapping[str, Any], None] = None,
+    private_key_path: Union[str, Path, None] = None,
+    private_key_env: Optional[str] = None,
+    private_key_value: Union[str, bytes, None] = None,
+) -> TokenGenerator:
+    """
+    Create a custom token generator from exchange-config inputs in one quick call.
+
+    Args:
+        token_id: The identifier for the new token (e.g., "T6").
+        attributes: List of (attribute_name, expression) tuples.
+        exchange_config_path: Optional exchange-config path. Uses the default path when omitted.
+        exchange_config_value: Optional in-memory exchange-config JSON or decoded mapping.
+        private_key_path: Optional private-key PEM path.
+        private_key_env: Optional environment-variable name containing private-key PEM text.
+        private_key_value: Optional in-memory private-key PEM text or bytes.
+
+    Returns:
+        A TokenGenerator configured with the custom token and exchange-derived secrets.
+    """
+    builder = TokenBuilder(token_id)
+    for attr_name, expr in attributes:
+        builder.add(attr_name, expr)
+
+    token = builder.build()
+    definition = CustomTokenDefinition().add_token(token)
+
+    return create_token_generator_from_exchange_config(
+        exchange_config_path=exchange_config_path,
+        exchange_config_value=exchange_config_value,
+        private_key_path=private_key_path,
+        private_key_env=private_key_env,
+        private_key_value=private_key_value,
+        token_definition=definition,
+    )
 
 
 # Convenience function to list available attributes

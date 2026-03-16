@@ -14,10 +14,10 @@ from unittest.mock import patch
 
 import pytest
 
+from opentoken.exchange_jwe import decrypt_exchange_envelope
 from opentoken_cli.commands.initiate_exchange_command import InitiateExchangeCommand
 from opentoken_cli.commands.open_token_command import OpenTokenCommand
 from opentoken_cli.util.ec_key_utils import SUPPORTED_CURVES, generate_key_pair, public_key_fingerprint
-from opentoken_cli.util.exchange_jwe import decrypt_exchange_envelope
 from opentoken_cli.util.stdin_utils import read_required_env_bytes
 
 # ---------------------------------------------------------------------------
