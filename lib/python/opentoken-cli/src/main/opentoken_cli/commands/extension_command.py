@@ -23,10 +23,17 @@ _SECURITY_WARNING = (
 )
 
 #: Dependencies bundled into the frozen binary that extensions may rely on.
+#: Derived from the packages collected in opentoken-cli.spec and requirements.txt.
 _BUNDLED_DEPS: frozenset[str] = frozenset(
     {
         "opentoken",
         "opentoken-cli",
+        "pandas",
+        "pyarrow",
+        "csv2parquet",
+        "cryptography",
+        "jwcrypto",
+        "packaging",
     }
 )
 
@@ -91,14 +98,21 @@ class ExtensionCommand:
         skip_confirm: bool = getattr(args, "yes", False)
 
         print(_SECURITY_WARNING)
-        if not skip_confirm and sys.stdin.isatty():
-            try:
-                answer = input("Do you want to continue? [y/N] ").strip().lower()
-            except (EOFError, KeyboardInterrupt):
-                answer = ""
-            if answer not in ("y", "yes"):
-                print("Installation cancelled.")
-                return 0
+        if not skip_confirm:
+            if sys.stdin.isatty():
+                try:
+                    answer = input("Do you want to continue? [y/N] ").strip().lower()
+                except (EOFError, KeyboardInterrupt):
+                    answer = ""
+                if answer not in ("y", "yes"):
+                    print("Installation cancelled.")
+                    return 0
+            else:
+                print(
+                    "Error: stdin is not a TTY. Pass --yes to confirm installation in non-interactive mode.",
+                    file=sys.stderr,
+                )
+                return 1
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             # Preserve the original wheel filename so pip can parse its metadata.
@@ -194,12 +208,26 @@ class ExtensionCommand:
                     pass
 
             if pip_installed:
+                # Look up the distribution name so the user can uninstall the
+                # correct package (the entry-point key and the dist name often differ).
+                dist_name = name
+                if not getattr(sys, "frozen", False):
+                    import importlib.metadata
+
+                    try:
+                        eps = importlib.metadata.entry_points(group="opentoken.extensions")
+                        for ep in eps:
+                            if ep.name == name:
+                                dist_name = ep.dist.metadata.get("Name") or ep.dist.name or name
+                                break
+                    except Exception:
+                        pass
                 print(
                     f"Error: '{name}' was installed via pip and cannot be removed by this command.\n"
                     f"Uninstall it with your package manager instead, for example:\n"
                     f"\n"
-                    f"    pip uninstall {name}\n"
-                    f"    uv pip uninstall {name}",
+                    f"    pip uninstall {dist_name}\n"
+                    f"    uv pip uninstall {dist_name}",
                     file=sys.stderr,
                 )
                 return 1
@@ -256,6 +284,13 @@ class ExtensionCommand:
             except OSError as exc:
                 print(f"Error: Could not copy local file '{local_path}': {exc}", file=sys.stderr)
                 return False
+
+        if not url.startswith("https://"):
+            print(
+                f"Error: Unsupported URL scheme in '{url}'. Only 'https://' and 'file://' are supported.",
+                file=sys.stderr,
+            )
+            return False
 
         try:
             with urlopen(url, timeout=_REQUEST_TIMEOUT_SECONDS) as resp, dest.open("wb") as out:
@@ -326,7 +361,7 @@ class ExtensionCommand:
             else:
                 # Normal Python: pip-install the wheel so entry points are registered.
                 pip_result = subprocess.run(
-                    [sys.executable, "-m", "pip", "install", str(whl_path)],
+                    [sys.executable, "-m", "pip", "install", "--upgrade", "--force-reinstall", str(whl_path)],
                     capture_output=True,
                     text=True,
                 )

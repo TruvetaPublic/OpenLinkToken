@@ -754,8 +754,10 @@ opentoken --help
 opentoken extension list
 
 # Run it
-opentoken hello-world greet --name Alice
-# → Hello, Alice! — from OpenToken hello-world extension
+opentoken hello-world hello --name Alice
+# → Hello, Alice
+opentoken hello-world bye --name Bob
+# → Bye, Bob
 ```
 
 ### Manual testing: wheel install (full pipeline)
@@ -768,15 +770,17 @@ cd lib/python/opentoken_ext_hello_world
 # Build the wheel
 pip install build && python -m build
 
-# Install via the extension command (--yes skips the security prompt)
-opentoken extension install file://./dist/opentoken_ext_hello_world-1.0.0-py3-none-any.whl --yes
+# Install via the extension command (--yes skips the security prompt; use an absolute path)
+opentoken extension install file://$(pwd)/dist/opentoken_ext_hello_world-1.0.0-py3-none-any.whl --yes
 
 # Confirm it appears in the registry
 opentoken extension list
 
 # Run it
-opentoken hello-world greet --name Alice
-# → Hello, Alice! — from OpenToken hello-world extension
+opentoken hello-world hello --name Alice
+# → Hello, Alice
+opentoken hello-world bye --name Bob
+# → Bye, Bob
 ```
 
 ### Run the extension tests

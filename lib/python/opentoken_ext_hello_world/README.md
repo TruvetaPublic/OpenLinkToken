@@ -64,7 +64,7 @@ This produces `dist/my_package-1.0.0-py3-none-any.whl`.
 
 ```bash
 # From a local build
-opentoken extension install file://./dist/opentoken_ext_hello_world-1.0.0-py3-none-any.whl
+opentoken extension install file:///$(pwd)/dist/opentoken_ext_hello_world-1.0.0-py3-none-any.whl
 
 # From a remote URL
 opentoken extension install https://example.com/opentoken_ext_hello_world-1.0.0-py3-none-any.whl
@@ -75,8 +75,11 @@ Pass `--yes` / `-y` to skip the security confirmation prompt.
 ## Invoking the Extension
 
 ```bash
-opentoken hello-world greet --name Alice
-# → Hello, Alice! — from OpenToken hello-world extension
+opentoken hello-world hello --name Alice
+# → Hello, Alice
+
+opentoken hello-world bye --name Bob
+# → Bye, Bob
 ```
 
 ## PyInstaller / Frozen Binary Compatibility
@@ -86,10 +89,14 @@ are loaded from the registry file (`~/.opentoken/extensions/registry.json`) rath
 than Python entry points.
 
 **Tier-1 (fully supported)**: Extensions with **no external dependencies** beyond
-the packages already bundled inside the binary. The hello-world extension is a
-tier-1 extension because `dependencies = []` in its `pyproject.toml`.
+the standard library. The hello-world extension is a Tier-1 extension because
+`dependencies = []` in its `pyproject.toml`.
 
-**Tier-2 (not supported in frozen binaries)**: Extensions that require third-party
+**Tier-2 (supported)**: Extensions that depend only on packages already bundled
+inside the binary (e.g., `pandas`, `pyarrow`, `cryptography`). These are binary-compatible
+because those packages are shipped inside the executable.
+
+**Tier-3 (not supported in frozen binaries)**: Extensions that require third-party
 packages not bundled in the binary will fail to install via `opentoken extension
 install` when running the frozen binary. Use the `pip`-installed Python package
 version of the CLI for such extensions.

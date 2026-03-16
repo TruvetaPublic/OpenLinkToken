@@ -32,7 +32,7 @@ touch opentoken_ext_hello_world/__init__.py
 Create `opentoken_ext_hello_world/extension.py`:
 
 ```python
-from opentoken.extension import OpenTokenExtension
+from opentoken_cli.extension import OpenTokenExtension
 
 
 class HelloWorldExtension(OpenTokenExtension):
@@ -55,21 +55,27 @@ class HelloWorldExtension(OpenTokenExtension):
             self.command_name,
             help=self.description,
         )
-        parser.set_defaults(func=self._run_default)
+        parser.set_defaults(func=lambda args: (parser.print_help(), 0)[1])
 
         sub = parser.add_subparsers()
 
-        greet = sub.add_parser("greet", help="Greet a named person")
-        greet.add_argument("--name", required=True, help="Name to greet")
-        greet.set_defaults(func=self._run_greet)
+        hello = sub.add_parser("hello", help="Greet a named person")
+        hello.add_argument("--name", required=True, help="Name to greet")
+        hello.set_defaults(func=self._run_hello)
+
+        bye = sub.add_parser("bye", help="Say goodbye to a named person")
+        bye.add_argument("--name", required=True, help="Name to say goodbye to")
+        bye.set_defaults(func=self._run_bye)
 
     # --- handlers ---
 
-    def _run_default(self, args) -> None:
-        print("Hello, world! — from OpenToken hello-world extension")
+    def _run_hello(self, args) -> int:
+        print(f"Hello, {args.name}")
+        return 0
 
-    def _run_greet(self, args) -> None:
-        print(f"Hello, {args.name}! — from OpenToken hello-world extension")
+    def _run_bye(self, args) -> int:
+        print(f"Bye, {args.name}")
+        return 0
 ```
 
 This extension uses only the Python standard library and the `opentoken.extension` base class — it is **Tier 1 (zero-dep)** and works under both the binary and a Python package install.
@@ -78,7 +84,7 @@ This extension uses only the Python standard library and the `opentoken.extensio
 
 ## 2. Declare the Entry Point
 
-Create `pyproject.toml` in the `opentoken-ext-hello-world/` directory:
+Create `pyproject.toml` in the `opentoken-hello-world/` directory:
 
 ```toml
 [build-system]
@@ -101,7 +107,7 @@ The entry-point key (`hello-world`) must match the `command_name` property in yo
 
 ## 3. Package It
 
-Build a wheel from the `opentoken-ext-hello-world/` directory:
+Build a wheel from the `opentoken-hello-world/` directory:
 
 ```bash
 python -m build
@@ -178,24 +184,24 @@ hello-world   1.0.0    hello-world   file:///home/user/opentoken-hello-world/dis
 
 ## 6. Run It
 
-Run the default command:
+Run the `hello` subcommand:
 
 ```bash
-opentoken hello-world
+opentoken hello-world hello --name Alice
 ```
 
 ```
-Hello, world! — from OpenToken hello-world extension
+Hello, Alice
 ```
 
-Run the `greet` subcommand:
+Run the `bye` subcommand:
 
 ```bash
-opentoken hello-world greet --name Alice
+opentoken hello-world bye --name Bob
 ```
 
 ```
-Hello, Alice! — from OpenToken hello-world extension
+Bye, Bob
 ```
 
 ---
@@ -204,13 +210,7 @@ Hello, Alice! — from OpenToken hello-world extension
 
 The `hello-world` extension uses only the Python standard library — it is **Tier 1 (zero-dep)**. This means it installs and loads correctly under both the pre-built OpenToken binary and a Python package install.
 
-If your extension needs additional packages, check whether they are already bundled in the binary:
-
-```bash
-opentoken --bundled-packages
-```
-
-Packages in that list are **Tier 2** (OpenToken-provided) and are also binary-compatible. Any package not in the list makes your extension **Tier 3** (external), which is incompatible with the binary.
+If your extension needs additional packages, check the [Extension Author Reference: Binary Compatibility](../reference/extensions.md#binary-compatibility) for the list of packages bundled in the binary. Packages that are bundled (e.g., `pandas`, `pyarrow`, `cryptography`) are **Tier 2** (OpenToken-provided) and are also binary-compatible. Any package not in the list makes your extension **Tier 3** (external), which is incompatible with the binary.
 
 For more detail on the three tiers and the two-track loader, see [Extension Author Reference: Binary Compatibility](../reference/extensions.md#binary-compatibility).
 
