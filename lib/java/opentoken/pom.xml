@@ -7,13 +7,13 @@
     <parent>
         <groupId>com.truveta</groupId>
         <artifactId>opentoken-parent</artifactId>
-        <version>1.13.0</version>
+        <version>1.13.1</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>opentoken</artifactId>
     <packaging>jar</packaging>
-    <version>1.13.0</version>
+    <version>1.13.1</version>
 
     <name>opentoken</name>
     <description>OpenToken Core Library - Privacy-preserving person matching using cryptographically secure token generation</description>
