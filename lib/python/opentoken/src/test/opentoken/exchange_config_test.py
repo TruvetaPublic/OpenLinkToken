@@ -10,6 +10,7 @@ from jwcrypto import jwe, jwk
 
 from opentoken.ec_key_utils import fingerprint_to_kid, generate_key_pair, public_key_fingerprint
 from opentoken.exchange_config import (
+    default_exchange_config_path,
     derive_transport_encryption_key,
     load_exchange_config,
     resolve_exchange_config,
@@ -290,3 +291,75 @@ def _write_current_exchange_config(tmp_path: Path) -> tuple[Path, bytes]:
     key_dir.joinpath("current.private.pem").write_bytes(sender_private_pem)
     key_dir.joinpath("current.public.pem").write_bytes(sender_public_pem)
     return exchange_config_path, sender_private_pem
+
+
+def test_default_exchange_config_path_returns_date_based_path():
+    """Default exchange config path should be a date-stamped .exchange.json file."""
+    result = default_exchange_config_path()
+    assert result.name.endswith(".exchange.json")
+    assert "opentoken-" in result.name
+
+
+def test_load_exchange_config_rejects_both_path_and_value(tmp_path: Path):
+    """Providing both a path and a direct value must raise ValueError."""
+    config_path = tmp_path / "config.exchange.json"
+    with pytest.raises(ValueError, match="Cannot combine"):
+        load_exchange_config(exchange_config_path=config_path, exchange_config_value={"version": 1})
+
+
+def test_load_exchange_config_rejects_nonexistent_path(tmp_path: Path):
+    """A path pointing to a nonexistent file must raise FileNotFoundError."""
+    with pytest.raises(FileNotFoundError, match="was not found"):
+        load_exchange_config(exchange_config_path=tmp_path / "missing.exchange.json")
+
+
+def test_load_exchange_config_rejects_non_file_path(tmp_path: Path):
+    """A path pointing to a directory instead of a file must raise OSError."""
+    with pytest.raises(OSError, match="is not a readable file"):
+        load_exchange_config(exchange_config_path=tmp_path)
+
+
+def test_load_exchange_config_rejects_invalid_json(tmp_path: Path):
+    """A file with malformed JSON must raise ValueError."""
+    bad_file = tmp_path / "bad.exchange.json"
+    bad_file.write_text("not-json", encoding="utf-8")
+    with pytest.raises(ValueError, match="is not valid JSON"):
+        load_exchange_config(exchange_config_path=bad_file)
+
+
+def test_resolve_exchange_config_private_key_rejects_multiple_inputs(tmp_path: Path):
+    """Combining path, env, and value inputs must raise ValueError."""
+    exchange_config_path, _ = _write_current_exchange_config(tmp_path)
+    loaded = load_exchange_config(exchange_config_path)
+    with pytest.raises(ValueError, match="Cannot combine"):
+        resolve_exchange_config_private_key(
+            loaded,
+            private_key_path=tmp_path / "key.pem",
+            private_key_env="SOME_ENV_VAR",
+        )
+
+
+def test_read_private_key_env_rejects_missing_var(tmp_path: Path):
+    """A missing or empty environment variable must raise ValueError."""
+    exchange_config_path, _ = _write_current_exchange_config(tmp_path)
+    loaded = load_exchange_config(exchange_config_path)
+    with pytest.raises(ValueError, match="does not contain non-empty private key data"):
+        resolve_exchange_config_private_key(
+            loaded,
+            private_key_env="OPENTOKEN_DEFINITELY_NOT_SET_XYZ",
+            environment={},
+        )
+
+
+def test_read_private_key_path_rejects_nonexistent(tmp_path: Path):
+    """A private key path that doesn't exist must raise FileNotFoundError."""
+    exchange_config_path, _ = _write_current_exchange_config(tmp_path)
+    loaded = load_exchange_config(exchange_config_path)
+    with pytest.raises(FileNotFoundError, match="not found"):
+        resolve_exchange_config_private_key(loaded, private_key_path=tmp_path / "missing.pem")
+
+
+def test_parse_exchange_config_value_rejects_non_object_json(tmp_path: Path):
+    """A JSON array instead of an object must be rejected as exchange config value."""
+    with pytest.raises(ValueError, match="must decode to a JSON object"):
+        load_exchange_config(exchange_config_value="[1,2,3]")

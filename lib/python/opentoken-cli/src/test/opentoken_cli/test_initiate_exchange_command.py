@@ -541,11 +541,11 @@ class TestInitiateExchangeCommandIntegration:
         config = json.loads(output_path.read_text())
         required = {"version", "protected", "iv", "ciphertext", "tag", "recipients"}
         assert required.issubset(config.keys())
-        assert config["version"] == 2
+        assert config["version"] == 1
         _assert_shared_jwe_header(config)
 
     def test_exchange_config_payload_includes_both_public_keys(self, tmp_path):
-        """Version 2 payloads retain both public keys for later transport-key derivation."""
+        """Payloads retain both public keys for later transport-key derivation."""
         partner_private_pem, partner_public_pem = generate_key_pair("P-256")
         partner_pem_path = tmp_path / "partner.public.pem"
         partner_pem_path.write_bytes(partner_public_pem)
