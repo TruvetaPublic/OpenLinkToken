@@ -89,20 +89,39 @@ class TestExtensionUninstall:
     """Tests for ``extension uninstall``."""
 
     def test_uninstall_removes_directory_and_registry_entry(self, tmp_path):
-        """uninstall removes the extension's directory and its registry entry."""
-        data = {"bye-ext": {"version": "1.0.0", "source_url": ""}}
+        """uninstall removes the extension's directory and its registry entry (frozen mode)."""
+        data = {"bye-ext": {"version": "1.0.0", "source_url": "", "dist_name": "opentoken-bye-ext"}}
         (tmp_path / "registry.json").write_text(json.dumps(data))
         ext_dir = tmp_path / "bye-ext"
         ext_dir.mkdir()
         (ext_dir / "dummy.py").write_text("")
 
         with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
-            result = ExtensionCommand._uninstall(_make_args(name="bye-ext"))
+            with patch("sys.frozen", True, create=True):
+                result = ExtensionCommand._uninstall(_make_args(name="bye-ext"))
 
         assert result == 0
         assert not ext_dir.exists()
         registry = json.loads((tmp_path / "registry.json").read_text())
         assert "bye-ext" not in registry
+
+    def test_uninstall_calls_pip_in_non_frozen_mode(self, tmp_path):
+        """uninstall calls pip uninstall for registry entries in a normal Python environment."""
+        data = {"my-ext": {"version": "1.0.0", "source_url": "", "dist_name": "opentoken-my-ext"}}
+        (tmp_path / "registry.json").write_text(json.dumps(data))
+
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+
+        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+            with patch("subprocess.run", return_value=mock_result) as mock_pip:
+                result = ExtensionCommand._uninstall(_make_args(name="my-ext"))
+
+        assert result == 0
+        mock_pip.assert_called_once()
+        call_args = mock_pip.call_args[0][0]
+        assert "uninstall" in call_args
+        assert "opentoken-my-ext" in call_args
 
     def test_uninstall_pip_installed_extension_shows_guidance(self, tmp_path, capsys):
         """uninstall prints pip guidance and returns 1 for entry-point extensions."""
@@ -172,8 +191,12 @@ class TestExtensionInstall:
         whl = _make_wheel(tmp_path)
         args = _make_args(url=f"file://{whl}", yes=True)
 
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+
         with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
-            result = ExtensionCommand._install(args)
+            with patch("subprocess.run", return_value=mock_result):
+                result = ExtensionCommand._install(args)
 
         assert result == 0
         out = capsys.readouterr().out

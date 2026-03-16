@@ -5,6 +5,7 @@ Copyright (c) Truveta. All rights reserved.
 import configparser
 import logging
 import shutil
+import subprocess
 import sys
 import tempfile
 import zipfile
@@ -113,7 +114,12 @@ class ExtensionCommand:
                 return 0
 
         with tempfile.TemporaryDirectory() as tmp_dir:
-            tmp_path = Path(tmp_dir) / "extension.whl"
+            # Preserve the original wheel filename so pip can parse its metadata.
+            import urllib.parse
+
+            url_filename = Path(urllib.parse.urlparse(url).path).name
+            whl_name = url_filename if url_filename.endswith(".whl") else "extension.whl"
+            tmp_path = Path(tmp_dir) / whl_name
             if not ExtensionCommand._download(url, tmp_path):
                 return 1
 
@@ -214,9 +220,28 @@ class ExtensionCommand:
             print(f"Error: Extension '{name}' is not installed.", file=sys.stderr)
             return 1
 
-        ext_dir = ExtensionRegistry.get_extensions_dir() / name
-        if ext_dir.exists():
-            shutil.rmtree(ext_dir)
+        meta = registry[name]
+
+        if getattr(sys, "frozen", False):
+            # Frozen binary: remove the extracted source directory.
+            ext_dir = ExtensionRegistry.get_extensions_dir() / name
+            if ext_dir.exists():
+                shutil.rmtree(ext_dir)
+        else:
+            # Normal Python: uninstall via pip using the recorded dist name.
+            dist_name = meta.get("dist_name") or name
+            pip_result = subprocess.run(
+                [sys.executable, "-m", "pip", "uninstall", "-y", dist_name],
+                capture_output=True,
+                text=True,
+            )
+            if pip_result.returncode != 0:
+                print(
+                    f"Error: pip uninstall failed:\n{pip_result.stderr}",
+                    file=sys.stderr,
+                )
+                return 1
+
         ExtensionRegistry.remove_extension(name)
         print(f"Extension '{name}' uninstalled.")
         return 0
@@ -292,7 +317,12 @@ class ExtensionCommand:
     @staticmethod
     def _install_wheel(whl_path: Path, source_url: str) -> int:
         """
-        Unpack *whl_path* and register the extension.
+        Install *whl_path* and register the extension.
+
+        In a normal Python environment the wheel is installed via ``pip`` so that
+        the extension's entry point is discoverable by ``importlib.metadata``.
+        In a frozen binary the wheel is extracted manually because ``pip`` is not
+        available, and the extension is loaded later via ``sys.path`` injection.
 
         Args:
             whl_path: Path to the downloaded ``.whl`` file.
@@ -306,7 +336,6 @@ class ExtensionCommand:
             return 1
 
         with zipfile.ZipFile(whl_path, "r") as zf:
-            # Check for unacceptable external dependencies when frozen.
             if getattr(sys, "frozen", False):
                 issue = ExtensionCommand._check_frozen_deps(zf)
                 if issue:
@@ -326,21 +355,45 @@ class ExtensionCommand:
                 )
                 return 1
 
-            ext_name, module_name, class_name, version = entry_point_info
-            ext_dir = ExtensionRegistry.get_extensions_dir() / ext_name
-            src_dir = ext_dir / "src"
-            src_dir.mkdir(parents=True, exist_ok=True)
+            ext_name, module_name, class_name, version, dist_name = entry_point_info
 
-            zf.extractall(src_dir)
+            if getattr(sys, "frozen", False):
+                # Frozen binary: extract wheel contents and inject via sys.path at runtime.
+                ext_dir = ExtensionRegistry.get_extensions_dir() / ext_name
+                src_dir = ext_dir / "src"
+                src_dir.mkdir(parents=True, exist_ok=True)
+                zf.extractall(src_dir)
+                metadata: dict = {
+                    "version": version,
+                    "source_url": source_url,
+                    "source_path": str(src_dir),
+                    "module": module_name,
+                    "class": class_name,
+                    "command_name": ext_name,
+                    "dist_name": dist_name,
+                }
+            else:
+                # Normal Python: pip-install the wheel so entry points are registered.
+                pip_result = subprocess.run(
+                    [sys.executable, "-m", "pip", "install", str(whl_path)],
+                    capture_output=True,
+                    text=True,
+                )
+                if pip_result.returncode != 0:
+                    print(
+                        f"Error: pip install failed:\n{pip_result.stderr}",
+                        file=sys.stderr,
+                    )
+                    return 1
+                metadata = {
+                    "version": version,
+                    "source_url": source_url,
+                    "module": module_name,
+                    "class": class_name,
+                    "command_name": ext_name,
+                    "dist_name": dist_name,
+                }
 
-        metadata: dict = {
-            "version": version,
-            "source_url": source_url,
-            "source_path": str(src_dir),
-            "module": module_name,
-            "class": class_name,
-            "command_name": ext_name,
-        }
         ExtensionRegistry.add_extension(ext_name, metadata)
         print(f"Extension '{ext_name}' (v{version}) installed successfully.")
         print(f"Run: opentoken {ext_name} --help")
@@ -374,14 +427,14 @@ class ExtensionCommand:
         return ", ".join(external) if external else None
 
     @staticmethod
-    def _extract_entry_point(zf: zipfile.ZipFile) -> Optional[tuple[str, str, str, str]]:
+    def _extract_entry_point(zf: zipfile.ZipFile) -> Optional[tuple[str, str, str, str, str]]:
         """
         Parse the wheel's ``entry_points.txt`` and return the first ``opentoken.extensions`` entry.
 
-        Also reads the ``METADATA`` file to obtain the package version.
+        Also reads the ``METADATA`` file to obtain the package version and distribution name.
 
         Returns:
-            ``(entry_name, module, class_name, version)`` or ``None`` if not found.
+            ``(entry_name, module, class_name, version, dist_name)`` or ``None`` if not found.
         """
         ep_candidates = [n for n in zf.namelist() if n.endswith(".dist-info/entry_points.txt")]
         if not ep_candidates:
@@ -406,14 +459,16 @@ class ExtensionCommand:
         module_name = module_name.strip()
         class_name = class_name.strip()
 
-        # Read version from METADATA.
+        # Read version and dist name from METADATA.
         version = "0.0.0"
+        dist_name = entry_name
         metadata_candidates = [n for n in zf.namelist() if n.endswith(".dist-info/METADATA")]
         if metadata_candidates:
             meta_content = zf.read(metadata_candidates[0]).decode("utf-8", errors="replace")
             for line in meta_content.splitlines():
                 if line.startswith("Version:"):
                     version = line.split(":", 1)[1].strip()
-                    break
+                elif line.startswith("Name:"):
+                    dist_name = line.split(":", 1)[1].strip()
 
-        return entry_name, module_name, class_name, version
+        return entry_name, module_name, class_name, version, dist_name
