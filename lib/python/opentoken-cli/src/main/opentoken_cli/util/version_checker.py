@@ -133,9 +133,10 @@ class VersionChecker:
     @staticmethod
     def _get_cache_path() -> Path:
         """Return the platform-appropriate path for the cache file."""
-        appdata = os.getenv("APPDATA", "").strip()
-        if appdata:
-            return Path(appdata) / _CACHE_DIR_NAME / _CACHE_FILENAME
+        if sys.platform == "win32":
+            appdata = os.getenv("APPDATA", "").strip()
+            if appdata:
+                return Path(appdata) / _CACHE_DIR_NAME / _CACHE_FILENAME
         return Path.home() / _CACHE_DIR_NAME / _CACHE_FILENAME
 
     def _read_cache(self) -> Optional[str]:

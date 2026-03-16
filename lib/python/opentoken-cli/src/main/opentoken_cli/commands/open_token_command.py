@@ -93,22 +93,47 @@ class OpenTokenCommand:
         # Import command modules here to avoid circular imports
         from opentoken_cli.commands.decrypt_command import DecryptCommand
         from opentoken_cli.commands.encrypt_command import EncryptCommand
+        from opentoken_cli.commands.extension_command import ExtensionCommand
         from opentoken_cli.commands.generate_key_pair_command import GenerateKeyPairCommand
         from opentoken_cli.commands.help_command import HelpCommand
         from opentoken_cli.commands.initiate_exchange_command import InitiateExchangeCommand
         from opentoken_cli.commands.package_command import PackageCommand
         from opentoken_cli.commands.tokenize_command import TokenizeCommand
         from opentoken_cli.commands.update_command import UpdateCommand
+        from opentoken_cli.extension.extension_loader import ExtensionLoader
 
-        # Register subcommands
-        HelpCommand.register_subcommand(subparsers)
-        TokenizeCommand.register_subcommand(subparsers)
-        EncryptCommand.register_subcommand(subparsers)
+        # Register subcommands in alphabetical order by command name
         DecryptCommand.register_subcommand(subparsers)
-        PackageCommand.register_subcommand(subparsers)
+        EncryptCommand.register_subcommand(subparsers)
+        ExtensionCommand.register_subcommand(subparsers)
         GenerateKeyPairCommand.register_subcommand(subparsers)
+        HelpCommand.register_subcommand(subparsers)
         InitiateExchangeCommand.register_subcommand(subparsers)
+        PackageCommand.register_subcommand(subparsers)
+        TokenizeCommand.register_subcommand(subparsers)
         UpdateCommand.register_subcommand(subparsers)
+
+        # Load installed extensions (entry points or registry).
+        _BUILTIN_COMMANDS = {
+            "help",
+            "tokenize",
+            "encrypt",
+            "decrypt",
+            "package",
+            "generate-key-pair",
+            "initiate-exchange",
+            "update",
+            "extension",
+        }
+        ExtensionLoader.load_extensions(subparsers, _BUILTIN_COMMANDS)
+
+        # Sort all subcommands (built-ins and extensions) alphabetically in-place.
+        # _name_parser_map drives dispatch and the choices {…} display;
+        # _choices_actions drives the per-command description table in --help.
+        sorted_items = sorted(subparsers._name_parser_map.items())
+        subparsers._name_parser_map.clear()
+        subparsers._name_parser_map.update(sorted_items)
+        subparsers._choices_actions.sort(key=lambda a: a.dest)
 
         return parser
 

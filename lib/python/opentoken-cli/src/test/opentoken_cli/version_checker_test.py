@@ -353,6 +353,7 @@ class TestGetCachePath:
         expected_path = Path(appdata) / ".opentoken" / "update-check.json"
 
         monkeypatch.setenv("APPDATA", appdata)
+        monkeypatch.setattr("sys.platform", "win32")
 
         path = VersionChecker.get_cache_path()
 

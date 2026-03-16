@@ -445,6 +445,74 @@ Every run generates a `.metadata.json` file:
   [-Verbose]
 ```
 
+## Extensions
+
+The `extension` subcommand manages CLI extensions. Extensions add top-level subcommands to `opentoken` without requiring a CLI upgrade. See [Extension Author Reference](extensions.md) for how to build extensions, and [Managing Extensions](../operations/managing-extensions.md) for operator workflows.
+
+### `extension install`
+
+```bash
+opentoken extension install [--yes] <url>
+```
+
+Downloads and installs an extension from a URL or `file://` path.
+
+| Option  | Description                                                            |
+| ------- | ---------------------------------------------------------------------- |
+| `<url>` | Source URL or `file://` absolute path to a `.whl` or `.tar.gz` package |
+| `--yes` | Skip the security confirmation prompt                                  |
+
+A security warning is always printed before installing. Confirmation is required unless `--yes` is passed. The CLI aborts with an error if the extension requires packages not bundled in the binary (Tier-3 extensions are not supported under the binary install).
+
+### `extension list`
+
+```bash
+opentoken extension list
+```
+
+Prints a table of all installed extensions with name, version, command name, and source URL.
+
+### `extension uninstall`
+
+```bash
+opentoken extension uninstall <name>
+```
+
+Removes the named extension and its registry entry. The `<name>` argument is the extension name as shown in `extension list`.
+
+### `extension update`
+
+```bash
+opentoken extension update [--yes] <name>
+```
+
+Re-fetches the extension from its original source URL and replaces the installed version. Applies the same security warning and confirmation flow as `extension install`.
+
+| Option   | Description                                 |
+| -------- | ------------------------------------------- |
+| `<name>` | Extension name as shown in `extension list` |
+| `--yes`  | Skip the security confirmation prompt       |
+
+---
+
+### Extension Environment Variables
+
+| Variable                   | Description                                                                                                                                         |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OPENTOKEN_EXTENSIONS_DIR` | Override the default extension install directory (`~/.opentoken/extensions/`). Set in CI or containers to install extensions at a predictable path. |
+
+### Registry File
+
+The extension registry is stored at:
+
+```
+~/.opentoken/extensions/registry.json
+```
+
+When `OPENTOKEN_EXTENSIONS_DIR` is set, the registry is stored in that directory instead. The registry records each extension's name, version, module path, entry-point class, install path, and source URL. It is read at CLI startup to discover extensions under the binary install.
+
+---
+
 ## Error Messages
 
 | Error                                  | Cause                        | Solution                         |

@@ -721,6 +721,103 @@ Writes:
 
 `--curve` options: `P-256` (default), `P-384`, `P-521`. Use `--force` to overwrite existing keys.
 
+## Local Extension Development
+
+The `opentoken-ext-hello-world` package in `lib/python/opentoken_ext_hello_world/` is the canonical reference extension. Use it as your starting point when developing a new extension locally.
+
+### Setup
+
+Install the hello-world extension in editable mode so the CLI discovers it via the `opentoken.extensions` entry-point group:
+
+```shell
+source /home/vscode/.local/share/opentoken/.venv/bin/activate
+
+# Install the CLI in editable mode (if not already)
+cd lib/python/opentoken-cli && uv pip install -e .
+
+# Install the reference extension in editable mode
+cd lib/python/opentoken_ext_hello_world && uv pip install -e .
+```
+
+After the editable install, the entry point is registered in the active Python environment. The CLI discovers it at startup with no further configuration.
+
+### Manual testing: editable install (fast path)
+
+The editable install registers the entry point immediately — no build step required.
+
+```shell
+cd lib/python/opentoken_ext_hello_world
+uv pip install -e .
+
+# Verify it appears in help and the extension list
+opentoken --help
+opentoken extension list
+
+# Run it
+opentoken hello-world greet --name Alice
+# → Hello, Alice! — from OpenToken hello-world extension
+```
+
+### Manual testing: wheel install (full pipeline)
+
+Use this to test the complete `extension install` flow, including download, unpacking, and registry write.
+
+```shell
+cd lib/python/opentoken_ext_hello_world
+
+# Build the wheel
+pip install build && python -m build
+
+# Install via the extension command (--yes skips the security prompt)
+opentoken extension install file://./dist/opentoken_ext_hello_world-1.0.0-py3-none-any.whl --yes
+
+# Confirm it appears in the registry
+opentoken extension list
+
+# Run it
+opentoken hello-world greet --name Alice
+# → Hello, Alice! — from OpenToken hello-world extension
+```
+
+### Run the extension tests
+
+```shell
+cd lib/python/opentoken_ext_hello_world && pytest src/test
+```
+
+### Developing your own extension
+
+1. Create a new directory for your extension package (mirror the `opentoken-hello-world` structure).
+2. Implement `OpenTokenExtension` from `opentoken_cli.extension`:
+   ```python
+   from opentoken_cli.extension import OpenTokenExtension
+   ```
+3. Declare the `opentoken.extensions` entry point in your `pyproject.toml`:
+   ```toml
+   [project.entry-points."opentoken.extensions"]
+   my-ext = "my_package.extension:MyExtension"
+   ```
+4. Install in editable mode (`uv pip install -e .`) — the CLI picks it up on next invocation.
+5. Package with `python -m build` and distribute as a `.whl`.
+6. End users install via `opentoken extension install <url-or-file://path>`.
+
+See `lib/python/opentoken_ext_hello_world/README.md` for the full lifecycle walkthrough and `pages/quickstarts/extension-quickstart.md` for a step-by-step guide.
+
+### Extension tests in `opentoken-cli`
+
+The loader, registry, and command tests live in:
+
+```
+lib/python/opentoken-cli/src/test/opentoken_cli/extension/
+lib/python/opentoken-cli/src/test/opentoken_cli/commands/test_extension_command.py
+```
+
+Run them with:
+
+```shell
+cd lib/python/opentoken-cli && pytest src/test/opentoken_cli/extension src/test/opentoken_cli/commands/test_extension_command.py -v
+```
+
 ## Development Container
 
 A Dev Container configuration provides a reproducible environment with:
