@@ -7,7 +7,6 @@ import logging
 import os
 import tempfile
 from pathlib import Path
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -125,13 +124,3 @@ class ExtensionRegistry:
         if name in registry:
             del registry[name]
             ExtensionRegistry.save(registry)
-
-    @staticmethod
-    def get_extension(name: str) -> Optional[dict]:
-        """
-        Return the metadata dict for a single extension, or ``None`` if not found.
-
-        Args:
-            name: The extension name to look up.
-        """
-        return ExtensionRegistry.load().get(name)

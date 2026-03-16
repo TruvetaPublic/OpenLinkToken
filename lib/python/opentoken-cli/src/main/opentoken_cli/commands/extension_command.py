@@ -37,7 +37,7 @@ class ExtensionCommand:
     """
     Manage OpenToken CLI extensions.
 
-    Provides sub-subcommands to install, list, uninstall, and update extensions.
+    Provides sub-subcommands to install, list, and uninstall extensions.
     """
 
     @staticmethod
@@ -46,7 +46,7 @@ class ExtensionCommand:
         parser = subparsers.add_parser(
             "extension",
             help="Manage OpenToken CLI extensions",
-            description="Install, list, uninstall, and update OpenToken CLI extensions.",
+            description="Install, list, and uninstall OpenToken CLI extensions.",
         )
         sub = parser.add_subparsers(dest="extension_subcommand")
 
@@ -77,19 +77,6 @@ class ExtensionCommand:
         uninstall_parser = sub.add_parser("uninstall", help="Uninstall an extension by name")
         uninstall_parser.add_argument("name", help="Extension name to uninstall")
         uninstall_parser.set_defaults(func=ExtensionCommand._uninstall)
-
-        # update
-        update_parser = sub.add_parser("update", help="Re-install an extension from its original source URL")
-        update_parser.add_argument("name", help="Extension name to update")
-        update_parser.add_argument(
-            "-y",
-            "--yes",
-            action="store_true",
-            default=False,
-            dest="yes",
-            help="Skip the security confirmation prompt",
-        )
-        update_parser.set_defaults(func=ExtensionCommand._update)
 
         parser.set_defaults(func=lambda args: (parser.print_help(), 0)[1])
 
@@ -245,42 +232,6 @@ class ExtensionCommand:
         ExtensionRegistry.remove_extension(name)
         print(f"Extension '{name}' uninstalled.")
         return 0
-
-    @staticmethod
-    def _update(args) -> int:
-        """Handle ``extension update <name>``."""
-        name: str = args.name
-        skip_confirm: bool = getattr(args, "yes", False)
-        meta = ExtensionRegistry.get_extension(name)
-        if meta is None:
-            print(f"Error: Extension '{name}' is not installed.", file=sys.stderr)
-            return 1
-
-        source_url = meta.get("source_url")
-        if not source_url:
-            print(f"Error: No source URL recorded for extension '{name}'.", file=sys.stderr)
-            return 1
-
-        # Reuse install logic; pass --yes through.
-        ext_dir = ExtensionRegistry.get_extensions_dir() / name
-        if ext_dir.exists():
-            shutil.rmtree(ext_dir)
-
-        print(_SECURITY_WARNING)
-        if not skip_confirm and sys.stdin.isatty():
-            try:
-                answer = input("Do you want to continue? [y/N] ").strip().lower()
-            except (EOFError, KeyboardInterrupt):
-                answer = ""
-            if answer not in ("y", "yes"):
-                print("Update cancelled.")
-                return 0
-
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            tmp_path = Path(tmp_dir) / "extension.whl"
-            if not ExtensionCommand._download(source_url, tmp_path):
-                return 1
-            return ExtensionCommand._install_wheel(tmp_path, source_url=source_url)
 
     # ------------------------------------------------------------------
     # Internal helpers

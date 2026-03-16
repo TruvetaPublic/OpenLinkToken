@@ -71,19 +71,13 @@ If no extensions are installed, the command prints `No extensions installed.`.
 
 ## Updating an Extension
 
-```bash
-opentoken extension update <name>
-```
-
-The `<name>` argument is the extension name as shown in `opentoken extension list`. The CLI fetches the latest version from the original source URL recorded in the registry, applies the same security warning and confirmation flow as `install`, and replaces the installed version.
-
-Pass `--yes` to skip confirmation:
+To update an extension, re-install it from the new version URL using `install --yes`:
 
 ```bash
-opentoken extension update --yes hello-world
+opentoken extension install --yes <new-url>
 ```
 
-If the source URL no longer resolves or the extension was installed from a `file://` path, the update fails with a descriptive error. In that case, uninstall and reinstall from the new location.
+The `--yes` flag skips the security confirmation prompt. The existing version is replaced by the newly installed wheel.
 
 ---
 

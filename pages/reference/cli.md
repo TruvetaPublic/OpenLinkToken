@@ -480,19 +480,6 @@ opentoken extension uninstall <name>
 
 Removes the named extension and its registry entry. The `<name>` argument is the extension name as shown in `extension list`.
 
-### `extension update`
-
-```bash
-opentoken extension update [--yes] <name>
-```
-
-Re-fetches the extension from its original source URL and replaces the installed version. Applies the same security warning and confirmation flow as `extension install`.
-
-| Option   | Description                                 |
-| -------- | ------------------------------------------- |
-| `<name>` | Extension name as shown in `extension list` |
-| `--yes`  | Skip the security confirmation prompt       |
-
 ---
 
 ### Extension Environment Variables
