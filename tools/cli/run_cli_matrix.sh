@@ -13,6 +13,7 @@ SENDER_PRIVATE_KEY_ENV_VAR="OPENTOKEN_MATRIX_SENDER_PRIVATE_KEY_PEM"
 
 PAUSE_SECONDS="0.25"
 INCLUDE_LIVE_UPDATE="false"
+INCLUDE_EXTENSION_INSTALL="false"
 AUTO_CONTINUE="false"
 DRY_RUN="false"
 KEEP_WORKSPACE="false"
@@ -34,13 +35,16 @@ The script prints each exact command before it runs, pauses between commands,
 and summarizes pass/fail counts plus the slowest command at the end.
 
 Options:
-  --pause-seconds N       Pause after each non-final command (default: 0.25)
-  --include-live-update   Also run `update --dry-run --yes` after `update --help`
-  --auto-continue         Skip confirmation prompts and run the full matrix
-  --dry-run               Print the planned commands without executing them
-  --keep-workspace        Preserve the temporary workspace after completion
-  --workspace PATH        Use a specific workspace directory instead of mktemp
-  --help                  Show this help text
+  --pause-seconds N           Pause after each non-final command (default: 0.25)
+  --include-live-update       Also run `update --dry-run --yes` after `update --help`
+  --include-extension-install Also run the full extension install/uninstall round-trip.
+                              Requires `python -m build` and modifies the active venv.
+                              The editable install is restored automatically on exit.
+  --auto-continue             Skip confirmation prompts and run the full matrix
+  --dry-run                   Print the planned commands without executing them
+  --keep-workspace            Preserve the temporary workspace after completion
+  --workspace PATH            Use a specific workspace directory instead of mktemp
+  --help                      Show this help text
 EOF
 }
 
@@ -53,6 +57,10 @@ parse_args() {
                 ;;
             --include-live-update)
                 INCLUDE_LIVE_UPDATE="true"
+                shift
+                ;;
+            --include-extension-install)
+                INCLUDE_EXTENSION_INSTALL="true"
                 shift
                 ;;
             --auto-continue)
@@ -106,7 +114,8 @@ setup_workspace() {
     OUTPUT_DIR="$WORKSPACE_ROOT/outputs"
     LOG_DIR="$WORKSPACE_ROOT/logs"
     HOME_DIR="$WORKSPACE_ROOT/home"
-    mkdir -p "$INPUT_DIR" "$OUTPUT_DIR" "$LOG_DIR" "$HOME_DIR"
+    WHEEL_DIR="$WORKSPACE_ROOT/wheels"
+    mkdir -p "$INPUT_DIR" "$OUTPUT_DIR" "$LOG_DIR" "$HOME_DIR" "$WHEEL_DIR"
 
     PERSON_CSV="$INPUT_DIR/people.csv"
     TOKENIZED_DEMO_CSV="$OUTPUT_DIR/tokenized-demo.csv"
@@ -117,6 +126,13 @@ setup_workspace() {
     EXCHANGE_JSON="$OUTPUT_DIR/local.exchange.json"
     RECIPIENT_PUBLIC_KEY="$HOME_DIR/.opentoken/recipient.public.pem"
     SENDER_PRIVATE_KEY="$HOME_DIR/.opentoken/sender-local.private.pem"
+
+    EXT_HELLO_WORLD_DIR="$REPO_ROOT/lib/python/opentoken_ext_hello_world"
+    EXT_HELLO_WORLD_WHEEL=""
+    EXT_HELLO_WORLD_WAS_INSTALLED="false"
+    if python -c "import importlib.metadata; importlib.metadata.distribution('opentoken-ext-hello-world')" 2>/dev/null; then
+        EXT_HELLO_WORLD_WAS_INSTALLED="true"
+    fi
 
     cat > "$PERSON_CSV" <<'EOF'
 RecordId,FirstName,LastName,PostalCode,Sex,BirthDate,SocialSecurityNumber
@@ -130,6 +146,14 @@ EOF
 }
 
 cleanup() {
+    # Restore the hello-world editable install if the install round-trip removed it.
+    if [[ "$INCLUDE_EXTENSION_INSTALL" == "true" && "$EXT_HELLO_WORLD_WAS_INSTALLED" == "true" ]]; then
+        if ! python -c "import importlib.metadata; importlib.metadata.distribution('opentoken-ext-hello-world')" 2>/dev/null; then
+            echo "Restoring opentoken-ext-hello-world editable install..."
+            python -m pip install -e "$EXT_HELLO_WORLD_DIR" --quiet
+        fi
+    fi
+
     local had_failures="false"
     local index
     for index in "${!STEP_CODES[@]}"; do
@@ -394,6 +418,58 @@ run_matrix() {
     if [[ "$INCLUDE_LIVE_UPDATE" == "true" ]]; then
         confirm_before_next_step "update-dry-run" "$PAUSE_SECONDS" || return 0
         run_step "update-dry-run" "0" "${python_cmd[@]}" update --dry-run --yes
+    fi
+
+    # ---- Extension tests ----
+
+    confirm_before_next_step "extension-help" "$PAUSE_SECONDS" || return 0
+    run_step "extension-help" "$PAUSE_SECONDS" "${python_cmd[@]}" extension --help
+    confirm_before_next_step "extension-list" "$PAUSE_SECONDS" || return 0
+    run_step "extension-list" "$PAUSE_SECONDS" "${python_cmd[@]}" extension list
+    confirm_before_next_step "extension-hello-world-help" "$PAUSE_SECONDS" || return 0
+    run_step "extension-hello-world-help" "$PAUSE_SECONDS" "${python_cmd[@]}" hello-world --help
+    confirm_before_next_step "extension-hello-world-hello" "$PAUSE_SECONDS" || return 0
+    run_step "extension-hello-world-hello" "$PAUSE_SECONDS" "${python_cmd[@]}" hello-world hello --name Alice
+    confirm_before_next_step "extension-hello-world-bye" "$PAUSE_SECONDS" || return 0
+    run_step "extension-hello-world-bye" "0" "${python_cmd[@]}" hello-world bye --name Bob
+
+    if [[ "$INCLUDE_EXTENSION_INSTALL" == "true" ]]; then
+        # Build the hello-world wheel into the isolated workspace.
+        echo
+        echo "=== extension-build-wheel ==="
+        if [[ "$DRY_RUN" != "true" ]]; then
+            if ! python -m build --wheel --outdir "$WHEEL_DIR" "$EXT_HELLO_WORLD_DIR" -q; then
+                echo "ERROR: wheel build failed; skipping install/uninstall steps." >&2
+            else
+                EXT_HELLO_WORLD_WHEEL="$(ls "$WHEEL_DIR"/opentoken_ext_hello_world-*.whl 2>/dev/null | head -1)"
+                echo "Built: $EXT_HELLO_WORLD_WHEEL"
+
+                confirm_before_next_step "extension-install" "$PAUSE_SECONDS" || return 0
+                run_step "extension-install" "$PAUSE_SECONDS" \
+                    "${python_cmd[@]}" extension install "file://$EXT_HELLO_WORLD_WHEEL" --yes
+                confirm_before_next_step "extension-list-installed" "$PAUSE_SECONDS" || return 0
+                run_step "extension-list-installed" "$PAUSE_SECONDS" "${python_cmd[@]}" extension list
+                confirm_before_next_step "extension-hello-world-hello-installed" "$PAUSE_SECONDS" || return 0
+                run_step "extension-hello-world-hello-installed" "$PAUSE_SECONDS" \
+                    "${python_cmd[@]}" hello-world hello --name Charlie
+                confirm_before_next_step "extension-uninstall" "$PAUSE_SECONDS" || return 0
+                run_step "extension-uninstall" "$PAUSE_SECONDS" \
+                    "${python_cmd[@]}" extension uninstall hello-world
+                confirm_before_next_step "extension-list-after-uninstall" "$PAUSE_SECONDS" || return 0
+                run_step "extension-list-after-uninstall" "0" "${python_cmd[@]}" extension list
+            fi
+        else
+            echo "command: (build wheel from $EXT_HELLO_WORLD_DIR)"
+            STEP_NAMES+=("extension-build-wheel")
+            STEP_CODES+=("0")
+            STEP_DURATIONS+=("0.00")
+            STEP_STDOUT_FILES+=("")
+            STEP_STDERR_FILES+=("")
+            for step in extension-install extension-list-installed extension-hello-world-hello-installed extension-uninstall extension-list-after-uninstall; do
+                confirm_before_next_step "$step" "$PAUSE_SECONDS" || return 0
+                run_step "$step" "$PAUSE_SECONDS" "${python_cmd[@]}" extension --help
+            done
+        fi
     fi
 }
 
