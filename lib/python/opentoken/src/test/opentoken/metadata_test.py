@@ -129,6 +129,10 @@ class TestMetadata:
         hash_result = Metadata.calculate_secure_hash("")
         assert hash_result is None
 
+    def test_calculate_secure_hash_return_type_allows_none_for_empty_input(self):
+        hash_result: str | None = Metadata.calculate_secure_hash("")
+        assert hash_result is None
+
     def test_calculate_secure_hash_with_unicode_input(self):
         input_str = "こんにちは"  # Japanese "hello"
         hash_result = Metadata.calculate_secure_hash(input_str)
@@ -139,6 +143,14 @@ class TestMetadata:
         # Verify UTF-8 encoding produces consistent results
         hash2 = Metadata.calculate_secure_hash(input_str)
         assert hash_result == hash2
+
+    def test_calculate_secure_hash_with_raw_bytes(self):
+        input_bytes = b"\xff\x00bytes"
+
+        hash_result = Metadata.calculate_secure_hash(input_bytes)
+
+        assert hash_result is not None
+        assert len(hash_result) == 64
 
     def test_metadata_constants(self):
         # Verify that the new constants are properly defined

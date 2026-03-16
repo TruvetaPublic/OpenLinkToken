@@ -67,47 +67,54 @@ The automatic version check can also be disabled permanently by setting the envi
 
 ### `package` (Default Encrypted Mode)
 
-| Argument            | Short | Required | Description                                                                            |
-| ------------------- | ----- | -------- | -------------------------------------------------------------------------------------- |
-| `--input`           | `-i`  | Yes      | Path to input file (CSV or Parquet)                                                    |
-| `--output`          | `-o`  | Yes      | Path to output file                                                                    |
-| `--type`            | `-t`  | Yes      | File type: `csv` or `parquet`                                                          |
-| `--hashingsecret`   | `-h`  | Yes      | Secret key for HMAC-SHA256 hashing                                                     |
-| `--encryptionkey`   | `-e`  | Yes      | 32-character key for AES-256 encryption                                                |
-| `--output-type`     | `-ot` | No       | Output file type if different from input                                               |
-| `--hash-record-ids` |       | No       | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability) |
+| Argument            | Short | Required | Description                                                                                 |
+| ------------------- | ----- | -------- | ------------------------------------------------------------------------------------------- |
+| `--input`           | `-i`  | Yes      | Path to input file (CSV or Parquet)                                                         |
+| `--output`          | `-o`  | Yes      | Path to output file                                                                         |
+| `--type`            | `-t`  | Yes      | File type: `csv` or `parquet`                                                               |
+| `--exchange-config` |       | No       | Exchange config JSON path. Defaults to `./opentoken-YYYY-MM-DD.exchange.json` when omitted. |
+| `--private-key`     |       | No\*     | Private key PEM used to decrypt the exchange config and derive the transport encryption key |
+| `--private-key-env` |       | No\*     | Environment variable containing the private key PEM                                         |
+| `--output-type`     | `-ot` | No       | Output file type if different from input                                                    |
+| `--hash-record-ids` |       | No       | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability)      |
 
 ### `tokenize` (Hashed Tokens Only)
 
-| Argument            | Short | Required         | Description                                                                            |
-| ------------------- | ----- | ---------------- | -------------------------------------------------------------------------------------- |
-| `--input`           | `-i`  | Yes              | Path to input file (CSV or Parquet)                                                    |
-| `--output`          | `-o`  | Yes              | Path to output file                                                                    |
-| `--type`            | `-t`  | Yes              | File type: `csv` or `parquet`                                                          |
-| `--hashingsecret`   | `-h`  | Normal mode only | Secret key for HMAC-SHA256 hashing                                                     |
-| `--demo-mode`       |       | No               | No hashing; outputs raw attribute signatures (see below)                               |
-| `--output-type`     | `-ot` | No               | Output file type if different from input                                               |
-| `--hash-record-ids` |       | No               | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability) |
+| Argument            | Short | Required         | Description                                                                                 |
+| ------------------- | ----- | ---------------- | ------------------------------------------------------------------------------------------- |
+| `--input`           | `-i`  | Yes              | Path to input file (CSV or Parquet)                                                         |
+| `--output`          | `-o`  | Yes              | Path to output file                                                                         |
+| `--type`            | `-t`  | Yes              | File type: `csv` or `parquet`                                                               |
+| `--exchange-config` |       | Normal mode only | Exchange config JSON path. Defaults to `./opentoken-YYYY-MM-DD.exchange.json` when omitted. |
+| `--private-key`     |       | No\*             | Private key PEM used to decrypt the exchange config                                         |
+| `--private-key-env` |       | No\*             | Environment variable containing the private key PEM                                         |
+| `--demo-mode`       |       | No               | No hashing; outputs raw attribute signatures. Cannot be combined with `--exchange-config`.  |
+| `--output-type`     | `-ot` | No               | Output file type if different from input                                                    |
+| `--hash-record-ids` |       | No               | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability)      |
 
 ### `encrypt` (Encrypt Input Tokens)
 
-| Argument          | Short | Required | Description                              |
-| ----------------- | ----- | -------- | ---------------------------------------- |
-| `--input`         | `-i`  | Yes      | Path to input file (CSV or Parquet)      |
-| `--output`        | `-o`  | Yes      | Path to output file                      |
-| `--type`          | `-t`  | Yes      | File type: `csv` or `parquet`            |
-| `--encryptionkey` | `-e`  | Yes      | 32-character key for AES-256 encryption  |
-| `--output-type`   | `-ot` | No       | Output file type if different from input |
+| Argument            | Short | Required | Description                                                                                 |
+| ------------------- | ----- | -------- | ------------------------------------------------------------------------------------------- |
+| `--input`           | `-i`  | Yes      | Path to input file (CSV or Parquet)                                                         |
+| `--output`          | `-o`  | Yes      | Path to output file                                                                         |
+| `--type`            | `-t`  | Yes      | File type: `csv` or `parquet`                                                               |
+| `--exchange-config` |       | No       | Exchange config JSON path. Defaults to `./opentoken-YYYY-MM-DD.exchange.json` when omitted. |
+| `--private-key`     |       | No\*     | Private key PEM used to decrypt the exchange config and derive the transport encryption key |
+| `--private-key-env` |       | No\*     | Environment variable containing the private key PEM                                         |
+| `--output-type`     | `-ot` | No       | Output file type if different from input                                                    |
 
 ### `decrypt` (Decrypt Encrypted Tokens)
 
-| Argument          | Short | Required | Description                              |
-| ----------------- | ----- | -------- | ---------------------------------------- |
-| `--input`         | `-i`  | Yes      | Path to input file (must be encrypted)   |
-| `--output`        | `-o`  | Yes      | Path to output file                      |
-| `--type`          | `-t`  | Yes      | File type: `csv` or `parquet`            |
-| `--encryptionkey` | `-e`  | Yes      | 32-character key for AES-256 encryption  |
-| `--output-type`   | `-ot` | No       | Output file type if different from input |
+| Argument            | Short | Required | Description                                                                                 |
+| ------------------- | ----- | -------- | ------------------------------------------------------------------------------------------- |
+| `--input`           | `-i`  | Yes      | Path to input file (must be encrypted)                                                      |
+| `--output`          | `-o`  | Yes      | Path to output file                                                                         |
+| `--type`            | `-t`  | Yes      | File type: `csv` or `parquet`                                                               |
+| `--exchange-config` |       | No       | Exchange config JSON path. Defaults to `./opentoken-YYYY-MM-DD.exchange.json` when omitted. |
+| `--private-key`     |       | No\*     | Private key PEM used to decrypt the exchange config and derive the transport encryption key |
+| `--private-key-env` |       | No\*     | Environment variable containing the private key PEM                                         |
+| `--output-type`     | `-ot` | No       | Output file type if different from input                                                    |
 
 ### `generate-key-pair` (ECDH Key Generation)
 
@@ -217,6 +224,10 @@ opentoken initiate-exchange \
 
 When `--sender-private-key-env` is used, OpenToken derives the sender public key
 in memory and does not write local sender key files under `~/.opentoken/`.
+
+For `tokenize`, `package`, `encrypt`, and `decrypt`, OpenToken resolves the exchange config from `--exchange-config` or from the date-based default path `./opentoken-YYYY-MM-DD.exchange.json`. When neither `--private-key` nor `--private-key-env` is supplied, the CLI falls back to `~/.opentoken/` fingerprint-based key lookup.
+
+\* Provide at most one of `--private-key` or `--private-key-env`.
 
 See [Sharing Tokenized Data](../operations/sharing-tokenized-data.md) for the full two-command ECDH bootstrap workflow.
 For a field-by-field format reference, see `docs/exchange-config-format.md`.

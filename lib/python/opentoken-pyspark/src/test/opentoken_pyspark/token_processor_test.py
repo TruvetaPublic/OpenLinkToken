@@ -4,11 +4,27 @@ Copyright (c) Truveta. All rights reserved.
 Tests for OpenToken PySpark token processor.
 """
 
+import base64
+import json
+from pathlib import Path
+from types import SimpleNamespace
+
 import pytest
+from jwcrypto import jwe, jwk
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StringType, StructField, StructType
 
+from opentoken.ec_key_utils import fingerprint_to_kid, generate_key_pair, public_key_fingerprint
+from opentoken.exchange_config import derive_transport_encryption_key, resolve_exchange_config_inputs
+from opentoken.exchange_jwe import (
+    EXCHANGE_JWE_CONTENT_TYPE,
+    EXCHANGE_JWE_ENCRYPTION,
+    EXCHANGE_JWE_RECIPIENT_ALGORITHM,
+    EXCHANGE_JWE_TYPE,
+    build_exchange_envelope,
+)
 from opentoken_pyspark import OpenTokenOverlapAnalyzer, OpenTokenProcessor
+from opentoken_pyspark import token_processor as token_processor_module
 
 
 @pytest.fixture(scope="module")
@@ -58,6 +74,127 @@ class TestOpenTokenProcessor:
         assert processor.hashing_secret == "HashingKey"
         assert processor.encryption_key == "Secret-Encryption-Key-Goes-Here."
 
+    def test_initialization_accepts_bytes_secrets(self, spark, sample_data):
+        """Test that processor stores and uses raw byte secrets."""
+        hashing_secret = b"HashingKey"
+        encryption_key = b"12345678901234567890123456789012"
+        processor = OpenTokenProcessor(hashing_secret=hashing_secret, encryption_key=encryption_key)
+
+        assert processor.hashing_secret == hashing_secret
+        assert processor.encryption_key == encryption_key
+
+        result_df = processor.process_dataframe(spark.createDataFrame(sample_data))
+        tokens = [row.Token for row in result_df.collect()]
+
+        assert tokens
+        assert any(token.startswith("ot.V1.") for token in tokens)
+
+    def test_from_exchange_config_resolves_bytes_and_uses_derived_transport_key(self, spark, sample_data, tmp_path):
+        """Test exchange-config factory resolves byte secrets and emits ot.V1 tokens with the derived key."""
+        exchange_config_path, private_key_path = _write_exchange_config(tmp_path)
+        exchange = resolve_exchange_config_inputs(exchange_config_path, private_key_path=private_key_path)
+
+        processor = OpenTokenProcessor.from_exchange_config(
+            exchange_config_path=exchange_config_path,
+            private_key_path=private_key_path,
+            ring_id="ring-from-config",
+        )
+
+        assert processor.hashing_secret == exchange.hashing_secret
+        assert processor.encryption_key == derive_transport_encryption_key(exchange)
+
+        exchange_config_path.unlink()
+        private_key_path.unlink()
+
+        result_df = processor.process_dataframe(spark.createDataFrame(sample_data))
+        tokens = [row.Token for row in result_df.collect()]
+
+        assert tokens
+        payload = _decrypt_v1_payload(tokens[0], processor.encryption_key)
+        assert payload["rid"] == "ring-from-config"
+        assert payload["ppid"]
+
+    def test_from_exchange_config_accepts_direct_exchange_config_and_private_key_values(
+        self,
+        spark,
+        sample_data,
+        tmp_path,
+    ):
+        """Direct exchange-config JSON and private-key PEM values should configure the processor."""
+        exchange_config_path, private_key_path = _write_exchange_config(tmp_path)
+        exchange = resolve_exchange_config_inputs(exchange_config_path, private_key_path=private_key_path)
+
+        processor = OpenTokenProcessor.from_exchange_config(
+            exchange_config_value=exchange_config_path.read_text(encoding="utf-8"),
+            private_key_value=private_key_path.read_text(encoding="utf-8"),
+            ring_id="ring-from-direct-values",
+        )
+
+        assert processor.hashing_secret == exchange.hashing_secret
+        assert processor.encryption_key == derive_transport_encryption_key(exchange)
+
+        result_df = processor.process_dataframe(spark.createDataFrame(sample_data))
+        tokens = [row.Token for row in result_df.collect()]
+
+        assert tokens
+        payload = _decrypt_v1_payload(tokens[0], processor.encryption_key)
+        assert payload["rid"] == "ring-from-direct-values"
+        assert payload["ppid"]
+
+    def test_from_exchange_config_derives_transport_key_without_version_fallback(self, monkeypatch):
+        """Test exchange-config factory always derives the transport key for resolved configs."""
+        resolved_exchange = SimpleNamespace(version=1, hashing_secret=b"resolved-hashing-secret")
+        derived_transport_key = b"12345678901234567890123456789012"
+        derive_call_count = 0
+
+        def fake_resolve_exchange_config_inputs(*args, **kwargs):
+            assert kwargs == {
+                "exchange_config_path": "config.json",
+                "exchange_config_value": None,
+                "private_key_path": "private.pem",
+                "private_key_env": "OPENTOKEN_PRIVATE_KEY",
+                "private_key_value": None,
+            }
+            return resolved_exchange
+
+        def fake_derive_transport_encryption_key(exchange):
+            nonlocal derive_call_count
+            derive_call_count += 1
+            assert exchange is resolved_exchange
+            return derived_transport_key
+
+        monkeypatch.setattr(
+            token_processor_module,
+            "resolve_exchange_config_inputs",
+            fake_resolve_exchange_config_inputs,
+        )
+        monkeypatch.setattr(
+            token_processor_module,
+            "derive_transport_encryption_key",
+            fake_derive_transport_encryption_key,
+        )
+
+        processor = OpenTokenProcessor.from_exchange_config(
+            exchange_config_path="config.json",
+            private_key_path="private.pem",
+            private_key_env="OPENTOKEN_PRIVATE_KEY",
+            ring_id="ring-from-config",
+        )
+
+        assert derive_call_count == 1
+        assert processor.hashing_secret == resolved_exchange.hashing_secret
+        assert processor.encryption_key == derived_transport_key
+
+    def test_from_exchange_config_rejects_future_exchange_config_versions(self, tmp_path):
+        """Test exchange-config factory rejects unsupported version 2 exchange configs."""
+        exchange_config_path, private_key_path = _write_future_exchange_config(tmp_path)
+
+        with pytest.raises(ValueError, match="Unsupported exchange config version '2'. Supported versions: 1."):
+            OpenTokenProcessor.from_exchange_config(
+                exchange_config_path=exchange_config_path,
+                private_key_path=private_key_path,
+            )
+
     def test_initialization_with_empty_hashing_secret(self):
         """Test that initialization fails with empty hashing secret."""
         with pytest.raises(ValueError, match="Hashing secret cannot be empty"):
@@ -72,6 +209,26 @@ class TestOpenTokenProcessor:
         """Test that initialization fails with whitespace-only secrets."""
         with pytest.raises(ValueError, match="Hashing secret cannot be empty"):
             OpenTokenProcessor("   ", "Secret-Encryption-Key-Goes-Here.")
+
+    def test_initialization_with_empty_bytes_hashing_secret(self):
+        """Test that initialization fails with empty bytes hashing secret."""
+        with pytest.raises(ValueError, match="Hashing secret cannot be empty"):
+            OpenTokenProcessor(b"", "Secret-Encryption-Key-Goes-Here.")
+
+    def test_initialization_with_empty_bytes_encryption_key(self):
+        """Test that initialization fails with empty bytes encryption key."""
+        with pytest.raises(ValueError, match="Encryption key cannot be empty"):
+            OpenTokenProcessor("HashingKey", b"")
+
+    def test_initialization_with_whitespace_bytes_hashing_secret(self):
+        """Test that initialization fails with whitespace-only bytes hashing secret."""
+        with pytest.raises(ValueError, match="Hashing secret cannot be empty"):
+            OpenTokenProcessor(b"   ", "Secret-Encryption-Key-Goes-Here.")
+
+    def test_initialization_with_whitespace_bytes_encryption_key(self):
+        """Test that initialization fails with whitespace-only bytes encryption key."""
+        with pytest.raises(ValueError, match="Encryption key cannot be empty"):
+            OpenTokenProcessor("HashingKey", b"   ")
 
     def test_process_dataframe_with_valid_data(self, spark, sample_data):
         """Test processing a DataFrame with valid data and ot.V1 encrypted output."""
@@ -375,3 +532,83 @@ class TestOpenTokenProcessor:
         result = processor.process_dataframe(df)
         # Result exists but may have zero rows due to validation failures
         assert result is not None
+
+
+def _write_exchange_config(tmp_path: Path) -> tuple[Path, Path]:
+    """Write a current exchange config plus matching sender private key file."""
+    sender_private_pem, sender_public_pem = generate_key_pair("P-256")
+    _, recipient_public_pem = generate_key_pair("P-256")
+    exchange_config_path = tmp_path / "current.exchange.json"
+    exchange_config_path.write_text(
+        json.dumps(
+            build_exchange_envelope(
+                exchange_name="shared-exchange",
+                hashing_secret=b"shared-hashing-secret",
+                sender_public_pem=sender_public_pem,
+                recipient_public_pem=recipient_public_pem,
+                curve="P-256",
+                created_at="2026-03-12T00:00:00Z",
+                exchange_id="exchange-pyspark",
+            )
+        ),
+        encoding="utf-8",
+    )
+    private_key_path = tmp_path / "sender.private.pem"
+    private_key_path.write_bytes(sender_private_pem)
+    return exchange_config_path, private_key_path
+
+
+def _write_future_exchange_config(tmp_path: Path) -> tuple[Path, Path]:
+    """Write an unsupported version 2 exchange config plus matching sender private key file."""
+    sender_private_pem, sender_public_pem = generate_key_pair("P-256")
+    _, recipient_public_pem = generate_key_pair("P-256")
+    payload = {
+        "exchangeName": "legacy",
+        "hashingSecret": "bGVnYWN5LWhhc2hpbmctc2VjcmV0",
+        "hashingSecretEncoding": "base64url",
+        "senderKeyFingerprint": public_key_fingerprint(sender_public_pem),
+        "recipientKeyFingerprint": public_key_fingerprint(recipient_public_pem),
+        "curve": "P-256",
+        "createdAt": "2026-03-12T00:00:00Z",
+        "exchangeId": "exchange-legacy",
+    }
+    protected = {
+        "typ": EXCHANGE_JWE_TYPE,
+        "cty": EXCHANGE_JWE_CONTENT_TYPE,
+        "enc": EXCHANGE_JWE_ENCRYPTION,
+    }
+    envelope = jwe.JWE(
+        json.dumps(payload, separators=(",", ":")).encode("utf-8"),
+        protected=json.dumps(protected, separators=(",", ":")),
+    )
+    for public_pem in (sender_public_pem, recipient_public_pem):
+        envelope.add_recipient(
+            jwk.JWK.from_pem(public_pem),
+            header=json.dumps(
+                {
+                    "alg": EXCHANGE_JWE_RECIPIENT_ALGORITHM,
+                    "kid": fingerprint_to_kid(public_key_fingerprint(public_pem)),
+                },
+                separators=(",", ":"),
+            ),
+        )
+
+    exchange_config_path = tmp_path / "future.exchange.json"
+    serialized = json.loads(envelope.serialize(compact=False))
+    serialized["version"] = 2
+    exchange_config_path.write_text(json.dumps(serialized), encoding="utf-8")
+
+    private_key_path = tmp_path / "future.private.pem"
+    private_key_path.write_bytes(sender_private_pem)
+    return exchange_config_path, private_key_path
+
+
+def _decrypt_v1_payload(token: str, encryption_key: bytes) -> dict[str, object]:
+    """Decrypt an ot.V1 token payload using raw AES key bytes."""
+    token_body = token.removeprefix("ot.V1.")
+    key_b64 = base64.urlsafe_b64encode(encryption_key).decode("utf-8").rstrip("=")
+    jwk_key = jwk.JWK(kty="oct", k=key_b64)
+    encrypted_token = jwe.JWE()
+    encrypted_token.deserialize(token_body)
+    encrypted_token.decrypt(jwk_key)
+    return json.loads(encrypted_token.payload.decode("utf-8"))

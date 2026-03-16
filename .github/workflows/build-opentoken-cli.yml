@@ -79,7 +79,9 @@ jobs:
         run: |
           mkdir -p smoke
           cp resources/sample.csv smoke/input.csv
-          ./dist/opentoken tokenize -i smoke/input.csv -t csv -o smoke/out.csv -h secret
+          ./dist/opentoken generate-key-pair --name recipient --force
+          ./dist/opentoken initiate-exchange --name smoke --public-key "$HOME/.opentoken/recipient.public.pem" --output smoke/smoke.exchange.json --hashingsecret secret
+          ./dist/opentoken tokenize -i smoke/input.csv -t csv -o smoke/out.csv --exchange-config smoke/smoke.exchange.json --private-key "$HOME/.opentoken/smoke.private.pem"
 
       - name: Smoke test (Windows)
         if: runner.os == 'Windows'
@@ -87,7 +89,9 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path smoke | Out-Null
           Copy-Item resources\sample.csv smoke\input.csv
-          .\dist\opentoken.exe tokenize -i smoke\input.csv -t csv -o smoke\out.csv -h secret
+          .\dist\opentoken.exe generate-key-pair --name recipient --force
+          .\dist\opentoken.exe initiate-exchange --name smoke --public-key "$HOME/.opentoken/recipient.public.pem" --output smoke\smoke.exchange.json --hashingsecret secret
+          .\dist\opentoken.exe tokenize -i smoke\input.csv -t csv -o smoke\out.csv --exchange-config smoke\smoke.exchange.json --private-key "$HOME/.opentoken/smoke.private.pem"
 
       - name: Prepare release assets
         shell: bash

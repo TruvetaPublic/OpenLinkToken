@@ -7,7 +7,7 @@ JWE Match Token Formatter for OpenToken V1 format.
 import base64
 import json
 import time
-from typing import Optional
+from typing import Optional, Union
 
 from jwcrypto import jwe, jwk
 
@@ -40,21 +40,29 @@ class JweMatchTokenFormatter(TokenTransformer):
     See RFC 7516 - JSON Web Encryption (JWE)
     """
 
-    def __init__(self, encryption_key: str, ring_id: str, rule_id: str, issuer: Optional[str] = None):
+    def __init__(self, encryption_key: Union[str, bytes], ring_id: str, rule_id: str, issuer: Optional[str] = None):
         """
         Initialize the JWE match token formatter.
 
+        Accepts either a ``str`` (UTF-8 encoded; must encode to exactly 32 bytes) or
+        raw ``bytes`` (must be exactly 32 bytes) for the encryption key.
+
         Args:
-            encryption_key: The encryption key (must be 32 bytes for AES-256)
-            ring_id: The ring identifier for key management
-            rule_id: The token rule identifier (e.g., "T1", "T2", etc.)
-            issuer: The issuer identifier (optional, defaults to "truveta.opentoken")
+            encryption_key: The encryption key (must be exactly 32 bytes for AES-256).
+            ring_id: The ring identifier for key management.
+            rule_id: The token rule identifier (e.g., "T1", "T2", etc.).
+            issuer: The issuer identifier (optional, defaults to "truveta.opentoken").
 
         Raises:
-            ValueError: If encryption_key, ring_id, or rule_id are invalid
+            ValueError: If encryption_key, ring_id, or rule_id are invalid.
         """
-        if not encryption_key or len(encryption_key) != 32:
-            raise ValueError("Encryption key must be exactly 32 characters (256 bits)")
+        if isinstance(encryption_key, bytes):
+            key_bytes = encryption_key
+        else:
+            key_bytes = encryption_key.encode("utf-8") if encryption_key else b""
+
+        if not key_bytes or len(key_bytes) != 32:
+            raise ValueError("Encryption key must be exactly 32 bytes (256 bits)")
         if not ring_id:
             raise ValueError("Ring ID must not be None or empty")
         if not rule_id:
@@ -65,7 +73,6 @@ class JweMatchTokenFormatter(TokenTransformer):
         self.issuer = issuer if issuer else "truveta.opentoken"
 
         # Create JWK from the encryption key - needs to be base64url-encoded
-        key_bytes = encryption_key.encode("utf-8")
         key_b64 = base64.urlsafe_b64encode(key_bytes).decode("utf-8").rstrip("=")
         self.jwk_key = jwk.JWK(kty="oct", k=key_b64)
 

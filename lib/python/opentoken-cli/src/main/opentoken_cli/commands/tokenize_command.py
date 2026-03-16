@@ -21,7 +21,7 @@ from opentoken_cli.io.parquet.person_attributes_parquet_writer import (
 from opentoken_cli.processor.person_attributes_processor import (
     PersonAttributesProcessor,
 )
-from opentoken_cli.util import StringMaskingUtil
+from opentoken_cli.util.exchange_config import resolve_exchange_config
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ class TokenizeCommand:
     Tokenize command - generates tokens from person attributes.
 
     Normal mode (default): applies SHA-256 then HMAC-SHA256 hashing on the token
-    signature, producing opaque base64 tokens. ``--hashingsecret`` is required.
+    signature using the hashing secret from the exchange config.
 
     Demo mode (``--demo-mode``): skips all hashing so tokens are the raw
     pipe-separated attribute signature strings. No secret is needed, making it easy
@@ -50,10 +50,10 @@ class TokenizeCommand:
             help="Generate tokens from person attributes (normal mode: HMAC-SHA256; demo mode: plain signatures)",
             description=(
                 "Generate tokens from person attributes.\n\n"
-                "Normal mode: tokens are HMAC-SHA256 hashed (--hashingsecret required).\n"
+                "Normal mode: tokens are HMAC-SHA256 hashed using the exchange config.\n"
                 "Demo mode (--demo-mode): tokens are plain attribute signature strings; no secret needed."
             ),
-            add_help=False,  # Disable automatic -h for help to allow -h for hashingsecret
+            add_help=False,
         )
 
         # Manually add --help (without -h short form)
@@ -103,18 +103,31 @@ class TokenizeCommand:
             dest="demo_mode",
             help=(
                 "Enable demo mode: output raw pipe-separated attribute signature strings with no hashing. "
-                "--hashingsecret is not required in this mode. "
+                "--exchange-config is not allowed in this mode. "
                 "Demo output is NOT suitable for production or cross-organisation exchange."
             ),
         )
 
-        # Optional in demo mode; required at runtime in normal mode
         parser.add_argument(
-            "-h",
-            "--hashingsecret",
+            "--exchange-config",
             required=False,
-            dest="hashing_secret",
-            help="Hashing secret for HMAC-SHA256 token generation (required in normal mode, ignored in demo mode)",
+            dest="exchange_config",
+            metavar="PATH",
+            help="Path to the exchange config JSON (default: ./opentoken-YYYY-MM-DD.exchange.json)",
+        )
+
+        private_key_group = parser.add_mutually_exclusive_group(required=False)
+        private_key_group.add_argument(
+            "--private-key",
+            dest="private_key",
+            metavar="PATH",
+            help="Path to the private key PEM used to decrypt the exchange config",
+        )
+        private_key_group.add_argument(
+            "--private-key-env",
+            dest="private_key_env",
+            metavar="ENV_VAR",
+            help="Read the private key PEM from the named environment variable",
         )
 
         parser.add_argument(
@@ -150,16 +163,12 @@ class TokenizeCommand:
 
         logger.info(f"Input: {args.input_path} ({args.input_type})")
         logger.info(f"Output: {args.output_path} ({output_type})")
-        if not demo_mode:
-            logger.info(f"Hashing Secret: {StringMaskingUtil.mask_string(args.hashing_secret)}")
         if hash_record_ids:
             logger.info("Record ID hashing enabled: RecordIds will be SHA-256 hashed in output")
 
-        # --hashingsecret is required in normal mode only
-        if not demo_mode:
-            if not args.hashing_secret or not args.hashing_secret.strip():
-                logger.error("--hashingsecret is required in normal mode. Use --demo-mode to skip hashing.")
-                return 1
+        if demo_mode and args.exchange_config:
+            logger.error("--demo-mode cannot be combined with --exchange-config.")
+            return 1
 
         try:
             if demo_mode:
@@ -170,12 +179,18 @@ class TokenizeCommand:
                     output_type,
                 )
             else:
+                exchange = resolve_exchange_config(
+                    args.exchange_config,
+                    private_key_path=args.private_key,
+                    private_key_env=args.private_key_env,
+                )
+                logger.info(f"Exchange config: {exchange.path}")
                 TokenizeCommand._process_tokens(
                     args.input_path,
                     args.output_path,
                     args.input_type,
                     output_type,
-                    args.hashing_secret,
+                    exchange.hashing_secret,
                     hash_record_ids,
                 )
             logger.info("Token generation completed successfully")
@@ -190,7 +205,7 @@ class TokenizeCommand:
         output_path: str,
         input_type: str,
         output_type: str,
-        hashing_secret: str,
+        hashing_secret: str | bytes,
         hash_record_ids: bool = False,
     ):
         """Process tokens in normal mode using SHA-256 + HMAC-SHA256."""

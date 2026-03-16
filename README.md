@@ -58,12 +58,16 @@ Download the [latest release](https://github.com/TruvetaPublic/OpenToken/release
 
 ```bash
 # Linux/macOS
-./opentoken -i ./resources/sample.csv -t csv -o ./resources/output.csv \
-  -h "HashingKey" -e "Secret-Encryption-Key-Goes-Here."
+./opentoken generate-key-pair --name recipient --force
+./opentoken initiate-exchange --name quickstart --public-key "$HOME/.opentoken/recipient.public.pem" --output ./resources/quickstart.exchange.json
+./opentoken package -i ./resources/sample.csv -t csv -o ./resources/output.csv \
+  --exchange-config ./resources/quickstart.exchange.json --private-key "$HOME/.opentoken/quickstart.private.pem"
 
 # Windows
-.\opentoken.exe -i .\resources\sample.csv -t csv -o .\resources\output.csv `
-  -h "HashingKey" -e "Secret-Encryption-Key-Goes-Here."
+.\opentoken.exe generate-key-pair --name recipient --force
+.\opentoken.exe initiate-exchange --name quickstart --public-key "$HOME/.opentoken/recipient.public.pem" --output .\resources\quickstart.exchange.json
+.\opentoken.exe package -i .\resources\sample.csv -t csv -o .\resources\output.csv `
+  --exchange-config .\resources\quickstart.exchange.json --private-key "$HOME/.opentoken/quickstart.private.pem"
 ```
 
 **Subcommand Interface:**
@@ -71,15 +75,17 @@ Download the [latest release](https://github.com/TruvetaPublic/OpenToken/release
 ```bash
 ./run-opentoken.sh package \
   -i ./resources/sample.csv -t csv -o ./resources/output.csv \
-  --hashingsecret "HashingKey" --encryptionkey "Secret-Encryption-Key-Goes-Here."
+  --exchange-config ./resources/quickstart.exchange.json \
+  --private-key "$HOME/.opentoken/quickstart.private.pem"
 ```
 
 **Available Commands:**
 
-- `opentoken package` - Generate and encrypt tokens in one step (recommended for most use cases)
-- `opentoken tokenize` - Generate hashed tokens only (no encryption)
-- `opentoken encrypt` - Encrypt existing hashed tokens
-- `opentoken decrypt` - Decrypt encrypted tokens
+- `opentoken package` - Generate and encrypt tokens in one step using the exchange config
+- `opentoken tokenize` - Generate hashed tokens only using the exchange config
+- `opentoken encrypt` - Encrypt existing hashed tokens using the exchange config
+- `opentoken decrypt` - Decrypt encrypted tokens using the exchange config
+- `opentoken initiate-exchange` - Create the exchange config consumed by later commands
 - `opentoken help [command]` - Show help for a specific command
 
 See <a href="https://truvetapublic.github.io/OpenToken/quickstarts/" target="_blank" rel="noopener noreferrer">Quickstarts</a> for Python CLI and detailed setup instructions.

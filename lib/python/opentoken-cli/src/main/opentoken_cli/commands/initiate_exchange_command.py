@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Optional
 from uuid import uuid4
 
+from opentoken.exchange_jwe import EXCHANGE_JWE_VERSION, build_exchange_envelope
 from opentoken_cli.util.ec_key_utils import (
     SUPPORTED_CURVES,
     derive_public_key_from_private_pem,
@@ -20,7 +21,6 @@ from opentoken_cli.util.ec_key_utils import (
     resolve_key_name,
     write_key,
 )
-from opentoken_cli.util.exchange_jwe import EXCHANGE_JWE_VERSION, build_exchange_envelope
 from opentoken_cli.util.stdin_utils import read_required_env_bytes, read_required_stdin_bytes
 
 logger = logging.getLogger(__name__)
@@ -51,7 +51,7 @@ class InitiateExchangeCommand:
                 "Initiate an ECDH key exchange with a partner.\n\n"
                 "Generates, reuses, or derives a sender key pair, encrypts the\n"
                 "exchange payload into a multi-recipient JWE envelope, and writes a\n"
-                "version 1 encrypted exchange config JSON file."
+                f"version {EXCHANGE_CONFIG_VERSION} encrypted exchange config JSON file."
             ),
         )
 

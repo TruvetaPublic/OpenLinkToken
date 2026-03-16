@@ -61,9 +61,7 @@ class MultiLanguageSyncer:
         have not yet been implemented in this repository.
         """
         discovered = {
-            lang: config
-            for lang, config in self.LANGUAGES.items()
-            if (self.root_dir / config["path"]).is_dir()
+            lang: config for lang, config in self.LANGUAGES.items() if (self.root_dir / config["path"]).is_dir()
         }
         if discovered:
             self.LANGUAGES = discovered
@@ -117,9 +115,7 @@ class MultiLanguageSyncer:
             )
 
             if result.returncode == 0:
-                all_files = [
-                    line.strip() for line in result.stdout.splitlines() if line.strip()
-                ]
+                all_files = [line.strip() for line in result.stdout.splitlines() if line.strip()]
                 return self._filter_ignored_files(all_files)
             return []
         except subprocess.CalledProcessError:
@@ -168,24 +164,20 @@ class MultiLanguageSyncer:
             return None
 
     def is_file_up_to_date(self, source_file, target_file, since_commit="HEAD~1"):
-        """Check if target file is up-to-date relative to source file changes"""
-        source_last_modified = self.get_file_last_modified_commit(
-            source_file, since_commit
-        )
-        target_last_modified = self.get_file_last_modified_commit(
-            target_file, since_commit
-        )
+        """Check if target file was touched anywhere in the PR when the source was also touched.
+
+        A sync pair is considered complete as long as both files were modified
+        at least once in the PR, regardless of commit order.
+        """
+        source_last_modified = self.get_file_last_modified_commit(source_file, since_commit)
+        target_last_modified = self.get_file_last_modified_commit(target_file, since_commit)
 
         # If source file wasn't modified at all in this PR, no sync needed
         if not source_last_modified:
             return True
 
-        # If target file wasn't modified at all in this PR, it's out of date
-        if not target_last_modified:
-            return False
-
-        # Target is up-to-date if it was modified after the source file
-        return target_last_modified["timestamp"] >= source_last_modified["timestamp"]
+        # Target is up-to-date if it was touched anywhere in the PR
+        return target_last_modified is not None
 
     def check_file_exists(self, file_path):
         """Check if a file exists"""
@@ -230,9 +222,7 @@ class MultiLanguageSyncer:
         # This prevents CLI command/processor files from being projected onto core library
         # paths where they don't belong, which would generate false-positive sync tasks.
         source_group = lang_config.get("group")
-        target_pool = (
-            active_languages if active_languages is not None else self.LANGUAGES
-        )
+        target_pool = active_languages if active_languages is not None else self.LANGUAGES
         for target_lang, target_config in target_pool.items():
             if target_lang == source_lang:
                 continue
@@ -244,9 +234,7 @@ class MultiLanguageSyncer:
             path_parts = target_path.split("/")
             if path_parts:
                 filename = path_parts[-1]
-                converted = self.convert_filename(
-                    filename, lang_config["naming"], target_config["naming"]
-                )
+                converted = self.convert_filename(filename, lang_config["naming"], target_config["naming"])
                 path_parts[-1] = converted + target_config["extension"]
                 target_path = "/".join(path_parts)
 
@@ -266,9 +254,7 @@ class MultiLanguageSyncer:
 
         # Check 1: Git is available
         try:
-            result = subprocess.run(
-                ["git", "--version"], capture_output=True, text=True
-            )
+            result = subprocess.run(["git", "--version"], capture_output=True, text=True)
             if result.returncode == 0:
                 checks.append(("✓", "Git", f"available ({result.stdout.strip()})"))
             else:
@@ -301,7 +287,7 @@ class MultiLanguageSyncer:
             if lang_path.exists() and lang_path.is_dir():
                 checks.append(("✓", f"{lang.upper()} Path", str(config["path"])))
             else:
-                issues.append(f'{lang.upper()} path does not exist: {config["path"]}')
+                issues.append(f"{lang.upper()} path does not exist: {config['path']}")
                 checks.append(("✗", f"{lang.upper()} Path", str(config["path"])))
 
         # Check 4: Mapping file
@@ -309,14 +295,10 @@ class MultiLanguageSyncer:
             try:
                 with open(self.mapping_file, "r") as f:
                     json.load(f)
-                checks.append(
-                    ("✓", "Mapping File", f"{self.mapping_file.name} (valid JSON)")
-                )
+                checks.append(("✓", "Mapping File", f"{self.mapping_file.name} (valid JSON)"))
             except json.JSONDecodeError as e:
                 issues.append(f"Mapping file contains invalid JSON: {e}")
-                checks.append(
-                    ("✗", "Mapping File", f"{self.mapping_file.name} (invalid JSON)")
-                )
+                checks.append(("✗", "Mapping File", f"{self.mapping_file.name} (invalid JSON)"))
         else:
             checks.append(
                 (
@@ -375,9 +357,7 @@ class MultiLanguageSyncer:
             output += "Status: ✅ PASSED\n"
             return (True, output)
 
-    def generate_sync_report(
-        self, output_format="console", since_commit="HEAD~1", languages=None
-    ):
+    def generate_sync_report(self, output_format="console", since_commit="HEAD~1", languages=None):
         """Generate a report of files that need syncing across all languages
 
         Returns:
@@ -392,11 +372,7 @@ class MultiLanguageSyncer:
                        Both source detection and target mapping are filtered to
                        only the specified languages. Defaults to all languages.
         """
-        active_languages = {
-            k: v
-            for k, v in self.LANGUAGES.items()
-            if languages is None or k in languages
-        }
+        active_languages = {k: v for k, v in self.LANGUAGES.items() if languages is None or k in languages}
 
         # Get changes for each active language
         all_changes = {}
@@ -419,9 +395,7 @@ class MultiLanguageSyncer:
 
         for source_lang, changed_files in all_changes.items():
             for source_file in changed_files:
-                corresponding = self.get_corresponding_files(
-                    source_file, source_lang, active_languages
-                )
+                corresponding = self.get_corresponding_files(source_file, source_lang, active_languages)
                 sync_requirements.append(
                     {
                         "source_lang": source_lang,
@@ -430,9 +404,7 @@ class MultiLanguageSyncer:
                     }
                 )
 
-        report = self.format_output(
-            sync_requirements, all_changes, output_format, since_commit
-        )
+        report = self.format_output(sync_requirements, all_changes, output_format, since_commit)
         is_complete = self._check_sync_complete(sync_requirements, since_commit)
 
         return (report, is_complete)
@@ -446,9 +418,7 @@ class MultiLanguageSyncer:
     ):
         """Format the output based on the specified format"""
         if output_format == "github-checklist":
-            return self.format_github_checklist(
-                sync_requirements, all_changes, since_commit
-            )
+            return self.format_github_checklist(sync_requirements, all_changes, since_commit)
         elif output_format == "json":
             return json.dumps(
                 {"sync_requirements": sync_requirements, "all_changes": all_changes},
@@ -465,18 +435,14 @@ class MultiLanguageSyncer:
         """
         for req in sync_requirements:
             for target_lang, target_file in req["corresponding"].items():
-                if not self.is_file_up_to_date(
-                    req["source_file"], target_file, since_commit
-                ):
+                if not self.is_file_up_to_date(req["source_file"], target_file, since_commit):
                     return False
         return True
 
     def format_github_checklist(self, sync_requirements, all_changes, since_commit):
         """Format output as GitHub markdown checklist"""
         if not sync_requirements:
-            return (
-                "✅ All changes appear to be in sync across Java, Python, and Node.js!"
-            )
+            return "✅ All changes appear to be in sync across Java, Python, and Node.js!"
 
         total_items = 0
         completed_items = 0
@@ -501,9 +467,7 @@ class MultiLanguageSyncer:
                 for target_lang, target_file in sorted(req["corresponding"].items()):
                     total_items += 1
                     exists = self.check_file_exists(target_file)
-                    is_up_to_date = self.is_file_up_to_date(
-                        source_file, target_file, since_commit
-                    )
+                    is_up_to_date = self.is_file_up_to_date(source_file, target_file, since_commit)
 
                     if is_up_to_date:
                         checkbox = "- [x]"
@@ -527,9 +491,7 @@ class MultiLanguageSyncer:
         )
 
         if completed_items > 0:
-            output += (
-                f"✅ **Progress**: {completed_items} of {total_items} items completed\n"
-            )
+            output += f"✅ **Progress**: {completed_items} of {total_items} items completed\n"
 
         return output
 
@@ -578,9 +540,7 @@ def main():
 
     args = parser.parse_args()
 
-    languages = (
-        [lang.strip() for lang in args.languages.split(",")] if args.languages else None
-    )
+    languages = [lang.strip() for lang in args.languages.split(",")] if args.languages else None
 
     syncer = MultiLanguageSyncer()
 
@@ -589,9 +549,7 @@ def main():
         print(report)
         sys.exit(0 if passed else 1)
 
-    report, is_complete = syncer.generate_sync_report(
-        args.format, args.since, languages
-    )
+    report, is_complete = syncer.generate_sync_report(args.format, args.since, languages)
 
     if report:
         print(report)

@@ -79,7 +79,7 @@ class PythonCLI(InteroperabilityTooling):
                 return str(virtual_env_python)
         return sys.executable
 
-    def _build_env(self) -> Dict[str, str]:
+    def _build_env(self, home_dir: Path | None = None) -> Dict[str, str]:
         """Build the environment needed to execute the Python CLI module."""
         pythonpath_entries = [
             str(self.project_root / "lib/python/opentoken/src/main"),
@@ -89,17 +89,21 @@ class PythonCLI(InteroperabilityTooling):
         if existing_pythonpath:
             pythonpath_entries.append(existing_pythonpath)
 
-        return {
+        env = {
             **os.environ,
             "PYTHONPATH": os.pathsep.join(pythonpath_entries),
         }
+        if home_dir is not None:
+            env["HOME"] = str(home_dir)
+        return env
 
-    def run(self, *args: str) -> subprocess.CompletedProcess:
+    def run(self, *args: str, home_dir: Path | None = None) -> subprocess.CompletedProcess:
         """Run the Python CLI through its module entrypoint."""
         cmd = [
             self._python_executable(),
             "-m",
             "opentoken_cli.main",
+            "--no-update-check",
             *args,
         ]
 
@@ -108,7 +112,7 @@ class PythonCLI(InteroperabilityTooling):
             capture_output=True,
             text=True,
             cwd=self.project_root,
-            env=self._build_env(),
+            env=self._build_env(home_dir=home_dir),
             check=False,
         )
 
@@ -119,8 +123,39 @@ class PythonCLI(InteroperabilityTooling):
 
         return result
 
+    def _bootstrap_exchange_config(self, workspace_root: Path) -> tuple[Path, Path]:
+        """Create exchange artifacts for the current CLI tokenize contract."""
+        recipient_name = "interop-recipient"
+        sender_name = "interop-sender"
+        recipient_public_key = workspace_root / ".opentoken" / f"{recipient_name}.public.pem"
+        sender_private_key = workspace_root / ".opentoken" / f"{sender_name}.private.pem"
+        exchange_config = workspace_root / "interop.exchange.json"
+
+        self.run(
+            "generate-key-pair",
+            "--name",
+            recipient_name,
+            home_dir=workspace_root,
+        )
+        self.run(
+            "initiate-exchange",
+            "--name",
+            sender_name,
+            "--public-key",
+            str(recipient_public_key),
+            "--output",
+            str(exchange_config),
+            "--hashingsecret",
+            self.HASHING_KEY,
+            home_dir=workspace_root,
+        )
+
+        return exchange_config, sender_private_key
+
     def generate_tokenized_output(self, input_file: Path, output_file: Path) -> subprocess.CompletedProcess:
         """Run the Python CLI `tokenize` command and write CSV output."""
+        workspace_root = output_file.parent
+        exchange_config, private_key = self._bootstrap_exchange_config(workspace_root)
         return self.run(
             "tokenize",
             "-i",
@@ -131,8 +166,11 @@ class PythonCLI(InteroperabilityTooling):
             str(output_file),
             "-ot",
             "csv",
-            "--hashingsecret",
-            self.HASHING_KEY,
+            "--exchange-config",
+            str(exchange_config),
+            "--private-key",
+            str(private_key),
+            home_dir=workspace_root,
         )
 
 

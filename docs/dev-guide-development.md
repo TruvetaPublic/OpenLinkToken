@@ -691,19 +691,20 @@ Minimum required arguments:
 
 ```shell
 # Python
-python -m opentoken_cli.main package -i input.csv -t csv -o output.csv -h HashingKey -e Secret-Encryption-Key-Goes-Here.
+python -m opentoken_cli.main package -i input.csv -t csv -o output.csv --exchange-config ./opentoken-YYYY-MM-DD.exchange.json --private-key ~/.opentoken/opentoken-YYYY-MM-DD.private.pem
 ```
 
 Arguments:
 
-| Flag                  | Description                                     |
-| --------------------- | ----------------------------------------------- |
-| `-t, --type`          | Input file type (`csv` or `parquet`)            |
-| `-i, --input`         | Input file path                                 |
-| `-o, --output`        | Output file path                                |
-| `-ot, --output-type`  | (Optional) Output file type (defaults to input) |
-| `-h, --hashingsecret` | Hashing secret for HMAC-SHA256                  |
-| `-e, --encryptionkey` | AES-256 encryption key                          |
+| Flag                 | Description                                     |
+| -------------------- | ----------------------------------------------- |
+| `-t, --type`         | Input file type (`csv` or `parquet`)            |
+| `-i, --input`        | Input file path                                 |
+| `-o, --output`       | Output file path                                |
+| `-ot, --output-type` | (Optional) Output file type (defaults to input) |
+| `--exchange-config`  | Exchange config JSON path                       |
+| `--private-key`      | Private key PEM used to decrypt the config      |
+| `--private-key-env`  | Environment variable containing the private key |
 
 ### Key Pair Generation
 

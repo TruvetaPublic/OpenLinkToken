@@ -17,12 +17,12 @@ sys.path.insert(0, str(REPO_ROOT / "lib" / "python" / "opentoken" / "src" / "mai
 
 from jwcrypto.common import JWException
 
+from opentoken.exchange_jwe import decrypt_exchange_envelope, resolve_private_key_by_kid
 from opentoken_cli.util.ec_key_utils import (
     derive_public_key_from_private_pem,
     fingerprint_to_kid,
     public_key_fingerprint,
 )
-from opentoken_cli.util.exchange_jwe import decrypt_exchange_envelope, resolve_private_key_by_kid
 from opentoken_cli.util.stdin_utils import read_required_stdin_bytes
 
 PROGRAM = "validate_exchange_secret.py"

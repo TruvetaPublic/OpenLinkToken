@@ -10,7 +10,7 @@ The OpenToken PySpark Bridge provides a seamless interface between PySpark DataF
 
 - **Distributed Processing**: Leverage PySpark's distributed computing capabilities for large datasets
 - **Simple API**: Easy-to-use interface that accepts PySpark DataFrames
-- **Compatible**: Works with standard OpenToken secrets for consistent token generation
+- **Exchange-Config Ready**: Recommended initiate-exchange flow with direct-secret support when you manage raw secrets yourself
 - **Flexible Column Names**: Supports multiple column name variants (e.g., FirstName/GivenName)
 - **Jupyter Ready**: Includes example notebooks for interactive exploration
 
@@ -95,7 +95,7 @@ The `dev` extra includes testing and notebook dependencies (pytest, jupyter, etc
 
 ### Basic Usage (All Spark Versions)
 
-The API is identical across all supported Spark versions:
+The recommended production flow resolves hashing and transport secrets from an initiate-exchange config on the driver:
 
 ```python
 import sys
@@ -113,10 +113,10 @@ spark = SparkSession.builder \
 # Load your data
 df = spark.read.csv("data.csv", header=True)
 
-# Initialize processor with your secrets
-processor = OpenTokenProcessor(
-    hashing_secret="your-hashing-secret",
-    encryption_key="your-encryption-key"
+# Initialize the processor from an initiate-exchange config
+processor = OpenTokenProcessor.from_exchange_config(
+    exchange_config_path="initiate-exchange-config.json",
+    private_key_path="participant-private-key.pem",
 )
 
 # Generate tokens
@@ -125,6 +125,44 @@ tokens_df = processor.process_dataframe(df)
 # View results
 tokens_df.show()
 ```
+
+`from_exchange_config(...)` resolves the exchange config and private key on the driver, then Spark workers receive only the derived byte payloads needed for token generation.
+
+### Azure Key Vault Example
+
+When your Spark job runs on Azure, keep the vault lookup on the driver and pass the resolved inputs into
+`from_exchange_config(...)`. In the PySpark bridge, the direct inputs are still the initiate-exchange config JSON plus the
+participant private key. The sender and recipient public keys are already embedded in the generated exchange config payload,
+so you normally keep them in Key Vault for exchange creation, rotation, or validation rather than passing them directly to
+`OpenTokenProcessor`.
+
+```python
+import os
+
+from azure.identity import DefaultAzureCredential
+from azure.keyvault.secrets import SecretClient
+from opentoken_pyspark import OpenTokenProcessor
+
+vault = SecretClient(
+    vault_url=os.environ["AZURE_KEY_VAULT_URL"],
+    credential=DefaultAzureCredential(),
+)
+
+exchange_config_json = vault.get_secret("opentoken-initiate-exchange-config").value
+participant_private_key_pem = vault.get_secret("opentoken-participant-private-key-pem").value
+
+# Optional: keep the public keys in Key Vault for exchange creation/rotation or validation.
+sender_public_key_pem = vault.get_secret("opentoken-sender-public-key-pem").value
+recipient_public_key_pem = vault.get_secret("opentoken-recipient-public-key-pem").value
+
+processor = OpenTokenProcessor.from_exchange_config(
+    exchange_config_value=exchange_config_json,
+    private_key_value=participant_private_key_pem,
+)
+```
+
+If Azure Key Vault is your system of record for the public keys, use those values when you create or rotate the
+initiate-exchange config upstream. The PySpark bridge does not take public-key arguments directly.
 
 ### Java 8-17 Setup (PySpark 3.5.x)
 
@@ -146,10 +184,10 @@ spark = SparkSession.builder \
 # Load your data
 df = spark.read.csv("data.csv", header=True)
 
-# Initialize processor with your secrets
-processor = OpenTokenProcessor(
-    hashing_secret="your-hashing-secret",
-    encryption_key="your-encryption-key"
+# Initialize the processor from an initiate-exchange config
+processor = OpenTokenProcessor.from_exchange_config(
+    exchange_config_path="initiate-exchange-config.json",
+    private_key_path="participant-private-key.pem",
 )
 
 # Generate tokens
@@ -169,10 +207,15 @@ from opentoken_pyspark import OpenTokenProcessor
 # Load data from Delta table or CSV
 df = spark.read.table("my_database.person_records")
 
-# Initialize processor
-processor = OpenTokenProcessor(
-    hashing_secret=dbutils.secrets.get("opentoken", "hashing_secret"),
-    encryption_key=dbutils.secrets.get("opentoken", "encryption_key")
+# Resolve private key material on the driver before processing
+participant_private_key_pem = dbutils.secrets.get(
+    "opentoken",
+    "participant_private_key_pem",
+)
+
+processor = OpenTokenProcessor.from_exchange_config(
+    exchange_config_path="/dbfs/FileStore/opentoken/initiate-exchange-config.json",
+    private_key_value=participant_private_key_pem,
 )
 
 # Generate tokens
@@ -181,6 +224,21 @@ tokens_df = processor.process_dataframe(df)
 # Save results
 tokens_df.write.mode("overwrite").saveAsTable("my_database.person_tokens")
 ```
+
+### Direct Secret Usage
+
+If you already inject raw secrets into your Spark application, the direct constructor remains supported:
+
+```python
+from opentoken_pyspark import OpenTokenProcessor
+
+processor = OpenTokenProcessor(
+    hashing_secret="your-hashing-secret",
+    encryption_key="0123456789abcdef0123456789abcdef",
+)
+```
+
+Use this path only when you intentionally manage raw secrets yourself. New integrations should prefer `from_exchange_config(...)`.
 
 ## Input DataFrame Requirements
 
@@ -211,8 +269,12 @@ Each input record produces multiple output rows (one per token rule).
 You can define custom tokens using the `opentoken_pyspark.notebook_helpers` module and pass them to the processor:
 
 ```python
-from opentoken_pyspark import OpenTokenProcessor
-from opentoken_pyspark.notebook_helpers import TokenBuilder, CustomTokenDefinition
+from opentoken_pyspark import (
+    CustomTokenDefinition,
+    OpenTokenProcessor,
+    TokenBuilder,
+    quick_token_from_exchange_config,
+)
 
 # Method 1: Using TokenBuilder
 custom_token = TokenBuilder("T6") \
@@ -225,15 +287,24 @@ custom_token = TokenBuilder("T6") \
 
 custom_definition = CustomTokenDefinition().add_token(custom_token)
 
-# Create processor with custom token definition
-processor = OpenTokenProcessor(
-    hashing_secret="your-hashing-secret",
-    encryption_key="your-encryption-key-32-chars!!",
-    token_definition=custom_definition  # Pass custom definition here
+# Create a processor with the custom definition
+processor = OpenTokenProcessor.from_exchange_config(
+    exchange_config_path="initiate-exchange-config.json",
+    private_key_path="participant-private-key.pem",
+    token_definition=custom_definition,
 )
 
 # Process DataFrame - will use T6 instead of default T1-T5
 tokens_df = processor.process_dataframe(df)
+
+# For one-off notebook exploration, the package root also exports
+# create_token_generator_from_exchange_config(...) and quick_token_from_exchange_config(...)
+generator = quick_token_from_exchange_config(
+    "T7",
+    [("last_name", "T|U"), ("first_name", "T|U"), ("birth_date", "T|D")],
+    exchange_config_path="initiate-exchange-config.json",
+    private_key_path="participant-private-key.pem",
+)
 ```
 
 For more examples and interactive experimentation with custom tokens, see the [Custom Token Definition Guide](notebooks/Custom_Token_Definition_Guide.ipynb).
@@ -272,8 +343,11 @@ The `OpenTokenOverlapAnalyzer` class helps identify matching records between two
 ```python
 from opentoken_pyspark import OpenTokenOverlapAnalyzer
 
-# Initialize with encryption key (same key used for token generation)
-analyzer = OpenTokenOverlapAnalyzer("encryption-key-32-characters!!")
+# Initialize from the same initiate-exchange config used for token generation
+analyzer = OpenTokenOverlapAnalyzer.from_exchange_config(
+    exchange_config_path="initiate-exchange-config.json",
+    private_key_path="participant-private-key.pem",
+)
 
 # Analyze overlap between two tokenized datasets
 # Match on tokens T1 and T2 (both must match)
@@ -331,7 +405,7 @@ for result in results:
 2. Matching rules specify which token types must match (e.g., ["T1", "T2"])
 3. Records are considered matching only if ALL specified token types match
 4. The analyzer provides statistics and a DataFrame of matched record pairs
-5. Uses the same encryption key that was used to generate the tokens, supporting both `ot.V1` JWE tokens and legacy encrypted token format
+5. Uses the exchange-derived transport key that was used to generate the tokens, supporting both `ot.V1` JWE tokens and legacy encrypted token format
 
 ## Testing
 
@@ -346,7 +420,8 @@ pytest
 
 - **Partitioning**: PySpark processes data in parallel across partitions. Adjust `spark.sql.shuffle.partitions` for your cluster size.
 - **Memory**: Token generation is memory-efficient but ensure adequate executor memory for your data volume.
-- **Secrets**: Secrets are serialized to worker nodes - ensure secure cluster configuration.
+- **Secret Resolution**: Exchange configs and private keys are resolved on the driver; workers receive only the derived hashing/encryption bytes.
+- **Secrets on Workers**: Derived secret bytes are still serialized to worker nodes, so ensure secure cluster configuration.
 
 ## Architecture
 
@@ -361,7 +436,7 @@ This architecture balances the benefits of distributed computing with the crypto
 
 ## Security Notes
 
-- **Secrets Management**: Use secure secrets management systems in production (e.g., AWS Secrets Manager, Azure Key Vault)
+- **Secrets Management**: Prefer initiate-exchange configs plus secure private-key delivery (for example AWS Secrets Manager or Azure Key Vault)
 - **Network Security**: Ensure secure communication between Spark nodes
 - **Data Privacy**: Generated tokens are cryptographically secure and cannot be reversed to original values
 

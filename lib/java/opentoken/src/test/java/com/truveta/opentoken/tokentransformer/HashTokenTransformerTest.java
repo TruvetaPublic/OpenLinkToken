@@ -6,13 +6,17 @@ package com.truveta.opentoken.tokentransformer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import java.security.NoSuchAlgorithmException;
+
 import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
+
 import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+
 import org.apache.commons.lang3.SerializationUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import java.util.Base64;
 
 class HashTokenTransformerTest {
     private static final String VALID_SECRET = "sampleSecret";
@@ -67,7 +71,7 @@ class HashTokenTransformerTest {
 
     @Test
     void testConstructor_NullSecret_InitializesWithNullMac() throws Exception {
-        HashTokenTransformer nullSecretTransformer = new HashTokenTransformer(null);
+        HashTokenTransformer nullSecretTransformer = new HashTokenTransformer((String) null);
         assertThrows(NullPointerException.class, () -> {
             nullSecretTransformer.transform(VALID_TOKEN);
         });
@@ -86,5 +90,20 @@ class HashTokenTransformerTest {
         String hash1 = transformer.transform(VALID_TOKEN);
         String hash2 = transformer.transform(VALID_TOKEN);
         assertEquals(hash1, hash2); // The hashed value should be consistent
+    }
+
+    @Test
+    void testTransform_RawByteSecret_ReturnsExpectedHash() throws Exception {
+        byte[] rawSecret = new byte[] {(byte) 0xff, 0x00, 's', 'e', 'c', 'r', 'e', 't'};
+        HashTokenTransformer rawSecretTransformer = new HashTokenTransformer(rawSecret);
+
+        String hashedToken = rawSecretTransformer.transform(VALID_TOKEN);
+
+        Mac mac = Mac.getInstance("HmacSHA256");
+        mac.init(new SecretKeySpec(rawSecret, "HmacSHA256"));
+        byte[] expectedHash = mac.doFinal(VALID_TOKEN.getBytes());
+        String expectedHashedToken = Base64.getEncoder().encodeToString(expectedHash);
+
+        assertEquals(expectedHashedToken, hashedToken);
     }
 }

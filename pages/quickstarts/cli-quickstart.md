@@ -43,12 +43,14 @@ cd opentoken-cli-2.0.0-alpha-macos-universal
 chmod +x opentoken
 
 # Run the CLI
+./opentoken generate-key-pair --name recipient --force
+./opentoken initiate-exchange --name quickstart --public-key "$HOME/.opentoken/recipient.public.pem" --output /path/to/quickstart.exchange.json
 ./opentoken package \
   -i /path/to/sample.csv \
   -o /path/to/output.csv \
   -t csv \
-  -h "HashingKey" \
-  -e "Secret-Encryption-Key-Goes-Here."
+  --exchange-config /path/to/quickstart.exchange.json \
+  --private-key "$HOME/.opentoken/quickstart.private.pem"
 ```
 
 **Windows PowerShell:**
@@ -59,12 +61,14 @@ Expand-Archive opentoken-cli-2.0.0-alpha-windows-x64.zip
 cd opentoken-cli-2.0.0-alpha-windows-x64
 
 # Run the CLI
+.\opentoken.exe generate-key-pair --name recipient --force
+.\opentoken.exe initiate-exchange --name quickstart --public-key "$HOME/.opentoken/recipient.public.pem" --output C:\path\to\quickstart.exchange.json
 .\opentoken.exe package `
   -i C:\path\to\sample.csv `
   -o C:\path\to\output.csv `
   -t csv `
-  -h "HashingKey" `
-  -e "Secret-Encryption-Key-Goes-Here."
+  --exchange-config C:\path\to\quickstart.exchange.json `
+  --private-key "$HOME/.opentoken/quickstart.private.pem"
 ```
 
 ### Verifying the Executable
@@ -111,15 +115,16 @@ cd C:\path\to\OpenToken
 
 The CLI is organized into subcommands. Choose the one that matches your workflow:
 
-| Subcommand             | Description                                             | Requires   |
-| ---------------------- | ------------------------------------------------------- | ---------- |
-| `package`              | Tokenize and encrypt in one step — use for data sharing | `-h`, `-e` |
-| `tokenize`             | Tokenize without encryption — use for internal analysis | `-h`       |
-| `tokenize --demo-mode` | Output plain attribute signatures — use for exploration | none       |
-| `encrypt`              | Encrypt previously tokenized (hashed) output            | `-e`       |
-| `decrypt`              | Decrypt encrypted tokens back to hashed form            | `-e`       |
-| `generate-key-pair`    | Generate an ECDH public/private key pair                | none       |
-| `update`               | Upgrade the CLI to the latest (or a specific) release   | none       |
+| Subcommand             | Description                                             | Requires                      |
+| ---------------------- | ------------------------------------------------------- | ----------------------------- |
+| `decrypt`              | Decrypt encrypted tokens back to hashed form            | exchange config + private key |
+| `encrypt`              | Encrypt previously tokenized (hashed) output            | exchange config + private key |
+| `generate-key-pair`    | Generate an ECDH public/private key pair                | none                          |
+| `initiate-exchange`    | Create the exchange config used by later commands       | recipient public key          |
+| `package`              | Tokenize and encrypt in one step — use for data sharing | exchange config + private key |
+| `tokenize`             | Tokenize without encryption — use for internal analysis | exchange config + private key |
+| `tokenize --demo-mode` | Output plain attribute signatures — use for exploration | none                          |
+| `update`               | Upgrade the CLI to the latest (or a specific) release   | none                          |
 
 For most use cases, `package` is the right starting point.
 Use `tokenize --demo-mode` to explore token output without managing secrets.
@@ -133,9 +138,10 @@ These arguments are shared across all subcommands:
 | `--input`           | `-i`  | Input file path (CSV or Parquet)                                                                                      |
 | `--output`          | `-o`  | Output file path                                                                                                      |
 | `--type`            | `-t`  | File type: `csv` or `parquet`                                                                                         |
-| `--hashingsecret`   | `-h`  | Secret key for HMAC hashing (required unless `--demo-mode`)                                                           |
-| `--encryptionkey`   | `-e`  | 32-character key for AES encryption                                                                                   |
-| `--demo-mode`       |       | Skip all hashing; output plain attribute signatures (tokenize only)                                                   |
+| `--exchange-config` |       | Exchange config JSON path. Defaults to `./opentoken-YYYY-MM-DD.exchange.json` when omitted on consumer commands.      |
+| `--private-key`     |       | Private key PEM used to decrypt the exchange config and derive later transport keys                                   |
+| `--private-key-env` |       | Environment variable containing the private key PEM                                                                   |
+| `--demo-mode`       |       | Skip all hashing; output plain attribute signatures (tokenize only; cannot be combined with `--exchange-config`)      |
 | `--hash-record-ids` |       | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability; `tokenize` and `package` only) |
 
 ## `package` Command
@@ -155,12 +161,14 @@ patient_002,Jane,Smith,1975-03-22,Female,90210,987-65-4321
 **Command:**
 
 ```bash
+opentoken generate-key-pair --name recipient --force
+opentoken initiate-exchange --name quickstart --public-key ~/.opentoken/recipient.public.pem --output ./quickstart.exchange.json
 opentoken package \
   -i sample.csv \
   -t csv \
   -o tokens.csv \
-  -h "MyHashingSecret" \
-  -e "MyEncryptionKey-32Characters!"
+  --exchange-config ./quickstart.exchange.json \
+  --private-key ~/.opentoken/quickstart.private.pem
 ```
 
 **Output (`tokens.csv`):**
@@ -182,8 +190,8 @@ opentoken package \
   -i input.parquet \
   -t parquet \
   -o tokens.parquet \
-  -h "MyHashingSecret" \
-  -e "MyEncryptionKey-32Characters!"
+  --exchange-config ./quickstart.exchange.json \
+  --private-key ~/.opentoken/quickstart.private.pem
 ```
 
 ## Other Subcommands

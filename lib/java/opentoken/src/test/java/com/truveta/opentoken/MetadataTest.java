@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.security.MessageDigest;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -84,8 +85,8 @@ class MetadataTest {
         Metadata metadata = new Metadata();
         metadata.initialize();
 
-        metadata.addHashedSecret(Metadata.HASHING_SECRET_HASH, null);
-        Map<String, Object> result = metadata.addHashedSecret(Metadata.ENCRYPTION_SECRET_HASH, null);
+        metadata.addHashedSecret(Metadata.HASHING_SECRET_HASH, (String) null);
+        Map<String, Object> result = metadata.addHashedSecret(Metadata.ENCRYPTION_SECRET_HASH, (String) null);
 
         assertFalse(result.containsKey(Metadata.HASHING_SECRET_HASH));
         assertFalse(result.containsKey(Metadata.ENCRYPTION_SECRET_HASH));
@@ -154,7 +155,7 @@ class MetadataTest {
 
     @Test
     void testCalculateSecureHashWithNullInput() {
-        String hash = Metadata.calculateSecureHash(null);
+        String hash = Metadata.calculateSecureHash((String) null);
         assertNull(hash);
     }
 
@@ -175,6 +176,36 @@ class MetadataTest {
         // Verify UTF-8 encoding produces consistent results
         String hash2 = Metadata.calculateSecureHash(input);
         assertEquals(hash, hash2);
+    }
+
+    @Test
+    void testAddHashedSecretWithByteArray() {
+        Metadata metadata = new Metadata();
+        metadata.initialize();
+
+        byte[] rawSecret = new byte[] {(byte) 0xff, 0x00, 0x01, 0x02};
+        Map<String, Object> result = metadata.addHashedSecret(Metadata.HASHING_SECRET_HASH, rawSecret);
+
+        assertTrue(result.containsKey(Metadata.HASHING_SECRET_HASH));
+        assertEquals(Metadata.calculateSecureHash(rawSecret), result.get(Metadata.HASHING_SECRET_HASH));
+    }
+
+    @Test
+    void testCalculateSecureHashWithRawBytes() throws Exception {
+        byte[] input = new byte[] {(byte) 0xff, 0x00, 'h', 'i'};
+
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        byte[] expectedHashBytes = digest.digest(input);
+        StringBuilder expectedHash = new StringBuilder();
+        for (byte b : expectedHashBytes) {
+            String hex = Integer.toHexString(0xff & b);
+            if (hex.length() == 1) {
+                expectedHash.append('0');
+            }
+            expectedHash.append(hex);
+        }
+
+        assertEquals(expectedHash.toString(), Metadata.calculateSecureHash(input));
     }
 
     @Test

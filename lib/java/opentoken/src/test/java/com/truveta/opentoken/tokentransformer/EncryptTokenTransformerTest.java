@@ -51,11 +51,27 @@ class EncryptTokenTransformerTest {
     }
 
     @Test
+    void testConstructor_Raw32ByteKey_Success() throws Exception {
+        EncryptTokenTransformer validTransformer = new EncryptTokenTransformer(VALID_KEY.getBytes(StandardCharsets.UTF_8));
+        Assertions.assertNotNull(validTransformer);
+    }
+
+    @Test
     void testConstructor_InvalidKeyLength_ThrowsIllegalArgumentException() {
         Exception exception = Assertions.assertThrows(InvalidKeyException.class, () -> {
             new EncryptTokenTransformer(INVALID_KEY); // Key is too short
         });
-        Assertions.assertEquals("Key must be 32 characters long", exception.getMessage());
+        Assertions.assertEquals("Key must be 32 bytes long", exception.getMessage());
+    }
+
+    @Test
+    void testConstructor_NonAscii32CharacterKey_ThrowsInvalidKeyException() {
+        String invalidUtf8LengthKey = "é".repeat(32);
+
+        Exception exception = Assertions.assertThrows(InvalidKeyException.class, () -> {
+            new EncryptTokenTransformer(invalidUtf8LengthKey);
+        });
+        Assertions.assertEquals("Key must be 32 bytes long", exception.getMessage());
     }
 
     @Test
