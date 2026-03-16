@@ -113,3 +113,4 @@ apm_modules/
 .github/skills/writing-skills/
 .github/skills/documentation-writer/
 .github/skills/gh-cli/
+apm.lock.yaml
