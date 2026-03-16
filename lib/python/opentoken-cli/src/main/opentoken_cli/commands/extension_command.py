@@ -218,7 +218,8 @@ class ExtensionCommand:
                         eps = importlib.metadata.entry_points(group="opentoken.extensions")
                         for ep in eps:
                             if ep.name == name:
-                                dist_name = ep.dist.metadata.get("Name") or ep.dist.name or name
+                                name_from_meta = ep.dist.metadata.get("Name")
+                                dist_name = name_from_meta if name_from_meta else (ep.dist.name if ep.dist.name else name)
                                 break
                     except Exception:
                         pass
@@ -360,8 +361,10 @@ class ExtensionCommand:
                 }
             else:
                 # Normal Python: pip-install the wheel so entry points are registered.
+                # --upgrade ensures a newer version replaces the old one;
+                # --no-deps avoids re-downloading unchanged transitive dependencies.
                 pip_result = subprocess.run(
-                    [sys.executable, "-m", "pip", "install", "--upgrade", "--force-reinstall", str(whl_path)],
+                    [sys.executable, "-m", "pip", "install", "--upgrade", "--no-deps", str(whl_path)],
                     capture_output=True,
                     text=True,
                 )

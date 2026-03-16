@@ -213,6 +213,7 @@ class TestExtensionInstall:
             with patch("sys.stdin") as mock_stdin:
                 mock_stdin.isatty.return_value = False
                 result = ExtensionCommand._install(args)
+                mock_stdin.isatty.assert_called_once()
 
         assert result == 1
         err = capsys.readouterr().err
@@ -228,8 +229,8 @@ class TestExtensionInstall:
         err = capsys.readouterr().err
         assert "Unsupported URL scheme" in err
 
-    def test_install_pip_uses_upgrade_force_reinstall(self, tmp_path, capsys):
-        """install passes --upgrade --force-reinstall to pip so re-installs always apply."""
+    def test_install_pip_uses_upgrade_no_deps(self, tmp_path, capsys):
+        """install passes --upgrade --no-deps to pip so the package is updated without re-downloading unchanged deps."""
         whl = _make_wheel(tmp_path)
         args = _make_args(url=f"file://{whl}", yes=True)
 
@@ -242,4 +243,4 @@ class TestExtensionInstall:
 
         call_args = mock_pip.call_args[0][0]
         assert "--upgrade" in call_args
-        assert "--force-reinstall" in call_args
+        assert "--no-deps" in call_args

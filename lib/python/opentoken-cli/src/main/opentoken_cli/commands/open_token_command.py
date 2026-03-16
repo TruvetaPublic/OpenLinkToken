@@ -125,6 +125,11 @@ class OpenTokenCommand:
             subparsers._name_parser_map.clear()
             subparsers._name_parser_map.update(sorted_items)
             subparsers._choices_actions.sort(key=lambda a: a.dest)
+        else:
+            logger.debug(
+                "Subcommand alphabetical sorting skipped: argparse internals "
+                "(_name_parser_map / _choices_actions) not available on this Python version."
+            )
 
         return parser
 
