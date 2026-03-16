@@ -28,6 +28,9 @@ class DecryptTokenTransformer(TokenTransformer):
         """
         Initializes the underlying cipher (AES) with the decryption secret.
 
+        Accepts either a ``str`` (UTF-8 encoded; must encode to exactly 32 bytes) or
+        raw ``bytes`` (must be exactly 32 bytes).
+
         Args:
             encryption_key: The encryption key. The UTF-8 encoded key material must be exactly 32 bytes long.
 

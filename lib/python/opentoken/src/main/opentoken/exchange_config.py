@@ -2,6 +2,9 @@
 Copyright (c) Truveta. All rights reserved.
 
 Shared helpers for loading and consuming initiate-exchange config files.
+
+Note: The exchange-config workflow is Python-CLI only. The Java counterpart
+(``ExchangeConfig.java``) is a placeholder stub that references this module.
 """
 
 import base64

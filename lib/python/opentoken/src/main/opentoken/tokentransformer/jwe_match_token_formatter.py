@@ -44,14 +44,17 @@ class JweMatchTokenFormatter(TokenTransformer):
         """
         Initialize the JWE match token formatter.
 
+        Accepts either a ``str`` (UTF-8 encoded; must encode to exactly 32 bytes) or
+        raw ``bytes`` (must be exactly 32 bytes) for the encryption key.
+
         Args:
-            encryption_key: The encryption key (must be 32 bytes for AES-256)
-            ring_id: The ring identifier for key management
-            rule_id: The token rule identifier (e.g., "T1", "T2", etc.)
-            issuer: The issuer identifier (optional, defaults to "truveta.opentoken")
+            encryption_key: The encryption key (must be exactly 32 bytes for AES-256).
+            ring_id: The ring identifier for key management.
+            rule_id: The token rule identifier (e.g., "T1", "T2", etc.).
+            issuer: The issuer identifier (optional, defaults to "truveta.opentoken").
 
         Raises:
-            ValueError: If encryption_key, ring_id, or rule_id are invalid
+            ValueError: If encryption_key, ring_id, or rule_id are invalid.
         """
         if isinstance(encryption_key, bytes):
             key_bytes = encryption_key

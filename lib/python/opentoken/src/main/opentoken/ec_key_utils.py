@@ -3,6 +3,9 @@ Copyright (c) Truveta. All rights reserved.
 
 Shared utilities for ECDH key management used by initiate-exchange and
 exchange-config consumers.
+
+Note: The exchange-config workflow is Python-CLI only. The Java counterpart
+(``EcKeyUtils.java``) is a placeholder stub that references this module.
 """
 
 import logging

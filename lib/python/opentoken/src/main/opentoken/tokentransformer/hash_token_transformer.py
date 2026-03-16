@@ -26,6 +26,9 @@ class HashTokenTransformer(TokenTransformer):
         """
         Initializes the underlying MAC with the secret key.
 
+        Accepts a ``str`` (encoded to UTF-8), raw ``bytes``, or ``None`` / empty
+        to create a no-op transformer (``transform`` will raise ``RuntimeError``).
+
         Args:
             hashing_secret: The cryptographic secret key.
 

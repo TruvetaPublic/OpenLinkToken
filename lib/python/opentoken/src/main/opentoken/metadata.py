@@ -74,14 +74,16 @@ class Metadata:
         Calculate a secure SHA-256 hash of the given input.
         The hash is returned as a hexadecimal string, or ``None`` for empty input.
 
+        Accepts both ``str`` (encoded as UTF-8) and raw ``bytes``.
+
         Args:
-            input_str: The input string to hash
+            input_str: The input string or raw bytes to hash.
 
         Returns:
-            The SHA-256 hash as a hexadecimal string, or ``None`` when the input is empty
+            The SHA-256 hash as a hexadecimal string, or ``None`` when the input is empty.
 
         Raises:
-            HashCalculationException: If there's an error calculating the hash
+            HashCalculationException: If there's an error calculating the hash.
         """
         if not input_str:
             return None
