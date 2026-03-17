@@ -487,7 +487,8 @@ class ExtensionCommand:
             return None
 
         raw = zf.read(ep_candidates[0]).decode("utf-8", errors="replace")
-        cp = configparser.ConfigParser()
+        cp = configparser.ConfigParser(interpolation=None)
+        cp.optionxform = str
         cp.read_string(raw)
 
         if not cp.has_section("opentoken.extensions"):
