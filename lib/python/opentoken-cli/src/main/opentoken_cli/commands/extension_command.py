@@ -151,7 +151,7 @@ class ExtensionCommand:
         url: str = args.url
         skip_confirm: bool = getattr(args, "yes", False)
 
-        print(_SECURITY_WARNING)
+        print(f"{_SECURITY_WARNING}\nYou are about to install an extension from:\n  {url}")
         if not skip_confirm:
             if sys.stdin.isatty():
                 try:
