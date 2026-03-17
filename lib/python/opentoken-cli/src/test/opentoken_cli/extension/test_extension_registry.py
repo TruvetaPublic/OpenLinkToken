@@ -6,20 +6,9 @@ Unit tests for ExtensionRegistry.
 
 import json
 import os
-from pathlib import Path
 from unittest.mock import patch
 
 from opentoken_cli.extension.extension_registry import ExtensionRegistry
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-
-def _registry_in(tmp_path: Path) -> Path:
-    """Return a registry path inside *tmp_path* and wire it via env override."""
-    return tmp_path / "registry.json"
-
 
 # ---------------------------------------------------------------------------
 # Tests
