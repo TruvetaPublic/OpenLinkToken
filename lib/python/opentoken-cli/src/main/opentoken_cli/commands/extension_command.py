@@ -367,7 +367,6 @@ class ExtensionCommand:
             return False
 
     @staticmethod
-    @staticmethod
     def _safe_extract_wheel(zf: zipfile.ZipFile, dest_dir: Path) -> None:
         """
         Safely extract a wheel, ensuring no archive entry escapes *dest_dir*.
