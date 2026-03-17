@@ -366,6 +366,23 @@ class TestExtensionInstall:
         assert "uninstall" in uninstall_call_args
         assert "opentoken-hello-world" in uninstall_call_args
 
+    def test_nonfrozen_install_invalid_ext_name_returns_error(self, tmp_path, capsys):
+        """_install_wheel returns 1 without calling pip when ext_name is not a valid dist name (non-frozen)."""
+        whl = _make_wheel(tmp_path)
+
+        with patch.object(
+            ExtensionCommand,
+            "_extract_entry_point",
+            return_value=("-r evil.txt", "some_module", "SomeClass", "1.0.0", "test"),
+        ):
+            with patch("subprocess.run") as mock_pip:
+                result = ExtensionCommand._install_wheel(whl, source_url="file:///test.whl")
+
+        assert result == 1
+        mock_pip.assert_not_called()
+        err = capsys.readouterr().err
+        assert "valid" in err.lower() or "invalid" in err.lower()
+
 
 # ---------------------------------------------------------------------------
 # Tests: _check_frozen_deps
@@ -454,6 +471,13 @@ class TestCheckFrozenDeps:
 
         assert any("multiple dist-info" in msg.lower() for msg in caplog.messages)
         assert result is None  # Neither METADATA entry has Requires-Dist lines
+
+    def test_frozen_deps_skips_extras_conditional_dep(self, tmp_path):
+        """_check_frozen_deps returns None when the only Requires-Dist entry is extras-conditional."""
+        metadata = 'Metadata-Version: 2.1\nName: my-extension\nRequires-Dist: requests; extra == "dev"\n'
+        with self._make_wheel_with_metadata(tmp_path, metadata) as zf:
+            result = ExtensionCommand._check_frozen_deps(zf)
+        assert result is None
 
 
 # ---------------------------------------------------------------------------

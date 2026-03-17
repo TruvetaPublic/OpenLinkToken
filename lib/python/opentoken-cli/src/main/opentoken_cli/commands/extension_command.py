@@ -521,6 +521,12 @@ class ExtensionCommand:
                 }
             else:
                 # Normal Python: pip-install the wheel so entry points are registered.
+                if not _validate_dist_name(ext_name):
+                    print(
+                        f"Error: Wheel entry-point key '{ext_name}' is not a valid extension name.",
+                        file=sys.stderr,
+                    )
+                    return 1
                 # --upgrade ensures a newer version replaces the old one.
                 # --no-deps is intentionally omitted here so that pip resolves transitive
                 # dependencies normally; omitting it in non-frozen mode prevents silent
@@ -618,6 +624,8 @@ class ExtensionCommand:
                     req = Requirement(raw_dep)
                 except InvalidRequirement:
                     continue
+                if req.marker is not None and not req.marker.evaluate():
+                    continue  # marker evaluates to False in this environment; skip
                 # Normalise dashes/underscores/dots per PEP 503 (collapse runs of [-_.] to a single -).
                 dep_name_norm = re.sub(r"[-_.]+", "-", req.name).lower()
                 if dep_name_norm not in _BUNDLED_DEPS:
