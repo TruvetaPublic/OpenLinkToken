@@ -45,7 +45,10 @@ class ExtensionRegistry:
         """
         env_override = os.environ.get("OPENTOKEN_EXTENSIONS_DIR")
         if env_override:
-            return Path(env_override).expanduser().resolve()
+            base_path = Path(env_override).expanduser()
+            if not base_path.is_absolute():
+                base_path = Path.home() / base_path
+            return base_path.resolve()
         return (Path.home() / _DEFAULT_EXTENSIONS_SUBDIR).resolve()
 
     @staticmethod
