@@ -88,8 +88,8 @@ Create `pyproject.toml` in the `opentoken-hello-world/` directory:
 
 ```toml
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "opentoken-ext-hello-world"
