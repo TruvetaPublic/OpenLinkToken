@@ -348,6 +348,12 @@ class ExtensionCommand:
                 # Frozen binary: extract wheel contents and inject via sys.path at runtime.
                 ext_dir = ExtensionRegistry.get_extensions_dir() / ext_name
                 src_dir = ext_dir / "src"
+                if src_dir.exists():
+                    try:
+                        shutil.rmtree(src_dir)
+                    except FileNotFoundError:
+                        # Directory was removed concurrently; safe to proceed.
+                        pass
                 src_dir.mkdir(parents=True, exist_ok=True)
                 zf.extractall(src_dir)
                 metadata: dict = {
