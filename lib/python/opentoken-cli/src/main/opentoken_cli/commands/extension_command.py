@@ -486,6 +486,7 @@ class ExtensionCommand:
                         f"Error: Unsafe path found in wheel '{whl_path.name}': {exc}",
                         file=sys.stderr,
                     )
+                    shutil.rmtree(src_dir, ignore_errors=True)
                     return 1
                 resolved_command_name = _resolve_extension_command_name(
                     module_name,
@@ -617,8 +618,8 @@ class ExtensionCommand:
                     req = Requirement(raw_dep)
                 except InvalidRequirement:
                     continue
-                # Normalise dashes/underscores per PEP 503.
-                dep_name_norm = req.name.lower().replace("_", "-")
+                # Normalise dashes/underscores/dots per PEP 503 (collapse runs of [-_.] to a single -).
+                dep_name_norm = re.sub(r"[-_.]+", "-", req.name).lower()
                 if dep_name_norm not in _BUNDLED_DEPS:
                     external.append(req.name)
         return ", ".join(external) if external else None

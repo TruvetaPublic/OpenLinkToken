@@ -201,7 +201,7 @@ Switch to the Python package install of OpenToken, or rewrite the extension to u
 ### Command name conflict
 
 ```
-Warning: extension 'my-ext' declares command_name 'package' which conflicts with a built-in command. Skipping.
+Extension 'HelloWorldExtension' conflicts with built-in command 'tokenize'; skipping.
 ```
 
 The extension's `command_name` must not match any built-in subcommand. Contact the extension author to rename the command.
