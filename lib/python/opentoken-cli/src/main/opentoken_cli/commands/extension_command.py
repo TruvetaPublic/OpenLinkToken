@@ -3,6 +3,7 @@ Copyright (c) Truveta. All rights reserved.
 """
 
 import configparser
+import importlib
 import logging
 import shutil
 import subprocess
@@ -10,7 +11,6 @@ import sys
 import tempfile
 import zipfile
 from contextlib import contextmanager
-import importlib
 from pathlib import Path
 from typing import Optional
 from urllib.parse import urlparse
@@ -367,7 +367,6 @@ class ExtensionCommand:
             return False
 
     @staticmethod
-    @staticmethod
     def _safe_extract_wheel(zf: zipfile.ZipFile, dest_dir: Path) -> None:
         """
         Safely extract a wheel, ensuring no archive entry escapes *dest_dir*.
@@ -399,6 +398,7 @@ class ExtensionCommand:
             with zf.open(member, "r") as source, target_path.open("wb") as target:
                 shutil.copyfileobj(source, target)
 
+    @staticmethod
     def _install_wheel(whl_path: Path, source_url: str) -> int:
         """
         Install *whl_path* and register the extension.
