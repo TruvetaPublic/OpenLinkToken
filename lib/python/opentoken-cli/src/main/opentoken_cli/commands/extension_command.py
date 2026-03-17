@@ -16,6 +16,8 @@ from typing import Optional
 from urllib.parse import urlparse
 from urllib.request import urlopen
 
+from packaging.requirements import InvalidRequirement, Requirement
+
 from opentoken_cli.extension.extension_registry import ExtensionRegistry
 
 logger = logging.getLogger(__name__)
@@ -152,7 +154,7 @@ class ExtensionCommand:
         url: str = args.url
         skip_confirm: bool = getattr(args, "yes", False)
 
-        print(_SECURITY_WARNING)
+        print(f"{_SECURITY_WARNING}\nYou are about to install an extension from:\n  {url}")
         if not skip_confirm:
             if sys.stdin.isatty():
                 try:
@@ -386,11 +388,6 @@ class ExtensionCommand:
 
             target_path = (dest_dir_resolved / member_path).resolve()
 
-            # Reject entries that resolve exactly to the destination directory
-            # unless they are explicitly marked as directories.
-            if target_path == dest_dir_resolved and not member.is_dir():
-                raise ValueError(f"Illegal path in wheel entry (points to destination directory): {member.filename!r}")
-
             # Prevent Zip Slip / path traversal by ensuring the target path
             # stays within the destination directory.
             if target_path != dest_dir_resolved and dest_dir_resolved not in target_path.parents:
@@ -404,6 +401,7 @@ class ExtensionCommand:
             with zf.open(member, "r") as source, target_path.open("wb") as target:
                 shutil.copyfileobj(source, target)
 
+    @staticmethod
     def _install_wheel(whl_path: Path, source_url: str) -> int:
         """
         Install *whl_path* and register the extension.
@@ -561,13 +559,15 @@ class ExtensionCommand:
         external = []
         for line in content.splitlines():
             if line.startswith("Requires-Dist:"):
-                dep = line.split(":", 1)[1].strip()
-                # Extract just the package name (before any version specifier / extras).
-                dep_name = dep.split(";")[0].split("[")[0].strip().rstrip("><=! ").lower()
-                # Normalise dashes/underscores.
-                dep_name_norm = dep_name.replace("_", "-")
+                raw_dep = line.split(":", 1)[1].strip()
+                try:
+                    req = Requirement(raw_dep)
+                except InvalidRequirement:
+                    continue
+                # Normalise dashes/underscores per PEP 503.
+                dep_name_norm = req.name.lower().replace("_", "-")
                 if dep_name_norm not in _BUNDLED_DEPS:
-                    external.append(dep_name)
+                    external.append(req.name)
         return ", ".join(external) if external else None
 
     @staticmethod

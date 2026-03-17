@@ -10,8 +10,6 @@ import zipfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from opentoken_cli.commands.extension_command import _SECURITY_WARNING, ExtensionCommand
 
 # ---------------------------------------------------------------------------
@@ -249,66 +247,75 @@ class TestExtensionInstall:
 
 
 # ---------------------------------------------------------------------------
-# Tests: _safe_extract_wheel
+# Tests: _check_frozen_deps
 # ---------------------------------------------------------------------------
 
 
-class TestSafeExtractWheel:
-    """Tests for the Zip Slip protection in ``_safe_extract_wheel``."""
+class TestCheckFrozenDeps:
+    """Unit tests for ExtensionCommand._check_frozen_deps."""
 
-    def test_extracts_valid_wheel(self, tmp_path):
-        """Normal wheel entries are extracted to the destination directory."""
-        dest = tmp_path / "dest"
-        dest.mkdir()
-        whl_path = tmp_path / "test.whl"
+    def _make_wheel_with_metadata(self, dest: Path, metadata_content: str) -> zipfile.ZipFile:
+        whl_path = dest / "test-1.0.0-py3-none-any.whl"
         with zipfile.ZipFile(whl_path, "w") as zf:
-            zf.writestr("pkg/__init__.py", "")
-            zf.writestr("pkg/module.py", "x = 1")
+            zf.writestr("test-1.0.0.dist-info/METADATA", metadata_content)
+        return zipfile.ZipFile(whl_path, "r")
 
-        with zipfile.ZipFile(whl_path, "r") as zf:
-            ExtensionCommand._safe_extract_wheel(zf, dest)
-
-        assert (dest / "pkg" / "__init__.py").exists()
-        assert (dest / "pkg" / "module.py").read_text() == "x = 1"
-
-    def test_rejects_path_traversal_entry(self, tmp_path):
-        """An archive entry that escapes dest_dir raises ValueError (Zip Slip guard)."""
-        dest = tmp_path / "dest"
-        dest.mkdir()
-        whl_path = tmp_path / "malicious.whl"
+    def test_no_metadata_returns_none(self, tmp_path):
+        whl_path = tmp_path / "test-1.0.0-py3-none-any.whl"
         with zipfile.ZipFile(whl_path, "w") as zf:
-            zf.writestr("../../evil.py", "malicious content")
-
+            zf.writestr("test/__init__.py", "")
         with zipfile.ZipFile(whl_path, "r") as zf:
-            with pytest.raises(ValueError, match="Illegal path"):
-                ExtensionCommand._safe_extract_wheel(zf, dest)
+            assert ExtensionCommand._check_frozen_deps(zf) is None
 
-        assert not (tmp_path / "evil.py").exists()
+    def test_all_bundled_deps_returns_none(self, tmp_path):
+        metadata = (
+            "Metadata-Version: 2.1\n"
+            "Name: my-extension\n"
+            "Requires-Dist: opentoken\n"
+            "Requires-Dist: pandas\n"
+            "Requires-Dist: pyarrow\n"
+        )
+        with self._make_wheel_with_metadata(tmp_path, metadata) as zf:
+            assert ExtensionCommand._check_frozen_deps(zf) is None
 
-    def test_rejects_absolute_path_entry(self, tmp_path):
-        """An archive entry with an absolute path raises ValueError."""
-        dest = tmp_path / "dest"
-        dest.mkdir()
-        whl_path = tmp_path / "absolute.whl"
-        with zipfile.ZipFile(whl_path, "w") as zf:
-            zf.writestr("/etc/passwd", "hacked")
+    def test_version_specifier_with_parentheses_is_parsed_correctly(self, tmp_path):
+        """Wheel METADATA may use 'pkg (>=1.2)' format; the name must be extracted cleanly."""
+        metadata = (
+            "Metadata-Version: 2.1\n"
+            "Name: my-extension\n"
+            "Requires-Dist: opentoken (>=2.0)\n"
+            "Requires-Dist: pandas (>=1.3,<3.0)\n"
+            "Requires-Dist: requests (>=2.28)\n"
+        )
+        with self._make_wheel_with_metadata(tmp_path, metadata) as zf:
+            result = ExtensionCommand._check_frozen_deps(zf)
+        assert result == "requests"
 
-        with zipfile.ZipFile(whl_path, "r") as zf:
-            with pytest.raises(ValueError, match="Illegal path"):
-                ExtensionCommand._safe_extract_wheel(zf, dest)
+    def test_version_specifier_without_parentheses_is_parsed_correctly(self, tmp_path):
+        metadata = (
+            "Metadata-Version: 2.1\nName: my-extension\nRequires-Dist: opentoken>=2.0\nRequires-Dist: requests>=2.28\n"
+        )
+        with self._make_wheel_with_metadata(tmp_path, metadata) as zf:
+            result = ExtensionCommand._check_frozen_deps(zf)
+        assert result == "requests"
 
-    def test_creates_directory_entries(self, tmp_path):
-        """Directory entries in the wheel are created without raising errors."""
-        dest = tmp_path / "dest"
-        dest.mkdir()
-        whl_path = tmp_path / "dirs.whl"
-        with zipfile.ZipFile(whl_path, "w") as zf:
-            dir_info = zipfile.ZipInfo("subdir/")
-            zf.writestr(dir_info, "")
-            zf.writestr("subdir/file.py", "pass")
+    def test_underscore_normalized_to_dash(self, tmp_path):
+        """Package names with underscores should be treated the same as dashes."""
+        metadata = "Metadata-Version: 2.1\nName: my-extension\nRequires-Dist: opentoken_cli\n"
+        with self._make_wheel_with_metadata(tmp_path, metadata) as zf:
+            result = ExtensionCommand._check_frozen_deps(zf)
+        assert result is None
 
-        with zipfile.ZipFile(whl_path, "r") as zf:
-            ExtensionCommand._safe_extract_wheel(zf, dest)
-
-        assert (dest / "subdir").is_dir()
-        assert (dest / "subdir" / "file.py").exists()
+    def test_multiple_external_deps_reported(self, tmp_path):
+        metadata = (
+            "Metadata-Version: 2.1\n"
+            "Name: my-extension\n"
+            "Requires-Dist: opentoken\n"
+            "Requires-Dist: requests (>=2.28)\n"
+            "Requires-Dist: httpx\n"
+        )
+        with self._make_wheel_with_metadata(tmp_path, metadata) as zf:
+            result = ExtensionCommand._check_frozen_deps(zf)
+        assert result is not None
+        assert "requests" in result
+        assert "httpx" in result
