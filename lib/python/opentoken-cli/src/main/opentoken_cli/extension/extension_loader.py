@@ -198,6 +198,16 @@ class ExtensionLoader:
                         class_name,
                     )
                     continue
+
+                command_name = getattr(instance, "command_name", None)
+                if not command_name or command_name != name:
+                    logger.warning(
+                        "Extension registry key '%s' does not match extension command_name '%s'; skipping.",
+                        name,
+                        command_name,
+                    )
+                    continue
+
                 extensions.append(instance)
             except Exception as exc:  # noqa: BLE001
                 logger.warning("Failed to load extension '%s' from registry: %s", name, exc)
