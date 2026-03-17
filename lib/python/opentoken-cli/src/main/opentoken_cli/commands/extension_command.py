@@ -302,6 +302,38 @@ class ExtensionCommand:
             return False
 
     @staticmethod
+    @staticmethod
+    def _safe_extract_wheel(zf: zipfile.ZipFile, dest_dir: Path) -> None:
+        """
+        Safely extract a wheel, ensuring no archive entry escapes *dest_dir*.
+
+        Raises:
+            ValueError: If an entry's resolved path is outside *dest_dir*.
+        """
+        dest_dir_resolved = dest_dir.resolve()
+
+        for member in zf.infolist():
+            member_path = Path(member.filename)
+
+            # Skip empty names
+            if not member.filename:
+                continue
+
+            target_path = (dest_dir_resolved / member_path).resolve()
+
+            # Prevent Zip Slip / path traversal by ensuring the target path
+            # stays within the destination directory.
+            if target_path != dest_dir_resolved and dest_dir_resolved not in target_path.parents:
+                raise ValueError(f"Illegal path in wheel entry: {member.filename!r}")
+
+            if member.is_dir():
+                target_path.mkdir(parents=True, exist_ok=True)
+                continue
+
+            target_path.parent.mkdir(parents=True, exist_ok=True)
+            with zf.open(member, "r") as source, target_path.open("wb") as target:
+                shutil.copyfileobj(source, target)
+
     def _install_wheel(whl_path: Path, source_url: str) -> int:
         """
         Install *whl_path* and register the extension.
@@ -355,7 +387,14 @@ class ExtensionCommand:
                         # Directory was removed concurrently; safe to proceed.
                         pass
                 src_dir.mkdir(parents=True, exist_ok=True)
-                zf.extractall(src_dir)
+                try:
+                    ExtensionCommand._safe_extract_wheel(zf, src_dir)
+                except ValueError as exc:
+                    print(
+                        f"Error: Unsafe path found in wheel '{whl_path.name}': {exc}",
+                        file=sys.stderr,
+                    )
+                    return 1
                 metadata: dict = {
                     "version": version,
                     "source_url": source_url,
