@@ -216,15 +216,7 @@ opentoken extension uninstall <name>
 
 **Frozen binary mode:** the uninstall command removes the extracted files from the extensions directory and then deletes the registry entry. If the files are already gone it still cleans up the registry entry.
 
-**Python package mode:** the uninstall command runs `pip uninstall -y <dist-name>` first. If pip reports the package as not installed (pip ≥ 21.3 exits non-zero in this case), the registry entry is **not** automatically removed.
-
-If you are in Python package mode and `uninstall` fails because the package is already gone, confirm with:
-
-```bash
-pip show <dist-name>
-```
-
-If pip confirms the package is absent, remove the stale registry entry manually — open `~/.opentoken/extensions/registry.json` (or `$OPENTOKEN_EXTENSIONS_DIR/registry.json`) and delete the key for the extension name. Then re-install if needed.
+**Python package mode:** the uninstall command runs `pip uninstall -y <dist-name>` first. If the package is already gone, pip exits 0 with a warning rather than an error, so `opentoken extension uninstall <name>` still proceeds to clean up the registry entry. No manual intervention is required.
 
 ---
 
