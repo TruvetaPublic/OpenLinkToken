@@ -218,5 +218,5 @@ For more detail on the three tiers and the two-track loader, see [Extension Auth
 ## Next Steps
 
 - [Extension Author Reference](../reference/extensions.md) — Full ABC contract, conflict rules, security model
-- [Managing Extensions](../operations/managing-extensions.md) — Update, uninstall, and CI/container workflows
+- [Managing Extensions](../operations/managing-extensions.md) — Uninstall and CI/container workflows
 - [CLI Reference](../reference/cli.md) — `opentoken extension` command options

@@ -4,7 +4,7 @@ layout: default
 
 # Managing Extensions
 
-Operator guide for installing, listing, updating, and removing OpenToken CLI extensions. Extensions add top-level subcommands to the CLI without requiring a CLI upgrade.
+Operator guide for installing, listing, and removing OpenToken CLI extensions. Extensions add top-level subcommands to the CLI without requiring a CLI upgrade.
 
 ---
 
@@ -66,18 +66,6 @@ hello-world   1.0.0    hello-world   file:///home/user/dist/opentoken_ext_hello_
 | SOURCE  | URL or `file://` path used at install time         |
 
 If no extensions are installed, the command prints `No extensions installed.`.
-
----
-
-## Updating an Extension
-
-To update an extension, re-install it from the new version URL using `install --yes`:
-
-```bash
-opentoken extension install --yes <new-url>
-```
-
-The `--yes` flag skips the security confirmation prompt. The existing version is replaced by the newly installed wheel.
 
 ---
 

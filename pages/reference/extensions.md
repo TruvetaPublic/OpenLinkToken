@@ -190,11 +190,11 @@ The pre-built OpenToken binary is a PyInstaller-frozen executable. Extensions th
 
 ### Three Dependency Tiers
 
-| Tier                       | Dependencies                                                                                                              | Binary compatible? |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------- | :----------------: |
-| **1 — Zero-dep**           | None (stdlib only)                                                                                                        |       ✅ Yes       |
-| **2 — OpenToken-provided** | Only packages bundled in the binary (e.g., `pyarrow`, `pandas`, `csv2parquet`, `cryptography`, `jwcrypto`, `packaging`)   |       ✅ Yes       |
-| **3 — External**           | Any other packages                                                                                                         |       ❌ No        |
+| Tier                       | Dependencies                                                                                                            | Binary compatible? |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------- | :----------------: |
+| **1 — Zero-dep**           | None (stdlib only)                                                                                                      |       ✅ Yes       |
+| **2 — OpenToken-provided** | Only packages bundled in the binary (e.g., `pyarrow`, `pandas`, `csv2parquet`, `cryptography`, `jwcrypto`, `packaging`) |       ✅ Yes       |
+| **3 — External**           | Any other packages                                                                                                      |       ❌ No        |
 
 **Recommendation:** Keep extensions at Tier 1 whenever possible. Tier 1 extensions work under both the binary and a Python package install.
 
@@ -250,6 +250,6 @@ The top-level keys are the extension `command_name` values. Each value is a meta
 
 ## Related Documentation
 
-- [Managing Extensions](../operations/managing-extensions.md) — Install, list, update, and uninstall extensions
+- [Managing Extensions](../operations/managing-extensions.md) — Install, list, and uninstall extensions
 - [Extension Quickstart](../quickstarts/extension-quickstart.md) — Build and install your first extension end-to-end
 - [CLI Reference](cli.md) — `opentoken extension` subcommands and environment variables
