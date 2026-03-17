@@ -129,6 +129,23 @@ class ExtensionLoader:
                         ep.name,
                     )
                     continue
+
+                command_name = getattr(instance, "command_name", None)
+                if not command_name:
+                    logger.warning(
+                        "Entry point '%s' extension instance is missing 'command_name'; skipping.",
+                        ep.name,
+                    )
+                    continue
+
+                if command_name != ep.name:
+                    logger.warning(
+                        "Entry point name '%s' does not match extension command_name '%s'; skipping.",
+                        ep.name,
+                        command_name,
+                    )
+                    continue
+
                 extensions.append(instance)
             except Exception as exc:  # noqa: BLE001
                 logger.warning("Failed to load extension from entry point '%s': %s", ep.name, exc)
