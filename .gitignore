@@ -88,6 +88,7 @@ demos/pprl-superhero-example/datasets/
 .ruff_cache/
 *.exchange.json
 apm.lock
+apm.lock.yaml
 
 # APM dependencies
 apm_modules/
@@ -113,5 +114,3 @@ apm_modules/
 .github/skills/writing-skills/
 .github/skills/documentation-writer/
 .github/skills/gh-cli/
-apm.lock.yaml
-lib/python/opentoken-cli/C:/Users/tester/AppData/Roaming/.opentoken/update-check.json
