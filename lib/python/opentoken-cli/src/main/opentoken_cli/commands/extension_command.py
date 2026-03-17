@@ -464,6 +464,12 @@ class ExtensionCommand:
             command_name = ext_name
             if getattr(sys, "frozen", False):
                 # Frozen binary: extract wheel contents and inject via sys.path at runtime.
+                if not _validate_dist_name(ext_name):
+                    print(
+                        f"Error: Wheel entry-point key '{ext_name}' is not a valid extension name.",
+                        file=sys.stderr,
+                    )
+                    return 1
                 ext_dir = ExtensionRegistry.get_extensions_dir() / ext_name
                 src_dir = ext_dir / "src"
                 if src_dir.exists():
@@ -535,6 +541,14 @@ class ExtensionCommand:
                     print(
                         f"Error: Unable to determine extension command name from {module_name}.{class_name}.",
                         file=sys.stderr,
+                    )
+                    logger.warning(
+                        "Rolling back pip install of '%s' because the extension class could not be resolved.",
+                        dist_name,
+                    )
+                    subprocess.run(
+                        [sys.executable, "-m", "pip", "uninstall", "-y", dist_name],
+                        check=False,
                     )
                     return 1
                 if resolved_command_name != ext_name:

@@ -5,6 +5,7 @@ Unit tests for ExtensionCommand.
 """
 
 import json
+import logging
 import os
 import zipfile
 from pathlib import Path
@@ -146,6 +147,20 @@ class TestExtensionUninstall:
         assert result == 1
         assert "not installed" in capsys.readouterr().err
 
+    def test_uninstall_invalid_dist_name_returns_error(self, tmp_path, capsys):
+        """_uninstall returns 1 and does not call pip when the registry dist_name is invalid."""
+        data = {"evil-ext": {"version": "1.0.0", "source_url": "", "dist_name": "-r evil.txt"}}
+        (tmp_path / "registry.json").write_text(json.dumps(data))
+
+        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+            with patch("subprocess.run") as mock_pip:
+                result = ExtensionCommand._uninstall(_make_args(name="evil-ext"))
+
+        assert result == 1
+        mock_pip.assert_not_called()
+        err = capsys.readouterr().err
+        assert "invalid" in err.lower() or "valid" in err.lower()
+
 
 # ---------------------------------------------------------------------------
 # Tests: install security warning
@@ -245,9 +260,10 @@ class TestExtensionInstall:
             with patch("subprocess.run", return_value=mock_result) as mock_pip:
                 ExtensionCommand._install(args)
 
-        call_args = mock_pip.call_args[0][0]
-        assert "--upgrade" in call_args
-        assert "--no-deps" not in call_args
+        # call_args_list[0] is the pip install call; the second call (if present) is the rollback.
+        install_call_args = mock_pip.call_args_list[0][0][0]
+        assert "--upgrade" in install_call_args
+        assert "--no-deps" not in install_call_args
 
 
 # ---------------------------------------------------------------------------
@@ -323,3 +339,43 @@ class TestCheckFrozenDeps:
         assert result is not None
         assert "requests" in result
         assert "httpx" in result
+
+    def test_warns_on_multiple_dist_info_directories(self, tmp_path, caplog):
+        """_check_frozen_deps emits a warning when the wheel has multiple dist-info directories."""
+        whl_path = tmp_path / "multi-1.0.0-py3-none-any.whl"
+        with zipfile.ZipFile(whl_path, "w") as zf:
+            zf.writestr("foo-1.0.dist-info/METADATA", "Metadata-Version: 2.1\nName: foo\nVersion: 1.0\n")
+            zf.writestr("bar-2.0.dist-info/METADATA", "Metadata-Version: 2.1\nName: bar\nVersion: 2.0\n")
+
+        with zipfile.ZipFile(whl_path, "r") as zf:
+            with caplog.at_level(logging.WARNING, logger="opentoken_cli.commands.extension_command"):
+                result = ExtensionCommand._check_frozen_deps(zf)
+
+        assert any("multiple dist-info" in msg.lower() for msg in caplog.messages)
+        assert result is None  # Neither METADATA entry has Requires-Dist lines
+
+
+# ---------------------------------------------------------------------------
+# Tests: _extract_entry_point
+# ---------------------------------------------------------------------------
+
+
+class TestExtractEntryPoint:
+    """Unit tests for ExtensionCommand._extract_entry_point."""
+
+    def test_warns_on_multiple_entry_points(self, tmp_path, caplog):
+        """_extract_entry_point warns and picks the first of multiple opentoken.extensions entries."""
+        ep_content = "[opentoken.extensions]\ncmd-one = mymodule:MyClass\ncmd-two = mymodule:OtherClass\n"
+        metadata_content = "Metadata-Version: 2.1\nName: mymodule\nVersion: 1.0.0\n"
+        whl_path = tmp_path / "mymodule-1.0.0-py3-none-any.whl"
+        with zipfile.ZipFile(whl_path, "w") as zf:
+            zf.writestr("mymodule-1.0.0.dist-info/entry_points.txt", ep_content)
+            zf.writestr("mymodule-1.0.0.dist-info/METADATA", metadata_content)
+
+        with zipfile.ZipFile(whl_path, "r") as zf:
+            with caplog.at_level(logging.WARNING, logger="opentoken_cli.commands.extension_command"):
+                result = ExtensionCommand._extract_entry_point(zf)
+
+        assert any("opentoken.extensions" in msg for msg in caplog.messages)
+        assert result is not None
+        assert result[0] == "cmd-one"

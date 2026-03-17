@@ -38,10 +38,19 @@ opentoken extension install --yes https://example.com/opentoken-ext-hello-world-
 
 ### What Install Does
 
-1. Downloads or copies the package to `~/.opentoken/extensions/` (or `$OPENTOKEN_EXTENSIONS_DIR`).
-2. Extracts and validates the package.
-3. Records the extension in `~/.opentoken/extensions/registry.json`.
-4. Prints the installed extension name, version, and command name.
+The exact steps depend on how OpenToken is installed:
+
+**Python package mode** (pip install / source install — the common case):
+
+1. Installs the wheel via `pip` into the active Python environment's site-packages.
+2. Records the extension metadata in `~/.opentoken/extensions/registry.json` (or `$OPENTOKEN_EXTENSIONS_DIR/registry.json`).
+3. Prints the installed extension name, version, and command name.
+
+**Frozen binary mode** (PyInstaller binary):
+
+1. Extracts the wheel contents into `~/.opentoken/extensions/<name>/src/` (or `$OPENTOKEN_EXTENSIONS_DIR/<name>/src/`).
+2. Records the extension metadata in `~/.opentoken/extensions/registry.json` (or `$OPENTOKEN_EXTENSIONS_DIR/registry.json`).
+3. Prints the installed extension name, version, and command name.
 
 ---
 
@@ -154,10 +163,18 @@ opentoken extension install <url>
 ### Extension does not appear in `opentoken --help`
 
 1. Confirm it is listed in `opentoken extension list`.
-2. Check for a load warning at startup. Load warnings are printed to stderr and look like:
+2. Check for a load warning at startup. Load warnings are printed to stderr. The format depends on the install mode:
+
+   Python package mode (entry-point track):
 
    ```
-   Warning: failed to load extension 'hello-world': ModuleNotFoundError: No module named 'opentoken_ext_hello_world'
+   Failed to load extension from entry point 'hello-world': ModuleNotFoundError: No module named 'opentoken_ext_hello_world'
+   ```
+
+   Frozen binary mode (registry track):
+
+   ```
+   Failed to load extension 'hello-world' from registry: ModuleNotFoundError: No module named 'opentoken_ext_hello_world'
    ```
 
 3. Verify that `OPENTOKEN_EXTENSIONS_DIR` is set consistently between install and runtime environments.
