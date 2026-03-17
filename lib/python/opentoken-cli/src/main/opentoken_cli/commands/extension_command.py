@@ -386,6 +386,11 @@ class ExtensionCommand:
 
             target_path = (dest_dir_resolved / member_path).resolve()
 
+            # Reject entries that resolve exactly to the destination directory
+            # unless they are explicitly marked as directories.
+            if target_path == dest_dir_resolved and not member.is_dir():
+                raise ValueError(f"Illegal path in wheel entry (points to destination directory): {member.filename!r}")
+
             # Prevent Zip Slip / path traversal by ensuring the target path
             # stays within the destination directory.
             if target_path != dest_dir_resolved and dest_dir_resolved not in target_path.parents:
