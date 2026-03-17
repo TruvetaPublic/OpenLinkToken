@@ -177,13 +177,9 @@ OpenToken does not verify the origin or integrity of extension packages beyond w
 **Sample install warning:**
 
 ```
-⚠ Security warning: you are about to install an extension from an unverified source:
-  https://example.com/opentoken-ext-hello-world-1.0.0-py3-none-any.whl
-
-  Extensions run with full access to your system. Only install extensions
-  from sources you trust.
-
-Install? [y/N]
+WARNING: You are about to install an extension from an unverified source: https://example.com/opentoken-ext-hello-world-1.0.0-py3-none-any.whl
+Extensions run with full access to your system. Only install extensions from sources you trust.
+Do you want to continue? [y/N]
 ```
 
 ---
