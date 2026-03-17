@@ -443,28 +443,33 @@ run_matrix() {
     if [[ "$INCLUDE_EXTENSION_INSTALL" == "true" ]]; then
         # Build the hello-world wheel into the isolated workspace.
         echo
-        echo "=== extension-build-wheel ==="
         if [[ "$DRY_RUN" != "true" ]]; then
-            if ! python -m build --wheel --outdir "$WHEEL_DIR" "$EXT_HELLO_WORLD_DIR" -q; then
-                echo "ERROR: wheel build failed; skipping install/uninstall steps." >&2
-            else
-                EXT_HELLO_WORLD_WHEEL="$(ls "$WHEEL_DIR"/opentoken_ext_hello_world-*.whl 2>/dev/null | head -1)"
-                echo "Built: $EXT_HELLO_WORLD_WHEEL"
+            confirm_before_next_step "extension-build-wheel" "$PAUSE_SECONDS" || return 0
+            run_step "extension-build-wheel" "$PAUSE_SECONDS" \
+                python -m build --wheel --outdir "$WHEEL_DIR" "$EXT_HELLO_WORLD_DIR" -q
 
-                confirm_before_next_step "extension-install" "$PAUSE_SECONDS" || return 0
-                run_step "extension-install" "$PAUSE_SECONDS" \
-                    "${python_cmd[@]}" extension install "file://$EXT_HELLO_WORLD_WHEEL" --yes
-                confirm_before_next_step "extension-list-installed" "$PAUSE_SECONDS" || return 0
-                run_step "extension-list-installed" "$PAUSE_SECONDS" "${python_cmd[@]}" extension list
-                confirm_before_next_step "extension-hello-world-hello-installed" "$PAUSE_SECONDS" || return 0
-                run_step "extension-hello-world-hello-installed" "$PAUSE_SECONDS" \
-                    "${python_cmd[@]}" hello-world hello --name Charlie
-                confirm_before_next_step "extension-uninstall" "$PAUSE_SECONDS" || return 0
-                run_step "extension-uninstall" "$PAUSE_SECONDS" \
-                    "${python_cmd[@]}" extension uninstall hello-world
-                confirm_before_next_step "extension-list-after-uninstall" "$PAUSE_SECONDS" || return 0
-                run_step "extension-list-after-uninstall" "0" "${python_cmd[@]}" extension list
+            local last_step_index=$(( ${#STEP_CODES[@]} - 1 ))
+            if (( last_step_index < 0 )) || [[ "${STEP_CODES[$last_step_index]}" != "0" ]]; then
+                echo "ERROR: wheel build failed; skipping install/uninstall steps." >&2
+                return 0
             fi
+
+            EXT_HELLO_WORLD_WHEEL="$(ls "$WHEEL_DIR"/opentoken_ext_hello_world-*.whl 2>/dev/null | head -1)"
+            echo "Built: $EXT_HELLO_WORLD_WHEEL"
+
+            confirm_before_next_step "extension-install" "$PAUSE_SECONDS" || return 0
+            run_step "extension-install" "$PAUSE_SECONDS" \
+                "${python_cmd[@]}" extension install "file://$EXT_HELLO_WORLD_WHEEL" --yes
+            confirm_before_next_step "extension-list-installed" "$PAUSE_SECONDS" || return 0
+            run_step "extension-list-installed" "$PAUSE_SECONDS" "${python_cmd[@]}" extension list
+            confirm_before_next_step "extension-hello-world-hello-installed" "$PAUSE_SECONDS" || return 0
+            run_step "extension-hello-world-hello-installed" "$PAUSE_SECONDS" \
+                "${python_cmd[@]}" hello-world hello --name Charlie
+            confirm_before_next_step "extension-uninstall" "$PAUSE_SECONDS" || return 0
+            run_step "extension-uninstall" "$PAUSE_SECONDS" \
+                "${python_cmd[@]}" extension uninstall hello-world
+            confirm_before_next_step "extension-list-after-uninstall" "$PAUSE_SECONDS" || return 0
+            run_step "extension-list-after-uninstall" "0" "${python_cmd[@]}" extension list
         else
             echo "command: (build wheel from $EXT_HELLO_WORLD_DIR)"
             STEP_NAMES+=("extension-build-wheel")
