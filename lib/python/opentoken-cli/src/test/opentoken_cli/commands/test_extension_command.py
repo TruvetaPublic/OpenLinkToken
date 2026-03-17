@@ -196,7 +196,11 @@ class TestExtensionInstall:
 
         with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
             with patch("subprocess.run", return_value=mock_result):
-                result = ExtensionCommand._install(args)
+                with patch(
+                    "opentoken_cli.commands.extension_command._resolve_extension_command_name",
+                    return_value="hello-world",
+                ):
+                    result = ExtensionCommand._install(args)
 
         assert result == 0
         out = capsys.readouterr().out
