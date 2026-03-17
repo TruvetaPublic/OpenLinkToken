@@ -233,8 +233,8 @@ class TestExtensionInstall:
         err = capsys.readouterr().err
         assert "Unsupported URL scheme" in err
 
-    def test_install_pip_uses_upgrade_no_deps(self, tmp_path, capsys):
-        """install passes --upgrade --no-deps to pip so the package is updated without re-downloading unchanged deps."""
+    def test_install_pip_uses_upgrade_without_no_deps(self, tmp_path, capsys):
+        """install passes --upgrade to pip but NOT --no-deps so transitive dependencies are resolved normally."""
         whl = _make_wheel(tmp_path)
         args = _make_args(url=f"file://{whl}", yes=True)
 
@@ -247,7 +247,7 @@ class TestExtensionInstall:
 
         call_args = mock_pip.call_args[0][0]
         assert "--upgrade" in call_args
-        assert "--no-deps" in call_args
+        assert "--no-deps" not in call_args
 
 
 # ---------------------------------------------------------------------------

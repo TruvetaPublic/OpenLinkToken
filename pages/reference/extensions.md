@@ -4,7 +4,7 @@ layout: default
 
 # Extension Author Reference
 
-Complete reference for building OpenToken CLI extensions. This page documents the `OpenTokenExtension` ABC contract, entry-point declaration, extension lifecycle, conflict rules, security model, and binary compatibility requirements.
+Complete reference for building OpenToken CLI extensions. This page documents the `OpenTokenExtension` ABC contract, entry-point declaration, extension lifecycle, conflict rules, security and trust model, and binary compatibility requirements.
 
 ---
 
@@ -165,22 +165,50 @@ install → discover → load → register → invoke → uninstall
 
 ---
 
-## Security Model
+## Security and Trust Model
 
-OpenToken does not verify the origin or integrity of extension packages beyond what the package installer provides.
+OpenToken does not perform hash or signature verification on extension wheel files. There is no checksum comparison, code-signing check, or certificate validation during installation — the CLI installs whatever `.whl` is located at the given URL or path. Verifying the source and integrity of an extension wheel is the responsibility of the person running the install command.
 
-- `opentoken extension install` always prints a security warning before installing.
-- The warning identifies the source URL and notes that the code has not been verified by the OpenToken project.
-- Confirmation is required at the prompt unless `--yes` is passed. In automated environments, pass `--yes` explicitly and ensure you have validated the source yourself.
-- Extensions run with the same privileges as the CLI process. Treat extension packages with the same caution you would apply to any third-party code.
+### What the CLI does at install time
 
-**Sample install warning:**
+- Prints a `_SECURITY_WARNING` banner before taking any action. This banner is intentional and cannot be suppressed; it reads: _"Extensions are arbitrary Python code and are not verified by Truveta. Install only extensions from sources you trust."_
+- Displays the source URL and prompts for confirmation.
+- Confirmation is required unless `--yes` is passed. In automated environments, pass `--yes` explicitly and ensure you have independently validated the source before running the command.
+
+**Sample install prompt:**
 
 ```
-WARNING: You are about to install an extension from an unverified source: https://example.com/opentoken-ext-hello-world-1.0.0-py3-none-any.whl
-Extensions run with full access to your system. Only install extensions from sources you trust.
+WARNING: Extensions are arbitrary Python code and are not verified by Truveta.
+Install only extensions from sources you trust.
+You are about to install an extension from:
+  https://example.com/opentoken-ext-hello-world-1.0.0-py3-none-any.whl
 Do you want to continue? [y/N]
 ```
+
+### What the CLI does not do
+
+- **No hash verification**: The CLI does not verify a SHA-256 or other checksum against a published sidecar. If the wheel file is modified in transit or at rest, the CLI will install the modified package without warning.
+- **No signature verification**: There is no code-signing or certificate check on the wheel contents.
+- **No origin allowlist**: Any valid `.whl` URL is accepted; the CLI has no concept of a trusted registry.
+
+### Implications for use
+
+Extensions run with the same privileges as the CLI process. A malicious or tampered extension has full access to the system, credentials, and data available to the user running `opentoken`.
+
+Before installing an extension:
+
+1. Confirm the wheel URL or file path comes from a source you control or have audited.
+2. Optionally verify the SHA-256 hash of the downloaded file against a hash published by the author through an out-of-band channel (for example, a GitHub release asset or an internal artifact store).
+
+### Operators in regulated environments
+
+Organisations that operate in regulated or high-assurance environments should not allow end users to install extensions directly from public URLs. Instead:
+
+- Host approved extension wheels in an internal artifact registry with access controls (for example, a private PyPI server, an internal S3 bucket, or a container image layer).
+- Distribute the registry URL and, if your tooling supports it, a corresponding SHA-256 hash to employees through a controlled channel.
+- Consider pre-baking approved extensions into a Docker image at build time using `--yes` against the internal registry URL so that runtime installs are not required.
+
+This limits the install-time attack surface without requiring changes to the CLI itself.
 
 ---
 

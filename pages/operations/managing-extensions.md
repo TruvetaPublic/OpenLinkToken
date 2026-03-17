@@ -79,6 +79,27 @@ The CLI removes the extension package from the extensions directory and deletes 
 
 ---
 
+## Upgrading an Extension
+
+There is no `opentoken extension update` subcommand. To upgrade an installed extension, reinstall it with the new wheel URL:
+
+```bash
+opentoken extension install https://example.com/opentoken-ext-hello-world-2.0.0-py3-none-any.whl
+```
+
+When the extension is already installed, `install` replaces it in-place with the new version.
+
+If you prefer an explicit two-step approach, uninstall the old version first:
+
+```bash
+opentoken extension uninstall hello-world
+opentoken extension install https://example.com/opentoken-ext-hello-world-2.0.0-py3-none-any.whl
+```
+
+The two-step approach is useful when you want to confirm the old version is cleanly removed before installing a newer one, or when switching to a wheel from a different source URL.
+
+---
+
 ## Using `OPENTOKEN_EXTENSIONS_DIR` in CI/Containers
 
 By default, extensions install to `~/.opentoken/extensions/`. Set `OPENTOKEN_EXTENSIONS_DIR` to override this path:

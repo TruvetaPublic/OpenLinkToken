@@ -5,6 +5,7 @@ Copyright (c) Truveta. All rights reserved.
 import configparser
 import importlib
 import logging
+import re
 import shutil
 import subprocess
 import sys
@@ -95,6 +96,15 @@ _BUNDLED_DEPS: frozenset[str] = frozenset(
 )
 
 _REQUEST_TIMEOUT_SECONDS = 60
+
+#: PEP 508 / PEP 440 package name pattern (letters, digits, dashes, dots, underscores;
+#: must start and end with a letter or digit).
+_VALID_DIST_NAME_RE = re.compile(r"^[A-Za-z0-9]([A-Za-z0-9._-]*[A-Za-z0-9])?$")
+
+
+def _validate_dist_name(dist_name: str) -> bool:
+    """Return *True* if *dist_name* is a valid PEP 508 distribution name."""
+    return bool(_VALID_DIST_NAME_RE.match(dist_name))
 
 
 class ExtensionCommand:
@@ -303,6 +313,13 @@ class ExtensionCommand:
         else:
             # Normal Python: uninstall via pip using the recorded dist name.
             dist_name = meta.get("dist_name") or name
+            if not _validate_dist_name(dist_name):
+                print(
+                    f"Error: Recorded distribution name '{dist_name}' is not a valid package name "
+                    "and cannot be passed to pip. Remove the extension manually.",
+                    file=sys.stderr,
+                )
+                return 1
             pip_result = subprocess.run(
                 [sys.executable, "-m", "pip", "uninstall", "-y", dist_name],
                 capture_output=True,
@@ -495,10 +512,12 @@ class ExtensionCommand:
                 }
             else:
                 # Normal Python: pip-install the wheel so entry points are registered.
-                # --upgrade ensures a newer version replaces the old one;
-                # --no-deps avoids re-downloading unchanged transitive dependencies.
+                # --upgrade ensures a newer version replaces the old one.
+                # --no-deps is intentionally omitted here so that pip resolves transitive
+                # dependencies normally; omitting it in non-frozen mode prevents silent
+                # load failures caused by missing transitive packages.
                 pip_result = subprocess.run(
-                    [sys.executable, "-m", "pip", "install", "--upgrade", "--no-deps", str(whl_path)],
+                    [sys.executable, "-m", "pip", "install", "--upgrade", str(whl_path)],
                     capture_output=True,
                     text=True,
                 )
@@ -555,6 +574,13 @@ class ExtensionCommand:
         if not metadata_candidates:
             return None
 
+        if len(metadata_candidates) > 1:
+            logger.warning(
+                "Wheel contains multiple dist-info directories (%s); this is invalid per PEP 427. "
+                "Only the first will be checked.",
+                metadata_candidates,
+            )
+
         content = zf.read(metadata_candidates[0]).decode("utf-8", errors="replace")
         external = []
         for line in content.splitlines():
@@ -596,6 +622,13 @@ class ExtensionCommand:
         if not items:
             return None
 
+        if len(items) > 1:
+            logger.warning(
+                "Wheel contains %d opentoken.extensions entry points; only the first (%s) will be registered.",
+                len(items),
+                items[0][0],
+            )
+
         entry_name, target = items[0]
         # target is like "some.module:ClassName"
         if ":" not in target:
@@ -614,6 +647,15 @@ class ExtensionCommand:
                 if line.startswith("Version:"):
                     version = line.split(":", 1)[1].strip()
                 elif line.startswith("Name:"):
-                    dist_name = line.split(":", 1)[1].strip()
+                    candidate = line.split(":", 1)[1].strip()
+                    if _validate_dist_name(candidate):
+                        dist_name = candidate
+                    else:
+                        logger.warning(
+                            "Wheel METADATA contains an invalid distribution name %r; "
+                            "falling back to entry-point name %r.",
+                            candidate,
+                            entry_name,
+                        )
 
         return entry_name, module_name, class_name, version, dist_name

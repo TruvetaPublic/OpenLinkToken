@@ -156,7 +156,7 @@ class TestLoadExtensionsFrozen:
         )
 
         fake_registry = {
-            "frozen-ext": {
+            "frozen-cmd": {
                 "version": "1.0.0",
                 "source_url": "file:///tmp/fake.whl",
                 "source_path": str(pkg_dir),
