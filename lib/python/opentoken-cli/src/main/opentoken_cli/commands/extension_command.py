@@ -11,6 +11,7 @@ import tempfile
 import zipfile
 from pathlib import Path
 from typing import Optional
+from urllib.parse import urlparse
 from urllib.request import urlopen
 
 from opentoken_cli.extension.extension_registry import ExtensionRegistry
@@ -294,8 +295,19 @@ class ExtensionCommand:
             return False
 
         try:
-            with urlopen(url, timeout=_REQUEST_TIMEOUT_SECONDS) as resp, dest.open("wb") as out:
-                shutil.copyfileobj(resp, out)
+            with urlopen(url, timeout=_REQUEST_TIMEOUT_SECONDS) as resp:
+                final_url = resp.geturl()
+                parsed_final = urlparse(final_url)
+                if parsed_final.scheme.lower() != "https":
+                    print(
+                        "Error: Download was redirected to a non-HTTPS URL "
+                        f"('{final_url}'). Insecure downloads are not allowed.",
+                        file=sys.stderr,
+                    )
+                    return False
+
+                with dest.open("wb") as out:
+                    shutil.copyfileobj(resp, out)
             return True
         except Exception as exc:
             print(f"Error: Download failed for '{url}': {exc}", file=sys.stderr)
