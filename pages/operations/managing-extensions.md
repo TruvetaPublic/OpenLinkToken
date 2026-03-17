@@ -192,8 +192,8 @@ Re-install the extension to ensure the package is in the correct location.
 ### Tier-3 rejection under the binary
 
 ```
-Error: this extension requires packages that are not bundled in the OpenToken binary
-(missing: pandas).
+Error: This extension requires external dependencies that are not bundled in the OpenToken binary: pandas
+Install the Python package version of OpenToken CLI to use this extension.
 ```
 
 Switch to the Python package install of OpenToken, or rewrite the extension to use only stdlib or OpenToken-bundled packages. See [Extension Author Reference: Binary Compatibility](../reference/extensions.md#binary-compatibility) for details on the three dependency tiers.

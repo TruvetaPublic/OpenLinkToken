@@ -229,12 +229,8 @@ The pre-built OpenToken binary is a PyInstaller-frozen executable. Extensions th
 `opentoken extension install` aborts with a clear error when it detects a Tier-3 extension under the binary:
 
 ```
-Error: this extension requires packages that are not bundled in the OpenToken binary
-(missing: pandas, pyarrow).
-
-To use this extension, install OpenToken as a Python package instead:
-  pip install opentoken-cli
-  opentoken extension install <url>
+Error: This extension requires external dependencies that are not bundled in the OpenToken binary: pandas, pyarrow
+Install the Python package version of OpenToken CLI to use this extension.
 ```
 
 ---

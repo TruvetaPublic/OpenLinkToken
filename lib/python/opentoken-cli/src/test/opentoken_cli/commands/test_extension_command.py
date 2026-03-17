@@ -265,6 +265,52 @@ class TestExtensionInstall:
         assert "--upgrade" in install_call_args
         assert "--no-deps" not in install_call_args
 
+    def test_install_rolls_back_pip_on_none_command_name(self, tmp_path):
+        """install rolls back pip when _resolve_extension_command_name returns None."""
+        whl = _make_wheel(tmp_path)
+        args = _make_args(url=f"file://{whl}", yes=True)
+
+        pip_install_result = MagicMock()
+        pip_install_result.returncode = 0
+
+        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+            with patch("subprocess.run", return_value=pip_install_result) as mock_pip:
+                with patch(
+                    "opentoken_cli.commands.extension_command._resolve_extension_command_name",
+                    return_value=None,
+                ):
+                    result = ExtensionCommand._install(args)
+
+        assert result != 0
+        # Expect two calls: pip install, then pip uninstall rollback.
+        assert mock_pip.call_count == 2
+        uninstall_call_args = mock_pip.call_args_list[1][0][0]
+        assert "uninstall" in uninstall_call_args
+        assert "opentoken-hello-world" in uninstall_call_args
+
+    def test_install_rolls_back_pip_on_command_name_mismatch(self, tmp_path):
+        """install rolls back pip when _resolve_extension_command_name returns a name that doesn't match."""
+        whl = _make_wheel(tmp_path)
+        args = _make_args(url=f"file://{whl}", yes=True)
+
+        pip_install_result = MagicMock()
+        pip_install_result.returncode = 0
+
+        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+            with patch("subprocess.run", return_value=pip_install_result) as mock_pip:
+                with patch(
+                    "opentoken_cli.commands.extension_command._resolve_extension_command_name",
+                    return_value="wrong-name",
+                ):
+                    result = ExtensionCommand._install(args)
+
+        assert result != 0
+        # Expect two calls: pip install, then pip uninstall rollback.
+        assert mock_pip.call_count == 2
+        uninstall_call_args = mock_pip.call_args_list[1][0][0]
+        assert "uninstall" in uninstall_call_args
+        assert "opentoken-hello-world" in uninstall_call_args
+
 
 # ---------------------------------------------------------------------------
 # Tests: _check_frozen_deps

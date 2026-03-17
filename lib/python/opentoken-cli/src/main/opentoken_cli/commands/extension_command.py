@@ -497,6 +497,7 @@ class ExtensionCommand:
                         f"Error: Unable to determine extension command name from {module_name}.{class_name}.",
                         file=sys.stderr,
                     )
+                    shutil.rmtree(src_dir, ignore_errors=True)
                     return 1
                 if resolved_command_name != ext_name:
                     print(
@@ -505,6 +506,7 @@ class ExtensionCommand:
                         f"'{resolved_command_name}'. These values must be identical.",
                         file=sys.stderr,
                     )
+                    shutil.rmtree(src_dir, ignore_errors=True)
                     return 1
                 command_name = resolved_command_name
                 metadata: dict = {
@@ -557,6 +559,17 @@ class ExtensionCommand:
                         f"'{ext_name}' does not match extension.command_name "
                         f"'{resolved_command_name}'. These values must be identical.",
                         file=sys.stderr,
+                    )
+                    logger.warning(
+                        "Rolling back pip install of '%s' because the resolved command name '%s' "
+                        "does not match the expected name '%s'.",
+                        dist_name,
+                        resolved_command_name,
+                        ext_name,
+                    )
+                    subprocess.run(
+                        [sys.executable, "-m", "pip", "uninstall", "-y", dist_name],
+                        check=False,
                     )
                     return 1
                 command_name = resolved_command_name
