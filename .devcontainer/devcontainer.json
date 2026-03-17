@@ -14,7 +14,7 @@
       "configureZshAsDefaultShell": true
     },
     "ghcr.io/devcontainers/features/java:1": {
-      "version": "21.0.9",
+      "version": "21.0.10",
       "installMaven": "true",
       "mavenVersion": "3.8.8",
       "installGradle": "false"
@@ -47,7 +47,7 @@
         "mikoz.autoflake-extension"
       ],
       "settings": {
-        "sonarlint.ls.javaHome": "/usr/local/sdkman/candidates/java/21.0.9-ms"
+        "sonarlint.ls.javaHome": "/usr/local/sdkman/candidates/java/21.0.10-ms"
       }
     }
   },
