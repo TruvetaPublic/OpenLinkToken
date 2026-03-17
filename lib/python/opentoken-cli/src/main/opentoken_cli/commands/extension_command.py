@@ -16,6 +16,8 @@ from typing import Optional
 from urllib.parse import urlparse
 from urllib.request import urlopen
 
+from packaging.requirements import InvalidRequirement, Requirement
+
 from opentoken_cli.extension.extension_registry import ExtensionRegistry
 
 logger = logging.getLogger(__name__)
@@ -70,6 +72,7 @@ def _resolve_extension_command_name(
             exc,
         )
         return None
+
 
 _SECURITY_WARNING = (
     "WARNING: Extensions are arbitrary Python code and are not verified by Truveta. "
@@ -468,8 +471,7 @@ class ExtensionCommand:
                 )
                 if resolved_command_name is None:
                     print(
-                        "Error: Unable to determine extension command name from "
-                        f"{module_name}.{class_name}.",
+                        f"Error: Unable to determine extension command name from {module_name}.{class_name}.",
                         file=sys.stderr,
                     )
                     return 1
@@ -512,8 +514,7 @@ class ExtensionCommand:
                 )
                 if resolved_command_name is None:
                     print(
-                        "Error: Unable to determine extension command name from "
-                        f"{module_name}.{class_name}.",
+                        f"Error: Unable to determine extension command name from {module_name}.{class_name}.",
                         file=sys.stderr,
                     )
                     return 1
@@ -558,13 +559,15 @@ class ExtensionCommand:
         external = []
         for line in content.splitlines():
             if line.startswith("Requires-Dist:"):
-                dep = line.split(":", 1)[1].strip()
-                # Extract just the package name (before any version specifier / extras).
-                dep_name = dep.split(";")[0].split("[")[0].strip().rstrip("><=! ").lower()
-                # Normalise dashes/underscores.
-                dep_name_norm = dep_name.replace("_", "-")
+                raw_dep = line.split(":", 1)[1].strip()
+                try:
+                    req = Requirement(raw_dep)
+                except InvalidRequirement:
+                    continue
+                # Normalise dashes/underscores per PEP 503.
+                dep_name_norm = req.name.lower().replace("_", "-")
                 if dep_name_norm not in _BUNDLED_DEPS:
-                    external.append(dep_name)
+                    external.append(req.name)
         return ", ".join(external) if external else None
 
     @staticmethod
