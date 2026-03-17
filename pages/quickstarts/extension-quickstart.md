@@ -133,14 +133,13 @@ opentoken extension install file://$(pwd)/dist/opentoken_ext_hello_world-1.0.0-p
 
 OpenToken prints a security warning and asks for confirmation:
 
-```
-⚠ Security warning: you are about to install an extension from an unverified source:
-  file:///home/user/opentoken-hello-world/dist/opentoken_ext_hello_world-1.0.0-py3-none-any.whl
+```text
+⚠ Security warning: you are about to install an extension from an unverified source.
 
   Extensions run with full access to your system. Only install extensions
   from sources you trust.
 
-Install? [y/N] y
+Install this extension? [y/N]: y
 
 ✓ Installed hello-world 1.0.0 (command: hello-world)
 ```
