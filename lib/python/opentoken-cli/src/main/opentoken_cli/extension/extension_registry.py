@@ -30,7 +30,9 @@ class ExtensionRegistry:
             "source_url": "https://example.com/hello_world-1.0.0-py3-none-any.whl",
             "source_path": "~/.opentoken/extensions/hello-world/src",
             "module": "opentoken_ext_hello_world.extension",
-            "class": "HelloWorldExtension"
+            "class": "HelloWorldExtension",
+            "command_name": "hello-world",
+            "dist_name": "opentoken-ext-hello-world"
           }
         }
     """
@@ -107,7 +109,8 @@ class ExtensionRegistry:
 
         Args:
             name: The extension's canonical name (matches ``command_name``).
-            metadata: Dict with keys ``version``, ``source_url``, ``source_path``, ``module``, ``class``.
+            metadata: Dict with keys ``version``, ``source_url``, ``source_path``, ``module``, ``class``,
+                ``command_name``, and ``dist_name``.
         """
         registry = ExtensionRegistry.load()
         registry[name] = metadata
