@@ -244,3 +244,78 @@ class TestExtensionInstall:
         call_args = mock_pip.call_args[0][0]
         assert "--upgrade" in call_args
         assert "--no-deps" in call_args
+
+
+# ---------------------------------------------------------------------------
+# Tests: _check_frozen_deps
+# ---------------------------------------------------------------------------
+
+
+class TestCheckFrozenDeps:
+    """Unit tests for ExtensionCommand._check_frozen_deps."""
+
+    def _make_wheel_with_metadata(self, dest: Path, metadata_content: str) -> zipfile.ZipFile:
+        whl_path = dest / "test-1.0.0-py3-none-any.whl"
+        with zipfile.ZipFile(whl_path, "w") as zf:
+            zf.writestr("test-1.0.0.dist-info/METADATA", metadata_content)
+        return zipfile.ZipFile(whl_path, "r")
+
+    def test_no_metadata_returns_none(self, tmp_path):
+        whl_path = tmp_path / "test-1.0.0-py3-none-any.whl"
+        with zipfile.ZipFile(whl_path, "w") as zf:
+            zf.writestr("test/__init__.py", "")
+        with zipfile.ZipFile(whl_path, "r") as zf:
+            assert ExtensionCommand._check_frozen_deps(zf) is None
+
+    def test_all_bundled_deps_returns_none(self, tmp_path):
+        metadata = (
+            "Metadata-Version: 2.1\n"
+            "Name: my-extension\n"
+            "Requires-Dist: opentoken\n"
+            "Requires-Dist: pandas\n"
+            "Requires-Dist: pyarrow\n"
+        )
+        with self._make_wheel_with_metadata(tmp_path, metadata) as zf:
+            assert ExtensionCommand._check_frozen_deps(zf) is None
+
+    def test_version_specifier_with_parentheses_is_parsed_correctly(self, tmp_path):
+        """Wheel METADATA may use 'pkg (>=1.2)' format; the name must be extracted cleanly."""
+        metadata = (
+            "Metadata-Version: 2.1\n"
+            "Name: my-extension\n"
+            "Requires-Dist: opentoken (>=2.0)\n"
+            "Requires-Dist: pandas (>=1.3,<3.0)\n"
+            "Requires-Dist: requests (>=2.28)\n"
+        )
+        with self._make_wheel_with_metadata(tmp_path, metadata) as zf:
+            result = ExtensionCommand._check_frozen_deps(zf)
+        assert result == "requests"
+
+    def test_version_specifier_without_parentheses_is_parsed_correctly(self, tmp_path):
+        metadata = (
+            "Metadata-Version: 2.1\nName: my-extension\nRequires-Dist: opentoken>=2.0\nRequires-Dist: requests>=2.28\n"
+        )
+        with self._make_wheel_with_metadata(tmp_path, metadata) as zf:
+            result = ExtensionCommand._check_frozen_deps(zf)
+        assert result == "requests"
+
+    def test_underscore_normalized_to_dash(self, tmp_path):
+        """Package names with underscores should be treated the same as dashes."""
+        metadata = "Metadata-Version: 2.1\nName: my-extension\nRequires-Dist: opentoken_cli\n"
+        with self._make_wheel_with_metadata(tmp_path, metadata) as zf:
+            result = ExtensionCommand._check_frozen_deps(zf)
+        assert result is None
+
+    def test_multiple_external_deps_reported(self, tmp_path):
+        metadata = (
+            "Metadata-Version: 2.1\n"
+            "Name: my-extension\n"
+            "Requires-Dist: opentoken\n"
+            "Requires-Dist: requests (>=2.28)\n"
+            "Requires-Dist: httpx\n"
+        )
+        with self._make_wheel_with_metadata(tmp_path, metadata) as zf:
+            result = ExtensionCommand._check_frozen_deps(zf)
+        assert result is not None
+        assert "requests" in result
+        assert "httpx" in result
