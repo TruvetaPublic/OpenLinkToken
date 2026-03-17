@@ -71,13 +71,13 @@ If no extensions are installed, the command prints `No extensions installed.`.
 
 ## Updating an Extension
 
-To update an extension, re-install it from the new version URL using `install --yes`:
+Re-download and reinstall an extension from its recorded source URL:
 
 ```bash
-opentoken extension install --yes <new-url>
+opentoken extension update <name>
 ```
 
-The `--yes` flag skips the security confirmation prompt. The existing version is replaced by the newly installed wheel.
+This fetches the wheel from the URL that was used at install time and reinstalls it, replacing the currently installed version. To update from a different URL, use `extension install <new-url>` instead.
 
 ---
 

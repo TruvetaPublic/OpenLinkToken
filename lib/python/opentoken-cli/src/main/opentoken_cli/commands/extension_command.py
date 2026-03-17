@@ -3,6 +3,7 @@ Copyright (c) Truveta. All rights reserved.
 """
 
 import configparser
+import importlib
 import logging
 import shutil
 import subprocess
@@ -10,7 +11,6 @@ import sys
 import tempfile
 import zipfile
 from contextlib import contextmanager
-import importlib
 from pathlib import Path
 from typing import Optional
 from urllib.parse import urlparse
@@ -71,6 +71,7 @@ def _resolve_extension_command_name(
         )
         return None
 
+
 _SECURITY_WARNING = (
     "WARNING: Extensions are arbitrary Python code and are not verified by Truveta. "
     "Install only extensions from sources you trust."
@@ -98,7 +99,7 @@ class ExtensionCommand:
     """
     Manage OpenToken CLI extensions.
 
-    Provides sub-subcommands to install, list, and uninstall extensions.
+    Provides sub-subcommands to install, list, update, and uninstall extensions.
     """
 
     @staticmethod
@@ -107,7 +108,7 @@ class ExtensionCommand:
         parser = subparsers.add_parser(
             "extension",
             help="Manage OpenToken CLI extensions",
-            description="Install, list, and uninstall OpenToken CLI extensions.",
+            description="Install, list, update, and uninstall OpenToken CLI extensions.",
         )
         sub = parser.add_subparsers(dest="extension_subcommand")
 
@@ -138,6 +139,14 @@ class ExtensionCommand:
         uninstall_parser = sub.add_parser("uninstall", help="Uninstall an extension by name")
         uninstall_parser.add_argument("name", help="Extension name to uninstall")
         uninstall_parser.set_defaults(func=ExtensionCommand._uninstall)
+
+        # update
+        update_parser = sub.add_parser(
+            "update",
+            help="Update an installed extension from its recorded source URL",
+        )
+        update_parser.add_argument("name", help="Extension name to update")
+        update_parser.set_defaults(func=ExtensionCommand._update)
 
         parser.set_defaults(func=lambda args: (parser.print_help(), 0)[1])
 
@@ -316,6 +325,35 @@ class ExtensionCommand:
         print(f"Extension '{name}' uninstalled.")
         return 0
 
+    @staticmethod
+    def _update(args) -> int:
+        """Handle ``extension update <name>``."""
+        name: str = args.name
+        registry = ExtensionRegistry.load()
+
+        if name not in registry:
+            print(f"Error: Extension '{name}' is not installed.", file=sys.stderr)
+            return 1
+
+        source_url = registry[name].get("source_url", "")
+        if not source_url:
+            print(
+                f"Error: No source URL recorded for extension '{name}'. "
+                "Use 'extension install <url>' to reinstall from a specific URL.",
+                file=sys.stderr,
+            )
+            return 1
+
+        print(f"Updating extension '{name}' from:\n  {source_url}")
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            url_filename = Path(urlparse(source_url).path).name
+            whl_name = url_filename if url_filename.endswith(".whl") else "extension.whl"
+            tmp_path = Path(tmp_dir) / whl_name
+            if not ExtensionCommand._download(source_url, tmp_path):
+                return 1
+
+            return ExtensionCommand._install_wheel(tmp_path, source_url=source_url)
+
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
@@ -468,8 +506,7 @@ class ExtensionCommand:
                 )
                 if resolved_command_name is None:
                     print(
-                        "Error: Unable to determine extension command name from "
-                        f"{module_name}.{class_name}.",
+                        f"Error: Unable to determine extension command name from {module_name}.{class_name}.",
                         file=sys.stderr,
                     )
                     return 1
@@ -512,8 +549,7 @@ class ExtensionCommand:
                 )
                 if resolved_command_name is None:
                     print(
-                        "Error: Unable to determine extension command name from "
-                        f"{module_name}.{class_name}.",
+                        f"Error: Unable to determine extension command name from {module_name}.{class_name}.",
                         file=sys.stderr,
                     )
                     return 1

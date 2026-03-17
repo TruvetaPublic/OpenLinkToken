@@ -81,6 +81,61 @@ class TestExtensionList:
 
 
 # ---------------------------------------------------------------------------
+# Tests: update
+# ---------------------------------------------------------------------------
+
+
+class TestExtensionUpdate:
+    """Tests for ``extension update``."""
+
+    def test_update_unknown_extension_returns_error(self, tmp_path, capsys):
+        """update returns 1 with an error when the extension is not installed."""
+        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+            result = ExtensionCommand._update(_make_args(name="ghost-ext"))
+
+        assert result == 1
+        assert "not installed" in capsys.readouterr().err
+
+    def test_update_missing_source_url_returns_error(self, tmp_path, capsys):
+        """update returns 1 when the registry entry has no source URL."""
+        data = {"my-ext": {"version": "1.0.0", "source_url": ""}}
+        (tmp_path / "registry.json").write_text(json.dumps(data))
+
+        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+            result = ExtensionCommand._update(_make_args(name="my-ext"))
+
+        assert result == 1
+        assert "No source URL" in capsys.readouterr().err
+
+    def test_update_reinstalls_from_recorded_url(self, tmp_path, capsys):
+        """update downloads from the saved source URL and reinstalls the extension."""
+        whl = _make_wheel(tmp_path)
+        data = {
+            "hello-world": {
+                "version": "1.0.0",
+                "source_url": f"file://{whl}",
+                "command_name": "hello-world",
+                "dist_name": "opentoken-hello-world",
+            }
+        }
+        (tmp_path / "registry.json").write_text(json.dumps(data))
+
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+
+        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+            with patch("subprocess.run", return_value=mock_result):
+                with patch(
+                    "opentoken_cli.commands.extension_command._resolve_extension_command_name",
+                    return_value="hello-world",
+                ):
+                    result = ExtensionCommand._update(_make_args(name="hello-world"))
+
+        assert result == 0
+        assert "installed successfully" in capsys.readouterr().out
+
+
+# ---------------------------------------------------------------------------
 # Tests: uninstall
 # ---------------------------------------------------------------------------
 
