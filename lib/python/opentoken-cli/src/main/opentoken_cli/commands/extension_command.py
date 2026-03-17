@@ -9,6 +9,8 @@ import subprocess
 import sys
 import tempfile
 import zipfile
+from contextlib import contextmanager
+import importlib
 from pathlib import Path
 from typing import Optional
 from urllib.parse import urlparse
@@ -17,6 +19,57 @@ from urllib.request import urlopen
 from opentoken_cli.extension.extension_registry import ExtensionRegistry
 
 logger = logging.getLogger(__name__)
+
+
+@contextmanager
+def _temporary_sys_path(path: Optional[Path]):
+    """
+    Temporarily add ``path`` to ``sys.path`` for dynamic imports.
+    """
+    if path is None:
+        yield
+        return
+
+    path_str = str(path)
+    if path_str in sys.path:
+        yield
+        return
+
+    sys.path.insert(0, path_str)
+    try:
+        yield
+    finally:
+        try:
+            sys.path.remove(path_str)
+        except ValueError:
+            pass
+
+
+def _resolve_extension_command_name(
+    module_name: str,
+    class_name: str,
+    src_dir: Optional[Path] = None,
+) -> Optional[str]:
+    """
+    Import the extension class and return its ``command_name`` attribute.
+    """
+    try:
+        with _temporary_sys_path(src_dir):
+            module = importlib.import_module(module_name)
+            extension_cls = getattr(module, class_name)
+            extension_obj = extension_cls()
+            command_name = getattr(extension_obj, "command_name", None)
+            if not isinstance(command_name, str) or not command_name:
+                return None
+            return command_name
+    except Exception as exc:
+        logger.error(
+            "Failed to resolve command_name for extension %s.%s: %s",
+            module_name,
+            class_name,
+            exc,
+        )
+        return None
 
 _SECURITY_WARNING = (
     "WARNING: Extensions are arbitrary Python code and are not verified by Truveta. "
@@ -388,6 +441,7 @@ class ExtensionCommand:
 
             ext_name, module_name, class_name, version, dist_name = entry_point_info
 
+            command_name = ext_name
             if getattr(sys, "frozen", False):
                 # Frozen binary: extract wheel contents and inject via sys.path at runtime.
                 ext_dir = ExtensionRegistry.get_extensions_dir() / ext_name
@@ -407,13 +461,34 @@ class ExtensionCommand:
                         file=sys.stderr,
                     )
                     return 1
+                resolved_command_name = _resolve_extension_command_name(
+                    module_name,
+                    class_name,
+                    src_dir,
+                )
+                if resolved_command_name is None:
+                    print(
+                        "Error: Unable to determine extension command name from "
+                        f"{module_name}.{class_name}.",
+                        file=sys.stderr,
+                    )
+                    return 1
+                if resolved_command_name != ext_name:
+                    print(
+                        "Error: Extension command name mismatch: entry point "
+                        f"'{ext_name}' does not match extension.command_name "
+                        f"'{resolved_command_name}'. These values must be identical.",
+                        file=sys.stderr,
+                    )
+                    return 1
+                command_name = resolved_command_name
                 metadata: dict = {
                     "version": version,
                     "source_url": source_url,
                     "source_path": str(src_dir),
                     "module": module_name,
                     "class": class_name,
-                    "command_name": ext_name,
+                    "command_name": command_name,
                     "dist_name": dist_name,
                 }
             else:
@@ -431,16 +506,36 @@ class ExtensionCommand:
                         file=sys.stderr,
                     )
                     return 1
+                resolved_command_name = _resolve_extension_command_name(
+                    module_name,
+                    class_name,
+                )
+                if resolved_command_name is None:
+                    print(
+                        "Error: Unable to determine extension command name from "
+                        f"{module_name}.{class_name}.",
+                        file=sys.stderr,
+                    )
+                    return 1
+                if resolved_command_name != ext_name:
+                    print(
+                        "Error: Extension command name mismatch: entry point "
+                        f"'{ext_name}' does not match extension.command_name "
+                        f"'{resolved_command_name}'. These values must be identical.",
+                        file=sys.stderr,
+                    )
+                    return 1
+                command_name = resolved_command_name
                 metadata = {
                     "version": version,
                     "source_url": source_url,
                     "module": module_name,
                     "class": class_name,
-                    "command_name": ext_name,
+                    "command_name": command_name,
                     "dist_name": dist_name,
                 }
 
-        ExtensionRegistry.add_extension(ext_name, metadata)
+        ExtensionRegistry.add_extension(command_name, metadata)
         print(f"Extension '{ext_name}' (v{version}) installed successfully.")
         print(f"Run: opentoken {ext_name} --help")
         return 0
