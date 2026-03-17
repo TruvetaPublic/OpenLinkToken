@@ -3,6 +3,7 @@ Copyright (c) Truveta. All rights reserved.
 """
 
 import configparser
+import importlib
 import logging
 import shutil
 import subprocess
@@ -10,7 +11,6 @@ import sys
 import tempfile
 import zipfile
 from contextlib import contextmanager
-import importlib
 from pathlib import Path
 from typing import Optional
 from urllib.parse import urlparse
@@ -70,6 +70,7 @@ def _resolve_extension_command_name(
             exc,
         )
         return None
+
 
 _SECURITY_WARNING = (
     "WARNING: Extensions are arbitrary Python code and are not verified by Truveta. "
@@ -367,7 +368,6 @@ class ExtensionCommand:
             return False
 
     @staticmethod
-    @staticmethod
     def _safe_extract_wheel(zf: zipfile.ZipFile, dest_dir: Path) -> None:
         """
         Safely extract a wheel, ensuring no archive entry escapes *dest_dir*.
@@ -468,8 +468,7 @@ class ExtensionCommand:
                 )
                 if resolved_command_name is None:
                     print(
-                        "Error: Unable to determine extension command name from "
-                        f"{module_name}.{class_name}.",
+                        f"Error: Unable to determine extension command name from {module_name}.{class_name}.",
                         file=sys.stderr,
                     )
                     return 1
@@ -512,8 +511,7 @@ class ExtensionCommand:
                 )
                 if resolved_command_name is None:
                     print(
-                        "Error: Unable to determine extension command name from "
-                        f"{module_name}.{class_name}.",
+                        f"Error: Unable to determine extension command name from {module_name}.{class_name}.",
                         file=sys.stderr,
                     )
                     return 1

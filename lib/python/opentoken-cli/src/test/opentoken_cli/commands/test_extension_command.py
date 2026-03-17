@@ -10,6 +10,8 @@ import zipfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from opentoken_cli.commands.extension_command import _SECURITY_WARNING, ExtensionCommand
 
 # ---------------------------------------------------------------------------
@@ -244,3 +246,69 @@ class TestExtensionInstall:
         call_args = mock_pip.call_args[0][0]
         assert "--upgrade" in call_args
         assert "--no-deps" in call_args
+
+
+# ---------------------------------------------------------------------------
+# Tests: _safe_extract_wheel
+# ---------------------------------------------------------------------------
+
+
+class TestSafeExtractWheel:
+    """Tests for the Zip Slip protection in ``_safe_extract_wheel``."""
+
+    def test_extracts_valid_wheel(self, tmp_path):
+        """Normal wheel entries are extracted to the destination directory."""
+        dest = tmp_path / "dest"
+        dest.mkdir()
+        whl_path = tmp_path / "test.whl"
+        with zipfile.ZipFile(whl_path, "w") as zf:
+            zf.writestr("pkg/__init__.py", "")
+            zf.writestr("pkg/module.py", "x = 1")
+
+        with zipfile.ZipFile(whl_path, "r") as zf:
+            ExtensionCommand._safe_extract_wheel(zf, dest)
+
+        assert (dest / "pkg" / "__init__.py").exists()
+        assert (dest / "pkg" / "module.py").read_text() == "x = 1"
+
+    def test_rejects_path_traversal_entry(self, tmp_path):
+        """An archive entry that escapes dest_dir raises ValueError (Zip Slip guard)."""
+        dest = tmp_path / "dest"
+        dest.mkdir()
+        whl_path = tmp_path / "malicious.whl"
+        with zipfile.ZipFile(whl_path, "w") as zf:
+            zf.writestr("../../evil.py", "malicious content")
+
+        with zipfile.ZipFile(whl_path, "r") as zf:
+            with pytest.raises(ValueError, match="Illegal path"):
+                ExtensionCommand._safe_extract_wheel(zf, dest)
+
+        assert not (tmp_path / "evil.py").exists()
+
+    def test_rejects_absolute_path_entry(self, tmp_path):
+        """An archive entry with an absolute path raises ValueError."""
+        dest = tmp_path / "dest"
+        dest.mkdir()
+        whl_path = tmp_path / "absolute.whl"
+        with zipfile.ZipFile(whl_path, "w") as zf:
+            zf.writestr("/etc/passwd", "hacked")
+
+        with zipfile.ZipFile(whl_path, "r") as zf:
+            with pytest.raises(ValueError, match="Illegal path"):
+                ExtensionCommand._safe_extract_wheel(zf, dest)
+
+    def test_creates_directory_entries(self, tmp_path):
+        """Directory entries in the wheel are created without raising errors."""
+        dest = tmp_path / "dest"
+        dest.mkdir()
+        whl_path = tmp_path / "dirs.whl"
+        with zipfile.ZipFile(whl_path, "w") as zf:
+            dir_info = zipfile.ZipInfo("subdir/")
+            zf.writestr(dir_info, "")
+            zf.writestr("subdir/file.py", "pass")
+
+        with zipfile.ZipFile(whl_path, "r") as zf:
+            ExtensionCommand._safe_extract_wheel(zf, dest)
+
+        assert (dest / "subdir").is_dir()
+        assert (dest / "subdir" / "file.py").exists()
