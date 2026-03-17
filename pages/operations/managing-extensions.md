@@ -63,16 +63,16 @@ opentoken extension list
 Sample output:
 
 ```
-NAME          VERSION  COMMAND       SOURCE
+Name          Version  Command       Source
 hello-world   1.0.0    hello-world   file:///home/user/dist/opentoken_ext_hello_world-1.0.0-py3-none-any.whl
 ```
 
 | Column  | Description                                        |
 | ------- | -------------------------------------------------- |
-| NAME    | Extension package name as recorded in the registry |
-| VERSION | SemVer version string                              |
-| COMMAND | Top-level subcommand added to the CLI              |
-| SOURCE  | URL or `file://` path used at install time         |
+| Name    | Extension package name as recorded in the registry |
+| Version | SemVer version string                              |
+| Command | Top-level subcommand added to the CLI              |
+| Source  | URL or `file://` path used at install time         |
 
 If no extensions are installed, the command prints `No extensions installed.`.
 
@@ -192,7 +192,7 @@ Re-install the extension to ensure the package is in the correct location.
 ### Tier-3 rejection under the binary
 
 ```
-Error: This extension requires external dependencies that are not bundled in the OpenToken binary: pandas
+Error: This extension requires external dependencies that are not bundled in the OpenToken binary: requests
 Install the Python package version of OpenToken CLI to use this extension.
 ```
 

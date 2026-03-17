@@ -307,6 +307,42 @@ class TestExtensionInstall:
         src_dir = tmp_path / "hello-world" / "src"
         assert not src_dir.exists()
 
+    def test_frozen_install_cleans_up_src_dir_on_none_command_name(self, tmp_path):
+        """install removes src_dir when _resolve_extension_command_name returns None (frozen mode)."""
+        whl = _make_wheel(tmp_path)
+        args = _make_args(url=f"file://{whl}", yes=True)
+
+        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+            with patch("sys.frozen", True, create=True):
+                with patch.object(ExtensionCommand, "_safe_extract_wheel"):
+                    with patch(
+                        "opentoken_cli.commands.extension_command._resolve_extension_command_name",
+                        return_value=None,
+                    ):
+                        result = ExtensionCommand._install(args)
+
+        assert result != 0
+        src_dir = tmp_path / "hello-world" / "src"
+        assert not src_dir.exists()
+
+    def test_frozen_install_cleans_up_src_dir_on_command_name_mismatch(self, tmp_path):
+        """install removes src_dir when _resolve_extension_command_name returns a mismatched name (frozen mode)."""
+        whl = _make_wheel(tmp_path)
+        args = _make_args(url=f"file://{whl}", yes=True)
+
+        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+            with patch("sys.frozen", True, create=True):
+                with patch.object(ExtensionCommand, "_safe_extract_wheel"):
+                    with patch(
+                        "opentoken_cli.commands.extension_command._resolve_extension_command_name",
+                        return_value="wrong-name",
+                    ):
+                        result = ExtensionCommand._install(args)
+
+        assert result != 0
+        src_dir = tmp_path / "hello-world" / "src"
+        assert not src_dir.exists()
+
     def test_install_rolls_back_pip_on_command_name_mismatch(self, tmp_path):
         """install rolls back pip when _resolve_extension_command_name returns a name that doesn't match."""
         whl = _make_wheel(tmp_path)
