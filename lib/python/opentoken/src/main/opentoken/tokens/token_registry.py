@@ -35,7 +35,7 @@ class TokenRegistry:
                     if item.name.endswith(".py") and item.name != "__init__.py"
                 ]
             except Exception:
-                module_names = ["t1_token", "t2_token", "t3_token", "t4_token", "t5_token"]
+                module_names = ["t1_token", "t2_token", "t3_token", "t4_token", "t5_token", "t6_token"]
 
         for module_name in module_names:
             module = importlib.import_module(f"{package_name}.{module_name}")

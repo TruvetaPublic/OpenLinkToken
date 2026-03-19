@@ -2,8 +2,11 @@
 Copyright (c) Truveta. All rights reserved.
 """
 
+from __future__ import annotations
+
 import logging
 import uuid
+from dataclasses import dataclass
 from typing import Any, Dict, List, Set, Type
 
 from opentoken.attributes.attribute import Attribute
@@ -11,6 +14,8 @@ from opentoken.attributes.general.record_id_attribute import RecordIdAttribute
 from opentoken.tokens.token_definition import TokenDefinition
 from opentoken.tokens.token_generator import TokenGenerator
 from opentoken.tokens.token_generator_result import TokenGeneratorResult
+from opentoken.tokens.t6_inference_config import T6InferenceConfig
+from opentoken.tokens.t6_onnx_signature_generator import T6OnnxSignatureGenerator
 from opentoken.tokens.tokenizer.sha256_tokenizer import SHA256Tokenizer
 from opentoken.tokens.tokenizer.tokenizer import Tokenizer
 from opentoken.tokentransformer.jwe_match_token_formatter import JweMatchTokenFormatter
@@ -21,6 +26,14 @@ from opentoken_cli.processor.token_constants import TokenConstants
 from opentoken_cli.util.record_id_hasher import RecordIdHasher
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class _PendingRow:
+    row: Dict[Type[Attribute], str]
+    row_counter: int
+    token_generator_result: TokenGeneratorResult
+    t6_payload: str | None
 
 
 class PersonAttributesProcessor:
@@ -35,7 +48,7 @@ class PersonAttributesProcessor:
     TOTAL_ROWS = "TotalRows"
     TOTAL_ROWS_WITH_INVALID_ATTRIBUTES = "TotalRowsWithInvalidAttributes"
     INVALID_ATTRIBUTES_BY_TYPE = "InvalidAttributesByType"
-    BLANK_TOKENS_BY_RULE = "BlankTokensByRule"
+    BLANK_TOKENS_BY_RULE_KEY = "BlankTokensByRule"
 
     def __init__(self):
         """Private constructor to prevent instantiation."""
@@ -128,7 +141,6 @@ class PersonAttributesProcessor:
         """
         token_generator = TokenGenerator(token_definition, tokenizer)
 
-        row_counter = 0
         invalid_attribute_count: Dict[str, int] = PersonAttributesProcessor._initialize_invalid_attribute_count(
             token_definition
         )
@@ -137,46 +149,24 @@ class PersonAttributesProcessor:
         )
 
         # Cache JWE formatters if encryption is enabled
-        jwe_formatters: Dict[str, JweMatchTokenFormatter] = {}
-        if encryption_key and ring_id:
-            for token_id in token_definition.get_token_identifiers():
-                try:
-                    jwe_formatters[token_id] = JweMatchTokenFormatter(
-                        encryption_key, ring_id, token_id, "truveta.opentoken"
-                    )
-                except Exception as e:
-                    error_msg = f"Failed to initialize JWE formatter for token rule {token_id}"
-                    logger.error(error_msg, exc_info=True)
-                    raise RuntimeError(error_msg) from e
+        jwe_formatters = PersonAttributesProcessor._initialize_jwe_formatters(
+            token_definition,
+            encryption_key,
+            ring_id,
+        )
 
         try:
-            for row in reader:
-                row_counter += 1
-
-                token_generator_result = token_generator.get_all_tokens(row)
-                logger.debug(f"Tokens: {token_generator_result.tokens}")
-
-                PersonAttributesProcessor._keep_track_of_invalid_attributes(
-                    token_generator_result, row_counter, invalid_attribute_count
-                )
-
-                PersonAttributesProcessor._keep_track_of_blank_tokens(
-                    token_generator_result, row_counter, blank_tokens_by_rule_count
-                )
-
-                PersonAttributesProcessor._write_tokens(
-                    writer,
-                    row,
-                    row_counter,
-                    token_generator_result,
-                    encryption_key,
-                    ring_id,
-                    jwe_formatters,
-                    hash_record_ids,
-                )
-
-                if row_counter % 10000 == 0:
-                    logger.info(f"Processed {row_counter:,} records")
+            row_counter = PersonAttributesProcessor._process_rows(
+                reader,
+                writer,
+                token_generator,
+                invalid_attribute_count,
+                blank_tokens_by_rule_count,
+                encryption_key,
+                ring_id,
+                jwe_formatters,
+                hash_record_ids,
+            )
 
         except Exception as e:
             logger.error(f"Error processing records: {e}", exc_info=True)
@@ -206,7 +196,7 @@ class PersonAttributesProcessor:
             metadata_map[PersonAttributesProcessor.INVALID_ATTRIBUTES_BY_TYPE] = dict(
                 sorted(invalid_attribute_count.items())
             )
-            metadata_map[PersonAttributesProcessor.BLANK_TOKENS_BY_RULE] = dict(
+            metadata_map[PersonAttributesProcessor.BLANK_TOKENS_BY_RULE_KEY] = dict(
                 sorted(blank_tokens_by_rule_count.items())
             )
 
@@ -276,6 +266,178 @@ class PersonAttributesProcessor:
                 )
 
     @staticmethod
+    def _initialize_jwe_formatters(
+        token_definition: TokenDefinition,
+        encryption_key: str,
+        ring_id: str,
+    ) -> Dict[str, JweMatchTokenFormatter]:
+        """Initialize per-token JWE formatters when encryption is configured."""
+        jwe_formatters: Dict[str, JweMatchTokenFormatter] = {}
+        if not (encryption_key and ring_id):
+            return jwe_formatters
+
+        for token_id in token_definition.get_token_identifiers():
+            try:
+                jwe_formatters[token_id] = JweMatchTokenFormatter(
+                    encryption_key,
+                    ring_id,
+                    token_id,
+                    "truveta.opentoken",
+                )
+            except Exception as e:
+                error_msg = f"Failed to initialize JWE formatter for token rule {token_id}"
+                logger.error(error_msg, exc_info=True)
+                raise RuntimeError(error_msg) from e
+
+        return jwe_formatters
+
+    @staticmethod
+    def _process_rows(
+        reader: PersonAttributesReader,
+        writer: PersonAttributesWriter,
+        token_generator: TokenGenerator,
+        invalid_attribute_count: Dict[str, int],
+        blank_tokens_by_rule_count: Dict[str, int],
+        encryption_key: str,
+        ring_id: str,
+        jwe_formatters: Dict[str, JweMatchTokenFormatter],
+        hash_record_ids: bool = False,
+    ) -> int:
+        """Process rows with either batched or standard token generation based on T6 configuration."""
+        if T6InferenceConfig.is_enabled():
+            return PersonAttributesProcessor._process_rows_with_batched_t6(
+                reader, writer, token_generator, invalid_attribute_count,
+                blank_tokens_by_rule_count, encryption_key, ring_id, jwe_formatters, hash_record_ids,
+            )
+        return PersonAttributesProcessor._process_rows_without_batched_t6(
+            reader, writer, token_generator, invalid_attribute_count,
+            blank_tokens_by_rule_count, encryption_key, ring_id, jwe_formatters, hash_record_ids,
+        )
+
+    @staticmethod
+    def _process_rows_without_batched_t6(
+        reader: PersonAttributesReader,
+        writer: PersonAttributesWriter,
+        token_generator: TokenGenerator,
+        invalid_attribute_count: Dict[str, int],
+        blank_tokens_by_rule_count: Dict[str, int],
+        encryption_key: str,
+        ring_id: str,
+        jwe_formatters: Dict[str, JweMatchTokenFormatter],
+        hash_record_ids: bool = False,
+    ) -> int:
+        """Process rows in standard per-row token generation mode."""
+        row_counter = 0
+        for row in reader:
+            row_counter += 1
+            token_generator_result = token_generator.get_all_tokens(row)
+            logger.debug(f"Tokens: {token_generator_result.tokens}")
+            PersonAttributesProcessor._keep_track_of_invalid_attributes(
+                token_generator_result, row_counter, invalid_attribute_count,
+            )
+            PersonAttributesProcessor._keep_track_of_blank_tokens(
+                token_generator_result, row_counter, blank_tokens_by_rule_count,
+            )
+            PersonAttributesProcessor._write_tokens(
+                writer, row, row_counter, token_generator_result,
+                encryption_key, ring_id, jwe_formatters, hash_record_ids,
+            )
+            if row_counter % 10000 == 0:
+                logger.info(f"Processed {row_counter:,} records")
+        return row_counter
+
+    @staticmethod
+    def _process_rows_with_batched_t6(
+        reader: PersonAttributesReader,
+        writer: PersonAttributesWriter,
+        token_generator: TokenGenerator,
+        invalid_attribute_count: Dict[str, int],
+        blank_tokens_by_rule_count: Dict[str, int],
+        encryption_key: str,
+        ring_id: str,
+        jwe_formatters: Dict[str, JweMatchTokenFormatter],
+        hash_record_ids: bool = False,
+    ) -> int:
+        """Process rows using batched T6 ONNX inference while retaining streaming output behavior."""
+        row_counter = 0
+        t6_batch_size = T6InferenceConfig.get_batch_size()
+        pending_rows: List[_PendingRow] = []
+
+        for row in reader:
+            row_counter += 1
+            token_generator_result = token_generator.get_all_tokens_excluding_t6(row)
+            t6_payload = token_generator.build_t6_payload(row, token_generator_result)
+            pending_rows.append(
+                _PendingRow(
+                    row=row,
+                    row_counter=row_counter,
+                    token_generator_result=token_generator_result,
+                    t6_payload=t6_payload,
+                )
+            )
+
+            if len(pending_rows) >= t6_batch_size:
+                PersonAttributesProcessor._flush_pending_rows(
+                    writer, token_generator, invalid_attribute_count,
+                    blank_tokens_by_rule_count, encryption_key, ring_id,
+                    jwe_formatters, pending_rows, hash_record_ids,
+                )
+
+            if row_counter % 10000 == 0:
+                logger.info(f"Processed {row_counter:,} records")
+
+        if pending_rows:
+            PersonAttributesProcessor._flush_pending_rows(
+                writer, token_generator, invalid_attribute_count,
+                blank_tokens_by_rule_count, encryption_key, ring_id,
+                jwe_formatters, pending_rows, hash_record_ids,
+            )
+
+        return row_counter
+
+    @staticmethod
+    def _flush_pending_rows(
+        writer: PersonAttributesWriter,
+        token_generator: TokenGenerator,
+        invalid_attribute_count: Dict[str, int],
+        blank_tokens_by_rule_count: Dict[str, int],
+        encryption_key: str,
+        ring_id: str,
+        jwe_formatters: Dict[str, JweMatchTokenFormatter],
+        pending_rows: List[_PendingRow],
+        hash_record_ids: bool = False,
+    ) -> None:
+        """Run batched T6 inference for queued rows and emit final tokens."""
+        t6_payloads = [pr.t6_payload for pr in pending_rows if pr.t6_payload is not None]
+        t6_signatures: List[str] = []
+        if t6_payloads:
+            t6_signatures = T6OnnxSignatureGenerator.generate_signatures(t6_payloads)
+
+        signature_index = 0
+        for pending_row in pending_rows:
+            t6_signature = None
+            if pending_row.t6_payload is not None and signature_index < len(t6_signatures):
+                t6_signature = t6_signatures[signature_index]
+                signature_index += 1
+
+            token_generator.apply_t6_signature_token(pending_row.token_generator_result, t6_signature)
+            logger.debug(f"Tokens: {pending_row.token_generator_result.tokens}")
+
+            PersonAttributesProcessor._keep_track_of_invalid_attributes(
+                pending_row.token_generator_result, pending_row.row_counter, invalid_attribute_count,
+            )
+            PersonAttributesProcessor._keep_track_of_blank_tokens(
+                pending_row.token_generator_result, pending_row.row_counter, blank_tokens_by_rule_count,
+            )
+            PersonAttributesProcessor._write_tokens(
+                writer, pending_row.row, pending_row.row_counter,
+                pending_row.token_generator_result, encryption_key, ring_id,
+                jwe_formatters, hash_record_ids,
+            )
+
+        pending_rows.clear()
+
+    @staticmethod
     def _keep_track_of_invalid_attributes(
         token_generator_result: TokenGeneratorResult,
         row_counter: int,
@@ -299,7 +461,7 @@ class PersonAttributesProcessor:
     def _keep_track_of_blank_tokens(
         token_generator_result: TokenGeneratorResult,
         row_counter: int,
-        blank_tokens_by_rule_count: Dict[str, int],
+        blank_token_count_by_rule: Dict[str, int],
     ) -> None:
         """
         Keep track of blank tokens for logging purposes.
@@ -307,13 +469,13 @@ class PersonAttributesProcessor:
         Args:
             token_generator_result: The result from token generation.
             row_counter: The current row number.
-            blank_tokens_by_rule_count: Dictionary to track blank token counts by rule.
+            blank_token_count_by_rule: Dictionary to track blank token counts by rule.
         """
         if token_generator_result.blank_tokens_by_rule:
             logger.debug(f"Blank tokens for row {row_counter:,}: {token_generator_result.blank_tokens_by_rule}")
 
             for rule_id in token_generator_result.blank_tokens_by_rule:
-                blank_tokens_by_rule_count[rule_id] += 1
+                blank_token_count_by_rule[rule_id] += 1
 
     @staticmethod
     def _initialize_invalid_attribute_count(

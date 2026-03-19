@@ -32,4 +32,15 @@ class TokenRegistryTest {
             assertFalse(definitions.isEmpty(), "Definitions for " + tokenId + " should not be empty");
         }
     }
+
+    @Test
+    void testLoadAllTokensIncludesT6WhenEnabled() {
+        T6InferenceConfig.configure(true, "classpath:/t6/model.onnx", "classpath:/t6/vocab.txt", 128);
+        try {
+            Map<String, List<AttributeExpression>> tokens = TokenRegistry.loadAllTokens();
+            assertTrue(tokens.containsKey("T6"), "Tokens map should contain T6 when enabled");
+        } finally {
+            T6InferenceConfig.configure(false, null, null, 128);
+        }
+    }
 }

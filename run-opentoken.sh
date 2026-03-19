@@ -16,6 +16,10 @@ ENCRYPTION_KEY=""
 DOCKER_IMAGE="opentoken:latest"
 SKIP_BUILD=false
 VERBOSE=false
+ENABLE_T6=false
+T6_MODEL_PATH=""
+T6_TOKENIZER_PATH=""
+T6_MAX_SEQ_LENGTH=""
 
 # Colors for output
 RED='\033[0;31m'
@@ -57,6 +61,10 @@ OPTIONAL:
     -s, --skip-build        Skip Docker image build (use existing image)
     --image NAME            Docker image name (default: opentoken:latest)
     -v, --verbose           Enable verbose output
+    --enable-t6             Enable optional ONNX-backed T6 token generation (package, tokenize)
+    --t6-model-path PATH    Path to ONNX model used for T6 inference
+    --t6-tokenizer-path PATH Path to tokenizer.json used for T6 inference
+    --t6-max-seq-length N   Maximum sequence length used for T6 tokenization
     --help                  Show this help message
 
 EXAMPLES:
@@ -134,6 +142,22 @@ while [[ $# -gt 0 ]]; do
         -v|--verbose)
             VERBOSE=true
             shift
+            ;;
+        --enable-t6)
+            ENABLE_T6=true
+            shift
+            ;;
+        --t6-model-path)
+            T6_MODEL_PATH="$2"
+            shift 2
+            ;;
+        --t6-tokenizer-path)
+            T6_TOKENIZER_PATH="$2"
+            shift 2
+            ;;
+        --t6-max-seq-length)
+            T6_MAX_SEQ_LENGTH="$2"
+            shift 2
             ;;
         --help)
             show_usage
@@ -228,6 +252,7 @@ if [[ $VERBOSE == true ]]; then
     log_info "Output file: $OUTPUT_FILE"
     log_info "File type: $FILE_TYPE"
     log_info "Docker image: $DOCKER_IMAGE"
+    log_info "T6 enabled: $ENABLE_T6"
 fi
 
 # Build Docker image if needed
@@ -273,9 +298,23 @@ CLI_ARGS=()
 case "$SUBCOMMAND" in
     package)
         CLI_ARGS+=(-h "$HASHING_SECRET" -e "$ENCRYPTION_KEY")
+        if [[ $ENABLE_T6 == false ]]; then
+            CLI_ARGS+=(--disable-t6)
+        else
+            [[ -n "$T6_MODEL_PATH" ]] && CLI_ARGS+=(--t6-model-path "$T6_MODEL_PATH")
+            [[ -n "$T6_TOKENIZER_PATH" ]] && CLI_ARGS+=(--t6-tokenizer-path "$T6_TOKENIZER_PATH")
+            [[ -n "$T6_MAX_SEQ_LENGTH" ]] && CLI_ARGS+=(--t6-max-seq-length "$T6_MAX_SEQ_LENGTH")
+        fi
         ;;
     tokenize)
         CLI_ARGS+=(-h "$HASHING_SECRET")
+        if [[ $ENABLE_T6 == false ]]; then
+            CLI_ARGS+=(--disable-t6)
+        else
+            [[ -n "$T6_MODEL_PATH" ]] && CLI_ARGS+=(--t6-model-path "$T6_MODEL_PATH")
+            [[ -n "$T6_TOKENIZER_PATH" ]] && CLI_ARGS+=(--t6-tokenizer-path "$T6_TOKENIZER_PATH")
+            [[ -n "$T6_MAX_SEQ_LENGTH" ]] && CLI_ARGS+=(--t6-max-seq-length "$T6_MAX_SEQ_LENGTH")
+        fi
         ;;
     encrypt|decrypt)
         CLI_ARGS+=(-e "$ENCRYPTION_KEY")

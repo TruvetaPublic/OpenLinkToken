@@ -4,6 +4,8 @@ Copyright (c) Truveta. All rights reserved.
 Utility class for masking sensitive strings in CLI commands.
 """
 
+from __future__ import annotations
+
 
 class StringMaskingUtil:
     """Utility methods for masking sensitive strings."""

@@ -12,7 +12,7 @@ OpenToken is a privacy-preserving token generation system for deterministic reco
 
 - Identical inputs always produce identical deterministic matching values (hash-only or decrypted)
 - Tokens reveal nothing about the underlying data (one-way)
-- Matching can occur on different attribute combinations via 5 distinct token rules (T1–T5)
+- Matching can occur on different attribute combinations via default token rules (T1–T5), with optional ONNX-backed T6
 
 **Applicability:** This specification applies to both Java and Python implementations. Cross-language deterministic outputs (hash-only and decrypted values) must be byte-identical for the same normalized inputs and secrets.
 
@@ -23,7 +23,7 @@ OpenToken is a privacy-preserving token generation system for deterministic reco
 ### In Scope
 
 1. **Person attribute normalization**: Transformation of raw input data into canonical forms
-2. **Token rule definitions**: Five rules (T1–T5) combining attributes in distinct ways
+2. **Token rule definitions**: Five default rules (T1–T5) combining attributes in distinct ways, plus optional T6
 3. **Token generation pipeline**: Deterministic transformation of normalized attributes → final tokens
 4. **Metadata tracking**: Processing statistics, system info, and secret hashes for audit
 5. **Error handling**: Behavior when attributes fail validation
@@ -128,7 +128,7 @@ Invalid records are flagged and tracked in metadata; blank tokens are generated 
 
 ### 4. Token Rule Application
 
-Apply each of the 5 token rules independently:
+Apply each enabled token rule independently:
 
 | Rule   | Attributes                                                  | Notes                                   |
 | ------ | ----------------------------------------------------------- | --------------------------------------- |
@@ -137,6 +137,7 @@ Apply each of the 5 token rules independently:
 | **T3** | U(LastName) \| U(FirstName) \| U(Sex) \| BirthDate          | Higher precision match; full name + sex |
 | **T4** | SocialSecurityNumber \| U(Sex) \| BirthDate                 | Authoritative; uses SSN                 |
 | **T5** | U(LastName) \| U(FirstName[0:3]) \| U(Sex)                  | Quick search; no birth date             |
+| **T6*** | ONNX CLS embedding from PostalCode/Birthdate/GivenName/Surname/Gender | Optional model-based rule |
 
 (U = Uppercase, [0] = first char, [0:3] = first 3 chars)
 
@@ -196,10 +197,10 @@ RecordId,RuleId,Token
 **Columns:**
 
 - `RecordId`: From input (or auto-generated if omitted)
-- `RuleId`: T1, T2, T3, T4, or T5
+- `RuleId`: T1, T2, T3, T4, or T5 (plus T6 when enabled)
 - `Token`: Encrypted `ot.V1.<JWE>` token in encrypted mode, or base64 HMAC token in hash-only/decrypted mode (or empty string if validation failed)
 
-**Rows per input record:** 5 (one per rule); may be fewer if errors occur
+**Rows per input record:** 5 by default (T1–T5), 6 when optional T6 is enabled; may be fewer if errors occur
 
 **Example:**
 

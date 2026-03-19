@@ -63,8 +63,9 @@ class TokenGeneratorIntegrationTest {
         Map<String, String> tokens = tokenGenerator.getAllTokens(personAttributes).getTokens();
 
         // Validate the tokens
+        // T6 is enabled by default; without PostalCode it produces a blank token
         assertNotNull(tokens);
-        assertEquals(5, tokens.size(), "Expected 5 tokens to be generated");
+        assertEquals(6, tokens.size(), "Expected 6 tokens to be generated (T1-T5 + T6 blank)");
 
         // Validate the actual tokens generated
         assertTrue(tokens.containsKey("T1"));
@@ -72,11 +73,13 @@ class TokenGeneratorIntegrationTest {
         assertTrue(tokens.containsKey("T3"));
         assertTrue(tokens.containsKey("T4"));
         assertTrue(tokens.containsKey("T5"));
+        assertTrue(tokens.containsKey("T6"));
 
         assertEquals("02292af14559b4c2a28a772536b81760ad7b8ebac8ce49e8450ca0fa5044e37f", tokens.get("T1"));
         assertEquals("0000000000000000000000000000000000000000000000000000000000000000", tokens.get("T2"));
         assertEquals("a76c3bff664bec8d0f77b4b47ad555d212dc671949ed3cf1c1edef68733835b2", tokens.get("T3"));
         assertEquals("21c3cf1fdb4fd45197e5def14d0228d26c56bcec1b8641079f9b9ec24f9a6a0b", tokens.get("T4"));
         assertEquals("3756556f2323148cb57e1e13b1abcd457e1c1706a84ae83d522a3fc0ad43506d", tokens.get("T5"));
+        assertEquals(Token.BLANK, tokens.get("T6"), "T6 should be blank when PostalCode is absent");
     }
 }

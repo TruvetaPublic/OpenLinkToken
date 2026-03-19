@@ -3,3 +3,8 @@ cryptography==46.0.5
 
 # JOSE/JWE for match token format
 jwcrypto>=1.5.6
+
+# T6 ONNX inference
+numpy>=1.26.0
+onnxruntime>=1.22.0
+tokenizers>=0.21.0

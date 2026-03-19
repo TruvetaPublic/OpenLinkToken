@@ -3,11 +3,19 @@ Copyright (c) Truveta. All rights reserved.
 """
 
 import logging
+from collections import OrderedDict
 from typing import Dict, List, Optional, Set, Type
 
 from opentoken.attributes.attribute import Attribute
 from opentoken.attributes.attribute_loader import AttributeLoader
+from opentoken.attributes.person.birth_date_attribute import BirthDateAttribute
+from opentoken.attributes.person.first_name_attribute import FirstNameAttribute
+from opentoken.attributes.person.last_name_attribute import LastNameAttribute
+from opentoken.attributes.person.postal_code_attribute import PostalCodeAttribute
+from opentoken.attributes.person.sex_attribute import SexAttribute
 from opentoken.tokens.base_token_definition import BaseTokenDefinition
+from opentoken.tokens.t6_inference_config import T6InferenceConfig
+from opentoken.tokens.t6_onnx_signature_generator import T6OnnxSignatureGenerator, t6_payload_to_json
 from opentoken.tokens.token import Token
 from opentoken.tokens.token_generation_exception import TokenGenerationException
 from opentoken.tokens.token_generator_result import TokenGeneratorResult
@@ -20,6 +28,8 @@ logger = logging.getLogger(__name__)
 
 class TokenGenerator:
     """Generates both the token signature and the token itself."""
+
+    T6_RULE_ID = "T6"
 
     @classmethod
     def from_transformers(
@@ -71,10 +81,16 @@ class TokenGenerator:
         Returns:
             The token signature using the token definition for the given token identifier.
         """
+        if token_id == self.T6_RULE_ID:
+            return self._get_t6_signature(person_attributes, result)
+
         definition = self.token_definition.get_token_definition(token_id)
 
         if person_attributes is None:
             raise ValueError("Person attributes cannot be null.")
+
+        if definition is None:
+            return None
 
         values = []
 
@@ -106,6 +122,77 @@ class TokenGenerator:
         # Filter out None and blank values, then join with '|'
         filtered_values = [v for v in values if v is not None and v.strip() != ""]
         return "|".join(filtered_values)
+
+    def _get_t6_signature(
+        self,
+        person_attributes: Dict[Type[Attribute], str],
+        result: TokenGeneratorResult,
+    ) -> Optional[str]:
+        """Build T6 signature using ONNX-backed inference when enabled."""
+        if not T6InferenceConfig.is_enabled():
+            return None
+
+        payload_json = self.build_t6_payload(person_attributes, result)
+        if payload_json is None:
+            return None
+
+        try:
+            return T6OnnxSignatureGenerator.generate_signature(payload_json)
+        except Exception as error:
+            logger.error("Error generating token signature for token id: T6", exc_info=error)
+            return None
+
+    def build_t6_payload(
+        self,
+        person_attributes: Dict[Type[Attribute], str],
+        result: TokenGeneratorResult,
+    ) -> Optional[str]:
+        """Build and validate the deterministic JSON payload required for T6 inference."""
+        if person_attributes is None:
+            return None
+
+        payload: "OrderedDict[str, str]" = OrderedDict()
+        if not self._add_t6_field(PostalCodeAttribute, "PostalCode", person_attributes, result, payload):
+            return None
+        if not self._add_t6_field(BirthDateAttribute, "Birthdate", person_attributes, result, payload):
+            return None
+        if not self._add_t6_field(FirstNameAttribute, "GivenName", person_attributes, result, payload):
+            return None
+        if not self._add_t6_field(LastNameAttribute, "Surname", person_attributes, result, payload):
+            return None
+        if not self._add_t6_field(SexAttribute, "Gender", person_attributes, result, payload):
+            return None
+
+        return t6_payload_to_json(payload)
+
+    def _add_t6_field(
+        self,
+        attribute_class: Type[Attribute],
+        field_name: str,
+        person_attributes: Dict[Type[Attribute], str],
+        result: TokenGeneratorResult,
+        payload: "OrderedDict[str, str]",
+    ) -> bool:
+        """Validate, normalize, and append one required field for T6 payload."""
+        if attribute_class not in person_attributes:
+            return False
+
+        attribute = self.attribute_instance_map.get(attribute_class)
+        if attribute is None:
+            return False
+
+        value = person_attributes[attribute_class]
+        if not attribute.validate(value):
+            result.invalid_attributes.add(attribute.get_name())
+            return False
+
+        normalized = attribute.normalize(value)
+        if normalized is None or normalized.strip() == "":
+            result.invalid_attributes.add(attribute.get_name())
+            return False
+
+        payload[field_name] = normalized
+        return True
 
     def get_all_token_signatures(self, person_attributes: Dict[Type[Attribute], str]) -> Dict[str, str]:
         """
@@ -182,6 +269,34 @@ class TokenGenerator:
                 logger.error(f"Error generating token for token id: {token_id}", exc_info=e)
 
         return result
+
+    def get_all_tokens_excluding_t6(self, person_attributes: Dict[Type[Attribute], str]) -> TokenGeneratorResult:
+        """Get tokens for all rules except T6."""
+        result = TokenGeneratorResult()
+
+        for token_id in self.token_definition.get_token_identifiers():
+            if token_id == self.T6_RULE_ID:
+                continue
+            try:
+                token = self._get_token(token_id, person_attributes, result)
+                if token is not None:
+                    result.tokens[token_id] = token
+            except Exception as error:
+                logger.error(f"Error generating token for token id: {token_id}", exc_info=error)
+
+        return result
+
+    def apply_t6_signature_token(self, result: TokenGeneratorResult, signature: Optional[str]) -> None:
+        """Tokenize and store T6 token from a precomputed T6 signature."""
+        try:
+            token = self.tokenizer.tokenize(signature)
+            result.tokens[self.T6_RULE_ID] = token
+            if Token.BLANK == token:
+                result.blank_tokens_by_rule.add(self.T6_RULE_ID)
+        except Exception as error:
+            logger.error("Error generating token for token id: T6", exc_info=error)
+            result.tokens[self.T6_RULE_ID] = Token.BLANK
+            result.blank_tokens_by_rule.add(self.T6_RULE_ID)
 
     def get_invalid_person_attributes(self, person_attributes: Dict[Type[Attribute], str]) -> Set[str]:
         """

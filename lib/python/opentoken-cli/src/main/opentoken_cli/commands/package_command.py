@@ -7,6 +7,7 @@ import uuid
 from typing import List
 
 from opentoken.metadata import Metadata
+from opentoken.tokens.t6_inference_config import T6InferenceConfig
 from opentoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
 from opentoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 from opentoken.tokentransformer.token_transformer import TokenTransformer
@@ -121,6 +122,52 @@ class PackageCommand:
             ),
         )
 
+        parser.add_argument(
+            "--disable-t6",
+            action="store_true",
+            dest="disable_t6",
+            help="Disable T6 ONNX inference token generation",
+        )
+
+        parser.add_argument(
+            "--t6-model-path",
+            dest="t6_model_path",
+            default=T6InferenceConfig.DEFAULT_MODEL_PATH,
+            help="Path to T6 ONNX model (default: classpath:/t6/model_int8.onnx)",
+        )
+
+        parser.add_argument(
+            "--t6-tokenizer-path",
+            dest="t6_tokenizer_path",
+            default=T6InferenceConfig.DEFAULT_TOKENIZER_PATH,
+            help="Path to T6 tokenizer JSON (default: classpath:/t6/tokenizer.json)",
+        )
+
+        parser.add_argument(
+            "--t6-max-seq-length",
+            "--t6-max-sequence-length",
+            dest="t6_max_sequence_length",
+            type=int,
+            default=T6InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH,
+            help="Maximum T6 tokenizer sequence length (default: 128)",
+        )
+
+        parser.add_argument(
+            "--t6-batch-size",
+            dest="t6_batch_size",
+            type=int,
+            default=T6InferenceConfig.DEFAULT_BATCH_SIZE,
+            help="T6 ONNX inference batch size (default: 64)",
+        )
+
+        parser.add_argument(
+            "--t6-num-threads",
+            dest="t6_num_threads",
+            type=int,
+            default=0,
+            help="ORT intra/inter-op thread count for T6 inference (0 = auto-detect, default: 0)",
+        )
+
         parser.set_defaults(func=PackageCommand.execute)
 
     @staticmethod
@@ -139,6 +186,28 @@ class PackageCommand:
         logger.info(f"Ring ID: {ring_id}")
         if hash_record_ids:
             logger.info("Record ID hashing enabled: RecordIds will be SHA-256 hashed in output")
+
+        t6_enabled = not getattr(args, "disable_t6", False)
+        T6InferenceConfig.configure(
+            enable_t6=t6_enabled,
+            configured_model_path=getattr(args, "t6_model_path", T6InferenceConfig.DEFAULT_MODEL_PATH),
+            configured_tokenizer_path=getattr(args, "t6_tokenizer_path", T6InferenceConfig.DEFAULT_TOKENIZER_PATH),
+            configured_max_sequence_length=getattr(
+                args, "t6_max_sequence_length", T6InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH
+            ),
+            configured_batch_size=getattr(args, "t6_batch_size", T6InferenceConfig.DEFAULT_BATCH_SIZE),
+            configured_num_threads=getattr(args, "t6_num_threads", 0),
+        )
+        num_threads = getattr(args, "t6_num_threads", 0)
+        logger.info(
+            "T6 ONNX inference: enabled=%s, modelPath=%s, tokenizerPath=%s, maxSequenceLength=%s, batchSize=%s, numThreads=%s",
+            t6_enabled,
+            getattr(args, "t6_model_path", T6InferenceConfig.DEFAULT_MODEL_PATH),
+            getattr(args, "t6_tokenizer_path", T6InferenceConfig.DEFAULT_TOKENIZER_PATH),
+            getattr(args, "t6_max_sequence_length", T6InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH),
+            getattr(args, "t6_batch_size", T6InferenceConfig.DEFAULT_BATCH_SIZE),
+            num_threads if num_threads > 0 else "auto",
+        )
 
         try:
             exchange = resolve_exchange_config(

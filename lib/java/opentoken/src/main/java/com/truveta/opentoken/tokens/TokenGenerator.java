@@ -7,6 +7,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -22,6 +23,11 @@ import org.slf4j.LoggerFactory;
 import com.truveta.opentoken.attributes.Attribute;
 import com.truveta.opentoken.attributes.AttributeExpression;
 import com.truveta.opentoken.attributes.AttributeLoader;
+import com.truveta.opentoken.attributes.person.BirthDateAttribute;
+import com.truveta.opentoken.attributes.person.FirstNameAttribute;
+import com.truveta.opentoken.attributes.person.LastNameAttribute;
+import com.truveta.opentoken.attributes.person.PostalCodeAttribute;
+import com.truveta.opentoken.attributes.person.SexAttribute;
 import com.truveta.opentoken.tokens.tokenizer.SHA256Tokenizer;
 import com.truveta.opentoken.tokens.tokenizer.Tokenizer;
 import com.truveta.opentoken.tokens.tokenizer.PassthroughTokenizer;
@@ -35,6 +41,7 @@ import com.truveta.opentoken.tokentransformer.TokenTransformer;
 public class TokenGenerator implements Serializable {
     private static final long serialVersionUID = 1L;
     private static final transient Logger logger = LoggerFactory.getLogger(TokenGenerator.class);
+    private static final String T6_RULE_ID = "T6";
 
     private Tokenizer tokenizer;
     private BaseTokenDefinition tokenDefinition;
@@ -85,9 +92,16 @@ public class TokenGenerator implements Serializable {
      */
     protected String getTokenSignature(String tokenId, Map<Class<? extends Attribute>, String> personAttributes,
             TokenGeneratorResult result) {
+        if (T6_RULE_ID.equals(tokenId)) {
+            return getT6Signature(personAttributes, result);
+        }
+
         var definition = tokenDefinition.getTokenDefinition(tokenId);
         if (personAttributes == null) {
             throw new IllegalArgumentException("Person attributes cannot be null.");
+        }
+        if (definition == null) {
+            return null;
         }
 
         var values = new ArrayList<String>(definition.size());
@@ -118,6 +132,124 @@ public class TokenGenerator implements Serializable {
 
         return Stream.of(values.toArray(new String[0])).filter(s -> null != s && !s.isBlank())
                 .collect(Collectors.joining("|"));
+    }
+
+    private String getT6Signature(Map<Class<? extends Attribute>, String> personAttributes,
+            TokenGeneratorResult result) {
+        if (!T6InferenceConfig.isEnabled()) {
+            return null;
+        }
+
+        String payloadJson = buildT6Payload(personAttributes, result);
+        if (payloadJson == null) {
+            return null;
+        }
+
+        try {
+            return T6OnnxSignatureGenerator.generateSignature(payloadJson);
+        } catch (Exception e) {
+            logger.error("Error generating token signature for token id: {}", T6_RULE_ID, e);
+            return null;
+        }
+    }
+
+    public String buildT6Payload(Map<Class<? extends Attribute>, String> personAttributes,
+            TokenGeneratorResult result) {
+        if (personAttributes == null) {
+            return null;
+        }
+
+        Map<String, String> payload = new LinkedHashMap<>();
+        if (!addT6Field(PostalCodeAttribute.class, "PostalCode", personAttributes, result, payload)
+                || !addT6Field(BirthDateAttribute.class, "Birthdate", personAttributes, result, payload)
+                || !addT6Field(FirstNameAttribute.class, "GivenName", personAttributes, result, payload)
+                || !addT6Field(LastNameAttribute.class, "Surname", personAttributes, result, payload)
+                || !addT6Field(SexAttribute.class, "Gender", personAttributes, result, payload)) {
+            return null;
+        }
+
+        return asJson(payload);
+    }
+
+    public TokenGeneratorResult getAllTokensExcludingT6(Map<Class<? extends Attribute>, String> personAttributes) {
+        TokenGeneratorResult result = new TokenGeneratorResult();
+
+        for (String tokenId : tokenDefinition.getTokenIdentifiers()) {
+            if (T6_RULE_ID.equals(tokenId)) {
+                continue;
+            }
+            try {
+                var token = getToken(tokenId, personAttributes, result);
+                if (token != null) {
+                    result.getTokens().put(tokenId, token);
+                }
+            } catch (Exception e) {
+                logger.error("Error generating token for token id: " + tokenId, e);
+            }
+        }
+
+        return result;
+    }
+
+    public void applyT6SignatureToken(TokenGeneratorResult result, String signature) {
+        try {
+            String token = tokenizer.tokenize(signature);
+            result.getTokens().put(T6_RULE_ID, token);
+            if (Token.BLANK.equals(token)) {
+                result.getBlankTokensByRule().add(T6_RULE_ID);
+            }
+        } catch (Exception e) {
+            logger.error("Error generating token for token id: " + T6_RULE_ID, e);
+            result.getTokens().put(T6_RULE_ID, Token.BLANK);
+            result.getBlankTokensByRule().add(T6_RULE_ID);
+        }
+    }
+
+    private boolean addT6Field(Class<? extends Attribute> attributeClass, String fieldName,
+            Map<Class<? extends Attribute>, String> personAttributes, TokenGeneratorResult result,
+            Map<String, String> payload) {
+        if (!personAttributes.containsKey(attributeClass)) {
+            return false;
+        }
+
+        Attribute attribute = attributeInstanceMap.get(attributeClass);
+        if (attribute == null) {
+            return false;
+        }
+
+        String value = personAttributes.get(attributeClass);
+        if (!attribute.validate(value)) {
+            result.getInvalidAttributes().add(attribute.getName());
+            return false;
+        }
+
+        String normalized = attribute.normalize(value);
+        if (normalized == null || normalized.isBlank()) {
+            result.getInvalidAttributes().add(attribute.getName());
+            return false;
+        }
+
+        payload.put(fieldName, normalized);
+        return true;
+    }
+
+    private String asJson(Map<String, String> values) {
+        StringBuilder builder = new StringBuilder("{");
+        boolean first = true;
+        for (Map.Entry<String, String> entry : values.entrySet()) {
+            if (!first) {
+                builder.append(", ");
+            }
+            builder.append("\"").append(escapeJson(entry.getKey())).append("\": ");
+            builder.append("\"").append(escapeJson(entry.getValue())).append("\"");
+            first = false;
+        }
+        builder.append("}");
+        return builder.toString();
+    }
+
+    private String escapeJson(String value) {
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     /**

@@ -4,6 +4,7 @@
 package com.truveta.opentoken.tokens;
 
 import com.truveta.opentoken.attributes.AttributeExpression;
+import com.truveta.opentoken.tokens.definitions.T6Token;
 import java.util.ServiceLoader;
 import java.util.HashMap;
 import java.util.List;
@@ -42,6 +43,10 @@ public class TokenRegistry {
         ServiceLoader<Token> loader = ServiceLoader.load(Token.class);
         for (Token token : loader) {
             tokensMap.put(token.getIdentifier(), token.getDefinition());
+        }
+        if (T6InferenceConfig.isEnabled()) {
+            Token t6Token = new T6Token();
+            tokensMap.put(t6Token.getIdentifier(), t6Token.getDefinition());
         }
         return tokensMap;
     }

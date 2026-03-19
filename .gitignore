@@ -114,3 +114,7 @@ apm_modules/
 .github/skills/writing-skills/
 .github/skills/documentation-writer/
 .github/skills/gh-cli/
+
+# T6 ONNX model files (large binaries, obtain/generate separately — see tools/quantize_t6_model.py)
+lib/java/opentoken/src/main/resources/t6/*.onnx
+lib/java/opentoken/src/main/resources/t6/*.onnx.data
