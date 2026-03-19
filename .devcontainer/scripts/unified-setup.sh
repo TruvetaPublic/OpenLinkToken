@@ -102,16 +102,12 @@ step_activate_venv() {
 }
 
 step_install_packages() {
-  skip_if_complete "packages-installed" "workspace package installation" && return 0
-
   echo "→ Installing all workspace packages and dependencies"
   cd "$REPO_ROOT"
   uv sync --all-packages --dev
 
   echo "→ Installing default PySpark bridge runtime (Spark 4.0)"
   uv pip install -e "lib/python/opentoken-pyspark[spark40]"
-
-  mark_complete "packages-installed"
 }
 
 step_activate_shell_init() {
@@ -145,11 +141,8 @@ step_install_prek() {
 # ============================================================================
 
 step_install_apm_cli() {
-  skip_if_complete "apm-cli-installed" "APM CLI installation" && return 0
-
   echo "→ Installing apm CLI"
   uv pip install apm-cli
-  mark_complete "apm-cli-installed"
 }
 
 step_setup_apm() {

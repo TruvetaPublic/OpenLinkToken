@@ -88,6 +88,7 @@ demos/pprl-superhero-example/datasets/
 .ruff_cache/
 *.exchange.json
 apm.lock
+apm.lock.yaml
 
 # APM dependencies
 apm_modules/

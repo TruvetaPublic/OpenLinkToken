@@ -40,6 +40,7 @@ After you run a quickstart:
 - [CLI Quickstart](cli-quickstart.md)
 - [Python Quickstart](python-quickstart.md)
 - [Java Quickstart](java-quickstart.md)
+- [Extension Quickstart](extension-quickstart.md) — Build, package, and install your first CLI extension
 
 ## Test Your Data
 
@@ -82,13 +83,13 @@ See [Configuration](../config/configuration.md) for detailed column mapping and 
 
 ## Common Issues
 
-**"Encryption key not provided"**  
+**"Encryption key not provided"**
 → Either add `-e "YourKey"` with `package` or use `tokenize` to skip encryption.
 
-**"Invalid BirthDate"**  
+**"Invalid BirthDate"**
 → Use YYYY-MM-DD format or one of the accepted formats. Date must be between 1910-01-01 and today.
 
-**"Docker image not found"**  
+**"Docker image not found"**
 → The script builds it automatically. Make sure you have Docker running.
 
 For more troubleshooting, see [Running OpenToken](../running-opentoken/index.md).

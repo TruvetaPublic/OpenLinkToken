@@ -21,6 +21,10 @@ This file is the runtime entrypoint. Keep it concise, and use the scoped instruc
 - **Commenting guidance:** `.github/instructions/self-explanatory-code-commenting.instructions.md`
 - **Specialized task handling:** Prefer matching custom agents from `.github/agents/` when their scope fits the work.
 
+## Code review
+
+When performing a code review, focus only on findings that are medium severity or higher. Skip style preferences, minor nitpicks, and low-impact suggestions. Surface bugs, security vulnerabilities, logic errors, correctness issues, and significant maintainability or performance concerns. For each finding, clearly state the severity, the risk, and what the fix should achieve.
+
 ## Runtime usage notes
 
 - Load only the smallest relevant instruction set for the files you are editing.

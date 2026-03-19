@@ -13,6 +13,7 @@ Guides for running and managing OpenToken in production.
 - [Tokenize](tokenize.md) — Generating tokens without encryption
 - [Decrypting Tokens](decrypting-tokens.md) — Recovering original signatures (requires keys)
 - [Mock Data Workflows](mock-data-workflows.md) — Generating test data
+- [Managing Extensions](managing-extensions.md) — Installing, listing, and removing CLI extensions
 
 ## Next Steps
 
