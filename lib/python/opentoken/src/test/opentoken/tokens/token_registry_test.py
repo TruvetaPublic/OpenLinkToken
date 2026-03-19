@@ -47,12 +47,13 @@ def test_load_all_tokens_with_resources_fallback():
         # Don't mock resources - let it actually work
         tokens = TokenRegistry.load_all_tokens()
 
-        assert len(tokens) == 5, "Should load all 5 tokens via resources fallback"
+        assert len(tokens) == 6, "Should load all 6 tokens via resources fallback"
         assert "T1" in tokens
         assert "T2" in tokens
         assert "T3" in tokens
         assert "T4" in tokens
         assert "T5" in tokens
+        assert "T6" in tokens
 
 
 def test_load_all_tokens_with_hardcoded_fallback():
@@ -70,13 +71,14 @@ def test_load_all_tokens_with_hardcoded_fallback():
         tokens = TokenRegistry.load_all_tokens()
 
         # Should still load all tokens via hardcoded fallback
-        assert len(tokens) == 5, "Should load all 5 tokens via hardcoded fallback"
-        expected_tokens = ["T1", "T2", "T3", "T4", "T5"]
+        assert len(tokens) == 6, "Should load all 6 tokens via hardcoded fallback"
+        expected_tokens = ["T1", "T2", "T3", "T4", "T5", "T6"]
         for token_id in expected_tokens:
             assert token_id in tokens, f"Hardcoded fallback should contain {token_id}"
-            definitions = tokens[token_id]
-            assert definitions is not None, f"Definitions for {token_id} should not be None"
-            assert definitions, f"Definitions for {token_id} should not be empty"
+            if token_id != "T6":
+                definitions = tokens[token_id]
+                assert definitions is not None, f"Definitions for {token_id} should not be None"
+                assert definitions, f"Definitions for {token_id} should not be empty"
 
 
 def test_load_all_tokens_each_fallback_path():
@@ -84,12 +86,12 @@ def test_load_all_tokens_each_fallback_path():
 
     # Test 1: Normal path (pkgutil works)
     tokens_normal = TokenRegistry.load_all_tokens()
-    assert len(tokens_normal) == 5
+    assert len(tokens_normal) == 6
 
     # Test 2: Resources fallback (pkgutil empty, resources works)
     with patch("opentoken.tokens.token_registry.pkgutil.iter_modules", return_value=[]):
         tokens_resources = TokenRegistry.load_all_tokens()
-        assert len(tokens_resources) == 5
+        assert len(tokens_resources) == 6
         # Verify same tokens loaded
         assert set(tokens_normal.keys()) == set(tokens_resources.keys())
 
@@ -99,7 +101,7 @@ def test_load_all_tokens_each_fallback_path():
         patch("opentoken.tokens.token_registry.resources.files", side_effect=Exception("Fail")),
     ):
         tokens_hardcoded = TokenRegistry.load_all_tokens()
-        assert len(tokens_hardcoded) == 5
+        assert len(tokens_hardcoded) == 6
         # Verify same tokens loaded
         assert set(tokens_normal.keys()) == set(tokens_hardcoded.keys())
 

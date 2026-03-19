@@ -41,7 +41,7 @@ class TestTokenGeneratorIntegration:
 
         # Validate the tokens
         assert tokens is not None
-        assert len(tokens) == 5, "Expected 5 tokens to be generated"
+        assert len(tokens) == 6, "Expected 6 tokens to be generated (T1-T5 + T6 blank)"
 
         # Validate the actual tokens generated
         assert "T1" in tokens
@@ -49,9 +49,12 @@ class TestTokenGeneratorIntegration:
         assert "T3" in tokens
         assert "T4" in tokens
         assert "T5" in tokens
+        assert "T6" in tokens
 
         assert tokens.get("T1") == "02292af14559b4c2a28a772536b81760ad7b8ebac8ce49e8450ca0fa5044e37f"
         assert tokens.get("T2") == "0000000000000000000000000000000000000000000000000000000000000000"
         assert tokens.get("T3") == "a76c3bff664bec8d0f77b4b47ad555d212dc671949ed3cf1c1edef68733835b2"
         assert tokens.get("T4") == "21c3cf1fdb4fd45197e5def14d0228d26c56bcec1b8641079f9b9ec24f9a6a0b"
         assert tokens.get("T5") == "3756556f2323148cb57e1e13b1abcd457e1c1706a84ae83d522a3fc0ad43506d"
+        # T6 is blank because PostalCode is missing from the test attributes
+        assert tokens.get("T6") == "0000000000000000000000000000000000000000000000000000000000000000"
