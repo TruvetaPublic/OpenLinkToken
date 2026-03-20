@@ -14,7 +14,7 @@ package com.truveta.opentoken.tokens;
 public final class RotationConfig {
 
     /** Default number of rotation matrices (= number of rotation tokens per record). */
-    public static final int DEFAULT_ROTATION_COUNT = 4;
+    public static final int DEFAULT_ROTATION_COUNT = 30;
 
     /** Default number of projected dimensions fed to the quantizer. */
     public static final int DEFAULT_HASH_DIMENSION = 32;

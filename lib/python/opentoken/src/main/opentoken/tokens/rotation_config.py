@@ -10,7 +10,7 @@ class RotationConfig:
     Call RotationConfig.is_enabled() to check whether rotation is active.
     """
 
-    DEFAULT_ROTATION_COUNT: ClassVar[int] = 4
+    DEFAULT_ROTATION_COUNT: ClassVar[int] = 30
     DEFAULT_HASH_DIMENSION: ClassVar[int] = 32
     DEFAULT_BIN_WIDTH: ClassVar[float] = 0.05
     DEFAULT_MIN_VAL: ClassVar[float] = -5.0
