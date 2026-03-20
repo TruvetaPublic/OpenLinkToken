@@ -26,6 +26,7 @@ from opentoken_cli.util.stdin_utils import read_required_env_bytes, read_require
 logger = logging.getLogger(__name__)
 
 EXCHANGE_CONFIG_VERSION = EXCHANGE_JWE_VERSION
+DEFAULT_ROTATION_COUNT = 30
 
 
 class InitiateExchangeCommand:
@@ -116,6 +117,38 @@ class InitiateExchangeCommand:
             help="Read the hashing secret from the named environment variable",
         )
 
+        rotation_iv_group = parser.add_mutually_exclusive_group(required=False)
+        rotation_iv_group.add_argument(
+            "--rotation-iv",
+            dest="rotation_iv",
+            default=None,
+            metavar="IV",
+            help="Rotation IV string for the rotation matrix generator (default: randomly generated)",
+        )
+        rotation_iv_group.add_argument(
+            "--rotation-iv-stdin",
+            dest="rotation_iv_stdin",
+            action="store_true",
+            default=False,
+            help="Read the rotation IV from stdin instead of passing it on the command line",
+        )
+        rotation_iv_group.add_argument(
+            "--rotation-iv-env",
+            dest="rotation_iv_env",
+            default=None,
+            metavar="ENV_VAR",
+            help="Read the rotation IV from the named environment variable",
+        )
+
+        parser.add_argument(
+            "--rotation-count",
+            dest="rotation_count",
+            type=int,
+            default=DEFAULT_ROTATION_COUNT,
+            metavar="N",
+            help=f"Number of rotation matrices to generate (default: {DEFAULT_ROTATION_COUNT})",
+        )
+
         parser.add_argument(
             "-c",
             "--curve",
@@ -170,6 +203,10 @@ class InitiateExchangeCommand:
         hashing_secret: Optional[str] = getattr(args, "hashing_secret", None)
         hashing_secret_stdin: bool = getattr(args, "hashing_secret_stdin", False)
         hashing_secret_env_name: Optional[str] = getattr(args, "hashing_secret_env", None)
+        rotation_iv: Optional[str] = getattr(args, "rotation_iv", None)
+        rotation_iv_stdin: bool = getattr(args, "rotation_iv_stdin", False)
+        rotation_iv_env_name: Optional[str] = getattr(args, "rotation_iv_env", None)
+        rotation_count: int = getattr(args, "rotation_count", DEFAULT_ROTATION_COUNT)
         curve: Optional[str] = getattr(args, "curve", None)
         force: bool = getattr(args, "force", False)
         local_private_key_path_str: Optional[str] = getattr(args, "local_private_key", None)
@@ -191,6 +228,24 @@ class InitiateExchangeCommand:
                     "Cannot combine --public-key-stdin and --hashingsecret-stdin because both consume stdin. "
                     "Use an environment-variable or file-based input for one of them."
                 )
+                return 1
+
+            stdin_flags = {
+                "--public-key-stdin": public_key_stdin,
+                "--hashingsecret-stdin": hashing_secret_stdin,
+                "--rotation-iv-stdin": rotation_iv_stdin,
+            }
+            active_stdin_flags = [flag for flag, active in stdin_flags.items() if active]
+            if len(active_stdin_flags) > 1:
+                logger.error(
+                    "Cannot combine %s because they all consume stdin. "
+                    "Use an environment-variable or file-based input for all but one of them.",
+                    " and ".join(active_stdin_flags),
+                )
+                return 1
+
+            if rotation_count < 1:
+                logger.error("--rotation-count must be a positive integer, got %d.", rotation_count)
                 return 1
 
             opentoken_dir = Path.home() / ".opentoken"
@@ -262,6 +317,12 @@ class InitiateExchangeCommand:
                 hashing_secret_env_name=hashing_secret_env_name,
             )
 
+            resolved_rotation_iv = InitiateExchangeCommand._resolve_rotation_iv(
+                rotation_iv,
+                rotation_iv_stdin=rotation_iv_stdin,
+                rotation_iv_env_name=rotation_iv_env_name,
+            )
+
             if persist_local_key_files:
                 if not force and (private_key_path.exists() or public_key_path_local.exists()):
                     logger.error(
@@ -283,6 +344,8 @@ class InitiateExchangeCommand:
                 curve=resolved_curve,
                 created_at=InitiateExchangeCommand._created_at(),
                 exchange_id=InitiateExchangeCommand._exchange_id(),
+                rotation_iv=resolved_rotation_iv,
+                rotation_count=rotation_count,
             )
 
             InitiateExchangeCommand._write_config(output_path, config, overwrite=force)
@@ -333,6 +396,39 @@ class InitiateExchangeCommand:
             )
         if hashing_secret:
             return hashing_secret.encode()
+        return secrets.token_bytes(32)
+
+    @staticmethod
+    def _resolve_rotation_iv(
+        rotation_iv: Optional[str],
+        rotation_iv_stdin: bool = False,
+        rotation_iv_env_name: Optional[str] = None,
+    ) -> bytes:
+        """Return the provided rotation IV as bytes, or generate a secure random one.
+
+        Args:
+            rotation_iv: Caller-supplied IV string, or ``None`` to auto-generate.
+            rotation_iv_stdin: When true, read the rotation IV from stdin.
+            rotation_iv_env_name: Environment variable name containing the rotation IV.
+
+        Returns:
+            The rotation IV as raw bytes.
+        """
+        if rotation_iv_stdin:
+            iv_bytes = read_required_stdin_bytes("--rotation-iv-stdin", "rotation IV")
+            if iv_bytes.endswith(b"\r\n"):
+                return iv_bytes[:-2]
+            if iv_bytes.endswith(b"\n"):
+                return iv_bytes[:-1]
+            return iv_bytes
+        if rotation_iv_env_name:
+            return read_required_env_bytes(
+                "--rotation-iv-env",
+                rotation_iv_env_name,
+                "rotation IV",
+            )
+        if rotation_iv:
+            return rotation_iv.encode()
         return secrets.token_bytes(32)
 
     @staticmethod

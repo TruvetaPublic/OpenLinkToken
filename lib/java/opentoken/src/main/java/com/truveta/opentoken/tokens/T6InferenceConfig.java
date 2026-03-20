@@ -8,8 +8,8 @@ package com.truveta.opentoken.tokens;
  */
 public final class T6InferenceConfig {
 
-    public static final String DEFAULT_MODEL_PATH = "classpath:/t6/model_int8.onnx";
-    public static final String DEFAULT_TOKENIZER_PATH = "classpath:/t6/tokenizer.json";
+    public static final String DEFAULT_MODEL_PATH = "classpath:/inferencing/t6/model.onnx";
+    public static final String DEFAULT_TOKENIZER_PATH = "classpath:/inferencing/t6/tokenizer.json";
     public static final int DEFAULT_MAX_SEQUENCE_LENGTH = 128;
     public static final int DEFAULT_BATCH_SIZE = 64;
     public static final int DEFAULT_NUM_THREADS = Runtime.getRuntime().availableProcessors();

@@ -155,14 +155,14 @@ class TokenizeCommand:
             "--t6-model-path",
             dest="t6_model_path",
             default=T6InferenceConfig.DEFAULT_MODEL_PATH,
-            help="Path to T6 ONNX model (default: classpath:/t6/model_int8.onnx)",
+            help=f"Path to T6 ONNX model (default: {T6InferenceConfig.DEFAULT_MODEL_PATH})",
         )
 
         parser.add_argument(
             "--t6-tokenizer-path",
             dest="t6_tokenizer_path",
             default=T6InferenceConfig.DEFAULT_TOKENIZER_PATH,
-            help="Path to T6 tokenizer JSON (default: classpath:/t6/tokenizer.json)",
+            help=f"Path to T6 tokenizer JSON (default: {T6InferenceConfig.DEFAULT_TOKENIZER_PATH})",
         )
 
         parser.add_argument(

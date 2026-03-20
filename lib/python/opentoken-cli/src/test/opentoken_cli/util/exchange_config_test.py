@@ -38,6 +38,8 @@ def test_resolve_exchange_config_delegates_to_shared_core_helper() -> None:
         private_key_pem=b"private-key",
         private_key_role="sender",
         hashing_secret=b"hashing-secret",
+        rotation_iv=b"test-rotation-iv",
+        rotation_count=30,
     )
 
     with patch(

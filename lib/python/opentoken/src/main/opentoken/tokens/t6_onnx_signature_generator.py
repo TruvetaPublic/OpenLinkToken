@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import importlib.resources
 import json
 import logging
 import os
@@ -269,18 +270,17 @@ class T6OnnxSignatureGenerator:
             try:
                 with _suppress_ort_stderr():
                     cls._probe_coreml()
-                    logger.info("T6 ONNX: CoreML active (subgraph-only) — Neural Engine / GPU acceleration enabled")
-                except Exception:
-                    logger.warning("T6 ONNX: CoreML probe failed; falling back to CPU.")
-                    cls._reinitialize_with_cpu_only()
+            except Exception:
+                logger.warning("T6 ONNX: CoreML probe failed; falling back to CPU.")
+                cls._reinitialize_with_cpu_only()
             else:
-                logger.info("T6 ONNX: running on CPUExecutionProvider")
+                logger.info("T6 ONNX: CoreML active (subgraph-only) — Neural Engine / GPU acceleration enabled")
+        else:
+            logger.info("T6 ONNX: running on CPUExecutionProvider")
 
-            tokenizer_ref = importlib.resources.files("opentoken.t6") / "tokenizer.json"
-            with importlib.resources.as_file(tokenizer_ref) as tokenizer_path:
-                cls._tokenizer = Tokenizer.from_file(str(tokenizer_path))
-            cls._active_model_path = model_path
-            cls._active_num_threads = num_threads
+        cls._tokenizer = Tokenizer.from_file(str(resolved_tokenizer_path))
+        cls._active_model_path = model_path
+        cls._active_tokenizer_path = tokenizer_path
 
     @classmethod
     def _probe_coreml(cls) -> None:
@@ -328,21 +328,26 @@ class T6OnnxSignatureGenerator:
 
     @classmethod
     def _resolve_path(cls, configured_path: str) -> Path:
-        """Resolve classpath-style paths and regular filesystem paths."""
+        """Resolve classpath-style paths and regular filesystem paths.
+
+        Resolution order:
+        1. Bundled package data via importlib.resources (installed wheel).
+        2. Filesystem walk up from the source file (source checkout / development).
+        """
         if configured_path.startswith("classpath:"):
             resource_path = configured_path[len("classpath:") :]
             filename = Path(resource_path).name
 
-            # Try bundled package data first
+            # Installed wheel: assets are bundled inside opentoken.tokens
             try:
-                ref = importlib.resources.files("opentoken.t6") / filename
+                ref = importlib.resources.files("opentoken.tokens") / filename
                 with importlib.resources.as_file(ref) as p:
                     if p.exists():
                         return p
             except Exception:
                 pass
 
-            # Fall back to filesystem walk (source checkout)
+            # Source checkout: walk up from this file looking for resources/<normalized>
             normalized = resource_path.lstrip("/")
             this_file = Path(__file__).resolve()
             for parent in this_file.parents:
@@ -351,28 +356,9 @@ class T6OnnxSignatureGenerator:
                     return candidate
 
             raise FileNotFoundError(
-                f"T6 model not found. Set the OPENTOKEN_T6_MODEL_PATH environment variable "
-                f"or place the model at: resources/{normalized}"
+                f"T6 resource not found. Configure an explicit path or place the file at: resources/{normalized}"
             )
         return Path(configured_path)
-
-    @classmethod
-    def _resolve_classpath_resource(cls, resource_path: str) -> Path:
-        """Resolve classpath resource to an existing path in the repository."""
-        normalized = resource_path[1:] if resource_path.startswith("/") else resource_path
-        candidates = []
-
-        this_file = Path(__file__).resolve()
-        for parent in this_file.parents:
-            candidates.append(parent / normalized)
-            candidates.append(parent / "resources" / normalized)
-            candidates.append(parent / "lib" / "java" / "opentoken" / "src" / "main" / "resources" / normalized)
-
-        for candidate in candidates:
-            if candidate.exists():
-                return candidate
-
-        raise FileNotFoundError(f"Missing classpath resource: {normalized}")
 
     @staticmethod
     def _serialize_embedding(embedding: np.ndarray) -> str:

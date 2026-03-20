@@ -101,16 +101,19 @@ Example recipient entry:
 
 After decryption, the payload is JSON with these fields:
 
-| Field                     | Type   | Description                                                  |
-| ------------------------- | ------ | ------------------------------------------------------------ |
-| `exchangeName`            | string | Logical exchange name recorded in the payload.               |
-| `hashingSecret`           | string | Hashing secret encoded as unpadded base64url text.           |
-| `hashingSecretEncoding`   | string | Encoding marker. Current value: `base64url`.                 |
-| `senderKeyFingerprint`    | string | SHA-256 fingerprint of the sender public key.                |
-| `recipientKeyFingerprint` | string | SHA-256 fingerprint of the partner public key.               |
-| `curve`                   | string | OpenToken curve name for the exchange keys, such as `P-256`. |
-| `createdAt`               | string | UTC creation timestamp in ISO 8601 `Z` form.                 |
-| `exchangeId`              | string | Random UUID used to identify the exchange artifact.          |
+| Field                     | Type    | Description                                                                             |
+| ------------------------- | ------- | --------------------------------------------------------------------------------------- |
+| `exchangeName`            | string  | Logical exchange name recorded in the payload.                                          |
+| `hashingSecret`           | string  | Hashing secret encoded as unpadded base64url text.                                      |
+| `hashingSecretEncoding`   | string  | Encoding marker. Current value: `base64url`.                                            |
+| `senderKeyFingerprint`    | string  | SHA-256 fingerprint of the sender public key.                                           |
+| `recipientKeyFingerprint` | string  | SHA-256 fingerprint of the partner public key.                                          |
+| `curve`                   | string  | OpenToken curve name for the exchange keys, such as `P-256`.                            |
+| `createdAt`               | string  | UTC creation timestamp in ISO 8601 `Z` form.                                            |
+| `exchangeId`              | string  | Random UUID used to identify the exchange artifact.                                     |
+| `rotationIv`              | string  | Initialization vector for the rotation matrix generator, encoded as unpadded base64url. |
+| `rotationIvEncoding`      | string  | Encoding marker. Current value: `base64url`.                                            |
+| `rotationCount`           | integer | Number of rotation matrices to generate. Default: `30`.                                 |
 
 Example decrypted payload:
 
@@ -123,7 +126,10 @@ Example decrypted payload:
   "recipientKeyFingerprint": "11:22:33:44:55:66",
   "curve": "P-256",
   "createdAt": "2026-03-11T21:00:00Z",
-  "exchangeId": "0f3d5f8a-3f2a-4c2f-b69d-cb1f9d08d4ab"
+  "exchangeId": "0f3d5f8a-3f2a-4c2f-b69d-cb1f9d08d4ab",
+  "rotationIv": "R2VuZXJhdGVkUm90YXRpb25JVkJ5dGVzMDEyMzQ1Njc",
+  "rotationIvEncoding": "base64url",
+  "rotationCount": 30
 }
 ```
 

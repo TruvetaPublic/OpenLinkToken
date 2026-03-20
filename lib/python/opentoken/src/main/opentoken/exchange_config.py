@@ -46,6 +46,8 @@ class ResolvedExchangeConfig:
     private_key_pem: bytes
     private_key_role: str
     hashing_secret: bytes
+    rotation_iv: bytes
+    rotation_count: int
 
 
 def default_exchange_config_path() -> Path:
@@ -175,6 +177,8 @@ def resolve_loaded_exchange_config(
         private_key_pem=private_key_pem,
         private_key_role=_resolve_private_key_role(private_key_pem, payload),
         hashing_secret=_decode_hashing_secret(payload),
+        rotation_iv=_decode_rotation_iv(payload),
+        rotation_count=_decode_rotation_count(payload),
     )
 
 
@@ -304,3 +308,25 @@ def _decode_hashing_secret(payload: Mapping[str, Any]) -> bytes:
         return base64.urlsafe_b64decode(value + padding)
     except Exception as error:
         raise ValueError(f"hashingSecret is not valid base64url data: {error}") from error
+
+
+def _decode_rotation_iv(payload: Mapping[str, Any]) -> bytes:
+    encoding = payload.get("rotationIvEncoding")
+    value = payload.get("rotationIv")
+    if encoding != "base64url":
+        raise ValueError(f"Unsupported rotationIvEncoding '{encoding}'.")
+    if not isinstance(value, str) or not value:
+        raise ValueError("Exchange config payload is missing rotationIv.")
+
+    padding = "=" * (-len(value) % 4)
+    try:
+        return base64.urlsafe_b64decode(value + padding)
+    except Exception as error:
+        raise ValueError(f"rotationIv is not valid base64url data: {error}") from error
+
+
+def _decode_rotation_count(payload: Mapping[str, Any]) -> int:
+    value = payload.get("rotationCount")
+    if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+        raise ValueError(f"Exchange config payload has an invalid rotationCount '{value}'. Must be a positive integer.")
+    return value

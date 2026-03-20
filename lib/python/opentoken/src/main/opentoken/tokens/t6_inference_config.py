@@ -6,8 +6,8 @@ import os
 class T6InferenceConfig:
     """Holds process-wide settings for T6 ONNX inference."""
 
-    DEFAULT_MODEL_PATH = "classpath:/t6/model_int8.onnx"
-    DEFAULT_TOKENIZER_PATH = "classpath:/t6/tokenizer.json"
+    DEFAULT_MODEL_PATH = "classpath:/inferencing/t6/model.onnx"
+    DEFAULT_TOKENIZER_PATH = "classpath:/inferencing/t6/tokenizer.json"
     DEFAULT_MAX_SEQUENCE_LENGTH = 128
     DEFAULT_BATCH_SIZE = 64
     DEFAULT_NUM_THREADS = os.cpu_count() or 1
@@ -36,8 +36,16 @@ class T6InferenceConfig:
             raise ValueError("T6 batch size must be greater than zero.")
 
         cls._enabled = enable_t6
-        cls._model_path = configured_model_path.strip() if configured_model_path and configured_model_path.strip() else cls.DEFAULT_MODEL_PATH
-        cls._tokenizer_path = configured_tokenizer_path.strip() if configured_tokenizer_path and configured_tokenizer_path.strip() else cls.DEFAULT_TOKENIZER_PATH
+        cls._model_path = (
+            configured_model_path.strip()
+            if configured_model_path and configured_model_path.strip()
+            else cls.DEFAULT_MODEL_PATH
+        )
+        cls._tokenizer_path = (
+            configured_tokenizer_path.strip()
+            if configured_tokenizer_path and configured_tokenizer_path.strip()
+            else cls.DEFAULT_TOKENIZER_PATH
+        )
         cls._max_sequence_length = configured_max_sequence_length
         cls._batch_size = configured_batch_size
         cls._num_threads = configured_num_threads if configured_num_threads > 0 else cls.DEFAULT_NUM_THREADS

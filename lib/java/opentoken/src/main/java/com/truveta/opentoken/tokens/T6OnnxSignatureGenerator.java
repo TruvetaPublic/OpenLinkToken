@@ -387,33 +387,47 @@ public final class T6OnnxSignatureGenerator {
 
     private static Path extractClasspathResource(String resourcePath) {
         String normalized = resourcePath.startsWith("/") ? resourcePath.substring(1) : resourcePath;
+
+        // Try bundled classpath first (packaged JARs with embedded resources)
         try (InputStream stream = T6OnnxSignatureGenerator.class.getClassLoader().getResourceAsStream(normalized)) {
-            if (stream == null) {
-                throw new IllegalStateException("Missing classpath resource: " + normalized);
-            }
+            if (stream != null) {
+                Path tempDir = Files.createTempDirectory("t6-assets-");
+                tempDir.toFile().deleteOnExit();
+                Path target = tempDir.resolve(Paths.get(normalized).getFileName().toString());
+                Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING);
+                target.toFile().deleteOnExit();
 
-            Path tempDir = Files.createTempDirectory("t6-assets-");
-            tempDir.toFile().deleteOnExit();
-            Path target = tempDir.resolve(Paths.get(normalized).getFileName().toString());
-            Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING);
-            target.toFile().deleteOnExit();
-
-            if (normalized.endsWith(".onnx")) {
-                String dataResource = normalized + ".data";
-                try (InputStream dataStream = T6OnnxSignatureGenerator.class.getClassLoader()
-                        .getResourceAsStream(dataResource)) {
-                    if (dataStream != null) {
-                        Path dataTarget = tempDir.resolve(Paths.get(dataResource).getFileName().toString());
-                        Files.copy(dataStream, dataTarget, StandardCopyOption.REPLACE_EXISTING);
-                        dataTarget.toFile().deleteOnExit();
+                if (normalized.endsWith(".onnx")) {
+                    String dataResource = normalized + ".data";
+                    try (InputStream dataStream = T6OnnxSignatureGenerator.class.getClassLoader()
+                            .getResourceAsStream(dataResource)) {
+                        if (dataStream != null) {
+                            Path dataTarget = tempDir.resolve(Paths.get(dataResource).getFileName().toString());
+                            Files.copy(dataStream, dataTarget, StandardCopyOption.REPLACE_EXISTING);
+                            dataTarget.toFile().deleteOnExit();
+                        }
                     }
                 }
-            }
 
-            return target;
+                return target;
+            }
         } catch (IOException e) {
             throw new IllegalStateException("Failed to extract classpath resource: " + normalized, e);
         }
+
+        // Filesystem fallback: walk up from the working directory to find resources/<normalized>
+        Path current = Paths.get(System.getProperty("user.dir"));
+        while (current != null) {
+            Path candidate = current.resolve("resources").resolve(normalized);
+            if (Files.exists(candidate)) {
+                return candidate;
+            }
+            current = current.getParent();
+        }
+
+        throw new IllegalStateException(
+                "T6 resource not found on classpath or filesystem. "
+                        + "Configure an explicit path or place the file at: resources/" + normalized);
     }
 
     private static String serializeEmbedding(float[] embedding) {

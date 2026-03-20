@@ -117,6 +117,16 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <resource>
+                <!-- Bundle all T6 inferencing assets from the shared resources directory -->
+                <directory>../../../resources/inferencing/t6</directory>
+                <targetPath>inferencing/t6</targetPath>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

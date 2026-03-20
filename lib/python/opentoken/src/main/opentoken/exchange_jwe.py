@@ -31,6 +31,8 @@ def build_exchange_envelope(
     curve: str,
     created_at: str,
     exchange_id: str,
+    rotation_iv: bytes,
+    rotation_count: int,
 ) -> dict[str, Any]:
     """Build a multi-recipient JWE exchange envelope."""
     payload = {
@@ -44,6 +46,9 @@ def build_exchange_envelope(
         "curve": curve,
         "createdAt": created_at,
         "exchangeId": exchange_id,
+        "rotationIv": _base64url_encode(rotation_iv),
+        "rotationIvEncoding": "base64url",
+        "rotationCount": rotation_count,
     }
     protected_header = {
         "typ": EXCHANGE_JWE_TYPE,
