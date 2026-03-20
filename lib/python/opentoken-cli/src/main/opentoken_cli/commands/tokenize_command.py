@@ -6,6 +6,7 @@ import logging
 from typing import List
 
 from opentoken.metadata import Metadata
+from opentoken.tokens.rotation_config import RotationConfig
 from opentoken.tokens.t6_inference_config import T6InferenceConfig
 from opentoken.tokens.tokenizer.passthrough_tokenizer import PassthroughTokenizer
 from opentoken.tokentransformer.hash_token_transformer import HashTokenTransformer
@@ -189,6 +190,14 @@ class TokenizeCommand:
             help="ORT intra/inter-op thread count for T6 inference (0 = auto-detect, default: 0)",
         )
 
+        parser.add_argument(
+            "--rotation-iv",
+            dest="rotation_iv",
+            default=None,
+            metavar="STRING",
+            help="Initialization vector for rotation-based T6-R* token generation.",
+        )
+
         parser.set_defaults(func=TokenizeCommand.execute)
 
     @staticmethod
@@ -233,6 +242,19 @@ class TokenizeCommand:
             getattr(args, "t6_max_sequence_length", T6InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH),
             getattr(args, "t6_batch_size", T6InferenceConfig.DEFAULT_BATCH_SIZE),
             num_threads if num_threads > 0 else "auto",
+        )
+
+        rotation_iv = getattr(args, "rotation_iv", None)
+        RotationConfig.configure(
+            enable=rotation_iv is not None,
+            rotation_iv=rotation_iv,
+        )
+        logger.info(
+            "Rotation token generation: enabled=%s, iv=%s, count=%s, hashDimension=%s",
+            rotation_iv is not None,
+            rotation_iv,
+            RotationConfig.DEFAULT_ROTATION_COUNT,
+            RotationConfig.DEFAULT_HASH_DIMENSION,
         )
 
         if demo_mode and args.exchange_config:

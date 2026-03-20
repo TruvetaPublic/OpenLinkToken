@@ -17,7 +17,6 @@ from tokenizers import Tokenizer
 
 from opentoken.tokens.t6_inference_config import T6InferenceConfig
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -54,6 +53,7 @@ def _resolve_providers() -> List[str | tuple]:
         ]
     return ["CPUExecutionProvider"]
 
+
 class T6OnnxSignatureGenerator:
     """Stateful ONNX inference helper for T6 signature generation."""
 
@@ -74,13 +74,46 @@ class T6OnnxSignatureGenerator:
     @classmethod
     def generate_signatures(cls, input_json_rows: List[str]) -> List[str]:
         """Generate deterministic T6 signatures for multiple rows using batched ONNX inference."""
+        signatures, _ = cls.generate_signatures_with_raw_embeddings(input_json_rows)
+        return signatures
+
+    @classmethod
+    def generate_raw_embeddings(cls, input_json_rows: List[str]) -> List[np.ndarray]:
+        """Generate raw CLS embedding float arrays for multiple JSON-formatted input rows.
+
+        Performs the same batched ONNX inference as generate_signatures but returns
+        raw np.ndarray vectors instead of hex-encoded strings.
+
+        Args:
+            input_json_rows: list of JSON strings representing person records
+
+        Returns:
+            list of 1-D float32 np.ndarray CLS embedding vectors in the same order
+        """
+        _, raw_embeddings = cls.generate_signatures_with_raw_embeddings(input_json_rows)
+        return raw_embeddings
+
+    @classmethod
+    def generate_signatures_with_raw_embeddings(cls, input_json_rows: List[str]) -> tuple[List[str], List[np.ndarray]]:
+        """Generate T6 hex signatures AND raw CLS embeddings in a single inference pass.
+
+        Use when both T6 token and rotation tokens are needed, to avoid running
+        ONNX inference twice.
+
+        Args:
+            input_json_rows: list of JSON strings representing person records
+
+        Returns:
+            (signatures, raw_embeddings) — parallel lists with same length as input
+        """
         if not input_json_rows:
-            return []
+            return [], []
 
         cls._initialize_if_needed()
 
         configured_batch_size = T6InferenceConfig.get_batch_size()
         signatures: List[str] = []
+        raw_embeddings: List[np.ndarray] = []
         total_inference_ms = 0.0
 
         for start in range(0, len(input_json_rows), configured_batch_size):
@@ -95,6 +128,7 @@ class T6OnnxSignatureGenerator:
 
             for index in range(len(real_batch)):
                 signatures.append(cls._serialize_embedding(embeddings[index]))
+                raw_embeddings.append(embeddings[index])
 
             if logger.isEnabledFor(logging.INFO):
                 logger.info(
@@ -113,14 +147,16 @@ class T6OnnxSignatureGenerator:
                 total_inference_ms / len(input_json_rows),
             )
 
-        return signatures
+        return signatures, raw_embeddings
 
     @classmethod
     def _run_batch_inference(cls, input_json_rows: List[str]) -> tuple[np.ndarray, float]:
         """Run ONNX inference for one fixed-size batch and return embeddings with elapsed ms."""
         import time
 
-        input_ids_batch, attention_mask_batch, token_type_ids_batch, position_ids_batch = cls._build_inputs(input_json_rows)
+        input_ids_batch, attention_mask_batch, token_type_ids_batch, position_ids_batch = cls._build_inputs(
+            input_json_rows
+        )
         inputs = {
             "input_ids": input_ids_batch,
             "attention_mask": attention_mask_batch,
@@ -233,15 +269,18 @@ class T6OnnxSignatureGenerator:
             try:
                 with _suppress_ort_stderr():
                     cls._probe_coreml()
-                logger.info("T6 ONNX: CoreML active (subgraph-only) — Neural Engine / GPU acceleration enabled")
-            except Exception as e:
-                logger.warning("T6 ONNX: CoreML probe failed; falling back to CPU.")
-                cls._reinitialize_with_cpu_only()
-        else:
-            logger.info("T6 ONNX: running on CPUExecutionProvider")
-        cls._tokenizer = Tokenizer.from_file(str(resolved_tokenizer_path))
-        cls._active_model_path = model_path
-        cls._active_tokenizer_path = tokenizer_path
+                    logger.info("T6 ONNX: CoreML active (subgraph-only) — Neural Engine / GPU acceleration enabled")
+                except Exception:
+                    logger.warning("T6 ONNX: CoreML probe failed; falling back to CPU.")
+                    cls._reinitialize_with_cpu_only()
+            else:
+                logger.info("T6 ONNX: running on CPUExecutionProvider")
+
+            tokenizer_ref = importlib.resources.files("opentoken.t6") / "tokenizer.json"
+            with importlib.resources.as_file(tokenizer_ref) as tokenizer_path:
+                cls._tokenizer = Tokenizer.from_file(str(tokenizer_path))
+            cls._active_model_path = model_path
+            cls._active_num_threads = num_threads
 
     @classmethod
     def _probe_coreml(cls) -> None:
@@ -291,7 +330,30 @@ class T6OnnxSignatureGenerator:
     def _resolve_path(cls, configured_path: str) -> Path:
         """Resolve classpath-style paths and regular filesystem paths."""
         if configured_path.startswith("classpath:"):
-            return cls._resolve_classpath_resource(configured_path[len("classpath:"):])
+            resource_path = configured_path[len("classpath:") :]
+            filename = Path(resource_path).name
+
+            # Try bundled package data first
+            try:
+                ref = importlib.resources.files("opentoken.t6") / filename
+                with importlib.resources.as_file(ref) as p:
+                    if p.exists():
+                        return p
+            except Exception:
+                pass
+
+            # Fall back to filesystem walk (source checkout)
+            normalized = resource_path.lstrip("/")
+            this_file = Path(__file__).resolve()
+            for parent in this_file.parents:
+                candidate = parent / "resources" / normalized
+                if candidate.exists():
+                    return candidate
+
+            raise FileNotFoundError(
+                f"T6 model not found. Set the OPENTOKEN_T6_MODEL_PATH environment variable "
+                f"or place the model at: resources/{normalized}"
+            )
         return Path(configured_path)
 
     @classmethod
@@ -315,7 +377,9 @@ class T6OnnxSignatureGenerator:
     @staticmethod
     def _serialize_embedding(embedding: np.ndarray) -> str:
         """Serialize embedding as big-endian float32 bytes encoded to lowercase hex."""
-        return b"".join(struct.pack(">I", struct.unpack(">I", struct.pack(">f", float(value)))[0]) for value in embedding).hex()
+        return b"".join(
+            struct.pack(">I", struct.unpack(">I", struct.pack(">f", float(value)))[0]) for value in embedding
+        ).hex()
 
 
 def t6_payload_to_json(payload: Dict[str, str]) -> str:

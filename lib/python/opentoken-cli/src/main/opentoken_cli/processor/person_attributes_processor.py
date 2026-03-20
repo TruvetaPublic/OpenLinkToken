@@ -11,14 +11,16 @@ from typing import Any, Dict, List, Set, Type
 
 from opentoken.attributes.attribute import Attribute
 from opentoken.attributes.general.record_id_attribute import RecordIdAttribute
+from opentoken.tokens.rotation_config import RotationConfig
+from opentoken.tokens.t6_inference_config import T6InferenceConfig
+from opentoken.tokens.t6_onnx_signature_generator import T6OnnxSignatureGenerator
 from opentoken.tokens.token_definition import TokenDefinition
 from opentoken.tokens.token_generator import TokenGenerator
 from opentoken.tokens.token_generator_result import TokenGeneratorResult
-from opentoken.tokens.t6_inference_config import T6InferenceConfig
-from opentoken.tokens.t6_onnx_signature_generator import T6OnnxSignatureGenerator
 from opentoken.tokens.tokenizer.sha256_tokenizer import SHA256Tokenizer
 from opentoken.tokens.tokenizer.tokenizer import Tokenizer
 from opentoken.tokentransformer.jwe_match_token_formatter import JweMatchTokenFormatter
+from opentoken.tokentransformer.rotation import RotationEmbeddingTransformer
 from opentoken.tokentransformer.token_transformer import TokenTransformer
 from opentoken_cli.io.person_attributes_reader import PersonAttributesReader
 from opentoken_cli.io.person_attributes_writer import PersonAttributesWriter
@@ -305,13 +307,35 @@ class PersonAttributesProcessor:
     ) -> int:
         """Process rows with either batched or standard token generation based on T6 configuration."""
         if T6InferenceConfig.is_enabled():
+            # Build rotation transformer once if rotation is enabled; dimension detected on first batch
+            rotation_transformer: RotationEmbeddingTransformer | None = None
             return PersonAttributesProcessor._process_rows_with_batched_t6(
-                reader, writer, token_generator, invalid_attribute_count,
-                blank_tokens_by_rule_count, encryption_key, ring_id, jwe_formatters, hash_record_ids,
+                reader,
+                writer,
+                token_generator,
+                invalid_attribute_count,
+                blank_tokens_by_rule_count,
+                encryption_key,
+                ring_id,
+                jwe_formatters,
+                hash_record_ids,
+                rotation_transformer,
+            )
+        if RotationConfig.is_enabled():
+            logger.warning(
+                "Rotation token generation (T6-R*) requires T6 to be enabled. "
+                "Rotation tokens will be skipped because T6 is disabled."
             )
         return PersonAttributesProcessor._process_rows_without_batched_t6(
-            reader, writer, token_generator, invalid_attribute_count,
-            blank_tokens_by_rule_count, encryption_key, ring_id, jwe_formatters, hash_record_ids,
+            reader,
+            writer,
+            token_generator,
+            invalid_attribute_count,
+            blank_tokens_by_rule_count,
+            encryption_key,
+            ring_id,
+            jwe_formatters,
+            hash_record_ids,
         )
 
     @staticmethod
@@ -333,14 +357,24 @@ class PersonAttributesProcessor:
             token_generator_result = token_generator.get_all_tokens(row)
             logger.debug(f"Tokens: {token_generator_result.tokens}")
             PersonAttributesProcessor._keep_track_of_invalid_attributes(
-                token_generator_result, row_counter, invalid_attribute_count,
+                token_generator_result,
+                row_counter,
+                invalid_attribute_count,
             )
             PersonAttributesProcessor._keep_track_of_blank_tokens(
-                token_generator_result, row_counter, blank_tokens_by_rule_count,
+                token_generator_result,
+                row_counter,
+                blank_tokens_by_rule_count,
             )
             PersonAttributesProcessor._write_tokens(
-                writer, row, row_counter, token_generator_result,
-                encryption_key, ring_id, jwe_formatters, hash_record_ids,
+                writer,
+                row,
+                row_counter,
+                token_generator_result,
+                encryption_key,
+                ring_id,
+                jwe_formatters,
+                hash_record_ids,
             )
             if row_counter % 10000 == 0:
                 logger.info(f"Processed {row_counter:,} records")
@@ -357,6 +391,7 @@ class PersonAttributesProcessor:
         ring_id: str,
         jwe_formatters: Dict[str, JweMatchTokenFormatter],
         hash_record_ids: bool = False,
+        rotation_transformer: RotationEmbeddingTransformer | None = None,
     ) -> int:
         """Process rows using batched T6 ONNX inference while retaining streaming output behavior."""
         row_counter = 0
@@ -377,10 +412,17 @@ class PersonAttributesProcessor:
             )
 
             if len(pending_rows) >= t6_batch_size:
-                PersonAttributesProcessor._flush_pending_rows(
-                    writer, token_generator, invalid_attribute_count,
-                    blank_tokens_by_rule_count, encryption_key, ring_id,
-                    jwe_formatters, pending_rows, hash_record_ids,
+                rotation_transformer = PersonAttributesProcessor._flush_pending_rows(
+                    writer,
+                    token_generator,
+                    invalid_attribute_count,
+                    blank_tokens_by_rule_count,
+                    encryption_key,
+                    ring_id,
+                    jwe_formatters,
+                    pending_rows,
+                    hash_record_ids,
+                    rotation_transformer,
                 )
 
             if row_counter % 10000 == 0:
@@ -388,9 +430,16 @@ class PersonAttributesProcessor:
 
         if pending_rows:
             PersonAttributesProcessor._flush_pending_rows(
-                writer, token_generator, invalid_attribute_count,
-                blank_tokens_by_rule_count, encryption_key, ring_id,
-                jwe_formatters, pending_rows, hash_record_ids,
+                writer,
+                token_generator,
+                invalid_attribute_count,
+                blank_tokens_by_rule_count,
+                encryption_key,
+                ring_id,
+                jwe_formatters,
+                pending_rows,
+                hash_record_ids,
+                rotation_transformer,
             )
 
         return row_counter
@@ -406,36 +455,80 @@ class PersonAttributesProcessor:
         jwe_formatters: Dict[str, JweMatchTokenFormatter],
         pending_rows: List[_PendingRow],
         hash_record_ids: bool = False,
-    ) -> None:
-        """Run batched T6 inference for queued rows and emit final tokens."""
+        rotation_transformer: RotationEmbeddingTransformer | None = None,
+    ) -> RotationEmbeddingTransformer | None:
+        """Run batched T6 inference for queued rows, apply rotation tokens if enabled, and emit final tokens.
+
+        Returns the (potentially newly constructed) rotation_transformer so it can be reused
+        across flush calls with a stable, dimension-aware instance.
+        """
         t6_payloads = [pr.t6_payload for pr in pending_rows if pr.t6_payload is not None]
         t6_signatures: List[str] = []
-        if t6_payloads:
+        raw_embeddings: List | None = None
+
+        if t6_payloads and RotationConfig.is_enabled():
+            t6_signatures, raw_embeddings = T6OnnxSignatureGenerator.generate_signatures_with_raw_embeddings(
+                t6_payloads
+            )
+            # Detect embedding dimension from first result and build transformer if not yet available
+            if raw_embeddings and rotation_transformer is None:
+                embedding_dim = len(raw_embeddings[0])
+                rotation_transformer = RotationEmbeddingTransformer(
+                    iv=RotationConfig.get_rotation_iv(),
+                    rotation_count=RotationConfig.get_rotation_count(),
+                    dimension=embedding_dim,
+                    hash_dimension=RotationConfig.get_hash_dimension(),
+                    bin_width=RotationConfig.get_bin_width(),
+                    min_val=RotationConfig.get_min_val(),
+                    max_val=RotationConfig.get_max_val(),
+                )
+        elif t6_payloads:
             t6_signatures = T6OnnxSignatureGenerator.generate_signatures(t6_payloads)
 
         signature_index = 0
+        embedding_index = 0
         for pending_row in pending_rows:
             t6_signature = None
+            raw_embedding = None
             if pending_row.t6_payload is not None and signature_index < len(t6_signatures):
                 t6_signature = t6_signatures[signature_index]
                 signature_index += 1
+                if raw_embeddings is not None and embedding_index < len(raw_embeddings):
+                    raw_embedding = raw_embeddings[embedding_index]
+                    embedding_index += 1
 
             token_generator.apply_t6_signature_token(pending_row.token_generator_result, t6_signature)
+
+            if rotation_transformer is not None and raw_embedding is not None:
+                token_generator.apply_t6_rotation_tokens(
+                    pending_row.token_generator_result, raw_embedding, rotation_transformer
+                )
+
             logger.debug(f"Tokens: {pending_row.token_generator_result.tokens}")
 
             PersonAttributesProcessor._keep_track_of_invalid_attributes(
-                pending_row.token_generator_result, pending_row.row_counter, invalid_attribute_count,
+                pending_row.token_generator_result,
+                pending_row.row_counter,
+                invalid_attribute_count,
             )
             PersonAttributesProcessor._keep_track_of_blank_tokens(
-                pending_row.token_generator_result, pending_row.row_counter, blank_tokens_by_rule_count,
+                pending_row.token_generator_result,
+                pending_row.row_counter,
+                blank_tokens_by_rule_count,
             )
             PersonAttributesProcessor._write_tokens(
-                writer, pending_row.row, pending_row.row_counter,
-                pending_row.token_generator_result, encryption_key, ring_id,
-                jwe_formatters, hash_record_ids,
+                writer,
+                pending_row.row,
+                pending_row.row_counter,
+                pending_row.token_generator_result,
+                encryption_key,
+                ring_id,
+                jwe_formatters,
+                hash_record_ids,
             )
 
         pending_rows.clear()
+        return rotation_transformer
 
     @staticmethod
     def _keep_track_of_invalid_attributes(

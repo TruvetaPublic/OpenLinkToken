@@ -4,7 +4,7 @@ Copyright (c) Truveta. All rights reserved.
 
 import logging
 from collections import OrderedDict
-from typing import Dict, List, Optional, Set, Type
+from typing import TYPE_CHECKING, Dict, List, Optional, Set, Type
 
 from opentoken.attributes.attribute import Attribute
 from opentoken.attributes.attribute_loader import AttributeLoader
@@ -22,6 +22,11 @@ from opentoken.tokens.token_generator_result import TokenGeneratorResult
 from opentoken.tokens.tokenizer.sha256_tokenizer import SHA256Tokenizer
 from opentoken.tokens.tokenizer.tokenizer import Tokenizer
 from opentoken.tokentransformer.token_transformer import TokenTransformer
+
+if TYPE_CHECKING:
+    import numpy as np
+
+    from opentoken.tokentransformer.rotation.embedding_transformer import EmbeddingTransformer
 
 logger = logging.getLogger(__name__)
 
@@ -297,6 +302,29 @@ class TokenGenerator:
             logger.error("Error generating token for token id: T6", exc_info=error)
             result.tokens[self.T6_RULE_ID] = Token.BLANK
             result.blank_tokens_by_rule.add(self.T6_RULE_ID)
+
+    def apply_t6_rotation_tokens(
+        self,
+        result: TokenGeneratorResult,
+        embedding: "np.ndarray",
+        transformer: "EmbeddingTransformer",
+    ) -> None:
+        """Apply T6 rotation tokens to the result from a precomputed raw embedding.
+
+        Generates tokens named "T6-R0", "T6-R1", ..., "T6-R{N-1}" (one per rotation
+        matrix) and stores them in result.tokens.
+
+        Args:
+            result: Token generator result to populate.
+            embedding: Raw CLS embedding float array (1-D).
+            transformer: Rotation embedding transformer.
+        """
+        try:
+            tokens = transformer.transform(embedding.tolist())
+            for i, token in enumerate(tokens):
+                result.tokens[f"T6-R{i}"] = token
+        except Exception as error:
+            logger.error("Error generating T6 rotation tokens", exc_info=error)
 
     def get_invalid_person_attributes(self, person_attributes: Dict[Type[Attribute], str]) -> Set[str]:
         """

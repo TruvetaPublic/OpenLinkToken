@@ -20,6 +20,7 @@ import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.truveta.opentoken.attributes.Attribute;
 import com.truveta.opentoken.attributes.AttributeExpression;
 import com.truveta.opentoken.attributes.AttributeLoader;
@@ -32,6 +33,7 @@ import com.truveta.opentoken.tokens.tokenizer.SHA256Tokenizer;
 import com.truveta.opentoken.tokens.tokenizer.Tokenizer;
 import com.truveta.opentoken.tokens.tokenizer.PassthroughTokenizer;
 import com.truveta.opentoken.tokentransformer.TokenTransformer;
+import com.truveta.opentoken.tokentransformer.rotation.EmbeddingTransformer;
 
 /**
  * Generates both the token signature and the token itself.
@@ -42,6 +44,7 @@ public class TokenGenerator implements Serializable {
     private static final long serialVersionUID = 1L;
     private static final transient Logger logger = LoggerFactory.getLogger(TokenGenerator.class);
     private static final String T6_RULE_ID = "T6";
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private Tokenizer tokenizer;
     private BaseTokenDefinition tokenDefinition;
@@ -50,7 +53,7 @@ public class TokenGenerator implements Serializable {
 
     /**
      * Initializes the token generator.
-     * 
+     *
      * @param tokenDefinition      the token definition.
      * @param tokenTransformerList a list of token transformers.
      * @deprecated Use {@link #TokenGenerator(BaseTokenDefinition, Tokenizer)} instead.
@@ -81,12 +84,12 @@ public class TokenGenerator implements Serializable {
      * invalid.
      *
      * @param tokenId the token identifier.
-     * 
+     *
      * @param personAttributes The person attributes. It is a map of the person
      * attributes.
-     * 
+     *
      * @param result the token generator result.
-     * 
+     *
      * @return the token signature using the token definition for the given token
      * identifier.
      */
@@ -191,6 +194,26 @@ public class TokenGenerator implements Serializable {
         return result;
     }
 
+    /**
+     * Apply T6 rotation tokens to the result using a precomputed raw embedding.
+     *
+     * <p>Generates tokens named {@code "T6-R0"}, {@code "T6-R1"}, …,
+     * {@code "T6-R{N-1}"} (one per rotation matrix configured in
+     * {@code transformer}).  Rotation tokens always produce output, so they are
+     * not tracked in {@link TokenGeneratorResult#getBlankTokensByRule()}.
+     *
+     * @param result      the token generator result to populate
+     * @param embedding   raw CLS embedding float vector
+     * @param transformer the rotation embedding transformer
+     */
+    public void applyT6RotationTokens(TokenGeneratorResult result, float[] embedding,
+            EmbeddingTransformer transformer) {
+        List<String> tokens = transformer.transform(embedding);
+        for (int i = 0; i < tokens.size(); i++) {
+            result.getTokens().put("T6-R" + i, tokens.get(i));
+        }
+    }
+
     public void applyT6SignatureToken(TokenGeneratorResult result, String signature) {
         try {
             String token = tokenizer.tokenize(signature);
@@ -234,30 +257,19 @@ public class TokenGenerator implements Serializable {
     }
 
     private String asJson(Map<String, String> values) {
-        StringBuilder builder = new StringBuilder("{");
-        boolean first = true;
-        for (Map.Entry<String, String> entry : values.entrySet()) {
-            if (!first) {
-                builder.append(", ");
-            }
-            builder.append("\"").append(escapeJson(entry.getKey())).append("\": ");
-            builder.append("\"").append(escapeJson(entry.getValue())).append("\"");
-            first = false;
+        try {
+            return OBJECT_MAPPER.writeValueAsString(values);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to serialize T6 payload to JSON", e);
         }
-        builder.append("}");
-        return builder.toString();
-    }
-
-    private String escapeJson(String value) {
-        return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     /**
      * Get the token signatures for all token/rule identifiers. This is mostly a
      * debug/logging/test method.
-     * 
+     *
      * @param personAttributes the person attributes map.
-     * 
+     *
      * @return A map of token/rule identifier to the token signature.
      */
     public Map<String, String> getAllTokenSignatures(Map<Class<? extends Attribute>, String> personAttributes) {
@@ -279,13 +291,13 @@ public class TokenGenerator implements Serializable {
      * Get token for a given token identifier.
      *
      * @param tokenId the token identifier.
-     * 
+     *
      * @param personAttributes the person attributes map.
-     * 
+     *
      * @param result the token generator result.
-     * 
+     *
      * @return the token using the token definition for the given token identifier.
-     * 
+     *
      * @throws TokenGenerationException in case of failure to generate the token.
      */
     protected String getToken(String tokenId, Map<Class<? extends Attribute>, String> personAttributes,
@@ -308,9 +320,9 @@ public class TokenGenerator implements Serializable {
 
     /**
      * Get the tokens for all token/rule identifiers.
-     * 
+     *
      * @param personAttributes the person attributes map.
-     * 
+     *
      * @return A {@link TokenGeneratorResult} object containing the tokens and
      *         invalid attributes.
      */
@@ -333,9 +345,9 @@ public class TokenGenerator implements Serializable {
 
     /**
      * Get invalid person attribute names.
-     * 
+     *
      * @param personAttributes the person attributes map.
-     * 
+     *
      * @return A set of invalid person attribute names.
      */
     public Set<String> getInvalidPersonAttributes(Map<Class<? extends Attribute>, String> personAttributes) {
