@@ -175,16 +175,16 @@ class TokenizeCommand:
         )
 
         parser.add_argument(
-            "--t6-batch-size",
-            dest="t6_batch_size",
+            "--inferencing-batch-size",
+            dest="inferencing_batch_size",
             type=int,
             default=T6InferenceConfig.DEFAULT_BATCH_SIZE,
             help="T6 ONNX inference batch size (default: 64)",
         )
 
         parser.add_argument(
-            "--t6-num-threads",
-            dest="t6_num_threads",
+            "--inferencing-num-threads",
+            dest="inferencing_num_threads",
             type=int,
             default=0,
             help="ORT intra/inter-op thread count for T6 inference (0 = auto-detect, default: 0)",
@@ -230,17 +230,17 @@ class TokenizeCommand:
             configured_max_sequence_length=getattr(
                 args, "t6_max_sequence_length", T6InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH
             ),
-            configured_batch_size=getattr(args, "t6_batch_size", T6InferenceConfig.DEFAULT_BATCH_SIZE),
-            configured_num_threads=getattr(args, "t6_num_threads", 0),
+            configured_batch_size=getattr(args, "inferencing_batch_size", T6InferenceConfig.DEFAULT_BATCH_SIZE),
+            configured_num_threads=getattr(args, "inferencing_num_threads", 0),
         )
-        num_threads = getattr(args, "t6_num_threads", 0)
+        num_threads = getattr(args, "inferencing_num_threads", 0)
         logger.info(
             "T6 ONNX inference: enabled=%s, modelPath=%s, tokenizerPath=%s, maxSequenceLength=%s, batchSize=%s, numThreads=%s",
             t6_enabled,
             getattr(args, "t6_model_path", T6InferenceConfig.DEFAULT_MODEL_PATH),
             getattr(args, "t6_tokenizer_path", T6InferenceConfig.DEFAULT_TOKENIZER_PATH),
             getattr(args, "t6_max_sequence_length", T6InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH),
-            getattr(args, "t6_batch_size", T6InferenceConfig.DEFAULT_BATCH_SIZE),
+            getattr(args, "inferencing_batch_size", T6InferenceConfig.DEFAULT_BATCH_SIZE),
             num_threads if num_threads > 0 else "auto",
         )
 
