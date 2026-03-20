@@ -259,11 +259,12 @@ class T6OnnxSignatureGenerator:
                 )
         except Exception as e:
             logger.warning("T6 ONNX: provider init failed (%s), retrying with CPUExecutionProvider only", e)
-            cls._session = ort.InferenceSession(
-                str(resolved_model_path),
-                sess_options=session_options,
-                providers=["CPUExecutionProvider"],
-            )
+            with _suppress_ort_stderr():
+                cls._session = ort.InferenceSession(
+                    str(resolved_model_path),
+                    sess_options=session_options,
+                    providers=["CPUExecutionProvider"],
+                )
         active = cls._session.get_providers()
         if "CoreMLExecutionProvider" in active:
             # Probe with a minimal input to detect runtime failures early
@@ -319,11 +320,12 @@ class T6OnnxSignatureGenerator:
         num_threads = T6InferenceConfig.get_num_threads()
         session_options.intra_op_num_threads = num_threads
         session_options.inter_op_num_threads = num_threads
-        cls._session = ort.InferenceSession(
-            str(resolved_model_path),
-            sess_options=session_options,
-            providers=["CPUExecutionProvider"],
-        )
+        with _suppress_ort_stderr():
+            cls._session = ort.InferenceSession(
+                str(resolved_model_path),
+                sess_options=session_options,
+                providers=["CPUExecutionProvider"],
+            )
         logger.info("T6 ONNX: reinitialized with CPUExecutionProvider")
 
     @classmethod
