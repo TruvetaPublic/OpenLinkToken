@@ -7,7 +7,6 @@ import hmac
 import math
 from typing import List
 
-
 # 2^53 used to convert 53-bit integers to uniform doubles.
 _MANTISSA_BITS = 1 << 53
 _MANTISSA_SCALE = 1.0 / _MANTISSA_BITS
@@ -42,6 +41,25 @@ def generate(iv: str, rotation_count: int, dimension: int) -> List[List[List[flo
 
 
 def _generate_one(key_material: bytes, rotation_index: int, n: int) -> List[List[float]]:
+    """Generate a single NxN orthogonal proper-rotation matrix.
+
+    Fills the matrix column-by-column using paired Box-Muller samples drawn
+    from an HMAC-SHA256 counter-mode PRNG, then orthonormalizes the columns
+    via Modified Gram-Schmidt, and finally flips the last column sign if
+    needed to guarantee det(Q) = +1.
+
+    Args:
+        key_material: 32-byte SHA-256 digest of the IV; used as the HMAC key.
+        rotation_index: Zero-based index of this matrix within the batch.
+            Incorporated into the HMAC counter so each matrix draws from a
+            distinct, non-overlapping region of the PRNG stream.
+        n: Matrix dimension; produces an NxN matrix.
+
+    Returns:
+        An NxN row-major list-of-lists ``q`` where ``q[row][col]`` is the
+        element at (row, col).  The matrix satisfies Q @ Q^T = I and
+        det(Q) = +1.
+    """
     pairs_per_col = (n + 1) // 2
 
     # Build row-major raw matrix: raw[row][col] filled column-by-column via Box-Muller.
@@ -84,13 +102,30 @@ def _generate_one(key_material: bytes, rotation_index: int, n: int) -> List[List
 
 
 def _extract_uniform(h: bytes, offset: int) -> float:
-    """Extract 53 bits from 8 bytes of HMAC output and scale to [0, 1)."""
+    """Extract 53 bits from 8 bytes of HMAC output and scale to [0, 1).
+
+    Args:
+        h: HMAC-SHA256 digest bytes (at least ``offset + 8`` bytes long).
+        offset: Byte offset within ``h`` to start reading from.
+
+    Returns:
+        A float in the range [0, 1) derived from the 53 most-significant bits
+        of the 64-bit big-endian integer at ``h[offset:offset+8]``.
+    """
     value = int.from_bytes(h[offset : offset + 8], "big")
     return ((value >> 11) & (_MANTISSA_BITS - 1)) * _MANTISSA_SCALE
 
 
 def _compute_det_sign(q: List[List[float]], n: int) -> int:
-    """Return +1 or -1: the sign of det(Q) via Gaussian elimination with partial pivoting."""
+    """Return the sign of det(Q) via Gaussian elimination with partial pivoting.
+
+    Args:
+        q: NxN row-major matrix as a list-of-lists.
+        n: Matrix dimension.
+
+    Returns:
+        ``+1`` if det(Q) > 0, ``-1`` if det(Q) < 0.
+    """
     a = [row[:] for row in q]
     sign = 1
     for col in range(n):
