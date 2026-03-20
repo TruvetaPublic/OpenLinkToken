@@ -145,9 +145,9 @@ class TokenizeCommand:
         )
 
         parser.add_argument(
-            "--disable-t6",
+            "--disable-inferencing",
             action="store_true",
-            dest="disable_t6",
+            dest="disable_inferencing",
             help="Disable T6 ONNX inference token generation",
         )
 
@@ -222,7 +222,7 @@ class TokenizeCommand:
         if hash_record_ids:
             logger.info("Record ID hashing enabled: RecordIds will be SHA-256 hashed in output")
 
-        t6_enabled = not getattr(args, "disable_t6", False)
+        t6_enabled = not getattr(args, "disable_inferencing", False)
         T6InferenceConfig.configure(
             enable_t6=t6_enabled,
             configured_model_path=getattr(args, "t6_model_path", T6InferenceConfig.DEFAULT_MODEL_PATH),
