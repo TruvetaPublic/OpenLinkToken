@@ -5,9 +5,10 @@ Copyright (c) Truveta. All rights reserved.
 import logging
 from typing import List
 
-from opentoken.metadata import Metadata
 from opentoken_core_ai.tokens.rotation_config import RotationConfig
 from opentoken_core_ai.tokens.t6_inference_config import T6InferenceConfig
+
+from opentoken.metadata import Metadata
 from opentoken.tokens.tokenizer.passthrough_tokenizer import PassthroughTokenizer
 from opentoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 from opentoken.tokentransformer.token_transformer import TokenTransformer
@@ -235,7 +236,8 @@ class TokenizeCommand:
         )
         num_threads = getattr(args, "inferencing_num_threads", 0)
         logger.info(
-            "T6 ONNX inference: enabled=%s, modelPath=%s, tokenizerPath=%s, maxSequenceLength=%s, batchSize=%s, numThreads=%s",
+            "T6 ONNX inference: enabled=%s, modelPath=%s, tokenizerPath=%s, "
+            "maxSequenceLength=%s, batchSize=%s, numThreads=%s",
             t6_enabled,
             getattr(args, "t6_model_path", T6InferenceConfig.DEFAULT_MODEL_PATH),
             getattr(args, "t6_tokenizer_path", T6InferenceConfig.DEFAULT_TOKENIZER_PATH),
@@ -245,14 +247,15 @@ class TokenizeCommand:
         )
 
         rotation_iv = getattr(args, "rotation_iv", None)
-        RotationConfig.configure(
-            enable=rotation_iv is not None,
-            rotation_iv=rotation_iv,
-        )
+        # Rotation is on by default (RotationConfig.DEFAULT_IV is used when no explicit IV
+        # is provided).  Only call configure() when an explicit IV was supplied so that the
+        # custom IV is honoured; otherwise the module-level defaults are already correct.
+        if rotation_iv is not None:
+            RotationConfig.configure(enable=True, rotation_iv=rotation_iv)
         logger.info(
             "Rotation token generation: enabled=%s, iv=%s, count=%s, hashDimension=%s",
-            rotation_iv is not None,
-            rotation_iv,
+            RotationConfig.is_enabled(),
+            RotationConfig.get_rotation_iv(),
             RotationConfig.DEFAULT_ROTATION_COUNT,
             RotationConfig.DEFAULT_HASH_DIMENSION,
         )

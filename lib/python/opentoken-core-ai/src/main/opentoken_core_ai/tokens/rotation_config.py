@@ -6,18 +6,24 @@ from typing import ClassVar, Optional
 class RotationConfig:
     """Static configuration for rotation-based T6 embedding token generation.
 
-    Call RotationConfig.configure(...) from the CLI entry point before processing.
+    Rotation is active by default when the AI module is installed; ``DEFAULT_IV``
+    is used automatically so no explicit call to ``configure()`` is required for
+    the common case.
+
+    Call RotationConfig.configure(...) from the CLI entry point to override
+    settings or to explicitly disable rotation.
     Call RotationConfig.is_enabled() to check whether rotation is active.
     """
 
+    DEFAULT_IV: ClassVar[str] = "opentoken-t6-v1"
     DEFAULT_ROTATION_COUNT: ClassVar[int] = 30
     DEFAULT_HASH_DIMENSION: ClassVar[int] = 32
     DEFAULT_BIN_WIDTH: ClassVar[float] = 0.05
     DEFAULT_MIN_VAL: ClassVar[float] = -5.0
     DEFAULT_MAX_VAL: ClassVar[float] = 5.0
 
-    _enabled: ClassVar[bool] = False
-    _rotation_iv: ClassVar[Optional[str]] = None
+    _enabled: ClassVar[bool] = True
+    _rotation_iv: ClassVar[Optional[str]] = DEFAULT_IV
     _rotation_count: ClassVar[int] = DEFAULT_ROTATION_COUNT
     _hash_dimension: ClassVar[int] = DEFAULT_HASH_DIMENSION
     _bin_width: ClassVar[float] = DEFAULT_BIN_WIDTH
@@ -39,7 +45,9 @@ class RotationConfig:
 
         Args:
             enable: Whether rotation token generation is active.
-            rotation_iv: Initialization vector for matrix generation (required when enable=True).
+            rotation_iv: Initialization vector for matrix generation.
+                         When ``enable=True`` and no IV is supplied, ``DEFAULT_IV``
+                         is used automatically.
             rotation_count: Number of rotation matrices to generate (must be > 0).
             hash_dimension: Projected dimensions to keep and quantize (must be > 0).
             bin_width: Quantizer bin width (must be > 0).
@@ -47,7 +55,7 @@ class RotationConfig:
             max_val: Quantizer upper bound.
         """
         if enable and not rotation_iv:
-            raise ValueError("rotation_iv is required when rotation is enabled.")
+            rotation_iv = cls.DEFAULT_IV
         if rotation_count <= 0:
             raise ValueError("rotation_count must be greater than zero.")
         if hash_dimension <= 0:
@@ -65,7 +73,7 @@ class RotationConfig:
     @classmethod
     def is_enabled(cls) -> bool:
         """Return whether rotation token generation is enabled."""
-        return cls._enabled and cls._rotation_iv is not None
+        return cls._enabled
 
     @classmethod
     def get_rotation_iv(cls) -> Optional[str]:

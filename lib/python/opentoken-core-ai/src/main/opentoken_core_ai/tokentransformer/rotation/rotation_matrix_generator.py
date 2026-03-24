@@ -5,7 +5,9 @@ Copyright (c) Truveta. All rights reserved.
 import hashlib
 import hmac
 import math
-from typing import List
+from typing import List, Optional
+
+import numpy as np
 
 # 2^53 used to convert 53-bit integers to uniform doubles.
 _MANTISSA_BITS = 1 << 53
@@ -15,89 +17,126 @@ _MIN_UNIFORM = _MANTISSA_SCALE
 _TWO_PI = 2.0 * math.pi
 
 
-def generate(iv: str, rotation_count: int, dimension: int) -> List[List[List[float]]]:
+def generate(
+    iv: str,
+    rotation_count: int,
+    dimension: int,
+    hash_dimension: Optional[int] = None,
+) -> List[np.ndarray]:
     """Generate a list of deterministic orthogonal rotation matrices from an IV.
 
     The matrices are derived from the IV using HMAC-SHA256 in counter mode for
     pseudo-random number generation, Box-Muller transform for standard normal
     values, and Modified Gram-Schmidt for orthonormalization. The algorithm is
     fully specified in terms of standard operations and produces bit-exact
-    results across Python and Java implementations.
+    results across Python and Java implementations when ``hash_dimension`` is
+    not provided or equals ``dimension``.
+
+    When ``hash_dimension < dimension``, a fast k×N path is used: only the
+    first ``hash_dimension`` rows of each raw column are generated, and
+    row-based Modified Gram-Schmidt orthonormalizes these k N-dimensional row
+    vectors.  This reduces PRNG calls from O(N²) to O(k·N) and Gram-Schmidt
+    from O(N³) to O(k²·N), making large embedding dimensions (e.g. 1024)
+    practical.  The resulting k×N projection matrices satisfy Q @ Q^T = I_k
+    (orthonormal rows) and may be used directly as projection matrices.
 
     Args:
         iv: Initialization vector string. Same IV always produces the same matrices.
         rotation_count: Number of rotation matrices to generate.
-        dimension: Number of rows and columns in each matrix (NxN).
+        dimension: Number of columns in each matrix (= size of the input embedding).
+        hash_dimension: Number of rows in each output matrix.  When ``None``
+            (default) the full ``dimension × dimension`` algorithm is used.
+            Pass ``hash_dimension < dimension`` to use the fast k-row path.
 
     Returns:
-        A list of ``rotation_count`` matrices, each represented as a
-        ``dimension x dimension`` list-of-lists in row-major order, i.e.
-        ``result[r][row][col]`` is the element at (row, col) of matrix r.
-        Each matrix Q is an orthogonal proper-rotation matrix (Q @ Q^T = I,
-        det(Q) = +1).
+        A list of ``rotation_count`` matrices, each a numpy float64 array of
+        shape ``(hash_dimension, dimension)`` (fast path) or
+        ``(dimension, dimension)`` (full path).  Rows of each matrix are
+        orthonormal in R^N.
     """
     key_material = hashlib.sha256(iv.encode("utf-8")).digest()
-    return [_generate_one(key_material, r, dimension) for r in range(rotation_count)]
+    k = hash_dimension if hash_dimension is not None and hash_dimension < dimension else dimension
+    return [_generate_one(key_material, r, dimension, k) for r in range(rotation_count)]
 
 
-def _generate_one(key_material: bytes, rotation_index: int, n: int) -> List[List[float]]:
-    """Generate a single NxN orthogonal proper-rotation matrix.
+def _generate_one(key_material: bytes, rotation_index: int, n: int, k: int) -> np.ndarray:
+    """Generate a single k×N orthogonal projection matrix.
 
-    Fills the matrix column-by-column using paired Box-Muller samples drawn
-    from an HMAC-SHA256 counter-mode PRNG, then orthonormalizes the columns
-    via Modified Gram-Schmidt, and finally flips the last column sign if
-    needed to guarantee det(Q) = +1.
+    When k == n: produces a full NxN proper-rotation matrix (det = +1).
+    When k < n: produces a k×N matrix with orthonormal rows (Q @ Q^T = I_k)
+    using only the first k rows of each raw random column vector.
+
+    The PRNG counter for element (row r, column j) uses the same counter as
+    the full N×N algorithm:  ``counter = (rotation_index * n + j) * pairs_per_col + r//2``
+    where ``pairs_per_col = (n + 1) // 2``.
 
     Args:
-        key_material: 32-byte SHA-256 digest of the IV; used as the HMAC key.
-        rotation_index: Zero-based index of this matrix within the batch.
-            Incorporated into the HMAC counter so each matrix draws from a
-            distinct, non-overlapping region of the PRNG stream.
-        n: Matrix dimension; produces an NxN matrix.
+        key_material: 32-byte SHA-256 digest of the IV.
+        rotation_index: Zero-based matrix index.
+        n: Embedding (input) dimension — number of columns.
+        k: Output (hash) dimension — number of rows to produce.
 
     Returns:
-        An NxN row-major list-of-lists ``q`` where ``q[row][col]`` is the
-        element at (row, col).  The matrix satisfies Q @ Q^T = I and
-        det(Q) = +1.
+        A k×N numpy float64 array with orthonormal rows (Q @ Q^T ≈ I_k).
     """
-    pairs_per_col = (n + 1) // 2
+    pairs_per_col = (n + 1) // 2  # full counter stride (for PRNG parity with Java)
+    pairs_needed = (k + 1) // 2  # only need first k rows
 
-    # Build row-major raw matrix: raw[row][col] filled column-by-column via Box-Muller.
-    raw = [[0.0] * n for _ in range(n)]
+    # Build the k×N raw matrix.
+    # raw[r, j] = the r-th element of the j-th raw random column vector.
+    # Uses the SAME counter as the full N×N algorithm (matches Java).
+    raw = np.empty((k, n), dtype=np.float64)
     for col in range(n):
         offset = 0
-        for pair in range(pairs_per_col):
+        for pair in range(pairs_needed):
             counter = (rotation_index * n + col) * pairs_per_col + pair
             h = hmac.new(key_material, counter.to_bytes(8, "big"), hashlib.sha256).digest()
             u1 = max(_extract_uniform(h, 0), _MIN_UNIFORM)
             u2 = _extract_uniform(h, 8)
             r_val = math.sqrt(-2.0 * math.log(u1))
             theta = _TWO_PI * u2
-            z0 = r_val * math.cos(theta)
-            z1 = r_val * math.sin(theta)
-            raw[offset][col] = z0
+            raw[offset, col] = r_val * math.cos(theta)
             offset += 1
-            if offset < n:
-                raw[offset][col] = z1
+            if offset < k:
+                raw[offset, col] = r_val * math.sin(theta)
                 offset += 1
 
-    # Modified Gram-Schmidt orthonormalization on columns.
-    # q[row][col] accumulates orthonormal column vectors.
-    q = [[0.0] * n for _ in range(n)]
+    if k == n:
+        # Full N×N path: column-based MGS then fix det sign.
+        return _column_mgs(raw, n)
+    else:
+        # Fast k×N path: row-based MGS gives orthonormal rows.
+        return _row_mgs(raw, k, n)
+
+
+def _column_mgs(raw_cols: np.ndarray, n: int) -> np.ndarray:
+    """Full N×N Modified Gram-Schmidt on columns, with det=+1 fix."""
+    q = np.empty((n, n), dtype=np.float64)
     for j in range(n):
-        v = [raw[row][j] for row in range(n)]
-        for k in range(j):
-            proj = sum(v[row] * q[row][k] for row in range(n))
-            v = [v[row] - proj * q[row][k] for row in range(n)]
-        norm = math.sqrt(sum(x * x for x in v))
-        for row in range(n):
-            q[row][j] = v[row] / norm
+        v = raw_cols[:, j].copy()
+        if j > 0:
+            proj = np.einsum("ij,i->j", q[:, :j], v)
+            v -= np.einsum("ij,j->i", q[:, :j], proj)
+        q[:, j] = v / np.linalg.norm(v)
+    if np.sign(np.linalg.det(q)) < 0:
+        q[:, n - 1] = -q[:, n - 1]
+    return q
 
-    # Ensure det(Q) = +1 (proper rotation, no reflection).
-    if _compute_det_sign(q, n) < 0:
-        for row in range(n):
-            q[row][n - 1] = -q[row][n - 1]
 
+def _row_mgs(raw: np.ndarray, k: int, n: int) -> np.ndarray:
+    """Row-based Modified Gram-Schmidt: orthonormalize k N-dimensional row vectors.
+
+    The input ``raw`` (k×N) has the raw random values; output ``q`` (k×N) has
+    orthonormal rows satisfying q @ q^T ≈ I_k.
+    """
+    q = np.empty((k, n), dtype=np.float64)
+    for i in range(k):
+        v = raw[i, :].copy()  # N-dimensional row vector
+        if i > 0:
+            # Project v (length N) onto each previous row (length N)
+            proj = q[:i, :] @ v  # shape (i,) — dot products in R^N
+            v -= q[:i, :].T @ proj  # subtract aggregate projection
+        q[i, :] = v / np.linalg.norm(v)
     return q
 
 
@@ -114,33 +153,3 @@ def _extract_uniform(h: bytes, offset: int) -> float:
     """
     value = int.from_bytes(h[offset : offset + 8], "big")
     return ((value >> 11) & (_MANTISSA_BITS - 1)) * _MANTISSA_SCALE
-
-
-def _compute_det_sign(q: List[List[float]], n: int) -> int:
-    """Return the sign of det(Q) via Gaussian elimination with partial pivoting.
-
-    Args:
-        q: NxN row-major matrix as a list-of-lists.
-        n: Matrix dimension.
-
-    Returns:
-        ``+1`` if det(Q) > 0, ``-1`` if det(Q) < 0.
-    """
-    a = [row[:] for row in q]
-    sign = 1
-    for col in range(n):
-        max_row = col
-        for row in range(col + 1, n):
-            if abs(a[row][col]) > abs(a[max_row][col]):
-                max_row = row
-        if max_row != col:
-            a[col], a[max_row] = a[max_row], a[col]
-            sign = -sign
-        for row in range(col + 1, n):
-            factor = a[row][col] / a[col][col]
-            for j in range(col, n):
-                a[row][j] -= factor * a[col][j]
-    for i in range(n):
-        if a[i][i] < 0:
-            sign = -sign
-    return sign

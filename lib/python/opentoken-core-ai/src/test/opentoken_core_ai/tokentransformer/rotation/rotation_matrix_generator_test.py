@@ -4,6 +4,7 @@ Copyright (c) Truveta. All rights reserved.
 
 import threading
 
+import numpy as np
 from opentoken_core_ai.tokentransformer.rotation.rotation_matrix_generator import generate
 
 _IV = "test-rotation-iv-2024"
@@ -46,19 +47,17 @@ class TestRotationMatrixGenerator:
         matrices_a = generate(_IV, _COUNT, _DIMENSION)
         matrices_b = generate(_IV, _COUNT, _DIMENSION)
         for ma, mb in zip(matrices_a, matrices_b):
-            for row_a, row_b in zip(ma, mb):
-                for va, vb in zip(row_a, row_b):
-                    assert va == vb
+            assert np.array_equal(ma, mb)
 
     def test_different_ivs_produce_different_matrices(self):
         matrices_a = generate(_IV, 1, _DIMENSION)
         matrices_b = generate(_ALT_IV, 1, _DIMENSION)
-        assert matrices_a[0] != matrices_b[0]
+        assert not np.array_equal(matrices_a[0], matrices_b[0])
 
     def test_rotation_indices_differ(self):
         matrices = generate(_IV, 3, _DIMENSION)
-        assert matrices[0] != matrices[1]
-        assert matrices[1] != matrices[2]
+        assert not np.array_equal(matrices[0], matrices[1])
+        assert not np.array_equal(matrices[1], matrices[2])
 
     def test_single_matrix(self):
         matrices = generate(_IV, 1, _DIMENSION)
@@ -109,12 +108,12 @@ class TestRotationMatrixGenerator:
         assert not errors, f"Thread errors: {errors}"
         reference = results[0]
         for r in results[1:]:
-            assert r == reference
+            assert np.array_equal(r, reference)
 
 
 def _det(matrix, n):
     """Compute determinant via Gaussian elimination for test validation."""
-    a = [row[:] for row in matrix]
+    a = [list(row) for row in matrix]
     sign = 1
     for col in range(n):
         max_row = col

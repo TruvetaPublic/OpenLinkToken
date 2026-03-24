@@ -72,4 +72,9 @@ class RotationEmbeddingTransformer:
         if self._matrices is None:
             with self._lock:
                 if self._matrices is None:
-                    self._matrices = generate(self._iv, self._rotation_count, self._dimension)
+                    self._matrices = generate(
+                        self._iv,
+                        self._rotation_count,
+                        self._dimension,
+                        hash_dimension=self._hash_dimension,
+                    )

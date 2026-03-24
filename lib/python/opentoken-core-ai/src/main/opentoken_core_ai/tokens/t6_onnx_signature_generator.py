@@ -73,6 +73,14 @@ class T6OnnxSignatureGenerator:
         return signatures[0]
 
     @classmethod
+    def generate_signature_with_raw_embedding(cls, input_json: str) -> tuple[str, np.ndarray]:
+        """Generate a deterministic T6 signature and raw embedding for one input JSON row."""
+        signatures, embeddings = cls.generate_signatures_with_raw_embeddings([input_json])
+        if not signatures:
+            raise RuntimeError("Failed to generate ONNX-based T6 signature.")
+        return signatures[0], embeddings[0]
+
+    @classmethod
     def generate_signatures(cls, input_json_rows: List[str]) -> List[str]:
         """Generate deterministic T6 signatures for multiple rows using batched ONNX inference."""
         signatures, _ = cls.generate_signatures_with_raw_embeddings(input_json_rows)
@@ -337,7 +345,7 @@ class T6OnnxSignatureGenerator:
         2. Filesystem walk up from the source file (source checkout / development).
         """
         if configured_path.startswith("classpath:"):
-            resource_path = configured_path[len("classpath:"):]
+            resource_path = configured_path[len("classpath:") :]
             filename = Path(resource_path).name
 
             # Installed package: assets are bundled inside opentoken_core_ai.tokens
