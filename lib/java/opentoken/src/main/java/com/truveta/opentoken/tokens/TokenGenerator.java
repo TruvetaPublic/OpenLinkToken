@@ -24,9 +24,9 @@ import org.slf4j.LoggerFactory;
 import com.truveta.opentoken.attributes.Attribute;
 import com.truveta.opentoken.attributes.AttributeExpression;
 import com.truveta.opentoken.attributes.AttributeLoader;
+import com.truveta.opentoken.tokens.tokenizer.PassthroughTokenizer;
 import com.truveta.opentoken.tokens.tokenizer.SHA256Tokenizer;
 import com.truveta.opentoken.tokens.tokenizer.Tokenizer;
-import com.truveta.opentoken.tokens.tokenizer.PassthroughTokenizer;
 import com.truveta.opentoken.tokentransformer.TokenTransformer;
 
 /**
@@ -242,6 +242,18 @@ public class TokenGenerator implements Serializable {
             throws TokenGenerationException {
         var signature = getTokenSignature(tokenId, personAttributes, result);
         logger.debug("Token signature for token id {}: {}", tokenId, signature);
+
+        // Tokens from the inference provider (e.g. T6) are already in their final form
+        // (pre-hashed); bypass the tokenizer to avoid double-transformation.
+        Optional<InferenceSignatureProvider> provider = findProvider();
+        if (provider.isPresent() && provider.get().getTokenId().equals(tokenId) && provider.get().isEnabled()) {
+            if (signature == null || Token.BLANK.equals(signature)) {
+                result.getBlankTokensByRule().add(tokenId);
+                return Token.BLANK;
+            }
+            return signature;
+        }
+
         try {
             String token = tokenizer.tokenize(signature);
             // Track blank tokens by rule
@@ -252,6 +264,24 @@ public class TokenGenerator implements Serializable {
         } catch (Exception e) {
             logger.error("Error generating token for token id: " + tokenId, e);
             throw new TokenGenerationException("Error generating token", e);
+        }
+    }
+
+    /**
+     * Store a pre-computed token value directly, bypassing the tokenizer and all
+     * transformers. Use for tokens whose value is already in its final form (e.g.,
+     * internally pre-hashed signatures such as T6 rotation values).
+     *
+     * @param result     the token generator result to update
+     * @param tokenId    the token identifier key to store the result under
+     * @param tokenValue the final token value, or {@code null}/blank to record blank
+     */
+    public void storeRawToken(TokenGeneratorResult result, String tokenId, String tokenValue) {
+        if (tokenValue != null && !Token.BLANK.equals(tokenValue)) {
+            result.getTokens().put(tokenId, tokenValue);
+        } else {
+            result.getTokens().put(tokenId, Token.BLANK);
+            result.getBlankTokensByRule().add(tokenId);
         }
     }
 
