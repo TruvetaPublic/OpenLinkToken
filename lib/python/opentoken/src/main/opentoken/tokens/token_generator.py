@@ -13,8 +13,10 @@ from opentoken.tokens.inference_signature_provider import InferenceBatchResult, 
 from opentoken.tokens.token import Token
 from opentoken.tokens.token_generation_exception import TokenGenerationException
 from opentoken.tokens.token_generator_result import TokenGeneratorResult
+from opentoken.tokens.tokenizer.passthrough_tokenizer import PassthroughTokenizer
 from opentoken.tokens.tokenizer.sha256_tokenizer import SHA256Tokenizer
 from opentoken.tokens.tokenizer.tokenizer import Tokenizer
+from opentoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 from opentoken.tokentransformer.token_transformer import TokenTransformer
 
 logger = logging.getLogger(__name__)
@@ -264,19 +266,27 @@ class TokenGenerator:
             result.blank_tokens_by_rule.add(token_id)
 
     def store_raw_token(self, result: TokenGeneratorResult, token_id: str, token_value: Optional[str]) -> None:
-        """Store a pre-computed token value directly, bypassing the tokenizer and all transformers.
+        """Store a pre-hashed token value, applying only non-hash transformers (e.g. encryption).
 
-        Use for tokens whose value is already in its final form (e.g., internally
-        pre-hashed signatures such as T6 rotation values).
+        Use for tokens that are already hashed (e.g. T6 HMAC rotation values).
+        HashTokenTransformer is skipped to avoid re-hashing; all other transformers
+        (e.g. EncryptTokenTransformer) are still applied via PassthroughTokenizer.
 
         Args:
             result: The token generator result to update.
             token_id: The token identifier key to store the result under.
-            token_value: The final token value, or ``None`` / blank to record a blank token.
+            token_value: The pre-hashed token value, or ``None`` / blank to record a blank token.
         """
-        if token_value and token_value != Token.BLANK:
-            result.tokens[token_id] = token_value
-        else:
+        all_transformers = getattr(self.tokenizer, "token_transformer_list", [])
+        encrypt_transformers = [t for t in all_transformers if not isinstance(t, HashTokenTransformer)]
+        passthrough = PassthroughTokenizer(encrypt_transformers)
+        try:
+            token = passthrough.tokenize(token_value)
+            result.tokens[token_id] = token
+            if Token.BLANK == token:
+                result.blank_tokens_by_rule.add(token_id)
+        except Exception as error:
+            logger.error("Error storing raw token for token id: %s", token_id, exc_info=error)
             result.tokens[token_id] = Token.BLANK
             result.blank_tokens_by_rule.add(token_id)
 

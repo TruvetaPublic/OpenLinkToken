@@ -27,6 +27,7 @@ import com.truveta.opentoken.attributes.AttributeLoader;
 import com.truveta.opentoken.tokens.tokenizer.PassthroughTokenizer;
 import com.truveta.opentoken.tokens.tokenizer.SHA256Tokenizer;
 import com.truveta.opentoken.tokens.tokenizer.Tokenizer;
+import com.truveta.opentoken.tokentransformer.HashTokenTransformer;
 import com.truveta.opentoken.tokentransformer.TokenTransformer;
 
 /**
@@ -243,15 +244,20 @@ public class TokenGenerator implements Serializable {
         var signature = getTokenSignature(tokenId, personAttributes, result);
         logger.debug("Token signature for token id {}: {}", tokenId, signature);
 
-        // Tokens from the inference provider (e.g. T6) are already in their final form
-        // (pre-hashed); bypass the tokenizer to avoid double-transformation.
+        // Tokens from inference providers (e.g. T6) are pre-hashed; skip SHA-256 re-hashing
+        // but still apply any remaining transformers (e.g. encryption) via PassthroughTokenizer.
         Optional<InferenceSignatureProvider> provider = findProvider();
         if (provider.isPresent() && provider.get().getTokenId().equals(tokenId) && provider.get().isEnabled()) {
             if (signature == null || Token.BLANK.equals(signature)) {
                 result.getBlankTokensByRule().add(tokenId);
                 return Token.BLANK;
             }
-            return signature;
+            try {
+                return new PassthroughTokenizer(encryptOnlyTransformers()).tokenize(signature);
+            } catch (Exception e) {
+                logger.error("Error applying transformers to inference token for token id: " + tokenId, e);
+                throw new TokenGenerationException("Error applying transformers to inference token", e);
+            }
         }
 
         try {
@@ -268,21 +274,43 @@ public class TokenGenerator implements Serializable {
     }
 
     /**
-     * Store a pre-computed token value directly, bypassing the tokenizer and all
-     * transformers. Use for tokens whose value is already in its final form (e.g.,
-     * internally pre-hashed signatures such as T6 rotation values).
+     * Store a pre-hashed token value, applying only non-hash transformers (e.g. encryption).
+     *
+     * <p>Use for tokens that are already hashed (e.g. T6 HMAC rotation values).
+     * {@link HashTokenTransformer} is skipped to avoid re-hashing; all other
+     * transformers (e.g. {@code EncryptTokenTransformer}) are still applied via
+     * {@link PassthroughTokenizer}.
      *
      * @param result     the token generator result to update
      * @param tokenId    the token identifier key to store the result under
-     * @param tokenValue the final token value, or {@code null}/blank to record blank
+     * @param tokenValue the pre-hashed token value, or {@code null}/blank to record blank
      */
     public void storeRawToken(TokenGeneratorResult result, String tokenId, String tokenValue) {
-        if (tokenValue != null && !Token.BLANK.equals(tokenValue)) {
-            result.getTokens().put(tokenId, tokenValue);
-        } else {
+        if (tokenValue == null || Token.BLANK.equals(tokenValue)) {
+            result.getTokens().put(tokenId, Token.BLANK);
+            result.getBlankTokensByRule().add(tokenId);
+            return;
+        }
+        try {
+            String token = new PassthroughTokenizer(encryptOnlyTransformers()).tokenize(tokenValue);
+            result.getTokens().put(tokenId, token);
+            if (Token.BLANK.equals(token)) {
+                result.getBlankTokensByRule().add(tokenId);
+            }
+        } catch (Exception e) {
+            logger.error("Error storing raw token for token id: " + tokenId, e);
             result.getTokens().put(tokenId, Token.BLANK);
             result.getBlankTokensByRule().add(tokenId);
         }
+    }
+
+    private List<TokenTransformer> encryptOnlyTransformers() {
+        if (tokenizer instanceof SHA256Tokenizer sha256) {
+            return sha256.getTokenTransformerList().stream()
+                    .filter(t -> !(t instanceof HashTokenTransformer))
+                    .toList();
+        }
+        return List.of();
     }
 
     /**

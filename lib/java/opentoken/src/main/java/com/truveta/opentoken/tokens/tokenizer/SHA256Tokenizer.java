@@ -5,6 +5,7 @@ package com.truveta.opentoken.tokens.tokenizer;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.codec.binary.Hex;
@@ -80,5 +81,14 @@ public final class SHA256Tokenizer implements Tokenizer {
         }
 
         return transformedToken;
+    }
+
+    /**
+     * Returns the transformer list used after SHA-256 hashing.
+     *
+     * @return unmodifiable view of the transformer list
+     */
+    public List<TokenTransformer> getTokenTransformerList() {
+        return Collections.unmodifiableList(tokenTransformerList);
     }
 }
