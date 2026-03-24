@@ -28,8 +28,11 @@ public final class RotationConfig {
     /** Default quantizer upper bound. */
     public static final double DEFAULT_MAX_VAL = 5.0;
 
-    private static volatile boolean enabled = false;
-    private static volatile String rotationIv = null;
+    /** Default initialization vector used when rotation is enabled without an explicit IV. */
+    public static final String DEFAULT_IV = "opentoken-t6-v1";
+
+    private static volatile boolean enabled = true;
+    private static volatile String rotationIv = DEFAULT_IV;
     private static volatile int rotationCount = DEFAULT_ROTATION_COUNT;
     private static volatile int hashDimension = DEFAULT_HASH_DIMENSION;
     private static volatile double binWidth = DEFAULT_BIN_WIDTH;
@@ -42,13 +45,21 @@ public final class RotationConfig {
     /**
      * Apply rotation configuration using default quantizer parameters.
      *
+     * <p>When {@code enable} is {@code true} and {@code iv} is {@code null} or blank,
+     * the IV falls back to {@link #DEFAULT_IV}.
+     *
      * @param enable whether rotation tokens are active
      * @param iv     initialization vector used to seed rotation matrices;
-     *               may be {@code null} when {@code enable} is {@code false}
+     *               may be {@code null} or blank when {@code enable} is {@code false},
+     *               or to accept the default IV when {@code enable} is {@code true}
      */
     public static synchronized void configure(boolean enable, String iv) {
         enabled = enable;
-        rotationIv = iv;
+        if (enable && (iv == null || iv.isBlank())) {
+            rotationIv = DEFAULT_IV;
+        } else {
+            rotationIv = iv;
+        }
         rotationCount = DEFAULT_ROTATION_COUNT;
         hashDimension = DEFAULT_HASH_DIMENSION;
         binWidth = DEFAULT_BIN_WIDTH;
@@ -59,9 +70,12 @@ public final class RotationConfig {
     /**
      * Apply rotation configuration with full parameter control.
      *
+     * <p>When {@code enable} is {@code true} and {@code iv} is {@code null} or blank,
+     * the IV falls back to {@link #DEFAULT_IV}.
+     *
      * @param enable               whether rotation tokens are active
-     * @param iv                   initialization vector; may be {@code null} when
-     *                             {@code enable} is {@code false}
+     * @param iv                   initialization vector; may be {@code null} or blank when
+     *                             {@code enable} is {@code false}, or to accept the default IV
      * @param configuredRotationCount number of rotation matrices; must be &gt; 0
      * @param configuredHashDimension number of projected dimensions; must be &gt; 0
      * @param configuredBinWidth   quantizer bin width; must be &gt; 0
@@ -88,7 +102,11 @@ public final class RotationConfig {
         }
 
         enabled = enable;
-        rotationIv = iv;
+        if (enable && (iv == null || iv.isBlank())) {
+            rotationIv = DEFAULT_IV;
+        } else {
+            rotationIv = iv;
+        }
         rotationCount = configuredRotationCount;
         hashDimension = configuredHashDimension;
         binWidth = configuredBinWidth;
@@ -99,13 +117,10 @@ public final class RotationConfig {
     /**
      * Return whether rotation token generation is active.
      *
-     * <p>Returns {@code true} only when {@code enabled} is {@code true} <em>and</em>
-     * a non-{@code null} IV has been configured.
-     *
      * @return {@code true} if rotation tokens should be generated
      */
     public static boolean isEnabled() {
-        return enabled && rotationIv != null;
+        return enabled;
     }
 
     /**

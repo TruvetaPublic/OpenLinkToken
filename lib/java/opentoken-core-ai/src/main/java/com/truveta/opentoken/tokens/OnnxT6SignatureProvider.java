@@ -11,6 +11,7 @@ import com.truveta.opentoken.attributes.person.FirstNameAttribute;
 import com.truveta.opentoken.attributes.person.LastNameAttribute;
 import com.truveta.opentoken.attributes.person.PostalCodeAttribute;
 import com.truveta.opentoken.attributes.person.SexAttribute;
+import com.truveta.opentoken.tokentransformer.rotation.RotationEmbeddingTransformer;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -31,6 +32,12 @@ public class OnnxT6SignatureProvider implements InferenceSignatureProvider {
 
     private static final String TOKEN_ID = "T6";
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    /**
+     * Lazily initialized, cached rotation embedding transformer.
+     * Volatile for double-checked locking.
+     */
+    private static volatile RotationEmbeddingTransformer rotationTransformer;
 
     private final Map<Class<? extends Attribute>, Attribute> attributeInstanceMap;
 
@@ -60,6 +67,12 @@ public class OnnxT6SignatureProvider implements InferenceSignatureProvider {
             return null;
         }
         try {
+            if (RotationConfig.isEnabled()) {
+                List<float[]> rawEmbeddings = T6OnnxSignatureGenerator.generateRawEmbeddings(List.of(payload));
+                float[] embedding = rawEmbeddings.get(0);
+                List<String> rotationValues = getOrCreateTransformer(embedding.length).transform(embedding);
+                return String.join(",", rotationValues);
+            }
             return T6OnnxSignatureGenerator.generateSignature(payload);
         } catch (Exception e) {
             log.error("Error generating T6 signature", e);
@@ -106,13 +119,48 @@ public class OnnxT6SignatureProvider implements InferenceSignatureProvider {
             signatures.add(null);
             embeddings.add(null);
         }
-        for (int vi = 0; vi < validIndices.size(); vi++) {
-            int originalIndex = validIndices.get(vi);
-            signatures.set(originalIndex, batchResult.signatures().get(vi));
-            embeddings.set(originalIndex, batchResult.rawEmbeddings().get(vi));
+
+        if (RotationConfig.isEnabled()) {
+            for (int vi = 0; vi < validIndices.size(); vi++) {
+                int originalIndex = validIndices.get(vi);
+                float[] embedding = batchResult.rawEmbeddings().get(vi);
+                List<String> rotationValues = getOrCreateTransformer(embedding.length).transform(embedding);
+                signatures.set(originalIndex, String.join(",", rotationValues));
+                embeddings.set(originalIndex, embedding);
+            }
+        } else {
+            for (int vi = 0; vi < validIndices.size(); vi++) {
+                int originalIndex = validIndices.get(vi);
+                signatures.set(originalIndex, batchResult.signatures().get(vi));
+                embeddings.set(originalIndex, batchResult.rawEmbeddings().get(vi));
+            }
         }
 
         return new InferenceBatchResult(signatures, embeddings);
+    }
+
+    /**
+     * Returns the cached {@link RotationEmbeddingTransformer}, creating it on first call.
+     *
+     * <p>Uses double-checked locking so that the expensive matrix generation only runs once,
+     * even under concurrent access.
+     *
+     * @param embeddingDim dimension of the raw CLS embedding from ONNX
+     * @return cached transformer configured from {@link RotationConfig}
+     */
+    private static RotationEmbeddingTransformer getOrCreateTransformer(int embeddingDim) {
+        if (rotationTransformer == null) {
+            synchronized (OnnxT6SignatureProvider.class) {
+                if (rotationTransformer == null) {
+                    rotationTransformer = RotationEmbeddingTransformer.withDefaults(
+                            RotationConfig.getRotationIv(),
+                            RotationConfig.getRotationCount(),
+                            embeddingDim,
+                            RotationConfig.getHashDimension());
+                }
+            }
+        }
+        return rotationTransformer;
     }
 
     /**
