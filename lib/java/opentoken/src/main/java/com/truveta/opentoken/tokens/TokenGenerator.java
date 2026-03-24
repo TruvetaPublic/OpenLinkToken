@@ -7,9 +7,10 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -20,20 +21,13 @@ import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.truveta.opentoken.attributes.Attribute;
 import com.truveta.opentoken.attributes.AttributeExpression;
 import com.truveta.opentoken.attributes.AttributeLoader;
-import com.truveta.opentoken.attributes.person.BirthDateAttribute;
-import com.truveta.opentoken.attributes.person.FirstNameAttribute;
-import com.truveta.opentoken.attributes.person.LastNameAttribute;
-import com.truveta.opentoken.attributes.person.PostalCodeAttribute;
-import com.truveta.opentoken.attributes.person.SexAttribute;
 import com.truveta.opentoken.tokens.tokenizer.SHA256Tokenizer;
 import com.truveta.opentoken.tokens.tokenizer.Tokenizer;
 import com.truveta.opentoken.tokens.tokenizer.PassthroughTokenizer;
 import com.truveta.opentoken.tokentransformer.TokenTransformer;
-import com.truveta.opentoken.tokentransformer.rotation.EmbeddingTransformer;
 
 /**
  * Generates both the token signature and the token itself.
@@ -43,13 +37,15 @@ import com.truveta.opentoken.tokentransformer.rotation.EmbeddingTransformer;
 public class TokenGenerator implements Serializable {
     private static final long serialVersionUID = 1L;
     private static final transient Logger logger = LoggerFactory.getLogger(TokenGenerator.class);
-    private static final String T6_RULE_ID = "T6";
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private Tokenizer tokenizer;
     private BaseTokenDefinition tokenDefinition;
 
     private Map<Class<? extends Attribute>, Attribute> attributeInstanceMap;
+
+    private static Optional<InferenceSignatureProvider> findProvider() {
+        return ServiceLoader.load(InferenceSignatureProvider.class).findFirst();
+    }
 
     /**
      * Initializes the token generator.
@@ -95,8 +91,14 @@ public class TokenGenerator implements Serializable {
      */
     protected String getTokenSignature(String tokenId, Map<Class<? extends Attribute>, String> personAttributes,
             TokenGeneratorResult result) {
-        if (T6_RULE_ID.equals(tokenId)) {
-            return getT6Signature(personAttributes, result);
+        Optional<InferenceSignatureProvider> provider = findProvider();
+        if (provider.isPresent() && provider.get().getTokenId().equals(tokenId) && provider.get().isEnabled()) {
+            try {
+                return provider.get().generateSignature(personAttributes);
+            } catch (Exception e) {
+                logger.error("Error generating token signature for token id: {}", tokenId, e);
+                return null;
+            }
         }
 
         var definition = tokenDefinition.getTokenDefinition(tokenId);
@@ -137,48 +139,13 @@ public class TokenGenerator implements Serializable {
                 .collect(Collectors.joining("|"));
     }
 
-    private String getT6Signature(Map<Class<? extends Attribute>, String> personAttributes,
-            TokenGeneratorResult result) {
-        if (!T6InferenceConfig.isEnabled()) {
-            return null;
-        }
-
-        String payloadJson = buildT6Payload(personAttributes, result);
-        if (payloadJson == null) {
-            return null;
-        }
-
-        try {
-            return T6OnnxSignatureGenerator.generateSignature(payloadJson);
-        } catch (Exception e) {
-            logger.error("Error generating token signature for token id: {}", T6_RULE_ID, e);
-            return null;
-        }
-    }
-
-    public String buildT6Payload(Map<Class<? extends Attribute>, String> personAttributes,
-            TokenGeneratorResult result) {
-        if (personAttributes == null) {
-            return null;
-        }
-
-        Map<String, String> payload = new LinkedHashMap<>();
-        if (!addT6Field(PostalCodeAttribute.class, "PostalCode", personAttributes, result, payload)
-                || !addT6Field(BirthDateAttribute.class, "Birthdate", personAttributes, result, payload)
-                || !addT6Field(FirstNameAttribute.class, "GivenName", personAttributes, result, payload)
-                || !addT6Field(LastNameAttribute.class, "Surname", personAttributes, result, payload)
-                || !addT6Field(SexAttribute.class, "Gender", personAttributes, result, payload)) {
-            return null;
-        }
-
-        return asJson(payload);
-    }
-
-    public TokenGeneratorResult getAllTokensExcludingT6(Map<Class<? extends Attribute>, String> personAttributes) {
+    public TokenGeneratorResult generateTokensExcluding(
+            Map<Class<? extends Attribute>, String> personAttributes,
+            Set<String> excludedTokenIds) {
         TokenGeneratorResult result = new TokenGeneratorResult();
 
         for (String tokenId : tokenDefinition.getTokenIdentifiers()) {
-            if (T6_RULE_ID.equals(tokenId)) {
+            if (excludedTokenIds.contains(tokenId)) {
                 continue;
             }
             try {
@@ -195,72 +162,42 @@ public class TokenGenerator implements Serializable {
     }
 
     /**
-     * Apply T6 rotation tokens to the result using a precomputed raw embedding.
+     * Apply pre-computed embedding-derived tokens to the result.
      *
-     * <p>Generates tokens named {@code "T6-R0"}, {@code "T6-R1"}, …,
-     * {@code "T6-R{N-1}"} (one per rotation matrix configured in
-     * {@code transformer}).  Rotation tokens always produce output, so they are
-     * not tracked in {@link TokenGeneratorResult#getBlankTokensByRule()}.
+     * <p>Stores each token string under the key {@code tokenIdPrefix + i}, e.g.
+     * {@code "T6-R0"}, {@code "T6-R1"}, …
      *
-     * @param result      the token generator result to populate
-     * @param embedding   raw CLS embedding float vector
-     * @param transformer the rotation embedding transformer
+     * @param result         the result to update
+     * @param tokenIdPrefix  prefix for the derived token keys
+     * @param tokenStrings   pre-computed token strings from the embedding transformer
      */
-    public void applyT6RotationTokens(TokenGeneratorResult result, float[] embedding,
-            EmbeddingTransformer transformer) {
-        List<String> tokens = transformer.transform(embedding);
-        for (int i = 0; i < tokens.size(); i++) {
-            result.getTokens().put("T6-R" + i, tokens.get(i));
+    public void applyEmbeddingDerivedTokens(
+            TokenGeneratorResult result,
+            String tokenIdPrefix,
+            List<String> tokenStrings) {
+        for (int i = 0; i < tokenStrings.size(); i++) {
+            result.getTokens().put(tokenIdPrefix + i, tokenStrings.get(i));
         }
     }
 
-    public void applyT6SignatureToken(TokenGeneratorResult result, String signature) {
+    /**
+     * Apply a pre-computed inference signature as a token in the result.
+     *
+     * @param result    the token generator result to update
+     * @param tokenId   the token identifier (e.g. {@code "T6"})
+     * @param signature the pre-computed hex-encoded signature string
+     */
+    public void applyPrecomputedSignature(TokenGeneratorResult result, String tokenId, String signature) {
         try {
             String token = tokenizer.tokenize(signature);
-            result.getTokens().put(T6_RULE_ID, token);
+            result.getTokens().put(tokenId, token);
             if (Token.BLANK.equals(token)) {
-                result.getBlankTokensByRule().add(T6_RULE_ID);
+                result.getBlankTokensByRule().add(tokenId);
             }
         } catch (Exception e) {
-            logger.error("Error generating token for token id: " + T6_RULE_ID, e);
-            result.getTokens().put(T6_RULE_ID, Token.BLANK);
-            result.getBlankTokensByRule().add(T6_RULE_ID);
-        }
-    }
-
-    private boolean addT6Field(Class<? extends Attribute> attributeClass, String fieldName,
-            Map<Class<? extends Attribute>, String> personAttributes, TokenGeneratorResult result,
-            Map<String, String> payload) {
-        if (!personAttributes.containsKey(attributeClass)) {
-            return false;
-        }
-
-        Attribute attribute = attributeInstanceMap.get(attributeClass);
-        if (attribute == null) {
-            return false;
-        }
-
-        String value = personAttributes.get(attributeClass);
-        if (!attribute.validate(value)) {
-            result.getInvalidAttributes().add(attribute.getName());
-            return false;
-        }
-
-        String normalized = attribute.normalize(value);
-        if (normalized == null || normalized.isBlank()) {
-            result.getInvalidAttributes().add(attribute.getName());
-            return false;
-        }
-
-        payload.put(fieldName, normalized);
-        return true;
-    }
-
-    private String asJson(Map<String, String> values) {
-        try {
-            return OBJECT_MAPPER.writeValueAsString(values);
-        } catch (Exception e) {
-            throw new IllegalStateException("Failed to serialize T6 payload to JSON", e);
+            logger.error("Error generating token for token id: " + tokenId, e);
+            result.getTokens().put(tokenId, Token.BLANK);
+            result.getBlankTokensByRule().add(tokenId);
         }
     }
 

@@ -16,7 +16,7 @@ import numpy as np
 import onnxruntime as ort
 from tokenizers import Tokenizer
 
-from opentoken.tokens.t6_inference_config import T6InferenceConfig
+from opentoken_core_ai.tokens.t6_inference_config import T6InferenceConfig
 
 logger = logging.getLogger(__name__)
 
@@ -151,7 +151,7 @@ class T6OnnxSignatureGenerator:
         return signatures, raw_embeddings
 
     @classmethod
-    def _run_batch_inference(cls, input_json_rows: List[str]) -> tuple[np.ndarray, float]:
+    def _run_batch_inference(cls, input_json_rows: List[str]) -> tuple[float, float]:
         """Run ONNX inference for one fixed-size batch and return embeddings with elapsed ms."""
         import time
 
@@ -337,12 +337,12 @@ class T6OnnxSignatureGenerator:
         2. Filesystem walk up from the source file (source checkout / development).
         """
         if configured_path.startswith("classpath:"):
-            resource_path = configured_path[len("classpath:") :]
+            resource_path = configured_path[len("classpath:"):]
             filename = Path(resource_path).name
 
-            # Installed wheel: assets are bundled inside opentoken.tokens
+            # Installed package: assets are bundled inside opentoken_core_ai.tokens
             try:
-                ref = importlib.resources.files("opentoken.tokens") / filename
+                ref = importlib.resources.files("opentoken_core_ai.tokens") / filename
                 with importlib.resources.as_file(ref) as p:
                     if p.exists():
                         return p

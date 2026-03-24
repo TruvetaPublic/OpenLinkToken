@@ -7,7 +7,7 @@ import uuid
 from typing import List
 
 from opentoken.metadata import Metadata
-from opentoken.tokens.t6_inference_config import T6InferenceConfig
+from opentoken_core_ai.tokens.t6_inference_config import T6InferenceConfig
 from opentoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
 from opentoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 from opentoken.tokentransformer.token_transformer import TokenTransformer

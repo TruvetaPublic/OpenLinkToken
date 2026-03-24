@@ -1,6 +1,9 @@
 # Core opentoken dependency
 opentoken==2.0.0-alpha
 
+# Core AI dependency (T6/rotation classes)
+opentoken-core-ai>=2.0.0-alpha
+
 # Data processing for I/O formats
 pandas
 pyarrow

@@ -2,13 +2,9 @@
 Copyright (c) Truveta. All rights reserved.
 """
 
-import math
 import threading
 
-import pytest
-
-from opentoken.tokentransformer.rotation.rotation_matrix_generator import generate
-
+from opentoken_core_ai.tokentransformer.rotation.rotation_matrix_generator import generate
 
 _IV = "test-rotation-iv-2024"
 _ALT_IV = "different-iv-abc"
@@ -37,9 +33,7 @@ class TestRotationMatrixGenerator:
                 for j in range(n):
                     dot = sum(matrix[i][k] * matrix[j][k] for k in range(n))
                     expected = 1.0 if i == j else 0.0
-                    assert abs(dot - expected) < 1e-10, (
-                        f"Q @ Q^T[{i},{j}] = {dot}, expected {expected}"
-                    )
+                    assert abs(dot - expected) < 1e-10, f"Q @ Q^T[{i},{j}] = {dot}, expected {expected}"
 
     def test_proper_rotation_determinant(self):
         """det(Q) must equal +1 for a proper rotation matrix."""

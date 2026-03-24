@@ -3,19 +3,13 @@ Copyright (c) Truveta. All rights reserved.
 """
 
 import logging
-from collections import OrderedDict
-from typing import TYPE_CHECKING, Dict, List, Optional, Set, Type
+from importlib.metadata import entry_points
+from typing import Dict, List, Optional, Set, Type
 
 from opentoken.attributes.attribute import Attribute
 from opentoken.attributes.attribute_loader import AttributeLoader
-from opentoken.attributes.person.birth_date_attribute import BirthDateAttribute
-from opentoken.attributes.person.first_name_attribute import FirstNameAttribute
-from opentoken.attributes.person.last_name_attribute import LastNameAttribute
-from opentoken.attributes.person.postal_code_attribute import PostalCodeAttribute
-from opentoken.attributes.person.sex_attribute import SexAttribute
 from opentoken.tokens.base_token_definition import BaseTokenDefinition
-from opentoken.tokens.t6_inference_config import T6InferenceConfig
-from opentoken.tokens.t6_onnx_signature_generator import T6OnnxSignatureGenerator, t6_payload_to_json
+from opentoken.tokens.inference_signature_provider import InferenceBatchResult, InferenceSignatureProvider  # noqa: F401
 from opentoken.tokens.token import Token
 from opentoken.tokens.token_generation_exception import TokenGenerationException
 from opentoken.tokens.token_generator_result import TokenGeneratorResult
@@ -23,18 +17,30 @@ from opentoken.tokens.tokenizer.sha256_tokenizer import SHA256Tokenizer
 from opentoken.tokens.tokenizer.tokenizer import Tokenizer
 from opentoken.tokentransformer.token_transformer import TokenTransformer
 
-if TYPE_CHECKING:
-    import numpy as np
-
-    from opentoken.tokentransformer.rotation.embedding_transformer import EmbeddingTransformer
-
 logger = logging.getLogger(__name__)
+
+_inference_provider: Optional[InferenceSignatureProvider] = None
+_provider_discovered = False
+
+
+def _get_inference_provider() -> Optional[InferenceSignatureProvider]:
+    """Lazily discover and cache the first registered InferenceSignatureProvider."""
+    global _inference_provider, _provider_discovered
+    if not _provider_discovered:
+        _provider_discovered = True
+        eps = entry_points(group="opentoken.inference_providers")
+        for ep in eps:
+            try:
+                provider_cls = ep.load()
+                _inference_provider = provider_cls()
+                break
+            except Exception:
+                pass
+    return _inference_provider
 
 
 class TokenGenerator:
     """Generates both the token signature and the token itself."""
-
-    T6_RULE_ID = "T6"
 
     @classmethod
     def from_transformers(
@@ -86,8 +92,13 @@ class TokenGenerator:
         Returns:
             The token signature using the token definition for the given token identifier.
         """
-        if token_id == self.T6_RULE_ID:
-            return self._get_t6_signature(person_attributes, result)
+        provider = _get_inference_provider()
+        if provider is not None and provider.get_token_id() == token_id and provider.is_enabled():
+            try:
+                return provider.generate_signature(person_attributes)
+            except Exception as error:
+                logger.error("Error generating token signature for token id: %s", token_id, exc_info=error)
+                return None
 
         definition = self.token_definition.get_token_definition(token_id)
 
@@ -127,77 +138,6 @@ class TokenGenerator:
         # Filter out None and blank values, then join with '|'
         filtered_values = [v for v in values if v is not None and v.strip() != ""]
         return "|".join(filtered_values)
-
-    def _get_t6_signature(
-        self,
-        person_attributes: Dict[Type[Attribute], str],
-        result: TokenGeneratorResult,
-    ) -> Optional[str]:
-        """Build T6 signature using ONNX-backed inference when enabled."""
-        if not T6InferenceConfig.is_enabled():
-            return None
-
-        payload_json = self.build_t6_payload(person_attributes, result)
-        if payload_json is None:
-            return None
-
-        try:
-            return T6OnnxSignatureGenerator.generate_signature(payload_json)
-        except Exception as error:
-            logger.error("Error generating token signature for token id: T6", exc_info=error)
-            return None
-
-    def build_t6_payload(
-        self,
-        person_attributes: Dict[Type[Attribute], str],
-        result: TokenGeneratorResult,
-    ) -> Optional[str]:
-        """Build and validate the deterministic JSON payload required for T6 inference."""
-        if person_attributes is None:
-            return None
-
-        payload: "OrderedDict[str, str]" = OrderedDict()
-        if not self._add_t6_field(PostalCodeAttribute, "PostalCode", person_attributes, result, payload):
-            return None
-        if not self._add_t6_field(BirthDateAttribute, "Birthdate", person_attributes, result, payload):
-            return None
-        if not self._add_t6_field(FirstNameAttribute, "GivenName", person_attributes, result, payload):
-            return None
-        if not self._add_t6_field(LastNameAttribute, "Surname", person_attributes, result, payload):
-            return None
-        if not self._add_t6_field(SexAttribute, "Gender", person_attributes, result, payload):
-            return None
-
-        return t6_payload_to_json(payload)
-
-    def _add_t6_field(
-        self,
-        attribute_class: Type[Attribute],
-        field_name: str,
-        person_attributes: Dict[Type[Attribute], str],
-        result: TokenGeneratorResult,
-        payload: "OrderedDict[str, str]",
-    ) -> bool:
-        """Validate, normalize, and append one required field for T6 payload."""
-        if attribute_class not in person_attributes:
-            return False
-
-        attribute = self.attribute_instance_map.get(attribute_class)
-        if attribute is None:
-            return False
-
-        value = person_attributes[attribute_class]
-        if not attribute.validate(value):
-            result.invalid_attributes.add(attribute.get_name())
-            return False
-
-        normalized = attribute.normalize(value)
-        if normalized is None or normalized.strip() == "":
-            result.invalid_attributes.add(attribute.get_name())
-            return False
-
-        payload[field_name] = normalized
-        return True
 
     def get_all_token_signatures(self, person_attributes: Dict[Type[Attribute], str]) -> Dict[str, str]:
         """
@@ -275,12 +215,24 @@ class TokenGenerator:
 
         return result
 
-    def get_all_tokens_excluding_t6(self, person_attributes: Dict[Type[Attribute], str]) -> TokenGeneratorResult:
-        """Get tokens for all rules except T6."""
+    def generate_tokens_excluding(
+        self,
+        person_attributes: Dict[Type[Attribute], str],
+        excluded_token_ids: Set[str],
+    ) -> TokenGeneratorResult:
+        """Get tokens for all rules except those in *excluded_token_ids*.
+
+        Args:
+            person_attributes: The person attributes map.
+            excluded_token_ids: Set of token identifiers to skip.
+
+        Returns:
+            A TokenGeneratorResult object containing the tokens and invalid attributes.
+        """
         result = TokenGeneratorResult()
 
         for token_id in self.token_definition.get_token_identifiers():
-            if token_id == self.T6_RULE_ID:
+            if token_id in excluded_token_ids:
                 continue
             try:
                 token = self._get_token(token_id, person_attributes, result)
@@ -291,40 +243,46 @@ class TokenGenerator:
 
         return result
 
-    def apply_t6_signature_token(self, result: TokenGeneratorResult, signature: Optional[str]) -> None:
-        """Tokenize and store T6 token from a precomputed T6 signature."""
-        try:
-            token = self.tokenizer.tokenize(signature)
-            result.tokens[self.T6_RULE_ID] = token
-            if Token.BLANK == token:
-                result.blank_tokens_by_rule.add(self.T6_RULE_ID)
-        except Exception as error:
-            logger.error("Error generating token for token id: T6", exc_info=error)
-            result.tokens[self.T6_RULE_ID] = Token.BLANK
-            result.blank_tokens_by_rule.add(self.T6_RULE_ID)
-
-    def apply_t6_rotation_tokens(
-        self,
-        result: TokenGeneratorResult,
-        embedding: "np.ndarray",
-        transformer: "EmbeddingTransformer",
+    def apply_precomputed_signature(
+        self, result: TokenGeneratorResult, token_id: str, signature: Optional[str]
     ) -> None:
-        """Apply T6 rotation tokens to the result from a precomputed raw embedding.
-
-        Generates tokens named "T6-R0", "T6-R1", ..., "T6-R{N-1}" (one per rotation
-        matrix) and stores them in result.tokens.
+        """Tokenize and store a token from a precomputed signature.
 
         Args:
-            result: Token generator result to populate.
-            embedding: Raw CLS embedding float array (1-D).
-            transformer: Rotation embedding transformer.
+            result: The token generator result to update.
+            token_id: The token identifier key to store the result under.
+            signature: The precomputed signature string, or ``None`` for a blank token.
         """
         try:
-            tokens = transformer.transform(embedding.tolist())
-            for i, token in enumerate(tokens):
-                result.tokens[f"T6-R{i}"] = token
+            token = self.tokenizer.tokenize(signature)
+            result.tokens[token_id] = token
+            if Token.BLANK == token:
+                result.blank_tokens_by_rule.add(token_id)
         except Exception as error:
-            logger.error("Error generating T6 rotation tokens", exc_info=error)
+            logger.error("Error generating token for token id: %s", token_id, exc_info=error)
+            result.tokens[token_id] = Token.BLANK
+            result.blank_tokens_by_rule.add(token_id)
+
+    def apply_embedding_derived_tokens(
+        self,
+        result: TokenGeneratorResult,
+        token_id_prefix: str,
+        token_strings: List[str],
+    ) -> None:
+        """Apply pre-computed embedding-derived tokens to the result.
+
+        Args:
+            result: The token generator result to update.
+            token_id_prefix: Prefix for derived token keys (e.g. ``"T6-R"``).
+            token_strings: Pre-computed token strings from the embedding transformer.
+        """
+        for i, token_string in enumerate(token_strings):
+            result.tokens[f"{token_id_prefix}{i}"] = token_string
+
+    @staticmethod
+    def get_inference_provider() -> Optional[InferenceSignatureProvider]:
+        """Return the discovered InferenceSignatureProvider, or None if none is installed."""
+        return _get_inference_provider()
 
     def get_invalid_person_attributes(self, person_attributes: Dict[Type[Attribute], str]) -> Set[str]:
         """

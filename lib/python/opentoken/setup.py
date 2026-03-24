@@ -2,37 +2,10 @@
 """Setup script for OpenToken Python package."""
 
 import os
-import shutil
 
 from setuptools import find_packages, setup
-from setuptools.command.build_py import build_py
 
 THIS_DIR = os.path.abspath(os.path.dirname(__file__))
-
-# Shared inferencing assets live here (single source of truth alongside the Java resources)
-INFERENCING_ASSETS_SRC = os.path.abspath(os.path.join(THIS_DIR, "../../../resources/inferencing/t6"))
-INFERENCING_ASSETS = ["model.onnx", "model.onnx.data", "tokenizer.json", "vocab.txt"]
-
-# Target: opentoken/tokens inside the built package tree
-INFERENCING_ASSETS_PKG = os.path.join("opentoken", "tokens")
-
-
-class BuildWithInferencingAssets(build_py):
-    """Copy shared T6 inferencing assets into the package at wheel-build time.
-
-    Mirrors what the Maven <resources> block does for the Java JAR — the files
-    live once in resources/inferencing/t6/ and are included in both artifacts
-    during their respective build processes without duplicating them in source.
-    """
-
-    def run(self):
-        super().run()
-        dst = os.path.join(self.build_lib, INFERENCING_ASSETS_PKG)
-        os.makedirs(dst, exist_ok=True)
-        for filename in INFERENCING_ASSETS:
-            src_file = os.path.join(INFERENCING_ASSETS_SRC, filename)
-            if os.path.exists(src_file):
-                shutil.copy2(src_file, dst)
 
 
 # Read the contents of the project README file.
@@ -62,12 +35,9 @@ setup(
     },
     package_dir={"": "src/main"},
     packages=find_packages(where="src/main"),
-    package_data={
-        "opentoken.tokens": INFERENCING_ASSETS,
-    },
+    package_data={},
     python_requires=">=3.10",
     install_requires=requirements,
-    cmdclass={"build_py": BuildWithInferencingAssets},
     extras_require={
         "dev": [
             "cryptography",

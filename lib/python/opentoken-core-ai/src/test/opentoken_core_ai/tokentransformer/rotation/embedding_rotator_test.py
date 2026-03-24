@@ -5,8 +5,7 @@ Copyright (c) Truveta. All rights reserved.
 import math
 
 import pytest
-
-from opentoken.tokentransformer.rotation.embedding_rotator import rotate
+from opentoken_core_ai.tokentransformer.rotation.embedding_rotator import rotate
 
 _IV = "test-rotation-iv-2024"
 _DIMENSION = 4

@@ -31,8 +31,8 @@ def build_exchange_envelope(
     curve: str,
     created_at: str,
     exchange_id: str,
-    rotation_iv: bytes,
-    rotation_count: int,
+    rotation_iv: bytes = b"",
+    rotation_count: int = 0,
 ) -> dict[str, Any]:
     """Build a multi-recipient JWE exchange envelope."""
     payload = {

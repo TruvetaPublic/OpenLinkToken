@@ -4,7 +4,7 @@ Copyright (c) Truveta. All rights reserved.
 
 import math
 
-from opentoken.tokentransformer.rotation.rotation_quantizer import quantize
+from opentoken_core_ai.tokentransformer.rotation.rotation_quantizer import quantize
 
 
 class TestRotationQuantizer:

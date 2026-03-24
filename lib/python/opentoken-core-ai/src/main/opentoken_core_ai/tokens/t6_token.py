@@ -1,5 +1,4 @@
 """Optional T6 token definition."""
-
 from typing import List
 
 from opentoken.attributes.attribute_expression import AttributeExpression

@@ -11,16 +11,15 @@ from typing import Any, Dict, List, Set, Type
 
 from opentoken.attributes.attribute import Attribute
 from opentoken.attributes.general.record_id_attribute import RecordIdAttribute
-from opentoken.tokens.rotation_config import RotationConfig
-from opentoken.tokens.t6_inference_config import T6InferenceConfig
-from opentoken.tokens.t6_onnx_signature_generator import T6OnnxSignatureGenerator
+from opentoken_core_ai.tokens.rotation_config import RotationConfig
+from opentoken_core_ai.tokens.t6_inference_config import T6InferenceConfig
 from opentoken.tokens.token_definition import TokenDefinition
 from opentoken.tokens.token_generator import TokenGenerator
 from opentoken.tokens.token_generator_result import TokenGeneratorResult
 from opentoken.tokens.tokenizer.sha256_tokenizer import SHA256Tokenizer
 from opentoken.tokens.tokenizer.tokenizer import Tokenizer
 from opentoken.tokentransformer.jwe_match_token_formatter import JweMatchTokenFormatter
-from opentoken.tokentransformer.rotation import RotationEmbeddingTransformer
+from opentoken_core_ai.tokentransformer.rotation.rotation_embedding_transformer import RotationEmbeddingTransformer
 from opentoken.tokentransformer.token_transformer import TokenTransformer
 from opentoken_cli.io.person_attributes_reader import PersonAttributesReader
 from opentoken_cli.io.person_attributes_writer import PersonAttributesWriter
@@ -35,7 +34,6 @@ class _PendingRow:
     row: Dict[Type[Attribute], str]
     row_counter: int
     token_generator_result: TokenGeneratorResult
-    t6_payload: str | None
 
 
 class PersonAttributesProcessor:
@@ -400,14 +398,12 @@ class PersonAttributesProcessor:
 
         for row in reader:
             row_counter += 1
-            token_generator_result = token_generator.get_all_tokens_excluding_t6(row)
-            t6_payload = token_generator.build_t6_payload(row, token_generator_result)
+            token_generator_result = token_generator.generate_tokens_excluding(row, {"T6"})
             pending_rows.append(
                 _PendingRow(
                     row=row,
                     row_counter=row_counter,
                     token_generator_result=token_generator_result,
-                    t6_payload=t6_payload,
                 )
             )
 
@@ -462,46 +458,41 @@ class PersonAttributesProcessor:
         Returns the (potentially newly constructed) rotation_transformer so it can be reused
         across flush calls with a stable, dimension-aware instance.
         """
-        t6_payloads = [pr.t6_payload for pr in pending_rows if pr.t6_payload is not None]
-        t6_signatures: List[str] = []
+        t6_signatures: List = [None] * len(pending_rows)
         raw_embeddings: List | None = None
 
-        if t6_payloads and RotationConfig.is_enabled():
-            t6_signatures, raw_embeddings = T6OnnxSignatureGenerator.generate_signatures_with_raw_embeddings(
-                t6_payloads
-            )
-            # Detect embedding dimension from first result and build transformer if not yet available
-            if raw_embeddings and rotation_transformer is None:
-                embedding_dim = len(raw_embeddings[0])
-                rotation_transformer = RotationEmbeddingTransformer(
-                    iv=RotationConfig.get_rotation_iv(),
-                    rotation_count=RotationConfig.get_rotation_count(),
-                    dimension=embedding_dim,
-                    hash_dimension=RotationConfig.get_hash_dimension(),
-                    bin_width=RotationConfig.get_bin_width(),
-                    min_val=RotationConfig.get_min_val(),
-                    max_val=RotationConfig.get_max_val(),
-                )
-        elif t6_payloads:
-            t6_signatures = T6OnnxSignatureGenerator.generate_signatures(t6_payloads)
+        inference_provider = TokenGenerator.get_inference_provider()
+        if inference_provider is not None and inference_provider.is_enabled():
+            rows = [pr.row for pr in pending_rows]
+            batch_result = inference_provider.generate_batch(rows)
+            t6_signatures = batch_result.signatures
+            if RotationConfig.is_enabled():
+                raw_embeddings = batch_result.raw_embeddings
+                # Detect embedding dimension from first non-None result and build transformer
+                if raw_embeddings and rotation_transformer is None:
+                    first_embedding = next((e for e in raw_embeddings if e is not None), None)
+                    if first_embedding is not None:
+                        embedding_dim = len(first_embedding)
+                        rotation_transformer = RotationEmbeddingTransformer(
+                            iv=RotationConfig.get_rotation_iv(),
+                            rotation_count=RotationConfig.get_rotation_count(),
+                            dimension=embedding_dim,
+                            hash_dimension=RotationConfig.get_hash_dimension(),
+                            bin_width=RotationConfig.get_bin_width(),
+                            min_val=RotationConfig.get_min_val(),
+                            max_val=RotationConfig.get_max_val(),
+                        )
 
-        signature_index = 0
-        embedding_index = 0
-        for pending_row in pending_rows:
-            t6_signature = None
-            raw_embedding = None
-            if pending_row.t6_payload is not None and signature_index < len(t6_signatures):
-                t6_signature = t6_signatures[signature_index]
-                signature_index += 1
-                if raw_embeddings is not None and embedding_index < len(raw_embeddings):
-                    raw_embedding = raw_embeddings[embedding_index]
-                    embedding_index += 1
+        for i, pending_row in enumerate(pending_rows):
+            t6_signature = t6_signatures[i] if i < len(t6_signatures) else None
+            raw_embedding = raw_embeddings[i] if raw_embeddings is not None and i < len(raw_embeddings) else None
 
-            token_generator.apply_t6_signature_token(pending_row.token_generator_result, t6_signature)
+            token_generator.apply_precomputed_signature(pending_row.token_generator_result, "T6", t6_signature)
 
             if rotation_transformer is not None and raw_embedding is not None:
-                token_generator.apply_t6_rotation_tokens(
-                    pending_row.token_generator_result, raw_embedding, rotation_transformer
+                token_strings = rotation_transformer.transform(raw_embedding)
+                token_generator.apply_embedding_derived_tokens(
+                    pending_row.token_generator_result, "T6-R", token_strings
                 )
 
             logger.debug(f"Tokens: {pending_row.token_generator_result.tokens}")

@@ -15,6 +15,7 @@
 
     <modules>
         <module>opentoken</module>
+        <module>opentoken-core-ai</module>
     </modules>
 
     <distributionManagement>

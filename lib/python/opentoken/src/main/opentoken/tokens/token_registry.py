@@ -5,6 +5,7 @@ Copyright (c) Truveta. All rights reserved.
 import importlib
 import pkgutil
 from importlib import resources
+from importlib.metadata import entry_points
 from typing import Dict, List
 
 from opentoken.attributes.attribute_expression import AttributeExpression
@@ -35,7 +36,7 @@ class TokenRegistry:
                     if item.name.endswith(".py") and item.name != "__init__.py"
                 ]
             except Exception:
-                module_names = ["t1_token", "t2_token", "t3_token", "t4_token", "t5_token", "t6_token"]
+                module_names = ["t1_token", "t2_token", "t3_token", "t4_token", "t5_token"]
 
         for module_name in module_names:
             module = importlib.import_module(f"{package_name}.{module_name}")
@@ -44,5 +45,15 @@ class TokenRegistry:
                 if isinstance(obj, type) and issubclass(obj, Token) and obj is not Token:
                     token = obj()
                     definitions[token.get_identifier()] = token.get_definition()
+
+        # Discover tokens registered by external packages (e.g. opentoken-core-ai)
+        for ep in entry_points(group="opentoken.tokens.definitions"):
+            try:
+                obj = ep.load()
+                if isinstance(obj, type) and issubclass(obj, Token) and obj is not Token:
+                    token = obj()
+                    definitions[token.get_identifier()] = token.get_definition()
+            except Exception:
+                pass
 
         return definitions

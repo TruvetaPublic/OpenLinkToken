@@ -5,9 +5,9 @@ Copyright (c) Truveta. All rights reserved.
 from threading import Lock
 from typing import List, Optional
 
-from opentoken.tokentransformer.rotation.embedding_rotator import rotate
-from opentoken.tokentransformer.rotation.rotation_matrix_generator import generate
-from opentoken.tokentransformer.rotation.rotation_quantizer import quantize
+from opentoken_core_ai.tokentransformer.rotation.embedding_rotator import rotate
+from opentoken_core_ai.tokentransformer.rotation.rotation_matrix_generator import generate
+from opentoken_core_ai.tokentransformer.rotation.rotation_quantizer import quantize
 
 
 class RotationEmbeddingTransformer:

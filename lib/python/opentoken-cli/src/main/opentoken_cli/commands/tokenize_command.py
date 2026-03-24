@@ -6,8 +6,8 @@ import logging
 from typing import List
 
 from opentoken.metadata import Metadata
-from opentoken.tokens.rotation_config import RotationConfig
-from opentoken.tokens.t6_inference_config import T6InferenceConfig
+from opentoken_core_ai.tokens.rotation_config import RotationConfig
+from opentoken_core_ai.tokens.t6_inference_config import T6InferenceConfig
 from opentoken.tokens.tokenizer.passthrough_tokenizer import PassthroughTokenizer
 from opentoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 from opentoken.tokentransformer.token_transformer import TokenTransformer

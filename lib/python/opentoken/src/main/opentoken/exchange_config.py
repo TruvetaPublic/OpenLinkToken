@@ -313,10 +313,12 @@ def _decode_hashing_secret(payload: Mapping[str, Any]) -> bytes:
 def _decode_rotation_iv(payload: Mapping[str, Any]) -> bytes:
     encoding = payload.get("rotationIvEncoding")
     value = payload.get("rotationIv")
+    if value is None:
+        return b""
     if encoding != "base64url":
         raise ValueError(f"Unsupported rotationIvEncoding '{encoding}'.")
     if not isinstance(value, str) or not value:
-        raise ValueError("Exchange config payload is missing rotationIv.")
+        return b""
 
     padding = "=" * (-len(value) % 4)
     try:
@@ -327,6 +329,8 @@ def _decode_rotation_iv(payload: Mapping[str, Any]) -> bytes:
 
 def _decode_rotation_count(payload: Mapping[str, Any]) -> int:
     value = payload.get("rotationCount")
+    if value is None or value == 0:
+        return 0
     if not isinstance(value, int) or isinstance(value, bool) or value < 1:
         raise ValueError(f"Exchange config payload has an invalid rotationCount '{value}'. Must be a positive integer.")
     return value

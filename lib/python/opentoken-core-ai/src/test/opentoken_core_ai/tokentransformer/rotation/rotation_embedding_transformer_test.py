@@ -5,7 +5,7 @@ Copyright (c) Truveta. All rights reserved.
 import re
 import threading
 
-from opentoken.tokentransformer.rotation.rotation_embedding_transformer import RotationEmbeddingTransformer
+from opentoken_core_ai.tokentransformer.rotation.rotation_embedding_transformer import RotationEmbeddingTransformer
 
 _IV = "test-rotation-iv-2024"
 _DIMENSION = 4
