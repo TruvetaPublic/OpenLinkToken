@@ -456,7 +456,8 @@ class PersonAttributesProcessor:
         for i, pending_row in enumerate(pending_rows):
             t6_signature = t6_signatures[i] if i < len(t6_signatures) else None
 
-            token_generator.apply_precomputed_signature(pending_row.token_generator_result, "T6", t6_signature)
+            # T6 is already HMAC-hashed internally; bypass the tokenizer/transformer chain.
+            token_generator.store_raw_token(pending_row.token_generator_result, "T6", t6_signature)
 
             logger.debug(f"Tokens: {pending_row.token_generator_result.tokens}")
 

@@ -263,6 +263,23 @@ class TokenGenerator:
             result.tokens[token_id] = Token.BLANK
             result.blank_tokens_by_rule.add(token_id)
 
+    def store_raw_token(self, result: TokenGeneratorResult, token_id: str, token_value: Optional[str]) -> None:
+        """Store a pre-computed token value directly, bypassing the tokenizer and all transformers.
+
+        Use for tokens whose value is already in its final form (e.g., internally
+        pre-hashed signatures such as T6 rotation values).
+
+        Args:
+            result: The token generator result to update.
+            token_id: The token identifier key to store the result under.
+            token_value: The final token value, or ``None`` / blank to record a blank token.
+        """
+        if token_value and token_value != Token.BLANK:
+            result.tokens[token_id] = token_value
+        else:
+            result.tokens[token_id] = Token.BLANK
+            result.blank_tokens_by_rule.add(token_id)
+
     def apply_embedding_derived_tokens(
         self,
         result: TokenGeneratorResult,

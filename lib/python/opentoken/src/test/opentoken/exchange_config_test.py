@@ -408,8 +408,8 @@ def test_resolve_exchange_config_exposes_rotation_iv_and_count(tmp_path: Path):
     assert resolved.rotation_count == 10
 
 
-def test_resolve_loaded_exchange_config_rejects_missing_rotation_iv(tmp_path: Path):
-    """A payload without rotationIv must raise ValueError during resolution."""
+def test_resolve_loaded_exchange_config_missing_rotation_iv_disables_rotation(tmp_path: Path):
+    """A payload without rotationIv resolves successfully with rotation_iv=b'' (rotation disabled)."""
     from opentoken.exchange_config import resolve_loaded_exchange_config
     from opentoken.exchange_jwe import decrypt_exchange_envelope
 
@@ -456,12 +456,12 @@ def test_resolve_loaded_exchange_config_rejects_missing_rotation_iv(tmp_path: Pa
     exchange_config_path.write_text(json.dumps(tampered), encoding="utf-8")
 
     loaded = load_exchange_config(exchange_config_path)
-    with pytest.raises(ValueError, match="rotationIvEncoding"):
-        resolve_loaded_exchange_config(loaded, sender_private_pem)
+    resolved = resolve_loaded_exchange_config(loaded, sender_private_pem)
+    assert resolved.rotation_iv == b""
 
 
-def test_resolve_loaded_exchange_config_rejects_invalid_rotation_count(tmp_path: Path):
-    """A payload with rotationCount of zero must raise ValueError during resolution."""
+def test_resolve_loaded_exchange_config_zero_rotation_count_disables_rotation(tmp_path: Path):
+    """A payload with rotationCount of zero resolves successfully with rotation_count=0 (rotation disabled)."""
     from opentoken.exchange_config import resolve_loaded_exchange_config
     from opentoken.exchange_jwe import decrypt_exchange_envelope
 
@@ -506,5 +506,5 @@ def test_resolve_loaded_exchange_config_rejects_invalid_rotation_count(tmp_path:
     exchange_config_path.write_text(json.dumps(tampered), encoding="utf-8")
 
     loaded = load_exchange_config(exchange_config_path)
-    with pytest.raises(ValueError, match="invalid rotationCount"):
-        resolve_loaded_exchange_config(loaded, sender_private_pem)
+    resolved = resolve_loaded_exchange_config(loaded, sender_private_pem)
+    assert resolved.rotation_count == 0
