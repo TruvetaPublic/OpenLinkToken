@@ -5,17 +5,25 @@ package com.truveta.opentoken.tokens;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.truveta.opentoken.attributes.Attribute;
+import com.truveta.opentoken.attributes.AttributeExpression;
 import com.truveta.opentoken.attributes.AttributeLoader;
 import com.truveta.opentoken.attributes.person.BirthDateAttribute;
 import com.truveta.opentoken.attributes.person.FirstNameAttribute;
 import com.truveta.opentoken.attributes.person.LastNameAttribute;
 import com.truveta.opentoken.attributes.person.PostalCodeAttribute;
 import com.truveta.opentoken.attributes.person.SexAttribute;
+import com.truveta.opentoken.tokens.definitions.T1Token;
 import com.truveta.opentoken.tokentransformer.rotation.RotationEmbeddingTransformer;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,6 +79,10 @@ public class OnnxT6SignatureProvider implements InferenceSignatureProvider {
                 List<float[]> rawEmbeddings = T6OnnxSignatureGenerator.generateRawEmbeddings(List.of(payload));
                 float[] embedding = rawEmbeddings.get(0);
                 List<String> rotationValues = getOrCreateTransformer(embedding.length).transform(embedding);
+                String t1Sig = computeT1Signature(personAttributes);
+                if (t1Sig != null) {
+                    rotationValues = hmacRotationValues(rotationValues, t1Sig);
+                }
                 return String.join(",", rotationValues);
             }
             return T6OnnxSignatureGenerator.generateSignature(payload);
@@ -125,6 +137,10 @@ public class OnnxT6SignatureProvider implements InferenceSignatureProvider {
                 int originalIndex = validIndices.get(vi);
                 float[] embedding = batchResult.rawEmbeddings().get(vi);
                 List<String> rotationValues = getOrCreateTransformer(embedding.length).transform(embedding);
+                String t1Sig = computeT1Signature(rows.get(originalIndex));
+                if (t1Sig != null) {
+                    rotationValues = hmacRotationValues(rotationValues, t1Sig);
+                }
                 signatures.set(originalIndex, String.join(",", rotationValues));
                 embeddings.set(originalIndex, embedding);
             }
@@ -161,6 +177,70 @@ public class OnnxT6SignatureProvider implements InferenceSignatureProvider {
             }
         }
         return rotationTransformer;
+    }
+
+    /**
+     * Computes the T1 raw signature from the given person attributes using the T1 token definition.
+     *
+     * <p>The T1 signature is {@code LASTNAME|FIRSTINITIAL|SEX|BIRTHDATE}, produced by applying
+     * each attribute expression from {@link T1Token#getDefinition()} in order.
+     *
+     * @param personAttributes normalised attribute map for one record
+     * @return pipe-delimited T1 signature string, or {@code null} if any field is missing or invalid
+     */
+    String computeT1Signature(Map<Class<? extends Attribute>, String> personAttributes) {
+        if (personAttributes == null) {
+            return null;
+        }
+        List<AttributeExpression> t1Definition = new T1Token().getDefinition();
+        List<String> parts = new ArrayList<>(t1Definition.size());
+        for (AttributeExpression attrExpr : t1Definition) {
+            Class<? extends Attribute> attrClass = attrExpr.getAttributeClass();
+            String raw = personAttributes.get(attrClass);
+            if (raw == null || raw.isBlank()) {
+                return null;
+            }
+            Attribute attr = attributeInstanceMap.get(attrClass);
+            if (attr == null || !attr.validate(raw)) {
+                return null;
+            }
+            String normalized = attr.normalize(raw);
+            try {
+                String effective = attrExpr.getEffectiveValue(normalized);
+                if (effective == null || effective.isBlank()) {
+                    return null;
+                }
+                parts.add(effective);
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+        return parts.isEmpty() ? null : String.join("|", parts);
+    }
+
+    /**
+     * HMAC-SHA256 each rotation value string using the T1 signature as the key.
+     *
+     * @param rotationValues list of space-separated bin index strings from the rotation pipeline
+     * @param t1Signature    the T1 raw signature used as the HMAC key
+     * @return list of lowercase hex-encoded HMAC-SHA256 digests, one per rotation value
+     */
+    List<String> hmacRotationValues(List<String> rotationValues, String t1Signature) {
+        byte[] keyBytes = t1Signature.getBytes(StandardCharsets.UTF_8);
+        SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "HmacSHA256");
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(keySpec);
+            List<String> result = new ArrayList<>(rotationValues.size());
+            for (String rv : rotationValues) {
+                mac.reset();
+                byte[] digest = mac.doFinal(rv.getBytes(StandardCharsets.UTF_8));
+                result.add(HexFormat.of().formatHex(digest));
+            }
+            return result;
+        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
+            throw new IllegalStateException("HmacSHA256 is unavailable or key is invalid", e);
+        }
     }
 
     /**
