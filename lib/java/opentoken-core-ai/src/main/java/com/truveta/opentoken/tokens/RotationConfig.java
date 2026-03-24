@@ -17,7 +17,7 @@ public final class RotationConfig {
     public static final int DEFAULT_ROTATION_COUNT = 30;
 
     /** Default number of projected dimensions fed to the quantizer. */
-    public static final int DEFAULT_HASH_DIMENSION = 32;
+    public static final int DEFAULT_HASH_DIMENSION = 4;
 
     /** Default quantizer bin width. */
     public static final double DEFAULT_BIN_WIDTH = 0.05;
