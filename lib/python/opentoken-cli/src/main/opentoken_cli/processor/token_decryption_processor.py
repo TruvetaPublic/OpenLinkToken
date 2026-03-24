@@ -66,9 +66,10 @@ class TokenDecryptionProcessor:
             row_counter += 1
 
             token = row.get(TokenConstants.TOKEN, "")
+            rule_id = row.get(TokenConstants.RULE_ID, "")
 
-            # Decrypt the token if it's not blank
-            if token and token != Token.BLANK:
+            # T6 tokens are pre-hashed (HMAC) and never AES-GCM encrypted — pass through as-is.
+            if token and token != Token.BLANK and not rule_id.startswith("T6"):
                 try:
                     decrypted_token = TokenDecryptionProcessor._decrypt_token(token, decryptor, encryption_key)
                     row[TokenConstants.TOKEN] = decrypted_token
