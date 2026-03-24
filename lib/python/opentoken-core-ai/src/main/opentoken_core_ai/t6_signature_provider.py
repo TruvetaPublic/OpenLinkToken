@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import hmac as _hmac
 import logging
 from threading import Lock
 from typing import ClassVar, Dict, List, Optional, Type
@@ -12,6 +14,7 @@ from opentoken.attributes.person.first_name_attribute import FirstNameAttribute
 from opentoken.attributes.person.last_name_attribute import LastNameAttribute
 from opentoken.attributes.person.postal_code_attribute import PostalCodeAttribute
 from opentoken.attributes.person.sex_attribute import SexAttribute
+from opentoken.tokens.definitions.t1_token import T1Token
 from opentoken.tokens.inference_signature_provider import InferenceBatchResult
 from opentoken.tokens.token_generator_result import TokenGeneratorResult
 from opentoken_core_ai.tokens.rotation_config import RotationConfig
@@ -20,6 +23,51 @@ from opentoken_core_ai.tokens.t6_onnx_signature_generator import T6OnnxSignature
 from opentoken_core_ai.tokentransformer.rotation.rotation_embedding_transformer import RotationEmbeddingTransformer
 
 logger = logging.getLogger(__name__)
+
+# Pre-built T1 expression pipeline — reused across all signature computations.
+_T1_DEFINITION = T1Token().get_definition()
+_T1_ATTRIBUTE_INSTANCES = {expr.attribute_class: expr.attribute_class() for expr in _T1_DEFINITION}
+
+
+def _compute_t1_signature(person_attributes: Dict[Type[Attribute], str]) -> Optional[str]:
+    """Compute the raw (pre-transformer) T1 signature from person attributes.
+
+    Applies the same attribute-expression pipeline as the T1 token definition:
+    LASTNAME|FIRSTINITIAL|SEX|BIRTHDATE (each normalized via its expression).
+    Returns None when any required T1 attribute is absent or invalid.
+    """
+    values = []
+    for attr_expr in _T1_DEFINITION:
+        attr_cls = attr_expr.attribute_class
+        raw = person_attributes.get(attr_cls)
+        if not raw:
+            return None
+        attr = _T1_ATTRIBUTE_INSTANCES[attr_cls]
+        if not attr.validate(raw):
+            return None
+        normalized = attr.normalize(raw)
+        try:
+            effective = attr_expr.get_effective_value(normalized)
+            if effective:
+                values.append(effective)
+        except ValueError:
+            return None
+    return "|".join(values) if values else None
+
+
+def _hmac_rotation_values(rotation_values: List[str], t1_signature: str) -> List[str]:
+    """HMAC-SHA256 each rotation-quantized string using the T1 signature as the key.
+
+    Args:
+        rotation_values: Space-separated bin-index strings, one per rotation matrix.
+        t1_signature: Raw T1 token signature used as the HMAC key (blocking key).
+
+    Returns:
+        List of SHA-256 hex digest strings, one per rotation value.
+    """
+    key = t1_signature.encode("utf-8")
+    return [_hmac.new(key, rv.encode("utf-8"), hashlib.sha256).hexdigest() for rv in rotation_values]
+
 
 # Ordered field name mapping for T6 payload
 _T6_FIELDS = [
@@ -67,9 +115,8 @@ class OnnxT6SignatureProvider:
     def generate_signature(self, person_attributes: Dict[Type[Attribute], str]) -> Optional[str]:
         """Generate a single T6 signature via ONNX inference.
 
-        When rotation is enabled the signature is the comma-joined list of
-        rotation-quantized values.  When rotation is disabled it falls back to
-        the raw hex embedding string.
+        Pipeline: ONNX embed → rotate → quantize → HMAC with T1 signature.
+        Falls back to raw hex embedding string when rotation is disabled.
         """
         result = TokenGeneratorResult()
         payload_json = self.build_t6_payload(person_attributes, result)
@@ -81,6 +128,9 @@ class OnnxT6SignatureProvider:
                 transformer = self._get_rotation_transformer(len(embedding))
                 if transformer is not None:
                     rotation_values: List[str] = transformer.transform(list(embedding))
+                    t1_sig = _compute_t1_signature(person_attributes)
+                    if t1_sig:
+                        rotation_values = _hmac_rotation_values(rotation_values, t1_sig)
                     return ",".join(rotation_values)
             return sig
         except Exception as error:
@@ -88,12 +138,10 @@ class OnnxT6SignatureProvider:
             return None
 
     def generate_batch(self, rows: List[Dict[Type[Attribute], str]]) -> InferenceBatchResult:
-        """Generate T6 signatures + raw embeddings for a batch of records.
+        """Generate T6 signatures for a batch of records.
 
-        When rotation is enabled each signature is the comma-joined list of
-        rotation-quantized values derived from the ONNX embedding.  When
-        rotation is disabled the raw hex embedding string is returned instead
-        (backward-compatible fallback).
+        Pipeline per record: ONNX embed → rotate → quantize → HMAC with T1 signature.
+        Falls back to raw hex embedding string when rotation is disabled.
         """
         payloads: List[Optional[str]] = []
         valid_indices: List[int] = []
@@ -126,6 +174,9 @@ class OnnxT6SignatureProvider:
                 raw_embeddings[original_index] = embedding
                 if transformer is not None and embedding is not None:
                     rotation_values: List[str] = transformer.transform(list(embedding))
+                    t1_sig = _compute_t1_signature(rows[original_index])
+                    if t1_sig:
+                        rotation_values = _hmac_rotation_values(rotation_values, t1_sig)
                     signatures[original_index] = ",".join(rotation_values)
                 else:
                     signatures[original_index] = batch_sigs[vi]
