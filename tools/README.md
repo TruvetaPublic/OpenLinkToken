@@ -183,6 +183,17 @@ cd ..
 python tools/interoperability/multi_language_interoperability_test.py
 ```
 
+### Rotation Matrix Interoperability Test
+
+Use `tools/interoperability/rotation_matrix_interop_test.py` to verify that the
+Java and Python `RotationMatrixGenerator` implementations produce bit-exact
+results for the same inputs. This is the parity gate for T6 inferencing tokens.
+
+```bash
+source /home/vscode/.local/share/opentoken/.venv/bin/activate
+python tools/interoperability/rotation_matrix_interop_test.py
+```
+
 For more detail on these checks, see `tools/interoperability/README.md`.
 
 ## Multi-Language Sync Tool

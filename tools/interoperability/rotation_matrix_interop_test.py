@@ -17,9 +17,9 @@ import tempfile
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(PROJECT_ROOT / "lib/python/opentoken/src/main"))
+sys.path.insert(0, str(PROJECT_ROOT / "lib/python/opentoken-core-ai/src/main"))
 
-from opentoken.tokentransformer.rotation.rotation_matrix_generator import generate  # noqa: E402
+from opentoken_core_ai.tokentransformer.rotation.rotation_matrix_generator import generate  # noqa: E402
 
 
 # Test vectors: (iv, rotation_count, dimension)
@@ -50,24 +50,39 @@ class JavaRotationHarness:
     def generate_matrices(
         self, iv: str, rotation_count: int, dimension: int, output_path: Path
     ) -> list[list[list[float]]]:
-        """Run the Java harness and return parsed matrices."""
-        cmd = [
+        """Run the Java harness and return parsed matrices.
+
+        Uses two Maven invocations: one to compile (with -am for transitive deps),
+        and one to execute only on the opentoken-core-ai module to avoid exec:java
+        running on the parent pom.
+        """
+        java_dir = self.project_root / "lib/java"
+
+        # Step 1: compile with all dependencies
+        compile_cmd = [
+            "mvn", "-pl", "opentoken-core-ai", "-am", "-DskipTests", "-q", "test-compile",
+        ]
+        compile_result = subprocess.run(
+            compile_cmd, capture_output=True, text=True, cwd=java_dir, check=False,
+        )
+        if compile_result.returncode != 0:
+            print(f"Java compile stderr:\n{compile_result.stderr}")
+            raise RuntimeError(
+                f"Java test-compile failed (exit {compile_result.returncode}): {compile_result.stderr[:500]}"
+            )
+
+        # Step 2: execute harness only on opentoken-core-ai (no -am avoids parent execution)
+        exec_cmd = [
             "mvn",
-            "-pl", "opentoken",
+            "-pl", "opentoken-core-ai",
             "-DskipTests",
-            "test-compile",
             "org.codehaus.mojo:exec-maven-plugin:3.5.0:java",
             f"-Dexec.mainClass={JAVA_MAIN_CLASS}",
             "-Dexec.classpathScope=test",
             f"-Dexec.args={iv} {rotation_count} {dimension} {output_path}",
         ]
-
         result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            cwd=self.project_root / "lib/java",
-            check=False,
+            exec_cmd, capture_output=True, text=True, cwd=java_dir, check=False,
         )
 
         if result.returncode != 0:
