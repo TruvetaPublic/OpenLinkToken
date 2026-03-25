@@ -379,5 +379,10 @@ class T6OnnxSignatureGenerator:
 
 
 def t6_payload_to_json(payload: Dict[str, str]) -> str:
-    """Convert an ordered payload map to stable JSON string format used for T6 tokenization."""
-    return json.dumps(payload, separators=(", ", ": "))
+    """Convert an ordered payload map to compact JSON used for T6 tokenization.
+
+    Uses compact separators (no spaces) to match Jackson's ObjectMapper default
+    output in the Java implementation, ensuring identical tokenizer input across
+    both runtimes.
+    """
+    return json.dumps(payload, separators=(",", ":"))
