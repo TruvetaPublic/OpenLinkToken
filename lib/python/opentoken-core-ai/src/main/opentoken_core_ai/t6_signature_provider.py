@@ -76,6 +76,9 @@ _T6_FIELDS = [
     (SexAttribute, "Gender"),
 ]
 
+# Pre-built attribute instances for T6 validation and normalization — reused across all calls.
+_T6_ATTRIBUTE_INSTANCES = {attr_cls: attr_cls() for attr_cls, _ in _T6_FIELDS}
+
 
 class OnnxT6SignatureProvider:
     """ONNX-backed implementation of InferenceSignatureProvider for T6 tokens."""
@@ -198,5 +201,13 @@ class OnnxT6SignatureProvider:
             if not value:
                 result.invalid_attributes.add(attr_cls.__name__)
                 return None
-            payload[field_name] = value
+            attr = _T6_ATTRIBUTE_INSTANCES[attr_cls]
+            if not attr.validate(value):
+                result.invalid_attributes.add(attr_cls.__name__)
+                return None
+            normalized = attr.normalize(value)
+            if not normalized:
+                result.invalid_attributes.add(attr_cls.__name__)
+                return None
+            payload[field_name] = normalized
         return t6_payload_to_json(payload)

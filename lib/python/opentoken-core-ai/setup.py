@@ -68,6 +68,14 @@ setup(
     python_requires=">=3.10",
     install_requires=requirements,
     cmdclass={"build_py": BuildWithInferencingAssets},
+    entry_points={
+        "opentoken.inference_providers": [
+            "t6 = opentoken_core_ai.t6_signature_provider:OnnxT6SignatureProvider",
+        ],
+        "opentoken.tokens.definitions": [
+            "t6_token = opentoken_core_ai.tokens.t6_token:T6Token",
+        ],
+    },
     extras_require={
         "test": ["pytest"],
     },

@@ -44,8 +44,11 @@ public class TokenGenerator implements Serializable {
 
     private Map<Class<? extends Attribute>, Attribute> attributeInstanceMap;
 
+    private static final Optional<InferenceSignatureProvider> PROVIDER =
+            ServiceLoader.load(InferenceSignatureProvider.class).findFirst();
+
     private static Optional<InferenceSignatureProvider> findProvider() {
-        return ServiceLoader.load(InferenceSignatureProvider.class).findFirst();
+        return PROVIDER;
     }
 
     /**
