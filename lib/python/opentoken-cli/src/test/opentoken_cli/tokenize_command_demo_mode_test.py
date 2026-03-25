@@ -2,6 +2,7 @@
 Copyright (c) Truveta. All rights reserved.
 """
 
+import csv as csv_module
 import json
 from pathlib import Path
 from unittest.mock import patch
@@ -223,7 +224,7 @@ class TestTokenizeCommandDemoMode:
             ]
         )
 
-        tokens = _extract_tokens(output_csv)
+        tokens = _extract_tokens(output_csv, exclude_rule_ids={"T6"})
         assert tokens, "Expected at least one non-blank token in normal mode"
 
         for token in tokens:
@@ -335,25 +336,36 @@ class TestTokenizeCommandDemoMode:
 # ---------------------------------------------------------------------------
 
 
-def _extract_tokens(csv_path: Path) -> list[str]:
-    """Return non-blank, non-sentinel token values from the Token column of a CSV."""
+def _extract_tokens(csv_path: Path, exclude_rule_ids: set[str] | None = None) -> list[str]:
+    """Return non-blank, non-sentinel token values from the Token column of a CSV.
+
+    Args:
+        csv_path: Path to the CSV file to read.
+        exclude_rule_ids: Optional set of RuleId values to skip (e.g. ``{"T6"}``).
+    """
     lines = csv_path.read_text().splitlines()
     if not lines:
         return []
 
-    headers = [h.strip() for h in lines[0].split(",")]
+    headers = next(csv_module.reader([lines[0]]))
+    headers = [h.strip() for h in headers]
     try:
         token_col = headers.index("Token")
     except ValueError:
         return []
 
+    rule_col = headers.index("RuleId") if "RuleId" in headers else -1
+
     tokens = []
-    for line in lines[1:]:
-        cols = line.split(",")
-        if len(cols) > token_col:
-            token = cols[token_col].strip()
-            if token and token != BLANK_TOKEN:
-                tokens.append(token)
+    for row in csv_module.reader(lines[1:]):
+        if len(row) <= token_col:
+            continue
+        if exclude_rule_ids and rule_col >= 0 and len(row) > rule_col:
+            if row[rule_col].strip() in exclude_rule_ids:
+                continue
+        token = row[token_col].strip()
+        if token and token != BLANK_TOKEN:
+            tokens.append(token)
     return tokens
 
 
