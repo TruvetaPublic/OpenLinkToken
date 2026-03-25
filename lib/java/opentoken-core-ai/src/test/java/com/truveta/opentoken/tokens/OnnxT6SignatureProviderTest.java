@@ -118,13 +118,13 @@ class OnnxT6SignatureProviderTest {
     }
 
     // -----------------------------------------------------------------------
-    // hmacRotationValues
+    // hashRotationValues
     // -----------------------------------------------------------------------
 
     @Test
-    void hmacRotationValues_returnsOneHexDigestPerInput() {
+    void hashRotationValues_returnsOneHexDigestPerInput() {
         List<String> rotationValues = List.of("94 104 96 97", "12 34 56 78");
-        List<String> result = provider.hmacRotationValues(rotationValues, "WRIGHT|R|FEMALE|1990-07-09");
+        List<String> result = provider.hashRotationValues(rotationValues, "WRIGHT|R|FEMALE|1990-07-09");
 
         assertEquals(2, result.size());
         for (String digest : result) {
@@ -135,31 +135,32 @@ class OnnxT6SignatureProviderTest {
     }
 
     @Test
-    void hmacRotationValues_deterministicOutput() {
+    void hashRotationValues_deterministicOutput() {
         List<String> rotationValues = List.of("94 104 96 97");
         String key = "WRIGHT|R|FEMALE|1990-07-09";
 
-        List<String> first = provider.hmacRotationValues(rotationValues, key);
-        List<String> second = provider.hmacRotationValues(rotationValues, key);
+        List<String> first = provider.hashRotationValues(rotationValues, key);
+        List<String> second = provider.hashRotationValues(rotationValues, key);
 
-        assertEquals(first, second, "HMAC must be deterministic");
+        assertEquals(first, second, "Hash must be deterministic");
     }
 
     @Test
-    void hmacRotationValues_differentKeysProduceDifferentDigests() {
+    void hashRotationValues_differentKeysProduceDifferentDigests() {
         List<String> rotationValues = List.of("94 104 96 97");
 
-        String digest1 = provider.hmacRotationValues(rotationValues, "WRIGHT|R|FEMALE|1990-07-09").get(0);
-        String digest2 = provider.hmacRotationValues(rotationValues, "SMITH|A|MALE|2000-01-15").get(0);
+        String digest1 = provider.hashRotationValues(rotationValues, "WRIGHT|R|FEMALE|1990-07-09").get(0);
+        String digest2 = provider.hashRotationValues(rotationValues, "SMITH|A|MALE|2000-01-15").get(0);
 
         assertTrue(!digest1.equals(digest2), "Different keys must produce different digests");
     }
 
     @Test
-    void hmacRotationValues_knownVector() {
-        // Pre-computed: HMAC-SHA256("94 104 96 97", key="WRIGHT|R|FEMALE|1990-07-09")
-        // Validated externally via Python: hmac.new(key.encode(), b"94 104 96 97", hashlib.sha256).hexdigest()
-        List<String> result = provider.hmacRotationValues(
+    void hashRotationValues_knownVector() {
+        // Pre-computed: SHA-256("94 104 96 97" + "WRIGHT|R|FEMALE|1990-07-09")
+        // Validated externally via Python:
+        //   hashlib.sha256(("94 104 96 97" + "WRIGHT|R|FEMALE|1990-07-09").encode("utf-8")).hexdigest()
+        List<String> result = provider.hashRotationValues(
                 List.of("94 104 96 97"), "WRIGHT|R|FEMALE|1990-07-09");
         assertNotNull(result.get(0));
         assertEquals(64, result.get(0).length());

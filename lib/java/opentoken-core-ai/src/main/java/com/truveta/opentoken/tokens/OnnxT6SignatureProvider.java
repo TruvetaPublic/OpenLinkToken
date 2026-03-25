@@ -16,10 +16,8 @@ import com.truveta.opentoken.tokens.definitions.T1Token;
 import com.truveta.opentoken.tokentransformer.rotation.RotationEmbeddingTransformer;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
-import java.security.InvalidKeyException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -81,7 +79,7 @@ public class OnnxT6SignatureProvider implements InferenceSignatureProvider {
                 List<String> rotationValues = getOrCreateTransformer(embedding.length).transform(embedding);
                 String t1Sig = computeT1Signature(personAttributes);
                 if (t1Sig != null) {
-                    rotationValues = hmacRotationValues(rotationValues, t1Sig);
+                    rotationValues = hashRotationValues(rotationValues, t1Sig);
                 }
                 return String.join(",", rotationValues);
             }
@@ -139,7 +137,7 @@ public class OnnxT6SignatureProvider implements InferenceSignatureProvider {
                 List<String> rotationValues = getOrCreateTransformer(embedding.length).transform(embedding);
                 String t1Sig = computeT1Signature(rows.get(originalIndex));
                 if (t1Sig != null) {
-                    rotationValues = hmacRotationValues(rotationValues, t1Sig);
+                    rotationValues = hashRotationValues(rotationValues, t1Sig);
                 }
                 signatures.set(originalIndex, String.join(",", rotationValues));
                 embeddings.set(originalIndex, embedding);
@@ -219,27 +217,24 @@ public class OnnxT6SignatureProvider implements InferenceSignatureProvider {
     }
 
     /**
-     * HMAC-SHA256 each rotation value string using the T1 signature as the key.
+     * SHA-256 hash each rotation value string concatenated with the T1 signature.
      *
      * @param rotationValues list of space-separated bin index strings from the rotation pipeline
-     * @param t1Signature    the T1 raw signature used as the HMAC key
-     * @return list of lowercase hex-encoded HMAC-SHA256 digests, one per rotation value
+     * @param t1Signature    the T1 raw signature appended to each rotation value before hashing
+     * @return list of lowercase hex-encoded SHA-256 digests, one per rotation value
      */
-    List<String> hmacRotationValues(List<String> rotationValues, String t1Signature) {
-        byte[] keyBytes = t1Signature.getBytes(StandardCharsets.UTF_8);
-        SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "HmacSHA256");
+    List<String> hashRotationValues(List<String> rotationValues, String t1Signature) {
         try {
-            Mac mac = Mac.getInstance("HmacSHA256");
-            mac.init(keySpec);
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
             List<String> result = new ArrayList<>(rotationValues.size());
             for (String rv : rotationValues) {
-                mac.reset();
-                byte[] digest = mac.doFinal(rv.getBytes(StandardCharsets.UTF_8));
-                result.add(HexFormat.of().formatHex(digest));
+                digest.reset();
+                byte[] hash = digest.digest((rv + t1Signature).getBytes(StandardCharsets.UTF_8));
+                result.add(HexFormat.of().formatHex(hash));
             }
             return result;
-        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
-            throw new IllegalStateException("HmacSHA256 is unavailable or key is invalid", e);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is unavailable", e);
         }
     }
 

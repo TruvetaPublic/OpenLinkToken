@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import hashlib
-import hmac as _hmac
 import logging
 from threading import Lock
 from typing import ClassVar, Dict, List, Optional, Type
@@ -55,18 +54,17 @@ def _compute_t1_signature(person_attributes: Dict[Type[Attribute], str]) -> Opti
     return "|".join(values) if values else None
 
 
-def _hmac_rotation_values(rotation_values: List[str], t1_signature: str) -> List[str]:
-    """HMAC-SHA256 each rotation-quantized string using the T1 signature as the key.
+def _hash_rotation_values(rotation_values: List[str], t1_signature: str) -> List[str]:
+    """SHA-256 hash each rotation-quantized string concatenated with the T1 signature.
 
     Args:
         rotation_values: Space-separated bin-index strings, one per rotation matrix.
-        t1_signature: Raw T1 token signature used as the HMAC key (blocking key).
+        t1_signature: Raw T1 token signature appended to each rotation value before hashing.
 
     Returns:
         List of SHA-256 hex digest strings, one per rotation value.
     """
-    key = t1_signature.encode("utf-8")
-    return [_hmac.new(key, rv.encode("utf-8"), hashlib.sha256).hexdigest() for rv in rotation_values]
+    return [hashlib.sha256((rv + t1_signature).encode("utf-8")).hexdigest() for rv in rotation_values]
 
 
 # Ordered field name mapping for T6 payload
@@ -115,7 +113,7 @@ class OnnxT6SignatureProvider:
     def generate_signature(self, person_attributes: Dict[Type[Attribute], str]) -> Optional[str]:
         """Generate a single T6 signature via ONNX inference.
 
-        Pipeline: ONNX embed → rotate → quantize → HMAC with T1 signature.
+        Pipeline: ONNX embed → rotate → quantize → SHA-256 hash with T1 signature.
         Falls back to raw hex embedding string when rotation is disabled.
         """
         result = TokenGeneratorResult()
@@ -130,7 +128,7 @@ class OnnxT6SignatureProvider:
                     rotation_values: List[str] = transformer.transform(list(embedding))
                     t1_sig = _compute_t1_signature(person_attributes)
                     if t1_sig:
-                        rotation_values = _hmac_rotation_values(rotation_values, t1_sig)
+                        rotation_values = _hash_rotation_values(rotation_values, t1_sig)
                     return ",".join(rotation_values)
             return sig
         except Exception as error:
@@ -140,7 +138,7 @@ class OnnxT6SignatureProvider:
     def generate_batch(self, rows: List[Dict[Type[Attribute], str]]) -> InferenceBatchResult:
         """Generate T6 signatures for a batch of records.
 
-        Pipeline per record: ONNX embed → rotate → quantize → HMAC with T1 signature.
+        Pipeline per record: ONNX embed → rotate → quantize → SHA-256 hash with T1 signature.
         Falls back to raw hex embedding string when rotation is disabled.
         """
         payloads: List[Optional[str]] = []
@@ -176,7 +174,7 @@ class OnnxT6SignatureProvider:
                     rotation_values: List[str] = transformer.transform(list(embedding))
                     t1_sig = _compute_t1_signature(rows[original_index])
                     if t1_sig:
-                        rotation_values = _hmac_rotation_values(rotation_values, t1_sig)
+                        rotation_values = _hash_rotation_values(rotation_values, t1_sig)
                     signatures[original_index] = ",".join(rotation_values)
                 else:
                     signatures[original_index] = batch_sigs[vi]
