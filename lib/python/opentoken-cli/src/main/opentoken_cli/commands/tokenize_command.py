@@ -247,18 +247,6 @@ class TokenizeCommand:
         )
 
         rotation_iv = getattr(args, "rotation_iv", None)
-        # Rotation is on by default (RotationConfig.DEFAULT_IV is used when no explicit IV
-        # is provided).  Only call configure() when an explicit IV was supplied so that the
-        # custom IV is honoured; otherwise the module-level defaults are already correct.
-        if rotation_iv is not None:
-            RotationConfig.configure(enable=True, rotation_iv=rotation_iv)
-        logger.info(
-            "Rotation token generation: enabled=%s, iv=%s, count=%s, hashDimension=%s",
-            RotationConfig.is_enabled(),
-            RotationConfig.get_rotation_iv(),
-            RotationConfig.DEFAULT_ROTATION_COUNT,
-            RotationConfig.DEFAULT_HASH_DIMENSION,
-        )
 
         if demo_mode and args.exchange_config:
             logger.error("--demo-mode cannot be combined with --exchange-config.")
@@ -266,6 +254,17 @@ class TokenizeCommand:
 
         try:
             if demo_mode:
+                # In demo mode, configure rotation from CLI --rotation-iv only
+                if rotation_iv is not None:
+                    RotationConfig.configure(enable=True, rotation_iv=rotation_iv)
+                logger.info(
+                    "Rotation token generation: enabled=%s, iv=%s, count=%s, hashDimension=%s, binWidth=%s",
+                    RotationConfig.is_enabled(),
+                    RotationConfig.get_rotation_iv(),
+                    RotationConfig.get_rotation_count(),
+                    RotationConfig.get_hash_dimension(),
+                    RotationConfig.get_bin_width(),
+                )
                 TokenizeCommand._process_tokens_demo(
                     args.input_path,
                     args.output_path,
@@ -279,6 +278,37 @@ class TokenizeCommand:
                     private_key_env=args.private_key_env,
                 )
                 logger.info(f"Exchange config: {exchange.path}")
+
+                # Configure rotation from exchange config; CLI --rotation-iv overrides
+                effective_iv = rotation_iv if rotation_iv is not None else None
+                if exchange.rotation_iv:
+                    exchange_iv_str = exchange.rotation_iv.decode("utf-8", errors="replace")
+                    if effective_iv is None:
+                        effective_iv = exchange_iv_str
+                effective_rotation_count = (
+                    exchange.rotation_count if exchange.rotation_count > 0 else RotationConfig.DEFAULT_ROTATION_COUNT
+                )
+                effective_bin_width = exchange.bin_width
+                effective_dimension_bias = exchange.dimension_bias if exchange.dimension_bias else None
+
+                if effective_iv is not None:
+                    RotationConfig.configure(
+                        enable=True,
+                        rotation_iv=effective_iv,
+                        rotation_count=effective_rotation_count,
+                        bin_width=effective_bin_width,
+                        dimension_bias=effective_dimension_bias,
+                    )
+
+                logger.info(
+                    "Rotation token generation: enabled=%s, iv=%s, count=%s, hashDimension=%s, binWidth=%s",
+                    RotationConfig.is_enabled(),
+                    RotationConfig.get_rotation_iv(),
+                    RotationConfig.get_rotation_count(),
+                    RotationConfig.get_hash_dimension(),
+                    RotationConfig.get_bin_width(),
+                )
+
                 TokenizeCommand._process_tokens(
                     args.input_path,
                     args.output_path,

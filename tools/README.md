@@ -118,6 +118,38 @@ private key whose fingerprint-derived `kid` matches one of the JWE recipients.
 `--private-key-stdin` is an alternative to `--private-key PATH`, so both the
 existing file-based option and stdin-based secret handling remain supported.
 
+### Exchange Config Inspection
+
+Use `tools/exchange/inspect_exchange_config.py` to decrypt and print the full
+contents of an exchange config file. This is useful for debugging, verifying
+rotation parameters, and confirming which keys are embedded.
+
+```bash
+# Print a human-readable summary (auto-resolves key from ~/.opentoken/)
+python tools/exchange/inspect_exchange_config.py \
+  --exchange-config sender-q2.exchange.json
+
+# Print with an explicit private key
+python tools/exchange/inspect_exchange_config.py \
+  --exchange-config sender-q2.exchange.json \
+  --private-key ~/.opentoken/sender-q2.private.pem
+
+# Read the private key from an environment variable
+python tools/exchange/inspect_exchange_config.py \
+  --exchange-config sender-q2.exchange.json \
+  --private-key-env OT_PRIVATE_KEY
+
+# Output the raw decrypted JSON payload
+python tools/exchange/inspect_exchange_config.py \
+  --exchange-config sender-q2.exchange.json \
+  --json
+```
+
+The summary view shows the exchange name, exchange ID, creation timestamp,
+curve, private key role (sender or recipient), hashing secret length and hex
+preview, rotation parameters (`rotationIv`, `rotationCount`, `binWidth`,
+`dimensionBias`), and both key fingerprints.
+
 ## Hash Tools
 
 ### Secret Hash Calculator

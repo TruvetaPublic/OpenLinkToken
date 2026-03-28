@@ -68,6 +68,8 @@ def test_build_exchange_envelope_round_trips_for_either_private_key():
         "rotationIv": "dGVzdC1yb3RhdGlvbi1pdi0yNA",
         "rotationIvEncoding": "base64url",
         "rotationCount": 30,
+        "binWidth": 0.05,
+        "dimensionBias": [],
     }
 
     recipient_headers = [entry["header"] for entry in envelope["recipients"]]
@@ -132,6 +134,8 @@ def test_resolve_exchange_config_decodes_hashing_secret_and_identifies_sender_ro
     assert resolved.hashing_secret == b"shared-hashing-secret"
     assert resolved.rotation_iv == b"test-rotation-iv-2024"
     assert resolved.rotation_count == 30
+    assert resolved.bin_width == 0.05
+    assert resolved.dimension_bias == []
     assert resolved.payload["exchangeId"] == "exchange-456"
 
 

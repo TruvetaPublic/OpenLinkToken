@@ -107,6 +107,7 @@ class OnnxT6SignatureProvider:
                         rotation_count=RotationConfig.get_rotation_count(),
                         dimension=embedding_dim,
                         hash_dimension=RotationConfig.get_hash_dimension(),
+                        bias=RotationConfig.get_dimension_bias(),
                         bin_width=RotationConfig.get_bin_width(),
                         min_val=RotationConfig.get_min_val(),
                         max_val=RotationConfig.get_max_val(),

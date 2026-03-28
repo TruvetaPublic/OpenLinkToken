@@ -114,6 +114,8 @@ After decryption, the payload is JSON with these fields:
 | `rotationIv`              | string  | Initialization vector for the rotation matrix generator, encoded as unpadded base64url. |
 | `rotationIvEncoding`      | string  | Encoding marker. Current value: `base64url`.                                            |
 | `rotationCount`           | integer | Number of rotation matrices to generate. Default: `30`.                                 |
+| `binWidth`                | number  | Quantization bin width for rotation-based token generation. Default: `0.05`.            |
+| `dimensionBias`           | array   | Per-dimension bias vector subtracted before rotation. Default: `[]` (all zeros).        |
 
 Example decrypted payload:
 
@@ -129,7 +131,9 @@ Example decrypted payload:
   "exchangeId": "0f3d5f8a-3f2a-4c2f-b69d-cb1f9d08d4ab",
   "rotationIv": "R2VuZXJhdGVkUm90YXRpb25JVkJ5dGVzMDEyMzQ1Njc",
   "rotationIvEncoding": "base64url",
-  "rotationCount": 30
+  "rotationCount": 30,
+  "binWidth": 0.05,
+  "dimensionBias": []
 }
 ```
 

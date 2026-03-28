@@ -1,6 +1,6 @@
 """Runtime configuration for rotation-based T6 token generation."""
 
-from typing import ClassVar, Optional
+from typing import ClassVar, List, Optional
 
 
 class RotationConfig:
@@ -29,6 +29,7 @@ class RotationConfig:
     _bin_width: ClassVar[float] = DEFAULT_BIN_WIDTH
     _min_val: ClassVar[float] = DEFAULT_MIN_VAL
     _max_val: ClassVar[float] = DEFAULT_MAX_VAL
+    _dimension_bias: ClassVar[Optional[List[float]]] = None
 
     @classmethod
     def configure(
@@ -40,6 +41,7 @@ class RotationConfig:
         bin_width: float = DEFAULT_BIN_WIDTH,
         min_val: float = DEFAULT_MIN_VAL,
         max_val: float = DEFAULT_MAX_VAL,
+        dimension_bias: Optional[List[float]] = None,
     ) -> None:
         """Configure the rotation token generation parameters.
 
@@ -53,6 +55,8 @@ class RotationConfig:
             bin_width: Quantizer bin width (must be > 0).
             min_val: Quantizer lower bound.
             max_val: Quantizer upper bound.
+            dimension_bias: Bias vector subtracted before rotation. None or empty
+                            means all zeros (no centering).
         """
         if enable and not rotation_iv:
             rotation_iv = cls.DEFAULT_IV
@@ -69,6 +73,7 @@ class RotationConfig:
         cls._bin_width = bin_width
         cls._min_val = min_val
         cls._max_val = max_val
+        cls._dimension_bias = dimension_bias if dimension_bias else None
 
     @classmethod
     def is_enabled(cls) -> bool:
@@ -104,3 +109,8 @@ class RotationConfig:
     def get_max_val(cls) -> float:
         """Return the quantizer upper bound."""
         return cls._max_val
+
+    @classmethod
+    def get_dimension_bias(cls) -> Optional[List[float]]:
+        """Return the dimension bias vector, or None for all-zeros default."""
+        return cls._dimension_bias

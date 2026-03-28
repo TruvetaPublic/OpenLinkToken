@@ -138,20 +138,27 @@ Available in the Python CLI.
 
 Generates, reuses, or derives a sender key pair, encrypts a hashing secret into a versioned multi-recipient JWE JSON exchange artifact, and writes recipient entries for both the sender and the partner. The artifact does **not** embed any private keys.
 
-| Argument                   | Short | Required | Default                    | Description                                                                                                       |
-| -------------------------- | ----- | -------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `--public-key`             |       | Yes\*    |                            | Path to the partner's public key (PEM/SPKI format)                                                                |
-| `--public-key-stdin`       |       | Yes\*    | `false`                    | Read the partner's public key PEM from stdin instead of `--public-key`                                            |
-| `--public-key-env`         |       | Yes\*    |                            | Read the partner's public key PEM from the named environment variable                                             |
-| `--name`                   | `-n`  | No       | `opentoken-<ISO8601-date>` | Base name for local key files                                                                                     |
-| `--output`                 | `-o`  | No       | `./<name>.exchange.json`   | Output path for the exchange config JSON                                                                          |
-| `--hashingsecret`          |       | No\*\*   | randomly generated         | Hashing secret to encrypt when you intentionally pass it on the command line                                      |
-| `--hashingsecret-stdin`    |       | No\*\*   | `false`                    | Read the hashing secret from stdin instead of passing it on the command line                                      |
-| `--hashingsecret-env`      |       | No\*\*   |                            | Read the hashing secret from the named environment variable                                                       |
-| `--curve`                  | `-c`  | No       | `P-256`                    | Elliptic curve for generated keys: `P-256`, `P-384`, or `P-521`                                                   |
-| `--force`                  |       | No       | `false`                    | Overwrite existing key files and exchange config                                                                  |
-| `--sender-private-key`     |       | No       |                            | Reuse an existing sender private key PEM for the sender-side recipient entry instead of generating a new key pair |
-| `--sender-private-key-env` |       | No       |                            | Read the sender private key PEM from the named environment variable without writing local sender key files        |
+| Argument                         | Short   | Required | Default                    | Description                                                                                                                                                      |
+| -------------------------------- | ------- | -------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--public-key`                   |         | Yes\*    |                            | Path to the partner's public key (PEM/SPKI format)                                                                                                               |
+| `--public-key-stdin`             |         | Yes\*    | `false`                    | Read the partner's public key PEM from stdin instead of `--public-key`                                                                                           |
+| `--public-key-env`               |         | Yes\*    |                            | Read the partner's public key PEM from the named environment variable                                                                                            |
+| `--name`                         | `-n`    | No       | `opentoken-<ISO8601-date>` | Base name for local key files                                                                                                                                    |
+| `--output`                       | `-o`    | No       | `./<name>.exchange.json`   | Output path for the exchange config JSON                                                                                                                         |
+| `--hashingsecret`                |         | No\*\*   | randomly generated         | Hashing secret to encrypt when you intentionally pass it on the command line                                                                                     |
+| `--hashingsecret-stdin`          |         | No\*\*   | `false`                    | Read the hashing secret from stdin instead of passing it on the command line                                                                                     |
+| `--hashingsecret-env`            |         | No\*\*   |                            | Read the hashing secret from the named environment variable                                                                                                      |
+| `--rotation-iv`                  |         | No\*\*\* | randomly generated         | Rotation IV string for the rotation matrix generator                                                                                                             |
+| `--rotation-iv-stdin`            |         | No\*\*\* | `false`                    | Read the rotation IV from stdin instead of passing it on the command line                                                                                        |
+| `--rotation-iv-env`              |         | No\*\*\* |                            | Read the rotation IV from the named environment variable                                                                                                         |
+| `--rotation-count`               |         | No       | `30`                       | Number of rotation matrices to generate                                                                                                                          |
+| `--rotation-bin-width`           | `WIDTH` | No       | `0.05`                     | Quantization bin width for rotation-based token generation                                                                                                       |
+| `--rotation-embedding-dimension` | `N`     | No       | `1024`                     | Embedding vector size. Sets the length of the zero-filled dimension bias written into the exchange config. Ignored when `--rotation-embedding-bias` is provided. |
+| `--rotation-embedding-bias`      | `PATH`  | No       |                            | Path to a JSON file containing a flat array of floats used as the dimension bias (e.g. `[0.12, -0.05, 0.33]`). Overrides `--rotation-embedding-dimension`.       |
+| `--curve`                        | `-c`    | No       | `P-256`                    | Elliptic curve for generated keys: `P-256`, `P-384`, or `P-521`                                                                                                  |
+| `--force`                        |         | No       | `false`                    | Overwrite existing key files and exchange config                                                                                                                 |
+| `--sender-private-key`           |         | No       |                            | Reuse an existing sender private key PEM for the sender-side recipient entry instead of generating a new key pair                                                |
+| `--sender-private-key-env`       |         | No       |                            | Read the sender private key PEM from the named environment variable without writing local sender key files                                                       |
 
 **Outputs:**
 
@@ -164,6 +171,8 @@ Generates, reuses, or derives a sender key pair, encrypts a hashing secret into 
 \* Provide one of `--public-key`, `--public-key-stdin`, or `--public-key-env`.
 
 \*\* Provide at most one of `--hashingsecret`, `--hashingsecret-stdin`, or `--hashingsecret-env`. If you omit all three, OpenToken generates a secure random hashing secret. For pre-existing secrets, prefer `--hashingsecret-env` or `--hashingsecret-stdin` so the secret does not appear in shell history or process arguments. Because stdin can only be consumed once per command, `--hashingsecret-stdin` cannot be combined with `--public-key-stdin`.
+
+\*\*\* Provide at most one of `--rotation-iv`, `--rotation-iv-stdin`, or `--rotation-iv-env`. If you omit all three, OpenToken generates a secure random rotation IV. Prefer `--rotation-iv-env` or `--rotation-iv-stdin` over `--rotation-iv` to avoid the value appearing in shell history. The rotation IV, count, and bin width are encrypted into the exchange payload so both parties use identical rotation parameters.
 
 **Example:**
 
@@ -224,6 +233,27 @@ opentoken initiate-exchange \
 
 When `--sender-private-key-env` is used, OpenToken derives the sender public key
 in memory and does not write local sender key files under `~/.opentoken/`.
+
+To provide an explicit dimension bias computed from a sample population, write
+the values to a JSON file and pass its path:
+
+```bash
+# bias.json contains a flat array: [0.12, -0.05, 0.33, 0.01, -0.22, 0.44]
+opentoken initiate-exchange \
+  --name sender-q2 \
+  --public-key ./recipient-org.public.pem \
+  --rotation-embedding-bias ./bias.json \
+  --output ./sender-q2.exchange.json
+```
+
+To use a bias exported from numpy:
+
+```python
+import json, numpy as np
+np.save("bias.npy", my_bias_array)
+with open("bias.json", "w") as f:
+    json.dump(my_bias_array.tolist(), f)
+```
 
 For `tokenize`, `package`, `encrypt`, and `decrypt`, OpenToken resolves the exchange config from `--exchange-config` or from the date-based default path `./opentoken-YYYY-MM-DD.exchange.json`. When neither `--private-key` nor `--private-key-env` is supplied, the CLI falls back to `~/.opentoken/` fingerprint-based key lookup.
 

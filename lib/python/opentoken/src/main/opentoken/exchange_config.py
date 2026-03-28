@@ -48,6 +48,8 @@ class ResolvedExchangeConfig:
     hashing_secret: bytes
     rotation_iv: bytes
     rotation_count: int
+    bin_width: float
+    dimension_bias: list[float]
 
 
 def default_exchange_config_path() -> Path:
@@ -179,6 +181,8 @@ def resolve_loaded_exchange_config(
         hashing_secret=_decode_hashing_secret(payload),
         rotation_iv=_decode_rotation_iv(payload),
         rotation_count=_decode_rotation_count(payload),
+        bin_width=_decode_bin_width(payload),
+        dimension_bias=_decode_dimension_bias(payload),
     )
 
 
@@ -334,3 +338,24 @@ def _decode_rotation_count(payload: Mapping[str, Any]) -> int:
     if not isinstance(value, int) or isinstance(value, bool) or value < 1:
         raise ValueError(f"Exchange config payload has an invalid rotationCount '{value}'. Must be a positive integer.")
     return value
+
+
+def _decode_bin_width(payload: Mapping[str, Any]) -> float:
+    value = payload.get("binWidth")
+    if value is None:
+        return 0.05
+    if not isinstance(value, (int, float)) or isinstance(value, bool) or value <= 0:
+        raise ValueError(f"Exchange config payload has an invalid binWidth '{value}'. Must be a positive number.")
+    return float(value)
+
+
+def _decode_dimension_bias(payload: Mapping[str, Any]) -> list[float]:
+    value = payload.get("dimensionBias")
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        raise ValueError(f"Exchange config payload has an invalid dimensionBias '{value}'. Must be a list of numbers.")
+    for i, item in enumerate(value):
+        if not isinstance(item, (int, float)) or isinstance(item, bool):
+            raise ValueError(f"dimensionBias[{i}] is not a valid number: {item!r}")
+    return [float(v) for v in value]

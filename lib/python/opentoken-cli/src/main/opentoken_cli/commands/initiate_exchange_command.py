@@ -27,6 +27,8 @@ logger = logging.getLogger(__name__)
 
 EXCHANGE_CONFIG_VERSION = EXCHANGE_JWE_VERSION
 DEFAULT_ROTATION_COUNT = 30
+DEFAULT_BIN_WIDTH = 0.05
+DEFAULT_EMBEDDING_DIMENSION = 1024
 
 
 class InitiateExchangeCommand:
@@ -150,6 +152,42 @@ class InitiateExchangeCommand:
         )
 
         parser.add_argument(
+            "--rotation-bin-width",
+            dest="bin_width",
+            type=float,
+            default=DEFAULT_BIN_WIDTH,
+            metavar="WIDTH",
+            help=f"Quantization bin width for rotation-based token generation (default: {DEFAULT_BIN_WIDTH})",
+        )
+
+        parser.add_argument(
+            "--rotation-embedding-dimension",
+            dest="embedding_dimension",
+            type=int,
+            default=DEFAULT_EMBEDDING_DIMENSION,
+            metavar="N",
+            help=(
+                f"Embedding vector size of the model (default: {DEFAULT_EMBEDDING_DIMENSION}).\n"
+                "Sets the length of the dimension bias array written into the exchange config.\n"
+                "Ignored when --rotation-embedding-bias is provided."
+            ),
+        )
+
+        parser.add_argument(
+            "--rotation-embedding-bias",
+            dest="embedding_bias",
+            type=str,
+            default=None,
+            metavar="PATH",
+            help=(
+                "Path to a JSON file containing a flat array of floats used as the\n"
+                "dimension bias subtracted from each embedding before rotation\n"
+                "(e.g. '[0.12, -0.05, 0.33]'). Overrides --rotation-embedding-dimension.\n"
+                "When omitted, defaults to zeros of length --rotation-embedding-dimension."
+            ),
+        )
+
+        parser.add_argument(
             "-c",
             "--curve",
             dest="curve",
@@ -209,6 +247,9 @@ class InitiateExchangeCommand:
         rotation_count: int = getattr(args, "rotation_count", DEFAULT_ROTATION_COUNT)
         curve: Optional[str] = getattr(args, "curve", None)
         force: bool = getattr(args, "force", False)
+        bin_width: float = getattr(args, "bin_width", DEFAULT_BIN_WIDTH)
+        embedding_dimension: int = getattr(args, "embedding_dimension", DEFAULT_EMBEDDING_DIMENSION)
+        embedding_bias: Optional[list] = getattr(args, "embedding_bias", None)
         local_private_key_path_str: Optional[str] = getattr(args, "local_private_key", None)
         sender_private_key_env_name: Optional[str] = getattr(args, "sender_private_key_env", None)
 
@@ -247,6 +288,35 @@ class InitiateExchangeCommand:
             if rotation_count < 1:
                 logger.error("--rotation-count must be a positive integer, got %d.", rotation_count)
                 return 1
+
+            if bin_width <= 0:
+                logger.error("--rotation-bin-width must be a positive number, got %s.", bin_width)
+                return 1
+
+            if embedding_bias is not None:
+                bias_path = Path(embedding_bias)
+                if not bias_path.exists():
+                    logger.error("--rotation-embedding-bias file not found: %s", bias_path)
+                    return 1
+                try:
+                    parsed = json.loads(bias_path.read_text(encoding="utf-8"))
+                    if not isinstance(parsed, list) or not all(isinstance(v, (int, float)) for v in parsed):
+                        raise ValueError("Expected a flat JSON array of numbers.")
+                    dimension_bias = [float(v) for v in parsed]
+                except (json.JSONDecodeError, ValueError) as e:
+                    logger.error("--rotation-embedding-bias: invalid JSON in '%s': %s", bias_path, e)
+                    return 1
+                if len(dimension_bias) < 2:
+                    logger.error(
+                        "--rotation-embedding-bias must contain at least 2 values, got %d.",
+                        len(dimension_bias),
+                    )
+                    return 1
+            else:
+                if embedding_dimension < 2:
+                    logger.error("--rotation-embedding-dimension must be at least 2, got %d.", embedding_dimension)
+                    return 1
+                dimension_bias = [0.0] * embedding_dimension
 
             opentoken_dir = Path.home() / ".opentoken"
             private_key_path = opentoken_dir / f"{name}.private.pem"
@@ -346,6 +416,8 @@ class InitiateExchangeCommand:
                 exchange_id=InitiateExchangeCommand._exchange_id(),
                 rotation_iv=resolved_rotation_iv,
                 rotation_count=rotation_count,
+                bin_width=bin_width,
+                dimension_bias=dimension_bias,
             )
 
             InitiateExchangeCommand._write_config(output_path, config, overwrite=force)
