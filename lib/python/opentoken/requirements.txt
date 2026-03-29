@@ -1,2 +1,2 @@
 # Cryptography - mandate secure version to address CVE-2023-0286
-cryptography==46.0.5
+cryptography==46.0.6
