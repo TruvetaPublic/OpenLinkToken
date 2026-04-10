@@ -24,7 +24,7 @@ mvn -version    # Should show 3.8 or higher
 
 ```bash
 # Clone and navigate to the repository
-cd /path/to/OpenToken/lib/java
+cd /path/to/OpenLinkToken/lib/java
 
 # Build both opentoken core and CLI modules
 mvn clean install

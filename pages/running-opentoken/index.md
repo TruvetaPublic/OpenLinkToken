@@ -158,7 +158,7 @@ Scripts automatically build and run the container.
 
 **Bash (Linux/Mac):**
 ```bash
-cd /path/to/OpenToken
+cd /path/to/OpenLinkToken
 
 ./run-opentoken.sh \
   -i ./resources/sample.csv \
@@ -170,7 +170,7 @@ cd /path/to/OpenToken
 
 **PowerShell (Windows):**
 ```powershell
-cd C:\path\to\OpenToken
+cd C:\path\to\OpenLinkToken
 
 .\run-opentoken.ps1 `
   -i .\resources\sample.csv `
