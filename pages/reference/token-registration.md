@@ -250,7 +250,7 @@ The Python `TokenRegistry.load_all_tokens()` implementation discovers `Token` su
 After making changes in both languages, verify parity:
 
 ```bash
-cd /workspaces/OpenToken/tools
+cd /workspaces/OpenLinkToken/tools
 python java_language_syncer.py
 ```
 
@@ -265,7 +265,7 @@ This tool checks:
 Run the interoperability test suite:
 
 ```bash
-cd /workspaces/OpenToken/tools/interoperability
+cd /workspaces/OpenLinkToken/tools/interoperability
 python java_python_interoperability_test.py
 ```
 

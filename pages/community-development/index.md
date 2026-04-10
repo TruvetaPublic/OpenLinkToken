@@ -45,7 +45,7 @@ pip install -r requirements.txt -e .
 ### PySpark Bridge
 
 ```bash
-source /workspaces/OpenToken/.venv/bin/activate
+source /workspaces/OpenLinkToken/.venv/bin/activate
 cd lib/python/opentoken-pyspark
 pip install -r requirements.txt -e .
 ```

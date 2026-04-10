@@ -214,7 +214,7 @@ cat resources/output.metadata.json
 
 **Dev Container:** If running in a dev container, use absolute path:
 ```bash
-docker run --rm -v /workspaces/OpenToken/resources:/app/resources \
+docker run --rm -v /workspaces/OpenLinkToken/resources:/app/resources \
   opentoken:latest ...
 ```
 
@@ -236,7 +236,7 @@ For large-scale distributed token generation and dataset overlap analysis, use t
 Ensure the Python root venv is active, then install:
 
 ```bash
-source /workspaces/OpenToken/.venv/bin/activate
+source /workspaces/OpenLinkToken/.venv/bin/activate
 
 cd lib/python/opentoken-pyspark
 pip install -r requirements.txt -e .
@@ -340,7 +340,7 @@ Wrong:   1905-01-01, 2025-12-31, 01-15-80
 
 **Solution**:
 1. Ensure Docker is running: `docker --version`
-2. Use absolute paths, not relative: `/workspaces/OpenToken/resources`
+2. Use absolute paths, not relative: `/workspaces/OpenLinkToken/resources`
 3. Clear Docker cache if needed: `docker system prune`
 4. Check file permissions: `ls -la resources/sample.csv`
 
