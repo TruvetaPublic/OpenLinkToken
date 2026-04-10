@@ -22,7 +22,7 @@
         <repository>
             <id>github</id>
             <name>GitHub Packages</name>
-            <url>https://maven.pkg.github.com/TruvetaPublic/OpenToken</url>
+            <url>https://maven.pkg.github.com/TruvetaPublic/OpenLinkToken</url>
         </repository>
     </distributionManagement>
 

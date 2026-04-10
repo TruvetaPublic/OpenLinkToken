@@ -50,7 +50,7 @@ jobs:
       - name: Publish to GitHub Packages Apache Maven
         run: |
           set -euo pipefail
-          base_url="https://maven.pkg.github.com/TruvetaPublic/OpenToken/com/truveta"
+          base_url="https://maven.pkg.github.com/TruvetaPublic/OpenLinkToken/com/truveta"
           version="${VERSION}"
           parent_metadata_url="${base_url}/opentoken-parent/maven-metadata.xml"
 

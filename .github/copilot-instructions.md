@@ -63,19 +63,19 @@ This document provides comprehensive guidance for AI coding agents working on th
 
 ### ⚠️ CRITICAL PYTHON ENVIRONMENT RULE
 
-**The Python virtual environment (`.venv`) is located at the repository root (`/workspaces/OpenToken/.venv`).**
+**The Python virtual environment (`.venv`) is located at the repository root (`/workspaces/OpenLinkToken/.venv`).**
 
 - ❌ **NEVER** create or activate a venv in any subdirectory (e.g., `lib/python/opentoken/.venv`)
 - ❌ **NEVER** run `python -m venv .venv` from any folder other than the repo root
-- ✅ **ALWAYS** activate the root venv: `source /workspaces/OpenToken/.venv/bin/activate`
+- ✅ **ALWAYS** activate the root venv: `source /workspaces/OpenLinkToken/.venv/bin/activate`
 - ✅ **ALWAYS** use absolute path or ensure you're at repo root before activating
 
 ```bash
 # CORRECT - activate from anywhere using absolute path
-source /workspaces/OpenToken/.venv/bin/activate
+source /workspaces/OpenLinkToken/.venv/bin/activate
 
 # CORRECT - navigate to repo root first
-cd /workspaces/OpenToken && source .venv/bin/activate
+cd /workspaces/OpenLinkToken && source .venv/bin/activate
 
 # WRONG - never do this from lib/python or any subdirectory
 cd lib/python/opentoken && python -m venv .venv  # ❌ DO NOT DO THIS
@@ -89,13 +89,13 @@ cd lib/python/opentoken && python -m venv .venv  # ❌ DO NOT DO THIS
 cd lib/java && mvn clean install
 
 # Python: Activate root venv first, then run tests from package directories
-source /workspaces/OpenToken/.venv/bin/activate
+source /workspaces/OpenLinkToken/.venv/bin/activate
 
 # Python core library tests:
-cd /workspaces/OpenToken/lib/python/opentoken && pytest
+cd /workspaces/OpenLinkToken/lib/python/opentoken && pytest
 
 # Python CLI tests:
-cd /workspaces/OpenToken/lib/python/opentoken-cli && pytest
+cd /workspaces/OpenLinkToken/lib/python/opentoken-cli && pytest
 
 # Note: No unified build script exists - build each language separately
 ```

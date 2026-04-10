@@ -206,7 +206,7 @@ Each run produces a `.metadata.json` with SHA-256 hashes of secrets:
 }
 ```
 
-Use [tools/hash_calculator.py](https://github.com/TruvetaPublic/OpenToken/blob/main/tools/hash_calculator.py) to verify:
+Use [tools/hash_calculator.py](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/tools/hash_calculator.py) to verify:
 
 ```bash
 python tools/hash_calculator.py \
