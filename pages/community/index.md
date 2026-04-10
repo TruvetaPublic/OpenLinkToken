@@ -13,4 +13,4 @@ Join the OpenToken community.
 ## Next Steps
 
 - **Get started**: [Quickstarts](../quickstarts/index.md)
-- **Report issues**: [GitHub Issues](https://github.com/TruvetaPublic/OpenToken/issues)
+- **Report issues**: [GitHub Issues](https://github.com/TruvetaPublic/OpenLinkToken/issues)

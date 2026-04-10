@@ -24,7 +24,7 @@ class Metadata:
     METADATA_FILE_EXTENSION = ".metadata.json"
     SYSTEM_PYTHON_VERSION = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
 
-    DEFAULT_VERSION = "1.13.1"
+    DEFAULT_VERSION = "1.13.2"
 
     # Output format values
     OUTPUT_FORMAT_JSON = "JSON"

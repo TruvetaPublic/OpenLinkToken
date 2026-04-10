@@ -133,7 +133,7 @@ record1,T2,pUxPgYL9+cMxkA+8928Pil+9W+dm9kISwHYPdkZS+I2nQ/bQ/8HyL3FOVf3NYPW5NKZZO
 ```json
 {
   "JavaVersion": "21.0.0",
-  "OpenTokenVersion": "1.13.1",
+  "OpenTokenVersion": "1.13.2",
   "Platform": "Java",
   "TotalRows": 1,
   "TotalRowsWithInvalidAttributes": 0,
@@ -158,7 +158,7 @@ Scripts automatically build and run the container.
 
 **Bash (Linux/Mac):**
 ```bash
-cd /path/to/OpenToken
+cd /path/to/OpenLinkToken
 
 ./run-opentoken.sh \
   -i ./resources/sample.csv \
@@ -170,7 +170,7 @@ cd /path/to/OpenToken
 
 **PowerShell (Windows):**
 ```powershell
-cd C:\path\to\OpenToken
+cd C:\path\to\OpenLinkToken
 
 .\run-opentoken.ps1 `
   -i .\resources\sample.csv `
@@ -214,7 +214,7 @@ cat resources/output.metadata.json
 
 **Dev Container:** If running in a dev container, use absolute path:
 ```bash
-docker run --rm -v /workspaces/OpenToken/resources:/app/resources \
+docker run --rm -v /workspaces/OpenLinkToken/resources:/app/resources \
   opentoken:latest ...
 ```
 
@@ -236,7 +236,7 @@ For large-scale distributed token generation and dataset overlap analysis, use t
 Ensure the Python root venv is active, then install:
 
 ```bash
-source /workspaces/OpenToken/.venv/bin/activate
+source /workspaces/OpenLinkToken/.venv/bin/activate
 
 cd lib/python/opentoken-pyspark
 pip install -r requirements.txt -e .
@@ -275,8 +275,8 @@ tokens_df.coalesce(1).write \
 
 See example notebooks in `lib/python/opentoken-pyspark/notebooks/`:
 
-- [Custom_Token_Definition_Guide.ipynb](https://github.com/TruvetaPublic/OpenToken/blob/main/lib/python/opentoken-pyspark/notebooks/Custom_Token_Definition_Guide.ipynb) – Define custom token rules
-- [Dataset_Overlap_Analysis_Guide.ipynb](https://github.com/TruvetaPublic/OpenToken/blob/main/lib/python/opentoken-pyspark/notebooks/Dataset_Overlap_Analysis_Guide.ipynb) – Find overlapping records across datasets
+- [Custom_Token_Definition_Guide.ipynb](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/lib/python/opentoken-pyspark/notebooks/Custom_Token_Definition_Guide.ipynb) – Define custom token rules
+- [Dataset_Overlap_Analysis_Guide.ipynb](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/lib/python/opentoken-pyspark/notebooks/Dataset_Overlap_Analysis_Guide.ipynb) – Find overlapping records across datasets
 
 ---
 
@@ -340,7 +340,7 @@ Wrong:   1905-01-01, 2025-12-31, 01-15-80
 
 **Solution**:
 1. Ensure Docker is running: `docker --version`
-2. Use absolute paths, not relative: `/workspaces/OpenToken/resources`
+2. Use absolute paths, not relative: `/workspaces/OpenLinkToken/resources`
 3. Clear Docker cache if needed: `docker system prune`
 4. Check file permissions: `ls -la resources/sample.csv`
 

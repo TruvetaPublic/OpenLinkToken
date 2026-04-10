@@ -8,8 +8,8 @@ This walkthrough explains the **data flow and artifacts** produced by the demo u
 
 If you want the full, runnable demo guide, see:
 
-- [Demo notebook (PPRL_Superhero_Demo.ipynb)](https://github.com/TruvetaPublic/OpenToken/blob/main/demos/pprl-superhero-example/PPRL_Superhero_Demo.ipynb)
-- [Demo README](https://github.com/TruvetaPublic/OpenToken/blob/main/demos/pprl-superhero-example/README.md)
+- [Demo notebook (PPRL_Superhero_Demo.ipynb)](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/demos/pprl-superhero-example/PPRL_Superhero_Demo.ipynb)
+- [Demo README](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/demos/pprl-superhero-example/README.md)
 
 ## Scenario and roles
 

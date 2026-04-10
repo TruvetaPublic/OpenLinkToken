@@ -551,4 +551,4 @@ This demonstration can be adapted for:
 
 ### Questions? <!-- omit in toc -->
 
-For issues or questions about OpenToken, please visit the [GitHub repository](https://github.com/mattwise-42/OpenToken).
+For issues or questions about OpenToken, please visit the [GitHub repository](https://github.com/TruvetaPublic/OpenLinkToken).

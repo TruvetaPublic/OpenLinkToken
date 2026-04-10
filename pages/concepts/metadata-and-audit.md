@@ -69,4 +69,4 @@ For full field descriptions, JSON schema, examples, and hash verification detail
 
 - **View metadata structure**: [Reference: Metadata Format](../reference/metadata-format.md)
 - **Understand validation rules**: [Normalization & Validation](normalization-and-validation.md)
-- **Use hash calculator**: [tools/hash_calculator.py](https://github.com/TruvetaPublic/OpenToken/blob/main/tools/hash_calculator.py)
+- **Use hash calculator**: [tools/hash_calculator.py](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/tools/hash_calculator.py)

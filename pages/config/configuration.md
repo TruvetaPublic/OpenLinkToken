@@ -174,7 +174,7 @@ java -jar opentoken-cli/target/opentoken-cli-*.jar \
   -h "HashingKey" -e "EncryptionKey32Characters!!!!!"
 
 # Python
-source /workspaces/OpenToken/.venv/bin/activate
+source /workspaces/OpenLinkToken/.venv/bin/activate
 python -m opentoken_cli.main \
   -i ../../../resources/sample.csv -t csv -o ../../../resources/output.csv \
   -h "HashingKey" -e "EncryptionKey32Characters!!!!!"

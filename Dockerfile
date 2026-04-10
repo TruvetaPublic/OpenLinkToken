@@ -23,7 +23,7 @@ RUN mkdir /app
 
 RUN addgroup --system appuser && adduser --system --no-create-home --ingroup appuser appuser
 
-ARG VERSION=1.13.1
+ARG VERSION=1.13.2
 COPY --from=build /app/opentoken-cli/target/opentoken-cli-${VERSION}.jar /usr/local/lib/opentoken.jar
 
 WORKDIR /app

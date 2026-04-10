@@ -23,8 +23,8 @@ This guide outlines how to contribute code, documentation, and bug reports to Op
 1. **Fork the repository** on GitHub
 2. **Clone your fork**:
    ```bash
-   git clone https://github.com/YOUR-USERNAME/OpenToken.git
-   cd OpenToken
+   git clone https://github.com/YOUR-USERNAME/OpenLinkToken.git
+   cd OpenLinkToken
    ```
 3. **Set up the Python environment** (at repo root):
    ```bash

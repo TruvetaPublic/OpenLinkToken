@@ -356,11 +356,11 @@ Notebook Guides:
 - See `lib/python/opentoken-pyspark/notebooks/` for example workflows (custom tokens & overlap analysis).
 ### Multi-Language Sync Tool
 
-Java is the source of truth. The sync tool ([tools/java_language_syncer.py](https://github.com/TruvetaPublic/OpenToken/blob/main/tools/java_language_syncer.py)) evaluates changed Java files against enabled target languages (currently Python). It will fail PR workflows if any modified Java file lacks a corresponding, up-to-date target implementation.
+Java is the source of truth. The sync tool ([tools/java_language_syncer.py](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/tools/java_language_syncer.py)) evaluates changed Java files against enabled target languages (currently Python). It will fail PR workflows if any modified Java file lacks a corresponding, up-to-date target implementation.
 
 Key concepts:
 
-- Source-centric config: [tools/java-language-mappings.json](https://github.com/TruvetaPublic/OpenToken/blob/main/tools/java-language-mappings.json) defines `critical_java_files` (with optional priorities/manual review) and `directory_roots` for broad coverage.
+- Source-centric config: [tools/java-language-mappings.json](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/tools/java-language-mappings.json) defines `critical_java_files` (with optional priorities/manual review) and `directory_roots` for broad coverage.
 - Language overrides: Target-specific adjustments live under `target_languages.<lang>.overrides.critical_files`.
 - Auto-generation: If `auto_generate_unmapped` is true, unmapped Java files still produce inferred target paths via handlers.
 - Sync status logic: A target file is considered synced if it was modified after the Java file (timestamp) or, in simplified mode, if both were touched in the PR.

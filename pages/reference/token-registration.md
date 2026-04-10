@@ -64,7 +64,7 @@ public class MiddleNameAttribute extends BaseAttribute {
 }
 ```
 
-2. **Register in service file** at [lib/java/opentoken/src/main/resources/META-INF/services/com.truveta.opentoken.attributes.Attribute](https://github.com/TruvetaPublic/OpenToken/blob/main/lib/java/opentoken/src/main/resources/META-INF/services/com.truveta.opentoken.attributes.Attribute):
+2. **Register in service file** at [lib/java/opentoken/src/main/resources/META-INF/services/com.truveta.opentoken.attributes.Attribute](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/lib/java/opentoken/src/main/resources/META-INF/services/com.truveta.opentoken.attributes.Attribute):
 
 ```
 com.truveta.opentoken.attributes.general.DateAttribute
@@ -129,7 +129,7 @@ public class T6Token implements Token {
 }
 ```
 
-2. **Register in service file** at [lib/java/opentoken/src/main/resources/META-INF/services/com.truveta.opentoken.tokens.Token](https://github.com/TruvetaPublic/OpenToken/blob/main/lib/java/opentoken/src/main/resources/META-INF/services/com.truveta.opentoken.tokens.Token):
+2. **Register in service file** at [lib/java/opentoken/src/main/resources/META-INF/services/com.truveta.opentoken.tokens.Token](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/lib/java/opentoken/src/main/resources/META-INF/services/com.truveta.opentoken.tokens.Token):
 
 ```
 com.truveta.opentoken.tokens.definitions.T1Token
@@ -250,7 +250,7 @@ The Python `TokenRegistry.load_all_tokens()` implementation discovers `Token` su
 After making changes in both languages, verify parity:
 
 ```bash
-cd /workspaces/OpenToken/tools
+cd /workspaces/OpenLinkToken/tools
 python java_language_syncer.py
 ```
 
@@ -265,7 +265,7 @@ This tool checks:
 Run the interoperability test suite:
 
 ```bash
-cd /workspaces/OpenToken/tools/interoperability
+cd /workspaces/OpenLinkToken/tools/interoperability
 python java_python_interoperability_test.py
 ```
 
@@ -277,19 +277,19 @@ This verifies that identical inputs produce identical token outputs in both lang
 
 | Type                   | Location                                                                                                                                                                                                                                                      |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Attribute classes      | [lib/java/opentoken/src/main/java/com/truveta/opentoken/attributes/](https://github.com/TruvetaPublic/OpenToken/tree/main/lib/java/opentoken/src/main/java/com/truveta/opentoken/attributes)                                                                  |
-| Token classes          | [lib/java/opentoken/src/main/java/com/truveta/opentoken/tokens/definitions/](https://github.com/TruvetaPublic/OpenToken/tree/main/lib/java/opentoken/src/main/java/com/truveta/opentoken/tokens/definitions)                                                  |
-| Attribute service file | [lib/java/opentoken/src/main/resources/META-INF/services/com.truveta.opentoken.attributes.Attribute](https://github.com/TruvetaPublic/OpenToken/blob/main/lib/java/opentoken/src/main/resources/META-INF/services/com.truveta.opentoken.attributes.Attribute) |
-| Token service file     | [lib/java/opentoken/src/main/resources/META-INF/services/com.truveta.opentoken.tokens.Token](https://github.com/TruvetaPublic/OpenToken/blob/main/lib/java/opentoken/src/main/resources/META-INF/services/com.truveta.opentoken.tokens.Token)                 |
+| Attribute classes      | [lib/java/opentoken/src/main/java/com/truveta/opentoken/attributes/](https://github.com/TruvetaPublic/OpenLinkToken/tree/main/lib/java/opentoken/src/main/java/com/truveta/opentoken/attributes)                                                                  |
+| Token classes          | [lib/java/opentoken/src/main/java/com/truveta/opentoken/tokens/definitions/](https://github.com/TruvetaPublic/OpenLinkToken/tree/main/lib/java/opentoken/src/main/java/com/truveta/opentoken/tokens/definitions)                                                  |
+| Attribute service file | [lib/java/opentoken/src/main/resources/META-INF/services/com.truveta.opentoken.attributes.Attribute](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/lib/java/opentoken/src/main/resources/META-INF/services/com.truveta.opentoken.attributes.Attribute) |
+| Token service file     | [lib/java/opentoken/src/main/resources/META-INF/services/com.truveta.opentoken.tokens.Token](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/lib/java/opentoken/src/main/resources/META-INF/services/com.truveta.opentoken.tokens.Token)                 |
 
 ### Python Files
 
 | Type              | Location                                                                                                                                                                                                               |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Attribute classes | [lib/python/opentoken/src/main/opentoken/attributes/](https://github.com/TruvetaPublic/OpenToken/tree/main/lib/python/opentoken/src/main/opentoken/attributes)                                                         |
-| Token classes     | [lib/python/opentoken/src/main/opentoken/tokens/definitions/](https://github.com/TruvetaPublic/OpenToken/tree/main/lib/python/opentoken/src/main/opentoken/tokens/definitions)                                         |
-| Attribute loader  | [lib/python/opentoken/src/main/opentoken/attributes/attribute_loader.py](https://github.com/TruvetaPublic/OpenToken/blob/main/lib/python/opentoken/src/main/opentoken/attributes/attribute_loader.py)                  |
-| Token discovery   | [lib/python/opentoken/src/main/opentoken/tokens/token_registry.py](https://github.com/TruvetaPublic/OpenToken/blob/main/lib/python/opentoken/src/main/opentoken/tokens/token_registry.py) (auto-discovers definitions) |
+| Attribute classes | [lib/python/opentoken/src/main/opentoken/attributes/](https://github.com/TruvetaPublic/OpenLinkToken/tree/main/lib/python/opentoken/src/main/opentoken/attributes)                                                         |
+| Token classes     | [lib/python/opentoken/src/main/opentoken/tokens/definitions/](https://github.com/TruvetaPublic/OpenLinkToken/tree/main/lib/python/opentoken/src/main/opentoken/tokens/definitions)                                         |
+| Attribute loader  | [lib/python/opentoken/src/main/opentoken/attributes/attribute_loader.py](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/lib/python/opentoken/src/main/opentoken/attributes/attribute_loader.py)                  |
+| Token discovery   | [lib/python/opentoken/src/main/opentoken/tokens/token_registry.py](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/lib/python/opentoken/src/main/opentoken/tokens/token_registry.py) (auto-discovers definitions) |
 
 ## Common Mistakes
 

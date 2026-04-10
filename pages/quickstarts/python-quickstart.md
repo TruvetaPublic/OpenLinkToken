@@ -25,7 +25,7 @@ pip --version
 **Important:** The virtual environment should be created at the repository root.
 
 ```bash
-cd /path/to/OpenToken
+cd /path/to/OpenLinkToken
 
 # Create virtual environment at repo root
 python -m venv .venv
@@ -178,7 +178,7 @@ OpenToken requires Python 3.10+. Check with `python --version`.
 If commands fail, ensure venv is active:
 
 ```bash
-source /path/to/OpenToken/.venv/bin/activate
+source /path/to/OpenLinkToken/.venv/bin/activate
 ```
 
 ### Import Errors After Updates

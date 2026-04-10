@@ -16,7 +16,7 @@ OpenToken includes a mock data generator for testing and development. The tool c
 
 ## Mock Data Generator
 
-Location: [tools/mockdata/data_generator.py](https://github.com/TruvetaPublic/OpenToken/blob/main/tools/mockdata/data_generator.py)
+Location: [tools/mockdata/data_generator.py](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/tools/mockdata/data_generator.py)
 
 ### Usage
 
@@ -145,14 +145,14 @@ For automated overlap analysis, see [Spark or Databricks](spark-or-databricks.md
 
 ## Sample Data Files
 
-Pre-generated sample files are available in [resources/](https://github.com/TruvetaPublic/OpenToken/tree/main/resources):
+Pre-generated sample files are available in [resources/](https://github.com/TruvetaPublic/OpenLinkToken/tree/main/resources):
 
 | File                                                                                                                    | Description                    |
 | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| [sample.csv](https://github.com/TruvetaPublic/OpenToken/blob/main/resources/sample.csv)                                 | Small test file for quickstart |
-| [mockdata/test_data.csv](https://github.com/TruvetaPublic/OpenToken/blob/main/resources/mockdata/test_data.csv)         | 100 records with duplicates    |
-| [mockdata/test_overlap1.csv](https://github.com/TruvetaPublic/OpenToken/blob/main/resources/mockdata/test_overlap1.csv) | Dataset for overlap testing    |
-| [mockdata/test_overlap2.csv](https://github.com/TruvetaPublic/OpenToken/blob/main/resources/mockdata/test_overlap2.csv) | Dataset for overlap testing    |
+| [sample.csv](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/resources/sample.csv)                                 | Small test file for quickstart |
+| [mockdata/test_data.csv](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/resources/mockdata/test_data.csv)         | 100 records with duplicates    |
+| [mockdata/test_overlap1.csv](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/resources/mockdata/test_overlap1.csv) | Dataset for overlap testing    |
+| [mockdata/test_overlap2.csv](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/resources/mockdata/test_overlap2.csv) | Dataset for overlap testing    |
 
 ---
 
