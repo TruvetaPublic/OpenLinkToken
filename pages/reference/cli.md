@@ -135,7 +135,7 @@ Every run generates a `.metadata.json` file:
 {
   "Platform": "Java",
   "JavaVersion": "21.0.0",
-  "OpenTokenVersion": "1.13.1",
+  "OpenTokenVersion": "1.13.2",
   "TotalRows": 100,
   "TotalRowsWithInvalidAttributes": 3,
   "InvalidAttributesByType": {
