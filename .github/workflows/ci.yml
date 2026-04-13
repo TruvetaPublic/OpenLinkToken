@@ -37,10 +37,12 @@ jobs:
       - name: Publish Maven Surefire report
         if: success() || failure()
         uses: scacap/action-surefire-report@v1
+        continue-on-error: true
 
       - name: Publish Java unit test results
         if: always()
         uses: EnricoMi/publish-unit-test-result-action@v2
+        continue-on-error: true
         with:
           files: |
             lib/java/openlinktoken/target/surefire-reports/*.xml
@@ -60,6 +62,7 @@ jobs:
 
       - name: Add Java code coverage to PR
         uses: madrapps/jacoco-report@v1.7.1
+        continue-on-error: true
         with:
           paths: |
             lib/java/openlinktoken/target/site/jacoco/jacoco.xml
@@ -73,6 +76,7 @@ jobs:
 
       - name: Update dependency graph
         uses: advanced-security/maven-dependency-submission-action@v3
+        continue-on-error: true
         with:
           directory: ${{ github.workspace }}/lib/java
           maven-args: "-B -DskipTests"
@@ -129,6 +133,7 @@ jobs:
       - name: Publish Python unit test results
         if: always()
         uses: EnricoMi/publish-unit-test-result-action@v2
+        continue-on-error: true
         with:
           files: |
             lib/python/openlinktoken/test-results-${{ matrix.python-version }}.xml
@@ -139,6 +144,7 @@ jobs:
       - name: Add Python code coverage to PR
         if: matrix.python-version == '3.10'
         uses: orgoro/coverage@v3.2
+        continue-on-error: true
         with:
           coverageFile: lib/python/openlinktoken/coverage.xml
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -198,6 +204,7 @@ jobs:
       - name: Publish Python CLI test results
         if: always()
         uses: EnricoMi/publish-unit-test-result-action@v2
+        continue-on-error: true
         with:
           files: |
             lib/python/openlinktoken-cli/test-results-${{ matrix.python-version }}.xml
@@ -309,6 +316,7 @@ jobs:
       - name: Publish PySpark test results
         if: always()
         uses: EnricoMi/publish-unit-test-result-action@v2
+        continue-on-error: true
         with:
           files: |
             lib/python/openlinktoken-pyspark/test-results-${{ matrix.python-version }}-spark${{ matrix.spark-version }}.xml
@@ -319,6 +327,7 @@ jobs:
       - name: Add PySpark code coverage to PR
         if: matrix.python-version == '3.10' && matrix.spark-version == '4.0'
         uses: orgoro/coverage@v3.2
+        continue-on-error: true
         with:
           coverageFile: lib/python/openlinktoken-pyspark/coverage-${{ matrix.python-version }}-spark${{ matrix.spark-version }}.xml
           token: ${{ secrets.GITHUB_TOKEN }}
