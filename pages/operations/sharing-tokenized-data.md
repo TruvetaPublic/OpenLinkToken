@@ -52,7 +52,7 @@ The two-command ECDH bootstrap workflow lets partners establish a shared hashing
 
 For this workflow:
 
-- `sender` means the party that runs `openlinktoken initiate-exchange` and creates the exchange artifact
+- `sender` means the party that runs `olt initiate-exchange` and creates the exchange artifact
 - `recipient` means the counterparty whose public key is supplied to `initiate-exchange` and who later decrypts with the matching private key
 
 ### Overview
@@ -78,7 +78,7 @@ from sender's local public key
 ### Step 1 — Recipient generates a key pair
 
 ```bash
-openlinktoken generate-key-pair --name recipient-org
+olt generate-key-pair --name recipient-org
 ```
 
 This writes:
@@ -89,7 +89,7 @@ This writes:
 ### Step 2 — Sender initiates the exchange
 
 ```bash
-openlinktoken initiate-exchange \
+olt initiate-exchange \
   --name sender-q2 \
   --public-key ./recipient-org.public.pem \
   --output ./sender-q2.exchange.json
@@ -99,7 +99,7 @@ To provide the same partner public key via stdin instead of `--public-key`:
 
 ```bash
 cat ./recipient-org.public.pem | \
-  openlinktoken initiate-exchange \
+  olt initiate-exchange \
     --name sender-q2 \
     --public-key-stdin \
     --output ./sender-q2.exchange.json
@@ -111,7 +111,7 @@ reference in one command, use environment variables:
 ```bash
 OT_RECIPIENT_PUBLIC_KEY="$(az keyvault secret show --vault-name my-vault --name recipient-public-key --query value -o tsv)" \
 OT_SENDER_PRIVATE_KEY="$(az keyvault secret show --vault-name my-vault --name sender-private-key --query value -o tsv)" \
-openlinktoken initiate-exchange \
+olt initiate-exchange \
   --name sender-q2 \
   --public-key-env OT_RECIPIENT_PUBLIC_KEY \
   --sender-private-key-env OT_SENDER_PRIVATE_KEY \
@@ -135,7 +135,7 @@ from the referenced private key in memory and skips writing sender key files to
 If you want to keep using an existing sender private key instead of generating a new one, use `--sender-private-key`:
 
 ```bash
-openlinktoken initiate-exchange \
+olt initiate-exchange \
   --name sender-q2 \
   --public-key ./recipient-org.public.pem \
   --sender-private-key ~/.openlinktoken/sender-q2.private.pem \
@@ -147,7 +147,7 @@ If you need to supply a pre-existing hashing secret, prefer an environment-varia
 ```bash
 export OT_HASHING_SECRET="$(az keyvault secret show --vault-name my-vault --name hashing-secret --query value -o tsv)"
 
-openlinktoken initiate-exchange \
+olt initiate-exchange \
   --name sender-q2 \
   --public-key ./recipient-org.public.pem \
   --hashingsecret-env OT_HASHING_SECRET \
@@ -192,7 +192,7 @@ cat ~/.openlinktoken/recipient-org.private.pem | \
     --private-key-stdin
 ```
 
-If the sender provided a known plaintext via `openlinktoken initiate-exchange --hashingsecret-env ...`, `--hashingsecret-stdin`, or `--hashingsecret ...`, the recipient can also perform an explicit pass/fail check:
+If the sender provided a known plaintext via `olt initiate-exchange --hashingsecret-env ...`, `--hashingsecret-stdin`, or `--hashingsecret ...`, the recipient can also perform an explicit pass/fail check:
 
 ```bash
 python tools/exchange/validate_exchange_secret.py \
@@ -208,7 +208,7 @@ Successful AES-GCM decryption proves the available key material matches one of t
 Once both parties have the exchange artifact and the matching private key, they run the consumer commands directly against the exchange config:
 
 ```bash
-openlinktoken package \
+olt package \
   -i patient_data.csv -t csv \
   -o tokens_for_partner.csv \
   --exchange-config sender-q2.exchange.json \
@@ -237,7 +237,7 @@ Generate tokens using the agreed-upon secrets.
 **Encrypted mode (recommended for external sharing):**
 
 ```bash
-openlinktoken package \
+olt package \
   -i patient_data.csv \
   -t csv \
   -o tokens_for_partner.csv \
@@ -250,7 +250,7 @@ openlinktoken package \
 Tokenized (unencrypted) output is primarily used **inside your environment** to support overlap analysis against encrypted tokens received from a partner:
 
 ```bash
-openlinktoken tokenize \
+olt tokenize \
   -i local_patient_data.csv \
   -t csv \
   -o local_hash_only_tokens.csv \
@@ -344,7 +344,7 @@ Compare the output hashes with `HashingSecretHash` and `EncryptionSecretHash` in
 Run OpenLinkToken on your local data using the **same secrets**:
 
 ```bash
-openlinktoken package \
+olt package \
   -i local_patient_data.csv \
   -t csv \
   -o local_tokens.csv \
@@ -381,7 +381,7 @@ See [Matching Model](../concepts/matching-model.md) for matching strategies.
 If tokens are encrypted and you need to debug or verify:
 
 ```bash
-openlinktoken decrypt \
+olt decrypt \
   -i partner_tokens.csv \
   -t csv \
   -o partner_decrypted.csv \

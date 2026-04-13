@@ -134,11 +134,11 @@ git checkout -b dev/your-username/feature-name
 
 ```java
 // ✓ Correct
-import com.truveta.openlinktoken.tokens.tokenizer.SHA256Tokenizer;
+import org.openlinktoken.tokens.tokenizer.SHA256Tokenizer;
 SHA256Tokenizer tokenizer = new SHA256Tokenizer(transformers);
 
 // ✗ Wrong - never use fully qualified names
-com.truveta.openlinktoken.tokens.tokenizer.SHA256Tokenizer tokenizer = ...
+org.openlinktoken.tokens.tokenizer.SHA256Tokenizer tokenizer = ...
 ```
 
 ### Python
@@ -179,8 +179,8 @@ When adding a new attribute (e.g., `MiddleNameAttribute`):
 
 ### Java
 
-1. Create class extending `BaseAttribute` in `lib/java/openlinktoken/src/main/java/com/truveta/openlinktoken/attributes/`
-2. Add to `META-INF/services/com.truveta.openlinktoken.attributes.Attribute` (alphabetical order)
+1. Create class extending `BaseAttribute` in `lib/java/openlinktoken/src/main/java/org/openlinktoken/attributes/`
+2. Add to `META-INF/services/org.openlinktoken.attributes.Attribute` (alphabetical order)
 3. Add tests in `src/test/java/`
 
 ### Python

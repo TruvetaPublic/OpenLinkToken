@@ -1,6 +1,4 @@
-"""
-Copyright (c) Truveta. All rights reserved.
-"""
+# SPDX-License-Identifier: MIT
 
 import argparse
 from abc import ABC, abstractmethod
@@ -30,7 +28,7 @@ class OpenLinkTokenExtension(ABC):
     @property
     @abstractmethod
     def description(self) -> str:
-        """Short human-readable description shown in `openlinktoken --help`."""
+        """Short human-readable description shown in `olt --help`."""
 
     @property
     @abstractmethod

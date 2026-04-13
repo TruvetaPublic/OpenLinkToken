@@ -1,6 +1,4 @@
-"""
-Copyright (c) Truveta. All rights reserved.
-"""
+# SPDX-License-Identifier: MIT
 
 from abc import ABC
 

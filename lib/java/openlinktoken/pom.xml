@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.truveta</groupId>
+        <groupId>org.openlinktoken</groupId>
         <artifactId>openlinktoken-parent</artifactId>
         <version>2.0.0-alpha</version>
         <relativePath>../pom.xml</relativePath>
@@ -17,7 +17,7 @@
 
     <name>openlinktoken</name>
     <description>OpenLinkToken Core Library - Privacy-preserving record linkage using cryptographically secure token generation</description>
-    <url>http://www.truveta.com</url>
+    <url>https://truvetapublic.github.io/OpenLinkToken/</url>
 
     <properties>
         <!-- Override parent default: only the core library is published to GitHub Packages -->

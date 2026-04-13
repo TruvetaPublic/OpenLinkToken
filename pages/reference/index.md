@@ -36,20 +36,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.truveta.openlinktoken.attributes.Attribute;
-import com.truveta.openlinktoken.attributes.person.BirthDateAttribute;
-import com.truveta.openlinktoken.attributes.person.FirstNameAttribute;
-import com.truveta.openlinktoken.attributes.person.LastNameAttribute;
-import com.truveta.openlinktoken.attributes.person.PostalCodeAttribute;
-import com.truveta.openlinktoken.attributes.person.SexAttribute;
-import com.truveta.openlinktoken.attributes.person.SocialSecurityNumberAttribute;
-import com.truveta.openlinktoken.tokens.TokenDefinition;
-import com.truveta.openlinktoken.tokens.TokenGenerator;
-import com.truveta.openlinktoken.tokens.TokenGeneratorResult;
-import com.truveta.openlinktoken.tokens.tokenizer.SHA256Tokenizer;
-import com.truveta.openlinktoken.tokentransformer.EncryptTokenTransformer;
-import com.truveta.openlinktoken.tokentransformer.HashTokenTransformer;
-import com.truveta.openlinktoken.tokentransformer.TokenTransformer;
+import org.openlinktoken.attributes.Attribute;
+import org.openlinktoken.attributes.person.BirthDateAttribute;
+import org.openlinktoken.attributes.person.FirstNameAttribute;
+import org.openlinktoken.attributes.person.LastNameAttribute;
+import org.openlinktoken.attributes.person.PostalCodeAttribute;
+import org.openlinktoken.attributes.person.SexAttribute;
+import org.openlinktoken.attributes.person.SocialSecurityNumberAttribute;
+import org.openlinktoken.tokens.TokenDefinition;
+import org.openlinktoken.tokens.TokenGenerator;
+import org.openlinktoken.tokens.TokenGeneratorResult;
+import org.openlinktoken.tokens.tokenizer.SHA256Tokenizer;
+import org.openlinktoken.tokentransformer.EncryptTokenTransformer;
+import org.openlinktoken.tokentransformer.HashTokenTransformer;
+import org.openlinktoken.tokentransformer.TokenTransformer;
 
 List<TokenTransformer> transformers = List.of(
   new HashTokenTransformer(hashingSecret),
@@ -135,7 +135,7 @@ The CLI processes CSV or Parquet files without writing code.
 **Basic usage:**
 
 ```bash
-openlinktoken package \
+olt package \
   -i input.csv -t csv -o output.csv \
   -h "HashingSecret" -e "EncryptionKey32Chars!!!!!!!!!!"
 ```

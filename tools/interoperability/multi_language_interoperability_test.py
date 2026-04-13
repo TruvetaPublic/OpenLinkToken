@@ -59,7 +59,7 @@ class InteroperabilityTooling:
     """Shared paths and test credentials for interoperability checks."""
 
     HASHING_KEY = "TestHashingKey123"
-    JAVA_MAIN_CLASS = "com.truveta.openlinktoken.tools.TokenizeInteropHarness"
+    JAVA_MAIN_CLASS = "org.openlinktoken.tools.TokenizeInteropHarness"
 
     def __init__(self):
         self.project_root = PROJECT_ROOT

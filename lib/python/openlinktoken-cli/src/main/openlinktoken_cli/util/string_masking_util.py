@@ -1,6 +1,5 @@
+# SPDX-License-Identifier: MIT
 """
-Copyright (c) Truveta. All rights reserved.
-
 Utility class for masking sensitive strings in CLI commands.
 """
 

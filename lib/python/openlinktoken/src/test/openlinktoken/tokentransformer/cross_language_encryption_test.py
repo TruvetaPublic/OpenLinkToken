@@ -1,6 +1,5 @@
+# SPDX-License-Identifier: MIT
 """
-Copyright (c) Truveta. All rights reserved.
-
 Tests cross-language compatibility between Java and Python encryption/decryption.
 These tests verify that tokens encrypted by Python can be decrypted by Java and vice versa.
 """

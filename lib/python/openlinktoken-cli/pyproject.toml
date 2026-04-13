@@ -12,7 +12,7 @@ dynamic = [
 ]
 
 [project.scripts]
-openlinktoken = "openlinktoken_cli.main:main"
+olt = "openlinktoken_cli.main:main"
 
 [build-system]
 requires = ["setuptools>=40.8.0", "wheel"]

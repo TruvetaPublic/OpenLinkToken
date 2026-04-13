@@ -1,7 +1,5 @@
 # src/test/openlinktoken/attributes/person/test_canadian_postal_code_attribute.py
-"""
-Copyright (c) Truveta. All rights reserved.
-"""
+# SPDX-License-Identifier: MIT
 
 import pickle
 from concurrent.futures import ThreadPoolExecutor, as_completed

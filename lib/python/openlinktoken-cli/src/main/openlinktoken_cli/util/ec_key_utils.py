@@ -1,6 +1,5 @@
+# SPDX-License-Identifier: MIT
 """
-Copyright (c) Truveta. All rights reserved.
-
 Backwards-compatible re-exports for shared EC key helpers.
 """
 

@@ -2,7 +2,7 @@
 layout: default
 ---
 
-# OpenLinkToken Documentation
+# Open Link Token Documentation
 
 OpenLinkToken is a privacy-preserving tokenization and matching library for secure person linkage using PII-derived attributes. It provides deterministic, cryptographically secure tokens across Java and Python implementations.
 

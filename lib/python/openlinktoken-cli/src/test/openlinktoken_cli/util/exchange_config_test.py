@@ -1,6 +1,4 @@
-"""
-Copyright (c) Truveta. All rights reserved.
-"""
+# SPDX-License-Identifier: MIT
 
 import importlib
 from pathlib import Path

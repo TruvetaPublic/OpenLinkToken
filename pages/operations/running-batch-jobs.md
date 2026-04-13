@@ -22,7 +22,7 @@ OpenLinkToken processes input files (CSV or Parquet) and produces two outputs:
 ### Basic Syntax
 
 ```bash
-openlinktoken <subcommand> [OPTIONS]
+olt <subcommand> [OPTIONS]
 ```
 
 ### Required Arguments
@@ -50,7 +50,7 @@ cd lib/python/openlinktoken-cli
 source ../../.venv/bin/activate
 uv pip install -r requirements.txt -e . -e ../openlinktoken
 
-openlinktoken package \
+olt package \
   -i ../../../resources/sample.csv \
   -t csv \
   -o ../../../resources/output.csv \
@@ -171,7 +171,7 @@ See [Reference: Metadata Format](../reference/metadata-format.md) for complete f
 export OPENTOKEN_HASHING_SECRET="MyHashingKey"
 export OPENTOKEN_ENCRYPTION_KEY="MyEncryptionKey32CharactersLong"
 
-openlinktoken package \
+olt package \
   -i data.csv -t csv -o tokens.csv \
   -h "$OPENTOKEN_HASHING_SECRET" \
   -e "$OPENTOKEN_ENCRYPTION_KEY"

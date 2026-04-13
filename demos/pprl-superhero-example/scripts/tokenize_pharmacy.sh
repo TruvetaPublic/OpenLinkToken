@@ -25,15 +25,15 @@ echo "============================================================"
 echo ""
 
 # Ensure Python CLI is available
-if ! command -v openlinktoken &>/dev/null; then
-  echo "openlinktoken CLI not found. Installing Python CLI..."
+if ! command -v olt &>/dev/null; then
+  echo "olt CLI not found. Installing Python CLI..."
   (cd "${PROJECT_ROOT}" && uv pip install -e lib/python/openlinktoken -e lib/python/openlinktoken-cli)
 fi
 
 mkdir -p "${DEMO_DIR}/outputs"
 
 echo "Running OpenLinkToken CLI (pharmacy)..."
-openlinktoken package \
+olt package \
   -t csv \
   -i "${DEMO_DIR}/datasets/pharmacy_superhero_data.csv" \
   -o "${DEMO_DIR}/outputs/pharmacy_tokens.csv" \

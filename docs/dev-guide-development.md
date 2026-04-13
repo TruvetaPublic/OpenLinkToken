@@ -115,7 +115,7 @@ Using as Maven dependencies:
 ```xml
 <!-- Core library (tokenization logic only) -->
 <dependency>
-  <groupId>com.truveta</groupId>
+  <groupId>org.openlinktoken</groupId>
   <artifactId>openlinktoken</artifactId>
   <version>${openlinktoken.version}</version>
 </dependency>
@@ -224,7 +224,7 @@ Smoke-test the local build before packaging it:
 ```shell
 mkdir -p smoke
 cp resources/sample.csv smoke/input.csv
-./dist/openlinktoken tokenize -i smoke/input.csv -t csv -o smoke/out.csv -h secret
+./dist/olt tokenize -i smoke/input.csv -t csv -o smoke/out.csv -h secret
 ```
 
 On Windows PowerShell:
@@ -408,7 +408,7 @@ When adding attributes/tokens: update all applicable language implementations, r
 | Build / Package | `cd lib/java && mvn clean install` | `uv pip install -e .`              |
 | Run Tests       | `mvn test`                         | `pytest src/test`                  |
 | Lint / Style    | `mvn checkstyle:check`             | (pep8 / flake8 if configured)      |
-| Run CLI         | N/A (use Python CLI)               | `openlinktoken package ...`        |
+| Run CLI         | N/A (use Python CLI)               | `olt package ...`                  |
 | Add Token       | SPI entry & class                  | new module in `tokens/definitions` |
 | Add Attribute   | SPI entry & class                  | class + loader import              |
 
@@ -425,7 +425,7 @@ assistants.
 **Core Principles:**
 
 - **Always use direct imports**: Never use fully qualified class names in code (e.g., `new SHA256Tokenizer()` instead
-  of `new com.truveta.openlinktoken.tokens.tokenizer.SHA256Tokenizer()`). Add import statements at the top of the file.
+  of `new org.openlinktoken.tokens.tokenizer.SHA256Tokenizer()`). Add import statements at the top of the file.
 - **Follow Google's Java Style Guide**: Use `UpperCamelCase` for classes, `lowerCamelCase` for methods/variables,
   `UPPER_SNAKE_CASE` for constants, `lowercase` for packages.
 - **Leverage Lombok**: Use `@Builder`, `@NonNull`, `@Data`, `@Value`, `@Slf4j` to reduce boilerplate.
@@ -585,15 +585,15 @@ Java uses the standard `ServiceLoader` discovery mechanism.
 
 Steps (Token example):
 
-1. Create class in `com.truveta.openlinktoken.tokens.definitions` extending `Token`.
+1. Create class in `org.openlinktoken.tokens.definitions` extending `Token`.
 2. Implement required abstract methods (identifier, definition, etc.).
-3. Add fully qualified class name to: `lib/java/openlinktoken/src/main/resources/META-INF/services/com.truveta.openlinktoken.tokens.Token` (one per line).
+3. Add fully qualified class name to: `lib/java/openlinktoken/src/main/resources/META-INF/services/org.openlinktoken.tokens.Token` (one per line).
 4. Run `mvn clean install` and add/adjust tests.
 
 Attribute steps are identical except:
 
-- Class extends `com.truveta.openlinktoken.attributes.Attribute` (e.g., in `attributes.person`).
-- Register in: `lib/java/openlinktoken/src/main/resources/META-INF/services/com.truveta.openlinktoken.attributes.Attribute`.
+- Class extends `org.openlinktoken.attributes.Attribute` (e.g., in `attributes.person`).
+- Register in: `lib/java/openlinktoken/src/main/resources/META-INF/services/org.openlinktoken.attributes.Attribute`.
 
 Guidelines:
 
@@ -711,7 +711,7 @@ Arguments:
 The `generate-key-pair` subcommand generates an ECDH public/private key pair:
 
 ```shell
-openlinktoken generate-key-pair --curve P-256 --name my-key
+olt generate-key-pair --curve P-256 --name my-key
 ```
 
 Writes:
@@ -750,13 +750,13 @@ cd lib/python/openlinktoken_ext_hello_world
 uv pip install -e .
 
 # Verify it appears in help and the extension list
-openlinktoken --help
-openlinktoken extension list
+olt --help
+olt extension list
 
 # Run it
-openlinktoken hello-world hello --name Alice
+olt hello-world hello --name Alice
 # → Hello, Alice
-openlinktoken hello-world bye --name Bob
+olt hello-world bye --name Bob
 # → Bye, Bob
 ```
 
@@ -771,15 +771,15 @@ cd lib/python/openlinktoken_ext_hello_world
 pip install build && python -m build
 
 # Install via the extension command (--yes skips the security prompt; use an absolute path)
-openlinktoken extension install file://$(pwd)/dist/openlinktoken_ext_hello_world-1.0.0-py3-none-any.whl --yes
+olt extension install file://$(pwd)/dist/openlinktoken_ext_hello_world-1.0.0-py3-none-any.whl --yes
 
 # Confirm it appears in the registry
-openlinktoken extension list
+olt extension list
 
 # Run it
-openlinktoken hello-world hello --name Alice
+olt hello-world hello --name Alice
 # → Hello, Alice
-openlinktoken hello-world bye --name Bob
+olt hello-world bye --name Bob
 # → Bye, Bob
 ```
 
@@ -803,7 +803,7 @@ cd lib/python/openlinktoken_ext_hello_world && pytest src/test
    ```
 4. Install in editable mode (`uv pip install -e .`) — the CLI picks it up on next invocation.
 5. Package with `python -m build` and distribute as a `.whl`.
-6. End users install via `openlinktoken extension install <url-or-file://path>`.
+6. End users install via `olt extension install <url-or-file://path>`.
 
 See `lib/python/openlinktoken_ext_hello_world/README.md` for the full lifecycle walkthrough and `pages/quickstarts/extension-quickstart.md` for a step-by-step guide.
 

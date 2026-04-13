@@ -38,4 +38,4 @@ WORKDIR /app
 RUN chown -R appuser:appuser /app
 USER appuser
 
-ENTRYPOINT ["openlinktoken"]
+ENTRYPOINT ["olt"]

@@ -26,12 +26,12 @@ Java uses the ServiceLoader pattern for runtime discovery.
 1. **Create the attribute class** extending `BaseAttribute`:
 
 ```java
-package com.truveta.openlinktoken.attributes.person;
+package org.openlinktoken.attributes.person;
 
 import java.util.List;
 
-import com.truveta.openlinktoken.attributes.BaseAttribute;
-import com.truveta.openlinktoken.attributes.validation.RegexValidator;
+import org.openlinktoken.attributes.BaseAttribute;
+import org.openlinktoken.attributes.validation.RegexValidator;
 
 /**
  * Middle name attribute with standard string normalization.
@@ -64,19 +64,19 @@ public class MiddleNameAttribute extends BaseAttribute {
 }
 ```
 
-2. **Register in service file** at [lib/java/openlinktoken/src/main/resources/META-INF/services/com.truveta.openlinktoken.attributes.Attribute](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/lib/java/openlinktoken/src/main/resources/META-INF/services/com.truveta.openlinktoken.attributes.Attribute):
+2. **Register in service file** at [lib/java/openlinktoken/src/main/resources/META-INF/services/org.openlinktoken.attributes.Attribute](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/lib/java/openlinktoken/src/main/resources/META-INF/services/org.openlinktoken.attributes.Attribute):
 
 ```
-com.truveta.openlinktoken.attributes.general.DateAttribute
-com.truveta.openlinktoken.attributes.general.RecordIdAttribute
-com.truveta.openlinktoken.attributes.general.StringAttribute
-com.truveta.openlinktoken.attributes.person.BirthDateAttribute
-com.truveta.openlinktoken.attributes.person.FirstNameAttribute
-com.truveta.openlinktoken.attributes.person.LastNameAttribute
-com.truveta.openlinktoken.attributes.person.MiddleNameAttribute
-com.truveta.openlinktoken.attributes.person.PostalCodeAttribute
-com.truveta.openlinktoken.attributes.person.SexAttribute
-com.truveta.openlinktoken.attributes.person.SocialSecurityNumberAttribute
+org.openlinktoken.attributes.general.DateAttribute
+org.openlinktoken.attributes.general.RecordIdAttribute
+org.openlinktoken.attributes.general.StringAttribute
+org.openlinktoken.attributes.person.BirthDateAttribute
+org.openlinktoken.attributes.person.FirstNameAttribute
+org.openlinktoken.attributes.person.LastNameAttribute
+org.openlinktoken.attributes.person.MiddleNameAttribute
+org.openlinktoken.attributes.person.PostalCodeAttribute
+org.openlinktoken.attributes.person.SexAttribute
+org.openlinktoken.attributes.person.SocialSecurityNumberAttribute
 ```
 
 **Rules for service files:**
@@ -91,16 +91,16 @@ com.truveta.openlinktoken.attributes.person.SocialSecurityNumberAttribute
 1. **Create the token class** implementing `Token`:
 
 ```java
-package com.truveta.openlinktoken.tokens.definitions;
+package org.openlinktoken.tokens.definitions;
 
 import java.util.ArrayList;
 
-import com.truveta.openlinktoken.attributes.AttributeExpression;
-import com.truveta.openlinktoken.attributes.person.BirthDateAttribute;
-import com.truveta.openlinktoken.attributes.person.FirstNameAttribute;
-import com.truveta.openlinktoken.attributes.person.LastNameAttribute;
-import com.truveta.openlinktoken.attributes.person.PostalCodeAttribute;
-import com.truveta.openlinktoken.tokens.Token;
+import org.openlinktoken.attributes.AttributeExpression;
+import org.openlinktoken.attributes.person.BirthDateAttribute;
+import org.openlinktoken.attributes.person.FirstNameAttribute;
+import org.openlinktoken.attributes.person.LastNameAttribute;
+import org.openlinktoken.attributes.person.PostalCodeAttribute;
+import org.openlinktoken.tokens.Token;
 
 /**
  * Token rule T6 - Example custom token.
@@ -130,15 +130,15 @@ public class T6Token implements Token {
 }
 ```
 
-2. **Register in service file** at [lib/java/openlinktoken/src/main/resources/META-INF/services/com.truveta.openlinktoken.tokens.Token](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/lib/java/openlinktoken/src/main/resources/META-INF/services/com.truveta.openlinktoken.tokens.Token):
+2. **Register in service file** at [lib/java/openlinktoken/src/main/resources/META-INF/services/org.openlinktoken.tokens.Token](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/lib/java/openlinktoken/src/main/resources/META-INF/services/org.openlinktoken.tokens.Token):
 
 ```
-com.truveta.openlinktoken.tokens.definitions.T1Token
-com.truveta.openlinktoken.tokens.definitions.T2Token
-com.truveta.openlinktoken.tokens.definitions.T3Token
-com.truveta.openlinktoken.tokens.definitions.T4Token
-com.truveta.openlinktoken.tokens.definitions.T5Token
-com.truveta.openlinktoken.tokens.definitions.T6Token
+org.openlinktoken.tokens.definitions.T1Token
+org.openlinktoken.tokens.definitions.T2Token
+org.openlinktoken.tokens.definitions.T3Token
+org.openlinktoken.tokens.definitions.T4Token
+org.openlinktoken.tokens.definitions.T5Token
+org.openlinktoken.tokens.definitions.T6Token
 ```
 
 ## Python Registration (Explicit Imports)
@@ -276,12 +276,12 @@ This verifies that identical inputs produce identical token outputs in both lang
 
 ### Java Files
 
-| Type                   | Location                                                                                                                                                                                                                                                                          |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Attribute classes      | [lib/java/openlinktoken/src/main/java/com/truveta/openlinktoken/attributes/](https://github.com/TruvetaPublic/OpenLinkToken/tree/main/lib/java/openlinktoken/src/main/java/com/truveta/openlinktoken/attributes)                                                                  |
-| Token classes          | [lib/java/openlinktoken/src/main/java/com/truveta/openlinktoken/tokens/definitions/](https://github.com/TruvetaPublic/OpenLinkToken/tree/main/lib/java/openlinktoken/src/main/java/com/truveta/openlinktoken/tokens/definitions)                                                  |
-| Attribute service file | [lib/java/openlinktoken/src/main/resources/META-INF/services/com.truveta.openlinktoken.attributes.Attribute](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/lib/java/openlinktoken/src/main/resources/META-INF/services/com.truveta.openlinktoken.attributes.Attribute) |
-| Token service file     | [lib/java/openlinktoken/src/main/resources/META-INF/services/com.truveta.openlinktoken.tokens.Token](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/lib/java/openlinktoken/src/main/resources/META-INF/services/com.truveta.openlinktoken.tokens.Token)                 |
+| Type                   | Location                                                                                                                                                                                                                                                          |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Attribute classes      | [lib/java/openlinktoken/src/main/java/org/openlinktoken/attributes/](https://github.com/TruvetaPublic/OpenLinkToken/tree/main/lib/java/openlinktoken/src/main/java/org/openlinktoken/attributes)                                                                  |
+| Token classes          | [lib/java/openlinktoken/src/main/java/org/openlinktoken/tokens/definitions/](https://github.com/TruvetaPublic/OpenLinkToken/tree/main/lib/java/openlinktoken/src/main/java/org/openlinktoken/tokens/definitions)                                                  |
+| Attribute service file | [lib/java/openlinktoken/src/main/resources/META-INF/services/org.openlinktoken.attributes.Attribute](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/lib/java/openlinktoken/src/main/resources/META-INF/services/org.openlinktoken.attributes.Attribute) |
+| Token service file     | [lib/java/openlinktoken/src/main/resources/META-INF/services/org.openlinktoken.tokens.Token](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/lib/java/openlinktoken/src/main/resources/META-INF/services/org.openlinktoken.tokens.Token)                 |
 
 ### Python Files
 
@@ -305,17 +305,17 @@ This verifies that identical inputs produce identical token outputs in both lang
 ❌ **Unsorted service file**
 
 ```
-com.truveta.openlinktoken.attributes.person.SexAttribute
-com.truveta.openlinktoken.attributes.person.BirthDateAttribute  # Should be sorted
+org.openlinktoken.attributes.person.SexAttribute
+org.openlinktoken.attributes.person.BirthDateAttribute  # Should be sorted
 ```
 
 ❌ **Blank lines or comments in service file**
 
 ```
-com.truveta.openlinktoken.attributes.person.BirthDateAttribute
+org.openlinktoken.attributes.person.BirthDateAttribute
 
 # This comment breaks ServiceLoader
-com.truveta.openlinktoken.attributes.person.FirstNameAttribute
+org.openlinktoken.attributes.person.FirstNameAttribute
 ```
 
 ### Python

@@ -1,6 +1,4 @@
-"""
-Copyright (c) Truveta. All rights reserved.
-"""
+# SPDX-License-Identifier: MIT
 
 from openlinktoken.tokentransformer.encryption_constants import EncryptionConstants
 

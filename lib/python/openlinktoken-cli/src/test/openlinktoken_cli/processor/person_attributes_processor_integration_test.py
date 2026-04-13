@@ -1,6 +1,4 @@
-"""
-Copyright (c) Truveta. All rights reserved.
-"""
+# SPDX-License-Identifier: MIT
 
 import base64
 import csv
@@ -96,7 +94,7 @@ class TestPersonAttributesProcessorIntegration:
             str(RESOURCES_DIR / "test_overlap1.csv"), token_transformer_list
         )
 
-        # Truveta file is neither hashed nor encrypted
+        # OpenLinkToken file is neither hashed nor encrypted
         token_transformer_list = [NoOperationTokenTransformer()]
         result_from_person_attributes_processor2 = self.read_csv_from_person_attributes_processor(
             str(RESOURCES_DIR / "test_overlap2.csv"), token_transformer_list
@@ -109,7 +107,7 @@ class TestPersonAttributesProcessorIntegration:
             record_id_to_token_map1[record_token1.get("RecordId")] = self.decrypt_token(encrypted_token)
 
         record_id_to_token_map2 = {}
-        # Truveta tokens are neither hashed nor encrypted. This needs to be hashed
+        # OpenLinkToken tokens are neither hashed nor encrypted. This needs to be hashed
         for record_token2 in result_from_person_attributes_processor2:
             no_op_token = record_token2.get("Token")
             # hashing this token to match incoming records files

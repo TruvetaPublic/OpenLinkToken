@@ -1,6 +1,4 @@
-"""
-Copyright (c) Truveta. All rights reserved.
-"""
+# SPDX-License-Identifier: MIT
 
 from openlinktoken_cli.processor.person_attributes_processor import PersonAttributesProcessor
 from openlinktoken_cli.processor.token_constants import TokenConstants

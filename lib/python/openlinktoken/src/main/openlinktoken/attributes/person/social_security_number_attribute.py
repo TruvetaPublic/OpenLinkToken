@@ -1,7 +1,5 @@
 # src/openlinktoken/attributes/person/social_security_number_attribute.py
-"""
-Copyright (c) Truveta. All rights reserved.
-"""
+# SPDX-License-Identifier: MIT
 
 import locale
 import re

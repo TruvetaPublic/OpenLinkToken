@@ -43,9 +43,9 @@ cd openlinktoken-cli-2.0.0-alpha-macos-universal
 chmod +x openlinktoken
 
 # Run the CLI
-./openlinktoken generate-key-pair --name recipient --force
-./openlinktoken initiate-exchange --name quickstart --public-key "$HOME/.openlinktoken/recipient.public.pem" --output /path/to/quickstart.exchange.json
-./openlinktoken package \
+./olt generate-key-pair --name recipient --force
+./olt initiate-exchange --name quickstart --public-key "$HOME/.openlinktoken/recipient.public.pem" --output /path/to/quickstart.exchange.json
+./olt package \
   -i /path/to/sample.csv \
   -o /path/to/output.csv \
   -t csv \
@@ -161,9 +161,9 @@ patient_002,Jane,Smith,1975-03-22,Female,90210,987-65-4321
 **Command:**
 
 ```bash
-openlinktoken generate-key-pair --name recipient --force
-openlinktoken initiate-exchange --name quickstart --public-key ~/.openlinktoken/recipient.public.pem --output ./quickstart.exchange.json
-openlinktoken package \
+olt generate-key-pair --name recipient --force
+olt initiate-exchange --name quickstart --public-key ~/.openlinktoken/recipient.public.pem --output ./quickstart.exchange.json
+olt package \
   -i sample.csv \
   -t csv \
   -o tokens.csv \
@@ -186,7 +186,7 @@ patient_002,T1,...
 ### Example: Parquet Input
 
 ```bash
-openlinktoken package \
+olt package \
   -i input.parquet \
   -t parquet \
   -o tokens.parquet \
@@ -208,7 +208,7 @@ For detail on `tokenize`, `encrypt`, `decrypt`, and `generate-key-pair`, see:
 Generates an ECDH public/private key pair and writes the keys to `~/.openlinktoken/`.
 
 ```bash
-openlinktoken generate-key-pair --curve P-256 --name my-org-key
+olt generate-key-pair --curve P-256 --name my-org-key
 ```
 
 This creates:
@@ -281,7 +281,7 @@ Each time you run the CLI it silently checks (in the background) whether a newer
 ```
 ⚠ A new version of OpenLinkToken is available: v2.1.0 (you have v2.0.0)
    Release notes: https://github.com/TruvetaPublic/OpenLinkToken/releases/tag/v2.1.0
-   Run 'openlinktoken update' to upgrade, or set OPENTOKEN_DISABLE_UPDATE_CHECK=1 to silence this message.
+   Run 'olt update' to upgrade, or set OPENTOKEN_DISABLE_UPDATE_CHECK=1 to silence this message.
 ```
 
 The check never blocks or delays the primary command and is cached for 24 hours. To disable it:
@@ -294,17 +294,17 @@ openlinktoken --no-update-check package ...
 export OPENTOKEN_DISABLE_UPDATE_CHECK=1
 ```
 
-### Self-Update with `openlinktoken update`
+### Self-Update with `olt update`
 
 ```bash
 # Upgrade to the latest release
-openlinktoken update
+olt update
 
 # Upgrade to a specific version
-openlinktoken update --version v2.1.0
+olt update --version v2.1.0
 
 # Preview changes without applying them
-openlinktoken update --dry-run
+olt update --dry-run
 ```
 
 The updater downloads the correct platform asset, verifies its SHA-256 checksum when available, prompts for confirmation, and replaces the binary in-place.

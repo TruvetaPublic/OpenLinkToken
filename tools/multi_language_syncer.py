@@ -20,7 +20,7 @@ class MultiLanguageSyncer:
     # Language configuration
     LANGUAGES = {
         "java": {
-            "path": "lib/java/openlinktoken/src/main/java/com/truveta/openlinktoken/",
+            "path": "lib/java/openlinktoken/src/main/java/org/openlinktoken/",
             "extension": ".java",
             "naming": "PascalCase",
             "group": "core",

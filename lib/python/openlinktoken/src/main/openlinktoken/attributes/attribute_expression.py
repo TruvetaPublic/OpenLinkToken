@@ -1,6 +1,5 @@
+# SPDX-License-Identifier: MIT
 """
-Copyright (c) Truveta. All rights reserved.
-
 An attribute expression determines how the value of an attribute is normalized for consumption.
 
 Below are the components used to compose the attribute expression:

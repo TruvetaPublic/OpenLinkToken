@@ -234,10 +234,10 @@ OpenLinkToken supports defining custom token rules:
 ```java
 import java.util.ArrayList;
 
-import com.truveta.openlinktoken.attributes.AttributeExpression;
-import com.truveta.openlinktoken.attributes.person.BirthDateAttribute;
-import com.truveta.openlinktoken.attributes.person.LastNameAttribute;
-import com.truveta.openlinktoken.tokens.Token;
+import org.openlinktoken.attributes.AttributeExpression;
+import org.openlinktoken.attributes.person.BirthDateAttribute;
+import org.openlinktoken.attributes.person.LastNameAttribute;
+import org.openlinktoken.tokens.Token;
 
 public class CustomToken implements Token {
   private static final long serialVersionUID = 1L;

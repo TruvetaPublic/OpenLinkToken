@@ -1,6 +1,5 @@
+# SPDX-License-Identifier: MIT
 """
-Copyright (c) Truveta. All rights reserved.
-
 Shared helpers for building and decrypting exchange-config JWE envelopes.
 
 Note: The exchange-config workflow is Python-CLI only. The Java counterpart

@@ -1,11 +1,7 @@
 {
   "java.configuration.updateBuildConfiguration": "automatic",
   "java.compile.nullAnalysis.mode": "automatic",
-  "java.templates.fileHeader": [
-    "/**",
-    " * Copyright (c) Truveta. All rights reserved.",
-    " */"
-  ],
+  "java.templates.fileHeader": ["/* SPDX-License-Identifier: MIT */"],
   "java.format.comments.enabled": false,
   "terminal.integrated.scrollback": 10000,
   "editor.formatOnPaste": true,

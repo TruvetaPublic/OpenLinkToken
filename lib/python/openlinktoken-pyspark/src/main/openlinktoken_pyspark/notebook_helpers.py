@@ -1,6 +1,5 @@
+# SPDX-License-Identifier: MIT
 """
-Copyright (c) Truveta. All rights reserved.
-
 Notebook helpers for convenient token definition and experimentation.
 This module provides a simplified API for creating custom tokens in Jupyter notebooks.
 """

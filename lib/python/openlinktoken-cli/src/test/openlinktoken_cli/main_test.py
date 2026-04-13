@@ -1,6 +1,5 @@
+# SPDX-License-Identifier: MIT
 """
-Copyright (c) Truveta. All rights reserved.
-
 Integration tests for the main module.
 Tests the end-to-end workflows for token generation and decryption using new subcommand interface.
 """
@@ -501,7 +500,7 @@ class TestOpenLinkTokenCommand:
         captured = capsys.readouterr()
         assert exit_code == 0, "Help should exit successfully"
         assert "Privacy-Preserving Record Linkage v" in captured.out
-        assert "usage: openlinktoken" in captured.out
+        assert "usage: olt" in captured.out
 
     # ===== Hash Record IDs Tests =====
 

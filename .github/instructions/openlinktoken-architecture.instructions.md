@@ -21,7 +21,7 @@ Core component areas:
 
 When adding new discoverable attributes or tokens, update both language implementations:
 
-- **Java:** add the implementation to the appropriate `META-INF/services/com.truveta.openlinktoken...` ServiceLoader file
+- **Java:** add the implementation to the appropriate `META-INF/services/org.openlinktoken...` ServiceLoader file
 - **Python:** update the explicit loader/registry modules such as `attribute_loader.py` and `token_registry.py`
 
 If registration is updated in only one language, treat it as a likely parity or runtime-discovery bug.

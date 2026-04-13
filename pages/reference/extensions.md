@@ -10,9 +10,9 @@ Complete reference for building OpenLinkToken CLI extensions. This page document
 
 ## Overview
 
-OpenLinkToken extensions are self-contained Python packages that add top-level subcommands to the `openlinktoken` CLI. Each extension registers exactly one top-level subcommand (for example, `openlinktoken hello-world`) by implementing the `OpenLinkTokenExtension` abstract base class and declaring an entry point in the `openlinktoken.extensions` group.
+OpenLinkToken extensions are self-contained Python packages that add top-level subcommands to the `openlinktoken` CLI. Each extension registers exactly one top-level subcommand (for example, `olt hello-world`) by implementing the `OpenLinkTokenExtension` abstract base class and declaring an entry point in the `openlinktoken.extensions` group.
 
-Extensions are installed to a user-local directory and loaded at CLI startup, so they appear alongside built-in commands in `openlinktoken --help`.
+Extensions are installed to a user-local directory and loaded at CLI startup, so they appear alongside built-in commands in `olt --help`.
 
 ---
 
@@ -45,7 +45,7 @@ class OpenLinkTokenExtension(ABC):
     @property
     @abstractmethod
     def description(self) -> str:
-        """Short description shown in ``openlinktoken --help``."""
+        """Short description shown in ``olt --help``."""
 
     @property
     @abstractmethod
@@ -145,14 +145,14 @@ The key (`hello-world`) must match `command_name` returned by your class. The CL
 install → discover → load → register → invoke → uninstall
 ```
 
-| Phase         | What happens                                                                                                                                                                                           |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **install**   | `openlinktoken extension install <url>` downloads the package, validates it, and records it in `registry.json`. A security warning is printed and confirmation is required (unless `--yes` is passed). |
-| **discover**  | At startup the CLI scans the `openlinktoken.extensions` entry-point group (Python package installs) and/or `registry.json` (binary installs).                                                          |
-| **load**      | Each discovered entry point is imported and instantiated. Load errors print a warning and skip the extension; they do not abort the CLI.                                                               |
-| **register**  | `register_subcommand(subparsers)` is called for each successfully loaded extension.                                                                                                                    |
-| **invoke**    | The user runs `openlinktoken <command_name> [args]`. The CLI dispatches to the `func` set by `set_defaults`.                                                                                           |
-| **uninstall** | `openlinktoken extension uninstall <name>` removes the package and its registry entry.                                                                                                                 |
+| Phase         | What happens                                                                                                                                                                                 |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **install**   | `olt extension install <url>` downloads the package, validates it, and records it in `registry.json`. A security warning is printed and confirmation is required (unless `--yes` is passed). |
+| **discover**  | At startup the CLI scans the `openlinktoken.extensions` entry-point group (Python package installs) and/or `registry.json` (binary installs).                                                |
+| **load**      | Each discovered entry point is imported and instantiated. Load errors print a warning and skip the extension; they do not abort the CLI.                                                     |
+| **register**  | `register_subcommand(subparsers)` is called for each successfully loaded extension.                                                                                                          |
+| **invoke**    | The user runs `openlinktoken <command_name> [args]`. The CLI dispatches to the `func` set by `set_defaults`.                                                                                 |
+| **uninstall** | `olt extension uninstall <name>` removes the package and its registry entry.                                                                                                                 |
 
 ---
 
@@ -161,7 +161,7 @@ install → discover → load → register → invoke → uninstall
 - **Command name uniqueness**: `command_name` must not duplicate a built-in subcommand name or another installed extension's `command_name`.
 - **Conflict at load time**: If two installed extensions declare the same `command_name`, the CLI prints a warning and loads the extension that sorts first alphabetically by `command_name`. The conflicting extension is skipped.
 - **Built-in precedence**: Built-in subcommands always take precedence. An extension whose `command_name` matches a built-in is skipped with a warning.
-- **Registry records source**: `registry.json` stores the source URL for each installed extension, which is shown in `openlinktoken extension list` to help diagnose conflicts.
+- **Registry records source**: `registry.json` stores the source URL for each installed extension, which is shown in `olt extension list` to help diagnose conflicts.
 
 ---
 
@@ -171,14 +171,14 @@ OpenLinkToken does not perform hash or signature verification on extension wheel
 
 ### What the CLI does at install time
 
-- Prints a `_SECURITY_WARNING` banner before taking any action. This banner is intentional and cannot be suppressed; it reads: _"Extensions are arbitrary Python code and are not verified by Truveta. Install only extensions from sources you trust."_
+- Prints a `_SECURITY_WARNING` banner before taking any action. This banner is intentional and cannot be suppressed; it reads: _"Extensions are arbitrary Python code and are not verified by the OpenLinkToken project. Install only extensions from sources you trust."_
 - Displays the source URL and prompts for confirmation.
 - Confirmation is required unless `--yes` is passed. In automated environments, pass `--yes` explicitly and ensure you have independently validated the source before running the command.
 
 **Sample install prompt:**
 
 ```
-WARNING: Extensions are arbitrary Python code and are not verified by Truveta.
+WARNING: Extensions are arbitrary Python code and are not verified by the OpenLinkToken project.
 Install only extensions from sources you trust.
 You are about to install an extension from:
   https://example.com/openlinktoken-ext-hello-world-1.0.0-py3-none-any.whl
@@ -226,7 +226,7 @@ The pre-built OpenLinkToken binary is a PyInstaller-frozen executable. Extension
 
 **Recommendation:** Keep extensions at Tier 1 whenever possible. Tier 1 extensions work under both the binary and a Python package install.
 
-`openlinktoken extension install` aborts with a clear error when it detects a Tier-3 extension under the binary:
+`olt extension install` aborts with a clear error when it detects a Tier-3 extension under the binary:
 
 ```
 Error: This extension requires external dependencies that are not bundled in the OpenLinkToken binary: requests, boto3
@@ -248,7 +248,7 @@ OpenLinkToken uses a two-track loader to work around this constraint:
 | **Python package**     | `importlib.metadata` entry points in the `openlinktoken.extensions` group |
 | **PyInstaller binary** | `registry.json` + `sys.path` injection                                    |
 
-Under the binary, `openlinktoken extension install` writes each extension's package path to `~/.openlinktoken/extensions/registry.json`. At startup the loader reads `registry.json`, injects each package path into `sys.path`, and then imports the extension class directly using the stored module and class name.
+Under the binary, `olt extension install` writes each extension's package path to `~/.openlinktoken/extensions/registry.json`. At startup the loader reads `registry.json`, injects each package path into `sys.path`, and then imports the extension class directly using the stored module and class name.
 
 **Implication for authors:** You do not need to do anything special to support the binary loader. As long as your class is importable from its module path and you have declared the entry point correctly, both tracks work automatically.
 
@@ -276,4 +276,4 @@ The top-level keys are the extension `command_name` values. Each value is a meta
 
 - [Managing Extensions](../operations/managing-extensions.md) — Install, list, and uninstall extensions
 - [Extension Quickstart](../quickstarts/extension-quickstart.md) — Build and install your first extension end-to-end
-- [CLI Reference](cli.md) — `openlinktoken extension` subcommands and environment variables
+- [CLI Reference](cli.md) — `olt extension` subcommands and environment variables

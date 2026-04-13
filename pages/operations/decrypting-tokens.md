@@ -28,7 +28,7 @@ Use the `decrypt` subcommand with the same encryption key used for token generat
 ### OpenLinkToken CLI (Python)
 
 ```bash
-openlinktoken decrypt \
+olt decrypt \
   -i ../../resources/output.csv \
   -t csv \
   -o ../../resources/decrypted.csv \
@@ -95,12 +95,12 @@ Tokens can be encrypted by one OpenLinkToken implementation and decrypted by ano
 
 ```bash
 # Encrypt with OpenLinkToken CLI
-openlinktoken package \
+olt package \
   -i data.csv -t csv -o tokens.csv \
   -h "HashingKey" -e "EncryptionKey32Characters!!!!!"
 
 # Decrypt with OpenLinkToken CLI
-openlinktoken decrypt \
+olt decrypt \
   -i tokens.csv -t csv -o decrypted.csv \
   -e "EncryptionKey32Characters!!!!!"
 ```
@@ -121,7 +121,7 @@ openlinktoken decrypt \
 - **Use environment variables** or secret stores:
   ```bash
   export OPENTOKEN_ENCRYPTION_KEY="YourKey32Characters!!!!!!!!!!!!"
-  openlinktoken decrypt -e "$OPENTOKEN_ENCRYPTION_KEY" ...
+  olt decrypt -e "$OPENTOKEN_ENCRYPTION_KEY" ...
   ```
 - **Rotate keys periodically** and re-encrypt tokens as needed
 

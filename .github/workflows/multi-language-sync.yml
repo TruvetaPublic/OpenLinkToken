@@ -4,7 +4,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
-      - "lib/java/openlinktoken/src/main/java/com/truveta/openlinktoken/**/*.java"
+      - "lib/java/openlinktoken/src/main/java/org/openlinktoken/**/*.java"
       - "lib/python/openlinktoken/src/**/*.py"
       - "lib/python/openlinktoken-cli/src/**/*.py"
 

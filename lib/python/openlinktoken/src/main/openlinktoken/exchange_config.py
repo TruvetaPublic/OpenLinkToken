@@ -1,6 +1,5 @@
+# SPDX-License-Identifier: MIT
 """
-Copyright (c) Truveta. All rights reserved.
-
 Shared helpers for loading and consuming initiate-exchange config files.
 
 Note: The exchange-config workflow is Python-CLI only. The Java counterpart
@@ -69,7 +68,7 @@ def load_exchange_config(
         if not config_path.exists():
             raise FileNotFoundError(
                 f"Exchange config '{config_path}' was not found. "
-                "Provide --exchange-config or run 'openlinktoken initiate-exchange' to create it."
+                "Provide --exchange-config or run 'olt initiate-exchange' to create it."
             )
         if not config_path.is_file():
             raise OSError(f"Exchange config path '{config_path}' is not a readable file.")
@@ -186,7 +185,7 @@ def derive_transport_encryption_key(exchange: ResolvedExchangeConfig) -> bytes:
     if not sender_public_key or not recipient_public_key:
         raise ValueError(
             "This exchange config does not include the public keys required for token encryption/decryption. "
-            "Regenerate it with 'openlinktoken initiate-exchange'."
+            "Regenerate it with 'olt initiate-exchange'."
         )
     if not exchange_id:
         raise ValueError("Exchange config payload is missing exchangeId required for key derivation.")

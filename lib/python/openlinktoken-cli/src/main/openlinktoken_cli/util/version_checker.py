@@ -1,6 +1,4 @@
-"""
-Copyright (c) Truveta. All rights reserved.
-"""
+# SPDX-License-Identifier: MIT
 
 import json
 import logging
@@ -216,7 +214,7 @@ class VersionChecker:
         lines = [
             f"{yellow}⚠ A new version of OpenLinkToken is available: {tag} (you have {current_tag}){reset}",
             f"   Release notes: https://github.com/TruvetaPublic/OpenLinkToken/releases/tag/{tag}",
-            f"   Run 'openlinktoken update' to upgrade, or set {_ENV_DISABLE}=1 to silence this message.",
+            f"   Run 'olt update' to upgrade, or set {_ENV_DISABLE}=1 to silence this message.",
         ]
         print("\n".join(lines), file=sys.stderr)
 

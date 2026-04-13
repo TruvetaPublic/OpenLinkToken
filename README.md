@@ -1,20 +1,20 @@
-# OpenLinkToken
+# Open Link Token
 
-Privacy-preserving tokenization and matching library for secure PII-based person linkage. OpenLinkToken generates deterministic, cryptographically secure tokens from person attributes (name, birthdate, SSN, etc.) so datasets can be matched without exposing raw identifiers.
+Privacy-preserving tokenization and matching library for secure PII-based person linkage. Open Link Token generates deterministic, cryptographically secure tokens from person attributes (name, birthdate, SSN, etc.) so datasets can be matched without exposing raw identifiers.
 
 ## Introduction
 
 Our approach to record linkage relies on building a set of matching tokens (or token signatures) per person which are derived from deterministic person data but preserve privacy by using cryptographically secure hashing algorithms.
 
-- [OpenLinkToken](#openlinktoken)
+- [Open Link Token](#open-link-token)
   - [Introduction](#introduction)
   - [Highlights](#highlights)
   - [Demo](#demo)
   - [Overview](#overview)
-  - [Why OpenLinkToken](#why-openlinktoken)
+  - [Why Open Link Token](#why-open-link-token)
   - [Quickstart](#quickstart)
   - [Key Matching Ideas](#key-matching-ideas)
-  - [Running OpenLinkToken](#running-openlinktoken)
+  - [Running Open Link Token](#running-open-link-token)
   - [Security Notes](#security-notes)
   - [Contributing \& Community](#contributing--community)
   - [Documentation](#documentation)
@@ -27,7 +27,7 @@ Our approach to record linkage relies on building a set of matching tokens (or t
 
 ## Demo
 
-New to OpenLinkToken? Start with the **[PPRL Superhero Demo](demos/pprl-superhero-example/)** — a beginner-friendly, end-to-end walkthrough showing how two parties (hospital and pharmacy) can privately find matching records without exposing raw identifiers.
+New to Open Link Token? Start with the **[PPRL Superhero Demo](demos/pprl-superhero-example/)** — a beginner-friendly, end-to-end walkthrough showing how two parties (hospital and pharmacy) can privately find matching records without exposing raw identifiers.
 
 The demo includes:
 
@@ -44,7 +44,7 @@ Perfect for understanding privacy-preserving record linkage concepts before divi
 - **Deterministic matching values**: Same input always produces the same cryptographically secure hash for matching
 - **Privacy-preserving**: Encrypted tokens cannot be reversed to recover original person data
 
-## Why OpenLinkToken
+## Why Open Link Token
 
 - Practical validation and normalization for common PII-derived attributes (names, birthdates, SSN, postal codes, sex)
 - Secure pipeline: SHA-256 → HMAC-SHA256 → AES-256 (or hash-only mode)
@@ -58,15 +58,15 @@ Download the [latest release](https://github.com/TruvetaPublic/OpenLinkToken/rel
 
 ```bash
 # Linux/macOS
-./openlinktoken generate-key-pair --name recipient --force
-./openlinktoken initiate-exchange --name quickstart --public-key "$HOME/.openlinktoken/recipient.public.pem" --output ./resources/quickstart.exchange.json
-./openlinktoken package -i ./resources/sample.csv -t csv -o ./resources/output.csv \
+./olt generate-key-pair --name recipient --force
+./olt initiate-exchange --name quickstart --public-key "$HOME/.openlinktoken/recipient.public.pem" --output ./resources/quickstart.exchange.json
+./olt package -i ./resources/sample.csv -t csv -o ./resources/output.csv \
   --exchange-config ./resources/quickstart.exchange.json --private-key "$HOME/.openlinktoken/quickstart.private.pem"
 
 # Windows
-.\openlinktoken.exe generate-key-pair --name recipient --force
-.\openlinktoken.exe initiate-exchange --name quickstart --public-key "$HOME/.openlinktoken/recipient.public.pem" --output .\resources\quickstart.exchange.json
-.\openlinktoken.exe package -i .\resources\sample.csv -t csv -o .\resources\output.csv `
+.\olt.exe generate-key-pair --name recipient --force
+.\olt.exe initiate-exchange --name quickstart --public-key "$HOME/.openlinktoken/recipient.public.pem" --output .\resources\quickstart.exchange.json
+.\olt.exe package -i .\resources\sample.csv -t csv -o .\resources\output.csv `
   --exchange-config .\resources\quickstart.exchange.json --private-key "$HOME/.openlinktoken/quickstart.private.pem"
 ```
 
@@ -81,12 +81,12 @@ Download the [latest release](https://github.com/TruvetaPublic/OpenLinkToken/rel
 
 **Available Commands:**
 
-- `openlinktoken package` - Generate and encrypt tokens in one step using the exchange config
-- `openlinktoken tokenize` - Generate hashed tokens only using the exchange config
-- `openlinktoken encrypt` - Encrypt existing hashed tokens using the exchange config
-- `openlinktoken decrypt` - Decrypt encrypted tokens using the exchange config
-- `openlinktoken initiate-exchange` - Create the exchange config consumed by later commands
-- `openlinktoken help [command]` - Show help for a specific command
+- `olt package` - Generate and encrypt tokens in one step using the exchange config
+- `olt tokenize` - Generate hashed tokens only using the exchange config
+- `olt encrypt` - Encrypt existing hashed tokens using the exchange config
+- `olt decrypt` - Decrypt encrypted tokens using the exchange config
+- `olt initiate-exchange` - Create the exchange config consumed by later commands
+- `olt help [command]` - Show help for a specific command
 
 See <a href="https://truvetapublic.github.io/OpenLinkToken/quickstarts/" target="_blank" rel="noopener noreferrer">Quickstarts</a> for Python CLI and detailed setup instructions.
 
@@ -96,7 +96,7 @@ See <a href="https://truvetapublic.github.io/OpenLinkToken/quickstarts/" target=
 - **Normalization**: Names, dates, postal codes normalized before tokenization — see <a href="https://truvetapublic.github.io/OpenLinkToken/concepts/normalization-and-validation.html" target="_blank" rel="noopener noreferrer">Normalization and Validation</a>
 - **Metadata**: Processing statistics and audit trail — see <a href="https://truvetapublic.github.io/OpenLinkToken/reference/metadata-format.html" target="_blank" rel="noopener noreferrer">Metadata Format</a>
 
-## Running OpenLinkToken
+## Running Open Link Token
 
 - **Subcommand Interface**: Modern command-based interface:
   - `tokenize` - Hash-only token generation

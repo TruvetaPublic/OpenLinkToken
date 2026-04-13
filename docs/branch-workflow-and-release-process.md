@@ -137,7 +137,7 @@ graph TB
      - `lib/java/openlinktoken/pom.xml` (core module)
      - `lib/java/pom.xml` (parent POM)
      - `Dockerfile`
-     - `lib/java/openlinktoken/src/main/java/com/truveta/openlinktoken/Metadata.java`
+     - `lib/java/openlinktoken/src/main/java/org/openlinktoken/Metadata.java`
      - `lib/python/openlinktoken/setup.py`
      - `lib/python/openlinktoken/src/main/openlinktoken/__init__.py`
      - `lib/python/openlinktoken/src/main/openlinktoken/metadata.py`

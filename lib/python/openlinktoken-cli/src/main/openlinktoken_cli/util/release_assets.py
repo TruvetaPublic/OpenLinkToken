@@ -1,6 +1,5 @@
+# SPDX-License-Identifier: MIT
 """
-Copyright (c) Truveta. All rights reserved.
-
 Helpers for preparing CLI release assets in the GitHub Actions build workflow.
 """
 

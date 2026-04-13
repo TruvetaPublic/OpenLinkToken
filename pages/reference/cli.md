@@ -169,10 +169,10 @@ Generates, reuses, or derives a sender key pair, encrypts a hashing secret into 
 
 ```bash
 # Step 1 – recipient generates their key pair and shares the public key
-openlinktoken generate-key-pair --name recipient-org
+olt generate-key-pair --name recipient-org
 
 # Step 2 – sender initiates the exchange using the recipient's public key
-openlinktoken initiate-exchange \
+olt initiate-exchange \
   --name sender-q2 \
   --public-key ./recipient-org.public.pem \
   --output ./sender-q2.exchange.json
@@ -181,7 +181,7 @@ openlinktoken initiate-exchange \
 To reuse an existing sender private key instead of generating a new one:
 
 ```bash
-openlinktoken initiate-exchange \
+olt initiate-exchange \
   --name sender-q2 \
   --public-key ./recipient-org.public.pem \
   --sender-private-key ~/.openlinktoken/sender-q2.private.pem \
@@ -191,7 +191,7 @@ openlinktoken initiate-exchange \
 To read the partner public key from stdin as an alternative to `--public-key`:
 
 ```bash
-cat ./recipient-org.public.pem | openlinktoken initiate-exchange \
+cat ./recipient-org.public.pem | olt initiate-exchange \
   --name sender-q2 \
   --public-key-stdin \
   --output ./sender-q2.exchange.json
@@ -202,7 +202,7 @@ To provide an existing hashing secret without exposing it in the process argumen
 ```bash
 export OT_HASHING_SECRET="$(az keyvault secret show --vault-name my-vault --name hashing-secret --query value -o tsv)"
 
-openlinktoken initiate-exchange \
+olt initiate-exchange \
   --name sender-q2 \
   --public-key ./recipient-org.public.pem \
   --hashingsecret-env OT_HASHING_SECRET \
@@ -215,7 +215,7 @@ one command, use environment-variable references instead of stdin:
 ```bash
 OT_PARTNER_PUBLIC_KEY="$(az keyvault secret show --vault-name my-vault --name recipient-public-key --query value -o tsv)" \
 OT_SENDER_PRIVATE_KEY="$(az keyvault secret show --vault-name my-vault --name sender-private-key --query value -o tsv)" \
-openlinktoken initiate-exchange \
+olt initiate-exchange \
   --name sender-q2 \
   --public-key-env OT_PARTNER_PUBLIC_KEY \
   --sender-private-key-env OT_SENDER_PRIVATE_KEY \
@@ -244,19 +244,19 @@ Downloads and installs the latest (or a specific) release of the OpenLinkToken C
 
 ```bash
 # Update to the latest release
-openlinktoken update
+olt update
 
 # Update to a specific version
-openlinktoken update --version v2.1.0
+olt update --version v2.1.0
 
 # Preview what would change (no-op)
-openlinktoken update --dry-run
+olt update --dry-run
 
 # Update without prompting for confirmation
-openlinktoken update --yes
+olt update --yes
 ```
 
-Release assets are published with SHA-256 sidecars, and `openlinktoken update` verifies the matching checksum automatically before the binary is replaced. The command exits non-zero if the checksum does not match.
+Release assets are published with SHA-256 sidecars, and `olt update` verifies the matching checksum automatically before the binary is replaced. The command exits non-zero if the checksum does not match.
 
 ## Modes of Operation
 
@@ -265,7 +265,7 @@ Release assets are published with SHA-256 sidecars, and `openlinktoken update` v
 Generates fully encrypted tokens using AES-256-GCM. Tokens can be decrypted later with the encryption key.
 
 ```bash
-openlinktoken package \
+olt package \
   -i input.csv -t csv -o output.csv \
   -h "HashingSecret" \
   -e "EncryptionKey-Exactly32Chars!!"
@@ -282,7 +282,7 @@ Signature → SHA-256 → HMAC-SHA256 → AES-256-GCM → Base64
 Generates one-way hashed tokens. Faster but tokens cannot be decrypted.
 
 ```bash
-openlinktoken tokenize \
+olt tokenize \
   -i input.csv -t csv -o output.csv \
   -h "HashingSecret"
 
@@ -305,7 +305,7 @@ attribute values compose each token for development, testing, or demos.
 > protection across trust boundaries.
 
 ```bash
-openlinktoken tokenize \
+olt tokenize \
   -i input.csv -t csv -o output.csv \
   --demo-mode
 ```
@@ -452,7 +452,7 @@ The `extension` subcommand manages CLI extensions. Extensions add top-level subc
 ### `extension install`
 
 ```bash
-openlinktoken extension install [--yes] <url>
+olt extension install [--yes] <url>
 ```
 
 Downloads and installs an extension from a URL or `file://` path.
@@ -467,7 +467,7 @@ A security warning is always printed before installing. Confirmation is required
 ### `extension list`
 
 ```bash
-openlinktoken extension list
+olt extension list
 ```
 
 Prints a table of all installed extensions with name, version, command name, and source URL.
@@ -475,7 +475,7 @@ Prints a table of all installed extensions with name, version, command name, and
 ### `extension uninstall`
 
 ```bash
-openlinktoken extension uninstall <name>
+olt extension uninstall <name>
 ```
 
 Removes the named extension and its registry entry. The `<name>` argument is the extension name as shown in `extension list`.
@@ -539,7 +539,7 @@ Every time the CLI is run, it performs a lightweight background check against th
 ```
 ⚠ A new version of OpenLinkToken is available: v2.1.0 (you have v2.0.0)
    Release notes: https://github.com/TruvetaPublic/OpenLinkToken/releases/tag/v2.1.0
-   Run 'openlinktoken update' to upgrade, or set OPENTOKEN_DISABLE_UPDATE_CHECK=1 to silence this message.
+   Run 'olt update' to upgrade, or set OPENTOKEN_DISABLE_UPDATE_CHECK=1 to silence this message.
 ```
 
 ### Opting Out
@@ -553,22 +553,22 @@ The version check can be disabled per-run or permanently:
 
 When disabled, no network request is made and no cache is read or written.
 
-### Self-Updating (`openlinktoken update`)
+### Self-Updating (`olt update`)
 
 Use the `update` subcommand to upgrade the CLI in-place:
 
 ```bash
 # Upgrade to the latest release
-openlinktoken update
+olt update
 
 # Upgrade to a specific release
-openlinktoken update --version v2.1.0
+olt update --version v2.1.0
 
 # Preview what would change without applying it
-openlinktoken update --dry-run
+olt update --dry-run
 
 # Skip confirmation prompt (for scripts / CI)
-openlinktoken update --yes
+olt update --yes
 ```
 
 #### Update Behaviour

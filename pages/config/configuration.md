@@ -32,7 +32,7 @@ Secrets can be passed via environment variables for security:
 export OPENTOKEN_HASHING_SECRET="MyHashingKey"
 export OPENTOKEN_ENCRYPTION_KEY="MyEncryptionKey32CharactersLong"
 
-openlinktoken package \
+olt package \
   -i data.csv -t csv -o tokens.csv \
   -h "$OPENTOKEN_HASHING_SECRET" \
   -e "$OPENTOKEN_ENCRYPTION_KEY"
@@ -120,7 +120,7 @@ Use `-ot` to specify a different output format:
 
 ```bash
 # Input CSV, output Parquet
-openlinktoken package \
+olt package \
   -i data.csv -t csv \
   -o tokens.parquet -ot parquet \
   -h "HashingKey" -e "EncryptionKey"

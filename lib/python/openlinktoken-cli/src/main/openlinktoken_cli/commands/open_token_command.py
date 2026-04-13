@@ -1,6 +1,4 @@
-"""
-Copyright (c) Truveta. All rights reserved.
-"""
+# SPDX-License-Identifier: MIT
 
 import argparse
 import logging
@@ -64,7 +62,7 @@ class OpenLinkTokenCommand:
     def create_parser():
         """Create the main argument parser with subcommands."""
         parser = argparse.ArgumentParser(
-            prog="openlinktoken",
+            prog="olt",
             description="Privacy-preserving record linkage via cryptographic tokens",
             formatter_class=argparse.RawDescriptionHelpFormatter,
         )

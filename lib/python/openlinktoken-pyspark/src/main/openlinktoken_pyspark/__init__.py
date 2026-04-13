@@ -1,6 +1,5 @@
+# SPDX-License-Identifier: MIT
 """
-Copyright (c) Truveta. All rights reserved.
-
 OpenLinkToken PySpark Bridge - Distributed token generation for PySpark DataFrames.
 """
 

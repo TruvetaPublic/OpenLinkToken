@@ -13,7 +13,7 @@ The OpenLinkToken CLI accepts command-line arguments for flexible token generati
 ### Basic Syntax
 
 ```bash
-openlinktoken <subcommand> [OPTIONS]
+olt <subcommand> [OPTIONS]
 ```
 
 ### Arguments
@@ -45,7 +45,7 @@ cd lib/python/openlinktoken-cli
 source ../../.venv/bin/activate
 uv pip install -r requirements.txt -e . -e ../openlinktoken
 
-openlinktoken package \
+olt package \
   -i ../../../resources/sample.csv \
   -t csv \
   -o ../../../resources/output.csv \
@@ -58,7 +58,7 @@ openlinktoken package \
 Generates HMAC-SHA256 hashed tokens without AES encryption. Only hashing secret required.
 
 ```bash
-openlinktoken tokenize \
+olt tokenize \
   -i ../../../resources/sample.csv \
   -t csv \
   -o ../../../resources/hashed-output.csv \
@@ -70,7 +70,7 @@ openlinktoken tokenize \
 Decrypts previously encrypted tokens. Only encryption key required.
 
 ```bash
-openlinktoken decrypt \
+olt decrypt \
   -i ../../../resources/output.csv \
   -t csv \
   -o ../../../resources/decrypted.csv \
@@ -82,7 +82,7 @@ openlinktoken decrypt \
 Generates an ECDH public/private key pair and writes keys to `~/.openlinktoken/`.
 
 ```bash
-openlinktoken generate-key-pair \
+olt generate-key-pair \
   --curve P-256 \
   --name my-key
 ```
@@ -98,7 +98,7 @@ If `--name` is omitted, a timestamp-based default name is used: `openlinktoken-<
 To overwrite an existing key, add `--force`:
 
 ```bash
-openlinktoken generate-key-pair --name my-key --force
+olt generate-key-pair --name my-key --force
 ```
 
 Supported curves (`--curve` / `-c`):
@@ -287,7 +287,7 @@ See example notebooks in `lib/python/openlinktoken-pyspark/notebooks/`:
 **Solution**: Either provide encryption key `-e "YourKey"` or use `tokenize`:
 
 ```bash
-openlinktoken tokenize -i data.csv -t csv -o output.csv -h "HashingKey"
+olt tokenize -i data.csv -t csv -o output.csv -h "HashingKey"
 ```
 
 ### "Invalid BirthDate" or "Date out of range"

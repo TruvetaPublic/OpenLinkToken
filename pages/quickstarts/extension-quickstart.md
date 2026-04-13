@@ -128,7 +128,7 @@ dist/
 Install the wheel into OpenLinkToken using the `file://` scheme with an absolute path:
 
 ```bash
-openlinktoken extension install file://$(pwd)/dist/openlinktoken_ext_hello_world-1.0.0-py3-none-any.whl
+olt extension install file://$(pwd)/dist/openlinktoken_ext_hello_world-1.0.0-py3-none-any.whl
 ```
 
 OpenLinkToken prints a security warning and asks for confirmation:
@@ -147,7 +147,7 @@ Install this extension? [y/N]: y
 Enter `y` to proceed. To skip the prompt in scripts, pass `--yes`:
 
 ```bash
-openlinktoken extension install --yes file://$(pwd)/dist/openlinktoken_ext_hello_world-1.0.0-py3-none-any.whl
+olt extension install --yes file://$(pwd)/dist/openlinktoken_ext_hello_world-1.0.0-py3-none-any.whl
 ```
 
 ---
@@ -157,7 +157,7 @@ openlinktoken extension install --yes file://$(pwd)/dist/openlinktoken_ext_hello
 Confirm the extension appears in the help output:
 
 ```bash
-openlinktoken --help
+olt --help
 ```
 
 You should see `hello-world` listed alongside the built-in subcommands:
@@ -171,7 +171,7 @@ You should see `hello-world` listed alongside the built-in subcommands:
 Confirm it is tracked in the registry:
 
 ```bash
-openlinktoken extension list
+olt extension list
 ```
 
 ```
@@ -186,7 +186,7 @@ hello-world   1.0.0    hello-world   file:///home/user/openlinktoken-hello-world
 Run the `hello` subcommand:
 
 ```bash
-openlinktoken hello-world hello --name Alice
+olt hello-world hello --name Alice
 ```
 
 ```
@@ -196,7 +196,7 @@ Hello, Alice
 Run the `bye` subcommand:
 
 ```bash
-openlinktoken hello-world bye --name Bob
+olt hello-world bye --name Bob
 ```
 
 ```
@@ -219,4 +219,4 @@ For more detail on the three tiers and the two-track loader, see [Extension Auth
 
 - [Extension Author Reference](../reference/extensions.md) — Full ABC contract, conflict rules, security model
 - [Managing Extensions](../operations/managing-extensions.md) — Uninstall and CI/container workflows
-- [CLI Reference](../reference/cli.md) — `openlinktoken extension` command options
+- [CLI Reference](../reference/cli.md) — `olt extension` command options

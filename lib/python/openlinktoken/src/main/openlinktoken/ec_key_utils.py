@@ -1,6 +1,5 @@
+# SPDX-License-Identifier: MIT
 """
-Copyright (c) Truveta. All rights reserved.
-
 Shared utilities for ECDH key management used by initiate-exchange and
 exchange-config consumers.
 

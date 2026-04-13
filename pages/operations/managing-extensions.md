@@ -13,7 +13,7 @@ Operator guide for installing, listing, and removing OpenLinkToken CLI extension
 ### From a URL
 
 ```bash
-openlinktoken extension install https://example.com/openlinktoken-ext-hello-world-1.0.0-py3-none-any.whl
+olt extension install https://example.com/openlinktoken-ext-hello-world-1.0.0-py3-none-any.whl
 ```
 
 The CLI prints a security warning and prompts for confirmation before installing. Review the source URL carefully — extensions run with the same privileges as the CLI process.
@@ -23,7 +23,7 @@ The CLI prints a security warning and prompts for confirmation before installing
 Use the `file://` scheme to install from a local `.whl` file:
 
 ```bash
-openlinktoken extension install file:///path/to/openlinktoken_ext_hello_world-1.0.0-py3-none-any.whl
+olt extension install file:///path/to/openlinktoken_ext_hello_world-1.0.0-py3-none-any.whl
 ```
 
 Use an absolute path in the `file://` URL.
@@ -33,7 +33,7 @@ Use an absolute path in the `file://` URL.
 Pass `--yes` to suppress the confirmation prompt. Use this in CI pipelines or container builds where you have already validated the source:
 
 ```bash
-openlinktoken extension install --yes https://example.com/openlinktoken-ext-hello-world-1.0.0-py3-none-any.whl
+olt extension install --yes https://example.com/openlinktoken-ext-hello-world-1.0.0-py3-none-any.whl
 ```
 
 ### What Install Does
@@ -57,7 +57,7 @@ The exact steps depend on how OpenLinkToken is installed:
 ## Listing Installed Extensions
 
 ```bash
-openlinktoken extension list
+olt extension list
 ```
 
 Sample output:
@@ -81,7 +81,7 @@ If no extensions are installed, the command prints `No extensions installed.`.
 ## Uninstalling an Extension
 
 ```bash
-openlinktoken extension uninstall <name>
+olt extension uninstall <name>
 ```
 
 The CLI removes the extension package from the extensions directory and deletes its entry from `registry.json`. The corresponding subcommand is no longer available after the next CLI invocation.
@@ -90,10 +90,10 @@ The CLI removes the extension package from the extensions directory and deletes 
 
 ## Upgrading an Extension
 
-There is no `openlinktoken extension update` subcommand. To upgrade an installed extension, reinstall it with the new wheel URL:
+There is no `olt extension update` subcommand. To upgrade an installed extension, reinstall it with the new wheel URL:
 
 ```bash
-openlinktoken extension install https://example.com/openlinktoken-ext-hello-world-2.0.0-py3-none-any.whl
+olt extension install https://example.com/openlinktoken-ext-hello-world-2.0.0-py3-none-any.whl
 ```
 
 When the extension is already installed, `install` replaces it in-place with the new version.
@@ -101,8 +101,8 @@ When the extension is already installed, `install` replaces it in-place with the
 If you prefer an explicit two-step approach, uninstall the old version first:
 
 ```bash
-openlinktoken extension uninstall hello-world
-openlinktoken extension install https://example.com/openlinktoken-ext-hello-world-2.0.0-py3-none-any.whl
+olt extension uninstall hello-world
+olt extension install https://example.com/openlinktoken-ext-hello-world-2.0.0-py3-none-any.whl
 ```
 
 The two-step approach is useful when you want to confirm the old version is cleanly removed before installing a newer one, or when switching to a wheel from a different source URL.
@@ -115,7 +115,7 @@ By default, extensions install to `~/.openlinktoken/extensions/`. Set `OPENTOKEN
 
 ```bash
 export OPENTOKEN_EXTENSIONS_DIR=/opt/openlinktoken/extensions
-openlinktoken extension install --yes https://example.com/openlinktoken-my-ext-1.0.0-py3-none-any.whl
+olt extension install --yes https://example.com/openlinktoken-my-ext-1.0.0-py3-none-any.whl
 ```
 
 This is useful when:
@@ -128,7 +128,7 @@ This is useful when:
 
 ```dockerfile
 ENV OPENTOKEN_EXTENSIONS_DIR=/opt/openlinktoken/extensions
-RUN openlinktoken extension install --yes \
+RUN olt extension install --yes \
     https://example.com/openlinktoken-my-ext-1.0.0-py3-none-any.whl
 ```
 
@@ -147,22 +147,22 @@ OpenLinkToken is distributed both as a pre-built PyInstaller binary and as a Pyt
 | Tier-2 extensions (OpenLinkToken-bundled deps) | ✅ Supported                      | ✅ Supported                           |
 | Tier-3 extensions (external deps)              | ✅ Supported                      | ❌ Rejected at install                 |
 
-Tier-3 extensions depend on packages that are not bundled in the binary. `openlinktoken extension install` detects this and aborts with a clear error message that includes the missing package names and instructions for switching to a Python package install.
+Tier-3 extensions depend on packages that are not bundled in the binary. `olt extension install` detects this and aborts with a clear error message that includes the missing package names and instructions for switching to a Python package install.
 
 If you need Tier-3 extensions, install OpenLinkToken as a Python package:
 
 ```bash
 pip install openlinktoken-cli
-openlinktoken extension install <url>
+olt extension install <url>
 ```
 
 ---
 
 ## Troubleshooting
 
-### Extension does not appear in `openlinktoken --help`
+### Extension does not appear in `olt --help`
 
-1. Confirm it is listed in `openlinktoken extension list`.
+1. Confirm it is listed in `olt extension list`.
 2. Check for a load warning at startup. Load warnings are printed to stderr. The format depends on the install mode:
 
    Python package mode (entry-point track):
@@ -211,12 +211,12 @@ The extension's `command_name` must not match any built-in subcommand. Contact t
 If the registry file is corrupt or lists an extension whose files are missing, try:
 
 ```bash
-openlinktoken extension uninstall <name>
+olt extension uninstall <name>
 ```
 
 **Frozen binary mode:** the uninstall command removes the extracted files from the extensions directory and then deletes the registry entry. If the files are already gone it still cleans up the registry entry.
 
-**Python package mode:** the uninstall command runs `pip uninstall -y <dist-name>` first. If the package is already gone, pip exits 0 with a warning rather than an error, so `openlinktoken extension uninstall <name>` still proceeds to clean up the registry entry. No manual intervention is required.
+**Python package mode:** the uninstall command runs `pip uninstall -y <dist-name>` first. If the package is already gone, pip exits 0 with a warning rather than an error, so `olt extension uninstall <name>` still proceeds to clean up the registry entry. No manual intervention is required.
 
 ---
 
@@ -224,4 +224,4 @@ openlinktoken extension uninstall <name>
 
 - [Extension Author Reference](../reference/extensions.md) — Building extensions
 - [Extension Quickstart](../quickstarts/extension-quickstart.md) — End-to-end walkthrough
-- [CLI Reference](../reference/cli.md) — `openlinktoken extension` command options and environment variables
+- [CLI Reference](../reference/cli.md) — `olt extension` command options and environment variables

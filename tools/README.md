@@ -43,31 +43,31 @@ requires `jwcrypto`.
 
 ### Initiating an Exchange
 
-Use `openlinktoken initiate-exchange` to create an encrypted exchange artifact for
+Use `olt initiate-exchange` to create an encrypted exchange artifact for
 the sender key and the partner's public key.
 
 ```bash
 # Read the partner public key from a file
-openlinktoken initiate-exchange \
+olt initiate-exchange \
   --public-key partner.public.pem \
   --name sender-q2
 
 # Read the same partner public key from stdin instead
-cat partner.public.pem | openlinktoken initiate-exchange \
+cat partner.public.pem | olt initiate-exchange \
   --public-key-stdin \
   --name sender-q2
 
 # Read both keys by environment-variable reference in one command
 OT_PARTNER_PUBLIC_KEY="$(az keyvault secret show --vault-name my-vault --name partner-public-key --query value -o tsv)" \
 OT_SENDER_PRIVATE_KEY="$(az keyvault secret show --vault-name my-vault --name sender-private-key --query value -o tsv)" \
-openlinktoken initiate-exchange \
+olt initiate-exchange \
   --public-key-env OT_PARTNER_PUBLIC_KEY \
   --sender-private-key-env OT_SENDER_PRIVATE_KEY \
   --name sender-q2
 
 # Read a pre-existing hashing secret from an environment variable instead of argv
 OT_HASHING_SECRET="$(az keyvault secret show --vault-name my-vault --name hashing-secret --query value -o tsv)" \
-openlinktoken initiate-exchange \
+olt initiate-exchange \
   --public-key partner.public.pem \
   --hashingsecret-env OT_HASHING_SECRET \
   --name sender-q2
@@ -89,7 +89,7 @@ command, `--hashingsecret-stdin` cannot be combined with `--public-key-stdin`.
 ### Exchange Secret Validation
 
 Use `tools/exchange/validate_exchange_secret.py` to verify that an
-`openlinktoken initiate-exchange` exchange artifact can actually be decrypted with
+`olt initiate-exchange` exchange artifact can actually be decrypted with
 either matching private key.
 
 ```bash
@@ -253,7 +253,7 @@ Language paths are defined directly in `multi_language_syncer.py`:
 
 ```python
 LANGUAGES = {
-    'java':   {'path': 'lib/java/openlinktoken/src/main/java/com/truveta/openlinktoken/', ...},
+    'java':   {'path': 'lib/java/openlinktoken/src/main/java/org/openlinktoken/', ...},
     'python': {'path': 'lib/python/openlinktoken/src/main/openlinktoken/', ...},
 }
 ```
@@ -280,7 +280,7 @@ PYTHON: 0 files changed
 ============================================================
 Sync Requirements:
 
-Source: lib/java/openlinktoken/src/main/java/com/truveta/openlinktoken/TokenGenerator.java
+Source: lib/java/openlinktoken/src/main/java/org/openlinktoken/TokenGenerator.java
   → python: ✓ lib/python/openlinktoken/src/main/openlinktoken/token_generator.py
   → nodejs: ✗ lib/nodejs/openlinktoken/src/TokenGenerator.ts
 ```

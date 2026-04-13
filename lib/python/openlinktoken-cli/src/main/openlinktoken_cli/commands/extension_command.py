@@ -1,6 +1,4 @@
-"""
-Copyright (c) Truveta. All rights reserved.
-"""
+# SPDX-License-Identifier: MIT
 
 import configparser
 import importlib
@@ -76,7 +74,7 @@ def _resolve_extension_command_name(
 
 
 _SECURITY_WARNING = (
-    "WARNING: Extensions are arbitrary Python code and are not verified by Truveta. "
+    "WARNING: Extensions are arbitrary Python code and are not verified by the OpenLinkToken project. "
     "Install only extensions from sources you trust."
 )
 

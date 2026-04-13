@@ -1,6 +1,5 @@
+# SPDX-License-Identifier: MIT
 """
-Copyright (c) Truveta. All rights reserved.
-
 Dataset overlap analyzer for comparing tokenized datasets.
 """
 

@@ -40,7 +40,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name="openlinktoken",
+    name="olt",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

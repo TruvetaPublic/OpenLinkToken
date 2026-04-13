@@ -64,10 +64,10 @@ This produces `dist/my_package-1.0.0-py3-none-any.whl`.
 
 ```bash
 # From a local build
-openlinktoken extension install file:///$(pwd)/dist/openlinktoken_ext_hello_world-1.0.0-py3-none-any.whl
+olt extension install file:///$(pwd)/dist/openlinktoken_ext_hello_world-1.0.0-py3-none-any.whl
 
 # From a remote URL
-openlinktoken extension install https://example.com/openlinktoken_ext_hello_world-1.0.0-py3-none-any.whl
+olt extension install https://example.com/openlinktoken_ext_hello_world-1.0.0-py3-none-any.whl
 ```
 
 Pass `--yes` / `-y` to skip the security confirmation prompt.
@@ -75,10 +75,10 @@ Pass `--yes` / `-y` to skip the security confirmation prompt.
 ## Invoking the Extension
 
 ```bash
-openlinktoken hello-world hello --name Alice
+olt hello-world hello --name Alice
 # → Hello, Alice
 
-openlinktoken hello-world bye --name Bob
+olt hello-world bye --name Bob
 # → Bye, Bob
 ```
 
@@ -97,6 +97,6 @@ inside the binary (e.g., `pandas`, `pyarrow`, `cryptography`). These are binary-
 because those packages are shipped inside the executable.
 
 **Tier-3 (not supported in frozen binaries)**: Extensions that require third-party
-packages not bundled in the binary will fail to install via `openlinktoken extension
+packages not bundled in the binary will fail to install via `olt extension
 install` when running the frozen binary. Use the `pip`-installed Python package
 version of the CLI for such extensions.

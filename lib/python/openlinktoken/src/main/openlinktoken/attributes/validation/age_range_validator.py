@@ -1,6 +1,4 @@
-"""
-Copyright (c) Truveta. All rights reserved.
-"""
+# SPDX-License-Identifier: MIT
 
 from openlinktoken.attributes.validation.serializable_attribute_validator import SerializableAttributeValidator
 

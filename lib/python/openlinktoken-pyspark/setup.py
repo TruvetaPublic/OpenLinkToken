@@ -26,14 +26,14 @@ core_requirements = [
 setup(
     name="openlinktoken-pyspark",
     version="2.0.0-alpha",
-    author="Truveta",
+    author="Open Link Token Contributors",
     description="OpenLinkToken PySpark bridge for distributed token generation",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/Truveta/OpenLinkToken",
+    url="https://github.com/TruvetaPublic/OpenLinkToken",
     project_urls={
-        "Source": "https://github.com/Truveta/OpenLinkToken",
-        "Documentation": "https://github.com/Truveta/OpenLinkToken/blob/main/README.md",
+        "Source": "https://github.com/TruvetaPublic/OpenLinkToken",
+        "Documentation": "https://github.com/TruvetaPublic/OpenLinkToken/blob/main/README.md",
     },
     package_dir={"": "src/main"},
     packages=find_packages(where="src/main"),

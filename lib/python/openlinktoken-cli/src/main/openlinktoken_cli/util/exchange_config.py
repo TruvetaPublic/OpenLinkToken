@@ -1,6 +1,5 @@
+# SPDX-License-Identifier: MIT
 """
-Copyright (c) Truveta. All rights reserved.
-
 CLI-facing wrappers around shared exchange-config helpers.
 """
 

@@ -200,7 +200,7 @@ df.to_parquet('large_test.parquet')
 "
 
 # Process with OpenLinkToken
-openlinktoken package \
+olt package \
   -i large_test.parquet -t parquet \
   -o tokens.parquet \
   -h "HashingKey" -e "EncryptionKey"

@@ -1,6 +1,5 @@
+# SPDX-License-Identifier: MIT
 """
-Copyright (c) Truveta. All rights reserved.
-
 Unit and integration tests for GenerateKeyPairCommand.
 """
 

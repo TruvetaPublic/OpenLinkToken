@@ -2,7 +2,7 @@
 
 ## Overview
 
-`openlinktoken initiate-exchange` writes a single JSON exchange artifact that contains:
+`olt initiate-exchange` writes a single JSON exchange artifact that contains:
 
 - a top-level `version` field with value `1`
 - a JSON JWE envelope with shared ciphertext fields
@@ -14,11 +14,11 @@ key material.
 
 ## Roles
 
-- `sender`: the party that runs `openlinktoken initiate-exchange`, creates the
+- `sender`: the party that runs `olt initiate-exchange`, creates the
   exchange artifact, and contributes the local sender key entry written into
   `recipients`
 - `recipient`: the counterparty whose public key is supplied to
-  `openlinktoken initiate-exchange` and whose matching private key can decrypt the
+  `olt initiate-exchange` and whose matching private key can decrypt the
   recipient entry in `recipients`
 
 ## Top-Level Structure

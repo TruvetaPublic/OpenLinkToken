@@ -61,7 +61,7 @@ uv pip install -r requirements.txt -e .
 ### Package Command (Tokenize + Encrypt)
 
 ```bash
-openlinktoken package \
+olt package \
   -i ../../../resources/sample.csv \
   -t csv \
   -o ../../../resources/output.csv \
@@ -72,7 +72,7 @@ openlinktoken package \
 ### Tokenize Command (Hash-Only, No Encryption)
 
 ```bash
-openlinktoken tokenize \
+olt tokenize \
   -i ../../../resources/sample.csv \
   -t csv \
   -o ../../../resources/output.csv \
@@ -82,7 +82,7 @@ openlinktoken tokenize \
 ### Parquet Format
 
 ```bash
-openlinktoken package \
+olt package \
   -i input.parquet \
   -t parquet \
   -o output.parquet \
@@ -93,7 +93,7 @@ openlinktoken package \
 ### Decrypt Command
 
 ```bash
-openlinktoken decrypt \
+olt decrypt \
   -i ../../../resources/output.csv \
   -t csv \
   -o ../../../resources/decrypted.csv \
@@ -103,7 +103,7 @@ openlinktoken decrypt \
 ### Generate ECDH Key Pair
 
 ```bash
-openlinktoken generate-key-pair \
+olt generate-key-pair \
   --curve P-256 \
   --name my-key
 ```
@@ -115,11 +115,11 @@ existing files.
 
 ```bash
 # Show all available commands
-openlinktoken --help
+olt --help
 
 # Show help for specific command
-openlinktoken help package
-openlinktoken package --help
+olt help package
+olt package --help
 ```
 
 If needed, you can still run the module form directly:

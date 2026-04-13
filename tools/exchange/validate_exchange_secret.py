@@ -37,7 +37,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--exchange-config",
         required=True,
-        help="Path to the .exchange.json file produced by `openlinktoken initiate-exchange`.",
+        help="Path to the .exchange.json file produced by `olt initiate-exchange`.",
     )
     private_key_group = parser.add_mutually_exclusive_group(required=False)
     private_key_group.add_argument(

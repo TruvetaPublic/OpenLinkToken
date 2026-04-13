@@ -118,7 +118,7 @@ ID002,T1,...
 
 - `RecordId`: From input (or auto-generated UUID)
 - `RuleId`: Token rule identifier (T1–T5)
-- `Token`: Encrypted `ot.V1.<JWE compact serialization>` token (or base64 HMAC token when generated via `openlinktoken tokenize`)
+- `Token`: Encrypted `ot.V1.<JWE compact serialization>` token (or base64 HMAC token when generated via `olt tokenize`)
 
 **Notes:**
 
@@ -164,7 +164,7 @@ See [Reference: Metadata Format](../reference/metadata-format.md) for detailed f
 Generates encrypted `ot.V1` match tokens using HMAC-SHA256 + JWE/AES-256-GCM.
 
 ```bash
-openlinktoken package \
+olt package \
   -i data.csv -t csv -o tokens.csv \
   -h "HashingKey" -e "EncryptionKey"
 ```
@@ -184,7 +184,7 @@ Encrypted `ot.V1` tokens include randomized IVs, so ciphertext values are not de
 Generates hashed tokens without encryption. Useful for token matching scenarios where encryption overhead is unnecessary.
 
 ```bash
-openlinktoken tokenize \
+olt tokenize \
   -i data.csv -t csv -o tokens.csv \
   -h "HashingKey"
 ```
@@ -209,7 +209,7 @@ Token Signature → SHA-256 Hash → HMAC-SHA256(hash, key) → Base64 Encode
 Reverse previous encryption to inspect or verify token generation.
 
 ```bash
-openlinktoken decrypt \
+olt decrypt \
   -i encrypted-tokens.csv -t csv -o decrypted-tokens.csv \
   -e "EncryptionKey"
 ```

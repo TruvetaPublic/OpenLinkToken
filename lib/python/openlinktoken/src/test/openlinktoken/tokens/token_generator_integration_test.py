@@ -1,6 +1,4 @@
-"""
-Copyright (c) Truveta. All rights reserved.
-"""
+# SPDX-License-Identifier: MIT
 
 from openlinktoken.attributes.person.birth_date_attribute import BirthDateAttribute
 from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute
