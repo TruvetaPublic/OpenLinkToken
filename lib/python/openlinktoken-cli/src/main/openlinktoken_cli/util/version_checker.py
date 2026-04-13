@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 _GITHUB_API_URL = "https://api.github.com/repos/TruvetaPublic/OpenLinkToken/releases/latest"
 _CACHE_TTL_SECONDS = 24 * 60 * 60  # 24 hours
 _REQUEST_TIMEOUT_SECONDS = 2
-_ENV_DISABLE = "OPENTOKEN_DISABLE_UPDATE_CHECK"
+_ENV_DISABLE = "OLT_DISABLE_UPDATE_CHECK"
 _CACHE_FILENAME = "update-check.json"
 _CACHE_DIR_NAME = ".openlinktoken"
 
@@ -52,7 +52,7 @@ class VersionChecker:
         Launch the background version check.
 
         Does nothing when update checks are disabled via the ``--no-update-check``
-        flag or the ``OPENTOKEN_DISABLE_UPDATE_CHECK`` environment variable.
+        flag or the ``OLT_DISABLE_UPDATE_CHECK`` environment variable.
         """
         if self._is_disabled():
             return

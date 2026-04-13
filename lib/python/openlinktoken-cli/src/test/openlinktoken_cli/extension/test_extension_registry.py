@@ -19,7 +19,7 @@ class TestLoad:
 
     def test_returns_empty_dict_when_file_absent(self, tmp_path):
         """load() returns {} when registry.json does not exist."""
-        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             result = ExtensionRegistry.load()
         assert result == {}
 
@@ -28,7 +28,7 @@ class TestLoad:
         data = {"my-ext": {"version": "1.0.0"}}
         (tmp_path / "registry.json").write_text(json.dumps(data))
 
-        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             result = ExtensionRegistry.load()
 
         assert result == data
@@ -37,7 +37,7 @@ class TestLoad:
         """load() returns {} and does not raise when the file contains invalid JSON."""
         (tmp_path / "registry.json").write_text("NOT VALID JSON{{}")
 
-        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             result = ExtensionRegistry.load()
 
         assert result == {}
@@ -56,7 +56,7 @@ class TestAddAndRoundTrip:
             "class": "MyExt",
         }
 
-        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             ExtensionRegistry.add_extension("my-ext", meta)
             loaded = ExtensionRegistry.load()
 
@@ -67,7 +67,7 @@ class TestAddAndRoundTrip:
         meta_v1 = {"version": "1.0.0"}
         meta_v2 = {"version": "2.0.0"}
 
-        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             ExtensionRegistry.add_extension("ext", meta_v1)
             ExtensionRegistry.add_extension("ext", meta_v2)
             loaded = ExtensionRegistry.load()
@@ -83,7 +83,7 @@ class TestRemoveExtension:
         data = {"ext-a": {"version": "1.0.0"}, "ext-b": {"version": "0.1.0"}}
         (tmp_path / "registry.json").write_text(json.dumps(data))
 
-        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             ExtensionRegistry.remove_extension("ext-a")
             loaded = ExtensionRegistry.load()
 
@@ -95,7 +95,7 @@ class TestRemoveExtension:
         data = {"ext-a": {"version": "1.0.0"}}
         (tmp_path / "registry.json").write_text(json.dumps(data))
 
-        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             ExtensionRegistry.remove_extension("does-not-exist")
             loaded = ExtensionRegistry.load()
 
@@ -103,21 +103,21 @@ class TestRemoveExtension:
 
 
 class TestEnvVarOverride:
-    """Tests for OPENTOKEN_EXTENSIONS_DIR environment variable override."""
+    """Tests for OLT_EXTENSIONS_DIR environment variable override."""
 
     def test_env_var_overrides_default_dir(self, tmp_path):
-        """get_extensions_dir() returns the path from OPENTOKEN_EXTENSIONS_DIR."""
+        """get_extensions_dir() returns the path from OLT_EXTENSIONS_DIR."""
         custom_dir = tmp_path / "custom_ext_dir"
         custom_dir.mkdir()
 
-        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(custom_dir)}):
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(custom_dir)}):
             result = ExtensionRegistry.get_extensions_dir()
 
         assert result == custom_dir
 
     def test_registry_path_uses_custom_dir(self, tmp_path):
-        """get_registry_path() is rooted inside OPENTOKEN_EXTENSIONS_DIR."""
-        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+        """get_registry_path() is rooted inside OLT_EXTENSIONS_DIR."""
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             path = ExtensionRegistry.get_registry_path()
 
         assert path == tmp_path / "registry.json"
@@ -126,7 +126,7 @@ class TestEnvVarOverride:
         """Registry data is written inside the overridden directory."""
         meta = {"version": "1.0.0"}
 
-        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             ExtensionRegistry.add_extension("x", meta)
 
         assert (tmp_path / "registry.json").exists()

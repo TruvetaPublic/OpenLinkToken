@@ -136,8 +136,8 @@ Store these in a local `.env` file (not committed):
 
 ```bash
 # .env (add to .gitignore)
-OPENTOKEN_HASHING_SECRET=HashingKey
-OPENTOKEN_ENCRYPTION_KEY=Secret-Encryption-Key-Goes-Here.
+OLT_HASHING_SECRET=HashingKey
+OLT_ENCRYPTION_KEY=Secret-Encryption-Key-Goes-Here.
 ```
 
 Load and use:
@@ -146,8 +146,8 @@ Load and use:
 source .env
 olt package \
   -i sample.csv -t csv -o output.csv \
-  -h "$OPENTOKEN_HASHING_SECRET" \
-  -e "$OPENTOKEN_ENCRYPTION_KEY"
+  -h "$OLT_HASHING_SECRET" \
+  -e "$OLT_ENCRYPTION_KEY"
 ```
 
 #### Production
@@ -165,15 +165,15 @@ Store secrets in a managed secret store and inject via environment variables at 
 **Example (AWS Secrets Manager):**
 
 ```bash
-export OPENTOKEN_HASHING_SECRET=$(aws secretsmanager get-secret-value \
+export OLT_HASHING_SECRET=$(aws secretsmanager get-secret-value \
   --secret-id openlinktoken-hash-key --query SecretString --output text)
-export OPENTOKEN_ENCRYPTION_KEY=$(aws secretsmanager get-secret-value \
+export OLT_ENCRYPTION_KEY=$(aws secretsmanager get-secret-value \
   --secret-id openlinktoken-enc-key --query SecretString --output text)
 
 olt package \
   -i data.csv -t csv -o tokens.csv \
-  -h "$OPENTOKEN_HASHING_SECRET" \
-  -e "$OPENTOKEN_ENCRYPTION_KEY"
+  -h "$OLT_HASHING_SECRET" \
+  -e "$OLT_ENCRYPTION_KEY"
 ```
 
 **Example (Databricks):**

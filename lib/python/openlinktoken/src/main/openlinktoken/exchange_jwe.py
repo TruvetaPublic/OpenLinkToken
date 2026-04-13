@@ -76,9 +76,9 @@ def decrypt_exchange_envelope(exchange_config: Mapping[str, Any], private_pem: b
     return bytes(envelope.payload)
 
 
-def resolve_private_key_by_kid(opentoken_dir: Path, kid: str) -> bytes:
+def resolve_private_key_by_kid(openlinktoken_dir: Path, kid: str) -> bytes:
     """Resolve a private key by matching a fingerprint-derived recipient ``kid``."""
-    for public_key_path in sorted(opentoken_dir.glob("*.public.pem")):
+    for public_key_path in sorted(openlinktoken_dir.glob("*.public.pem")):
         public_pem = public_key_path.read_bytes()
         if fingerprint_to_kid(public_key_fingerprint(public_pem)) != kid:
             continue
@@ -91,7 +91,7 @@ def resolve_private_key_by_kid(opentoken_dir: Path, kid: str) -> bytes:
             )
         return private_key_path.read_bytes()
 
-    raise FileNotFoundError(f"No private key found for recipient kid '{kid}' in {opentoken_dir}.")
+    raise FileNotFoundError(f"No private key found for recipient kid '{kid}' in {openlinktoken_dir}.")
 
 
 def _base64url_encode(value: bytes) -> str:

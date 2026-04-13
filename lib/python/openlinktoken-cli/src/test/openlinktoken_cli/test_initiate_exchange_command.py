@@ -204,9 +204,9 @@ class TestInitiateExchangeCommandIntegration:
             )
 
         assert exit_code == 0
-        opentoken_dir = tmp_path / ".openlinktoken"
-        assert (opentoken_dir / "test-exchange.private.pem").exists()
-        assert (opentoken_dir / "test-exchange.public.pem").exists()
+        openlinktoken_dir = tmp_path / ".openlinktoken"
+        assert (openlinktoken_dir / "test-exchange.private.pem").exists()
+        assert (openlinktoken_dir / "test-exchange.public.pem").exists()
         assert output_path.exists()
 
     def test_basic_exchange_accepts_partner_public_key_from_stdin(self, tmp_path, monkeypatch):
@@ -228,9 +228,9 @@ class TestInitiateExchangeCommandIntegration:
             )
 
         assert exit_code == 0
-        opentoken_dir = tmp_path / ".openlinktoken"
-        assert (opentoken_dir / "stdin-exchange.private.pem").exists()
-        assert (opentoken_dir / "stdin-exchange.public.pem").exists()
+        openlinktoken_dir = tmp_path / ".openlinktoken"
+        assert (openlinktoken_dir / "stdin-exchange.private.pem").exists()
+        assert (openlinktoken_dir / "stdin-exchange.public.pem").exists()
         assert output_path.exists()
 
     def test_basic_exchange_accepts_public_and_sender_key_refs_from_env(self, tmp_path, monkeypatch):
@@ -258,9 +258,9 @@ class TestInitiateExchangeCommandIntegration:
 
         assert exit_code == 0
         assert output_path.exists()
-        opentoken_dir = tmp_path / ".openlinktoken"
-        assert not (opentoken_dir / "env-ref.private.pem").exists()
-        assert not (opentoken_dir / "env-ref.public.pem").exists()
+        openlinktoken_dir = tmp_path / ".openlinktoken"
+        assert not (openlinktoken_dir / "env-ref.private.pem").exists()
+        assert not (openlinktoken_dir / "env-ref.public.pem").exists()
 
         config = json.loads(output_path.read_text())
         _assert_shared_jwe_header(config)
@@ -488,9 +488,9 @@ class TestInitiateExchangeCommandIntegration:
         assert exit_code == 1
         assert "OT_MISSING_HASHING_SECRET" in caplog.text
         assert not output_path.exists()
-        opentoken_dir = tmp_path / ".openlinktoken"
-        assert not (opentoken_dir / "missing-hashing-secret-env.private.pem").exists()
-        assert not (opentoken_dir / "missing-hashing-secret-env.public.pem").exists()
+        openlinktoken_dir = tmp_path / ".openlinktoken"
+        assert not (openlinktoken_dir / "missing-hashing-secret-env.private.pem").exists()
+        assert not (openlinktoken_dir / "missing-hashing-secret-env.public.pem").exists()
 
     # -------------------------------------------------------------------------
     # Exchange config structure
@@ -851,8 +851,8 @@ class TestInitiateExchangeCommandIntegration:
             )
 
         assert exit_code == 0
-        opentoken_dir = tmp_path / ".openlinktoken"
-        matches = list(opentoken_dir.glob("openlinktoken-????-??-??.private.pem"))
+        openlinktoken_dir = tmp_path / ".openlinktoken"
+        matches = list(openlinktoken_dir.glob("openlinktoken-????-??-??.private.pem"))
         assert matches, "Expected private key file matching openlinktoken-<ISO-date>.private.pem"
 
     # -------------------------------------------------------------------------

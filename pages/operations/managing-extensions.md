@@ -43,13 +43,13 @@ The exact steps depend on how OpenLinkToken is installed:
 **Python package mode** (pip install / source install — the common case):
 
 1. Installs the wheel via `pip` into the active Python environment's site-packages.
-2. Records the extension metadata in `~/.openlinktoken/extensions/registry.json` (or `$OPENTOKEN_EXTENSIONS_DIR/registry.json`).
+2. Records the extension metadata in `~/.openlinktoken/extensions/registry.json` (or `$OLT_EXTENSIONS_DIR/registry.json`).
 3. Prints the installed extension name, version, and command name.
 
 **Frozen binary mode** (PyInstaller binary):
 
-1. Extracts the wheel contents into `~/.openlinktoken/extensions/<name>/src/` (or `$OPENTOKEN_EXTENSIONS_DIR/<name>/src/`).
-2. Records the extension metadata in `~/.openlinktoken/extensions/registry.json` (or `$OPENTOKEN_EXTENSIONS_DIR/registry.json`).
+1. Extracts the wheel contents into `~/.openlinktoken/extensions/<name>/src/` (or `$OLT_EXTENSIONS_DIR/<name>/src/`).
+2. Records the extension metadata in `~/.openlinktoken/extensions/registry.json` (or `$OLT_EXTENSIONS_DIR/registry.json`).
 3. Prints the installed extension name, version, and command name.
 
 ---
@@ -109,12 +109,12 @@ The two-step approach is useful when you want to confirm the old version is clea
 
 ---
 
-## Using `OPENTOKEN_EXTENSIONS_DIR` in CI/Containers
+## Using `OLT_EXTENSIONS_DIR` in CI/Containers
 
-By default, extensions install to `~/.openlinktoken/extensions/`. Set `OPENTOKEN_EXTENSIONS_DIR` to override this path:
+By default, extensions install to `~/.openlinktoken/extensions/`. Set `OLT_EXTENSIONS_DIR` to override this path:
 
 ```bash
-export OPENTOKEN_EXTENSIONS_DIR=/opt/openlinktoken/extensions
+export OLT_EXTENSIONS_DIR=/opt/openlinktoken/extensions
 olt extension install --yes https://example.com/openlinktoken-my-ext-1.0.0-py3-none-any.whl
 ```
 
@@ -127,12 +127,12 @@ This is useful when:
 **Docker example:**
 
 ```dockerfile
-ENV OPENTOKEN_EXTENSIONS_DIR=/opt/openlinktoken/extensions
+ENV OLT_EXTENSIONS_DIR=/opt/openlinktoken/extensions
 RUN olt extension install --yes \
     https://example.com/openlinktoken-my-ext-1.0.0-py3-none-any.whl
 ```
 
-The registry file (`registry.json`) is always written to the same directory as the installed extensions, regardless of the `OPENTOKEN_EXTENSIONS_DIR` value.
+The registry file (`registry.json`) is always written to the same directory as the installed extensions, regardless of the `OLT_EXTENSIONS_DIR` value.
 
 ---
 
@@ -177,7 +177,7 @@ olt extension install <url>
    Failed to load extension 'hello-world' from registry: ModuleNotFoundError: No module named 'openlinktoken_ext_hello_world'
    ```
 
-3. Verify that `OPENTOKEN_EXTENSIONS_DIR` is set consistently between install and runtime environments.
+3. Verify that `OLT_EXTENSIONS_DIR` is set consistently between install and runtime environments.
 
 ### `ModuleNotFoundError` on load
 

@@ -191,9 +191,9 @@ class InitiateExchangeCommand:
                 )
                 return 1
 
-            opentoken_dir = Path.home() / ".openlinktoken"
-            private_key_path = opentoken_dir / f"{name}.private.pem"
-            public_key_path_local = opentoken_dir / f"{name}.public.pem"
+            openlinktoken_dir = Path.home() / ".openlinktoken"
+            private_key_path = openlinktoken_dir / f"{name}.private.pem"
+            public_key_path_local = openlinktoken_dir / f"{name}.public.pem"
             output_path = Path(output_path_str) if output_path_str else Path(f"{name}.exchange.json")
 
             if not force and output_path.exists():
@@ -265,11 +265,11 @@ class InitiateExchangeCommand:
                     logger.error(
                         "Key files for '%s' already exist in %s. Use --force to overwrite.",
                         name,
-                        opentoken_dir,
+                        openlinktoken_dir,
                     )
                     return 1
 
-                ensure_directory(opentoken_dir)
+                ensure_directory(openlinktoken_dir)
                 write_key(private_key_path, private_pem, 0o600, overwrite=force)
                 write_key(public_key_path_local, local_public_pem, 0o644, overwrite=force)
 

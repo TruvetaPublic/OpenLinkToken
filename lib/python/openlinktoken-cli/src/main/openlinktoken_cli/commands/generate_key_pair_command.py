@@ -89,19 +89,19 @@ class GenerateKeyPairCommand:
                 )
                 return 1
 
-            opentoken_dir = Path.home() / ".openlinktoken"
-            private_key_path = opentoken_dir / f"{name}.private.pem"
-            public_key_path = opentoken_dir / f"{name}.public.pem"
+            openlinktoken_dir = Path.home() / ".openlinktoken"
+            private_key_path = openlinktoken_dir / f"{name}.private.pem"
+            public_key_path = openlinktoken_dir / f"{name}.public.pem"
 
             if not force and (private_key_path.exists() or public_key_path.exists()):
                 logger.error(
                     "Key files for '%s' already exist in %s. Use --force to overwrite.",
                     name,
-                    opentoken_dir,
+                    openlinktoken_dir,
                 )
                 return 1
 
-            ensure_directory(opentoken_dir)
+            ensure_directory(openlinktoken_dir)
             private_pem, public_pem = generate_key_pair(curve)
             write_key(private_key_path, private_pem, 0o600, overwrite=force)
             write_key(public_key_path, public_pem, 0o644, overwrite=force)

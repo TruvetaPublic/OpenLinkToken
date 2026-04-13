@@ -75,17 +75,17 @@ class TestIsDisabled:
         assert checker._is_disabled()
 
     def test_disabled_via_env(self, monkeypatch):
-        monkeypatch.setenv("OPENTOKEN_DISABLE_UPDATE_CHECK", "1")
+        monkeypatch.setenv("OLT_DISABLE_UPDATE_CHECK", "1")
         checker = VersionChecker(_CURRENT)
         assert checker._is_disabled()
 
     def test_not_disabled_by_default(self, monkeypatch):
-        monkeypatch.delenv("OPENTOKEN_DISABLE_UPDATE_CHECK", raising=False)
+        monkeypatch.delenv("OLT_DISABLE_UPDATE_CHECK", raising=False)
         checker = VersionChecker(_CURRENT)
         assert not checker._is_disabled()
 
     def test_not_disabled_when_env_zero(self, monkeypatch):
-        monkeypatch.setenv("OPENTOKEN_DISABLE_UPDATE_CHECK", "0")
+        monkeypatch.setenv("OLT_DISABLE_UPDATE_CHECK", "0")
         checker = VersionChecker(_CURRENT)
         assert not checker._is_disabled()
 
@@ -200,7 +200,7 @@ class TestRun:
         cache_path.write_text(json.dumps(_make_cache(_NEWER, age_hours=1.0)))
 
         checker = VersionChecker(_CURRENT)
-        monkeypatch.delenv("OPENTOKEN_DISABLE_UPDATE_CHECK", raising=False)
+        monkeypatch.delenv("OLT_DISABLE_UPDATE_CHECK", raising=False)
         with patch.object(VersionChecker, "_get_cache_path", return_value=cache_path):
             checker._run()
         assert checker._result == _NEWER
@@ -215,7 +215,7 @@ class TestRun:
         mock_resp.__exit__ = MagicMock(return_value=False)
 
         checker = VersionChecker(_CURRENT)
-        monkeypatch.delenv("OPENTOKEN_DISABLE_UPDATE_CHECK", raising=False)
+        monkeypatch.delenv("OLT_DISABLE_UPDATE_CHECK", raising=False)
         with patch.object(VersionChecker, "_get_cache_path", return_value=cache_path):
             with patch("openlinktoken_cli.util.version_checker.urlopen", return_value=mock_resp):
                 checker._run()
@@ -263,7 +263,7 @@ class TestWaitAndNotify:
 
     def test_notice_shown_after_command(self, capsys, monkeypatch):
         monkeypatch.delenv("NO_COLOR", raising=False)
-        monkeypatch.delenv("OPENTOKEN_DISABLE_UPDATE_CHECK", raising=False)
+        monkeypatch.delenv("OLT_DISABLE_UPDATE_CHECK", raising=False)
 
         checker = VersionChecker(_CURRENT)
         checker._result = _NEWER  # inject result directly
@@ -310,17 +310,17 @@ class TestStartVersionCheck:
     """Tests for the module-level start_version_check helper."""
 
     def test_returns_checker_instance(self, monkeypatch):
-        monkeypatch.setenv("OPENTOKEN_DISABLE_UPDATE_CHECK", "1")
+        monkeypatch.setenv("OLT_DISABLE_UPDATE_CHECK", "1")
         checker = start_version_check(_CURRENT)
         assert isinstance(checker, VersionChecker)
 
     def test_disabled_when_env_set(self, monkeypatch):
-        monkeypatch.setenv("OPENTOKEN_DISABLE_UPDATE_CHECK", "1")
+        monkeypatch.setenv("OLT_DISABLE_UPDATE_CHECK", "1")
         checker = start_version_check(_CURRENT)
         assert checker._thread is None
 
     def test_disabled_via_flag(self, monkeypatch):
-        monkeypatch.delenv("OPENTOKEN_DISABLE_UPDATE_CHECK", raising=False)
+        monkeypatch.delenv("OLT_DISABLE_UPDATE_CHECK", raising=False)
         checker = start_version_check(_CURRENT, no_update_check=True)
         assert checker._thread is None
 

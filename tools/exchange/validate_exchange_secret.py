@@ -111,17 +111,17 @@ def _resolve_private_key_pem(
             raise ValueError("Provided private key does not match any JWE recipient entry in the exchange config.")
         return private_pem
 
-    opentoken_dir = Path.home() / ".openlinktoken"
+    openlinktoken_dir = Path.home() / ".openlinktoken"
     missing_kids: list[str] = []
     for kid in recipient_kids:
         try:
-            return resolve_private_key_by_kid(opentoken_dir, kid)
+            return resolve_private_key_by_kid(openlinktoken_dir, kid)
         except FileNotFoundError:
             missing_kids.append(kid)
 
     raise ValueError(
         "No local private key could be resolved for any exchange recipient kid "
-        f"in {opentoken_dir}: {', '.join(missing_kids)}"
+        f"in {openlinktoken_dir}: {', '.join(missing_kids)}"
     )
 
 

@@ -281,7 +281,7 @@ Each time you run the CLI it silently checks (in the background) whether a newer
 ```
 ⚠ A new version of OpenLinkToken is available: v2.1.0 (you have v2.0.0)
    Release notes: https://github.com/TruvetaPublic/OpenLinkToken/releases/tag/v2.1.0
-   Run 'olt update' to upgrade, or set OPENTOKEN_DISABLE_UPDATE_CHECK=1 to silence this message.
+   Run 'olt update' to upgrade, or set OLT_DISABLE_UPDATE_CHECK=1 to silence this message.
 ```
 
 The check never blocks or delays the primary command and is cached for 24 hours. To disable it:
@@ -291,7 +291,7 @@ The check never blocks or delays the primary command and is cached for 24 hours.
 openlinktoken --no-update-check package ...
 
 # Disable permanently (add to your shell profile)
-export OPENTOKEN_DISABLE_UPDATE_CHECK=1
+export OLT_DISABLE_UPDATE_CHECK=1
 ```
 
 ### Self-Update with `olt update`

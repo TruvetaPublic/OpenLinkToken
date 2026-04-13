@@ -154,10 +154,10 @@ class TestGenerateKeyPairCommandIntegration:
                     ]
                 )
 
-        opentoken_dir = tmp_path / ".openlinktoken"
+        openlinktoken_dir = tmp_path / ".openlinktoken"
         assert exit_code == 0, f"generate-key-pair should succeed for curve {curve}"
-        assert (opentoken_dir / f"{key_name}.private.pem").exists()
-        assert (opentoken_dir / f"{key_name}.public.pem").exists()
+        assert (openlinktoken_dir / f"{key_name}.private.pem").exists()
+        assert (openlinktoken_dir / f"{key_name}.public.pem").exists()
 
     # -------------------------------------------------------------------------
     # Default name: openlinktoken-<ISO8601-date>
@@ -169,8 +169,8 @@ class TestGenerateKeyPairCommandIntegration:
             exit_code = OpenLinkTokenCommand.execute(["generate-key-pair"])
 
         assert exit_code == 0
-        opentoken_dir = tmp_path / ".openlinktoken"
-        matches = list(opentoken_dir.glob("openlinktoken-????-??-??.private.pem"))
+        openlinktoken_dir = tmp_path / ".openlinktoken"
+        matches = list(openlinktoken_dir.glob("openlinktoken-????-??-??.private.pem"))
         assert matches, "Expected a private key file matching openlinktoken-<ISO-date>.private.pem"
 
     # -------------------------------------------------------------------------
@@ -184,8 +184,8 @@ class TestGenerateKeyPairCommandIntegration:
             exit_code = OpenLinkTokenCommand.execute(["generate-key-pair", "--name", key_name])
 
         assert exit_code == 0
-        opentoken_dir = tmp_path / ".openlinktoken"
-        priv = (opentoken_dir / f"{key_name}.private.pem").read_bytes()
+        openlinktoken_dir = tmp_path / ".openlinktoken"
+        priv = (openlinktoken_dir / f"{key_name}.private.pem").read_bytes()
         assert priv.startswith(b"-----BEGIN PRIVATE KEY-----")
 
     # -------------------------------------------------------------------------
@@ -210,9 +210,9 @@ class TestGenerateKeyPairCommandIntegration:
             exit_code = OpenLinkTokenCommand.execute(["generate-key-pair", "--name", key_name, "--force"])
 
         assert exit_code == 0, "--force overwrite should succeed"
-        opentoken_dir = tmp_path / ".openlinktoken"
-        assert (opentoken_dir / f"{key_name}.private.pem").exists()
-        assert (opentoken_dir / f"{key_name}.public.pem").exists()
+        openlinktoken_dir = tmp_path / ".openlinktoken"
+        assert (openlinktoken_dir / f"{key_name}.private.pem").exists()
+        assert (openlinktoken_dir / f"{key_name}.public.pem").exists()
 
     # -------------------------------------------------------------------------
     # Unsupported curve
@@ -233,9 +233,9 @@ class TestGenerateKeyPairCommandIntegration:
 
         assert exit_code != 0, "Unsafe key name must exit non-zero"
 
-        opentoken_dir = tmp_path / ".openlinktoken"
-        if opentoken_dir.exists():
-            assert list(opentoken_dir.glob("*.pem")) == [], "Unsafe key names must not create output files"
+        openlinktoken_dir = tmp_path / ".openlinktoken"
+        if openlinktoken_dir.exists():
+            assert list(openlinktoken_dir.glob("*.pem")) == [], "Unsafe key names must not create output files"
 
     # -------------------------------------------------------------------------
     # Directory and file permissions
@@ -250,8 +250,8 @@ class TestGenerateKeyPairCommandIntegration:
         with patch("pathlib.Path.home", return_value=tmp_path):
             OpenLinkTokenCommand.execute(["generate-key-pair", "--name", key_name])
 
-        opentoken_dir = tmp_path / ".openlinktoken"
-        mode = stat.S_IMODE(os.stat(opentoken_dir).st_mode)
+        openlinktoken_dir = tmp_path / ".openlinktoken"
+        mode = stat.S_IMODE(os.stat(openlinktoken_dir).st_mode)
         assert mode == 0o700, f"Directory must have 700 permissions but got {oct(mode)}"
 
     def test_private_key_has_600_permissions(self, tmp_path):

@@ -52,7 +52,7 @@ class TestExtensionList:
 
     def test_list_empty_registry(self, tmp_path, capsys):
         """list prints a friendly message when no extensions are installed."""
-        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             with patch("importlib.metadata.entry_points", return_value=[]):
                 result = ExtensionCommand._list(_make_args())
 
@@ -70,7 +70,7 @@ class TestExtensionList:
         }
         (tmp_path / "registry.json").write_text(json.dumps(data))
 
-        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             result = ExtensionCommand._list(_make_args())
 
         out = capsys.readouterr().out
@@ -96,7 +96,7 @@ class TestExtensionUninstall:
         ext_dir.mkdir()
         (ext_dir / "dummy.py").write_text("")
 
-        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             with patch("sys.frozen", True, create=True):
                 result = ExtensionCommand._uninstall(_make_args(name="bye-ext"))
 
@@ -113,7 +113,7 @@ class TestExtensionUninstall:
         mock_result = MagicMock()
         mock_result.returncode = 0
 
-        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             with patch("subprocess.run", return_value=mock_result) as mock_pip:
                 result = ExtensionCommand._uninstall(_make_args(name="my-ext"))
 
@@ -128,7 +128,7 @@ class TestExtensionUninstall:
         mock_ep = MagicMock()
         mock_ep.name = "pip-ext"
 
-        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             with patch("importlib.metadata.entry_points", return_value=[mock_ep]):
                 result = ExtensionCommand._uninstall(_make_args(name="pip-ext"))
 
@@ -139,7 +139,7 @@ class TestExtensionUninstall:
 
     def test_uninstall_unknown_extension_returns_error(self, tmp_path, capsys):
         """uninstall returns 1 with an error message for unknown extension names."""
-        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             with patch("importlib.metadata.entry_points", return_value=[]):
                 result = ExtensionCommand._uninstall(_make_args(name="ghost-ext"))
 
@@ -151,7 +151,7 @@ class TestExtensionUninstall:
         data = {"evil-ext": {"version": "1.0.0", "source_url": "", "dist_name": "-r evil.txt"}}
         (tmp_path / "registry.json").write_text(json.dumps(data))
 
-        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             with patch("subprocess.run") as mock_pip:
                 result = ExtensionCommand._uninstall(_make_args(name="evil-ext"))
 
@@ -172,7 +172,7 @@ class TestExtensionInstall:
     def test_install_prints_security_warning(self, tmp_path, capsys):
         """install always prints the security warning before any other action."""
         args = _make_args(url="file:///nonexistent.whl", yes=True)
-        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             # The file doesn't exist — we just want to confirm the warning is printed.
             ExtensionCommand._install(args)
 
@@ -182,7 +182,7 @@ class TestExtensionInstall:
     def test_install_yes_flag_skips_prompt(self, tmp_path, capsys):
         """--yes skips the interactive confirmation prompt."""
         args = _make_args(url="file:///nonexistent.whl", yes=True)
-        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             with patch("builtins.input") as mock_input:
                 ExtensionCommand._install(args)
                 mock_input.assert_not_called()
@@ -190,7 +190,7 @@ class TestExtensionInstall:
     def test_install_prompts_without_yes(self, tmp_path, capsys):
         """Without --yes, the user is prompted when stdin is a tty."""
         args = _make_args(url="file:///nonexistent.whl", yes=False)
-        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             with patch("sys.stdin") as mock_stdin:
                 mock_stdin.isatty.return_value = True
                 with patch("builtins.input", return_value="n"):
@@ -208,7 +208,7 @@ class TestExtensionInstall:
         mock_result = MagicMock()
         mock_result.returncode = 0
 
-        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             with patch("subprocess.run", return_value=mock_result):
                 with patch(
                     "openlinktoken_cli.commands.extension_command._resolve_extension_command_name",
@@ -227,7 +227,7 @@ class TestExtensionInstall:
     def test_install_non_interactive_without_yes_fails(self, tmp_path, capsys):
         """Without --yes and in a non-TTY context, install must fail with a clear error."""
         args = _make_args(url="file:///nonexistent.whl", yes=False)
-        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             with patch("sys.stdin") as mock_stdin:
                 mock_stdin.isatty.return_value = False
                 result = ExtensionCommand._install(args)
@@ -240,7 +240,7 @@ class TestExtensionInstall:
     def test_install_rejects_non_https_url(self, tmp_path, capsys):
         """install must reject URLs with schemes other than https:// or file://."""
         args = _make_args(url="http://example.com/ext.whl", yes=True)
-        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             result = ExtensionCommand._install(args)
 
         assert result == 1
@@ -255,7 +255,7 @@ class TestExtensionInstall:
         mock_result = MagicMock()
         mock_result.returncode = 0
 
-        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             with patch("subprocess.run", return_value=mock_result) as mock_pip:
                 ExtensionCommand._install(args)
 
@@ -272,7 +272,7 @@ class TestExtensionInstall:
         pip_install_result = MagicMock()
         pip_install_result.returncode = 0
 
-        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             with patch("subprocess.run", return_value=pip_install_result) as mock_pip:
                 with patch(
                     "openlinktoken_cli.commands.extension_command._resolve_extension_command_name",
@@ -292,7 +292,7 @@ class TestExtensionInstall:
         whl = _make_wheel(tmp_path)
         args = _make_args(url=f"file://{whl}", yes=True)
 
-        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             with patch("sys.frozen", True, create=True):
                 with patch.object(
                     ExtensionCommand,
@@ -311,7 +311,7 @@ class TestExtensionInstall:
         whl = _make_wheel(tmp_path)
         args = _make_args(url=f"file://{whl}", yes=True)
 
-        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             with patch("sys.frozen", True, create=True):
                 with patch.object(ExtensionCommand, "_safe_extract_wheel"):
                     with patch(
@@ -329,7 +329,7 @@ class TestExtensionInstall:
         whl = _make_wheel(tmp_path)
         args = _make_args(url=f"file://{whl}", yes=True)
 
-        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             with patch("sys.frozen", True, create=True):
                 with patch.object(ExtensionCommand, "_safe_extract_wheel"):
                     with patch(
@@ -350,7 +350,7 @@ class TestExtensionInstall:
         pip_install_result = MagicMock()
         pip_install_result.returncode = 0
 
-        with patch.dict(os.environ, {"OPENTOKEN_EXTENSIONS_DIR": str(tmp_path)}):
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             with patch("subprocess.run", return_value=pip_install_result) as mock_pip:
                 with patch(
                     "openlinktoken_cli.commands.extension_command._resolve_extension_command_name",

@@ -50,8 +50,8 @@ Azure Key Vault pattern:
         )
 
 Optional direct-secret environment variables:
-    OPENTOKEN_HASHING_SECRET=...
-    OPENTOKEN_ENCRYPTION_KEY=...
+    OLT_HASHING_SECRET=...
+    OLT_ENCRYPTION_KEY=...
 """
 
 import os
@@ -78,15 +78,15 @@ def create_processor() -> OpenLinkTokenProcessor:
             private_key_env=private_key_env,
         )
 
-    hashing_secret = os.environ.get("OPENTOKEN_HASHING_SECRET")
-    encryption_key = os.environ.get("OPENTOKEN_ENCRYPTION_KEY")
+    hashing_secret = os.environ.get("OLT_HASHING_SECRET")
+    encryption_key = os.environ.get("OLT_ENCRYPTION_KEY")
     if hashing_secret:
         print("Using direct-secret flow from environment variables.")
         return OpenLinkTokenProcessor(hashing_secret=hashing_secret, encryption_key=encryption_key)
 
     raise RuntimeError(
         "Set OPENTOKEN_EXCHANGE_CONFIG_PATH with OPENTOKEN_PRIVATE_KEY_PATH or OPENTOKEN_PRIVATE_KEY. "
-        "For direct-secret usage, set OPENTOKEN_HASHING_SECRET and OPENTOKEN_ENCRYPTION_KEY."
+        "For direct-secret usage, set OLT_HASHING_SECRET and OLT_ENCRYPTION_KEY."
     )
 
 

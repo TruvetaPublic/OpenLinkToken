@@ -168,13 +168,13 @@ See [Reference: Metadata Format](../reference/metadata-format.md) for complete f
 ### Environment Variables for Secrets
 
 ```bash
-export OPENTOKEN_HASHING_SECRET="MyHashingKey"
-export OPENTOKEN_ENCRYPTION_KEY="MyEncryptionKey32CharactersLong"
+export OLT_HASHING_SECRET="MyHashingKey"
+export OLT_ENCRYPTION_KEY="MyEncryptionKey32CharactersLong"
 
 olt package \
   -i data.csv -t csv -o tokens.csv \
-  -h "$OPENTOKEN_HASHING_SECRET" \
-  -e "$OPENTOKEN_ENCRYPTION_KEY"
+  -h "$OLT_HASHING_SECRET" \
+  -e "$OLT_ENCRYPTION_KEY"
 ```
 
 ### Logging and Monitoring

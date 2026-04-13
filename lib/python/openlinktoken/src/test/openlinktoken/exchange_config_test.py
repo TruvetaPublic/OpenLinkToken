@@ -73,21 +73,21 @@ def test_build_exchange_envelope_round_trips_for_either_private_key():
 
 def test_resolve_private_key_by_kid_uses_matching_public_key_basename(tmp_path: Path):
     """Kid resolution maps a matching public key file back to its private key PEM."""
-    opentoken_dir = tmp_path / ".openlinktoken"
-    opentoken_dir.mkdir()
+    openlinktoken_dir = tmp_path / ".openlinktoken"
+    openlinktoken_dir.mkdir()
 
     expected_private_pem, expected_public_pem = generate_key_pair("P-256")
-    expected_prefix = opentoken_dir / "sender-key"
+    expected_prefix = openlinktoken_dir / "sender-key"
     expected_prefix.with_suffix(".public.pem").write_bytes(expected_public_pem)
     expected_prefix.with_suffix(".private.pem").write_bytes(expected_private_pem)
 
     other_private_pem, other_public_pem = generate_key_pair("P-256")
-    other_prefix = opentoken_dir / "other-key"
+    other_prefix = openlinktoken_dir / "other-key"
     other_prefix.with_suffix(".public.pem").write_bytes(other_public_pem)
     other_prefix.with_suffix(".private.pem").write_bytes(other_private_pem)
 
     resolved_private_pem = resolve_private_key_by_kid(
-        opentoken_dir,
+        openlinktoken_dir,
         fingerprint_to_kid(public_key_fingerprint(expected_public_pem)),
     )
 

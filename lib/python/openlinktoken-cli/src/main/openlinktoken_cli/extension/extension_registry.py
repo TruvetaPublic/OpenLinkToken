@@ -16,7 +16,7 @@ class ExtensionRegistry:
     Manages the OpenLinkToken extension registry stored at ``~/.openlinktoken/extensions/registry.json``.
 
     The registry is a JSON file that maps extension names to their installation metadata.
-    The base directory can be overridden via the ``OPENTOKEN_EXTENSIONS_DIR`` environment variable.
+    The base directory can be overridden via the ``OLT_EXTENSIONS_DIR`` environment variable.
 
     Registry JSON schema (one entry per installed extension):
 
@@ -40,10 +40,10 @@ class ExtensionRegistry:
         """
         Return the base directory for installed extensions.
 
-        Uses the ``OPENTOKEN_EXTENSIONS_DIR`` environment variable when set;
+        Uses the ``OLT_EXTENSIONS_DIR`` environment variable when set;
         otherwise defaults to ``~/.openlinktoken/extensions/``.
         """
-        env_override = os.environ.get("OPENTOKEN_EXTENSIONS_DIR")
+        env_override = os.environ.get("OLT_EXTENSIONS_DIR")
         if env_override:
             base_path = Path(env_override).expanduser()
             if not base_path.is_absolute():

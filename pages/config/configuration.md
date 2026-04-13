@@ -29,28 +29,28 @@ For the complete, authoritative list of flags, short options, and defaults, see 
 Secrets can be passed via environment variables for security:
 
 ```bash
-export OPENTOKEN_HASHING_SECRET="MyHashingKey"
-export OPENTOKEN_ENCRYPTION_KEY="MyEncryptionKey32CharactersLong"
+export OLT_HASHING_SECRET="MyHashingKey"
+export OLT_ENCRYPTION_KEY="MyEncryptionKey32CharactersLong"
 
 olt package \
   -i data.csv -t csv -o tokens.csv \
-  -h "$OPENTOKEN_HASHING_SECRET" \
-  -e "$OPENTOKEN_ENCRYPTION_KEY"
+  -h "$OLT_HASHING_SECRET" \
+  -e "$OLT_ENCRYPTION_KEY"
 ```
 
 ### Docker Environment
 
 ```bash
 docker run --rm \
-  -e OPENTOKEN_HASHING_SECRET="MyHashingKey" \
-  -e OPENTOKEN_ENCRYPTION_KEY="MyEncryptionKey32CharactersLong" \
+  -e OLT_HASHING_SECRET="MyHashingKey" \
+  -e OLT_ENCRYPTION_KEY="MyEncryptionKey32CharactersLong" \
   -v $(pwd)/resources:/app/resources \
   openlinktoken:latest package \
   -i /app/resources/sample.csv \
   -t csv \
   -o /app/resources/output.csv \
-  -h "$OPENTOKEN_HASHING_SECRET" \
-  -e "$OPENTOKEN_ENCRYPTION_KEY"
+  -h "$OLT_HASHING_SECRET" \
+  -e "$OLT_ENCRYPTION_KEY"
 ```
 
 ---

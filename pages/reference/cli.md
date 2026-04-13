@@ -61,7 +61,7 @@ These options are accepted by the root command and apply to every invocation:
 | ------------------- | ----------------------------------------------------------- |
 | `--no-update-check` | Disable the automatic background version check for this run |
 
-The automatic version check can also be disabled permanently by setting the environment variable `OPENTOKEN_DISABLE_UPDATE_CHECK=1`.
+The automatic version check can also be disabled permanently by setting the environment variable `OLT_DISABLE_UPDATE_CHECK=1`.
 
 ## Arguments by Subcommand
 
@@ -484,9 +484,9 @@ Removes the named extension and its registry entry. The `<name>` argument is the
 
 ### Extension Environment Variables
 
-| Variable                   | Description                                                                                                                                             |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `OPENTOKEN_EXTENSIONS_DIR` | Override the default extension install directory (`~/.openlinktoken/extensions/`). Set in CI or containers to install extensions at a predictable path. |
+| Variable             | Description                                                                                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OLT_EXTENSIONS_DIR` | Override the default extension install directory (`~/.openlinktoken/extensions/`). Set in CI or containers to install extensions at a predictable path. |
 
 ### Registry File
 
@@ -496,7 +496,7 @@ The extension registry is stored at:
 ~/.openlinktoken/extensions/registry.json
 ```
 
-When `OPENTOKEN_EXTENSIONS_DIR` is set, the registry is stored in that directory instead. The registry records each extension's name, version, module path, entry-point class, install path, and source URL. It is read at CLI startup to discover extensions under the binary install.
+When `OLT_EXTENSIONS_DIR` is set, the registry is stored in that directory instead. The registry records each extension's name, version, module path, entry-point class, install path, and source URL. It is read at CLI startup to discover extensions under the binary install.
 
 ---
 
@@ -539,17 +539,17 @@ Every time the CLI is run, it performs a lightweight background check against th
 ```
 ⚠ A new version of OpenLinkToken is available: v2.1.0 (you have v2.0.0)
    Release notes: https://github.com/TruvetaPublic/OpenLinkToken/releases/tag/v2.1.0
-   Run 'olt update' to upgrade, or set OPENTOKEN_DISABLE_UPDATE_CHECK=1 to silence this message.
+   Run 'olt update' to upgrade, or set OLT_DISABLE_UPDATE_CHECK=1 to silence this message.
 ```
 
 ### Opting Out
 
 The version check can be disabled per-run or permanently:
 
-| Mechanism                                  | Scope                                       |
-| ------------------------------------------ | ------------------------------------------- |
-| `--no-update-check` CLI flag               | Per invocation                              |
-| `OPENTOKEN_DISABLE_UPDATE_CHECK=1` env var | Persistent (shell profile / CI environment) |
+| Mechanism                            | Scope                                       |
+| ------------------------------------ | ------------------------------------------- |
+| `--no-update-check` CLI flag         | Per invocation                              |
+| `OLT_DISABLE_UPDATE_CHECK=1` env var | Persistent (shell profile / CI environment) |
 
 When disabled, no network request is made and no cache is read or written.
 

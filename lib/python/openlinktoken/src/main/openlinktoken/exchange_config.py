@@ -120,7 +120,7 @@ def resolve_exchange_config_private_key(
     private_key_path: str | Path | None = None,
     private_key_env: str | None = None,
     private_key_value: str | bytes | None = None,
-    opentoken_dir: Path | None = None,
+    openlinktoken_dir: Path | None = None,
     environment: Mapping[str, str] | None = None,
 ) -> bytes:
     """Resolve private-key PEM bytes for a loaded exchange config."""
@@ -141,15 +141,15 @@ def resolve_exchange_config_private_key(
     if private_key_value is not None:
         return _read_private_key_value(private_key_value)
 
-    resolved_opentoken_dir = opentoken_dir if opentoken_dir else Path.home() / ".openlinktoken"
+    resolved_openlinktoken_dir = openlinktoken_dir if openlinktoken_dir else Path.home() / ".openlinktoken"
     for kid in _recipient_kids(exchange_config.config):
         try:
-            return resolve_private_key_by_kid(resolved_opentoken_dir, kid)
+            return resolve_private_key_by_kid(resolved_openlinktoken_dir, kid)
         except FileNotFoundError:
             continue
 
     raise FileNotFoundError(
-        f"No private key matching this exchange config was found in {resolved_opentoken_dir}. "
+        f"No private key matching this exchange config was found in {resolved_openlinktoken_dir}. "
         "Provide a private key path, environment variable, or direct value."
     )
 

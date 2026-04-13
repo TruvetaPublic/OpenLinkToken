@@ -120,8 +120,8 @@ olt decrypt \
 - **Never commit encryption keys** to version control
 - **Use environment variables** or secret stores:
   ```bash
-  export OPENTOKEN_ENCRYPTION_KEY="YourKey32Characters!!!!!!!!!!!!"
-  olt decrypt -e "$OPENTOKEN_ENCRYPTION_KEY" ...
+  export OLT_ENCRYPTION_KEY="YourKey32Characters!!!!!!!!!!!!"
+  olt decrypt -e "$OLT_ENCRYPTION_KEY" ...
   ```
 - **Rotate keys periodically** and re-encrypt tokens as needed
 

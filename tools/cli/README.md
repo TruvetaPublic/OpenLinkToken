@@ -22,7 +22,7 @@ The command lines below are the exact CLI invocations that the script executes.
 8. `python -m openlinktoken_cli.main --no-update-check generate-key-pair --name recipient-p384 --curve P-384 --force`
 9. `python -m openlinktoken_cli.main --no-update-check generate-key-pair --name recipient-p521 --curve P-521 --force`
 10. `python -m openlinktoken_cli.main --no-update-check initiate-exchange --help`
-11. `python -m openlinktoken_cli.main --no-update-check initiate-exchange --name sender-local --public-key-env OPENTOKEN_MATRIX_RECIPIENT_PUBLIC_KEY_PEM --output <WORKSPACE>/outputs/local.exchange.json --hashingsecret-env OPENTOKEN_MATRIX_HASHING_SECRET --force`
+11. `python -m openlinktoken_cli.main --no-update-check initiate-exchange --name sender-local --public-key-env OLT_MATRIX_RECIPIENT_PUBLIC_KEY_PEM --output <WORKSPACE>/outputs/local.exchange.json --hashingsecret-env OPENTOKEN_MATRIX_HASHING_SECRET --force`
 12. `python -m openlinktoken_cli.main --no-update-check tokenize -i <WORKSPACE>/inputs/people.csv -t csv -o <WORKSPACE>/outputs/tokenized-hash.csv --exchange-config <WORKSPACE>/outputs/local.exchange.json --private-key-env OPENTOKEN_MATRIX_SENDER_PRIVATE_KEY_PEM`
 13. `python -m openlinktoken_cli.main --no-update-check encrypt --help`
 14. `python -m openlinktoken_cli.main --no-update-check encrypt -i <WORKSPACE>/outputs/tokenized-hash.csv -t csv -o <WORKSPACE>/outputs/encrypted.csv --exchange-config <WORKSPACE>/outputs/local.exchange.json --private-key-env OPENTOKEN_MATRIX_SENDER_PRIVATE_KEY_PEM`
