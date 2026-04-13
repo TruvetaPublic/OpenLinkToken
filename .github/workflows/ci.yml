@@ -43,7 +43,7 @@ jobs:
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
           files: |
-            lib/java/opentoken/target/surefire-reports/*.xml
+            lib/java/openlinktoken/target/surefire-reports/*.xml
           check_name: Java Test Results
           comment_mode: always
           compare_to_earlier_commit: false
@@ -56,13 +56,13 @@ jobs:
         with:
           name: java-code-coverage
           path: |
-            lib/java/opentoken/target/site/jacoco/*
+            lib/java/openlinktoken/target/site/jacoco/*
 
       - name: Add Java code coverage to PR
         uses: madrapps/jacoco-report@v1.7.1
         with:
           paths: |
-            lib/java/opentoken/target/site/jacoco/jacoco.xml
+            lib/java/openlinktoken/target/site/jacoco/jacoco.xml
           token: ${{ secrets.GITHUB_TOKEN }}
           title: Code Coverage
           min-coverage-overall: ${{ env.MIN_COVERAGE_OVERALL }}
@@ -100,23 +100,23 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          uv pip install --system -r lib/python/opentoken/requirements.txt pytest pytest-cov ruff -e lib/python/opentoken/
+          uv pip install --system -r lib/python/openlinktoken/requirements.txt pytest pytest-cov ruff -e lib/python/openlinktoken/
 
       - name: Lint with ruff
         run: |
-          ruff check lib/python/opentoken/src
+          ruff check lib/python/openlinktoken/src
 
       - name: Test with pytest
         run: |
-          PYTHONPATH=lib/python/opentoken/src/main pytest lib/python/opentoken/src/test --junitxml=lib/python/opentoken/test-results-${{ matrix.python-version }}.xml --cov=lib/python/opentoken/src/main --cov-report=xml:lib/python/opentoken/coverage.xml --cov-report=html:lib/python/opentoken/htmlcov
+          PYTHONPATH=lib/python/openlinktoken/src/main pytest lib/python/openlinktoken/src/test --junitxml=lib/python/openlinktoken/test-results-${{ matrix.python-version }}.xml --cov=lib/python/openlinktoken/src/main --cov-report=xml:lib/python/openlinktoken/coverage.xml --cov-report=html:lib/python/openlinktoken/htmlcov
 
       - name: Upload Python coverage artifact
         uses: actions/upload-artifact@v4
         with:
           name: python-code-coverage-${{ matrix.python-version }}
           path: |
-            lib/python/opentoken/coverage.xml
-            lib/python/opentoken/htmlcov/*
+            lib/python/openlinktoken/coverage.xml
+            lib/python/openlinktoken/htmlcov/*
 
       - name: Upload Python JUnit results
         if: always()
@@ -124,14 +124,14 @@ jobs:
         with:
           name: python-junit-core-${{ matrix.python-version }}
           path: |
-            lib/python/opentoken/test-results-${{ matrix.python-version }}.xml
+            lib/python/openlinktoken/test-results-${{ matrix.python-version }}.xml
 
       - name: Publish Python unit test results
         if: always()
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
           files: |
-            lib/python/opentoken/test-results-${{ matrix.python-version }}.xml
+            lib/python/openlinktoken/test-results-${{ matrix.python-version }}.xml
           check_name: Python ${{ matrix.python-version }} Test Results
           comment_mode: off
           compare_to_earlier_commit: false
@@ -140,7 +140,7 @@ jobs:
         if: matrix.python-version == '3.10'
         uses: orgoro/coverage@v3.2
         with:
-          coverageFile: lib/python/opentoken/coverage.xml
+          coverageFile: lib/python/openlinktoken/coverage.xml
           token: ${{ secrets.GITHUB_TOKEN }}
           thresholdAll: ${{ env.MIN_COVERAGE_OVERALL_RATIO }}
           thresholdNew: ${{ env.MIN_COVERAGE_CHANGED_FILES_RATIO }}
@@ -169,23 +169,23 @@ jobs:
 
       - name: Install Python CLI dependencies
         run: |
-          uv pip install --system -r lib/python/opentoken/requirements.txt -e lib/python/opentoken/ -r lib/python/opentoken-cli/requirements.txt pytest pytest-cov ruff -e lib/python/opentoken-cli/
+          uv pip install --system -r lib/python/openlinktoken/requirements.txt -e lib/python/openlinktoken/ -r lib/python/openlinktoken-cli/requirements.txt pytest pytest-cov ruff -e lib/python/openlinktoken-cli/
 
       - name: Lint CLI with ruff
         run: |
-          ruff check lib/python/opentoken-cli/src
+          ruff check lib/python/openlinktoken-cli/src
 
       - name: Test CLI with pytest
         run: |
-          PYTHONPATH=lib/python/opentoken/src/main:lib/python/opentoken-cli/src/main pytest lib/python/opentoken-cli/src/test --junitxml=lib/python/opentoken-cli/test-results-${{ matrix.python-version }}.xml --cov=lib/python/opentoken-cli/src/main --cov-report=xml:lib/python/opentoken-cli/coverage.xml --cov-report=html:lib/python/opentoken-cli/htmlcov
+          PYTHONPATH=lib/python/openlinktoken/src/main:lib/python/openlinktoken-cli/src/main pytest lib/python/openlinktoken-cli/src/test --junitxml=lib/python/openlinktoken-cli/test-results-${{ matrix.python-version }}.xml --cov=lib/python/openlinktoken-cli/src/main --cov-report=xml:lib/python/openlinktoken-cli/coverage.xml --cov-report=html:lib/python/openlinktoken-cli/htmlcov
 
       - name: Upload Python CLI coverage artifact
         uses: actions/upload-artifact@v4
         with:
           name: python-cli-code-coverage-${{ matrix.python-version }}
           path: |
-            lib/python/opentoken-cli/coverage.xml
-            lib/python/opentoken-cli/htmlcov/*
+            lib/python/openlinktoken-cli/coverage.xml
+            lib/python/openlinktoken-cli/htmlcov/*
 
       - name: Upload Python CLI JUnit results
         if: always()
@@ -193,29 +193,29 @@ jobs:
         with:
           name: python-junit-cli-${{ matrix.python-version }}
           path: |
-            lib/python/opentoken-cli/test-results-${{ matrix.python-version }}.xml
+            lib/python/openlinktoken-cli/test-results-${{ matrix.python-version }}.xml
 
       - name: Publish Python CLI test results
         if: always()
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
           files: |
-            lib/python/opentoken-cli/test-results-${{ matrix.python-version }}.xml
+            lib/python/openlinktoken-cli/test-results-${{ matrix.python-version }}.xml
           check_name: Python CLI ${{ matrix.python-version }} Test Results
           comment_mode: off
           compare_to_earlier_commit: false
 
       - name: Run CLI smoke test
         run: |
-          cd lib/python/opentoken-cli
+          cd lib/python/openlinktoken-cli
           mkdir -p target
-          opentoken generate-key-pair --name recipient --force
-          opentoken initiate-exchange --name smoke --public-key "$HOME/.opentoken/recipient.public.pem" --output target/smoke.exchange.json --hashingsecret "HashingKey"
-          opentoken package -i ../../../resources/sample.csv -t csv -o target/output.csv --exchange-config target/smoke.exchange.json --private-key "$HOME/.opentoken/smoke.private.pem"
+          openlinktoken generate-key-pair --name recipient --force
+          openlinktoken initiate-exchange --name smoke --public-key "$HOME/.openlinktoken/recipient.public.pem" --output target/smoke.exchange.json --hashingsecret "HashingKey"
+          openlinktoken package -i ../../../resources/sample.csv -t csv -o target/output.csv --exchange-config target/smoke.exchange.json --private-key "$HOME/.openlinktoken/smoke.private.pem"
 
       - name: Validate CLI output files
         run: |
-          cd lib/python/opentoken-cli
+          cd lib/python/openlinktoken-cli
           if [ ! -f "target/output.csv" ]; then
             echo "Error: output.csv not created"
             exit 1
@@ -227,7 +227,7 @@ jobs:
 
       - name: Validate CLI output content
         run: |
-          cd lib/python/opentoken-cli
+          cd lib/python/openlinktoken-cli
           line_count=$(wc -l < target/output.csv)
           if [ "$line_count" -le 1 ]; then
             echo "Error: Output CSV appears to be empty or only contains headers"
@@ -259,35 +259,35 @@ jobs:
           # Spark 3.4/3.5 require Java 8-17, Spark 4.0+ requires Java 21
           java-version: ${{ (matrix.spark-version == '4.0' || matrix.spark-version == '4.1') && '21' || '17' }}
 
-      - name: Install OpenToken core library
+      - name: Install OpenLinkToken core library
         run: |
-          uv pip install --system -r lib/python/opentoken/requirements.txt -e lib/python/opentoken/
+          uv pip install --system -r lib/python/openlinktoken/requirements.txt -e lib/python/openlinktoken/
 
       - name: Install PySpark bridge dependencies (Spark ${{ matrix.spark-version }})
         run: |
           uv pip install --system pytest pytest-cov ruff
           if [ "${{ matrix.spark-version }}" = "4.0" ]; then
-            uv pip install --system -e "lib/python/opentoken-pyspark[spark40]"
+            uv pip install --system -e "lib/python/openlinktoken-pyspark[spark40]"
           elif [ "${{ matrix.spark-version }}" = "4.1" ]; then
-            uv pip install --system -e "lib/python/opentoken-pyspark[spark41]"
+            uv pip install --system -e "lib/python/openlinktoken-pyspark[spark41]"
           elif [ "${{ matrix.spark-version }}" = "3.4" ]; then
-            uv pip install --system -e "lib/python/opentoken-pyspark[spark34]"
+            uv pip install --system -e "lib/python/openlinktoken-pyspark[spark34]"
           elif [ "${{ matrix.spark-version }}" = "3.5" ]; then
-            uv pip install --system -e "lib/python/opentoken-pyspark[spark35]"
+            uv pip install --system -e "lib/python/openlinktoken-pyspark[spark35]"
           else
             echo "Unsupported Spark version for PySpark bridge: '${{ matrix.spark-version }}'."
             echo "Please update .github/workflows/ci.yml to handle this Spark version."
             exit 1
           fi
-          uv pip install --system -r lib/python/opentoken-pyspark/dev-requirements.txt
+          uv pip install --system -r lib/python/openlinktoken-pyspark/dev-requirements.txt
 
       - name: Lint with ruff
         run: |
-          ruff check lib/python/opentoken-pyspark/src/main/opentoken_pyspark
+          ruff check lib/python/openlinktoken-pyspark/src/main/openlinktoken_pyspark
 
       - name: Test PySpark bridge
         run: |
-          PYTHONPATH=lib/python/opentoken/src/main:lib/python/opentoken-pyspark/src/main pytest lib/python/opentoken-pyspark/src/test --junitxml=lib/python/opentoken-pyspark/test-results-${{ matrix.python-version }}-spark${{ matrix.spark-version }}.xml --cov=lib/python/opentoken-pyspark/src/main/opentoken_pyspark --cov-report=xml:lib/python/opentoken-pyspark/coverage-${{ matrix.python-version }}-spark${{ matrix.spark-version }}.xml --cov-report=html:lib/python/opentoken-pyspark/htmlcov-${{ matrix.python-version }}-spark${{ matrix.spark-version }}
+          PYTHONPATH=lib/python/openlinktoken/src/main:lib/python/openlinktoken-pyspark/src/main pytest lib/python/openlinktoken-pyspark/src/test --junitxml=lib/python/openlinktoken-pyspark/test-results-${{ matrix.python-version }}-spark${{ matrix.spark-version }}.xml --cov=lib/python/openlinktoken-pyspark/src/main/openlinktoken_pyspark --cov-report=xml:lib/python/openlinktoken-pyspark/coverage-${{ matrix.python-version }}-spark${{ matrix.spark-version }}.xml --cov-report=html:lib/python/openlinktoken-pyspark/htmlcov-${{ matrix.python-version }}-spark${{ matrix.spark-version }}
 
       - name: Upload PySpark coverage artifact
         if: always()
@@ -295,8 +295,8 @@ jobs:
         with:
           name: pyspark-code-coverage-${{ matrix.python-version }}-spark${{ matrix.spark-version }}
           path: |
-            lib/python/opentoken-pyspark/coverage-${{ matrix.python-version }}-spark${{ matrix.spark-version }}.xml
-            lib/python/opentoken-pyspark/htmlcov-${{ matrix.python-version }}-spark${{ matrix.spark-version }}/*
+            lib/python/openlinktoken-pyspark/coverage-${{ matrix.python-version }}-spark${{ matrix.spark-version }}.xml
+            lib/python/openlinktoken-pyspark/htmlcov-${{ matrix.python-version }}-spark${{ matrix.spark-version }}/*
 
       - name: Upload PySpark JUnit results
         if: always()
@@ -304,14 +304,14 @@ jobs:
         with:
           name: python-junit-pyspark-${{ matrix.python-version }}-spark${{ matrix.spark-version }}
           path: |
-            lib/python/opentoken-pyspark/test-results-${{ matrix.python-version }}-spark${{ matrix.spark-version }}.xml
+            lib/python/openlinktoken-pyspark/test-results-${{ matrix.python-version }}-spark${{ matrix.spark-version }}.xml
 
       - name: Publish PySpark test results
         if: always()
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
           files: |
-            lib/python/opentoken-pyspark/test-results-${{ matrix.python-version }}-spark${{ matrix.spark-version }}.xml
+            lib/python/openlinktoken-pyspark/test-results-${{ matrix.python-version }}-spark${{ matrix.spark-version }}.xml
           check_name: PySpark Bridge ${{ matrix.python-version }} Spark ${{ matrix.spark-version }} Test Results
           comment_mode: off
           compare_to_earlier_commit: false
@@ -320,7 +320,7 @@ jobs:
         if: matrix.python-version == '3.10' && matrix.spark-version == '4.0'
         uses: orgoro/coverage@v3.2
         with:
-          coverageFile: lib/python/opentoken-pyspark/coverage-${{ matrix.python-version }}-spark${{ matrix.spark-version }}.xml
+          coverageFile: lib/python/openlinktoken-pyspark/coverage-${{ matrix.python-version }}-spark${{ matrix.spark-version }}.xml
           token: ${{ secrets.GITHUB_TOKEN }}
           thresholdAll: ${{ env.MIN_COVERAGE_OVERALL_RATIO }}
           thresholdNew: ${{ env.MIN_COVERAGE_CHANGED_FILES_RATIO }}
@@ -522,7 +522,7 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          uv pip install --system -e lib/python/opentoken -e lib/python/opentoken-cli -e "lib/python/opentoken-pyspark[spark40]"
+          uv pip install --system -e lib/python/openlinktoken -e lib/python/openlinktoken-cli -e "lib/python/openlinktoken-pyspark[spark40]"
 
       - name: Install interoperability tool dependencies
         run: |

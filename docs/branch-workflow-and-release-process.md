@@ -1,6 +1,6 @@
 # Branch Workflow and Release Process
 
-This document explains the **Gitflow-based** branch strategy and automated workflows for the OpenToken repository.
+This document explains the **Gitflow-based** branch strategy and automated workflows for the OpenLinkToken repository.
 
 We follow Gitflow's separation of `main`, `develop`, `dev/*`, and `release/*` branches, with a few automation-oriented tweaks (notably an automated `main` → `develop` sync after each release).
 
@@ -72,14 +72,14 @@ graph TB
 ### `main`
 
 - **Purpose**: Production-ready, stable releases only
-- **Protection**: 
+- **Protection**:
   - Required CI checks must pass
   - Code review required
   - Only accepts PRs from `release/*` branches
 - **Merges from**: `release/*` branches only
 - **Merges to**: `develop` (automatic sync after release)
 - **Tagging**: Releases are automatically tagged `vx.y.z`
-- **Relationship to Gitflow**: In classic Gitflow, `release/*` branches are merged into both `main` and `develop`. In OpenToken, we merge `release/*` into `main`, then use an automated PR from `main` → `develop` to keep `develop` in sync. Functionally this is equivalent, but fully automated.
+- **Relationship to Gitflow**: In classic Gitflow, `release/*` branches are merged into both `main` and `develop`. In OpenLinkToken, we merge `release/*` into `main`, then use an automated PR from `main` → `develop` to keep `develop` in sync. Functionally this is equivalent, but fully automated.
 
 ### `develop`
 
@@ -92,6 +92,7 @@ graph TB
 - **Keeps in sync with `main`**: After each release, an automated PR merges `main` back into `develop`, carrying all release changes (equivalent to Gitflow’s manual `release/*` → `develop` merge).
 
 ### `release/*`
+
 - **Purpose**: Final preparation and version bump before production release
 - **Naming**: `release/x.y.z` (semantic versioning)
 - **Lifecycle**:
@@ -125,21 +126,22 @@ graph TB
 **Trigger**: PR opened/updated from `release/*` branch to `main`
 
 **Actions**:
+
 1. Extracts version from branch name (e.g., `release/1.23.4` → `1.23.4`)
 2. Validates semantic versioning format (`x.y.z`)
-3. Compares with current version in `lib/python/opentoken/src/main/opentoken/__init__.py` (`__version__` variable)
+3. Compares with current version in `lib/python/openlinktoken/src/main/openlinktoken/__init__.py` (`__version__` variable)
 4. If update needed:
    - Runs `bump2version --new-version x.y.z patch`
    - Updates all version files:
      - `.bumpversion.cfg`
-     - `lib/java/opentoken/pom.xml` (core module)
+     - `lib/java/openlinktoken/pom.xml` (core module)
      - `lib/java/pom.xml` (parent POM)
      - `Dockerfile`
-     - `lib/java/opentoken/src/main/java/com/truveta/opentoken/Metadata.java`
-     - `lib/python/opentoken/setup.py`
-     - `lib/python/opentoken/src/main/opentoken/__init__.py`
-     - `lib/python/opentoken/src/main/opentoken/metadata.py`
-     - `lib/python/opentoken-cli/setup.py`
+     - `lib/java/openlinktoken/src/main/java/com/truveta/openlinktoken/Metadata.java`
+     - `lib/python/openlinktoken/setup.py`
+     - `lib/python/openlinktoken/src/main/openlinktoken/__init__.py`
+     - `lib/python/openlinktoken/src/main/openlinktoken/metadata.py`
+     - `lib/python/openlinktoken-cli/setup.py`
    - Commits changes to release branch
    - Comments on PR with update summary
 5. If already up-to-date:
@@ -150,6 +152,7 @@ graph TB
 **Trigger**: PR merged to `main` from `release/*` branch
 
 **Actions**:
+
 1. Extracts version from `.bumpversion.cfg`
 2. Checks if release/tag already exist
 3. If not existing:
@@ -192,6 +195,7 @@ git push origin release/1.5.0
 ```
 
 **Automatic:**
+
 - ✅ Version files updated based on branch name
 - ✅ Git tag created on main
 - ✅ GitHub release created with notes
@@ -199,6 +203,7 @@ git push origin release/1.5.0
 - ✅ Main synced back to develop
 
 **Manual:**
+
 - Create the `release/x.y.z` branch
 - Open the PR to main
 - Review and approve the PR
@@ -234,27 +239,29 @@ git push origin dev/<github-username>/new-token-type
 
 ## FAQ
 
-**Q: Why can't I open a PR to `main` from my feature branch?**  
+**Q: Why can't I open a PR to `main` from my feature branch?**
 A: Feature work should go to `develop` first. Only release branches can merge to `main`. This ensures `main` is always stable and production-ready.
 
-**Q: My PR was auto-retargeted. Is this normal?**  
+**Q: My PR was auto-retargeted. Is this normal?**
 A: Yes! If you opened a PR to `main` from a non-release branch, it's automatically retargeted to `develop`. This is by design.
 
-**Q: Do I need to manually bump versions?**  
+**Q: Do I need to manually bump versions?**
 A: No! The `auto-version-bump` workflow extracts the version from your `release/x.y.z` branch name and updates all files automatically.
 
-**Q: How do I make a hotfix?**  
+**Q: How do I make a hotfix?**
 **A:** Hotfixes follow the same general pattern as releases, but start from `main`:
+
 1. Create a `release/x.y.z+1` branch from `release/x.y.z`. The branch name must still start with `release/` so the `auto-version-bump` and `auto-release` workflows apply.
 2. Push the branch to GitHub.
 3. Open a PR to `main`.
 4. After merge, the `auto-release` workflow will:
-  - Tag the release
-  - Create the GitHub release
-  - Open a sync PR from `main` → `develop` so the hotfix is also available in `develop`  
-This is equivalent to Gitflow’s `hotfix/*` flow (hotfix from `main`, merged back to both `main` and `develop`), but implemented using `release/*` naming plus automation.
 
-**Q: Can I bypass branch protection?**  
+- Tag the release
+- Create the GitHub release
+- Open a sync PR from `main` → `develop` so the hotfix is also available in `develop`
+  This is equivalent to Gitflow’s `hotfix/*` flow (hotfix from `main`, merged back to both `main` and `develop`), but implemented using `release/*` naming plus automation.
+
+**Q: Can I bypass branch protection?**
 A: Repository admins can override branch protection, but it's strongly discouraged. Follow the release process to maintain code quality and stability.
 
 ## Related Documentation

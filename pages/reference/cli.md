@@ -4,24 +4,24 @@ layout: default
 
 # CLI Reference
 
-Complete reference for OpenToken CLI arguments, modes, and examples. This page is the single source of truth for CLI flags and options; other documentation (such as Configuration) links here instead of duplicating them.
+Complete reference for OpenLinkToken CLI arguments, modes, and examples. This page is the single source of truth for CLI flags and options; other documentation (such as Configuration) links here instead of duplicating them.
 
 ## Installation Options
 
 ### Self-Contained Executable (Recommended)
 
-Download the pre-built executable from [releases](https://github.com/TruvetaPublic/OpenToken/releases):
+Download the pre-built executable from [releases](https://github.com/TruvetaPublic/OpenLinkToken/releases):
 
-- **Linux**: `opentoken-cli-{version}-linux-x64.zip`
-- **macOS**: `opentoken-cli-{version}-macos-universal.zip` (Intel + Apple Silicon)
-- **Windows**: `opentoken-cli-{version}-windows-x64.zip`
+- **Linux**: `openlinktoken-cli-{version}-linux-x64.zip`
+- **macOS**: `openlinktoken-cli-{version}-macos-universal.zip` (Intel + Apple Silicon)
+- **Windows**: `openlinktoken-cli-{version}-windows-x64.zip`
 
 No dependencies required. Extract and run.
 
 ### Other Options
 
-- **Docker**: Use `run-opentoken.sh` (Linux/Mac) or `run-opentoken.ps1` (Windows)
-- **Python**: Install with `uv pip install opentoken-cli`, then run `opentoken` or `python -m opentoken_cli.main`
+- **Docker**: Use `run-openlinktoken.sh` (Linux/Mac) or `run-openlinktoken.ps1` (Windows)
+- **Python**: Install with `uv pip install openlinktoken-cli`, then run `openlinktoken` or `python -m openlinktoken_cli.main`
 
 For installation details, see the [CLI Quickstart](../quickstarts/cli-quickstart.md).
 
@@ -37,20 +37,20 @@ The `tokenize` subcommand is primarily used to build **internal overlap-analysis
 
 ```bash
 # Self-contained executable
-./opentoken [OPTIONS]
+./openlinktoken [OPTIONS]
 
 # Python
-python -m opentoken_cli.main <subcommand> [OPTIONS]
+python -m openlinktoken_cli.main <subcommand> [OPTIONS]
 ```
 
 **Windows (PowerShell):**
 
 ```powershell
 # Self-contained executable
-.\opentoken.exe [OPTIONS]
+.\openlinktoken.exe [OPTIONS]
 
 # Python
-python -m opentoken_cli.main <subcommand> [OPTIONS]
+python -m openlinktoken_cli.main <subcommand> [OPTIONS]
 ```
 
 ## Global Options
@@ -67,70 +67,70 @@ The automatic version check can also be disabled permanently by setting the envi
 
 ### `package` (Default Encrypted Mode)
 
-| Argument            | Short | Required | Description                                                                                 |
-| ------------------- | ----- | -------- | ------------------------------------------------------------------------------------------- |
-| `--input`           | `-i`  | Yes      | Path to input file (CSV or Parquet)                                                         |
-| `--output`          | `-o`  | Yes      | Path to output file                                                                         |
-| `--type`            | `-t`  | Yes      | File type: `csv` or `parquet`                                                               |
-| `--exchange-config` |       | No       | Exchange config JSON path. Defaults to `./opentoken-YYYY-MM-DD.exchange.json` when omitted. |
-| `--private-key`     |       | No\*     | Private key PEM used to decrypt the exchange config and derive the transport encryption key |
-| `--private-key-env` |       | No\*     | Environment variable containing the private key PEM                                         |
-| `--output-type`     | `-ot` | No       | Output file type if different from input                                                    |
-| `--hash-record-ids` |       | No       | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability)      |
+| Argument            | Short | Required | Description                                                                                     |
+| ------------------- | ----- | -------- | ----------------------------------------------------------------------------------------------- |
+| `--input`           | `-i`  | Yes      | Path to input file (CSV or Parquet)                                                             |
+| `--output`          | `-o`  | Yes      | Path to output file                                                                             |
+| `--type`            | `-t`  | Yes      | File type: `csv` or `parquet`                                                                   |
+| `--exchange-config` |       | No       | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted. |
+| `--private-key`     |       | No\*     | Private key PEM used to decrypt the exchange config and derive the transport encryption key     |
+| `--private-key-env` |       | No\*     | Environment variable containing the private key PEM                                             |
+| `--output-type`     | `-ot` | No       | Output file type if different from input                                                        |
+| `--hash-record-ids` |       | No       | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability)          |
 
 ### `tokenize` (Hashed Tokens Only)
 
-| Argument            | Short | Required         | Description                                                                                 |
-| ------------------- | ----- | ---------------- | ------------------------------------------------------------------------------------------- |
-| `--input`           | `-i`  | Yes              | Path to input file (CSV or Parquet)                                                         |
-| `--output`          | `-o`  | Yes              | Path to output file                                                                         |
-| `--type`            | `-t`  | Yes              | File type: `csv` or `parquet`                                                               |
-| `--exchange-config` |       | Normal mode only | Exchange config JSON path. Defaults to `./opentoken-YYYY-MM-DD.exchange.json` when omitted. |
-| `--private-key`     |       | No\*             | Private key PEM used to decrypt the exchange config                                         |
-| `--private-key-env` |       | No\*             | Environment variable containing the private key PEM                                         |
-| `--demo-mode`       |       | No               | No hashing; outputs raw attribute signatures. Cannot be combined with `--exchange-config`.  |
-| `--output-type`     | `-ot` | No               | Output file type if different from input                                                    |
-| `--hash-record-ids` |       | No               | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability)      |
+| Argument            | Short | Required         | Description                                                                                     |
+| ------------------- | ----- | ---------------- | ----------------------------------------------------------------------------------------------- |
+| `--input`           | `-i`  | Yes              | Path to input file (CSV or Parquet)                                                             |
+| `--output`          | `-o`  | Yes              | Path to output file                                                                             |
+| `--type`            | `-t`  | Yes              | File type: `csv` or `parquet`                                                                   |
+| `--exchange-config` |       | Normal mode only | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted. |
+| `--private-key`     |       | No\*             | Private key PEM used to decrypt the exchange config                                             |
+| `--private-key-env` |       | No\*             | Environment variable containing the private key PEM                                             |
+| `--demo-mode`       |       | No               | No hashing; outputs raw attribute signatures. Cannot be combined with `--exchange-config`.      |
+| `--output-type`     | `-ot` | No               | Output file type if different from input                                                        |
+| `--hash-record-ids` |       | No               | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability)          |
 
 ### `encrypt` (Encrypt Input Tokens)
 
-| Argument            | Short | Required | Description                                                                                 |
-| ------------------- | ----- | -------- | ------------------------------------------------------------------------------------------- |
-| `--input`           | `-i`  | Yes      | Path to input file (CSV or Parquet)                                                         |
-| `--output`          | `-o`  | Yes      | Path to output file                                                                         |
-| `--type`            | `-t`  | Yes      | File type: `csv` or `parquet`                                                               |
-| `--exchange-config` |       | No       | Exchange config JSON path. Defaults to `./opentoken-YYYY-MM-DD.exchange.json` when omitted. |
-| `--private-key`     |       | No\*     | Private key PEM used to decrypt the exchange config and derive the transport encryption key |
-| `--private-key-env` |       | No\*     | Environment variable containing the private key PEM                                         |
-| `--output-type`     | `-ot` | No       | Output file type if different from input                                                    |
+| Argument            | Short | Required | Description                                                                                     |
+| ------------------- | ----- | -------- | ----------------------------------------------------------------------------------------------- |
+| `--input`           | `-i`  | Yes      | Path to input file (CSV or Parquet)                                                             |
+| `--output`          | `-o`  | Yes      | Path to output file                                                                             |
+| `--type`            | `-t`  | Yes      | File type: `csv` or `parquet`                                                                   |
+| `--exchange-config` |       | No       | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted. |
+| `--private-key`     |       | No\*     | Private key PEM used to decrypt the exchange config and derive the transport encryption key     |
+| `--private-key-env` |       | No\*     | Environment variable containing the private key PEM                                             |
+| `--output-type`     | `-ot` | No       | Output file type if different from input                                                        |
 
 ### `decrypt` (Decrypt Encrypted Tokens)
 
-| Argument            | Short | Required | Description                                                                                 |
-| ------------------- | ----- | -------- | ------------------------------------------------------------------------------------------- |
-| `--input`           | `-i`  | Yes      | Path to input file (must be encrypted)                                                      |
-| `--output`          | `-o`  | Yes      | Path to output file                                                                         |
-| `--type`            | `-t`  | Yes      | File type: `csv` or `parquet`                                                               |
-| `--exchange-config` |       | No       | Exchange config JSON path. Defaults to `./opentoken-YYYY-MM-DD.exchange.json` when omitted. |
-| `--private-key`     |       | No\*     | Private key PEM used to decrypt the exchange config and derive the transport encryption key |
-| `--private-key-env` |       | No\*     | Environment variable containing the private key PEM                                         |
-| `--output-type`     | `-ot` | No       | Output file type if different from input                                                    |
+| Argument            | Short | Required | Description                                                                                     |
+| ------------------- | ----- | -------- | ----------------------------------------------------------------------------------------------- |
+| `--input`           | `-i`  | Yes      | Path to input file (must be encrypted)                                                          |
+| `--output`          | `-o`  | Yes      | Path to output file                                                                             |
+| `--type`            | `-t`  | Yes      | File type: `csv` or `parquet`                                                                   |
+| `--exchange-config` |       | No       | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted. |
+| `--private-key`     |       | No\*     | Private key PEM used to decrypt the exchange config and derive the transport encryption key     |
+| `--private-key-env` |       | No\*     | Environment variable containing the private key PEM                                             |
+| `--output-type`     | `-ot` | No       | Output file type if different from input                                                        |
 
 ### `generate-key-pair` (ECDH Key Generation)
 
 Available in the Python CLI.
 
-| Argument  | Short | Required | Default                    | Description                                        |
-| --------- | ----- | -------- | -------------------------- | -------------------------------------------------- |
-| `--curve` | `-c`  | No       | `P-256`                    | Elliptic curve: `P-256`, `P-384`, or `P-521`       |
-| `--name`  | `-n`  | No       | `opentoken-<ISO8601-date>` | Base name for output key files                     |
-| `--force` |       | No       | `false`                    | Overwrite existing key files if they already exist |
+| Argument  | Short | Required | Default                        | Description                                        |
+| --------- | ----- | -------- | ------------------------------ | -------------------------------------------------- |
+| `--curve` | `-c`  | No       | `P-256`                        | Elliptic curve: `P-256`, `P-384`, or `P-521`       |
+| `--name`  | `-n`  | No       | `openlinktoken-<ISO8601-date>` | Base name for output key files                     |
+| `--force` |       | No       | `false`                        | Overwrite existing key files if they already exist |
 
-Writes key files to `~/.opentoken/`:
+Writes key files to `~/.openlinktoken/`:
 
-- `~/.opentoken/<name>.private.pem` — PKCS#8 PEM private key (permissions `600`)
-- `~/.opentoken/<name>.public.pem` — SubjectPublicKeyInfo PEM public key (permissions `644`)
-- `~/.opentoken/` directory is created with permissions `700` if absent.
+- `~/.openlinktoken/<name>.private.pem` — PKCS#8 PEM private key (permissions `600`)
+- `~/.openlinktoken/<name>.public.pem` — SubjectPublicKeyInfo PEM public key (permissions `644`)
+- `~/.openlinktoken/` directory is created with permissions `700` if absent.
 
 ### `initiate-exchange` (ECDH Key-Exchange Bootstrap)
 
@@ -138,41 +138,41 @@ Available in the Python CLI.
 
 Generates, reuses, or derives a sender key pair, encrypts a hashing secret into a versioned multi-recipient JWE JSON exchange artifact, and writes recipient entries for both the sender and the partner. The artifact does **not** embed any private keys.
 
-| Argument                   | Short | Required | Default                    | Description                                                                                                       |
-| -------------------------- | ----- | -------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `--public-key`             |       | Yes\*    |                            | Path to the partner's public key (PEM/SPKI format)                                                                |
-| `--public-key-stdin`       |       | Yes\*    | `false`                    | Read the partner's public key PEM from stdin instead of `--public-key`                                            |
-| `--public-key-env`         |       | Yes\*    |                            | Read the partner's public key PEM from the named environment variable                                             |
-| `--name`                   | `-n`  | No       | `opentoken-<ISO8601-date>` | Base name for local key files                                                                                     |
-| `--output`                 | `-o`  | No       | `./<name>.exchange.json`   | Output path for the exchange config JSON                                                                          |
-| `--hashingsecret`          |       | No\*\*   | randomly generated         | Hashing secret to encrypt when you intentionally pass it on the command line                                      |
-| `--hashingsecret-stdin`    |       | No\*\*   | `false`                    | Read the hashing secret from stdin instead of passing it on the command line                                      |
-| `--hashingsecret-env`      |       | No\*\*   |                            | Read the hashing secret from the named environment variable                                                       |
-| `--curve`                  | `-c`  | No       | `P-256`                    | Elliptic curve for generated keys: `P-256`, `P-384`, or `P-521`                                                   |
-| `--force`                  |       | No       | `false`                    | Overwrite existing key files and exchange config                                                                  |
-| `--sender-private-key`     |       | No       |                            | Reuse an existing sender private key PEM for the sender-side recipient entry instead of generating a new key pair |
-| `--sender-private-key-env` |       | No       |                            | Read the sender private key PEM from the named environment variable without writing local sender key files        |
+| Argument                   | Short | Required | Default                        | Description                                                                                                       |
+| -------------------------- | ----- | -------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| `--public-key`             |       | Yes\*    |                                | Path to the partner's public key (PEM/SPKI format)                                                                |
+| `--public-key-stdin`       |       | Yes\*    | `false`                        | Read the partner's public key PEM from stdin instead of `--public-key`                                            |
+| `--public-key-env`         |       | Yes\*    |                                | Read the partner's public key PEM from the named environment variable                                             |
+| `--name`                   | `-n`  | No       | `openlinktoken-<ISO8601-date>` | Base name for local key files                                                                                     |
+| `--output`                 | `-o`  | No       | `./<name>.exchange.json`       | Output path for the exchange config JSON                                                                          |
+| `--hashingsecret`          |       | No\*\*   | randomly generated             | Hashing secret to encrypt when you intentionally pass it on the command line                                      |
+| `--hashingsecret-stdin`    |       | No\*\*   | `false`                        | Read the hashing secret from stdin instead of passing it on the command line                                      |
+| `--hashingsecret-env`      |       | No\*\*   |                                | Read the hashing secret from the named environment variable                                                       |
+| `--curve`                  | `-c`  | No       | `P-256`                        | Elliptic curve for generated keys: `P-256`, `P-384`, or `P-521`                                                   |
+| `--force`                  |       | No       | `false`                        | Overwrite existing key files and exchange config                                                                  |
+| `--sender-private-key`     |       | No       |                                | Reuse an existing sender private key PEM for the sender-side recipient entry instead of generating a new key pair |
+| `--sender-private-key-env` |       | No       |                                | Read the sender private key PEM from the named environment variable without writing local sender key files        |
 
 **Outputs:**
 
-- `~/.opentoken/<name>.private.pem` — local private key (permissions `600`) when OpenToken generates a sender key or reuses `--sender-private-key`
-- `~/.opentoken/<name>.public.pem` — local public key (permissions `644`) when OpenToken generates a sender key or reuses `--sender-private-key`
+- `~/.openlinktoken/<name>.private.pem` — local private key (permissions `600`) when OpenLinkToken generates a sender key or reuses `--sender-private-key`
+- `~/.openlinktoken/<name>.public.pem` — local public key (permissions `644`) when OpenLinkToken generates a sender key or reuses `--sender-private-key`
 - `<output>` — versioned multi-recipient JWE JSON exchange artifact containing the encrypted hashing secret
 
 `<output>` can be decrypted by either side with its own matching private key. The JSON is still sensitive, but it does **not** contain private key material.
 
 \* Provide one of `--public-key`, `--public-key-stdin`, or `--public-key-env`.
 
-\*\* Provide at most one of `--hashingsecret`, `--hashingsecret-stdin`, or `--hashingsecret-env`. If you omit all three, OpenToken generates a secure random hashing secret. For pre-existing secrets, prefer `--hashingsecret-env` or `--hashingsecret-stdin` so the secret does not appear in shell history or process arguments. Because stdin can only be consumed once per command, `--hashingsecret-stdin` cannot be combined with `--public-key-stdin`.
+\*\* Provide at most one of `--hashingsecret`, `--hashingsecret-stdin`, or `--hashingsecret-env`. If you omit all three, OpenLinkToken generates a secure random hashing secret. For pre-existing secrets, prefer `--hashingsecret-env` or `--hashingsecret-stdin` so the secret does not appear in shell history or process arguments. Because stdin can only be consumed once per command, `--hashingsecret-stdin` cannot be combined with `--public-key-stdin`.
 
 **Example:**
 
 ```bash
 # Step 1 – recipient generates their key pair and shares the public key
-opentoken generate-key-pair --name recipient-org
+openlinktoken generate-key-pair --name recipient-org
 
 # Step 2 – sender initiates the exchange using the recipient's public key
-opentoken initiate-exchange \
+openlinktoken initiate-exchange \
   --name sender-q2 \
   --public-key ./recipient-org.public.pem \
   --output ./sender-q2.exchange.json
@@ -181,17 +181,17 @@ opentoken initiate-exchange \
 To reuse an existing sender private key instead of generating a new one:
 
 ```bash
-opentoken initiate-exchange \
+openlinktoken initiate-exchange \
   --name sender-q2 \
   --public-key ./recipient-org.public.pem \
-  --sender-private-key ~/.opentoken/sender-q2.private.pem \
+  --sender-private-key ~/.openlinktoken/sender-q2.private.pem \
   --output ./sender-q2.exchange.json
 ```
 
 To read the partner public key from stdin as an alternative to `--public-key`:
 
 ```bash
-cat ./recipient-org.public.pem | opentoken initiate-exchange \
+cat ./recipient-org.public.pem | openlinktoken initiate-exchange \
   --name sender-q2 \
   --public-key-stdin \
   --output ./sender-q2.exchange.json
@@ -202,7 +202,7 @@ To provide an existing hashing secret without exposing it in the process argumen
 ```bash
 export OT_HASHING_SECRET="$(az keyvault secret show --vault-name my-vault --name hashing-secret --query value -o tsv)"
 
-opentoken initiate-exchange \
+openlinktoken initiate-exchange \
   --name sender-q2 \
   --public-key ./recipient-org.public.pem \
   --hashingsecret-env OT_HASHING_SECRET \
@@ -215,17 +215,17 @@ one command, use environment-variable references instead of stdin:
 ```bash
 OT_PARTNER_PUBLIC_KEY="$(az keyvault secret show --vault-name my-vault --name recipient-public-key --query value -o tsv)" \
 OT_SENDER_PRIVATE_KEY="$(az keyvault secret show --vault-name my-vault --name sender-private-key --query value -o tsv)" \
-opentoken initiate-exchange \
+openlinktoken initiate-exchange \
   --name sender-q2 \
   --public-key-env OT_PARTNER_PUBLIC_KEY \
   --sender-private-key-env OT_SENDER_PRIVATE_KEY \
   --output ./sender-q2.exchange.json
 ```
 
-When `--sender-private-key-env` is used, OpenToken derives the sender public key
-in memory and does not write local sender key files under `~/.opentoken/`.
+When `--sender-private-key-env` is used, OpenLinkToken derives the sender public key
+in memory and does not write local sender key files under `~/.openlinktoken/`.
 
-For `tokenize`, `package`, `encrypt`, and `decrypt`, OpenToken resolves the exchange config from `--exchange-config` or from the date-based default path `./opentoken-YYYY-MM-DD.exchange.json`. When neither `--private-key` nor `--private-key-env` is supplied, the CLI falls back to `~/.opentoken/` fingerprint-based key lookup.
+For `tokenize`, `package`, `encrypt`, and `decrypt`, OpenLinkToken resolves the exchange config from `--exchange-config` or from the date-based default path `./openlinktoken-YYYY-MM-DD.exchange.json`. When neither `--private-key` nor `--private-key-env` is supplied, the CLI falls back to `~/.openlinktoken/` fingerprint-based key lookup.
 
 \* Provide at most one of `--private-key` or `--private-key-env`.
 
@@ -234,7 +234,7 @@ For a field-by-field format reference, see `docs/exchange-config-format.md`.
 
 ### `update` (Self-Update CLI)
 
-Downloads and installs the latest (or a specific) release of the OpenToken CLI in-place.
+Downloads and installs the latest (or a specific) release of the OpenLinkToken CLI in-place.
 
 | Argument    | Short | Required | Description                                           |
 | ----------- | ----- | -------- | ----------------------------------------------------- |
@@ -244,19 +244,19 @@ Downloads and installs the latest (or a specific) release of the OpenToken CLI i
 
 ```bash
 # Update to the latest release
-opentoken update
+openlinktoken update
 
 # Update to a specific version
-opentoken update --version v2.1.0
+openlinktoken update --version v2.1.0
 
 # Preview what would change (no-op)
-opentoken update --dry-run
+openlinktoken update --dry-run
 
 # Update without prompting for confirmation
-opentoken update --yes
+openlinktoken update --yes
 ```
 
-Release assets are published with SHA-256 sidecars, and `opentoken update` verifies the matching checksum automatically before the binary is replaced. The command exits non-zero if the checksum does not match.
+Release assets are published with SHA-256 sidecars, and `openlinktoken update` verifies the matching checksum automatically before the binary is replaced. The command exits non-zero if the checksum does not match.
 
 ## Modes of Operation
 
@@ -265,7 +265,7 @@ Release assets are published with SHA-256 sidecars, and `opentoken update` verif
 Generates fully encrypted tokens using AES-256-GCM. Tokens can be decrypted later with the encryption key.
 
 ```bash
-opentoken package \
+openlinktoken package \
   -i input.csv -t csv -o output.csv \
   -h "HashingSecret" \
   -e "EncryptionKey-Exactly32Chars!!"
@@ -282,7 +282,7 @@ Signature → SHA-256 → HMAC-SHA256 → AES-256-GCM → Base64
 Generates one-way hashed tokens. Faster but tokens cannot be decrypted.
 
 ```bash
-opentoken tokenize \
+openlinktoken tokenize \
   -i input.csv -t csv -o output.csv \
   -h "HashingSecret"
 
@@ -305,7 +305,7 @@ attribute values compose each token for development, testing, or demos.
 > protection across trust boundaries.
 
 ```bash
-opentoken tokenize \
+openlinktoken tokenize \
   -i input.csv -t csv -o output.csv \
   --demo-mode
 ```
@@ -395,7 +395,7 @@ Every run generates a `.metadata.json` file:
 {
   "Platform": "Python",
   "PythonVersion": "3.11.0",
-  "OpenTokenVersion": "2.0.0-alpha",
+  "OpenLinkTokenVersion": "2.0.0-alpha",
   "TotalRows": 100,
   "TotalRowsWithInvalidAttributes": 3,
   "InvalidAttributesByType": {
@@ -413,10 +413,10 @@ Every run generates a `.metadata.json` file:
 
 ## Docker Script Options
 
-### Bash (run-opentoken.sh)
+### Bash (run-openlinktoken.sh)
 
 ```bash
-./run-opentoken.sh package \
+./run-openlinktoken.sh package \
   -i ./input.csv \
   -o ./output.csv \
   -t csv \
@@ -432,10 +432,10 @@ Every run generates a `.metadata.json` file:
 | `--verbose`    | Show detailed output      |
 | `--help`       | Show help message         |
 
-### PowerShell (run-opentoken.ps1)
+### PowerShell (run-openlinktoken.ps1)
 
 ```powershell
-.\run-opentoken.ps1 package `
+.\run-openlinktoken.ps1 package `
   -i .\input.csv `
   -o .\output.csv `
   -FileType csv `
@@ -447,12 +447,12 @@ Every run generates a `.metadata.json` file:
 
 ## Extensions
 
-The `extension` subcommand manages CLI extensions. Extensions add top-level subcommands to `opentoken` without requiring a CLI upgrade. See [Extension Author Reference](extensions.md) for how to build extensions, and [Managing Extensions](../operations/managing-extensions.md) for operator workflows.
+The `extension` subcommand manages CLI extensions. Extensions add top-level subcommands to `openlinktoken` without requiring a CLI upgrade. See [Extension Author Reference](extensions.md) for how to build extensions, and [Managing Extensions](../operations/managing-extensions.md) for operator workflows.
 
 ### `extension install`
 
 ```bash
-opentoken extension install [--yes] <url>
+openlinktoken extension install [--yes] <url>
 ```
 
 Downloads and installs an extension from a URL or `file://` path.
@@ -467,7 +467,7 @@ A security warning is always printed before installing. Confirmation is required
 ### `extension list`
 
 ```bash
-opentoken extension list
+openlinktoken extension list
 ```
 
 Prints a table of all installed extensions with name, version, command name, and source URL.
@@ -475,7 +475,7 @@ Prints a table of all installed extensions with name, version, command name, and
 ### `extension uninstall`
 
 ```bash
-opentoken extension uninstall <name>
+openlinktoken extension uninstall <name>
 ```
 
 Removes the named extension and its registry entry. The `<name>` argument is the extension name as shown in `extension list`.
@@ -484,16 +484,16 @@ Removes the named extension and its registry entry. The `<name>` argument is the
 
 ### Extension Environment Variables
 
-| Variable                   | Description                                                                                                                                         |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `OPENTOKEN_EXTENSIONS_DIR` | Override the default extension install directory (`~/.opentoken/extensions/`). Set in CI or containers to install extensions at a predictable path. |
+| Variable                   | Description                                                                                                                                             |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OPENTOKEN_EXTENSIONS_DIR` | Override the default extension install directory (`~/.openlinktoken/extensions/`). Set in CI or containers to install extensions at a predictable path. |
 
 ### Registry File
 
 The extension registry is stored at:
 
 ```
-~/.opentoken/extensions/registry.json
+~/.openlinktoken/extensions/registry.json
 ```
 
 When `OPENTOKEN_EXTENSIONS_DIR` is set, the registry is stored in that directory instead. The registry records each extension's name, version, module path, entry-point class, install path, and source URL. It is read at CLI startup to discover extensions under the binary install.
@@ -529,17 +529,17 @@ Every time the CLI is run, it performs a lightweight background check against th
 
 - Runs asynchronously in a background thread — it **never delays** the primary command
 - Has a 2-second timeout; network errors are silently ignored
-- Caches the result for **24 hours** in the OpenToken user cache file:
-  - Linux / macOS: `~/.opentoken/update-check.json`
-  - Windows: `%APPDATA%\.opentoken\update-check.json`
+- Caches the result for **24 hours** in the OpenLinkToken user cache file:
+  - Linux / macOS: `~/.openlinktoken/update-check.json`
+  - Windows: `%APPDATA%\.openlinktoken\update-check.json`
 - Prints a notice to **stderr** (not stdout) only when a newer version is found, so piped/scripted usage is unaffected
 
 **Sample notice:**
 
 ```
-⚠ A new version of OpenToken is available: v2.1.0 (you have v2.0.0)
-   Release notes: https://github.com/TruvetaPublic/OpenToken/releases/tag/v2.1.0
-   Run 'opentoken update' to upgrade, or set OPENTOKEN_DISABLE_UPDATE_CHECK=1 to silence this message.
+⚠ A new version of OpenLinkToken is available: v2.1.0 (you have v2.0.0)
+   Release notes: https://github.com/TruvetaPublic/OpenLinkToken/releases/tag/v2.1.0
+   Run 'openlinktoken update' to upgrade, or set OPENTOKEN_DISABLE_UPDATE_CHECK=1 to silence this message.
 ```
 
 ### Opting Out
@@ -553,22 +553,22 @@ The version check can be disabled per-run or permanently:
 
 When disabled, no network request is made and no cache is read or written.
 
-### Self-Updating (`opentoken update`)
+### Self-Updating (`openlinktoken update`)
 
 Use the `update` subcommand to upgrade the CLI in-place:
 
 ```bash
 # Upgrade to the latest release
-opentoken update
+openlinktoken update
 
 # Upgrade to a specific release
-opentoken update --version v2.1.0
+openlinktoken update --version v2.1.0
 
 # Preview what would change without applying it
-opentoken update --dry-run
+openlinktoken update --dry-run
 
 # Skip confirmation prompt (for scripts / CI)
-opentoken update --yes
+openlinktoken update --yes
 ```
 
 #### Update Behaviour
@@ -583,13 +583,13 @@ opentoken update --yes
 
 #### Update Error Handling
 
-| Condition                       | Exit code | Message                                     |
-| ------------------------------- | --------- | ------------------------------------------- |
-| Already on the latest version   | 0         | `OpenToken is already up to date (v2.0.0).` |
-| Asset not found for platform    | 1         | Clear error with download link              |
-| Checksum verification failed    | 1         | Error message; downloaded file is deleted   |
-| Insufficient write permissions  | 1         | Suggests `sudo` or manual download link     |
-| Network error / release missing | 1         | Descriptive error                           |
+| Condition                       | Exit code | Message                                         |
+| ------------------------------- | --------- | ----------------------------------------------- |
+| Already on the latest version   | 0         | `OpenLinkToken is already up to date (v2.0.0).` |
+| Asset not found for platform    | 1         | Clear error with download link                  |
+| Checksum verification failed    | 1         | Error message; downloaded file is deleted       |
+| Insufficient write permissions  | 1         | Suggests `sudo` or manual download link         |
+| Network error / release missing | 1         | Descriptive error                               |
 
 ## Performance Tips
 

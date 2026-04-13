@@ -5,7 +5,7 @@ title: Community
 
 # Community
 
-Join the OpenToken community.
+Join the OpenLinkToken community.
 
 - [Contributing](contributing.md) — How to contribute code and documentation
 - [Code of Conduct](code-of-conduct.md) — Community standards
@@ -13,4 +13,4 @@ Join the OpenToken community.
 ## Next Steps
 
 - **Get started**: [Quickstarts](../quickstarts/index.md)
-- **Report issues**: [GitHub Issues](https://github.com/TruvetaPublic/OpenToken/issues)
+- **Report issues**: [GitHub Issues](https://github.com/TruvetaPublic/OpenLinkToken/issues)

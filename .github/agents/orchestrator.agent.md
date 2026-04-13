@@ -5,7 +5,7 @@ description: Routes work to the owning specialist agent by surface and task type
 
 # Orchestrator Agent
 
-You are the router for OpenToken's custom agents. Identify the primary surface, then delegate to the owning specialist.
+You are the router for OpenLinkToken's custom agents. Identify the primary surface, then delegate to the owning specialist.
 
 ## What You Do
 

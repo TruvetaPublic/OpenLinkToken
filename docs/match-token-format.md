@@ -1,6 +1,6 @@
 # Match Token Format Specification
 
-This document describes the self-contained match token format for OpenToken, designed for continuous data exchange with versioning support and cryptographic agility.
+This document describes the self-contained match token format for OpenLinkToken, designed for continuous data exchange with versioning support and cryptographic agility.
 
 ## Overview
 
@@ -26,7 +26,7 @@ ot.V1.<base64url(JWE)>
 
 | Component | Description                                                        |
 | --------- | ------------------------------------------------------------------ |
-| `ot`      | OpenToken prefix (scanner-safe, clearly not an access token)       |
+| `ot`      | OpenLinkToken prefix (scanner-safe, clearly not an access token)   |
 | `V1`      | Format version (allows future evolution of the envelope structure) |
 | `<JWE>`   | Standard JWE Compact Serialization (RFC 7516)                      |
 
@@ -251,7 +251,7 @@ ot.V1.eyJhbGciOiJBMjU2R0NNS1ciLCJlbmMiOiJBMjU2R0NNIiwidHlwIjoibWF0Y2gtdG9rZW4iLC
   "mac_alg": "HS256",
   "ppid": ["7Kx9mL2pNqRsTuVw8yZaB3cD4eF5gH6iJ7kL8mN9oP0qRs"],
   "rid": "ring-2026-q1",
-  "iss": "truveta.opentoken",
+  "iss": "truveta.openlinktoken",
   "iat": 1738339200
 }
 ```
@@ -280,7 +280,7 @@ ot.V1.eyJhbGciOiJBMjU2R0NNS1ciLCJlbmMiOiJBMjU2R0NNIiwidHlwIjoibWF0Y2gtdG9rZW4iLC
     "dGhpcyBpcyBhIFNIQTMtNTEyIHRoZW4gSE1BQy1TSEE1MTIgaGFzaCB3aGljaCBpcyA2NCBieXRlcw"
   ],
   "rid": "ring-2026-q1-highsec",
-  "iss": "truveta.opentoken",
+  "iss": "truveta.openlinktoken",
   "iat": 1738339200
 }
 ```
@@ -302,11 +302,13 @@ For ML-based matching with vector embeddings, the `ppid` contains base64-encoded
   "rlid": "T8",
   "hash_alg": "SHA-256",
   "mac_alg": "HS256",
-  "ppid": ["SGVsbG8gV29ybGQhIFRoaXMgaXMgYSBiYXNlNjQgZW5jb2RlZCBmbG9hdDMyIGFycmF5..."],
+  "ppid": [
+    "SGVsbG8gV29ybGQhIFRoaXMgaXMgYSBiYXNlNjQgZW5jb2RlZCBmbG9hdDMyIGFycmF5..."
+  ],
   "ppid_dtype": "float32",
   "ppid_dims": 768,
   "rid": "ring-2026-q1",
-  "iss": "truveta.opentoken",
+  "iss": "truveta.openlinktoken",
   "iat": 1738339200
 }
 ```
@@ -412,5 +414,5 @@ This format is compatible with standard JOSE/JWE libraries:
 - [RFC 7516 - JSON Web Encryption (JWE)](https://datatracker.ietf.org/doc/html/rfc7516)
 - [RFC 7517 - JSON Web Key (JWK)](https://datatracker.ietf.org/doc/html/rfc7517)
 - [RFC 7518 - JSON Web Algorithms (JWA)](https://datatracker.ietf.org/doc/html/rfc7518)
-- [OpenToken Token Rules](../pages/concepts/token-rules.md)
-- [OpenToken Security](../pages/security.md)
+- [OpenLinkToken Token Rules](../pages/concepts/token-rules.md)
+- [OpenLinkToken Security](../pages/security.md)

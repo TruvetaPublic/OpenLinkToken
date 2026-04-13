@@ -2,7 +2,7 @@
 #
 # Run the Superhero PPRL example end-to-end:
 #  1) Generate datasets
-#  2) Tokenize with the Python OpenToken CLI
+#  2) Tokenize with the Python OpenLinkToken CLI
 #  3) Decrypt-and-compare tokens to measure overlap
 #
 set -euo pipefail
@@ -63,7 +63,7 @@ python "${DEMO_DIR}/scripts/generate_superhero_datasets.py"
 echo ""
 
 # Step 2: Tokenize datasets with the Python CLI
-echo -e "${BLUE}Step 2/3: Tokenizing datasets with OpenToken...${NC}"
+echo -e "${BLUE}Step 2/3: Tokenizing datasets with OpenLinkToken...${NC}"
 chmod +x "${DEMO_DIR}/scripts/tokenize_hospital.sh" || true
 chmod +x "${DEMO_DIR}/scripts/tokenize_pharmacy.sh" || true
 "${DEMO_DIR}/scripts/tokenize_hospital.sh"

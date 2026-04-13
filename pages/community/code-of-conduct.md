@@ -4,13 +4,13 @@ layout: default
 
 # Code of Conduct
 
-This Code of Conduct sets expectations for respectful, inclusive participation in the OpenToken community.
+This Code of Conduct sets expectations for respectful, inclusive participation in the OpenLinkToken community.
 
 ---
 
 ## Our Pledge
 
-We as members, contributors, and maintainers pledge to make participation in the OpenToken community a harassment-free experience for everyone, regardless of age, body size, disability, ethnicity, sex characteristics, gender identity and expression, level of experience, education, socio-economic status, nationality, personal appearance, race, religion, or sexual identity and orientation.
+We as members, contributors, and maintainers pledge to make participation in the OpenLinkToken community a harassment-free experience for everyone, regardless of age, body size, disability, ethnicity, sex characteristics, gender identity and expression, level of experience, education, socio-economic status, nationality, personal appearance, race, religion, or sexual identity and orientation.
 
 We pledge to act and interact in ways that contribute to an open, welcoming, diverse, inclusive, and healthy community.
 
@@ -110,11 +110,11 @@ All reports will be handled with discretion. The identity of the reporter will b
 
 Consequences for violating this Code of Conduct may include:
 
-| Level | Violation | Consequence |
-|-------|-----------|-------------|
-| **Warning** | First-time minor violation | Private written warning with explanation |
-| **Temporary Ban** | Repeated minor or single serious violation | Temporary ban from project spaces (days to weeks) |
-| **Permanent Ban** | Pattern of violations or severe single violation | Permanent removal from all project spaces |
+| Level             | Violation                                        | Consequence                                       |
+| ----------------- | ------------------------------------------------ | ------------------------------------------------- |
+| **Warning**       | First-time minor violation                       | Private written warning with explanation          |
+| **Temporary Ban** | Repeated minor or single serious violation       | Temporary ban from project spaces (days to weeks) |
+| **Permanent Ban** | Pattern of violations or severe single violation | Permanent removal from all project spaces         |
 
 ### Appeals
 

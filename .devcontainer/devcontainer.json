@@ -1,7 +1,7 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/java
 {
-  "name": "OpenToken",
+  "name": "Open Link Token",
   "build": {
     "context": "..",
     "dockerfile": "Dockerfile",
@@ -49,21 +49,21 @@
       ],
       "settings": {
         "sonarlint.ls.javaHome": "/usr/local/sdkman/candidates/java/21.0.10-ms",
-        "python.defaultInterpreterPath": "/home/vscode/.local/share/opentoken/.venv/bin/python",
+        "python.defaultInterpreterPath": "/home/vscode/.local/share/openlinktoken/.venv/bin/python",
         "python.terminal.activateEnvironment": true
       }
     }
   },
   "mounts": [
-    "type=volume,source=opentoken-local,target=/home/vscode/.local",
-    "type=volume,source=opentoken-cache,target=/home/vscode/.cache",
-    "type=volume,source=opentoken-copilot,target=/home/vscode/.copilot",
-    "type=volume,source=opentoken-vscode-server,target=/home/vscode/.vscode-server",
-    "type=volume,source=opentoken-vscode-insiders,target=/home/vscode/.vscode-server-insiders"
+    "type=volume,source=openlinktoken-local,target=/home/vscode/.local",
+    "type=volume,source=openlinktoken-cache,target=/home/vscode/.cache",
+    "type=volume,source=openlinktoken-copilot,target=/home/vscode/.copilot",
+    "type=volume,source=openlinktoken-vscode-server,target=/home/vscode/.vscode-server",
+    "type=volume,source=openlinktoken-vscode-insiders,target=/home/vscode/.vscode-server-insiders"
   ],
   "containerEnv": {
     "PYSPARK_SUBMIT_ARGS": "--driver-memory 8g --executor-memory 8g --conf spark.driver.maxResultSize=4g --conf spark.memory.fraction=0.7 pyspark-shell",
-    "UV_PROJECT_ENVIRONMENT": "/home/vscode/.local/share/opentoken/.venv"
+    "UV_PROJECT_ENVIRONMENT": "/home/vscode/.local/share/openlinktoken/.venv"
   },
   "updateContentCommand": {
     "fix-mount-permissions": "for d in /home/vscode/.copilot /home/vscode/.cache /home/vscode/.local /home/vscode/.vscode-server /home/vscode/.vscode-server-insiders; do [ -d \"$d\" ] || continue; sudo chown -R vscode:vscode \"$d\"; done"

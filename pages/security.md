@@ -8,7 +8,7 @@ Cryptographic building blocks, key management expectations, and security conside
 
 ## Overview
 
-OpenToken generates cryptographically secure tokens for privacy-preserving record linkage across datasets. The system uses deterministic hashing and optional encryption to prevent re-identification while enabling matching on identical person attributes.
+OpenLinkToken generates cryptographically secure tokens for privacy-preserving record linkage across datasets. The system uses deterministic hashing and optional encryption to prevent re-identification while enabling matching on identical person attributes.
 
 **Key security properties:**
 
@@ -22,7 +22,7 @@ OpenToken generates cryptographically secure tokens for privacy-preserving recor
 
 ### Token Transformation Pipeline
 
-OpenToken transforms person attributes through multiple layers:
+OpenLinkToken transforms person attributes through multiple layers:
 
 **Encryption mode (default):**
 
@@ -107,11 +107,11 @@ HMAC-SHA256(message, key) = SHA256((key ⊕ opad) || SHA256((key ⊕ ipad) || me
 
 ## Key Management & Secrets
 
-This section consolidates practical guidance for managing the cryptographic secrets OpenToken requires.
+This section consolidates practical guidance for managing the cryptographic secrets OpenLinkToken requires.
 
 ### Types of Secrets
 
-OpenToken uses two secrets. Which secrets are required depends on the subcommand:
+OpenLinkToken uses two secrets. Which secrets are required depends on the subcommand:
 
 | Secret             | CLI Flag                 | Purpose                                   | Required for subcommands        | Requirements                         |
 | ------------------ | ------------------------ | ----------------------------------------- | ------------------------------- | ------------------------------------ |
@@ -126,7 +126,7 @@ Use clearly marked placeholder values:
 
 ```bash
 # Placeholder secrets for local testing only
-opentoken package \
+openlinktoken package \
   -i sample.csv -t csv -o output.csv \
   -h "HashingKey" \
   -e "Secret-Encryption-Key-Goes-Here."
@@ -144,7 +144,7 @@ Load and use:
 
 ```bash
 source .env
-opentoken package \
+openlinktoken package \
   -i sample.csv -t csv -o output.csv \
   -h "$OPENTOKEN_HASHING_SECRET" \
   -e "$OPENTOKEN_ENCRYPTION_KEY"
@@ -166,11 +166,11 @@ Store secrets in a managed secret store and inject via environment variables at 
 
 ```bash
 export OPENTOKEN_HASHING_SECRET=$(aws secretsmanager get-secret-value \
-  --secret-id opentoken-hash-key --query SecretString --output text)
+  --secret-id openlinktoken-hash-key --query SecretString --output text)
 export OPENTOKEN_ENCRYPTION_KEY=$(aws secretsmanager get-secret-value \
-  --secret-id opentoken-enc-key --query SecretString --output text)
+  --secret-id openlinktoken-enc-key --query SecretString --output text)
 
-opentoken package \
+openlinktoken package \
   -i data.csv -t csv -o tokens.csv \
   -h "$OPENTOKEN_HASHING_SECRET" \
   -e "$OPENTOKEN_ENCRYPTION_KEY"
@@ -179,12 +179,12 @@ opentoken package \
 **Example (Databricks):**
 
 ```python
-from opentoken_pyspark import SparkPersonTokenProcessor
+from openlinktoken_pyspark import SparkPersonTokenProcessor
 
 processor = SparkPersonTokenProcessor(
     spark=spark,
-    hashing_secret=dbutils.secrets.get("opentoken", "hashing_secret"),
-    encryption_key=dbutils.secrets.get("opentoken", "encryption_key")
+    hashing_secret=dbutils.secrets.get("openlinktoken", "hashing_secret"),
+    encryption_key=dbutils.secrets.get("openlinktoken", "encryption_key")
 )
 ```
 
@@ -212,7 +212,7 @@ Each run produces a `.metadata.json` with SHA-256 hashes of secrets:
 }
 ```
 
-Use [tools/hash_calculator.py](https://github.com/TruvetaPublic/OpenToken/blob/main/tools/hash_calculator.py) to verify:
+Use [tools/hash_calculator.py](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/tools/hash_calculator.py) to verify:
 
 ```bash
 python tools/hash_calculator.py \
@@ -226,14 +226,14 @@ python tools/hash_calculator.py \
 - **CLI flags for secrets**: [CLI Reference](reference/cli.md)
 - **Environment variable usage**: [Configuration](config/configuration.md#environment-variables)
 - **Databricks / Spark secrets**: [Spark or Databricks](operations/spark-or-databricks.md)
-- **Running the CLI**: [Running OpenToken](running-opentoken/index.md)
+- **Running the CLI**: [Running OpenLinkToken](running-openlinktoken/index.md)
 - **Metadata format (hash fields)**: [Reference: Metadata Format](reference/metadata-format.md)
 
 ---
 
 ## Security Considerations and Limitations
 
-### What OpenToken Protects Against
+### What OpenLinkToken Protects Against
 
 **✓ Re-identification without secrets:**
 
@@ -249,7 +249,7 @@ python tools/hash_calculator.py \
 **✓ Data quality issues:**
 Metadata captures processing statistics; data quality guidance lives in the concepts documentation.
 
-### What OpenToken Does NOT Protect Against
+### What OpenLinkToken Does NOT Protect Against
 
 **✗ Compromise of secrets:**
 
@@ -274,7 +274,7 @@ Metadata captures processing statistics; data quality guidance lives in the conc
 
 ### User Responsibilities
 
-OpenToken provides cryptographic primitives but **users are responsible for:**
+OpenLinkToken provides cryptographic primitives but **users are responsible for:**
 
 - **Secret management**: Storing, rotating, and protecting hashing secrets and encryption keys
 - **Access control**: Limiting who can generate, access, or decrypt tokens
@@ -311,5 +311,5 @@ See [Concepts: Normalization and Validation](concepts/normalization-and-validati
 - **View detailed crypto pipeline**: [Specification](specification.md)
 - **Understand metadata security**: [Reference: Metadata Format](reference/metadata-format.md)
 - **Review validation rules**: [Concepts: Normalization and Validation](concepts/normalization-and-validation.md)
-- **Configure OpenToken**: [Configuration](config/configuration.md)
+- **Configure OpenLinkToken**: [Configuration](config/configuration.md)
 - **Share tokens across organizations**: [Sharing Tokenized Data](operations/sharing-tokenized-data.md)

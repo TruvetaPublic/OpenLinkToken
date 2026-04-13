@@ -35,7 +35,7 @@ How to use the PySpark bridge for distributed token generation on Spark clusters
 # From repo root
 source .venv/bin/activate
 
-cd lib/python/opentoken-pyspark
+cd lib/python/openlinktoken-pyspark
 uv pip install -e .[spark40]  # For Java 21
 # or
 uv pip install -e .[spark35]  # For Java 8-17
@@ -46,7 +46,7 @@ uv pip install -e .[spark35]  # For Java 8-17
 For environments where PySpark is pre-installed:
 
 ```bash
-uv pip install opentoken-pyspark
+uv pip install openlinktoken-pyspark
 ```
 
 ---
@@ -59,11 +59,11 @@ uv pip install opentoken-pyspark
 import sys
 import os
 from pyspark.sql import SparkSession
-from opentoken_pyspark import OpenTokenProcessor
+from openlinktoken_pyspark import OpenLinkTokenProcessor
 
 # Create Spark session
 spark = SparkSession.builder \
-    .appName("OpenToken") \
+    .appName("OpenLinkToken") \
     .master("local[*]") \
     .config("spark.executorEnv.PYTHONPATH", os.pathsep.join(sys.path)) \
     .getOrCreate()
@@ -72,7 +72,7 @@ spark = SparkSession.builder \
 df = spark.read.csv("data.csv", header=True)
 
 # Initialize processor with your secrets
-processor = OpenTokenProcessor(
+processor = OpenLinkTokenProcessor(
     hashing_secret="your-hashing-secret",
     encryption_key="your-encryption-key-32-chars!!"
 )
@@ -90,15 +90,15 @@ tokens_df.write.mode("overwrite").csv("output/tokens")
 ### Databricks Example
 
 ```python
-from opentoken_pyspark import OpenTokenProcessor
+from openlinktoken_pyspark import OpenLinkTokenProcessor
 
 # Load data from Delta table or CSV
 df = spark.read.table("my_database.person_records")
 
 # Initialize processor using Databricks secrets
-processor = OpenTokenProcessor(
-    hashing_secret=dbutils.secrets.get("opentoken", "hashing_secret"),
-    encryption_key=dbutils.secrets.get("opentoken", "encryption_key")
+processor = OpenLinkTokenProcessor(
+    hashing_secret=dbutils.secrets.get("openlinktoken", "hashing_secret"),
+    encryption_key=dbutils.secrets.get("openlinktoken", "encryption_key")
 )
 
 # Generate tokens
@@ -143,10 +143,10 @@ Each input record produces multiple output rows (one per token rule):
 Find matching records between two tokenized datasets:
 
 ```python
-from opentoken_pyspark import OpenTokenOverlapAnalyzer
+from openlinktoken_pyspark import OpenLinkTokenOverlapAnalyzer
 
 # Initialize with encryption key (same key used for token generation)
-analyzer = OpenTokenOverlapAnalyzer("encryption-key-32-characters!!")
+analyzer = OpenLinkTokenOverlapAnalyzer("encryption-key-32-characters!!")
 
 # Analyze overlap - match on T1 and T2 (both must match)
 results = analyzer.analyze_overlap(
@@ -192,8 +192,8 @@ for result in results:
 ## Custom Token Definitions
 
 ```python
-from opentoken_pyspark import OpenTokenProcessor
-from opentoken_pyspark.notebook_helpers import TokenBuilder, CustomTokenDefinition
+from openlinktoken_pyspark import OpenLinkTokenProcessor
+from openlinktoken_pyspark.notebook_helpers import TokenBuilder, CustomTokenDefinition
 
 # Define custom token rule
 custom_token = TokenBuilder("T6") \
@@ -207,7 +207,7 @@ custom_token = TokenBuilder("T6") \
 custom_definition = CustomTokenDefinition().add_token(custom_token)
 
 # Create processor with custom definition
-processor = OpenTokenProcessor(
+processor = OpenLinkTokenProcessor(
     hashing_secret="your-hashing-secret",
     encryption_key="your-encryption-key-32-chars!!",
     token_definition=custom_definition
@@ -256,11 +256,11 @@ Store secrets in Databricks secrets:
 
 ```bash
 # Create secret scope
-databricks secrets create-scope --scope opentoken
+databricks secrets create-scope --scope openlinktoken
 
 # Add secrets
-databricks secrets put --scope opentoken --key hashing_secret
-databricks secrets put --scope opentoken --key encryption_key
+databricks secrets put --scope openlinktoken --key hashing_secret
+databricks secrets put --scope openlinktoken --key encryption_key
 ```
 
 ### Cluster Libraries
@@ -268,7 +268,7 @@ databricks secrets put --scope opentoken --key encryption_key
 Install via cluster UI or init script:
 
 ```bash
-uv pip install opentoken-pyspark
+uv pip install openlinktoken-pyspark
 ```
 
 ### Unity Catalog + Secrets (Recommended)
@@ -284,12 +284,12 @@ Unity Catalog (UC) is the right place to govern **data access** (tables, volumes
 **Example: read secrets + write UC table**
 
 ```python
-from opentoken_pyspark import OpenTokenProcessor
+from openlinktoken_pyspark import OpenLinkTokenProcessor
 
-hashing_secret = dbutils.secrets.get("opentoken", "hashing_secret")
-encryption_key = dbutils.secrets.get("opentoken", "encryption_key")
+hashing_secret = dbutils.secrets.get("openlinktoken", "hashing_secret")
+encryption_key = dbutils.secrets.get("openlinktoken", "encryption_key")
 
-processor = OpenTokenProcessor(
+processor = OpenLinkTokenProcessor(
     hashing_secret=hashing_secret,
     encryption_key=encryption_key,
 )
@@ -311,10 +311,10 @@ tokens_df.write.mode("overwrite").format("delta").saveAsTable("main.pprl.person_
 
 ## Example Notebooks
 
-See the notebooks in `lib/python/opentoken-pyspark/notebooks/`:
+See the notebooks in `lib/python/openlinktoken-pyspark/notebooks/`:
 
-- [Custom_Token_Definition_Guide.ipynb](https://github.com/TruvetaPublic/OpenToken/blob/main/lib/python/opentoken-pyspark/notebooks/Custom_Token_Definition_Guide.ipynb) – Define custom token rules
-- [Dataset_Overlap_Analysis_Guide.ipynb](https://github.com/TruvetaPublic/OpenToken/blob/main/lib/python/opentoken-pyspark/notebooks/Dataset_Overlap_Analysis_Guide.ipynb) – Find overlapping records across datasets
+- [Custom_Token_Definition_Guide.ipynb](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/lib/python/openlinktoken-pyspark/notebooks/Custom_Token_Definition_Guide.ipynb) – Define custom token rules
+- [Dataset_Overlap_Analysis_Guide.ipynb](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/lib/python/openlinktoken-pyspark/notebooks/Dataset_Overlap_Analysis_Guide.ipynb) – Find overlapping records across datasets
 
 ---
 
@@ -329,4 +329,4 @@ See the notebooks in `lib/python/opentoken-pyspark/notebooks/`:
 ## Next Steps
 
 - **Batch processing**: [Running Batch Jobs](running-batch-jobs.md)
-- **Overlap analysis**: See the [Dataset_Overlap_Analysis_Guide.ipynb](https://github.com/TruvetaPublic/OpenToken/blob/main/lib/python/opentoken-pyspark/notebooks/Dataset_Overlap_Analysis_Guide.ipynb) example notebook
+- **Overlap analysis**: See the [Dataset_Overlap_Analysis_Guide.ipynb](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/lib/python/openlinktoken-pyspark/notebooks/Dataset_Overlap_Analysis_Guide.ipynb) example notebook

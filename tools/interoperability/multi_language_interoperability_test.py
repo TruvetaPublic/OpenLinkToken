@@ -1,5 +1,5 @@
 """
-Interoperability tests for OpenToken Java core library and Python CLI.
+Interoperability tests for OpenLinkToken Java core library and Python CLI.
 
 These tests validate two parity layers:
 - the Python library reproduces the deterministic fixture values already asserted by
@@ -19,7 +19,7 @@ from typing import Any, Dict
 
 # Add Python library to path
 PROJECT_ROOT = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(PROJECT_ROOT / "lib/python/opentoken/src/main"))
+sys.path.insert(0, str(PROJECT_ROOT / "lib/python/openlinktoken/src/main"))
 
 
 # These fixture values are intentionally kept aligned with the Java
@@ -59,7 +59,7 @@ class InteroperabilityTooling:
     """Shared paths and test credentials for interoperability checks."""
 
     HASHING_KEY = "TestHashingKey123"
-    JAVA_MAIN_CLASS = "com.truveta.opentoken.tools.TokenizeInteropHarness"
+    JAVA_MAIN_CLASS = "com.truveta.openlinktoken.tools.TokenizeInteropHarness"
 
     def __init__(self):
         self.project_root = PROJECT_ROOT
@@ -67,7 +67,7 @@ class InteroperabilityTooling:
 
 
 class PythonCLI(InteroperabilityTooling):
-    """Command-line wrapper for the Python OpenToken CLI."""
+    """Command-line wrapper for the Python OpenLinkToken CLI."""
 
     @staticmethod
     def _python_executable() -> str:
@@ -82,8 +82,8 @@ class PythonCLI(InteroperabilityTooling):
     def _build_env(self, home_dir: Path | None = None) -> Dict[str, str]:
         """Build the environment needed to execute the Python CLI module."""
         pythonpath_entries = [
-            str(self.project_root / "lib/python/opentoken/src/main"),
-            str(self.project_root / "lib/python/opentoken-cli/src/main"),
+            str(self.project_root / "lib/python/openlinktoken/src/main"),
+            str(self.project_root / "lib/python/openlinktoken-cli/src/main"),
         ]
         existing_pythonpath = os.environ.get("PYTHONPATH")
         if existing_pythonpath:
@@ -102,7 +102,7 @@ class PythonCLI(InteroperabilityTooling):
         cmd = [
             self._python_executable(),
             "-m",
-            "opentoken_cli.main",
+            "openlinktoken_cli.main",
             "--no-update-check",
             *args,
         ]
@@ -117,9 +117,9 @@ class PythonCLI(InteroperabilityTooling):
         )
 
         if result.returncode != 0:
-            print(f"OpenToken-Python stderr: {result.stderr}")
-            print(f"OpenToken-Python stdout: {result.stdout}")
-            raise RuntimeError(f"OpenToken-Python failed with return code {result.returncode}: {result.stderr}")
+            print(f"OpenLinkToken-Python stderr: {result.stderr}")
+            print(f"OpenLinkToken-Python stdout: {result.stdout}")
+            raise RuntimeError(f"OpenLinkToken-Python failed with return code {result.returncode}: {result.stderr}")
 
         return result
 
@@ -127,8 +127,8 @@ class PythonCLI(InteroperabilityTooling):
         """Create exchange artifacts for the current CLI tokenize contract."""
         recipient_name = "interop-recipient"
         sender_name = "interop-sender"
-        recipient_public_key = workspace_root / ".opentoken" / f"{recipient_name}.public.pem"
-        sender_private_key = workspace_root / ".opentoken" / f"{sender_name}.private.pem"
+        recipient_public_key = workspace_root / ".openlinktoken" / f"{recipient_name}.public.pem"
+        sender_private_key = workspace_root / ".openlinktoken" / f"{sender_name}.private.pem"
         exchange_config = workspace_root / "interop.exchange.json"
 
         self.run(
@@ -182,7 +182,7 @@ class JavaLibraryHarness(InteroperabilityTooling):
         cmd = [
             "mvn",
             "-pl",
-            "opentoken",
+            "openlinktoken",
             "-DskipTests",
             "test-compile",
             "org.codehaus.mojo:exec-maven-plugin:3.5.0:java",
@@ -200,9 +200,9 @@ class JavaLibraryHarness(InteroperabilityTooling):
         )
 
         if result.returncode != 0:
-            print(f"OpenToken-Java stderr: {result.stderr}")
-            print(f"OpenToken-Java stdout: {result.stdout}")
-            raise RuntimeError(f"OpenToken-Java failed with return code {result.returncode}: {result.stderr}")
+            print(f"OpenLinkToken-Java stderr: {result.stderr}")
+            print(f"OpenLinkToken-Java stdout: {result.stdout}")
+            raise RuntimeError(f"OpenLinkToken-Java failed with return code {result.returncode}: {result.stderr}")
 
         return result
 
@@ -288,13 +288,13 @@ class TestTokenCompatibility:
 
     def test_python_library_matches_known_java_fixture_values(self):
         """Verify the Python library matches the deterministic Java fixture tokens."""
-        from opentoken.attributes.person.birth_date_attribute import BirthDateAttribute
-        from opentoken.attributes.person.first_name_attribute import FirstNameAttribute
-        from opentoken.attributes.person.last_name_attribute import LastNameAttribute
-        from opentoken.attributes.person.sex_attribute import SexAttribute
-        from opentoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
-        from opentoken.tokens.token_definition import TokenDefinition
-        from opentoken.tokens.token_generator import TokenGenerator
+        from openlinktoken.attributes.person.birth_date_attribute import BirthDateAttribute
+        from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute
+        from openlinktoken.attributes.person.last_name_attribute import LastNameAttribute
+        from openlinktoken.attributes.person.sex_attribute import SexAttribute
+        from openlinktoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
+        from openlinktoken.tokens.token_definition import TokenDefinition
+        from openlinktoken.tokens.token_generator import TokenGenerator
 
         token_generator = TokenGenerator.from_transformers(TokenDefinition(), [])
         person_attributes = {
@@ -316,7 +316,7 @@ class TestTokenCompatibility:
 
             result = self.python_cli.generate_tokenized_output(self.python_cli.sample_csv, python_output)
 
-            assert result.args[1:3] == ["-m", "opentoken_cli.main"], result.args
+            assert result.args[1:3] == ["-m", "openlinktoken_cli.main"], result.args
             assert python_output.exists(), f"Python CLI output file {python_output} not found"
 
             python_tokens = self.validator.load_csv_tokens(python_output)
@@ -330,7 +330,7 @@ class TestTokenCompatibility:
                 python_meta = json.load(file_handle)
 
             assert python_meta["Platform"] == "Python", python_meta
-            assert python_meta["OpenTokenVersion"], python_meta
+            assert python_meta["OpenLinkTokenVersion"], python_meta
             assert python_meta["HashingSecretHash"] == EXPECTED_SAMPLE_METADATA["HashingSecretHash"], python_meta
             assert python_meta["TotalRows"] == EXPECTED_SAMPLE_METADATA["TotalRows"], python_meta
             assert (
@@ -380,7 +380,7 @@ class TestTokenCompatibility:
             with open(python_metadata, "r", encoding="utf-8") as file_handle:
                 python_meta = json.load(file_handle)
 
-            expected_fields = ["Platform", "PythonVersion", "OpenTokenVersion", "TotalRows", "HashingSecretHash"]
+            expected_fields = ["Platform", "PythonVersion", "OpenLinkTokenVersion", "TotalRows", "HashingSecretHash"]
             for field in expected_fields:
                 assert field in python_meta, f"Python metadata missing expected field '{field}'"
 

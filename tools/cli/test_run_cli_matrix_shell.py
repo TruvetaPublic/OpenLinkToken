@@ -29,8 +29,8 @@ def test_shell_harness_dry_run_prints_reviewable_commands() -> None:
     assert "generate-key-pair-p521" in completed.stdout
     assert "initiate-exchange-local" in completed.stdout
     assert "update-help" in completed.stdout
-    assert "python -m opentoken_cli.main" in completed.stdout
-    assert "command: python -m opentoken_cli.main --no-update-check --help" in completed.stdout
+    assert "python -m openlinktoken_cli.main" in completed.stdout
+    assert "command: python -m openlinktoken_cli.main --no-update-check --help" in completed.stdout
     assert "--public-key-env OPENTOKEN_MATRIX_RECIPIENT_PUBLIC_KEY_PEM" in completed.stdout
     assert "--hashingsecret-env OPENTOKEN_MATRIX_HASHING_SECRET" in completed.stdout
     assert "--private-key-env OPENTOKEN_MATRIX_SENDER_PRIVATE_KEY_PEM" in completed.stdout

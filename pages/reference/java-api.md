@@ -13,25 +13,25 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.truveta.opentoken.attributes.Attribute;
-import com.truveta.opentoken.attributes.person.BirthDateAttribute;
-import com.truveta.opentoken.attributes.person.FirstNameAttribute;
-import com.truveta.opentoken.attributes.person.LastNameAttribute;
-import com.truveta.opentoken.attributes.person.PostalCodeAttribute;
-import com.truveta.opentoken.attributes.person.SexAttribute;
-import com.truveta.opentoken.attributes.person.SocialSecurityNumberAttribute;
-import com.truveta.opentoken.tokens.TokenDefinition;
-import com.truveta.opentoken.tokens.TokenGenerator;
-import com.truveta.opentoken.tokens.TokenGeneratorResult;
-import com.truveta.opentoken.tokens.tokenizer.SHA256Tokenizer;
-import com.truveta.opentoken.tokentransformer.EncryptTokenTransformer;
-import com.truveta.opentoken.tokentransformer.HashTokenTransformer;
-import com.truveta.opentoken.tokentransformer.TokenTransformer;
+import com.truveta.openlinktoken.attributes.Attribute;
+import com.truveta.openlinktoken.attributes.person.BirthDateAttribute;
+import com.truveta.openlinktoken.attributes.person.FirstNameAttribute;
+import com.truveta.openlinktoken.attributes.person.LastNameAttribute;
+import com.truveta.openlinktoken.attributes.person.PostalCodeAttribute;
+import com.truveta.openlinktoken.attributes.person.SexAttribute;
+import com.truveta.openlinktoken.attributes.person.SocialSecurityNumberAttribute;
+import com.truveta.openlinktoken.tokens.TokenDefinition;
+import com.truveta.openlinktoken.tokens.TokenGenerator;
+import com.truveta.openlinktoken.tokens.TokenGeneratorResult;
+import com.truveta.openlinktoken.tokens.tokenizer.SHA256Tokenizer;
+import com.truveta.openlinktoken.tokentransformer.EncryptTokenTransformer;
+import com.truveta.openlinktoken.tokentransformer.HashTokenTransformer;
+import com.truveta.openlinktoken.tokentransformer.TokenTransformer;
 ```
 
 ## Person Attribute Map
 
-OpenToken's Java library represents a person's values as a map keyed by attribute class:
+OpenLinkToken's Java library represents a person's values as a map keyed by attribute class:
 
 ```java
 Map<Class<? extends Attribute>, String> personAttributes = new HashMap<>();
@@ -114,7 +114,7 @@ EncryptTokenTransformer encryptor = new EncryptTokenTransformer(
 
 String signature = "DOE|J|MALE|1980-01-15";
 String encryptedToken = encryptor.transform(signature);
-// Returns: OpenToken encrypted match token string (ot.V1.<JWE compact serialization>)
+// Returns: OpenLinkToken encrypted match token string (ot.V1.<JWE compact serialization>)
 ```
 
 ## Complete Example
@@ -124,20 +124,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.truveta.opentoken.attributes.Attribute;
-import com.truveta.opentoken.attributes.person.BirthDateAttribute;
-import com.truveta.opentoken.attributes.person.FirstNameAttribute;
-import com.truveta.opentoken.attributes.person.LastNameAttribute;
-import com.truveta.opentoken.attributes.person.PostalCodeAttribute;
-import com.truveta.opentoken.attributes.person.SexAttribute;
-import com.truveta.opentoken.attributes.person.SocialSecurityNumberAttribute;
-import com.truveta.opentoken.tokens.TokenDefinition;
-import com.truveta.opentoken.tokens.TokenGenerator;
-import com.truveta.opentoken.tokens.TokenGeneratorResult;
-import com.truveta.opentoken.tokens.tokenizer.SHA256Tokenizer;
-import com.truveta.opentoken.tokentransformer.EncryptTokenTransformer;
-import com.truveta.opentoken.tokentransformer.HashTokenTransformer;
-import com.truveta.opentoken.tokentransformer.TokenTransformer;
+import com.truveta.openlinktoken.attributes.Attribute;
+import com.truveta.openlinktoken.attributes.person.BirthDateAttribute;
+import com.truveta.openlinktoken.attributes.person.FirstNameAttribute;
+import com.truveta.openlinktoken.attributes.person.LastNameAttribute;
+import com.truveta.openlinktoken.attributes.person.PostalCodeAttribute;
+import com.truveta.openlinktoken.attributes.person.SexAttribute;
+import com.truveta.openlinktoken.attributes.person.SocialSecurityNumberAttribute;
+import com.truveta.openlinktoken.tokens.TokenDefinition;
+import com.truveta.openlinktoken.tokens.TokenGenerator;
+import com.truveta.openlinktoken.tokens.TokenGeneratorResult;
+import com.truveta.openlinktoken.tokens.tokenizer.SHA256Tokenizer;
+import com.truveta.openlinktoken.tokentransformer.EncryptTokenTransformer;
+import com.truveta.openlinktoken.tokentransformer.HashTokenTransformer;
+import com.truveta.openlinktoken.tokentransformer.TokenTransformer;
 
 public class TokenGenerator {
     public static void main(String[] args) {
@@ -211,7 +211,7 @@ for (Map<Class<? extends Attribute>, String> personAttributes : persons) {
 ```xml
 <dependency>
     <groupId>com.truveta</groupId>
-    <artifactId>opentoken</artifactId>
+    <artifactId>openlinktoken</artifactId>
     <version>2.0.0-alpha</version>
 </dependency>
 ```

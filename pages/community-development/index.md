@@ -34,11 +34,11 @@ uv venv .venv
 source .venv/bin/activate
 
 # Core library
-cd lib/python/opentoken
+cd lib/python/openlinktoken
 uv pip install -r requirements.txt -e .
 
 # CLI
-cd ../opentoken-cli
+cd ../openlinktoken-cli
 uv pip install -r requirements.txt -e .
 ```
 
@@ -47,7 +47,7 @@ uv pip install -r requirements.txt -e .
 ```bash
 # From repo root
 source .venv/bin/activate
-cd lib/python/opentoken-pyspark
+cd lib/python/openlinktoken-pyspark
 uv pip install -r requirements.txt -e .
 ```
 
@@ -69,13 +69,13 @@ dev/* (feature work) → develop → release/x.y.z → main → develop (auto-sy
 ## Tests & Quality Gates
 
 - Java: `mvn clean install` (includes unit tests, integration tests, Checkstyle, JaCoCo).
-- Python: `pytest` (run from `lib/python/opentoken` and `lib/python/opentoken-cli`).
+- Python: `pytest` (run from `lib/python/openlinktoken` and `lib/python/openlinktoken-cli`).
 - Interoperability: `python tools/interoperability/multi_language_interoperability_test.py`.
-- Sync check: [tools/sync-check.sh](https://github.com/TruvetaPublic/OpenToken/blob/main/tools/sync-check.sh) to ensure Java/Python parity.
+- Sync check: [tools/sync-check.sh](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/tools/sync-check.sh) to ensure Java/Python parity.
 
 ## Dev Container
 
-A VS Code dev container is provided with Java, Maven, Python, and Docker CLI pre-installed. See the canonical [Developer Guide on GitHub](https://github.com/TruvetaPublic/OpenToken/blob/main/docs/dev-guide-development.md) for full setup and build details.
+A VS Code dev container is provided with Java, Maven, Python, and Docker CLI pre-installed. See the canonical [Developer Guide on GitHub](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/docs/dev-guide-development.md) for full setup and build details.
 
 ## Issues & Discussions
 
@@ -84,4 +84,4 @@ A VS Code dev container is provided with Java, Maven, Python, and Docker CLI pre
 
 ## License
 
-OpenToken is released under the MIT License. See the [LICENSE file on GitHub](https://github.com/TruvetaPublic/OpenToken/blob/main/LICENSE) for details.
+OpenLinkToken is released under the MIT License. See the [LICENSE file on GitHub](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/LICENSE) for details.

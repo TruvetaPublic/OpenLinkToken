@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Tokenize the pharmacy dataset using OpenToken (Python CLI).
+# Tokenize the pharmacy dataset using OpenLinkToken (Python CLI).
 #
 # Output:
 #   outputs/pharmacy_tokens.csv
@@ -25,15 +25,15 @@ echo "============================================================"
 echo ""
 
 # Ensure Python CLI is available
-if ! command -v opentoken &>/dev/null; then
-  echo "opentoken CLI not found. Installing Python CLI..."
-  (cd "${PROJECT_ROOT}" && uv pip install -e lib/python/opentoken -e lib/python/opentoken-cli)
+if ! command -v openlinktoken &>/dev/null; then
+  echo "openlinktoken CLI not found. Installing Python CLI..."
+  (cd "${PROJECT_ROOT}" && uv pip install -e lib/python/openlinktoken -e lib/python/openlinktoken-cli)
 fi
 
 mkdir -p "${DEMO_DIR}/outputs"
 
-echo "Running OpenToken CLI (pharmacy)..."
-opentoken package \
+echo "Running OpenLinkToken CLI (pharmacy)..."
+openlinktoken package \
   -t csv \
   -i "${DEMO_DIR}/datasets/pharmacy_superhero_data.csv" \
   -o "${DEMO_DIR}/outputs/pharmacy_tokens.csv" \

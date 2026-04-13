@@ -4,15 +4,15 @@ layout: default
 
 # Extension Quickstart
 
-Build, package, and install your first OpenToken CLI extension end-to-end. This walkthrough uses the `hello-world` reference extension from the OpenToken monorepo (`lib/python/opentoken_ext_hello_world/`).
+Build, package, and install your first OpenLinkToken CLI extension end-to-end. This walkthrough uses the `hello-world` reference extension from the OpenLinkToken monorepo (`lib/python/openlinktoken_ext_hello_world/`).
 
-By the end you will have a new `hello-world` subcommand available in your local `opentoken` installation.
+By the end you will have a new `hello-world` subcommand available in your local `openlinktoken` installation.
 
 ---
 
 ## Prerequisites
 
-- OpenToken CLI installed (binary or Python package). See [CLI Quickstart](cli-quickstart.md).
+- OpenLinkToken CLI installed (binary or Python package). See [CLI Quickstart](cli-quickstart.md).
 - Python 3.10 or later.
 - `build` package: `pip install build`
 
@@ -23,19 +23,19 @@ By the end you will have a new `hello-world` subcommand available in your local 
 Create a new Python package directory:
 
 ```bash
-mkdir opentoken-hello-world
-cd opentoken-hello-world
-mkdir opentoken_ext_hello_world
-touch opentoken_ext_hello_world/__init__.py
+mkdir openlinktoken-hello-world
+cd openlinktoken-hello-world
+mkdir openlinktoken_ext_hello_world
+touch openlinktoken_ext_hello_world/__init__.py
 ```
 
-Create `opentoken_ext_hello_world/extension.py`:
+Create `openlinktoken_ext_hello_world/extension.py`:
 
 ```python
-from opentoken_cli.extension import OpenTokenExtension
+from openlinktoken_cli.extension import OpenLinkTokenExtension
 
 
-class HelloWorldExtension(OpenTokenExtension):
+class HelloWorldExtension(OpenLinkTokenExtension):
     """Reference extension — greet the world."""
 
     @property
@@ -44,7 +44,7 @@ class HelloWorldExtension(OpenTokenExtension):
 
     @property
     def description(self) -> str:
-        return "Greet the world from an OpenToken extension"
+        return "Greet the world from an OpenLinkToken extension"
 
     @property
     def version(self) -> str:
@@ -78,13 +78,13 @@ class HelloWorldExtension(OpenTokenExtension):
         return 0
 ```
 
-This extension uses only the Python standard library and the `opentoken.extension` base class — it is **Tier 1 (zero-dep)** and works under both the binary and a Python package install.
+This extension uses only the Python standard library and the `openlinktoken.extension` base class — it is **Tier 1 (zero-dep)** and works under both the binary and a Python package install.
 
 ---
 
 ## 2. Declare the Entry Point
 
-Create `pyproject.toml` in the `opentoken-hello-world/` directory:
+Create `pyproject.toml` in the `openlinktoken-hello-world/` directory:
 
 ```toml
 [build-system]
@@ -92,13 +92,13 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "opentoken-ext-hello-world"
+name = "openlinktoken-ext-hello-world"
 version = "1.0.0"
-description = "Hello-world reference extension for the OpenToken CLI"
+description = "Hello-world reference extension for the OpenLinkToken CLI"
 requires-python = ">=3.10"
 
-[project.entry-points."opentoken.extensions"]
-hello-world = "opentoken_ext_hello_world.extension:HelloWorldExtension"
+[project.entry-points."openlinktoken.extensions"]
+hello-world = "openlinktoken_ext_hello_world.extension:HelloWorldExtension"
 ```
 
 The entry-point key (`hello-world`) must match the `command_name` property in your class.
@@ -107,7 +107,7 @@ The entry-point key (`hello-world`) must match the `command_name` property in yo
 
 ## 3. Package It
 
-Build a wheel from the `opentoken-hello-world/` directory:
+Build a wheel from the `openlinktoken-hello-world/` directory:
 
 ```bash
 python -m build
@@ -117,21 +117,21 @@ This creates a `dist/` directory containing:
 
 ```
 dist/
-  opentoken_ext_hello_world-1.0.0-py3-none-any.whl
-  opentoken_ext_hello_world-1.0.0.tar.gz
+  openlinktoken_ext_hello_world-1.0.0-py3-none-any.whl
+  openlinktoken_ext_hello_world-1.0.0.tar.gz
 ```
 
 ---
 
 ## 4. Install It
 
-Install the wheel into OpenToken using the `file://` scheme with an absolute path:
+Install the wheel into OpenLinkToken using the `file://` scheme with an absolute path:
 
 ```bash
-opentoken extension install file://$(pwd)/dist/opentoken_ext_hello_world-1.0.0-py3-none-any.whl
+openlinktoken extension install file://$(pwd)/dist/openlinktoken_ext_hello_world-1.0.0-py3-none-any.whl
 ```
 
-OpenToken prints a security warning and asks for confirmation:
+OpenLinkToken prints a security warning and asks for confirmation:
 
 ```text
 ⚠ Security warning: you are about to install an extension from an unverified source.
@@ -147,7 +147,7 @@ Install this extension? [y/N]: y
 Enter `y` to proceed. To skip the prompt in scripts, pass `--yes`:
 
 ```bash
-opentoken extension install --yes file://$(pwd)/dist/opentoken_ext_hello_world-1.0.0-py3-none-any.whl
+openlinktoken extension install --yes file://$(pwd)/dist/openlinktoken_ext_hello_world-1.0.0-py3-none-any.whl
 ```
 
 ---
@@ -157,26 +157,26 @@ opentoken extension install --yes file://$(pwd)/dist/opentoken_ext_hello_world-1
 Confirm the extension appears in the help output:
 
 ```bash
-opentoken --help
+openlinktoken --help
 ```
 
 You should see `hello-world` listed alongside the built-in subcommands:
 
 ```
 ...
-  hello-world         Greet the world from an OpenToken extension
+  hello-world         Greet the world from an OpenLinkToken extension
 ...
 ```
 
 Confirm it is tracked in the registry:
 
 ```bash
-opentoken extension list
+openlinktoken extension list
 ```
 
 ```
 NAME          VERSION  COMMAND       SOURCE
-hello-world   1.0.0    hello-world   file:///home/user/opentoken-hello-world/dist/opentoken_ext_hello_world-1.0.0-py3-none-any.whl
+hello-world   1.0.0    hello-world   file:///home/user/openlinktoken-hello-world/dist/openlinktoken_ext_hello_world-1.0.0-py3-none-any.whl
 ```
 
 ---
@@ -186,7 +186,7 @@ hello-world   1.0.0    hello-world   file:///home/user/opentoken-hello-world/dis
 Run the `hello` subcommand:
 
 ```bash
-opentoken hello-world hello --name Alice
+openlinktoken hello-world hello --name Alice
 ```
 
 ```
@@ -196,7 +196,7 @@ Hello, Alice
 Run the `bye` subcommand:
 
 ```bash
-opentoken hello-world bye --name Bob
+openlinktoken hello-world bye --name Bob
 ```
 
 ```
@@ -207,9 +207,9 @@ Bye, Bob
 
 ## Keeping Extensions Binary-Compatible
 
-The `hello-world` extension uses only the Python standard library — it is **Tier 1 (zero-dep)**. This means it installs and loads correctly under both the pre-built OpenToken binary and a Python package install.
+The `hello-world` extension uses only the Python standard library — it is **Tier 1 (zero-dep)**. This means it installs and loads correctly under both the pre-built OpenLinkToken binary and a Python package install.
 
-If your extension needs additional packages, check the [Extension Author Reference: Binary Compatibility](../reference/extensions.md#binary-compatibility) for the list of packages bundled in the binary. Packages that are bundled (e.g., `pandas`, `pyarrow`, `cryptography`) are **Tier 2** (OpenToken-provided) and are also binary-compatible. Any package not in the list makes your extension **Tier 3** (external), which is incompatible with the binary.
+If your extension needs additional packages, check the [Extension Author Reference: Binary Compatibility](../reference/extensions.md#binary-compatibility) for the list of packages bundled in the binary. Packages that are bundled (e.g., `pandas`, `pyarrow`, `cryptography`) are **Tier 2** (OpenLinkToken-provided) and are also binary-compatible. Any package not in the list makes your extension **Tier 3** (external), which is incompatible with the binary.
 
 For more detail on the three tiers and the two-track loader, see [Extension Author Reference: Binary Compatibility](../reference/extensions.md#binary-compatibility).
 
@@ -219,4 +219,4 @@ For more detail on the three tiers and the two-track loader, see [Extension Auth
 
 - [Extension Author Reference](../reference/extensions.md) — Full ABC contract, conflict rules, security model
 - [Managing Extensions](../operations/managing-extensions.md) — Uninstall and CI/container workflows
-- [CLI Reference](../reference/cli.md) — `opentoken extension` command options
+- [CLI Reference](../reference/cli.md) — `openlinktoken extension` command options

@@ -4,13 +4,13 @@ layout: default
 
 # Configuration
 
-Configuration options for OpenToken inputs, outputs, secrets, and runtime behavior.
+Configuration options for OpenLinkToken inputs, outputs, secrets, and runtime behavior.
 
 ---
 
 ## CLI Arguments
 
-OpenToken can be run from the Python CLI or via the helper shell/PowerShell scripts.
+OpenLinkToken can be run from the Python CLI or via the helper shell/PowerShell scripts.
 
 At a high level you must always specify:
 
@@ -32,7 +32,7 @@ Secrets can be passed via environment variables for security:
 export OPENTOKEN_HASHING_SECRET="MyHashingKey"
 export OPENTOKEN_ENCRYPTION_KEY="MyEncryptionKey32CharactersLong"
 
-opentoken package \
+openlinktoken package \
   -i data.csv -t csv -o tokens.csv \
   -h "$OPENTOKEN_HASHING_SECRET" \
   -e "$OPENTOKEN_ENCRYPTION_KEY"
@@ -45,7 +45,7 @@ docker run --rm \
   -e OPENTOKEN_HASHING_SECRET="MyHashingKey" \
   -e OPENTOKEN_ENCRYPTION_KEY="MyEncryptionKey32CharactersLong" \
   -v $(pwd)/resources:/app/resources \
-  opentoken:latest package \
+  openlinktoken:latest package \
   -i /app/resources/sample.csv \
   -t csv \
   -o /app/resources/output.csv \
@@ -120,7 +120,7 @@ Use `-ot` to specify a different output format:
 
 ```bash
 # Input CSV, output Parquet
-opentoken package \
+openlinktoken package \
   -i data.csv -t csv \
   -o tokens.parquet -ot parquet \
   -h "HashingKey" -e "EncryptionKey"
@@ -137,7 +137,7 @@ Each run produces two files:
 
 ## Processing Modes
 
-OpenToken supports three processing modes that control how token signatures are transformed:
+OpenLinkToken supports three processing modes that control how token signatures are transformed:
 
 - **Encryption (default)** – produces encrypted tokens suitable for external exchange; requires both a hashing secret and an encryption key.
 - **Tokenize** – produces one-way hashed tokens for internal matching and overlap analysis; requires only the hashing secret.
@@ -170,7 +170,7 @@ For the exact CLI flags that enable each mode, see the [CLI Reference](../refere
 ```bash
 # Python
 source ../../.venv/bin/activate
-python -m opentoken_cli.main package \
+python -m openlinktoken_cli.main package \
   -i ../../resources/sample.csv -t csv -o ../../resources/output.csv \
   -h "HashingKey" -e "EncryptionKey32Characters!!!!!"
 ```
@@ -178,7 +178,7 @@ python -m opentoken_cli.main package \
 ### Docker Container
 
 ```bash
-./run-opentoken.sh package \
+./run-openlinktoken.sh package \
   -i ./resources/sample.csv \
   -o ./resources/output.csv \
   -t csv \
@@ -189,11 +189,11 @@ python -m opentoken_cli.main package \
 ### Spark/Databricks Cluster
 
 ```python
-from opentoken_pyspark import OpenTokenProcessor
+from openlinktoken_pyspark import OpenLinkTokenProcessor
 
-processor = OpenTokenProcessor(
-    hashing_secret=dbutils.secrets.get("opentoken", "hashing_secret"),
-    encryption_key=dbutils.secrets.get("opentoken", "encryption_key")
+processor = OpenLinkTokenProcessor(
+    hashing_secret=dbutils.secrets.get("openlinktoken", "hashing_secret"),
+    encryption_key=dbutils.secrets.get("openlinktoken", "encryption_key")
 )
 ```
 

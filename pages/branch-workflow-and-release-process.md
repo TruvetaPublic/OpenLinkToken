@@ -4,7 +4,7 @@ layout: default
 
 # Branch Workflow and Release Process
 
-This document explains the **Gitflow-based** branch strategy and automated workflows for the OpenToken repository.
+This document explains the **Gitflow-based** branch strategy and automated workflows for the OpenLinkToken repository.
 
 We follow Gitflow's separation of `main`, `develop`, `dev/*`, and `release/*` branches, with a few automation-oriented tweaks (notably an automated `main` → `develop` sync after each release).
 
@@ -83,7 +83,7 @@ graph TB
 - **Merges from**: `release/*` branches only
 - **Merges to**: `develop` (automatic sync after release)
 - **Tagging**: Releases are automatically tagged `vx.y.z`
-- **Relationship to Gitflow**: In classic Gitflow, `release/*` branches are merged into both `main` and `develop`. In OpenToken, we merge `release/*` into `main`, then use an automated PR from `main` → `develop` to keep `develop` in sync. Functionally this is equivalent, but fully automated.
+- **Relationship to Gitflow**: In classic Gitflow, `release/*` branches are merged into both `main` and `develop`. In OpenLinkToken, we merge `release/*` into `main`, then use an automated PR from `main` → `develop` to keep `develop` in sync. Functionally this is equivalent, but fully automated.
 
 ### `develop`
 
@@ -133,19 +133,19 @@ graph TB
 
 1. Extracts version from branch name (e.g., `release/1.23.4` → `1.23.4`)
 2. Validates semantic versioning format (`x.y.z`)
-3. Compares with current version in `lib/python/opentoken/src/main/opentoken/__init__.py` (`__version__` variable)
+3. Compares with current version in `lib/python/openlinktoken/src/main/openlinktoken/__init__.py` (`__version__` variable)
 4. If update needed:
    - Runs `bump2version --new-version x.y.z patch`
    - Updates all version files:
      - `.bumpversion.cfg`
-     - `lib/java/opentoken/pom.xml` (core module)
+     - `lib/java/openlinktoken/pom.xml` (core module)
      - `lib/java/pom.xml` (parent POM)
      - `Dockerfile`
-     - `lib/java/opentoken/src/main/java/com/truveta/opentoken/Metadata.java`
-     - `lib/python/opentoken/setup.py`
-     - `lib/python/opentoken/src/main/opentoken/__init__.py`
-     - `lib/python/opentoken/src/main/opentoken/metadata.py`
-     - `lib/python/opentoken-cli/setup.py`
+     - `lib/java/openlinktoken/src/main/java/com/truveta/openlinktoken/Metadata.java`
+     - `lib/python/openlinktoken/setup.py`
+     - `lib/python/openlinktoken/src/main/openlinktoken/__init__.py`
+     - `lib/python/openlinktoken/src/main/openlinktoken/metadata.py`
+     - `lib/python/openlinktoken-cli/setup.py`
    - Commits changes to release branch
    - Comments on PR with update summary
 5. If already up-to-date:
@@ -260,17 +260,17 @@ A: No! The `auto-version-bump` workflow extracts the version from your `release/
 3. Open a PR to `main`.
 4. After merge, the `auto-release` workflow will:
 
-    - Tag the release
-    - Create the GitHub release
-    - Open a sync PR from `main` → `develop` so the hotfix is also available in `develop`
-    This is equivalent to Gitflow’s `hotfix/*` flow (hotfix from `main`, merged back to both `main` and `develop`), but implemented using `release/*` naming plus automation.
+   - Tag the release
+   - Create the GitHub release
+   - Open a sync PR from `main` → `develop` so the hotfix is also available in `develop`
+     This is equivalent to Gitflow’s `hotfix/*` flow (hotfix from `main`, merged back to both `main` and `develop`), but implemented using `release/*` naming plus automation.
 
 **Q: Can I bypass branch protection?**
 A: Repository admins can override branch protection, but it's strongly discouraged. Follow the release process to maintain code quality and stability.
 
 ## Related Documentation
 
-- [Developer Guide on GitHub](https://github.com/TruvetaPublic/OpenToken/blob/main/docs/dev-guide-development.md) - Canonical contributor setup, build, and development workflow documentation
+- [Developer Guide on GitHub](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/docs/dev-guide-development.md) - Canonical contributor setup, build, and development workflow documentation
 - Workflow files:
   - `.github/workflows/auto-version-bump.yml`
   - `.github/workflows/auto-release.yml`

@@ -20,19 +20,19 @@ class MultiLanguageSyncer:
     # Language configuration
     LANGUAGES = {
         "java": {
-            "path": "lib/java/opentoken/src/main/java/com/truveta/opentoken/",
+            "path": "lib/java/openlinktoken/src/main/java/com/truveta/openlinktoken/",
             "extension": ".java",
             "naming": "PascalCase",
             "group": "core",
         },
         "python": {
-            "path": "lib/python/opentoken/src/main/opentoken/",
+            "path": "lib/python/openlinktoken/src/main/openlinktoken/",
             "extension": ".py",
             "naming": "snake_case",
             "group": "core",
         },
         "python-cli": {
-            "path": "lib/python/opentoken-cli/src/main/opentoken_cli/",
+            "path": "lib/python/openlinktoken-cli/src/main/openlinktoken_cli/",
             "extension": ".py",
             "naming": "snake_case",
             "group": "cli",

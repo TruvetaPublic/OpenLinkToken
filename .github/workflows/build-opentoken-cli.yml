@@ -1,4 +1,4 @@
-name: Build OpenToken CLI (PyInstaller)
+name: Build OpenLinkToken CLI (PyInstaller)
 
 on:
   workflow_dispatch:
@@ -59,19 +59,19 @@ jobs:
 
       - name: Install build dependencies
         run: |
-          uv pip install --system -e lib/python/opentoken
-          uv pip install --system -r lib/python/opentoken-cli/pyinstaller-requirements.txt
-          uv pip install --system -r lib/python/opentoken-cli/requirements.txt
-          uv pip install --system -e lib/python/opentoken-cli --no-deps
+          uv pip install --system -e lib/python/openlinktoken
+          uv pip install --system -r lib/python/openlinktoken-cli/pyinstaller-requirements.txt
+          uv pip install --system -r lib/python/openlinktoken-cli/requirements.txt
+          uv pip install --system -e lib/python/openlinktoken-cli --no-deps
 
       - name: Build CLI binary
         shell: bash
         run: |
           if [[ "${{ runner.os }}" == "macOS" ]]; then
             # Build universal binary for macOS (both x86_64 and arm64)
-            pyinstaller --clean --noconfirm --target-arch universal2 lib/python/opentoken-cli/opentoken-cli.spec
+            pyinstaller --clean --noconfirm --target-arch universal2 lib/python/openlinktoken-cli/openlinktoken-cli.spec
           else
-            pyinstaller --clean --noconfirm lib/python/opentoken-cli/opentoken-cli.spec
+            pyinstaller --clean --noconfirm lib/python/openlinktoken-cli/openlinktoken-cli.spec
           fi
 
       - name: Smoke test (macOS/Linux)
@@ -79,9 +79,9 @@ jobs:
         run: |
           mkdir -p smoke
           cp resources/sample.csv smoke/input.csv
-          ./dist/opentoken generate-key-pair --name recipient --force
-          ./dist/opentoken initiate-exchange --name smoke --public-key "$HOME/.opentoken/recipient.public.pem" --output smoke/smoke.exchange.json --hashingsecret secret
-          ./dist/opentoken tokenize -i smoke/input.csv -t csv -o smoke/out.csv --exchange-config smoke/smoke.exchange.json --private-key "$HOME/.opentoken/smoke.private.pem"
+          ./dist/openlinktoken generate-key-pair --name recipient --force
+          ./dist/openlinktoken initiate-exchange --name smoke --public-key "$HOME/.openlinktoken/recipient.public.pem" --output smoke/smoke.exchange.json --hashingsecret secret
+          ./dist/openlinktoken tokenize -i smoke/input.csv -t csv -o smoke/out.csv --exchange-config smoke/smoke.exchange.json --private-key "$HOME/.openlinktoken/smoke.private.pem"
 
       - name: Smoke test (Windows)
         if: runner.os == 'Windows'
@@ -89,15 +89,15 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path smoke | Out-Null
           Copy-Item resources\sample.csv smoke\input.csv
-          .\dist\opentoken.exe generate-key-pair --name recipient --force
-          .\dist\opentoken.exe initiate-exchange --name smoke --public-key "$HOME/.opentoken/recipient.public.pem" --output smoke\smoke.exchange.json --hashingsecret secret
-          .\dist\opentoken.exe tokenize -i smoke\input.csv -t csv -o smoke\out.csv --exchange-config smoke\smoke.exchange.json --private-key "$HOME/.opentoken/smoke.private.pem"
+          .\dist\openlinktoken.exe generate-key-pair --name recipient --force
+          .\dist\openlinktoken.exe initiate-exchange --name smoke --public-key "$HOME/.openlinktoken/recipient.public.pem" --output smoke\smoke.exchange.json --hashingsecret secret
+          .\dist\openlinktoken.exe tokenize -i smoke\input.csv -t csv -o smoke\out.csv --exchange-config smoke\smoke.exchange.json --private-key "$HOME/.openlinktoken/smoke.private.pem"
 
       - name: Prepare release assets
         shell: bash
         run: |
           set -euo pipefail
-          python -m opentoken_cli.util.release_assets \
+          python -m openlinktoken_cli.util.release_assets \
             --version "${VERSION}" \
             --runner-os "${{ runner.os }}" \
             --dist-dir dist \
@@ -106,7 +106,7 @@ jobs:
       - name: Upload workflow artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: opentoken-cli-${{ env.VERSION }}-${{ matrix.os }}
+          name: openlinktoken-cli-${{ env.VERSION }}-${{ matrix.os }}
           path: release-assets/*
           if-no-files-found: error
 

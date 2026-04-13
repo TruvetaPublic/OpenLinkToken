@@ -4,7 +4,7 @@ layout: default
 
 # Normalization and Validation
 
-OpenToken applies consistent normalization and validation rules to ensure accurate, reproducible token generation across different data sources.
+OpenLinkToken applies consistent normalization and validation rules to ensure accurate, reproducible token generation across different data sources.
 
 ---
 
@@ -48,6 +48,7 @@ Input → Normalize → Validate → Token Generation
 | `"García Jr."` | `"GARCIA"` |
 
 **Validation:**
+
 - Must not be empty after normalization
 - No numeric characters allowed
 
@@ -56,6 +57,7 @@ Input → Normalize → Validate → Token Generation
 ## Birth Date
 
 **Normalization:**
+
 - Parse multiple date formats
 - Output as `yyyy-MM-dd` (ISO 8601)
 
@@ -90,6 +92,7 @@ Input → Normalize → Validate → Token Generation
 ## Social Security Number (SSN)
 
 **Normalization:**
+
 - Remove all non-digit characters
 - Format as `XXX-XX-XXXX`
 
@@ -129,6 +132,7 @@ XXX-XX-0000  (Invalid serial)
 ## Sex
 
 **Normalization:**
+
 - Convert to uppercase
 - Map to single character
 
@@ -141,6 +145,7 @@ XXX-XX-0000  (Invalid serial)
 | `"U"`, `"Unknown"`, `"u"` | `"U"`      |
 
 **Validation:**
+
 - Must be M, F, or U after normalization
 
 ---
@@ -150,10 +155,12 @@ XXX-XX-0000  (Invalid serial)
 **Normalization by Country:**
 
 **US ZIP Codes:**
+
 - Extract first 5 digits
 - Accept 5-digit or ZIP+4 format
 
 **Canadian Postal Codes:**
+
 - Uppercase
 - Format as `A1A 1A1`
 
@@ -182,6 +189,7 @@ XXX-XX-0000  (Invalid serial)
 **Purpose:** Broader geographic matching with reduced precision
 
 **Normalization:**
+
 - Extract first 3 digits of postal code
 
 **Examples:**

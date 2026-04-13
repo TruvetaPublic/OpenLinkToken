@@ -4,7 +4,7 @@ layout: default
 
 # Operations
 
-Guides for running and managing OpenToken in production.
+Guides for running and managing OpenLinkToken in production.
 
 - [Running Batch Jobs](running-batch-jobs.md) — Processing large datasets
 - [Spark or Databricks](spark-or-databricks.md) — Distributed processing with PySpark

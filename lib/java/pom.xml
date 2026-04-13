@@ -5,23 +5,23 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.truveta</groupId>
-    <artifactId>opentoken-parent</artifactId>
+    <artifactId>openlinktoken-parent</artifactId>
     <packaging>pom</packaging>
     <version>2.0.0-alpha</version>
 
-    <name>opentoken-parent</name>
-    <description>OpenToken Parent POM - Privacy-preserving record linkage library</description>
+    <name>openlinktoken-parent</name>
+    <description>OpenLinkToken Parent POM - Privacy-preserving record linkage library</description>
     <url>http://www.truveta.com</url>
 
     <modules>
-        <module>opentoken</module>
+        <module>openlinktoken</module>
     </modules>
 
     <distributionManagement>
         <repository>
             <id>github</id>
             <name>GitHub Packages</name>
-            <url>https://maven.pkg.github.com/TruvetaPublic/OpenToken</url>
+            <url>https://maven.pkg.github.com/TruvetaPublic/OpenLinkToken</url>
         </repository>
     </distributionManagement>
 
@@ -42,7 +42,7 @@
             <!-- Internal modules -->
             <dependency>
                 <groupId>com.truveta</groupId>
-                <artifactId>opentoken</artifactId>
+                <artifactId>openlinktoken</artifactId>
                 <version>2.0.0-alpha</version>
             </dependency>
 
@@ -227,7 +227,7 @@
                     <artifactId>maven-javadoc-plugin</artifactId>
                     <version>3.12.0</version>
                     <configuration>
-                        <excludePackageNames>com.truveta.opentoken</excludePackageNames>
+                        <excludePackageNames>com.truveta.openlinktoken</excludePackageNames>
                     </configuration>
                 </plugin>
                 <!-- Versions Plugin -->

@@ -1,0 +1,16 @@
+com.truveta.openlinktoken.attributes.person.AgeAttribute
+com.truveta.openlinktoken.attributes.person.BirthDateAttribute
+com.truveta.openlinktoken.attributes.person.BirthYearAttribute
+com.truveta.openlinktoken.attributes.person.CanadianPostalCodeAttribute
+com.truveta.openlinktoken.attributes.person.FirstNameAttribute
+com.truveta.openlinktoken.attributes.person.LastNameAttribute
+com.truveta.openlinktoken.attributes.person.PostalCodeAttribute
+com.truveta.openlinktoken.attributes.person.SexAttribute
+com.truveta.openlinktoken.attributes.person.SocialSecurityNumberAttribute
+com.truveta.openlinktoken.attributes.person.USPostalCodeAttribute
+com.truveta.openlinktoken.attributes.general.DateAttribute
+com.truveta.openlinktoken.attributes.general.DecimalAttribute
+com.truveta.openlinktoken.attributes.general.IntegerAttribute
+com.truveta.openlinktoken.attributes.general.RecordIdAttribute
+com.truveta.openlinktoken.attributes.general.StringAttribute
+com.truveta.openlinktoken.attributes.general.YearAttribute

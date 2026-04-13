@@ -4,7 +4,7 @@ layout: default
 
 # Match Token Format
 
-OpenToken supports a self-contained match token format that embeds versioning and cryptographic metadata directly in each token. This enables continuous data exchange across systems with varying OpenToken versions and algorithms.
+OpenLinkToken supports a self-contained match token format that embeds versioning and cryptographic metadata directly in each token. This enables continuous data exchange across systems with varying OpenLinkToken versions and algorithms.
 
 ---
 
@@ -12,13 +12,13 @@ OpenToken supports a self-contained match token format that embeds versioning an
 
 Traditional token formats store metadata externally (in file headers or separate configuration). The match token format bundles everything together:
 
-| Benefit                   | Description                                                |
-| ------------------------- | ---------------------------------------------------------- |
-| **Version tracking**      | Each token identifies which OpenToken version generated it |
-| **Cryptographic agility** | Algorithm changes are self-documented per token            |
-| **Ring identification**   | Key management metadata travels with the token             |
-| **Scanner safety**        | Distinct prefix prevents confusion with access tokens      |
-| **Batch processing**      | Metadata queryable without decryption                      |
+| Benefit                   | Description                                                    |
+| ------------------------- | -------------------------------------------------------------- |
+| **Version tracking**      | Each token identifies which OpenLinkToken version generated it |
+| **Cryptographic agility** | Algorithm changes are self-documented per token                |
+| **Ring identification**   | Key management metadata travels with the token                 |
+| **Scanner safety**        | Distinct prefix prevents confusion with access tokens          |
+| **Batch processing**      | Metadata queryable without decryption                          |
 
 ---
 
@@ -34,7 +34,7 @@ ot.V1.<JWE-compact-serialization>
 
 | Part    | Description                                          |
 | ------- | ---------------------------------------------------- |
-| `ot`    | OpenToken prefix (scanner-safe)                      |
+| `ot`    | OpenLinkToken prefix (scanner-safe)                  |
 | `V1`    | Envelope format version                              |
 | `<JWE>` | Standard JWE (RFC 7516) containing encrypted payload |
 
@@ -136,7 +136,7 @@ The encrypted payload contains the actual token data:
   "mac_alg": "HS256",
   "ppid": ["7Kx9mL2pNqRsTuVw8yZaB3cD4eF5gH6iJ7kL8mN9oP0q"],
   "rid": "ring-2026-q1",
-  "iss": "truveta.opentoken",
+  "iss": "truveta.openlinktoken",
   "iat": 1738339200
 }
 ```
@@ -209,6 +209,7 @@ The `rlid` field identifies which token signature rule was used:
 ### Example 1: Standard Configuration (SHA-256 + HMAC-SHA256 + AES-256-GCM)
 
 **Protected Header:**
+
 ```json
 {
   "alg": "A256GCMKW",
@@ -219,6 +220,7 @@ The `rlid` field identifies which token signature rule was used:
 ```
 
 **Payload:**
+
 ```json
 {
   "rlid": "T1",
@@ -226,7 +228,7 @@ The `rlid` field identifies which token signature rule was used:
   "mac_alg": "HS256",
   "ppid": ["7Kx9mL2pNqRsTuVw8yZaB3cD4eF5gH6iJ7kL8mN9oP0q"],
   "rid": "ring-2026-q1",
-  "iss": "truveta.opentoken",
+  "iss": "truveta.openlinktoken",
   "iat": 1738339200
 }
 ```
@@ -234,6 +236,7 @@ The `rlid` field identifies which token signature rule was used:
 ### Example 2: High-Security Configuration (SHA3-512 + HMAC-SHA512 + RSA-OAEP-256)
 
 **Protected Header:**
+
 ```json
 {
   "alg": "RSA-OAEP-256",
@@ -244,14 +247,17 @@ The `rlid` field identifies which token signature rule was used:
 ```
 
 **Payload:**
+
 ```json
 {
   "rlid": "T1",
   "hash_alg": "SHA3-512",
   "mac_alg": "HS512",
-  "ppid": ["dGhpcyBpcyBhIDY0IGJ5dGUgaGFzaCBvdXRwdXQgZnJvbSBTSEEzLTUxMiBhbmQgSE1BQy1TSEE1MTI"],
+  "ppid": [
+    "dGhpcyBpcyBhIDY0IGJ5dGUgaGFzaCBvdXRwdXQgZnJvbSBTSEEzLTUxMiBhbmQgSE1BQy1TSEE1MTI"
+  ],
   "rid": "ring-2026-q1-highsec",
-  "iss": "truveta.opentoken",
+  "iss": "truveta.openlinktoken",
   "iat": 1738339200
 }
 ```
@@ -269,16 +275,19 @@ The `rlid` field identifies which token signature rule was used:
 For ML-based matching with vector embeddings, the `ppid` contains base64-encoded binary:
 
 **Payload:**
+
 ```json
 {
   "rlid": "T8",
   "hash_alg": "SHA-256",
   "mac_alg": "HS256",
-  "ppid": ["SGVsbG8gV29ybGQhIFRoaXMgaXMgYSBiYXNlNjQgZW5jb2RlZCBmbG9hdDMyIGFycmF5..."],
+  "ppid": [
+    "SGVsbG8gV29ybGQhIFRoaXMgaXMgYSBiYXNlNjQgZW5jb2RlZCBmbG9hdDMyIGFycmF5..."
+  ],
   "ppid_dtype": "float32",
   "ppid_dims": 768,
   "rid": "ring-2026-q1",
-  "iss": "truveta.opentoken",
+  "iss": "truveta.openlinktoken",
   "iat": 1738339200
 }
 ```
@@ -303,8 +312,8 @@ def create_ot_token(
     mac_alg: str = "HS256",
     issuer: str = None
 ) -> str:
-    """Create a self-contained OpenToken."""
-    
+    """Create a self-contained OpenLinkToken."""
+
     # Build payload
     payload = {
         "rlid": rlid,
@@ -316,7 +325,7 @@ def create_ot_token(
     }
     if issuer:
         payload["iss"] = issuer
-    
+
     # Create JWE with custom headers
     protected = {
         "alg": "A256GCMKW",
@@ -324,7 +333,7 @@ def create_ot_token(
         "typ": "match-token",
         "kid": ring_id
     }
-    
+
     jwe_token = jwe.encrypt(
         json.dumps(payload).encode(),
         encryption_key,
@@ -332,7 +341,7 @@ def create_ot_token(
         encryption="A256GCM",
         headers=protected
     )
-    
+
     return f"ot.V1.{jwe_token.decode()}"
 ```
 
@@ -346,22 +355,22 @@ import base64
 
 def parse_ot_token_header(token: str) -> dict:
     """Extract header metadata without decryption."""
-    
+
     if not token.startswith("ot."):
-        raise ValueError("Not an OpenToken")
-    
+        raise ValueError("Not an OpenLinkToken")
+
     parts = token.split(".")
     format_version = parts[1]  # "V1"
-    
+
     # Decode JWE protected header (third part)
     header_b64 = parts[2]
     # Add padding if needed
     padding = 4 - len(header_b64) % 4
     if padding != 4:
         header_b64 += "=" * padding
-    
+
     header = json.loads(base64.urlsafe_b64decode(header_b64))
-    
+
     return {
         "format_version": format_version,
         "ring_id": header.get("kid"),
@@ -375,13 +384,13 @@ def parse_ot_token_header(token: str) -> dict:
 ```python
 def decrypt_ot_token(token: str, encryption_key: bytes) -> dict:
     """Decrypt and return full payload."""
-    
+
     if not token.startswith("ot.V1."):
         raise ValueError("Unsupported format version")
-    
+
     jwe_token = token[len("ot.V1."):]
     payload_bytes = jwe.decrypt(jwe_token, encryption_key)
-    
+
     return json.loads(payload_bytes)
 ```
 
@@ -394,7 +403,7 @@ def decrypt_ot_token(token: str, encryption_key: bytes) -> dict:
 The `ot.V1.` prefix clearly identifies these tokens:
 
 ```
-ot.V1.eyJhbGci...  ← OpenToken (clearly labeled)
+ot.V1.eyJhbGci...  ← OpenLinkToken (clearly labeled)
 eyJhbGciOiJIUzI1NiIs...     ← JWT (could trigger scanners)
 AKIA1234567890ABCDEF...     ← AWS key (definitely triggers scanners)
 ```

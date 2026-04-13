@@ -7,13 +7,13 @@ applyTo: "**/*.py"
 
 ## Repo-Specific Runtime Rules
 
-- Use the shared Python virtual environment at `/home/vscode/.local/share/opentoken/.venv`.
+- Use the shared Python virtual environment at `/home/vscode/.local/share/openlinktoken/.venv`.
 - The workspace-root `.venv` is a symlink to this shared environment in the devcontainer.
 - Never create or activate a nested `.venv` under `lib/python/...`.
 - Activate the shared environment with:
 
 ```bash
-source /home/vscode/.local/share/opentoken/.venv/bin/activate
+source /home/vscode/.local/share/openlinktoken/.venv/bin/activate
 ```
 
 ## Python Instructions
@@ -77,18 +77,18 @@ result_df = (
 ### Running Tests
 
 ```bash
-source /home/vscode/.local/share/opentoken/.venv/bin/activate
+source /home/vscode/.local/share/openlinktoken/.venv/bin/activate
 
-cd lib/python/opentoken && pytest
-cd lib/python/opentoken-cli && pytest
+cd lib/python/openlinktoken && pytest
+cd lib/python/openlinktoken-cli && pytest
 ```
 
 ### Installing Dependencies
 
 ```bash
-source /home/vscode/.local/share/opentoken/.venv/bin/activate
-cd lib/python/opentoken && uv pip install -r requirements.txt -r dev-requirements.txt
-cd lib/python/opentoken-cli && uv pip install -r requirements.txt -r dev-requirements.txt
+source /home/vscode/.local/share/openlinktoken/.venv/bin/activate
+cd lib/python/openlinktoken && uv pip install -r requirements.txt -r dev-requirements.txt
+cd lib/python/openlinktoken-cli && uv pip install -r requirements.txt -r dev-requirements.txt
 ```
 
 ### Test Guidelines

@@ -1,6 +1,6 @@
 # Privacy-Preserving Record Linkage (PPRL) Demonstration <!-- omit in toc -->
 
-This demonstration shows how to use OpenToken for privacy-preserving record linkage between two organizations sharing patient data.
+This demonstration shows how to use OpenLinkToken for privacy-preserving record linkage between two organizations sharing patient data.
 
 For a step-by-step walkthrough, start with the Jupyter notebook: [PPRL_Superhero_Demo.ipynb](PPRL_Superhero_Demo.ipynb). You can also run the full demo end-to-end with `./run_end_to_end.sh`.
 
@@ -48,7 +48,7 @@ This demo focuses on two organizations that want to link their datasets without 
 
 In this demo, assume the **hospital** runs the overlap analysis step (it receives the pharmacy token file and compares tokens to find matches).
 
-> **Note (optional deployment patterns):** In real deployments, the overlap analysis can be run by either party, in a jointly operated shared environment, or (optionally) by a third-party matching service. OpenToken does not require a third party.
+> **Note (optional deployment patterns):** In real deployments, the overlap analysis can be run by either party, in a jointly operated shared environment, or (optionally) by a third-party matching service. OpenLinkToken does not require a third party.
 
 | Role     | What they hold                                       | What they share             | Needs hashing secret?                              | Needs encryption key?                  |
 | -------- | ---------------------------------------------------- | --------------------------- | -------------------------------------------------- | -------------------------------------- |
@@ -114,7 +114,7 @@ Hospital (overlap analysis in this demo)
 
 ### Scenario <!-- omit in toc -->
 
-**Super Hero Hospital** and **Super Hero Pharmacy** want to link their patient records to improve care coordination, but they need to protect patient privacy. They use OpenToken to:
+**Super Hero Hospital** and **Super Hero Pharmacy** want to link their patient records to improve care coordination, but they need to protect patient privacy. They use OpenLinkToken to:
 
 1. Generate encrypted tokens from patient identifiers (name, birthdate, SSN, etc.)
 2. Share only the encrypted tokens (not raw patient data)
@@ -130,9 +130,9 @@ Hospital (overlap analysis in this demo)
 
 ## Tokenization basics
 
-### How OpenToken Works <!-- omit in toc -->
+### How OpenLinkToken Works <!-- omit in toc -->
 
-OpenToken generates 5 different tokens (T1-T5) for each patient using different combinations of attributes:
+OpenLinkToken generates 5 different tokens (T1-T5) for each patient using different combinations of attributes:
 
 | Token ID | Token Components                                         |
 | -------- | -------------------------------------------------------- |
@@ -152,7 +152,7 @@ Each token is:
 
 ### Match policy (how you decide what counts as a match) <!-- omit in toc -->
 
-OpenToken does **not** define a single, universal “match policy.” A match policy is something the parties agree on up front: it determines **which token IDs must match** (and how many) before you treat two records as referring to the same person.
+OpenLinkToken does **not** define a single, universal “match policy.” A match policy is something the parties agree on up front: it determines **which token IDs must match** (and how many) before you treat two records as referring to the same person.
 
 This matters because different token combinations trade off **false positives** vs. **missed matches** depending on your data quality and your risk tolerance.
 
@@ -160,13 +160,13 @@ This matters because different token combinations trade off **false positives** 
 
 ### Custom tokens (optional) <!-- omit in toc -->
 
-T1–T5 are **standard** token definitions provided by OpenToken, but they are not the only possible approach.
+T1–T5 are **standard** token definitions provided by OpenLinkToken, but they are not the only possible approach.
 
 If needed, the parties can define **additional custom token rules** (new token IDs) based on different attribute combinations or matching goals. The key requirement is that **both parties must use the exact same token definitions and normalization rules**, otherwise tokens won’t be comparable.
 
 ### Important Note About Token Comparison <!-- omit in toc -->
 
-OpenToken uses **AES-256-GCM encryption with random initialization vectors (IVs)** for enhanced security. This means:
+OpenLinkToken uses **AES-256-GCM encryption with random initialization vectors (IVs)** for enhanced security. This means:
 
 - Each tokenization run produces different encrypted values, even for identical input data
 - To compare tokens across independently tokenized datasets, **tokens must be decrypted first**
@@ -205,7 +205,7 @@ chmod +x run_end_to_end.sh
 ./run_end_to_end.sh
 ```
 
-This runs dataset generation, tokenization with the Python OpenToken CLI, and overlap analysis.
+This runs dataset generation, tokenization with the Python OpenLinkToken CLI, and overlap analysis.
 
 ### What the script does (step-by-step) <!-- omit in toc -->
 
@@ -262,7 +262,7 @@ This script performs the record linkage analysis:
 
 1. **Loads** encrypted tokens from both datasets
 2. **Decrypts** tokens to get the underlying HMAC-SHA256 hashes
-   - Decryption is necessary because OpenToken uses random IVs for encryption
+   - Decryption is necessary because OpenLinkToken uses random IVs for encryption
    - Each tokenization produces different encrypted values for the same data
    - Decryption reveals the deterministic hash values that can be compared
 3. **Compares** decrypted tokens to find matches
@@ -348,7 +348,7 @@ This demo creates files under `datasets/` (raw synthetic data) and `outputs/` (t
 
 ### Why Decryption is Necessary <!-- omit in toc -->
 
-OpenToken uses **AES-256-GCM encryption with random IVs** (initialization vectors) for each encryption operation. This is a security best practice that prevents pattern analysis attacks. However, it creates a challenge for multi-party record linkage:
+OpenLinkToken uses **AES-256-GCM encryption with random IVs** (initialization vectors) for each encryption operation. This is a security best practice that prevents pattern analysis attacks. However, it creates a challenge for multi-party record linkage:
 
 1. **Problem**: Hospital tokenizes their data → produces encrypted tokens with random IVs
 2. **Problem**: Pharmacy tokenizes their data → produces different encrypted tokens (different IVs)
@@ -435,7 +435,7 @@ No – the design is intentionally one-way. Even after decryption, you only see 
 
 ### Why do encrypted tokens differ between runs? <!-- omit in toc -->
 
-OpenToken uses AES-GCM encryption with a fresh random IV for each token, so encrypting the same fingerprint twice produces different ciphertexts. This prevents attackers from learning when two encrypted values are the same just by looking at the bytes. Under the hood, the deterministic HMAC fingerprint is the same for identical input, which is what the matching step compares after decryption.
+OpenLinkToken uses AES-GCM encryption with a fresh random IV for each token, so encrypting the same fingerprint twice produces different ciphertexts. This prevents attackers from learning when two encrypted values are the same just by looking at the bytes. Under the hood, the deterministic HMAC fingerprint is the same for identical input, which is what the matching step compares after decryption.
 
 ### Who should be allowed to decrypt? <!-- omit in toc -->
 
@@ -515,13 +515,13 @@ matches = find_matches(hospital_tokens, pharmacy_tokens, required_token_matches=
 
 ### "Invalid attribute" errors during tokenization <!-- omit in toc -->
 
-**Cause**: Some generated data doesn't meet OpenToken validation rules.
+**Cause**: Some generated data doesn't meet OpenLinkToken validation rules.
 
-**Solution**: This is expected. OpenToken validates data (e.g., SSN format, birthdate ranges) and skips invalid records. Check the metadata file for details.
+**Solution**: This is expected. OpenLinkToken validates data (e.g., SSN format, birthdate ranges) and skips invalid records. Check the metadata file for details.
 
 ### CLI setup errors <!-- omit in toc -->
 
-**Cause**: Python or `uv` is not installed/configured, or the `opentoken` CLI could not be installed.
+**Cause**: Python or `uv` is not installed/configured, or the `openlinktoken` CLI could not be installed.
 
 **Solution**:
 
@@ -545,10 +545,10 @@ This demonstration can be adapted for:
 
 ### Additional Resources <!-- omit in toc -->
 
-- [OpenToken Main README](../../README.md)
+- [OpenLinkToken Main README](../../README.md)
 - [Development Guide](../../docs/dev-guide-development.md)
 - [Metadata Format Documentation](../../docs/metadata-format.md)
 
 ### Questions? <!-- omit in toc -->
 
-For issues or questions about OpenToken, please visit the [GitHub repository](https://github.com/mattwise-42/OpenToken).
+For issues or questions about OpenLinkToken, please visit the [GitHub repository](https://github.com/mattwise-42/OpenLinkToken).

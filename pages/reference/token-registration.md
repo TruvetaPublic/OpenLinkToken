@@ -8,7 +8,7 @@ This guide explains how to register custom tokens and attributes in both Java an
 
 ## Overview
 
-OpenToken uses different registration mechanisms:
+OpenLinkToken uses different registration mechanisms:
 
 | Language | Mechanism         | Location             |
 | -------- | ----------------- | -------------------- |
@@ -26,12 +26,12 @@ Java uses the ServiceLoader pattern for runtime discovery.
 1. **Create the attribute class** extending `BaseAttribute`:
 
 ```java
-package com.truveta.opentoken.attributes.person;
+package com.truveta.openlinktoken.attributes.person;
 
 import java.util.List;
 
-import com.truveta.opentoken.attributes.BaseAttribute;
-import com.truveta.opentoken.attributes.validation.RegexValidator;
+import com.truveta.openlinktoken.attributes.BaseAttribute;
+import com.truveta.openlinktoken.attributes.validation.RegexValidator;
 
 /**
  * Middle name attribute with standard string normalization.
@@ -64,22 +64,23 @@ public class MiddleNameAttribute extends BaseAttribute {
 }
 ```
 
-2. **Register in service file** at [lib/java/opentoken/src/main/resources/META-INF/services/com.truveta.opentoken.attributes.Attribute](https://github.com/TruvetaPublic/OpenToken/blob/main/lib/java/opentoken/src/main/resources/META-INF/services/com.truveta.opentoken.attributes.Attribute):
+2. **Register in service file** at [lib/java/openlinktoken/src/main/resources/META-INF/services/com.truveta.openlinktoken.attributes.Attribute](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/lib/java/openlinktoken/src/main/resources/META-INF/services/com.truveta.openlinktoken.attributes.Attribute):
 
 ```
-com.truveta.opentoken.attributes.general.DateAttribute
-com.truveta.opentoken.attributes.general.RecordIdAttribute
-com.truveta.opentoken.attributes.general.StringAttribute
-com.truveta.opentoken.attributes.person.BirthDateAttribute
-com.truveta.opentoken.attributes.person.FirstNameAttribute
-com.truveta.opentoken.attributes.person.LastNameAttribute
-com.truveta.opentoken.attributes.person.MiddleNameAttribute
-com.truveta.opentoken.attributes.person.PostalCodeAttribute
-com.truveta.opentoken.attributes.person.SexAttribute
-com.truveta.opentoken.attributes.person.SocialSecurityNumberAttribute
+com.truveta.openlinktoken.attributes.general.DateAttribute
+com.truveta.openlinktoken.attributes.general.RecordIdAttribute
+com.truveta.openlinktoken.attributes.general.StringAttribute
+com.truveta.openlinktoken.attributes.person.BirthDateAttribute
+com.truveta.openlinktoken.attributes.person.FirstNameAttribute
+com.truveta.openlinktoken.attributes.person.LastNameAttribute
+com.truveta.openlinktoken.attributes.person.MiddleNameAttribute
+com.truveta.openlinktoken.attributes.person.PostalCodeAttribute
+com.truveta.openlinktoken.attributes.person.SexAttribute
+com.truveta.openlinktoken.attributes.person.SocialSecurityNumberAttribute
 ```
 
 **Rules for service files:**
+
 - One fully-qualified class name per line
 - Keep entries **alphabetically sorted**
 - No blank lines or comments
@@ -90,16 +91,16 @@ com.truveta.opentoken.attributes.person.SocialSecurityNumberAttribute
 1. **Create the token class** implementing `Token`:
 
 ```java
-package com.truveta.opentoken.tokens.definitions;
+package com.truveta.openlinktoken.tokens.definitions;
 
 import java.util.ArrayList;
 
-import com.truveta.opentoken.attributes.AttributeExpression;
-import com.truveta.opentoken.attributes.person.BirthDateAttribute;
-import com.truveta.opentoken.attributes.person.FirstNameAttribute;
-import com.truveta.opentoken.attributes.person.LastNameAttribute;
-import com.truveta.opentoken.attributes.person.PostalCodeAttribute;
-import com.truveta.opentoken.tokens.Token;
+import com.truveta.openlinktoken.attributes.AttributeExpression;
+import com.truveta.openlinktoken.attributes.person.BirthDateAttribute;
+import com.truveta.openlinktoken.attributes.person.FirstNameAttribute;
+import com.truveta.openlinktoken.attributes.person.LastNameAttribute;
+import com.truveta.openlinktoken.attributes.person.PostalCodeAttribute;
+import com.truveta.openlinktoken.tokens.Token;
 
 /**
  * Token rule T6 - Example custom token.
@@ -129,15 +130,15 @@ public class T6Token implements Token {
 }
 ```
 
-2. **Register in service file** at [lib/java/opentoken/src/main/resources/META-INF/services/com.truveta.opentoken.tokens.Token](https://github.com/TruvetaPublic/OpenToken/blob/main/lib/java/opentoken/src/main/resources/META-INF/services/com.truveta.opentoken.tokens.Token):
+2. **Register in service file** at [lib/java/openlinktoken/src/main/resources/META-INF/services/com.truveta.openlinktoken.tokens.Token](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/lib/java/openlinktoken/src/main/resources/META-INF/services/com.truveta.openlinktoken.tokens.Token):
 
 ```
-com.truveta.opentoken.tokens.definitions.T1Token
-com.truveta.opentoken.tokens.definitions.T2Token
-com.truveta.opentoken.tokens.definitions.T3Token
-com.truveta.opentoken.tokens.definitions.T4Token
-com.truveta.opentoken.tokens.definitions.T5Token
-com.truveta.opentoken.tokens.definitions.T6Token
+com.truveta.openlinktoken.tokens.definitions.T1Token
+com.truveta.openlinktoken.tokens.definitions.T2Token
+com.truveta.openlinktoken.tokens.definitions.T3Token
+com.truveta.openlinktoken.tokens.definitions.T4Token
+com.truveta.openlinktoken.tokens.definitions.T5Token
+com.truveta.openlinktoken.tokens.definitions.T6Token
 ```
 
 ## Python Registration (Explicit Imports)
@@ -149,12 +150,12 @@ Python uses explicit imports in loader classes.
 1. **Create the attribute class**:
 
 ```python
-# lib/python/opentoken/src/main/opentoken/attributes/person/middle_name_attribute.py
+# lib/python/openlinktoken/src/main/openlinktoken/attributes/person/middle_name_attribute.py
 
 from typing import List
 
-from opentoken.attributes.base_attribute import BaseAttribute
-from opentoken.attributes.validation.regex_validator import RegexValidator
+from openlinktoken.attributes.base_attribute import BaseAttribute
+from openlinktoken.attributes.validation.regex_validator import RegexValidator
 
 
 class MiddleNameAttribute(BaseAttribute):
@@ -182,13 +183,13 @@ class MiddleNameAttribute(BaseAttribute):
 
 2. **Register in AttributeLoader**:
 
-Edit `lib/python/opentoken/src/main/opentoken/attributes/attribute_loader.py`:
+Edit `lib/python/openlinktoken/src/main/openlinktoken/attributes/attribute_loader.py`:
 
 ```python
-from opentoken.attributes.person.first_name_attribute import FirstNameAttribute
-from opentoken.attributes.person.last_name_attribute import LastNameAttribute
-from opentoken.attributes.person.middle_name_attribute import MiddleNameAttribute  # Add import
-from opentoken.attributes.person.birth_date_attribute import BirthDateAttribute
+from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute
+from openlinktoken.attributes.person.last_name_attribute import LastNameAttribute
+from openlinktoken.attributes.person.middle_name_attribute import MiddleNameAttribute  # Add import
+from openlinktoken.attributes.person.birth_date_attribute import BirthDateAttribute
 # ... other imports
 
 class AttributeLoader:
@@ -208,16 +209,16 @@ class AttributeLoader:
 1. **Create the token class**:
 
 ```python
-# lib/python/opentoken/src/main/opentoken/tokens/definitions/t6_token.py
+# lib/python/openlinktoken/src/main/openlinktoken/tokens/definitions/t6_token.py
 
 from typing import List
 
-from opentoken.attributes.attribute_expression import AttributeExpression
-from opentoken.attributes.person.birth_date_attribute import BirthDateAttribute
-from opentoken.attributes.person.first_name_attribute import FirstNameAttribute
-from opentoken.attributes.person.last_name_attribute import LastNameAttribute
-from opentoken.attributes.person.postal_code_attribute import PostalCodeAttribute
-from opentoken.tokens.token import Token
+from openlinktoken.attributes.attribute_expression import AttributeExpression
+from openlinktoken.attributes.person.birth_date_attribute import BirthDateAttribute
+from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute
+from openlinktoken.attributes.person.last_name_attribute import LastNameAttribute
+from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttribute
+from openlinktoken.tokens.token import Token
 
 class T6Token(Token):
     """Token rule T6 - Example custom token."""
@@ -241,7 +242,7 @@ class T6Token(Token):
 
 2. **No registry edit needed for tokens**:
 
-The Python `TokenRegistry.load_all_tokens()` implementation discovers `Token` subclasses by scanning modules in `opentoken.tokens.definitions`. As long as your new token lives under that package (for example `t6_token.py`), it will be picked up automatically.
+The Python `TokenRegistry.load_all_tokens()` implementation discovers `Token` subclasses by scanning modules in `openlinktoken.tokens.definitions`. As long as your new token lives under that package (for example `t6_token.py`), it will be picked up automatically.
 
 ## Cross-Language Sync Verification
 
@@ -254,6 +255,7 @@ python3 tools/multi_language_syncer.py
 ```
 
 This tool checks:
+
 - Attribute names match between Java and Python
 - Token rules are identical
 - Normalization logic produces same outputs
@@ -264,7 +266,7 @@ This tool checks:
 Run the interoperability test suite:
 
 ```bash
-cd /workspaces/OpenToken/tools/interoperability
+cd /workspaces/OpenLinkToken/tools/interoperability
 python multi_language_interoperability_test.py
 ```
 
@@ -274,65 +276,71 @@ This verifies that identical inputs produce identical token outputs in both lang
 
 ### Java Files
 
-| Type                   | Location                                                                                                                                                                                                                                                      |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Attribute classes      | [lib/java/opentoken/src/main/java/com/truveta/opentoken/attributes/](https://github.com/TruvetaPublic/OpenToken/tree/main/lib/java/opentoken/src/main/java/com/truveta/opentoken/attributes)                                                                  |
-| Token classes          | [lib/java/opentoken/src/main/java/com/truveta/opentoken/tokens/definitions/](https://github.com/TruvetaPublic/OpenToken/tree/main/lib/java/opentoken/src/main/java/com/truveta/opentoken/tokens/definitions)                                                  |
-| Attribute service file | [lib/java/opentoken/src/main/resources/META-INF/services/com.truveta.opentoken.attributes.Attribute](https://github.com/TruvetaPublic/OpenToken/blob/main/lib/java/opentoken/src/main/resources/META-INF/services/com.truveta.opentoken.attributes.Attribute) |
-| Token service file     | [lib/java/opentoken/src/main/resources/META-INF/services/com.truveta.opentoken.tokens.Token](https://github.com/TruvetaPublic/OpenToken/blob/main/lib/java/opentoken/src/main/resources/META-INF/services/com.truveta.opentoken.tokens.Token)                 |
+| Type                   | Location                                                                                                                                                                                                                                                                          |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Attribute classes      | [lib/java/openlinktoken/src/main/java/com/truveta/openlinktoken/attributes/](https://github.com/TruvetaPublic/OpenLinkToken/tree/main/lib/java/openlinktoken/src/main/java/com/truveta/openlinktoken/attributes)                                                                  |
+| Token classes          | [lib/java/openlinktoken/src/main/java/com/truveta/openlinktoken/tokens/definitions/](https://github.com/TruvetaPublic/OpenLinkToken/tree/main/lib/java/openlinktoken/src/main/java/com/truveta/openlinktoken/tokens/definitions)                                                  |
+| Attribute service file | [lib/java/openlinktoken/src/main/resources/META-INF/services/com.truveta.openlinktoken.attributes.Attribute](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/lib/java/openlinktoken/src/main/resources/META-INF/services/com.truveta.openlinktoken.attributes.Attribute) |
+| Token service file     | [lib/java/openlinktoken/src/main/resources/META-INF/services/com.truveta.openlinktoken.tokens.Token](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/lib/java/openlinktoken/src/main/resources/META-INF/services/com.truveta.openlinktoken.tokens.Token)                 |
 
 ### Python Files
 
-| Type              | Location                                                                                                                                                                                                               |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Attribute classes | [lib/python/opentoken/src/main/opentoken/attributes/](https://github.com/TruvetaPublic/OpenToken/tree/main/lib/python/opentoken/src/main/opentoken/attributes)                                                         |
-| Token classes     | [lib/python/opentoken/src/main/opentoken/tokens/definitions/](https://github.com/TruvetaPublic/OpenToken/tree/main/lib/python/opentoken/src/main/opentoken/tokens/definitions)                                         |
-| Attribute loader  | [lib/python/opentoken/src/main/opentoken/attributes/attribute_loader.py](https://github.com/TruvetaPublic/OpenToken/blob/main/lib/python/opentoken/src/main/opentoken/attributes/attribute_loader.py)                  |
-| Token discovery   | [lib/python/opentoken/src/main/opentoken/tokens/token_registry.py](https://github.com/TruvetaPublic/OpenToken/blob/main/lib/python/opentoken/src/main/opentoken/tokens/token_registry.py) (auto-discovers definitions) |
+| Type              | Location                                                                                                                                                                                                                                   |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Attribute classes | [lib/python/openlinktoken/src/main/openlinktoken/attributes/](https://github.com/TruvetaPublic/OpenLinkToken/tree/main/lib/python/openlinktoken/src/main/openlinktoken/attributes)                                                         |
+| Token classes     | [lib/python/openlinktoken/src/main/openlinktoken/tokens/definitions/](https://github.com/TruvetaPublic/OpenLinkToken/tree/main/lib/python/openlinktoken/src/main/openlinktoken/tokens/definitions)                                         |
+| Attribute loader  | [lib/python/openlinktoken/src/main/openlinktoken/attributes/attribute_loader.py](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/lib/python/openlinktoken/src/main/openlinktoken/attributes/attribute_loader.py)                  |
+| Token discovery   | [lib/python/openlinktoken/src/main/openlinktoken/tokens/token_registry.py](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/lib/python/openlinktoken/src/main/openlinktoken/tokens/token_registry.py) (auto-discovers definitions) |
 
 ## Common Mistakes
 
 ### Java
 
 ❌ **Forgetting service file entry**
+
 ```
 # Attribute won't be discovered at runtime!
 ```
 
 ❌ **Unsorted service file**
+
 ```
-com.truveta.opentoken.attributes.person.SexAttribute
-com.truveta.opentoken.attributes.person.BirthDateAttribute  # Should be sorted
+com.truveta.openlinktoken.attributes.person.SexAttribute
+com.truveta.openlinktoken.attributes.person.BirthDateAttribute  # Should be sorted
 ```
 
 ❌ **Blank lines or comments in service file**
+
 ```
-com.truveta.opentoken.attributes.person.BirthDateAttribute
+com.truveta.openlinktoken.attributes.person.BirthDateAttribute
 
 # This comment breaks ServiceLoader
-com.truveta.opentoken.attributes.person.FirstNameAttribute
+com.truveta.openlinktoken.attributes.person.FirstNameAttribute
 ```
 
 ### Python
 
 ❌ **Forgetting loader import**
+
 ```python
 # AttributeLoader.load() won't include the new attribute!
 ```
 
 ❌ **Not matching module layout**
 
-Keep person attributes under `opentoken.attributes.person` (for example `opentoken/attributes/person/middle_name_attribute.py`), then import from that module and add the attribute instance to `AttributeLoader.load()`.
+Keep person attributes under `openlinktoken.attributes.person` (for example `openlinktoken/attributes/person/middle_name_attribute.py`), then import from that module and add the attribute instance to `AttributeLoader.load()`.
 
 ### Both Languages
 
 ❌ **Updating only one language**
+
 ```
 # Cross-language parity broken!
 # Java has MiddleNameAttribute, Python doesn't
 ```
 
 ❌ **Different attribute names**
+
 ```java
 // Java: "MiddleName"
 // Python: "middle_name"

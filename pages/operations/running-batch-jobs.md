@@ -4,13 +4,13 @@ layout: default
 
 # Running Batch Jobs
 
-How to run OpenToken in batch mode across CSV or Parquet files at scale using CLI or Docker.
+How to run OpenLinkToken in batch mode across CSV or Parquet files at scale using CLI or Docker.
 
 ---
 
 ## Overview
 
-OpenToken processes input files (CSV or Parquet) and produces two outputs:
+OpenLinkToken processes input files (CSV or Parquet) and produces two outputs:
 
 1. **Tokens file** (CSV or Parquet): Contains `RecordId`, `RuleId`, `Token` columns
 2. **Metadata file** (JSON): Processing statistics, secret hashes, and validation counts
@@ -22,7 +22,7 @@ OpenToken processes input files (CSV or Parquet) and produces two outputs:
 ### Basic Syntax
 
 ```bash
-opentoken <subcommand> [OPTIONS]
+openlinktoken <subcommand> [OPTIONS]
 ```
 
 ### Required Arguments
@@ -46,11 +46,11 @@ opentoken <subcommand> [OPTIONS]
 ### CLI Example
 
 ```bash
-cd lib/python/opentoken-cli
+cd lib/python/openlinktoken-cli
 source ../../.venv/bin/activate
-uv pip install -r requirements.txt -e . -e ../opentoken
+uv pip install -r requirements.txt -e . -e ../openlinktoken
 
-opentoken package \
+openlinktoken package \
   -i ../../../resources/sample.csv \
   -t csv \
   -o ../../../resources/output.csv \
@@ -67,9 +67,9 @@ opentoken package \
 **Bash (Linux/Mac):**
 
 ```bash
-cd /path/to/OpenToken
+cd /path/to/OpenLinkToken
 
-./run-opentoken.sh package \
+./run-openlinktoken.sh package \
   -i ./resources/sample.csv \
   -o ./resources/output.csv \
   -t csv \
@@ -80,9 +80,9 @@ cd /path/to/OpenToken
 **PowerShell (Windows):**
 
 ```powershell
-cd C:\path\to\OpenToken
+cd C:\path\to\OpenLinkToken
 
-.\run-opentoken.ps1 package `
+.\run-openlinktoken.ps1 package `
   -i .\resources\sample.csv `
   -o .\resources\output.csv `
   -FileType csv `
@@ -102,11 +102,11 @@ cd C:\path\to\OpenToken
 
 ```bash
 # Build the image
-docker build -t opentoken:latest .
+docker build -t openlinktoken:latest .
 
 # Run with sample data
 docker run --rm -v $(pwd)/resources:/app/resources \
-  opentoken:latest package \
+  openlinktoken:latest package \
   -i /app/resources/sample.csv \
   -t csv \
   -o /app/resources/output.csv \
@@ -149,7 +149,7 @@ ID001,T2,pUxPgYL9+cMxkA+8928Pil+9W+dm9kISwHYPdkZS+I2nQ/bQ/8HyL3FOVf3NYPW5NKZZO1O
 {
   "Platform": "Java",
   "JavaVersion": "21.0.0",
-  "OpenTokenVersion": "1.0.0",
+  "OpenLinkTokenVersion": "1.0.0",
   "TotalRows": 100,
   "TotalRowsWithInvalidAttributes": 3,
   "InvalidAttributesByType": { "BirthDate": 2, "PostalCode": 1 },
@@ -171,7 +171,7 @@ See [Reference: Metadata Format](../reference/metadata-format.md) for complete f
 export OPENTOKEN_HASHING_SECRET="MyHashingKey"
 export OPENTOKEN_ENCRYPTION_KEY="MyEncryptionKey32CharactersLong"
 
-opentoken package \
+openlinktoken package \
   -i data.csv -t csv -o tokens.csv \
   -h "$OPENTOKEN_HASHING_SECRET" \
   -e "$OPENTOKEN_ENCRYPTION_KEY"

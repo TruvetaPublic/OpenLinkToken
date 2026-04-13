@@ -15,7 +15,7 @@ Own repo-root, project-facing markdown such as `README.md` and similar top-level
 
 ## Priorities
 
-1. **Clear project framing.** Explain what OpenToken is, why it matters, and where readers should go next.
+1. **Clear project framing.** Explain what OpenLinkToken is, why it matters, and where readers should go next.
 2. **Scannable structure.** Prefer overview, installation, usage, documentation, and contributing sections where they fit.
 3. **Strong entrypoints.** Keep quick starts, badges, and top-level navigation easy to scan.
 4. **Relative repo links.** Use relative links for repository files and descriptive link text.

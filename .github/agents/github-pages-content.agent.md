@@ -1,11 +1,11 @@
 ---
 name: github-pages-content
-description: Maintains pages/ content for the OpenToken GitHub Pages site
+description: Maintains pages/ content for the OpenLinkToken GitHub Pages site
 ---
 
 # GitHub Pages Content Agent
 
-Own the `pages/**` surface for the OpenToken GitHub Pages site.
+Own the `pages/**` surface for the OpenLinkToken GitHub Pages site.
 
 ## Scope
 

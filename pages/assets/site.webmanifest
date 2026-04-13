@@ -1,6 +1,6 @@
 {
-  "name": "OpenToken",
-  "short_name": "OpenToken",
+  "name": "OpenLinkToken",
+  "short_name": "OpenLinkToken",
   "icons": [
     {
       "src": "android-chrome-192x192.png",

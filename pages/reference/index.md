@@ -4,7 +4,7 @@ layout: default
 
 # Reference: API Overview
 
-OpenToken provides three interfaces for generating privacy-preserving tokens: a Java library, a Python library, and a command-line interface (CLI). All three produce identical tokens for the same input, enabling cross-language and cross-platform workflows.
+OpenLinkToken provides three interfaces for generating privacy-preserving tokens: a Java library, a Python library, and a command-line interface (CLI). All three produce identical tokens for the same input, enabling cross-language and cross-platform workflows.
 
 ---
 
@@ -36,20 +36,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.truveta.opentoken.attributes.Attribute;
-import com.truveta.opentoken.attributes.person.BirthDateAttribute;
-import com.truveta.opentoken.attributes.person.FirstNameAttribute;
-import com.truveta.opentoken.attributes.person.LastNameAttribute;
-import com.truveta.opentoken.attributes.person.PostalCodeAttribute;
-import com.truveta.opentoken.attributes.person.SexAttribute;
-import com.truveta.opentoken.attributes.person.SocialSecurityNumberAttribute;
-import com.truveta.opentoken.tokens.TokenDefinition;
-import com.truveta.opentoken.tokens.TokenGenerator;
-import com.truveta.opentoken.tokens.TokenGeneratorResult;
-import com.truveta.opentoken.tokens.tokenizer.SHA256Tokenizer;
-import com.truveta.opentoken.tokentransformer.EncryptTokenTransformer;
-import com.truveta.opentoken.tokentransformer.HashTokenTransformer;
-import com.truveta.opentoken.tokentransformer.TokenTransformer;
+import com.truveta.openlinktoken.attributes.Attribute;
+import com.truveta.openlinktoken.attributes.person.BirthDateAttribute;
+import com.truveta.openlinktoken.attributes.person.FirstNameAttribute;
+import com.truveta.openlinktoken.attributes.person.LastNameAttribute;
+import com.truveta.openlinktoken.attributes.person.PostalCodeAttribute;
+import com.truveta.openlinktoken.attributes.person.SexAttribute;
+import com.truveta.openlinktoken.attributes.person.SocialSecurityNumberAttribute;
+import com.truveta.openlinktoken.tokens.TokenDefinition;
+import com.truveta.openlinktoken.tokens.TokenGenerator;
+import com.truveta.openlinktoken.tokens.TokenGeneratorResult;
+import com.truveta.openlinktoken.tokens.tokenizer.SHA256Tokenizer;
+import com.truveta.openlinktoken.tokentransformer.EncryptTokenTransformer;
+import com.truveta.openlinktoken.tokentransformer.HashTokenTransformer;
+import com.truveta.openlinktoken.tokentransformer.TokenTransformer;
 
 List<TokenTransformer> transformers = List.of(
   new HashTokenTransformer(hashingSecret),
@@ -91,17 +91,17 @@ The Python API mirrors the Java API for cross-language parity.
 **Quick example:**
 
 ```python
-from opentoken.attributes.person.birth_date_attribute import BirthDateAttribute
-from opentoken.attributes.person.first_name_attribute import FirstNameAttribute
-from opentoken.attributes.person.last_name_attribute import LastNameAttribute
-from opentoken.attributes.person.postal_code_attribute import PostalCodeAttribute
-from opentoken.attributes.person.sex_attribute import SexAttribute
-from opentoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
-from opentoken.tokens.token_definition import TokenDefinition
-from opentoken.tokens.token_generator import TokenGenerator
-from opentoken.tokens.tokenizer.sha256_tokenizer import SHA256Tokenizer
-from opentoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
-from opentoken.tokentransformer.hash_token_transformer import HashTokenTransformer
+from openlinktoken.attributes.person.birth_date_attribute import BirthDateAttribute
+from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute
+from openlinktoken.attributes.person.last_name_attribute import LastNameAttribute
+from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttribute
+from openlinktoken.attributes.person.sex_attribute import SexAttribute
+from openlinktoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
+from openlinktoken.tokens.token_definition import TokenDefinition
+from openlinktoken.tokens.token_generator import TokenGenerator
+from openlinktoken.tokens.tokenizer.sha256_tokenizer import SHA256Tokenizer
+from openlinktoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
+from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 
 token_definition = TokenDefinition()
 tokenizer = SHA256Tokenizer([
@@ -135,7 +135,7 @@ The CLI processes CSV or Parquet files without writing code.
 **Basic usage:**
 
 ```bash
-opentoken package \
+openlinktoken package \
   -i input.csv -t csv -o output.csv \
   -h "HashingSecret" -e "EncryptionKey32Chars!!!!!!!!!!"
 ```
@@ -143,7 +143,7 @@ opentoken package \
 Or with Python:
 
 ```bash
-python -m opentoken_cli.main package \
+python -m openlinktoken_cli.main package \
   -i input.csv -t csv -o output.csv \
   -h "HashingSecret" -e "EncryptionKey32Chars!!!!!!!!!!"
 ```
@@ -177,7 +177,7 @@ Every token generation run produces a `.metadata.json` file alongside the token 
 
 ## Custom Token Registration
 
-OpenToken supports defining custom token rules beyond T1–T5. Custom rules can include additional attributes (e.g., MRN) or different attribute combinations.
+OpenLinkToken supports defining custom token rules beyond T1–T5. Custom rules can include additional attributes (e.g., MRN) or different attribute combinations.
 
 **Full reference:** [Token Registration](token-registration.md)
 

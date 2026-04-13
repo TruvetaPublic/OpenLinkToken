@@ -49,7 +49,7 @@ applyTo: "**/*.java"
   ```
 - Run Checkstyle explicitly when needed:
   ```bash
-  cd lib/java/opentoken && mvn checkstyle:check
+  cd lib/java/openlinktoken && mvn checkstyle:check
   ```
 - Ensure all tests pass as part of the build.
 - **Code Review Checklist**: Before finalizing any Java code changes, verify:
