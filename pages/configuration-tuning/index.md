@@ -133,7 +133,7 @@ Always JSON format, suffixed `.metadata.json` (e.g., `output.metadata.json`):
 ```json
 {
   "PythonVersion": "3.11.0",
-  "OpenLinkTokenVersion": "1.0.0",
+  "Version": "1.0.0",
   "Platform": "Python",
   "TotalRows": 3,
   "TotalRowsWithInvalidAttributes": 1,

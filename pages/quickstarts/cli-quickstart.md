@@ -244,7 +244,7 @@ A `.metadata.json` file is created alongside the output:
 {
   "Platform": "Python",
   "PythonVersion": "3.11.0",
-  "OpenLinkTokenVersion": "2.0.0",
+  "Version": "2.0.0",
   "TotalRows": 2,
   "TotalRowsWithInvalidAttributes": 0,
   "InvalidAttributesByType": {},

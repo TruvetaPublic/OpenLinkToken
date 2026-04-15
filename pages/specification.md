@@ -241,7 +241,7 @@ Parquet format includes compression and is suitable for large datasets.
 {
   "Platform": "Java",
   "JavaVersion": "21.0.0",
-  "OpenLinkTokenVersion": "1.7.0",
+  "Version": "1.7.0",
   "TotalRows": 100,
   "TotalRowsWithInvalidAttributes": 3,
   "InvalidAttributesByType": {

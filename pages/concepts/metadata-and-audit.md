@@ -57,7 +57,7 @@ python tools/hash_calculator.py \
 
 Metadata provides:
 
-- What platform and version (`Platform`, `OpenLinkTokenVersion`, and `JavaVersion`/`PythonVersion`)
+- What platform and version (`Platform`, `Version`, and `JavaVersion`/`PythonVersion`)
 - What data quality outcomes (record counts and attribute-level statistics)
 
 **Use cases:**

@@ -11,7 +11,7 @@ class Metadata:
     # Metadata keys
     PLATFORM = "Platform"
     PYTHON_VERSION = "PythonVersion"
-    OPENTOKEN_VERSION = "OpenLinkTokenVersion"
+    VERSION = "Version"
     OUTPUT_FORMAT = "OutputFormat"
     ENCRYPTION_SECRET_HASH = "EncryptionSecretHash"
     HASHING_SECRET_HASH = "HashingSecretHash"
@@ -44,7 +44,7 @@ class Metadata:
         self.metadata_map.clear()
         self.metadata_map[self.PYTHON_VERSION] = self.SYSTEM_PYTHON_VERSION
         self.metadata_map[self.PLATFORM] = self.PLATFORM_PYTHON
-        self.metadata_map[self.OPENTOKEN_VERSION] = self.DEFAULT_VERSION
+        self.metadata_map[self.VERSION] = self.DEFAULT_VERSION
 
         return self.metadata_map
 

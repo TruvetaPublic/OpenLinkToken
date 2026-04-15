@@ -46,7 +46,7 @@ Extension: .metadata.json
   "Platform": "string",
   "JavaVersion": "string (optional, Java only)",
   "PythonVersion": "string (optional, Python only)",
-  "OpenLinkTokenVersion": "string",
+  "Version": "string",
   "TotalRows": integer,
   "TotalRowsWithInvalidAttributes": integer,
   "InvalidAttributesByType": {
@@ -68,12 +68,12 @@ Extension: .metadata.json
 
 ### Platform Information
 
-| Field                  | Type   | Description                          | Example                |
-| ---------------------- | ------ | ------------------------------------ | ---------------------- |
-| `Platform`             | String | Processing platform/language         | `"Java"` or `"Python"` |
-| `JavaVersion`          | String | Java runtime version (Java only)     | `"21.0.0"`             |
-| `PythonVersion`        | String | Python runtime version (Python only) | `"3.11.5"`             |
-| `OpenLinkTokenVersion` | String | OpenLinkToken library version        | `"1.12.2"`             |
+| Field           | Type   | Description                          | Example                |
+| --------------- | ------ | ------------------------------------ | ---------------------- |
+| `Platform`      | String | Processing platform/language         | `"Java"` or `"Python"` |
+| `JavaVersion`   | String | Java runtime version (Java only)     | `"21.0.0"`             |
+| `PythonVersion` | String | Python runtime version (Python only) | `"3.11.5"`             |
+| `Version`       | String | OpenLinkToken library version        | `"1.12.2"`             |
 
 **Notes:**
 
@@ -126,7 +126,7 @@ Extension: .metadata.json
 {
   "Platform": "Java",
   "JavaVersion": "21.0.0",
-  "OpenLinkTokenVersion": "2.0.0-alpha",
+  "Version": "2.0.0-alpha",
   "TotalRows": 101,
   "TotalRowsWithInvalidAttributes": 9,
   "InvalidAttributesByType": {
@@ -154,7 +154,7 @@ Extension: .metadata.json
 {
   "Platform": "Python",
   "PythonVersion": "3.11.5",
-  "OpenLinkTokenVersion": "2.0.0-alpha",
+  "Version": "2.0.0-alpha",
   "TotalRows": 50,
   "TotalRowsWithInvalidAttributes": 2,
   "InvalidAttributesByType": {

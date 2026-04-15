@@ -229,11 +229,11 @@ class TestReplaceBinary:
     def test_uses_path_binary_when_found(self, tmp_path):
         src = tmp_path / "new_binary"
         src.write_bytes(b"new content")
-        target = tmp_path / "openlinktoken"
+        target = tmp_path / "olt"
         target.write_bytes(b"old content")
 
         with patch.object(UpdateCommand, "_find_target_binary", return_value=target):
-            rc = UpdateCommand._replace_binary(src, "openlinktoken")
+            rc = UpdateCommand._replace_binary(src, "olt")
 
         assert rc == 0
         assert target.read_bytes() == b"new content"
@@ -247,7 +247,7 @@ class TestReplaceBinary:
             patch.object(UpdateCommand, "_find_target_binary", return_value=None),
             patch.object(Path, "is_file", return_value=False),
         ):
-            rc = UpdateCommand._replace_binary(src, "openlinktoken")
+            rc = UpdateCommand._replace_binary(src, "olt")
 
         assert rc != 0
         assert "Unable to locate" in capsys.readouterr().err
@@ -255,14 +255,14 @@ class TestReplaceBinary:
     def test_argv0_fallback_when_name_matches(self, tmp_path):
         src = tmp_path / "new_binary"
         src.write_bytes(b"new content")
-        fake_entrypoint = tmp_path / "openlinktoken"
+        fake_entrypoint = tmp_path / "olt"
         fake_entrypoint.write_bytes(b"old content")
 
         with (
             patch.object(UpdateCommand, "_find_target_binary", return_value=None),
             patch.object(sys, "argv", [str(fake_entrypoint)]),
         ):
-            rc = UpdateCommand._replace_binary(src, "openlinktoken")
+            rc = UpdateCommand._replace_binary(src, "olt")
 
         assert rc == 0
         assert fake_entrypoint.read_bytes() == b"new content"
@@ -270,14 +270,14 @@ class TestReplaceBinary:
     def test_permission_error_returns_nonzero(self, tmp_path, capsys):
         src = tmp_path / "new_binary"
         src.write_bytes(b"content")
-        target = tmp_path / "openlinktoken"
+        target = tmp_path / "olt"
         target.write_bytes(b"old")
 
         with (
             patch.object(UpdateCommand, "_find_target_binary", return_value=target),
             patch("shutil.copy2", side_effect=OSError("Permission denied")),
         ):
-            rc = UpdateCommand._replace_binary(src, "openlinktoken")
+            rc = UpdateCommand._replace_binary(src, "olt")
 
         assert rc != 0
 

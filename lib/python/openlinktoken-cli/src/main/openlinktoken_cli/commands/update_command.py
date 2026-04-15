@@ -164,8 +164,8 @@ class UpdateCommand:
                         return 1
 
             # Replace current installation
-            # Derive a likely entrypoint name (e.g. "openlinktoken" from
-            # "openlinktoken-linux-amd64") so we are not tightly coupled to the
+            # Derive a likely entrypoint name (e.g. "olt" from
+            # "olt-linux-amd64") so we are not tightly coupled to the
             # full release asset filename.
             expected_entrypoint_name = asset_name.split("-", 1)[0] if asset_name else ""
             result = UpdateCommand._replace_binary(tmp_path, expected_entrypoint_name)
@@ -312,7 +312,7 @@ class UpdateCommand:
         """
         python_interpreter = Path(sys.executable).resolve()
         # Determine target path: for a wheel-installed script the executable is
-        # the Python interpreter; we instead look for the "openlinktoken" script on PATH.
+        # the Python interpreter; we instead look for the "olt" script on PATH.
         target = UpdateCommand._find_target_binary()
         if target is None:
             # Fallback: try to infer the CLI entrypoint from sys.argv[0], but only
@@ -330,10 +330,10 @@ class UpdateCommand:
                 target = argv0
             else:
                 print(
-                    "Error: Unable to locate the openlinktoken executable to update.\n"
-                    "The updater could not find an 'openlinktoken' binary on PATH and\n"
+                    "Error: Unable to locate the olt executable to update.\n"
+                    "The updater could not find an 'olt' binary on PATH and\n"
                     "cannot safely determine which file to overwrite.\n"
-                    "Please reinstall openlinktoken via your package manager or download\n"
+                    "Please reinstall olt via your package manager or download\n"
                     "the latest release from:\n"
                     "  https://github.com/TruvetaPublic/OpenLinkToken/releases",
                     file=sys.stderr,
@@ -363,8 +363,8 @@ class UpdateCommand:
 
     @staticmethod
     def _find_target_binary() -> Optional[Path]:
-        """Locate the 'openlinktoken' script on PATH."""
-        target = shutil.which("openlinktoken")
+        """Locate the 'olt' script on PATH."""
+        target = shutil.which("olt")
         return Path(target) if target else None
 
     # ------------------------------------------------------------------

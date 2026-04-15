@@ -1,6 +1,6 @@
 ---
 name: code-reviewer
-description: Reviews OpenLinkToken changes for repo-specific risks, verification gaps, and documentation impact
+description: Reviews Open Link Token changes for repo-specific risks, verification gaps, and documentation impact
 ---
 
 # Code Reviewer Agent

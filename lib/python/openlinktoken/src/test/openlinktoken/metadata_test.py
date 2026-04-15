@@ -10,13 +10,13 @@ class TestMetadata:
 
         assert Metadata.PYTHON_VERSION in result
         assert Metadata.PLATFORM in result
-        assert Metadata.OPENTOKEN_VERSION in result
+        assert Metadata.VERSION in result
 
         assert Metadata.HASHING_SECRET_HASH not in result
         assert Metadata.ENCRYPTION_SECRET_HASH not in result
 
         assert result[Metadata.PLATFORM] == Metadata.PLATFORM_PYTHON
-        assert result[Metadata.OPENTOKEN_VERSION] == Metadata.DEFAULT_VERSION
+        assert result[Metadata.VERSION] == Metadata.DEFAULT_VERSION
 
     def test_add_hashed_secret_with_hashing_secret(self):
         metadata = Metadata()

@@ -330,7 +330,7 @@ class TestTokenCompatibility:
                 python_meta = json.load(file_handle)
 
             assert python_meta["Platform"] == "Python", python_meta
-            assert python_meta["OpenLinkTokenVersion"], python_meta
+            assert python_meta["Version"], python_meta
             assert python_meta["HashingSecretHash"] == EXPECTED_SAMPLE_METADATA["HashingSecretHash"], python_meta
             assert python_meta["TotalRows"] == EXPECTED_SAMPLE_METADATA["TotalRows"], python_meta
             assert (
@@ -380,7 +380,7 @@ class TestTokenCompatibility:
             with open(python_metadata, "r", encoding="utf-8") as file_handle:
                 python_meta = json.load(file_handle)
 
-            expected_fields = ["Platform", "PythonVersion", "OpenLinkTokenVersion", "TotalRows", "HashingSecretHash"]
+            expected_fields = ["Platform", "PythonVersion", "Version", "TotalRows", "HashingSecretHash"]
             for field in expected_fields:
                 assert field in python_meta, f"Python metadata missing expected field '{field}'"
 

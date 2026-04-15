@@ -29,27 +29,27 @@ class TestCreateReleaseAssets:
         dist_dir = tmp_path / "dist"
         output_dir = tmp_path / "release-assets"
         binary_content = b"linux binary"
-        _write_binary(dist_dir, "openlinktoken", binary_content)
+        _write_binary(dist_dir, "olt", binary_content)
 
         generated_paths = create_release_assets("2.1.0", "Linux", dist_dir, output_dir)
 
         generated_names = {path.name for path in generated_paths}
         assert generated_names == {
-            "openlinktoken-v2.1.0-linux-x86_64",
-            "openlinktoken-v2.1.0-linux-x86_64.sha256",
-            "openlinktoken-cli-2.1.0-linux-x64.zip",
-            "openlinktoken-cli-2.1.0-linux-x64.zip.sha256",
+            "olt-v2.1.0-linux-x86_64",
+            "olt-v2.1.0-linux-x86_64.sha256",
+            "olt-cli-2.1.0-linux-x64.zip",
+            "olt-cli-2.1.0-linux-x64.zip.sha256",
         }
 
-        binary_path = output_dir / "openlinktoken-v2.1.0-linux-x86_64"
+        binary_path = output_dir / "olt-v2.1.0-linux-x86_64"
         assert binary_path.read_bytes() == binary_content
         assert (output_dir / f"{binary_path.name}.sha256").read_text() == _expected_checksum(
             binary_content, binary_path.name
         )
 
-        zip_path = output_dir / "openlinktoken-cli-2.1.0-linux-x64.zip"
+        zip_path = output_dir / "olt-cli-2.1.0-linux-x64.zip"
         with zipfile.ZipFile(zip_path) as archive:
-            archived_binary_name = "openlinktoken-cli-2.1.0-linux-x64/openlinktoken"
+            archived_binary_name = "olt-cli-2.1.0-linux-x64/olt"
             assert archive.namelist() == [archived_binary_name]
             assert archive.read(archived_binary_name) == binary_content
 
@@ -62,15 +62,15 @@ class TestCreateReleaseAssets:
         dist_dir = tmp_path / "dist"
         output_dir = tmp_path / "release-assets"
         binary_content = b"windows binary"
-        _write_binary(dist_dir, "openlinktoken.exe", binary_content)
+        _write_binary(dist_dir, "olt.exe", binary_content)
 
         create_release_assets("v2.1.0", "windows", dist_dir, output_dir)
 
-        binary_path = output_dir / "openlinktoken-v2.1.0-windows-x86_64.exe"
+        binary_path = output_dir / "olt-v2.1.0-windows-x86_64.exe"
         assert binary_path.read_bytes() == binary_content
 
-        with zipfile.ZipFile(output_dir / "openlinktoken-cli-2.1.0-windows-x64.zip") as archive:
-            assert archive.namelist() == ["openlinktoken-cli-2.1.0-windows-x64/openlinktoken.exe"]
+        with zipfile.ZipFile(output_dir / "olt-cli-2.1.0-windows-x64.zip") as archive:
+            assert archive.namelist() == ["olt-cli-2.1.0-windows-x64/olt.exe"]
 
     def test_rejects_unsupported_runner_os(self, tmp_path):
         """Unsupported runner names should fail fast with a clear error."""

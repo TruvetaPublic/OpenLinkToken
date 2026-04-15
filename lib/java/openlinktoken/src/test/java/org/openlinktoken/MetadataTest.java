@@ -22,13 +22,13 @@ class MetadataTest {
 
         assertTrue(result.containsKey(Metadata.JAVA_VERSION));
         assertTrue(result.containsKey(Metadata.PLATFORM));
-        assertTrue(result.containsKey(Metadata.OPENTOKEN_VERSION));
+        assertTrue(result.containsKey(Metadata.VERSION));
 
         assertFalse(result.containsKey(Metadata.HASHING_SECRET_HASH));
         assertFalse(result.containsKey(Metadata.ENCRYPTION_SECRET_HASH));
 
         assertEquals(Metadata.PLATFORM_JAVA, result.get(Metadata.PLATFORM));
-        assertEquals(Metadata.DEFAULT_VERSION, result.get(Metadata.OPENTOKEN_VERSION));
+        assertEquals(Metadata.DEFAULT_VERSION, result.get(Metadata.VERSION));
     }
 
     @Test

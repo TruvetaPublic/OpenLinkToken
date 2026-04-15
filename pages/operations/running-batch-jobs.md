@@ -149,7 +149,7 @@ ID001,T2,pUxPgYL9+cMxkA+8928Pil+9W+dm9kISwHYPdkZS+I2nQ/bQ/8HyL3FOVf3NYPW5NKZZO1O
 {
   "Platform": "Java",
   "JavaVersion": "21.0.0",
-  "OpenLinkTokenVersion": "1.0.0",
+  "Version": "1.0.0",
   "TotalRows": 100,
   "TotalRowsWithInvalidAttributes": 3,
   "InvalidAttributesByType": { "BirthDate": 2, "PostalCode": 1 },

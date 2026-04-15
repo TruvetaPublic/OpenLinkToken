@@ -13,7 +13,7 @@ The metadata is stored in JSON format with the extension `.metadata.json` and co
 | Field                            | Description                                                                                     |
 | -------------------------------- | ----------------------------------------------------------------------------------------------- |
 | `JavaVersion` / `PythonVersion`  | The version of Java or Python used to run the processing (field name depends on platform)       |
-| `OpenLinkTokenVersion`           | The version of the OpenLinkToken library                                                        |
+| `Version`                        | The version of the OpenLinkToken library                                                        |
 | `Platform`                       | The platform/environment used for processing (e.g., "Java" or "Python")                         |
 | `TotalRows`                      | The total number of records processed                                                           |
 | `TotalRowsWithInvalidAttributes` | The number of records that contained one or more invalid attributes                             |
@@ -55,7 +55,7 @@ The tool outputs the calculated hashes in the same format as stored in the metad
 {
   "Platform": "Java",
   "JavaVersion": "11.0.27",
-  "OpenLinkTokenVersion": "1.7.0",
+  "Version": "1.7.0",
   "TotalRows": "101",
   "TotalRowsWithInvalidAttributes": "9",
   "InvalidAttributesByType": {

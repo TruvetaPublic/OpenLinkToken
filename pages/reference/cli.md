@@ -395,7 +395,7 @@ Every run generates a `.metadata.json` file:
 {
   "Platform": "Python",
   "PythonVersion": "3.11.0",
-  "OpenLinkTokenVersion": "2.0.0-alpha",
+  "Version": "2.0.0-alpha",
   "TotalRows": 100,
   "TotalRowsWithInvalidAttributes": 3,
   "InvalidAttributesByType": {

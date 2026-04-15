@@ -24,19 +24,19 @@ class ReleaseAssetSpec:
 
 _RELEASE_ASSET_SPECS = {
     "linux": ReleaseAssetSpec(
-        executable_name="openlinktoken",
-        package_name="openlinktoken-cli-{version}-linux-x64",
-        binary_asset_name="openlinktoken-v{version}-linux-x86_64",
+        executable_name="olt",
+        package_name="olt-cli-{version}-linux-x64",
+        binary_asset_name="olt-v{version}-linux-x86_64",
     ),
     "macos": ReleaseAssetSpec(
-        executable_name="openlinktoken",
-        package_name="openlinktoken-cli-{version}-macos-universal",
-        binary_asset_name="openlinktoken-v{version}-macos-universal",
+        executable_name="olt",
+        package_name="olt-cli-{version}-macos-universal",
+        binary_asset_name="olt-v{version}-macos-universal",
     ),
     "windows": ReleaseAssetSpec(
-        executable_name="openlinktoken.exe",
-        package_name="openlinktoken-cli-{version}-windows-x64",
-        binary_asset_name="openlinktoken-v{version}-windows-x86_64.exe",
+        executable_name="olt.exe",
+        package_name="olt-cli-{version}-windows-x64",
+        binary_asset_name="olt-v{version}-windows-x86_64.exe",
     ),
 }
 

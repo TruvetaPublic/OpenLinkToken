@@ -12,7 +12,7 @@ public class Metadata {
     // Metadata keys
     public static final String PLATFORM = "Platform";
     public static final String JAVA_VERSION = "JavaVersion";
-    public static final String OPENTOKEN_VERSION = "OpenLinkTokenVersion";
+    public static final String VERSION = "Version";
     public static final String OUTPUT_FORMAT = "OutputFormat";
     public static final String ENCRYPTION_SECRET_HASH = "EncryptionSecretHash";
     public static final String HASHING_SECRET_HASH = "HashingSecretHash";
@@ -46,7 +46,7 @@ public class Metadata {
         metadataMap.clear();
         metadataMap.put(JAVA_VERSION, SYSTEM_JAVA_VERSION);
         metadataMap.put(PLATFORM, PLATFORM_JAVA);
-        metadataMap.put(OPENTOKEN_VERSION, DEFAULT_VERSION);
+        metadataMap.put(VERSION, DEFAULT_VERSION);
 
         return metadataMap;
     }
