@@ -74,6 +74,7 @@ jobs:
 
       - name: Update dependency graph
         uses: advanced-security/maven-dependency-submission-action@v3
+        continue-on-error: true
         with:
           directory: ${{ github.workspace }}/lib/java
           maven-args: "-B -DskipTests"
