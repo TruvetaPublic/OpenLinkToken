@@ -22,7 +22,7 @@ def test_resolve_exchange_config_rejects_conflicting_cli_private_key_inputs() ->
         exchange_config_util.resolve_exchange_config(
             "exchange.json",
             private_key_path="provided.private.pem",
-            private_key_env="OPENTOKEN_PRIVATE_KEY",
+            private_key_env="OLT_PRIVATE_KEY",
         )
 
 

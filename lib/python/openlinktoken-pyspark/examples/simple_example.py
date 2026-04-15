@@ -15,8 +15,8 @@ Usage:
     python simple_example.py
 
 Recommended environment variables:
-    OPENTOKEN_EXCHANGE_CONFIG_PATH=/path/to/initiate-exchange-config.json
-    OPENTOKEN_PRIVATE_KEY_PATH=/path/to/participant-private-key.pem
+    OLT_EXCHANGE_CONFIG_PATH=/path/to/initiate-exchange-config.json
+    OLT_PRIVATE_KEY_PATH=/path/to/participant-private-key.pem
 
 Azure Key Vault pattern:
     Keep Azure Key Vault lookups on the driver. Fetch the initiate-exchange
@@ -64,9 +64,9 @@ from openlinktoken_pyspark import OpenLinkTokenProcessor
 
 def create_processor() -> OpenLinkTokenProcessor:
     """Create a processor using exchange-config inputs when available."""
-    exchange_config_path = os.environ.get("OPENTOKEN_EXCHANGE_CONFIG_PATH")
-    private_key_path = os.environ.get("OPENTOKEN_PRIVATE_KEY_PATH")
-    private_key_env = "OPENTOKEN_PRIVATE_KEY" if os.environ.get("OPENTOKEN_PRIVATE_KEY") else None
+    exchange_config_path = os.environ.get("OLT_EXCHANGE_CONFIG_PATH")
+    private_key_path = os.environ.get("OLT_PRIVATE_KEY_PATH")
+    private_key_env = "OLT_PRIVATE_KEY" if os.environ.get("OLT_PRIVATE_KEY") else None
 
     if exchange_config_path or private_key_path or private_key_env:
         print(
@@ -85,7 +85,7 @@ def create_processor() -> OpenLinkTokenProcessor:
         return OpenLinkTokenProcessor(hashing_secret=hashing_secret, encryption_key=encryption_key)
 
     raise RuntimeError(
-        "Set OPENTOKEN_EXCHANGE_CONFIG_PATH with OPENTOKEN_PRIVATE_KEY_PATH or OPENTOKEN_PRIVATE_KEY. "
+        "Set OLT_EXCHANGE_CONFIG_PATH with OLT_PRIVATE_KEY_PATH or OLT_PRIVATE_KEY. "
         "For direct-secret usage, set OLT_HASHING_SECRET and OLT_ENCRYPTION_KEY."
     )
 

@@ -211,11 +211,11 @@ def test_resolve_exchange_config_private_key_reads_private_key_env(tmp_path: Pat
     """Named environment variables should supply private-key PEM bytes."""
     exchange_config_path, sender_private_pem = _write_current_exchange_config(tmp_path)
     loaded_exchange = load_exchange_config(exchange_config_path)
-    monkeypatch.setenv("OPENTOKEN_TEST_PRIVATE_KEY", sender_private_pem.decode("utf-8"))
+    monkeypatch.setenv("OLT_TEST_PRIVATE_KEY", sender_private_pem.decode("utf-8"))
 
     resolved_private_pem = resolve_exchange_config_private_key(
         loaded_exchange,
-        private_key_env="OPENTOKEN_TEST_PRIVATE_KEY",
+        private_key_env="OLT_TEST_PRIVATE_KEY",
     )
 
     assert resolved_private_pem == sender_private_pem
@@ -236,11 +236,11 @@ def test_resolve_exchange_config_private_key_falls_back_to_opentoken_kid_lookup(
 def test_resolve_exchange_config_inputs_loads_and_decrypts_from_private_key_env(tmp_path: Path, monkeypatch):
     """Convenience helpers should load the config, resolve the private key, and decrypt the payload."""
     exchange_config_path, sender_private_pem = _write_current_exchange_config(tmp_path)
-    monkeypatch.setenv("OPENTOKEN_TEST_PRIVATE_KEY", sender_private_pem.decode("utf-8"))
+    monkeypatch.setenv("OLT_TEST_PRIVATE_KEY", sender_private_pem.decode("utf-8"))
 
     resolved_exchange = resolve_exchange_config_inputs(
         exchange_config_path=exchange_config_path,
-        private_key_env="OPENTOKEN_TEST_PRIVATE_KEY",
+        private_key_env="OLT_TEST_PRIVATE_KEY",
     )
 
     assert resolved_exchange.path == exchange_config_path
@@ -344,7 +344,7 @@ def test_read_private_key_env_rejects_missing_var(tmp_path: Path):
     with pytest.raises(ValueError, match="does not contain non-empty private key data"):
         resolve_exchange_config_private_key(
             loaded,
-            private_key_env="OPENTOKEN_DEFINITELY_NOT_SET_XYZ",
+            private_key_env="OLT_DEFINITELY_NOT_SET_XYZ",
             environment={},
         )
 

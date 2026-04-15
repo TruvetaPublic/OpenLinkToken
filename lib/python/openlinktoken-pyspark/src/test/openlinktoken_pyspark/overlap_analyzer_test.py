@@ -90,15 +90,15 @@ class TestOpenLinkTokenOverlapAnalyzerInit:
     def test_from_exchange_config_uses_derived_transport_key(self, tmp_path, monkeypatch):
         """Factory should resolve and use the exchange-derived transport key."""
         exchange_config_path, sender_private_pem = _write_exchange_config(tmp_path)
-        monkeypatch.setenv("OPENTOKEN_TEST_PRIVATE_KEY", sender_private_pem.decode("utf-8"))
+        monkeypatch.setenv("OLT_TEST_PRIVATE_KEY", sender_private_pem.decode("utf-8"))
         resolved_exchange = resolve_exchange_config_inputs(
             exchange_config_path,
-            private_key_env="OPENTOKEN_TEST_PRIVATE_KEY",
+            private_key_env="OLT_TEST_PRIVATE_KEY",
         )
 
         analyzer = OpenLinkTokenOverlapAnalyzer.from_exchange_config(
             exchange_config_path=exchange_config_path,
-            private_key_env="OPENTOKEN_TEST_PRIVATE_KEY",
+            private_key_env="OLT_TEST_PRIVATE_KEY",
         )
 
         assert analyzer.encryption_key == derive_transport_encryption_key(resolved_exchange)

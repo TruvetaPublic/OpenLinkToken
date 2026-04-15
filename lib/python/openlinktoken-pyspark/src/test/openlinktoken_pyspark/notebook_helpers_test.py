@@ -178,17 +178,17 @@ class TestQuickToken:
     def test_quick_token_from_exchange_config_matches_direct_secrets(self, tmp_path, monkeypatch):
         """Exchange-config quick-token helper should match direct-secret output."""
         exchange_config_path, _, sender_private_pem = _write_exchange_config(tmp_path)
-        monkeypatch.setenv("OPENTOKEN_TEST_PRIVATE_KEY", sender_private_pem.decode("utf-8"))
+        monkeypatch.setenv("OLT_TEST_PRIVATE_KEY", sender_private_pem.decode("utf-8"))
         resolved_exchange = resolve_exchange_config_inputs(
             exchange_config_path,
-            private_key_env="OPENTOKEN_TEST_PRIVATE_KEY",
+            private_key_env="OLT_TEST_PRIVATE_KEY",
         )
 
         generator = notebook_helpers.quick_token_from_exchange_config(
             token_id="T10",
             attributes=[("last_name", "T|U"), ("first_name", "T|U"), ("birth_date", "T|D")],
             exchange_config_path=exchange_config_path,
-            private_key_env="OPENTOKEN_TEST_PRIVATE_KEY",
+            private_key_env="OLT_TEST_PRIVATE_KEY",
         )
         expected_generator = quick_token(
             "T10",

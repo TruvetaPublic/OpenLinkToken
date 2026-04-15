@@ -151,7 +151,7 @@ class TestOpenLinkTokenProcessor:
                 "exchange_config_path": "config.json",
                 "exchange_config_value": None,
                 "private_key_path": "private.pem",
-                "private_key_env": "OPENTOKEN_PRIVATE_KEY",
+                "private_key_env": "OLT_PRIVATE_KEY",
                 "private_key_value": None,
             }
             return resolved_exchange
@@ -176,7 +176,7 @@ class TestOpenLinkTokenProcessor:
         processor = OpenLinkTokenProcessor.from_exchange_config(
             exchange_config_path="config.json",
             private_key_path="private.pem",
-            private_key_env="OPENTOKEN_PRIVATE_KEY",
+            private_key_env="OLT_PRIVATE_KEY",
             ring_id="ring-from-config",
         )
 
