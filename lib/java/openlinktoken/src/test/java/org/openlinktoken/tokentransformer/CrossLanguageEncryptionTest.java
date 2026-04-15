@@ -35,7 +35,7 @@ class CrossLanguageEncryptionTest {
 
     @Test
     void testJavaEncryptDecrypt_PipeDelimitedToken() throws Exception {
-        // Simulate a typical OpenLinkToken signature format
+        // Simulate a typical Open Link Token signature format
         String originalToken = "DOE|JOHN|MALE|2000-01-01";
 
         String encrypted = encryptor.transform(originalToken);

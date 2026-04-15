@@ -2,7 +2,7 @@
 Analyze overlap between tokenized hospital and pharmacy datasets.
 
 This script performs privacy-preserving record linkage by comparing tokens
-from both datasets. Since OpenLinkToken uses random IVs for AES-GCM encryption,
+from both datasets. Since Open Link Token uses random IVs for AES-GCM encryption,
 tokens must be decrypted before comparison to get the underlying HMAC-SHA256
 hash values, which are deterministic and comparable.
 """
@@ -67,7 +67,7 @@ def decrypt_v1_token(v1_token, encryption_key):
 
 def decrypt_token(encrypted_token, encryption_key):
     """
-    Decrypt an OpenLinkToken encrypted token to get the underlying hash.
+    Decrypt an Open Link Token encrypted token to get the underlying hash.
 
     Args:
         encrypted_token: Base64-encoded encrypted token with prepended IV
@@ -291,7 +291,7 @@ def main():
 
     # Load and decrypt tokens
     print("Loading and decrypting tokens...")
-    print("(Decryption is needed because OpenLinkToken uses random IVs for encryption)")
+    print("(Decryption is needed because Open Link Token uses random IVs for encryption)")
     hospital_tokens = load_tokens(hospital_tokens_file, encryption_key)
     pharmacy_tokens = load_tokens(pharmacy_tokens_file, encryption_key)
     print(f"Loaded {len(hospital_tokens)} hospital records")

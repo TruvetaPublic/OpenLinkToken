@@ -25,7 +25,7 @@ Decryption is useful for:
 
 Use the `decrypt` subcommand with the same encryption key used for token generation.
 
-### OpenLinkToken CLI (Python)
+### Open Link Token CLI (Python)
 
 ```bash
 olt decrypt \
@@ -91,15 +91,15 @@ python decryptor.py \
 
 ## Cross-Language Decryption
 
-Tokens can be encrypted by one OpenLinkToken implementation and decrypted by another—all implementations use AES-256-GCM with identical parameters:
+Tokens can be encrypted by one Open Link Token implementation and decrypted by another—all implementations use AES-256-GCM with identical parameters:
 
 ```bash
-# Encrypt with OpenLinkToken CLI
+# Encrypt with Open Link Token CLI
 olt package \
   -i data.csv -t csv -o tokens.csv \
   -h "HashingKey" -e "EncryptionKey32Characters!!!!!"
 
-# Decrypt with OpenLinkToken CLI
+# Decrypt with Open Link Token CLI
 olt decrypt \
   -i tokens.csv -t csv -o decrypted.csv \
   -e "EncryptionKey32Characters!!!!!"

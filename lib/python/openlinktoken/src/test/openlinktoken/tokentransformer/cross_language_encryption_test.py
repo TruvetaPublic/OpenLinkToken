@@ -34,7 +34,7 @@ class TestCrossLanguageEncryption:
 
     def test_python_encrypt_decrypt_pipe_delimited_token(self):
         """Test that Python can encrypt and decrypt a pipe-delimited token."""
-        # Simulate a typical OpenLinkToken signature format
+        # Simulate a typical Open Link Token signature format
         original_token = "DOE|JOHN|MALE|2000-01-01"
 
         encrypted = self.encryptor.transform(original_token)

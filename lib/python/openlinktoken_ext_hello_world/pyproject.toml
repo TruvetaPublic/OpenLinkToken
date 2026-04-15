@@ -2,7 +2,7 @@
 name = "openlinktoken-ext-hello-world"
 version = "1.0.0"
 requires-python = ">=3.10"
-description = "OpenLinkToken hello-world reference extension"
+description = "Open Link Token hello-world reference extension"
 dependencies = []
 
 [project.entry-points."openlinktoken.extensions"]

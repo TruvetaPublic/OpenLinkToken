@@ -5,7 +5,7 @@ description: Maintains docs/ as the durable source for specs, reference docs, an
 
 # Docs Maintainer Agent
 
-Own the `docs/**` surface for OpenLinkToken's durable documentation.
+Own the `docs/**` surface for Open Link Token's durable documentation.
 
 ## Scope
 

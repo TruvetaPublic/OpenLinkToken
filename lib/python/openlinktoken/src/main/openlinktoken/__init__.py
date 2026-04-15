@@ -1,5 +1,5 @@
 """
-OpenLinkToken Python Package
+Open Link Token Python Package
 
 
 This package provides utilities for tokenizing and processing person attributes

@@ -6,7 +6,7 @@ layout: default
 
 For a high-level overview and other entry points, see [Quickstarts](index.md).
 
-Run the OpenLinkToken CLI end-to-end to generate tokens from a sample dataset in minutes.
+Run the Open Link Token CLI end-to-end to generate tokens from a sample dataset in minutes.
 
 ## Prerequisites
 
@@ -77,7 +77,7 @@ The self-contained executable includes:
 
 - Python 3.11 runtime (bundled)
 - All dependencies (pyarrow, pandas, cryptography)
-- OpenLinkToken CLI and core library
+- Open Link Token CLI and core library
 
 No installation or setup required — just download, extract, and run.
 
@@ -101,7 +101,7 @@ cd /path/to/OpenLinkToken
 ### Windows PowerShell
 
 ```powershell
-cd C:\path\to\OpenLinkToken
+cd C:\path\to\Open Link Token
 
 .\run-openlinktoken.ps1 package `
   -i .\resources\sample.csv `
@@ -279,7 +279,7 @@ SSN must be 9 digits. Area code cannot be 000, 666, or 900-999.
 Each time you run the CLI it silently checks (in the background) whether a newer release is available. If one is found, a notice is printed to **stderr** after the command completes:
 
 ```
-⚠ A new version of OpenLinkToken is available: v2.1.0 (you have v2.0.0)
+⚠ A new version of Open Link Token is available: v2.1.0 (you have v2.0.0)
    Release notes: https://github.com/TruvetaPublic/OpenLinkToken/releases/tag/v2.1.0
    Run 'olt update' to upgrade, or set OLT_DISABLE_UPDATE_CHECK=1 to silence this message.
 ```

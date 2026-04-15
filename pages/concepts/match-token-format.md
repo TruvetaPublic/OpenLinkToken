@@ -4,7 +4,7 @@ layout: default
 
 # Match Token Format
 
-OpenLinkToken supports a self-contained match token format that embeds versioning and cryptographic metadata directly in each token. This enables continuous data exchange across systems with varying OpenLinkToken versions and algorithms.
+Open Link Token supports a self-contained match token format that embeds versioning and cryptographic metadata directly in each token. This enables continuous data exchange across systems with varying Open Link Token versions and algorithms.
 
 ---
 
@@ -12,13 +12,13 @@ OpenLinkToken supports a self-contained match token format that embeds versionin
 
 Traditional token formats store metadata externally (in file headers or separate configuration). The match token format bundles everything together:
 
-| Benefit                   | Description                                                    |
-| ------------------------- | -------------------------------------------------------------- |
-| **Version tracking**      | Each token identifies which OpenLinkToken version generated it |
-| **Cryptographic agility** | Algorithm changes are self-documented per token                |
-| **Ring identification**   | Key management metadata travels with the token                 |
-| **Scanner safety**        | Distinct prefix prevents confusion with access tokens          |
-| **Batch processing**      | Metadata queryable without decryption                          |
+| Benefit                   | Description                                                      |
+| ------------------------- | ---------------------------------------------------------------- |
+| **Version tracking**      | Each token identifies which Open Link Token version generated it |
+| **Cryptographic agility** | Algorithm changes are self-documented per token                  |
+| **Ring identification**   | Key management metadata travels with the token                   |
+| **Scanner safety**        | Distinct prefix prevents confusion with access tokens            |
+| **Batch processing**      | Metadata queryable without decryption                            |
 
 ---
 
@@ -34,7 +34,7 @@ ot.V1.<JWE-compact-serialization>
 
 | Part    | Description                                          |
 | ------- | ---------------------------------------------------- |
-| `ot`    | OpenLinkToken prefix (scanner-safe)                  |
+| `ot`    | Open Link Token prefix (scanner-safe)                |
 | `V1`    | Envelope format version                              |
 | `<JWE>` | Standard JWE (RFC 7516) containing encrypted payload |
 
@@ -312,7 +312,7 @@ def create_ot_token(
     mac_alg: str = "HS256",
     issuer: str = None
 ) -> str:
-    """Create a self-contained OpenLinkToken."""
+    """Create a self-contained Open Link Token."""
 
     # Build payload
     payload = {
@@ -357,7 +357,7 @@ def parse_ot_token_header(token: str) -> dict:
     """Extract header metadata without decryption."""
 
     if not token.startswith("ot."):
-        raise ValueError("Not an OpenLinkToken")
+        raise ValueError("Not an Open Link Token")
 
     parts = token.split(".")
     format_version = parts[1]  # "V1"
@@ -403,7 +403,7 @@ def decrypt_ot_token(token: str, encryption_key: bytes) -> dict:
 The `ot.V1.` prefix clearly identifies these tokens:
 
 ```
-ot.V1.eyJhbGci...  ← OpenLinkToken (clearly labeled)
+ot.V1.eyJhbGci...  ← Open Link Token (clearly labeled)
 eyJhbGciOiJIUzI1NiIs...     ← JWT (could trigger scanners)
 AKIA1234567890ABCDEF...     ← AWS key (definitely triggers scanners)
 ```

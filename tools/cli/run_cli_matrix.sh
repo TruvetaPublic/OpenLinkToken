@@ -30,7 +30,7 @@ show_usage() {
     cat <<'EOF'
 Usage: tools/cli/run_cli_matrix.sh [OPTIONS]
 
-Run a local OpenLinkToken CLI command matrix against the current worktree.
+Run a local Open Link Token CLI command matrix against the current worktree.
 The script prints each exact command before it runs, pauses between commands,
 and summarizes pass/fail counts plus the slowest command at the end.
 
@@ -329,7 +329,7 @@ PY
     done
 
     echo
-    echo "OpenLinkToken CLI matrix summary"
+    echo "Open Link Token CLI matrix summary"
     echo "Commands run: $total"
     echo "Passed: $passed"
     echo "Failed: $failed"

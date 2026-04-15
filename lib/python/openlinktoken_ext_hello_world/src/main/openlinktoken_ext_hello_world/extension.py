@@ -6,7 +6,7 @@ from openlinktoken_cli.extension import OpenLinkTokenExtension
 
 
 class HelloWorldExtension(OpenLinkTokenExtension):
-    """Reference OpenLinkToken extension that demonstrates the extension interface."""
+    """Reference Open Link Token extension that demonstrates the extension interface."""
 
     @property
     def command_name(self) -> str:
@@ -16,7 +16,7 @@ class HelloWorldExtension(OpenLinkTokenExtension):
     @property
     def description(self) -> str:
         """Return a short human-readable description of this extension."""
-        return "OpenLinkToken hello-world reference extension"
+        return "Open Link Token hello-world reference extension"
 
     @property
     def version(self) -> str:

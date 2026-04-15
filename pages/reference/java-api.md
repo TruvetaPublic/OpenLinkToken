@@ -31,7 +31,7 @@ import org.openlinktoken.tokentransformer.TokenTransformer;
 
 ## Person Attribute Map
 
-OpenLinkToken's Java library represents a person's values as a map keyed by attribute class:
+Open Link Token's Java library represents a person's values as a map keyed by attribute class:
 
 ```java
 Map<Class<? extends Attribute>, String> personAttributes = new HashMap<>();
@@ -114,7 +114,7 @@ EncryptTokenTransformer encryptor = new EncryptTokenTransformer(
 
 String signature = "DOE|J|MALE|1980-01-15";
 String encryptedToken = encryptor.transform(signature);
-// Returns: OpenLinkToken encrypted match token string (ot.V1.<JWE compact serialization>)
+// Returns: Open Link Token encrypted match token string (ot.V1.<JWE compact serialization>)
 ```
 
 ## Complete Example

@@ -1,6 +1,6 @@
 # Branch Workflow and Release Process
 
-This document explains the **Gitflow-based** branch strategy and automated workflows for the OpenLinkToken repository.
+This document explains the **Gitflow-based** branch strategy and automated workflows for the Open Link Token repository.
 
 We follow Gitflow's separation of `main`, `develop`, `dev/*`, and `release/*` branches, with a few automation-oriented tweaks (notably an automated `main` → `develop` sync after each release).
 
@@ -79,7 +79,7 @@ graph TB
 - **Merges from**: `release/*` branches only
 - **Merges to**: `develop` (automatic sync after release)
 - **Tagging**: Releases are automatically tagged `vx.y.z`
-- **Relationship to Gitflow**: In classic Gitflow, `release/*` branches are merged into both `main` and `develop`. In OpenLinkToken, we merge `release/*` into `main`, then use an automated PR from `main` → `develop` to keep `develop` in sync. Functionally this is equivalent, but fully automated.
+- **Relationship to Gitflow**: In classic Gitflow, `release/*` branches are merged into both `main` and `develop`. In Open Link Token, we merge `release/*` into `main`, then use an automated PR from `main` → `develop` to keep `develop` in sync. Functionally this is equivalent, but fully automated.
 
 ### `develop`
 

@@ -4,7 +4,7 @@ layout: default
 
 # Normalization and Validation
 
-OpenLinkToken applies consistent normalization and validation rules to ensure accurate, reproducible token generation across different data sources.
+Open Link Token applies consistent normalization and validation rules to ensure accurate, reproducible token generation across different data sources.
 
 ---
 

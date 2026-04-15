@@ -266,7 +266,7 @@ jobs:
           # Spark 3.4/3.5 require Java 8-17, Spark 4.0+ requires Java 21
           java-version: ${{ (matrix.spark-version == '4.0' || matrix.spark-version == '4.1') && '21' || '17' }}
 
-      - name: Install OpenLinkToken core library
+      - name: Install Open Link Token core library
         run: |
           uv pip install --system -r lib/python/openlinktoken/requirements.txt -e lib/python/openlinktoken/
 

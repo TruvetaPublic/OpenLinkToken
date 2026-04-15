@@ -29,10 +29,10 @@ export_cert_macos() {
   # Check if certificate exists in keychain
   if security find-certificate -a -c "$CERT_NAME" -Z | grep -q "SHA-1"; then
     echo "Certificate found in keychain. Exporting..."
-    
+
     # Export the certificate
     security find-certificate -a -c "$CERT_NAME" -p > "$OUTPUT_FILE"
-    
+
     if [ $? -eq 0 ] && [ -s "$OUTPUT_FILE" ]; then
       echo "Certificate successfully exported to $OUTPUT_FILE"
       return 0
@@ -50,19 +50,19 @@ export_cert_macos() {
 export_cert_windows() {
   echo "Detected Windows system..."
   echo "Attempting to export Zscaler Root CA from Windows certificate store..."
-  
+
   # First, check if PowerShell is available
   if command -v powershell.exe &> /dev/null; then
     echo "Using PowerShell to export certificate..."
-    
+
     # Call the PowerShell script to export the certificate
     PS1_SCRIPT="$OUTPUT_DIR/Export-ZscalerCert.ps1"
-    
+
     # Check if the PS1 script exists
     if [ -f "$PS1_SCRIPT" ]; then
       echo "Found PowerShell script: $PS1_SCRIPT"
       powershell.exe -ExecutionPolicy Bypass -File "$PS1_SCRIPT"
-      
+
       if [ $? -eq 0 ] && [ -s "$OUTPUT_FILE" ]; then
         echo "Certificate successfully exported to $OUTPUT_FILE"
         # No need for DER to PEM conversion as the PS1 script already outputs in PEM format

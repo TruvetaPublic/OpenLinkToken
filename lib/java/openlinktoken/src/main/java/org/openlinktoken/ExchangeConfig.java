@@ -2,7 +2,7 @@
 package org.openlinktoken;
 
 /**
- * Placeholder for Python-side exchange-config loading and resolution used by the OpenLinkToken CLI.
+ * Placeholder for Python-side exchange-config loading and resolution used by the Open Link Token CLI.
  *
  * <p>The full implementation lives in the Python package under
  * {@code openlinktoken.exchange_config} and handles loading, validating, and decrypting

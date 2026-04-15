@@ -74,7 +74,7 @@ def _resolve_extension_command_name(
 
 
 _SECURITY_WARNING = (
-    "WARNING: Extensions are arbitrary Python code and are not verified by the OpenLinkToken project. "
+    "WARNING: Extensions are arbitrary Python code and are not verified by the Open Link Token project. "
     "Install only extensions from sources you trust."
 )
 
@@ -107,7 +107,7 @@ def _validate_dist_name(dist_name: str) -> bool:
 
 class ExtensionCommand:
     """
-    Manage OpenLinkToken CLI extensions.
+    Manage Open Link Token CLI extensions.
 
     Provides sub-subcommands to install, list, and uninstall extensions.
     """
@@ -117,8 +117,8 @@ class ExtensionCommand:
         """Register the ``extension`` subcommand and its sub-subcommands."""
         parser = subparsers.add_parser(
             "extension",
-            help="Manage OpenLinkToken CLI extensions",
-            description="Install, list, and uninstall OpenLinkToken CLI extensions.",
+            help="Manage Open Link Token CLI extensions",
+            description="Install, list, and uninstall Open Link Token CLI extensions.",
         )
         sub = parser.add_subparsers(dest="extension_subcommand")
 
@@ -443,8 +443,8 @@ class ExtensionCommand:
                 if issue:
                     print(
                         f"Error: This extension requires external dependencies that are not bundled "
-                        f"in the OpenLinkToken binary: {issue}\n"
-                        "Install the Python package version of OpenLinkToken CLI to use this extension.",
+                        f"in the Open Link Token binary: {issue}\n"
+                        "Install the Python package version of Open Link Token CLI to use this extension.",
                         file=sys.stderr,
                     )
                     return 1

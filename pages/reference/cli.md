@@ -4,7 +4,7 @@ layout: default
 
 # CLI Reference
 
-Complete reference for OpenLinkToken CLI arguments, modes, and examples. This page is the single source of truth for CLI flags and options; other documentation (such as Configuration) links here instead of duplicating them.
+Complete reference for Open Link Token CLI arguments, modes, and examples. This page is the single source of truth for CLI flags and options; other documentation (such as Configuration) links here instead of duplicating them.
 
 ## Installation Options
 
@@ -155,15 +155,15 @@ Generates, reuses, or derives a sender key pair, encrypts a hashing secret into 
 
 **Outputs:**
 
-- `~/.openlinktoken/<name>.private.pem` — local private key (permissions `600`) when OpenLinkToken generates a sender key or reuses `--sender-private-key`
-- `~/.openlinktoken/<name>.public.pem` — local public key (permissions `644`) when OpenLinkToken generates a sender key or reuses `--sender-private-key`
+- `~/.openlinktoken/<name>.private.pem` — local private key (permissions `600`) when Open Link Token generates a sender key or reuses `--sender-private-key`
+- `~/.openlinktoken/<name>.public.pem` — local public key (permissions `644`) when Open Link Token generates a sender key or reuses `--sender-private-key`
 - `<output>` — versioned multi-recipient JWE JSON exchange artifact containing the encrypted hashing secret
 
 `<output>` can be decrypted by either side with its own matching private key. The JSON is still sensitive, but it does **not** contain private key material.
 
 \* Provide one of `--public-key`, `--public-key-stdin`, or `--public-key-env`.
 
-\*\* Provide at most one of `--hashingsecret`, `--hashingsecret-stdin`, or `--hashingsecret-env`. If you omit all three, OpenLinkToken generates a secure random hashing secret. For pre-existing secrets, prefer `--hashingsecret-env` or `--hashingsecret-stdin` so the secret does not appear in shell history or process arguments. Because stdin can only be consumed once per command, `--hashingsecret-stdin` cannot be combined with `--public-key-stdin`.
+\*\* Provide at most one of `--hashingsecret`, `--hashingsecret-stdin`, or `--hashingsecret-env`. If you omit all three, Open Link Token generates a secure random hashing secret. For pre-existing secrets, prefer `--hashingsecret-env` or `--hashingsecret-stdin` so the secret does not appear in shell history or process arguments. Because stdin can only be consumed once per command, `--hashingsecret-stdin` cannot be combined with `--public-key-stdin`.
 
 **Example:**
 
@@ -222,10 +222,10 @@ olt initiate-exchange \
   --output ./sender-q2.exchange.json
 ```
 
-When `--sender-private-key-env` is used, OpenLinkToken derives the sender public key
+When `--sender-private-key-env` is used, Open Link Token derives the sender public key
 in memory and does not write local sender key files under `~/.openlinktoken/`.
 
-For `tokenize`, `package`, `encrypt`, and `decrypt`, OpenLinkToken resolves the exchange config from `--exchange-config` or from the date-based default path `./openlinktoken-YYYY-MM-DD.exchange.json`. When neither `--private-key` nor `--private-key-env` is supplied, the CLI falls back to `~/.openlinktoken/` fingerprint-based key lookup.
+For `tokenize`, `package`, `encrypt`, and `decrypt`, Open Link Token resolves the exchange config from `--exchange-config` or from the date-based default path `./openlinktoken-YYYY-MM-DD.exchange.json`. When neither `--private-key` nor `--private-key-env` is supplied, the CLI falls back to `~/.openlinktoken/` fingerprint-based key lookup.
 
 \* Provide at most one of `--private-key` or `--private-key-env`.
 
@@ -234,7 +234,7 @@ For a field-by-field format reference, see `docs/exchange-config-format.md`.
 
 ### `update` (Self-Update CLI)
 
-Downloads and installs the latest (or a specific) release of the OpenLinkToken CLI in-place.
+Downloads and installs the latest (or a specific) release of the Open Link Token CLI in-place.
 
 | Argument    | Short | Required | Description                                           |
 | ----------- | ----- | -------- | ----------------------------------------------------- |
@@ -529,7 +529,7 @@ Every time the CLI is run, it performs a lightweight background check against th
 
 - Runs asynchronously in a background thread — it **never delays** the primary command
 - Has a 2-second timeout; network errors are silently ignored
-- Caches the result for **24 hours** in the OpenLinkToken user cache file:
+- Caches the result for **24 hours** in the Open Link Token user cache file:
   - Linux / macOS: `~/.openlinktoken/update-check.json`
   - Windows: `%APPDATA%\.openlinktoken\update-check.json`
 - Prints a notice to **stderr** (not stdout) only when a newer version is found, so piped/scripted usage is unaffected
@@ -537,7 +537,7 @@ Every time the CLI is run, it performs a lightweight background check against th
 **Sample notice:**
 
 ```
-⚠ A new version of OpenLinkToken is available: v2.1.0 (you have v2.0.0)
+⚠ A new version of Open Link Token is available: v2.1.0 (you have v2.0.0)
    Release notes: https://github.com/TruvetaPublic/OpenLinkToken/releases/tag/v2.1.0
    Run 'olt update' to upgrade, or set OLT_DISABLE_UPDATE_CHECK=1 to silence this message.
 ```
@@ -583,13 +583,13 @@ olt update --yes
 
 #### Update Error Handling
 
-| Condition                       | Exit code | Message                                         |
-| ------------------------------- | --------- | ----------------------------------------------- |
-| Already on the latest version   | 0         | `OpenLinkToken is already up to date (v2.0.0).` |
-| Asset not found for platform    | 1         | Clear error with download link                  |
-| Checksum verification failed    | 1         | Error message; downloaded file is deleted       |
-| Insufficient write permissions  | 1         | Suggests `sudo` or manual download link         |
-| Network error / release missing | 1         | Descriptive error                               |
+| Condition                       | Exit code | Message                                           |
+| ------------------------------- | --------- | ------------------------------------------------- |
+| Already on the latest version   | 0         | `Open Link Token is already up to date (v2.0.0).` |
+| Asset not found for platform    | 1         | Clear error with download link                    |
+| Checksum verification failed    | 1         | Error message; downloaded file is deleted         |
+| Insufficient write permissions  | 1         | Suggests `sudo` or manual download link           |
+| Network error / release missing | 1         | Descriptive error                                 |
 
 ## Performance Tips
 

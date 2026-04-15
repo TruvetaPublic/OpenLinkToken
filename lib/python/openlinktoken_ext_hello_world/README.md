@@ -1,6 +1,6 @@
-# OpenLinkToken Hello-World Reference Extension
+# Open Link Token Hello-World Reference Extension
 
-This package demonstrates how to build an OpenLinkToken CLI extension.
+This package demonstrates how to build an Open Link Token CLI extension.
 
 ## Implementing `OpenLinkTokenExtension`
 
@@ -84,7 +84,7 @@ olt hello-world bye --name Bob
 
 ## PyInstaller / Frozen Binary Compatibility
 
-When using the pre-built OpenLinkToken binary (compiled with PyInstaller), extensions
+When using the pre-built Open Link Token binary (compiled with PyInstaller), extensions
 are loaded from the registry file (`~/.openlinktoken/extensions/registry.json`) rather
 than Python entry points.
 

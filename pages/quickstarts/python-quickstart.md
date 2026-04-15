@@ -6,7 +6,7 @@ layout: default
 
 For a high-level overview and other entry points, see [Quickstarts](index.md).
 
-Install the Python packages and run the OpenLinkToken CLI with a virtual environment.
+Install the Python packages and run the Open Link Token CLI with a virtual environment.
 After installation, use the `openlinktoken` command directly.
 
 ## Prerequisites
@@ -181,7 +181,7 @@ for rule_id, token in result.tokens.items():
 
 ## Cross-Language Parity
 
-OpenLinkToken guarantees that Java and Python produce **identical tokens** for the same input. This is verified by interoperability tests:
+Open Link Token guarantees that Java and Python produce **identical tokens** for the same input. This is verified by interoperability tests:
 
 ```bash
 cd tools/interoperability
@@ -215,7 +215,7 @@ Make sure you installed with `-e .` (editable mode) from the correct directory.
 
 ### "Python version not supported"
 
-OpenLinkToken requires Python 3.10+. Check with `python --version`.
+Open Link Token requires Python 3.10+. Check with `python --version`.
 
 ### Virtual Environment Not Activated
 
@@ -247,7 +247,7 @@ uv pip install -e .
 
 ## Development Setup
 
-For contributing to OpenLinkToken:
+For contributing to Open Link Token:
 
 ```bash
 # Install development dependencies

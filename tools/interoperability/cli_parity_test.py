@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Python CLI tests for OpenLinkToken.
+Python CLI tests for Open Link Token.
 
 Ensures that the Python CLI provides the expected command structure,
 help output, and behavior for all subcommands.
@@ -138,7 +138,7 @@ def test_version_flag():
     python_combined = python_out + python_err
     version_pattern = re.compile(r"\b\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?\b")
 
-    assert version_pattern.search(python_combined) or "OpenLinkToken" in python_combined, (
+    assert version_pattern.search(python_combined) or "Open Link Token" in python_combined, (
         "Python version output missing version info"
     )
 
@@ -148,7 +148,7 @@ def test_version_flag():
 def main():
     """Run all CLI parity tests."""
     print(f"\n{YELLOW}{'=' * 70}{RESET}")
-    print(f"{YELLOW}OpenLinkToken Python CLI Tests{RESET}")
+    print(f"{YELLOW}Open Link Token Python CLI Tests{RESET}")
     print(f"{YELLOW}{'=' * 70}{RESET}")
 
     try:

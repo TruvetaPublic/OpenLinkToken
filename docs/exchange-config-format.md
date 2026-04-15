@@ -1,4 +1,4 @@
-# OpenLinkToken Exchange Config Format
+# Open Link Token Exchange Config Format
 
 ## Overview
 
@@ -25,14 +25,14 @@ key material.
 
 The exchange config is a JSON object with these fields:
 
-| Field        | Type    | Description                                                                             |
-| ------------ | ------- | --------------------------------------------------------------------------------------- |
-| `version`    | integer | Artifact format marker. Current value: `1`.                                             |
-| `protected`  | string  | Base64url-encoded protected JOSE header shared by all recipients.                       |
-| `iv`         | string  | Base64url AES-GCM initialization vector for the ciphertext.                             |
-| `ciphertext` | string  | Base64url ciphertext for the encrypted payload.                                         |
-| `tag`        | string  | Base64url AES-GCM authentication tag.                                                   |
-| `recipients` | array   | Per-recipient JWE entries. OpenLinkToken writes one sender entry and one partner entry. |
+| Field        | Type    | Description                                                                               |
+| ------------ | ------- | ----------------------------------------------------------------------------------------- |
+| `version`    | integer | Artifact format marker. Current value: `1`.                                               |
+| `protected`  | string  | Base64url-encoded protected JOSE header shared by all recipients.                         |
+| `iv`         | string  | Base64url AES-GCM initialization vector for the ciphertext.                               |
+| `ciphertext` | string  | Base64url ciphertext for the encrypted payload.                                           |
+| `tag`        | string  | Base64url AES-GCM authentication tag.                                                     |
+| `recipients` | array   | Per-recipient JWE entries. Open Link Token writes one sender entry and one partner entry. |
 
 This is a JWE JSON serialization with shared ciphertext fields and per-recipient
 key-wrapping metadata.
@@ -74,7 +74,7 @@ Each item in `recipients` contains the wrapped key for one decrypting party.
 | `kid` | string | Portable recipient identifier derived from the recipient public-key fingerprint. |
 | `epk` | object | Ephemeral EC public key used for this recipient's JWE key agreement.             |
 
-`kid` is not a friendly key name. OpenLinkToken derives it from the public-key
+`kid` is not a friendly key name. Open Link Token derives it from the public-key
 fingerprint and writes it in `sha256:<lowercase-hyphenated-hex>` form.
 Friendly names such as `sender-q2` remain local operator-facing names for files in
 `~/.openlinktoken/`; they are not the portable identifiers embedded in the artifact.
@@ -101,16 +101,16 @@ Example recipient entry:
 
 After decryption, the payload is JSON with these fields:
 
-| Field                     | Type   | Description                                                      |
-| ------------------------- | ------ | ---------------------------------------------------------------- |
-| `exchangeName`            | string | Logical exchange name recorded in the payload.                   |
-| `hashingSecret`           | string | Hashing secret encoded as unpadded base64url text.               |
-| `hashingSecretEncoding`   | string | Encoding marker. Current value: `base64url`.                     |
-| `senderKeyFingerprint`    | string | SHA-256 fingerprint of the sender public key.                    |
-| `recipientKeyFingerprint` | string | SHA-256 fingerprint of the partner public key.                   |
-| `curve`                   | string | OpenLinkToken curve name for the exchange keys, such as `P-256`. |
-| `createdAt`               | string | UTC creation timestamp in ISO 8601 `Z` form.                     |
-| `exchangeId`              | string | Random UUID used to identify the exchange artifact.              |
+| Field                     | Type   | Description                                                        |
+| ------------------------- | ------ | ------------------------------------------------------------------ |
+| `exchangeName`            | string | Logical exchange name recorded in the payload.                     |
+| `hashingSecret`           | string | Hashing secret encoded as unpadded base64url text.                 |
+| `hashingSecretEncoding`   | string | Encoding marker. Current value: `base64url`.                       |
+| `senderKeyFingerprint`    | string | SHA-256 fingerprint of the sender public key.                      |
+| `recipientKeyFingerprint` | string | SHA-256 fingerprint of the partner public key.                     |
+| `curve`                   | string | Open Link Token curve name for the exchange keys, such as `P-256`. |
+| `createdAt`               | string | UTC creation timestamp in ISO 8601 `Z` form.                       |
+| `exchangeId`              | string | Random UUID used to identify the exchange artifact.                |
 
 Example decrypted payload:
 

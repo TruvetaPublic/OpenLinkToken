@@ -24,7 +24,7 @@ from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTrans
 
 ## Person Attribute Dict
 
-OpenLinkToken's Python library represents a person's values as a dict keyed by attribute class:
+Open Link Token's Python library represents a person's values as a dict keyed by attribute class:
 
 ```python
 person_attributes = {
@@ -105,7 +105,7 @@ encryptor = EncryptTokenTransformer(
 
 signature = "DOE|J|MALE|1980-01-15"
 encrypted_token = encryptor.transform(signature)
-# Returns: OpenLinkToken encrypted match token string (ot.V1.<JWE compact serialization>)
+# Returns: Open Link Token encrypted match token string (ot.V1.<JWE compact serialization>)
 ```
 
 ## Complete Example
@@ -210,9 +210,9 @@ def process_csv(input_path, output_path, hashing_secret, encryption_key):
 For distributed processing on Spark, use the `openlinktoken_pyspark` bridge:
 
 ```python
-from openlinktoken_pyspark import OpenLinkTokenProcessor
+from openlinktoken_pyspark import Open Link TokenProcessor
 
-processor = OpenLinkTokenProcessor(
+processor = Open Link TokenProcessor(
     hashing_secret="HashingSecret",
     encryption_key="EncryptionKey-32Characters-Here",
 )
@@ -227,9 +227,9 @@ df_tokens.show()
 For overlap analysis between two tokenized datasets, use:
 
 ```python
-from openlinktoken_pyspark import OpenLinkTokenOverlapAnalyzer
+from openlinktoken_pyspark import Open Link TokenOverlapAnalyzer
 
-analyzer = OpenLinkTokenOverlapAnalyzer("EncryptionKey-32Characters-Here")
+analyzer = Open Link TokenOverlapAnalyzer("EncryptionKey-32Characters-Here")
 results = analyzer.analyze_overlap(tokens_df1, tokens_df2, ["T1", "T2"])
 analyzer.print_summary(results)
 ```
@@ -238,7 +238,7 @@ See [Spark or Databricks](../operations/spark-or-databricks.md) for end-to-end P
 
 ## Cross-Language Parity
 
-OpenLinkToken guarantees identical output between Java and Python:
+Open Link Token guarantees identical output between Java and Python:
 
 ```python
 # This Python code produces the exact same tokens as equivalent Java code

@@ -8,7 +8,7 @@ This guide explains how to register custom tokens and attributes in both Java an
 
 ## Overview
 
-OpenLinkToken uses different registration mechanisms:
+Open Link Token uses different registration mechanisms:
 
 | Language | Mechanism         | Location             |
 | -------- | ----------------- | -------------------- |

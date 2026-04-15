@@ -4,18 +4,18 @@ layout: default
 
 # Sharing Tokenized Data Between Organizations
 
-How to securely exchange OpenLinkToken outputs for cross-organization record linkage.
+How to securely exchange Open Link Token outputs for cross-organization record linkage.
 
 ---
 
 ## Overview
 
-Organizations often need to identify overlapping individuals across datasets without exposing raw person data. OpenLinkToken enables this by generating deterministic, cryptographically secure tokens that can be shared and matched externally.
+Organizations often need to identify overlapping individuals across datasets without exposing raw person data. Open Link Token enables this by generating deterministic, cryptographically secure tokens that can be shared and matched externally.
 
 **Typical scenario:**
 
 1. Organization A and Organization B each hold patient records
-2. Both organizations run OpenLinkToken on their data using **the same secrets**
+2. Both organizations run Open Link Token on their data using **the same secrets**
 3. They exchange only the token output (no raw PII)
 4. Matching tokens indicate the same person exists in both datasets
 
@@ -27,7 +27,7 @@ Organizations often need to identify overlapping individuals across datasets wit
          │                                      │
          ▼                                      ▼
 ┌─────────────────┐                    ┌─────────────────┐
-│   OpenLinkToken     │                    │   OpenLinkToken     │
+│   Open Link Token     │                    │   Open Link Token     │
 │ (same secrets)  │                    │ (same secrets)  │
 └────────┬────────┘                    └────────┬────────┘
          │                                      │
@@ -128,7 +128,7 @@ This:
 
 This means the same exchange artifact can be decrypted by either side with its own private key, but the JSON alone is not enough to recover the hashing secret.
 
-When `--sender-private-key-env` is used, OpenLinkToken derives the sender public key
+When `--sender-private-key-env` is used, Open Link Token derives the sender public key
 from the referenced private key in memory and skips writing sender key files to
 `~/.openlinktoken/`.
 
@@ -230,7 +230,7 @@ Before tokenization, both parties must agree on:
 
 **Best practice:** Use a secure channel (encrypted email, secure file transfer, or direct key exchange in person) to share secrets. Never send secrets alongside token files.
 
-### Step 2: Run OpenLinkToken
+### Step 2: Run Open Link Token
 
 Generate tokens using the agreed-upon secrets.
 
@@ -341,7 +341,7 @@ Compare the output hashes with `HashingSecretHash` and `EncryptionSecretHash` in
 
 ### Step 3: Generate Your Own Tokens
 
-Run OpenLinkToken on your local data using the **same secrets**:
+Run Open Link Token on your local data using the **same secrets**:
 
 ```bash
 olt package \
@@ -422,7 +422,7 @@ Before sharing:
 
 ### Audit and Logging
 
-- **Log token generation events**: Who ran OpenLinkToken, when, with which input file
+- **Log token generation events**: Who ran Open Link Token, when, with which input file
 - **Log token transfers**: When tokens were sent/received, to/from whom
 - **Log matching events**: Who performed matching, what results were produced
 
@@ -446,13 +446,13 @@ With only the token file, an attacker cannot identify individuals.
 
 ## Common Pitfalls
 
-| Issue                         | Cause                     | Solution                                                |
-| ----------------------------- | ------------------------- | ------------------------------------------------------- |
-| Zero matches between datasets | Different secrets used    | Verify secret hashes match in metadata files            |
-| Partial matches only          | Normalization differences | Ensure both parties use the same OpenLinkToken version  |
-| High invalid record counts    | Data quality issues       | Clean data before tokenization; review validation rules |
-| Secrets exposed in logs       | Logging misconfiguration  | Configure logging to exclude sensitive parameters       |
-| Token file intercepted        | Insecure transfer         | Use encrypted file transfer; prefer encrypted tokens    |
+| Issue                         | Cause                     | Solution                                                 |
+| ----------------------------- | ------------------------- | -------------------------------------------------------- |
+| Zero matches between datasets | Different secrets used    | Verify secret hashes match in metadata files             |
+| Partial matches only          | Normalization differences | Ensure both parties use the same Open Link Token version |
+| High invalid record counts    | Data quality issues       | Clean data before tokenization; review validation rules  |
+| Secrets exposed in logs       | Logging misconfiguration  | Configure logging to exclude sensitive parameters        |
+| Token file intercepted        | Insecure transfer         | Use encrypted file transfer; prefer encrypted tokens     |
 
 ---
 

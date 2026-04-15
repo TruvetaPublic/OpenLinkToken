@@ -4,11 +4,11 @@ layout: default
 
 # Metadata Format
 
-Complete reference for the OpenLinkToken metadata JSON file structure, fields, and usage for audit and verification.
+Complete reference for the Open Link Token metadata JSON file structure, fields, and usage for audit and verification.
 
 ## Overview
 
-OpenLinkToken generates a metadata file alongside every token output file. Metadata files provide:
+Open Link Token generates a metadata file alongside every token output file. Metadata files provide:
 
 - **Processing statistics**: Counts of total records, invalid attributes, and blank tokens
 - **System information**: Platform (Java/Python), runtime version, library version
@@ -73,7 +73,7 @@ Extension: .metadata.json
 | `Platform`      | String | Processing platform/language         | `"Java"` or `"Python"` |
 | `JavaVersion`   | String | Java runtime version (Java only)     | `"21.0.0"`             |
 | `PythonVersion` | String | Python runtime version (Python only) | `"3.11.5"`             |
-| `Version`       | String | OpenLinkToken library version        | `"1.12.2"`             |
+| `Version`       | String | Open Link Token library version      | `"1.12.2"`             |
 
 **Notes:**
 

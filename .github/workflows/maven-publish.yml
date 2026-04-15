@@ -67,7 +67,7 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             "$parent_metadata_url"); then
             if echo "$metadata" | grep -q "<version>${version}</version>"; then
-              echo "OpenLinkToken parent ${version} already published. Skipping deploy."
+              echo "Open Link Token parent ${version} already published. Skipping deploy."
               exit 0
             fi
           fi

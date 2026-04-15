@@ -79,7 +79,7 @@ replacement for the existing file-based flow.
 `--public-key-env ENV_VAR` and `--sender-private-key-env ENV_VAR` let you pass
 two independent key references in one command without relying on a shared stdin
 stream. When `--sender-private-key-env` is used, the sender key stays in memory
-for the command run and OpenLinkToken does not write local sender key files.
+for the command run and Open Link Token does not write local sender key files.
 
 For pre-existing hashing secrets, prefer `--hashingsecret-env ENV_VAR` or
 `--hashingsecret-stdin` over `--hashingsecret` so the secret does not appear in
@@ -123,7 +123,7 @@ existing file-based option and stdin-based secret handling remain supported.
 ### Secret Hash Calculator
 
 Use `tools/hash/hash_calculator.py` to compute the SHA-256 secret hashes that
-OpenLinkToken includes in metadata output.
+Open Link Token includes in metadata output.
 
 ```bash
 python tools/hash/hash_calculator.py \

@@ -6,7 +6,7 @@ layout: default
 
 For a high-level overview and other entry points, see [Quickstarts](index.md).
 
-Use the OpenLinkToken Java library to generate tokens programmatically from your Java application.
+Use the Open Link Token Java library to generate tokens programmatically from your Java application.
 
 ## Prerequisites
 
@@ -22,7 +22,7 @@ mvn -version    # Should show 3.8 or higher
 
 ## Maven Dependency
 
-Add the OpenLinkToken library to your project's `pom.xml`:
+Add the Open Link Token library to your project's `pom.xml`:
 
 ```xml
 <dependency>

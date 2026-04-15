@@ -9,7 +9,7 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-#: The set of command names reserved by built-in OpenLinkToken subcommands.
+#: The set of command names reserved by built-in Open Link Token subcommands.
 BUILTIN_COMMANDS: set[str] = {
     "help",
     "tokenize",
@@ -25,7 +25,7 @@ BUILTIN_COMMANDS: set[str] = {
 
 class ExtensionLoader:
     """
-    Discovers and loads OpenLinkToken CLI extensions into the argument parser.
+    Discovers and loads Open Link Token CLI extensions into the argument parser.
 
     Two discovery tracks are supported:
 
@@ -53,7 +53,7 @@ class ExtensionLoader:
         * The extension module cannot be imported.
 
         Args:
-            subparsers: The shared subparsers action from the root OpenLinkToken parser.
+            subparsers: The shared subparsers action from the root Open Link Token parser.
             built_in_commands: Set of reserved command names.  Defaults to
                 ``BUILTIN_COMMANDS`` when ``None``.
         """

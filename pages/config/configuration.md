@@ -4,13 +4,13 @@ layout: default
 
 # Configuration
 
-Configuration options for OpenLinkToken inputs, outputs, secrets, and runtime behavior.
+Configuration options for Open Link Token inputs, outputs, secrets, and runtime behavior.
 
 ---
 
 ## CLI Arguments
 
-OpenLinkToken can be run from the Python CLI or via the helper shell/PowerShell scripts.
+Open Link Token can be run from the Python CLI or via the helper shell/PowerShell scripts.
 
 At a high level you must always specify:
 
@@ -137,7 +137,7 @@ Each run produces two files:
 
 ## Processing Modes
 
-OpenLinkToken supports three processing modes that control how token signatures are transformed:
+Open Link Token supports three processing modes that control how token signatures are transformed:
 
 - **Encryption (default)** – produces encrypted tokens suitable for external exchange; requires both a hashing secret and an encryption key.
 - **Tokenize** – produces one-way hashed tokens for internal matching and overlap analysis; requires only the hashing secret.
@@ -189,9 +189,9 @@ python -m openlinktoken_cli.main package \
 ### Spark/Databricks Cluster
 
 ```python
-from openlinktoken_pyspark import OpenLinkTokenProcessor
+from openlinktoken_pyspark import Open Link TokenProcessor
 
-processor = OpenLinkTokenProcessor(
+processor = Open Link TokenProcessor(
     hashing_secret=dbutils.secrets.get("openlinktoken", "hashing_secret"),
     encryption_key=dbutils.secrets.get("openlinktoken", "encryption_key")
 )

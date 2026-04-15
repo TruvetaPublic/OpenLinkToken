@@ -14,7 +14,7 @@ from openlinktoken_cli.util.ec_key_utils import generate_key_pair
 
 
 class TestOpenLinkTokenCommand:
-    """Integration tests for OpenLinkToken CLI with new subcommand interface."""
+    """Integration tests for Open Link Token CLI with new subcommand interface."""
 
     HASHING_SECRET = "TestHashingSecret"
     ENCRYPTION_KEY = "TestEncryptionKeyValue1234567890"  # Must be exactly 32 chars
@@ -492,7 +492,7 @@ class TestOpenLinkTokenCommand:
         assert exit_code != 0, "Command should fail with invalid subcommand"
 
     def test_help_shows_banner_for_interactive_runs(self, monkeypatch, capsys):
-        """Interactive help output should include the OpenLinkToken banner."""
+        """Interactive help output should include the Open Link Token banner."""
         monkeypatch.setattr("sys.stdout.isatty", lambda: True)
 
         exit_code = OpenLinkTokenCommand.execute(["--help"])

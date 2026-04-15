@@ -281,7 +281,7 @@ PHARMACY_PRESCRIPTION_TYPES = [
 
 
 def generate_ssn():
-    """Generate a valid-looking SSN that passes OpenLinkToken validation."""
+    """Generate a valid-looking SSN that passes Open Link Token validation."""
     # Avoid 000, 666, and 900-999 for area
     area = random.choice([str(i).zfill(3) for i in range(1, 900) if i != 666])
     # Avoid 00 for group
@@ -292,7 +292,7 @@ def generate_ssn():
 
 
 def generate_birthdate():
-    """Generate a birthdate between 1910 and today (valid for OpenLinkToken)."""
+    """Generate a birthdate between 1910 and today (valid for Open Link Token)."""
     start_date = datetime(1950, 1, 1)
     end_date = datetime.now() - timedelta(days=365 * 18)  # At least 18 years old
     random_days = random.randint(0, (end_date - start_date).days)

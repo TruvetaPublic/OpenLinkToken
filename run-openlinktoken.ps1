@@ -1,5 +1,5 @@
 # run-openlinktoken.ps1
-# Convenience script to build and run OpenLinkToken via Docker
+# Convenience script to build and run Open Link Token via Docker
 # Automatically handles Docker image building and container execution
 
 [CmdletBinding()]
@@ -54,8 +54,8 @@ USAGE:
     run-openlinktoken.ps1 [SUBCOMMAND] [OPTIONS]
 
 DESCRIPTION:
-    Convenience wrapper for building and running OpenLinkToken via Docker.
-    Automatically builds the Docker image if needed and runs OpenLinkToken with specified parameters.
+    Convenience wrapper for building and running Open Link Token via Docker.
+    Automatically builds the Docker image if needed and runs Open Link Token with specified parameters.
 
 SUBCOMMANDS:
     package     Tokenize and encrypt in one step (default). Requires -h and -e.
@@ -101,7 +101,7 @@ EXAMPLES:
     .\run-openlinktoken.ps1 -Subcommand tokenize -i .\input.csv -o .\output.csv -h "secret" -Verbose
 
 NOTES:
-    - This script must be run from the OpenLinkToken repository root directory
+    - This script must be run from the Open Link Token repository root directory
     - Input and output files are automatically mounted into the Docker container
     - The script will build the Docker image on first run (may take a few minutes)
     - Use -SkipBuild to skip rebuilding the image on subsequent runs
@@ -263,8 +263,8 @@ if (-not $SkipBuild) {
     }
 }
 
-# Run OpenLinkToken via Docker
-Write-Info "Running OpenLinkToken ($Subcommand)..."
+# Run Open Link Token via Docker
+Write-Info "Running Open Link Token ($Subcommand)..."
 
 # Build subcommand-specific CLI argument list
 $CliArgs = @()
@@ -315,9 +315,9 @@ if ($InputDir -eq $OutputDir) {
 }
 
 if ($LASTEXITCODE -eq 0) {
-    Write-Info "OpenLinkToken completed successfully!"
+    Write-Info "Open Link Token completed successfully!"
     Write-Info "Output file: $OutputFile"
 } else {
-    Write-Info "OpenLinkToken execution failed"
+    Write-Info "Open Link Token execution failed"
     exit 1
 }

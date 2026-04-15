@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Simple example demonstrating OpenLinkToken PySpark usage.
+Simple example demonstrating Open Link Token PySpark usage.
 
-This script shows how to use the OpenLinkToken PySpark bridge to generate
+This script shows how to use the Open Link Token PySpark bridge to generate
 tokens from person data in a PySpark DataFrame.
 
 Prerequisites:
@@ -136,8 +136,8 @@ def main():
     print("Input DataFrame:")
     df.show(truncate=False)
 
-    # Initialize OpenLinkToken processor
-    print("\nInitializing OpenLinkToken processor...")
+    # Initialize Open Link Token processor
+    print("\nInitializing Open Link Token processor...")
     processor = create_processor()
 
     # Generate tokens

@@ -1,5 +1,5 @@
 """
-Parquet subpackage for person attribute I/O in the OpenLinkToken CLI project.
+Parquet subpackage for person attribute I/O in the Open Link Token CLI project.
 """
 
 from openlinktoken_cli.io.parquet.person_attributes_parquet_reader import PersonAttributesParquetReader

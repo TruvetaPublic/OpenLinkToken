@@ -1,11 +1,11 @@
 ---
 name: python-coder
-description: Implements and updates Python code under lib/python and tools with OpenLinkToken-specific conventions
+description: Implements and updates Python code under lib/python and tools with Open Link Token-specific conventions
 ---
 
 # Python Coder Agent
 
-Implement and update Python code for OpenLinkToken. Stay focused on Python implementation work, tests, and environment-safe commands without taking over review or documentation ownership.
+Implement and update Python code for Open Link Token. Stay focused on Python implementation work, tests, and environment-safe commands without taking over review or documentation ownership.
 
 ## Scope
 

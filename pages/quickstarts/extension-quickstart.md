@@ -4,7 +4,7 @@ layout: default
 
 # Extension Quickstart
 
-Build, package, and install your first OpenLinkToken CLI extension end-to-end. This walkthrough uses the `hello-world` reference extension from the OpenLinkToken monorepo (`lib/python/openlinktoken_ext_hello_world/`).
+Build, package, and install your first Open Link Token CLI extension end-to-end. This walkthrough uses the `hello-world` reference extension from the Open Link Token monorepo (`lib/python/openlinktoken_ext_hello_world/`).
 
 By the end you will have a new `hello-world` subcommand available in your local `openlinktoken` installation.
 
@@ -12,7 +12,7 @@ By the end you will have a new `hello-world` subcommand available in your local 
 
 ## Prerequisites
 
-- OpenLinkToken CLI installed (binary or Python package). See [CLI Quickstart](cli-quickstart.md).
+- Open Link Token CLI installed (binary or Python package). See [CLI Quickstart](cli-quickstart.md).
 - Python 3.10 or later.
 - `build` package: `pip install build`
 
@@ -44,7 +44,7 @@ class HelloWorldExtension(OpenLinkTokenExtension):
 
     @property
     def description(self) -> str:
-        return "Greet the world from an OpenLinkToken extension"
+        return "Greet the world from an Open Link Token extension"
 
     @property
     def version(self) -> str:
@@ -94,7 +94,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "openlinktoken-ext-hello-world"
 version = "1.0.0"
-description = "Hello-world reference extension for the OpenLinkToken CLI"
+description = "Hello-world reference extension for the Open Link Token CLI"
 requires-python = ">=3.10"
 
 [project.entry-points."openlinktoken.extensions"]
@@ -125,13 +125,13 @@ dist/
 
 ## 4. Install It
 
-Install the wheel into OpenLinkToken using the `file://` scheme with an absolute path:
+Install the wheel into Open Link Token using the `file://` scheme with an absolute path:
 
 ```bash
 olt extension install file://$(pwd)/dist/openlinktoken_ext_hello_world-1.0.0-py3-none-any.whl
 ```
 
-OpenLinkToken prints a security warning and asks for confirmation:
+Open Link Token prints a security warning and asks for confirmation:
 
 ```text
 ⚠ Security warning: you are about to install an extension from an unverified source.
@@ -164,7 +164,7 @@ You should see `hello-world` listed alongside the built-in subcommands:
 
 ```
 ...
-  hello-world         Greet the world from an OpenLinkToken extension
+  hello-world         Greet the world from an Open Link Token extension
 ...
 ```
 
@@ -207,9 +207,9 @@ Bye, Bob
 
 ## Keeping Extensions Binary-Compatible
 
-The `hello-world` extension uses only the Python standard library — it is **Tier 1 (zero-dep)**. This means it installs and loads correctly under both the pre-built OpenLinkToken binary and a Python package install.
+The `hello-world` extension uses only the Python standard library — it is **Tier 1 (zero-dep)**. This means it installs and loads correctly under both the pre-built Open Link Token binary and a Python package install.
 
-If your extension needs additional packages, check the [Extension Author Reference: Binary Compatibility](../reference/extensions.md#binary-compatibility) for the list of packages bundled in the binary. Packages that are bundled (e.g., `pandas`, `pyarrow`, `cryptography`) are **Tier 2** (OpenLinkToken-provided) and are also binary-compatible. Any package not in the list makes your extension **Tier 3** (external), which is incompatible with the binary.
+If your extension needs additional packages, check the [Extension Author Reference: Binary Compatibility](../reference/extensions.md#binary-compatibility) for the list of packages bundled in the binary. Packages that are bundled (e.g., `pandas`, `pyarrow`, `cryptography`) are **Tier 2** (Open Link Token-provided) and are also binary-compatible. Any package not in the list makes your extension **Tier 3** (external), which is incompatible with the binary.
 
 For more detail on the three tiers and the two-track loader, see [Extension Author Reference: Binary Compatibility](../reference/extensions.md#binary-compatibility).
 

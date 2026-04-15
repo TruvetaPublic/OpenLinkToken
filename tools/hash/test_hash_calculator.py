@@ -105,7 +105,7 @@ def test_script_execution():
 
 def main():
     """Run all tests."""
-    print("Testing OpenLinkToken Hash Calculator")
+    print("Testing Open Link Token Hash Calculator")
     print("=" * 40)
 
     all_passed = True

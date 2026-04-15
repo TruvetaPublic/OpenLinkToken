@@ -1,15 +1,15 @@
-# OpenLinkToken Agent Registry
+# Open Link Token Agent Registry
 
-This file is the repo-level registry for OpenLinkToken's custom agent architecture. It defines which instruction layer to use, which agent owns which surface, and how documentation work should be handed off.
+This file is the repo-level registry for Open Link Token's custom agent architecture. It defines which instruction layer to use, which agent owns which surface, and how documentation work should be handed off.
 
 ## Instruction Stack
 
-| Layer                                    | Role                                         | Notes                                                                                                                                                                                    |
-| ---------------------------------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `.github/copilot-instructions.md`        | Repo-wide runtime guidance for coding agents | Primary source for OpenLinkToken-specific rules, architecture, workflow, verification, and PR expectations. `docs/dev-guide-development.md` already points AI coding agents here.        |
-| `.github/instructions/*.instructions.md` | Focused supplemental rules                   | Use for topic-specific detail such as Java, Python, OpenLinkToken architecture/parity, security, PRs, and commenting. Keep durable rule detail here instead of duplicating it in agents. |
-| `.github/agents/*.agent.md`              | Narrow specialist agents                     | Use these to route work by surface or task type. Agents should stay concise, explicit, and strongly scoped.                                                                              |
-| `.github/skills/*`                       | Process workflows                            | Use skills for how to work (planning, debugging, TDD, co-authoring, etc.). Skills guide execution; agents define ownership.                                                              |
+| Layer                                    | Role                                         | Notes                                                                                                                                                                                      |
+| ---------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `.github/copilot-instructions.md`        | Repo-wide runtime guidance for coding agents | Primary source for Open Link Token-specific rules, architecture, workflow, verification, and PR expectations. `docs/dev-guide-development.md` already points AI coding agents here.        |
+| `.github/instructions/*.instructions.md` | Focused supplemental rules                   | Use for topic-specific detail such as Java, Python, Open Link Token architecture/parity, security, PRs, and commenting. Keep durable rule detail here instead of duplicating it in agents. |
+| `.github/agents/*.agent.md`              | Narrow specialist agents                     | Use these to route work by surface or task type. Agents should stay concise, explicit, and strongly scoped.                                                                                |
+| `.github/skills/*`                       | Process workflows                            | Use skills for how to work (planning, debugging, TDD, co-authoring, etc.). Skills guide execution; agents define ownership.                                                                |
 
 ## Agent Registry
 

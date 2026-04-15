@@ -5,7 +5,7 @@ title: Configuration
 
 # Configuration
 
-Configure OpenLinkToken for your environment.
+Configure Open Link Token for your environment.
 
 - [Configuration Guide](configuration.md) — Main configuration reference
 

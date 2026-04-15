@@ -4,15 +4,15 @@ layout: default
 
 # Overview
 
-## What is OpenLinkToken?
+## What is Open Link Token?
 
-OpenLinkToken is a privacy-preserving tokenization and matching library for secure person linkage using PII-derived attributes. It generates cryptographically secure matching tokens from person attributes, enabling matching across datasets without directly comparing names, birthdates, SSNs, and other sensitive identifiers.
+Open Link Token is a privacy-preserving tokenization and matching library for secure person linkage using PII-derived attributes. It generates cryptographically secure matching tokens from person attributes, enabling matching across datasets without directly comparing names, birthdates, SSNs, and other sensitive identifiers.
 
 Both Java and Python implementations produce **byte-identical hash-only outputs** (and byte-identical decrypted token payloads) for the same normalized input, enabling flexible deployment and cross-language workflows.
 
 ## The Problem
 
-Organizations often need to match people across datasets—finding the same person across systems and time. Direct comparison of names and birthdates raises privacy concerns and is error-prone due to typos and data quality variations. **OpenLinkToken solves this by generating deterministic cryptographic fingerprints from person data, with optional encrypted token wrapping for secure exchange.**
+Organizations often need to match people across datasets—finding the same person across systems and time. Direct comparison of names and birthdates raises privacy concerns and is error-prone due to typos and data quality variations. **Open Link Token solves this by generating deterministic cryptographic fingerprints from person data, with optional encrypted token wrapping for secure exchange.**
 
 ## The Solution
 
@@ -22,7 +22,7 @@ Instead of storing or comparing raw person attributes:
 John Doe | 1975-03-15 | 98004 → [STORED OR COMPARED]
 ```
 
-OpenLinkToken generates secure tokens derived from those attributes:
+Open Link Token generates secure tokens derived from those attributes:
 
 ```
 John Doe | 1975-03-15 | 98004 → SHA-256 HASH → HMAC-SHA256 → AES-256/JWE (ot.V1) → Token
@@ -42,7 +42,7 @@ Matching is performed on deterministic hash-only values (or decrypted token payl
 
 ### Token Generation Rules
 
-OpenLinkToken uses **5 distinct token rules (T1–T5)** that define which attributes combine to form each token. Each rule targets different matching scenarios:
+Open Link Token uses **5 distinct token rules (T1–T5)** that define which attributes combine to form each token. Each rule targets different matching scenarios:
 
 | Rule | Definition                                      | Use Case                 |
 | ---- | ----------------------------------------------- | ------------------------ |
@@ -94,7 +94,7 @@ Output CSV/Parquet + Metadata
 
 ## Multi-Language Parity
 
-OpenLinkToken is implemented in **Java and Python**. Both produce **byte-identical deterministic values** (hash-only outputs and decrypted token payloads) for the same normalized input and secrets. This enables:
+Open Link Token is implemented in **Java and Python**. Both produce **byte-identical deterministic values** (hash-only outputs and decrypted token payloads) for the same normalized input and secrets. This enables:
 
 - Flexible deployment (choose Java or Python)
 - Cross-language processing (encrypt in one language, decrypt in another)
@@ -108,7 +108,7 @@ OpenLinkToken is implemented in **Java and Python**. Both produce **byte-identic
 - **Privacy-Focused**: Designed for regulated environments where PII must be protected
 - **Validation**: Rejects invalid or placeholder values before processing
 
-## Who Uses OpenLinkToken?
+## Who Uses Open Link Token?
 
 - **Data Engineers**: Building record linkage pipelines
 - **Privacy/Infra Engineers**: Securing sensitive data in regulated systems
@@ -117,7 +117,7 @@ OpenLinkToken is implemented in **Java and Python**. Both produce **byte-identic
 
 ## Next Steps
 
-**→ [Quickstarts](../quickstarts/index.md)** – Try OpenLinkToken in 5 minutes. Choose CLI (Docker), Python, or Java.
+**→ [Quickstarts](../quickstarts/index.md)** – Try Open Link Token in 5 minutes. Choose CLI (Docker), Python, or Java.
 
 Once you've run through a quickstart:
 

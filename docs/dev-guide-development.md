@@ -1,4 +1,4 @@
-# OpenLinkToken Development Guide
+# Open Link Token Development Guide
 
 This guide centralizes contributor-facing information. It covers local setup, language-specific build instructions, development environment, versioning, and key contribution workflows.
 
@@ -17,7 +17,7 @@ This guide centralizes contributor-facing information. It covers local setup, la
 
 ## Contents
 
-- [OpenLinkToken Development Guide](#openlinktoken-development-guide)
+- [Open Link Token Development Guide](#openlinktoken-development-guide)
   - [At a Glance](#at-a-glance)
   - [Contents](#contents)
   - [Prerequisites](#prerequisites)
@@ -337,11 +337,11 @@ Basic Usage:
 
 ```python
 from pyspark.sql import SparkSession
-from openlinktoken_pyspark import OpenLinkTokenProcessor
+from openlinktoken_pyspark import Open Link TokenProcessor
 
-spark = SparkSession.builder.master("local[2]").appName("OpenLinkTokenExample").getOrCreate()
+spark = SparkSession.builder.master("local[2]").appName("Open Link TokenExample").getOrCreate()
 df = spark.read.csv("people.csv", header=True)
-processor = OpenLinkTokenProcessor("HashingKey", "Secret-Encryption-Key-Goes-Here.")
+processor = Open Link TokenProcessor("HashingKey", "Secret-Encryption-Key-Goes-Here.")
 token_df = processor.process_dataframe(df)
 token_df.show()
 ```
@@ -349,7 +349,7 @@ token_df.show()
 Custom Token Definitions (example adding T6):
 
 ```python
-from openlinktoken_pyspark import OpenLinkTokenProcessor
+from openlinktoken_pyspark import Open Link TokenProcessor
 from openlinktoken_pyspark.notebook_helpers import TokenBuilder, CustomTokenDefinition
 
 t6 = TokenBuilder("T6") \
@@ -359,7 +359,7 @@ t6 = TokenBuilder("T6") \
   .build()
 
 definition = CustomTokenDefinition().add_token(t6)
-processor = OpenLinkTokenProcessor(
+processor = Open Link TokenProcessor(
   hashing_secret="HashingKey",
   encryption_key="Secret-Encryption-Key-Goes-Here.",
   token_definition=definition
@@ -544,7 +544,7 @@ counter++; // Increment counter by one
 5. **Authentication Failures (A07):** Secure session management, rate limiting, account lockout
 6. **Data Integrity (A08):** Avoid insecure deserialization, validate untrusted data
 
-**OpenLinkToken-specific:**
+**Open Link Token-specific:**
 
 - Hashing and encryption keys must only appear in test files with dummy values
 - SSN validation logic is public, but never log actual SSN values
@@ -554,7 +554,7 @@ counter++; // Increment counter by one
 
 ## Token Processing Modes
 
-OpenLinkToken supports three processing modes across Java, Python, and the PySpark bridge. These modes determine how raw token signatures are transformed:
+Open Link Token supports three processing modes across Java, Python, and the PySpark bridge. These modes determine how raw token signatures are transformed:
 
 | Mode      | Secrets Required                | Transform Pipeline                                | Output Example (T1)                  | Deterministic Across Runs | Recommended Use                                                   |
 | --------- | ------------------------------- | ------------------------------------------------- | ------------------------------------ | ------------------------- | ----------------------------------------------------------------- |

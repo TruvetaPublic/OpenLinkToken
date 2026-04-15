@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class OpenLinkTokenCommand:
     """
-    Main entry point command for OpenLinkToken CLI with subcommands.
+    Main entry point command for Open Link Token CLI with subcommands.
     Provides modern, subcommand-based interface for token operations.
     """
 
@@ -22,7 +22,7 @@ class OpenLinkTokenCommand:
     @staticmethod
     def show_banner():
         """
-        Display the OpenLinkToken banner for interactive sessions.
+        Display the Open Link Token banner for interactive sessions.
         Respects NO_COLOR environment variable and TTY detection.
         """
         # Check if we're in an interactive terminal and NO_COLOR is not set
@@ -43,7 +43,7 @@ class OpenLinkTokenCommand:
 
     @staticmethod
     def _get_colorized_banner():
-        """Get the colorized OpenLinkToken banner."""
+        """Get the colorized Open Link Token banner."""
         cyan = "\033[36m"
         blue = "\033[34m"
         reset = "\033[0m"
@@ -70,7 +70,7 @@ class OpenLinkTokenCommand:
         parser.add_argument(
             "--version",
             action="version",
-            version=f"OpenLinkToken {OpenLinkTokenCommand.VERSION}",
+            version=f"Open Link Token {OpenLinkTokenCommand.VERSION}",
         )
 
         parser.add_argument(

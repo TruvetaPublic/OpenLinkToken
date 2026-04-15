@@ -13,7 +13,7 @@ _DEFAULT_EXTENSIONS_SUBDIR = Path(".openlinktoken") / "extensions"
 
 class ExtensionRegistry:
     """
-    Manages the OpenLinkToken extension registry stored at ``~/.openlinktoken/extensions/registry.json``.
+    Manages the Open Link Token extension registry stored at ``~/.openlinktoken/extensions/registry.json``.
 
     The registry is a JSON file that maps extension names to their installation metadata.
     The base directory can be overridden via the ``OLT_EXTENSIONS_DIR`` environment variable.

@@ -1,5 +1,5 @@
 """
-OpenLinkToken Decryptor Tool
+Open Link Token Decryptor Tool
 
 Decrypts AES-GCM encrypted tokens from CSV files.
 Supports both legacy base64-encoded tokens and V1 JWE tokens (ot.V1.<JWE>).
@@ -120,7 +120,7 @@ def decrypt_tokens(key, input_file, output_file):
 def parse_args():
     """Parse command-line arguments for encryption key, input file, and output file."""
     parser = argparse.ArgumentParser(
-        prog=PROGRAM, description="Decrypts tokens from OpenLinkToken CSV files using AES-GCM encryption"
+        prog=PROGRAM, description="Decrypts tokens from Open Link Token CSV files using AES-GCM encryption"
     )
     parser.add_argument("-e", "--encryption-key", required=True, help="Symmetric encryption key.")
     parser.add_argument("-i", "--input-file", required=True, help="The input file with encrypted tokens.")

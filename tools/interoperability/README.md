@@ -1,7 +1,7 @@
 # Interoperability Tests
 
 This directory contains interoperability checks for the Java core library and the
-Python CLI implementation of OpenLinkToken.
+Python CLI implementation of Open Link Token.
 
 ## CLI Parity Tests
 

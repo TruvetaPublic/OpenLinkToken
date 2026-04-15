@@ -212,7 +212,7 @@ class VersionChecker:
         current_tag = f"v{self._current_version}"
 
         lines = [
-            f"{yellow}⚠ A new version of OpenLinkToken is available: {tag} (you have {current_tag}){reset}",
+            f"{yellow}⚠ A new version of Open Link Token is available: {tag} (you have {current_tag}){reset}",
             f"   Release notes: https://github.com/TruvetaPublic/OpenLinkToken/releases/tag/{tag}",
             f"   Run 'olt update' to upgrade, or set {_ENV_DISABLE}=1 to silence this message.",
         ]

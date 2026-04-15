@@ -2,7 +2,7 @@
 package org.openlinktoken;
 
 /**
- * Placeholder for Python-side JWE envelope helpers used by the OpenLinkToken CLI exchange workflow.
+ * Placeholder for Python-side JWE envelope helpers used by the Open Link Token CLI exchange workflow.
  *
  * <p>The full implementation lives in the Python package under
  * {@code openlinktoken.exchange_jwe} and handles building and decrypting multi-recipient

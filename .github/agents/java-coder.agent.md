@@ -1,11 +1,11 @@
 ---
 name: java-coder
-description: Implements and updates Java code under lib/java with OpenLinkToken-specific conventions
+description: Implements and updates Java code under lib/java with Open Link Token-specific conventions
 ---
 
 # Java Coder Agent
 
-Implement and update Java code for OpenLinkToken. Stay focused on Java implementation work, tests, and registration details without taking over review or documentation ownership.
+Implement and update Java code for Open Link Token. Stay focused on Java implementation work, tests, and registration details without taking over review or documentation ownership.
 
 ## Scope
 
@@ -19,7 +19,7 @@ Implement and update Java code for OpenLinkToken. Stay focused on Java implement
 1. Follow `.github/instructions/java.instructions.md` for coding and verification rules.
 2. Never use fully qualified class names in Java code; add imports and use short names.
 3. Use `.github/instructions/openlinktoken-architecture.instructions.md` when a change touches parity-sensitive behavior or discoverable components.
-4. Reuse existing OpenLinkToken patterns for attributes, validators, tokens, and CLI code instead of introducing parallel structures.
+4. Reuse existing Open Link Token patterns for attributes, validators, tokens, and CLI code instead of introducing parallel structures.
 5. Add or update Java tests with the change.
 
 ## When to Use

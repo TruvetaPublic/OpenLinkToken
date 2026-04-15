@@ -4,7 +4,7 @@ layout: default
 
 # Managing Extensions
 
-Operator guide for installing, listing, and removing OpenLinkToken CLI extensions. Extensions add top-level subcommands to the CLI without requiring a CLI upgrade.
+Operator guide for installing, listing, and removing Open Link Token CLI extensions. Extensions add top-level subcommands to the CLI without requiring a CLI upgrade.
 
 ---
 
@@ -38,7 +38,7 @@ olt extension install --yes https://example.com/openlinktoken-ext-hello-world-1.
 
 ### What Install Does
 
-The exact steps depend on how OpenLinkToken is installed:
+The exact steps depend on how Open Link Token is installed:
 
 **Python package mode** (pip install / source install — the common case):
 
@@ -120,7 +120,7 @@ olt extension install --yes https://example.com/openlinktoken-my-ext-1.0.0-py3-n
 
 This is useful when:
 
-- Running OpenLinkToken in a container where the home directory is ephemeral.
+- Running Open Link Token in a container where the home directory is ephemeral.
 - Sharing a single extensions directory across multiple users or CI agents.
 - Pre-baking extensions into a Docker image layer at a predictable path.
 
@@ -138,18 +138,18 @@ The registry file (`registry.json`) is always written to the same directory as t
 
 ## Binary vs. Python Package Install Differences
 
-OpenLinkToken is distributed both as a pre-built PyInstaller binary and as a Python package (`pip install openlinktoken-cli`). The extension system behaves differently under each.
+Open Link Token is distributed both as a pre-built PyInstaller binary and as a Python package (`pip install openlinktoken-cli`). The extension system behaves differently under each.
 
-| Behaviour                                      | Python package                    | PyInstaller binary                     |
-| ---------------------------------------------- | --------------------------------- | -------------------------------------- |
-| Discovery                                      | `importlib.metadata` entry points | `registry.json` + `sys.path` injection |
-| Tier-1 extensions (zero-dep)                   | ✅ Supported                      | ✅ Supported                           |
-| Tier-2 extensions (OpenLinkToken-bundled deps) | ✅ Supported                      | ✅ Supported                           |
-| Tier-3 extensions (external deps)              | ✅ Supported                      | ❌ Rejected at install                 |
+| Behaviour                                        | Python package                    | PyInstaller binary                     |
+| ------------------------------------------------ | --------------------------------- | -------------------------------------- |
+| Discovery                                        | `importlib.metadata` entry points | `registry.json` + `sys.path` injection |
+| Tier-1 extensions (zero-dep)                     | ✅ Supported                      | ✅ Supported                           |
+| Tier-2 extensions (Open Link Token-bundled deps) | ✅ Supported                      | ✅ Supported                           |
+| Tier-3 extensions (external deps)                | ✅ Supported                      | ❌ Rejected at install                 |
 
 Tier-3 extensions depend on packages that are not bundled in the binary. `olt extension install` detects this and aborts with a clear error message that includes the missing package names and instructions for switching to a Python package install.
 
-If you need Tier-3 extensions, install OpenLinkToken as a Python package:
+If you need Tier-3 extensions, install Open Link Token as a Python package:
 
 ```bash
 pip install openlinktoken-cli
@@ -192,11 +192,11 @@ Re-install the extension to ensure the package is in the correct location.
 ### Tier-3 rejection under the binary
 
 ```
-Error: This extension requires external dependencies that are not bundled in the OpenLinkToken binary: requests
-Install the Python package version of OpenLinkToken CLI to use this extension.
+Error: This extension requires external dependencies that are not bundled in the Open Link Token binary: requests
+Install the Python package version of Open Link Token CLI to use this extension.
 ```
 
-Switch to the Python package install of OpenLinkToken, or rewrite the extension to use only stdlib or OpenLinkToken-bundled packages. See [Extension Author Reference: Binary Compatibility](../reference/extensions.md#binary-compatibility) for details on the three dependency tiers.
+Switch to the Python package install of Open Link Token, or rewrite the extension to use only stdlib or Open Link Token-bundled packages. See [Extension Author Reference: Binary Compatibility](../reference/extensions.md#binary-compatibility) for details on the three dependency tiers.
 
 ### Command name conflict
 

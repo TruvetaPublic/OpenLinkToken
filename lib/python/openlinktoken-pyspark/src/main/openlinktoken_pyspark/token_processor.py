@@ -14,7 +14,7 @@ from pyspark.sql.column import Column
 from pyspark.sql.functions import col, explode, pandas_udf
 from pyspark.sql.types import ArrayType, StringType, StructField, StructType
 
-# Import OpenLinkToken core functionality
+# Import Open Link Token core functionality
 from openlinktoken.attributes.attribute import Attribute
 from openlinktoken.attributes.attribute_loader import AttributeLoader
 from openlinktoken.attributes.general.record_id_attribute import RecordIdAttribute
@@ -39,9 +39,9 @@ logger = logging.getLogger(__name__)
 
 class OpenLinkTokenProcessor:
     """
-    Process PySpark DataFrames to generate OpenLinkTokens.
+    Process PySpark DataFrames to generate Open Link Tokens.
 
-    This class provides a bridge between PySpark DataFrames and OpenLinkToken
+    This class provides a bridge between PySpark DataFrames and Open Link Token
     token generation functionality, enabling distributed token generation
     across a Spark cluster.
     """
@@ -83,7 +83,7 @@ class OpenLinkTokenProcessor:
         ring_id: str | None = None,
     ):
         """
-        Initialize the OpenLinkToken processor with secrets.
+        Initialize the Open Link Token processor with secrets.
 
         Args:
             hashing_secret: Optional secret for HMAC-SHA256 hashing. If None, tokens will be plain concatenated strings.

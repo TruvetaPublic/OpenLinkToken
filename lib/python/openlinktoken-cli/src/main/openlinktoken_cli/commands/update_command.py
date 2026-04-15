@@ -28,7 +28,7 @@ _OS_SYSTEM_ALIASES = {
 
 class UpdateCommand:
     """
-    Update command - self-update the OpenLinkToken CLI to the latest release.
+    Update command - self-update the Open Link Token CLI to the latest release.
 
     Downloads, verifies (SHA-256 checksum when available), and replaces the
     running binary/package with the specified or latest release.
@@ -39,9 +39,9 @@ class UpdateCommand:
         """Register the update subcommand with the argument parser."""
         parser = subparsers.add_parser(
             "update",
-            help="Update OpenLinkToken CLI to the latest release",
+            help="Update Open Link Token CLI to the latest release",
             description=(
-                "Self-update the OpenLinkToken CLI to the latest (or a specified) release.\n\n"
+                "Self-update the Open Link Token CLI to the latest (or a specified) release.\n\n"
                 "Downloads the correct asset for the current platform, verifies its checksum,\n"
                 "and replaces the current binary in-place."
             ),
@@ -102,7 +102,7 @@ class UpdateCommand:
 
         # Already up to date?
         if not target_version_tag and not UpdateCommand._is_newer(latest_version, current_version):
-            print(f"OpenLinkToken is already up to date ({tag}).")
+            print(f"Open Link Token is already up to date ({tag}).")
             return 0
 
         # Find the correct asset for this platform
@@ -122,7 +122,7 @@ class UpdateCommand:
         checksum_asset = UpdateCommand._find_checksum_asset(release_info, asset_name)
 
         if dry_run:
-            print(f"Would update OpenLinkToken from v{current_version} to {tag}.")
+            print(f"Would update Open Link Token from v{current_version} to {tag}.")
             print(f"  Asset : {asset_name}")
             print(f"  URL   : {asset_url}")
             if checksum_asset:
@@ -132,7 +132,7 @@ class UpdateCommand:
         # Confirmation prompt (skip when --yes or non-interactive)
         if not skip_confirm and sys.stdin.isatty():
             try:
-                answer = input(f"Update OpenLinkToken from v{current_version} to {tag}? [y/N] ").strip().lower()
+                answer = input(f"Update Open Link Token from v{current_version} to {tag}? [y/N] ").strip().lower()
             except (EOFError, KeyboardInterrupt):
                 answer = ""
             if answer not in ("y", "yes"):
@@ -178,7 +178,7 @@ class UpdateCommand:
             if tmp_path.exists():
                 tmp_path.unlink(missing_ok=True)
 
-        print(f"OpenLinkToken successfully updated to {tag}.")
+        print(f"Open Link Token successfully updated to {tag}.")
         return 0
 
     # ------------------------------------------------------------------

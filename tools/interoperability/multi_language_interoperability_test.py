@@ -1,5 +1,5 @@
 """
-Interoperability tests for OpenLinkToken Java core library and Python CLI.
+Interoperability tests for Open Link Token Java core library and Python CLI.
 
 These tests validate two parity layers:
 - the Python library reproduces the deterministic fixture values already asserted by
@@ -67,7 +67,7 @@ class InteroperabilityTooling:
 
 
 class PythonCLI(InteroperabilityTooling):
-    """Command-line wrapper for the Python OpenLinkToken CLI."""
+    """Command-line wrapper for the Python Open Link Token CLI."""
 
     @staticmethod
     def _python_executable() -> str:
@@ -117,9 +117,9 @@ class PythonCLI(InteroperabilityTooling):
         )
 
         if result.returncode != 0:
-            print(f"OpenLinkToken-Python stderr: {result.stderr}")
-            print(f"OpenLinkToken-Python stdout: {result.stdout}")
-            raise RuntimeError(f"OpenLinkToken-Python failed with return code {result.returncode}: {result.stderr}")
+            print(f"Open Link Token-Python stderr: {result.stderr}")
+            print(f"Open Link Token-Python stdout: {result.stdout}")
+            raise RuntimeError(f"Open Link Token-Python failed with return code {result.returncode}: {result.stderr}")
 
         return result
 
@@ -200,9 +200,9 @@ class JavaLibraryHarness(InteroperabilityTooling):
         )
 
         if result.returncode != 0:
-            print(f"OpenLinkToken-Java stderr: {result.stderr}")
-            print(f"OpenLinkToken-Java stdout: {result.stdout}")
-            raise RuntimeError(f"OpenLinkToken-Java failed with return code {result.returncode}: {result.stderr}")
+            print(f"Open Link Token-Java stderr: {result.stderr}")
+            print(f"Open Link Token-Java stdout: {result.stdout}")
+            raise RuntimeError(f"Open Link Token-Java failed with return code {result.returncode}: {result.stderr}")
 
         return result
 

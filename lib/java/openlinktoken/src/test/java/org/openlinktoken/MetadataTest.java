@@ -181,7 +181,7 @@ class MetadataTest {
         Metadata metadata = new Metadata();
         metadata.initialize();
 
-        byte[] rawSecret = new byte[] {(byte) 0xff, 0x00, 0x01, 0x02};
+        byte[] rawSecret = new byte[] { (byte) 0xff, 0x00, 0x01, 0x02 };
         Map<String, Object> result = metadata.addHashedSecret(Metadata.HASHING_SECRET_HASH, rawSecret);
 
         assertTrue(result.containsKey(Metadata.HASHING_SECRET_HASH));
@@ -190,7 +190,7 @@ class MetadataTest {
 
     @Test
     void testCalculateSecureHashWithRawBytes() throws Exception {
-        byte[] input = new byte[] {(byte) 0xff, 0x00, 'h', 'i'};
+        byte[] input = new byte[] { (byte) 0xff, 0x00, 'h', 'i' };
 
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         byte[] expectedHashBytes = digest.digest(input);

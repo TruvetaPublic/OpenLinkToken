@@ -6,7 +6,7 @@ from typing import Any, Dict
 
 
 class Metadata:
-    """Handles metadata generation and management for OpenLinkToken."""
+    """Handles metadata generation and management for Open Link Token."""
 
     # Metadata keys
     PLATFORM = "Platform"

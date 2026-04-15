@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # run-openlinktoken.sh
-# Convenience script to build and run OpenLinkToken via Docker
+# Convenience script to build and run Open Link Token via Docker
 # Automatically handles Docker image building and container execution
 
 set -e  # Exit on error
@@ -35,8 +35,8 @@ show_usage() {
     cat << EOF
 Usage: $0 [SUBCOMMAND] [OPTIONS]
 
-Convenience wrapper for building and running OpenLinkToken via Docker.
-Automatically builds the Docker image if needed and runs OpenLinkToken with specified parameters.
+Convenience wrapper for building and running Open Link Token via Docker.
+Automatically builds the Docker image if needed and runs Open Link Token with specified parameters.
 
 SUBCOMMANDS:
     package     Tokenize and encrypt in one step (default). Requires -h and -e.
@@ -82,7 +82,7 @@ EXAMPLES:
     $0 tokenize -i ./input.csv -o ./output.csv -h "secret" -v
 
 NOTES:
-    - This script must be run from the OpenLinkToken repository root directory
+    - This script must be run from the Open Link Token repository root directory
     - Input and output files are automatically mounted into the Docker container
     - The script will build the Docker image on first run (may take a few minutes)
     - Use --skip-build to skip rebuilding the image on subsequent runs
@@ -282,8 +282,8 @@ case "$SUBCOMMAND" in
         ;;
 esac
 
-# Run OpenLinkToken via Docker
-log_info "Running OpenLinkToken ($SUBCOMMAND)..."
+# Run Open Link Token via Docker
+log_info "Running Open Link Token ($SUBCOMMAND)..."
 
 # If input and output are in the same directory, mount once
 if [[ "$INPUT_DIR" == "$OUTPUT_DIR" ]]; then
@@ -318,9 +318,9 @@ else
 fi
 
 if [[ $? -eq 0 ]]; then
-    log_success "OpenLinkToken completed successfully!"
+    log_success "Open Link Token completed successfully!"
     log_success "Output file: $OUTPUT_FILE"
 else
-    log_error "OpenLinkToken execution failed"
+    log_error "Open Link Token execution failed"
     exit 1
 fi

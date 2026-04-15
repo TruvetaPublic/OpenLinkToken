@@ -84,4 +84,4 @@ A VS Code dev container is provided with Java, Maven, Python, and Docker CLI pre
 
 ## License
 
-OpenLinkToken is released under the MIT License. See the [LICENSE file on GitHub](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/LICENSE) for details.
+Open Link Token is released under the MIT License. See the [LICENSE file on GitHub](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/LICENSE) for details.

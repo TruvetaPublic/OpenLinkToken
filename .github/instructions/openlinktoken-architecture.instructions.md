@@ -1,13 +1,13 @@
 ---
-description: "OpenLinkToken architecture, parity, and registration guidance"
+description: "Open Link Token architecture, parity, and registration guidance"
 applyTo: "**"
 ---
 
-# OpenLinkToken Architecture and Parity Guidance
+# Open Link Token Architecture and Parity Guidance
 
 ## Core Model
 
-OpenLinkToken is a dual-implementation library. Java and Python should produce equivalent behavior and byte-identical token outputs for the same normalized input unless a change is explicitly designed otherwise.
+Open Link Token is a dual-implementation library. Java and Python should produce equivalent behavior and byte-identical token outputs for the same normalized input unless a change is explicitly designed otherwise.
 
 Core component areas:
 

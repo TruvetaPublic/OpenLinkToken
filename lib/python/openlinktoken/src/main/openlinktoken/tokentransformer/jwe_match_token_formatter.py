@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
 """
-JWE Match Token Formatter for OpenLinkToken V1 format.
+JWE Match Token Formatter for Open Link Token V1 format.
 """
 
 import base64

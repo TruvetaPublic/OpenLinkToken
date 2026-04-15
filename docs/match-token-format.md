@@ -1,6 +1,6 @@
 # Match Token Format Specification
 
-This document describes the self-contained match token format for OpenLinkToken, designed for continuous data exchange with versioning support and cryptographic agility.
+This document describes the self-contained match token format for Open Link Token, designed for continuous data exchange with versioning support and cryptographic agility.
 
 ## Overview
 
@@ -26,7 +26,7 @@ ot.V1.<base64url(JWE)>
 
 | Component | Description                                                        |
 | --------- | ------------------------------------------------------------------ |
-| `ot`      | OpenLinkToken prefix (scanner-safe, clearly not an access token)   |
+| `ot`      | Open Link Token prefix (scanner-safe, clearly not an access token) |
 | `V1`      | Format version (allows future evolution of the envelope structure) |
 | `<JWE>`   | Standard JWE Compact Serialization (RFC 7516)                      |
 
@@ -414,5 +414,5 @@ This format is compatible with standard JOSE/JWE libraries:
 - [RFC 7516 - JSON Web Encryption (JWE)](https://datatracker.ietf.org/doc/html/rfc7516)
 - [RFC 7517 - JSON Web Key (JWK)](https://datatracker.ietf.org/doc/html/rfc7517)
 - [RFC 7518 - JSON Web Algorithms (JWA)](https://datatracker.ietf.org/doc/html/rfc7518)
-- [OpenLinkToken Token Rules](../pages/concepts/token-rules.md)
-- [OpenLinkToken Security](../pages/security.md)
+- [Open Link Token Token Rules](../pages/concepts/token-rules.md)
+- [Open Link Token Security](../pages/security.md)

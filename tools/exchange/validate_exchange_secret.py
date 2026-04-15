@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate that an OpenLinkToken JWE exchange config can be decrypted by either side."""
+"""Validate that an Open Link Token JWE exchange config can be decrypted by either side."""
 
 from __future__ import annotations
 

@@ -1,5 +1,5 @@
 """
-This package contains test cases for attributes related to person data in the OpenLinkToken project.
+This package contains test cases for attributes related to person data in the Open Link Token project.
 """
 
 # You can optionally import specific test modules here if needed

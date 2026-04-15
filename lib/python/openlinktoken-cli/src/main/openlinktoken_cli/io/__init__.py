@@ -1,5 +1,5 @@
 """
-I/O subpackage for the OpenLinkToken CLI project.
+I/O subpackage for the Open Link Token CLI project.
 """
 
 from openlinktoken_cli.io.metadata_writer import MetadataWriter

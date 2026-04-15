@@ -8,7 +8,7 @@ Input formats, output modes, and customization options.
 
 ## Input File Format
 
-OpenLinkToken processes CSV and Parquet files. Both formats support the same attribute columns with flexible naming.
+Open Link Token processes CSV and Parquet files. Both formats support the same attribute columns with flexible naming.
 
 ### Column Names & Aliases
 
@@ -73,7 +73,7 @@ Parquet files follow the same column naming conventions and requirements as CSV:
 ```python
 import pyarrow.parquet as pq
 
-# Read with OpenLinkToken
+# Read with Open Link Token
 df = pq.read_table("data.parquet").to_pandas()
 
 # Must have required columns
@@ -98,7 +98,7 @@ Records with invalid attributes are still output (with blank tokens for that rul
 
 ## Output File Format
 
-OpenLinkToken generates two output files: tokens and metadata.
+Open Link Token generates two output files: tokens and metadata.
 
 ### Tokens Output
 
@@ -235,7 +235,7 @@ To define custom token rules beyond T1–T5, see:
 
 ## Cross-Language Compatibility
 
-OpenLinkToken produces **identical tokens** for the same input and secrets across integrations.
+Open Link Token produces **identical tokens** for the same input and secrets across integrations.
 
 **Verified for:**
 
@@ -258,4 +258,4 @@ python multi_language_interoperability_test.py
 - **Understand validation rules**: [Security](../security.md)
 - **View metadata format**: [Reference: Metadata Format](../reference/metadata-format.md)
 - **Define custom tokens**: [Reference](../reference/index.md)
-- **Debug tokens**: [Running OpenLinkToken](../running-openlinktoken/index.md)
+- **Debug tokens**: [Running Open Link Token](../running-openlinktoken/index.md)

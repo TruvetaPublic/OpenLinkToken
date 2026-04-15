@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run a local OpenLinkToken CLI command matrix against the current worktree."""
+"""Run a local Open Link Token CLI command matrix against the current worktree."""
 
 from __future__ import annotations
 
@@ -306,7 +306,7 @@ def format_summary(results: Sequence[CommandResult]) -> str:
     failed = total - passed
 
     lines = [
-        "OpenLinkToken CLI matrix summary",
+        "Open Link Token CLI matrix summary",
         f"Commands run: {total}",
         f"Passed: {passed}",
         f"Failed: {failed}",
@@ -339,7 +339,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     """Run the local CLI command matrix harness."""
     parser = argparse.ArgumentParser(
         description=(
-            "Run a local OpenLinkToken CLI command matrix against the current worktree "
+            "Run a local Open Link Token CLI command matrix against the current worktree "
             "using 'python -m openlinktoken_cli.main'."
         )
     )

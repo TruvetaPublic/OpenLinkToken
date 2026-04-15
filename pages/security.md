@@ -8,7 +8,7 @@ Cryptographic building blocks, key management expectations, and security conside
 
 ## Overview
 
-OpenLinkToken generates cryptographically secure tokens for privacy-preserving record linkage across datasets. The system uses deterministic hashing and optional encryption to prevent re-identification while enabling matching on identical person attributes.
+Open Link Token generates cryptographically secure tokens for privacy-preserving record linkage across datasets. The system uses deterministic hashing and optional encryption to prevent re-identification while enabling matching on identical person attributes.
 
 **Key security properties:**
 
@@ -22,7 +22,7 @@ OpenLinkToken generates cryptographically secure tokens for privacy-preserving r
 
 ### Token Transformation Pipeline
 
-OpenLinkToken transforms person attributes through multiple layers:
+Open Link Token transforms person attributes through multiple layers:
 
 **Encryption mode (default):**
 
@@ -107,11 +107,11 @@ HMAC-SHA256(message, key) = SHA256((key ⊕ opad) || SHA256((key ⊕ ipad) || me
 
 ## Key Management & Secrets
 
-This section consolidates practical guidance for managing the cryptographic secrets OpenLinkToken requires.
+This section consolidates practical guidance for managing the cryptographic secrets Open Link Token requires.
 
 ### Types of Secrets
 
-OpenLinkToken uses two secrets. Which secrets are required depends on the subcommand:
+Open Link Token uses two secrets. Which secrets are required depends on the subcommand:
 
 | Secret             | CLI Flag                 | Purpose                                   | Required for subcommands        | Requirements                         |
 | ------------------ | ------------------------ | ----------------------------------------- | ------------------------------- | ------------------------------------ |
@@ -226,14 +226,14 @@ python tools/hash_calculator.py \
 - **CLI flags for secrets**: [CLI Reference](reference/cli.md)
 - **Environment variable usage**: [Configuration](config/configuration.md#environment-variables)
 - **Databricks / Spark secrets**: [Spark or Databricks](operations/spark-or-databricks.md)
-- **Running the CLI**: [Running OpenLinkToken](running-openlinktoken/index.md)
+- **Running the CLI**: [Running Open Link Token](running-openlinktoken/index.md)
 - **Metadata format (hash fields)**: [Reference: Metadata Format](reference/metadata-format.md)
 
 ---
 
 ## Security Considerations and Limitations
 
-### What OpenLinkToken Protects Against
+### What Open Link Token Protects Against
 
 **✓ Re-identification without secrets:**
 
@@ -249,7 +249,7 @@ python tools/hash_calculator.py \
 **✓ Data quality issues:**
 Metadata captures processing statistics; data quality guidance lives in the concepts documentation.
 
-### What OpenLinkToken Does NOT Protect Against
+### What Open Link Token Does NOT Protect Against
 
 **✗ Compromise of secrets:**
 
@@ -274,7 +274,7 @@ Metadata captures processing statistics; data quality guidance lives in the conc
 
 ### User Responsibilities
 
-OpenLinkToken provides cryptographic primitives but **users are responsible for:**
+Open Link Token provides cryptographic primitives but **users are responsible for:**
 
 - **Secret management**: Storing, rotating, and protecting hashing secrets and encryption keys
 - **Access control**: Limiting who can generate, access, or decrypt tokens
@@ -311,5 +311,5 @@ See [Concepts: Normalization and Validation](concepts/normalization-and-validati
 - **View detailed crypto pipeline**: [Specification](specification.md)
 - **Understand metadata security**: [Reference: Metadata Format](reference/metadata-format.md)
 - **Review validation rules**: [Concepts: Normalization and Validation](concepts/normalization-and-validation.md)
-- **Configure OpenLinkToken**: [Configuration](config/configuration.md)
+- **Configure Open Link Token**: [Configuration](config/configuration.md)
 - **Share tokens across organizations**: [Sharing Tokenized Data](operations/sharing-tokenized-data.md)

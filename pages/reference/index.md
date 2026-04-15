@@ -4,7 +4,7 @@ layout: default
 
 # Reference: API Overview
 
-OpenLinkToken provides three interfaces for generating privacy-preserving tokens: a Java library, a Python library, and a command-line interface (CLI). All three produce identical tokens for the same input, enabling cross-language and cross-platform workflows.
+Open Link Token provides three interfaces for generating privacy-preserving tokens: a Java library, a Python library, and a command-line interface (CLI). All three produce identical tokens for the same input, enabling cross-language and cross-platform workflows.
 
 ---
 
@@ -177,7 +177,7 @@ Every token generation run produces a `.metadata.json` file alongside the token 
 
 ## Custom Token Registration
 
-OpenLinkToken supports defining custom token rules beyond T1–T5. Custom rules can include additional attributes (e.g., MRN) or different attribute combinations.
+Open Link Token supports defining custom token rules beyond T1–T5. Custom rules can include additional attributes (e.g., MRN) or different attribute combinations.
 
 **Full reference:** [Token Registration](token-registration.md)
 

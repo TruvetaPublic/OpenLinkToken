@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Tokenize the hospital dataset using OpenLinkToken (Python CLI).
+# Tokenize the hospital dataset using Open Link Token (Python CLI).
 #
 # Output:
 #   outputs/hospital_tokens.csv
@@ -32,7 +32,7 @@ fi
 
 mkdir -p "${DEMO_DIR}/outputs"
 
-echo "Running OpenLinkToken CLI (hospital)..."
+echo "Running Open Link Token CLI (hospital)..."
 olt package \
   -t csv \
   -i "${DEMO_DIR}/datasets/hospital_superhero_data.csv" \

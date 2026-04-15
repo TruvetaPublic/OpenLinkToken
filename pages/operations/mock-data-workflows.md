@@ -4,13 +4,13 @@ layout: default
 
 # Mock Data Workflows
 
-How to generate and process mock datasets for testing OpenLinkToken pipelines.
+How to generate and process mock datasets for testing Open Link Token pipelines.
 
 ---
 
 ## Overview
 
-OpenLinkToken includes a mock data generator for testing and development. The tool creates realistic person records with configurable duplicate rates for overlap analysis testing.
+Open Link Token includes a mock data generator for testing and development. The tool creates realistic person records with configurable duplicate rates for overlap analysis testing.
 
 ---
 
@@ -58,7 +58,7 @@ If no arguments provided:
 
 ## Output Format
 
-Generated CSV files include all required OpenLinkToken columns:
+Generated CSV files include all required Open Link Token columns:
 
 ```csv
 RecordId,BirthDate,FirstName,LastName,PostalCode,Sex,SocialSecurityNumber
@@ -112,7 +112,7 @@ Duplicates have **different RecordIds** but **identical attributes**, so they pr
 cd tools/mockdata
 python data_generator.py 100 0.05 test_data.csv
 
-# 2. Process with OpenLinkToken
+# 2. Process with Open Link Token
 cd ../../
 ./run-openlinktoken.sh package \
   -i tools/mockdata/test_data.csv \
@@ -137,7 +137,7 @@ python data_generator.py 1000 0.0 dataset_a.csv
 python data_generator.py 1000 0.0 dataset_b.csv
 
 # Add some common records manually or use a script
-# Then process both with OpenLinkToken using the same secrets
+# Then process both with Open Link Token using the same secrets
 ```
 
 For automated overlap analysis, see [Spark or Databricks](spark-or-databricks.md).
@@ -199,7 +199,7 @@ df = pd.read_csv('large_test.csv')
 df.to_parquet('large_test.parquet')
 "
 
-# Process with OpenLinkToken
+# Process with Open Link Token
 olt package \
   -i large_test.parquet -t parquet \
   -o tokens.parquet \
@@ -210,6 +210,6 @@ olt package \
 
 ## Next Steps
 
-- **Run OpenLinkToken**: [Running Batch Jobs](running-batch-jobs.md)
+- **Run Open Link Token**: [Running Batch Jobs](running-batch-jobs.md)
 - **Quickstart guide**: [Quickstarts](../quickstarts/index.md)
 - **Overlap analysis**: [Spark or Databricks](spark-or-databricks.md)

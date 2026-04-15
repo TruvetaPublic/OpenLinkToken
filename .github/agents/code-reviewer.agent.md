@@ -5,13 +5,13 @@ description: Reviews Open Link Token changes for repo-specific risks, verificati
 
 # Code Reviewer Agent
 
-Review OpenLinkToken changes for material repository-specific issues. Focus on correctness, parity, verification, and process readiness; do not spend time on low-value style nits. This agent can be used for normal PR review or as a follow-up validation pass after a specialist edits repo instructions, agents, workflows, or behavior-adjacent docs.
+Review Open Link Token changes for material repository-specific issues. Focus on correctness, parity, verification, and process readiness; do not spend time on low-value style nits. This agent can be used for normal PR review or as a follow-up validation pass after a specialist edits repo instructions, agents, workflows, or behavior-adjacent docs.
 
 ## Review Priorities
 
 ### 1. Java import rule
 
-Flag any Java code that uses fully qualified class names instead of imports. OpenLinkToken requires short class names plus `import` statements.
+Flag any Java code that uses fully qualified class names instead of imports. Open Link Token requires short class names plus `import` statements.
 
 ### 2. Shared venv only
 
@@ -19,7 +19,7 @@ Flag any instruction or workflow that creates or activates a Python virtual envi
 
 ### 3. Cross-language parity awareness
 
-OpenLinkToken behavior often has Java/Python parity requirements. If normalization, validation, token generation, registration, or interoperability-sensitive behavior changes in only one language, call out likely parity drift.
+Open Link Token behavior often has Java/Python parity requirements. If normalization, validation, token generation, registration, or interoperability-sensitive behavior changes in only one language, call out likely parity drift.
 
 ### 4. Registration and discovery consistency
 

@@ -4,11 +4,11 @@ layout: default
 
 # Matching Concepts
 
-Understand how OpenLinkToken tokens work for record linkage and the strategies behind the 5 token rules.
+Understand how Open Link Token tokens work for record linkage and the strategies behind the 5 token rules.
 
 ## Token Generation Rules
 
-OpenLinkToken generates **5 distinct tokens (T1–T5)** per person, each combining different attributes to target different matching scenarios.
+Open Link Token generates **5 distinct tokens (T1–T5)** per person, each combining different attributes to target different matching scenarios.
 
 ### Rule Definitions
 
@@ -174,11 +174,11 @@ The token generation pipeline ensures **high collision resistance**:
 2. **HMAC-SHA256**: Adds secret key; prevents pre-computed tables
 3. **AES-256**: Adds another layer of encryption; prevents token re-identification
 
-Even with SHA-256's theoretical weaknesses, OpenLinkToken's combination is secure for regulated PII use cases.
+Even with SHA-256's theoretical weaknesses, Open Link Token's combination is secure for regulated PII use cases.
 
 ## Next Steps
 
 - **Understand validation rules**: [Security](../security.md)
-- **Decrypt and debug tokens**: [Running OpenLinkToken](../running-openlinktoken/index.md)
+- **Decrypt and debug tokens**: [Running Open Link Token](../running-openlinktoken/index.md)
 - **View full token specification**: [Specification](../specification.md)
 - **Integrate with your system**: [Configuration](../config/configuration.md)

@@ -1,4 +1,4 @@
-"""Token definitions and generation utilities for OpenLinkToken."""
+"""Token definitions and generation utilities for Open Link Token."""
 
 from .base_token_definition import BaseTokenDefinition
 from .token import Token

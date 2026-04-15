@@ -4,13 +4,13 @@ layout: default
 
 # Running Batch Jobs
 
-How to run OpenLinkToken in batch mode across CSV or Parquet files at scale using CLI or Docker.
+How to run Open Link Token in batch mode across CSV or Parquet files at scale using CLI or Docker.
 
 ---
 
 ## Overview
 
-OpenLinkToken processes input files (CSV or Parquet) and produces two outputs:
+Open Link Token processes input files (CSV or Parquet) and produces two outputs:
 
 1. **Tokens file** (CSV or Parquet): Contains `RecordId`, `RuleId`, `Token` columns
 2. **Metadata file** (JSON): Processing statistics, secret hashes, and validation counts
@@ -80,7 +80,7 @@ cd /path/to/OpenLinkToken
 **PowerShell (Windows):**
 
 ```powershell
-cd C:\path\to\OpenLinkToken
+cd C:\path\to\Open Link Token
 
 .\run-openlinktoken.ps1 package `
   -i .\resources\sample.csv `

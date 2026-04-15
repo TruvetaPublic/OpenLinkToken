@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 
 class OpenLinkTokenExtension(ABC):
     """
-    Interface for OpenLinkToken CLI extensions.
+    Interface for Open Link Token CLI extensions.
 
     An extension registers exactly one top-level subcommand name.
     It receives the subparsers object during CLI startup and is responsible
@@ -20,7 +20,7 @@ class OpenLinkTokenExtension(ABC):
         The top-level subcommand name this extension owns.
 
         Must be unique across all installed extensions and must not
-        conflict with built-in OpenLinkToken commands.
+        conflict with built-in Open Link Token commands.
 
         Example: "extcmd"  → enables `openlinktoken extcmd ...`
         """
@@ -46,5 +46,5 @@ class OpenLinkTokenExtension(ABC):
         leaf parsers so that OpenLinkTokenCommand can dispatch to them via `parsed_args.func`.
 
         Args:
-            subparsers: The shared subparsers action from the root OpenLinkToken parser.
+            subparsers: The shared subparsers action from the root Open Link Token parser.
         """

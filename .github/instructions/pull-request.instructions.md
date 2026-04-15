@@ -1,5 +1,5 @@
 ---
-description: "OpenLinkToken branch and pull request workflow"
+description: "Open Link Token branch and pull request workflow"
 applyTo: "**"
 ---
 
@@ -63,7 +63,7 @@ Before converting a PR from draft to ready for review, ensure:
 
 Types: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`
 
-Use the repository PR body scaffold in `.github/pull_request_template.md`. It is designed to capture the minimum reviewer context for OpenLinkToken:
+Use the repository PR body scaffold in `.github/pull_request_template.md`. It is designed to capture the minimum reviewer context for Open Link Token:
 
 - concise summary and related issue linkage
 - affected surfaces (Java, Python, CLI, docs, workflows, release flow)

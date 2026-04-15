@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Setup script for OpenLinkToken CLI package."""
+"""Setup script for Open Link Token CLI package."""
 
 import os
 
@@ -14,7 +14,7 @@ try:
         long_description = f.read()
 except FileNotFoundError:
     # Fallback to a short description if README is unavailable
-    long_description = "OpenLinkToken CLI - Command line interface for record linkage."
+    long_description = "Open Link Token CLI - Command line interface for record linkage."
 
 # Read requirements from requirements.txt
 with open(os.path.join(this_directory, "requirements.txt"), encoding="utf-8") as f:
@@ -24,7 +24,7 @@ setup(
     name="openlinktoken-cli",
     version="2.0.0-alpha",
     author="Open Link Token Contributors",
-    description="OpenLinkToken CLI - Command line interface for record linkage",
+    description="Open Link Token CLI - Command line interface for record linkage",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/TruvetaPublic/OpenLinkToken",

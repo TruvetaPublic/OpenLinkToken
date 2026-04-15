@@ -4,7 +4,7 @@ layout: default
 
 # Contributing
 
-This guide outlines how to contribute code, documentation, and bug reports to OpenLinkToken.
+This guide outlines how to contribute code, documentation, and bug reports to Open Link Token.
 
 ---
 
@@ -24,7 +24,7 @@ This guide outlines how to contribute code, documentation, and bug reports to Op
 2. **Clone your fork**:
    ```bash
    git clone https://github.com/YOUR-USERNAME/OpenLinkToken.git
-   cd OpenLinkToken
+   cd Open Link Token
    ```
 3. **Set up the Python environment** (at repo root):
    ```bash
@@ -43,7 +43,7 @@ This guide outlines how to contribute code, documentation, and bug reports to Op
 
 ## Branching Strategy
 
-OpenLinkToken uses a Gitflow-based branching strategy:
+Open Link Token uses a Gitflow-based branching strategy:
 
 ### Branch Types
 
@@ -206,7 +206,7 @@ python3 tools/multi_language_syncer.py
 Include:
 
 - **Title**: Clear, concise description
-- **Environment**: OS, Java/Python version, OpenLinkToken version
+- **Environment**: OS, Java/Python version, Open Link Token version
 - **Steps to reproduce**: Minimal example
 - **Expected behavior**: What should happen
 - **Actual behavior**: What actually happens
@@ -252,4 +252,4 @@ Include:
 - Check existing issues for similar questions
 - Review the [Code of Conduct](code-of-conduct.md)
 
-Thank you for contributing to OpenLinkToken!
+Thank you for contributing to Open Link Token!

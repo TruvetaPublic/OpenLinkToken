@@ -2,13 +2,13 @@
 layout: default
 ---
 
-# Running OpenLinkToken
+# Running Open Link Token
 
 Guides for generating tokens in different environments and use cases.
 
 ## CLI Guide
 
-The OpenLinkToken CLI accepts command-line arguments for flexible token generation.
+The Open Link Token CLI accepts command-line arguments for flexible token generation.
 
 ### Basic Syntax
 
@@ -166,7 +166,7 @@ cd /path/to/OpenLinkToken
 **PowerShell (Windows):**
 
 ```powershell
-cd C:\path\to\OpenLinkToken
+cd C:\path\to\Open Link Token
 
 .\run-openlinktoken.ps1 package `
   -i .\resources\sample.csv `
@@ -247,7 +247,7 @@ from openlinktoken_pyspark import SparkPersonTokenProcessor
 
 # Initialize Spark session
 spark = SparkSession.builder \
-    .appName("OpenLinkToken") \
+    .appName("Open Link Token") \
     .getOrCreate()
 
 # Create processor

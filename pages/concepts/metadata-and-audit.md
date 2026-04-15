@@ -8,7 +8,7 @@ Overview of the metadata produced alongside tokens and how to use it for auditin
 
 ## Overview
 
-Every OpenLinkToken run generates a metadata file (`.metadata.json`) alongside the token output. This metadata provides:
+Every Open Link Token run generates a metadata file (`.metadata.json`) alongside the token output. This metadata provides:
 
 - Processing statistics (records processed, validation failures, blank tokens)
 - System information (platform and version)

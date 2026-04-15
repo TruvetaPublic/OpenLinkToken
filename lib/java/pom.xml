@@ -10,7 +10,7 @@
     <version>2.0.0-alpha</version>
 
     <name>openlinktoken-parent</name>
-    <description>OpenLinkToken Parent POM - Privacy-preserving record linkage library</description>
+    <description>Open Link Token Parent POM - Privacy-preserving record linkage library</description>
     <url>https://truvetapublic.github.io/OpenLinkToken/</url>
 
     <modules>

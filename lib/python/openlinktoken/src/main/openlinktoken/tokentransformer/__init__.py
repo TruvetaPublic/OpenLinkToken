@@ -1,4 +1,4 @@
-"""Token transformer implementations for OpenLinkToken."""
+"""Token transformer implementations for Open Link Token."""
 
 from .decrypt_token_transformer import DecryptTokenTransformer
 from .encrypt_token_transformer import EncryptTokenTransformer

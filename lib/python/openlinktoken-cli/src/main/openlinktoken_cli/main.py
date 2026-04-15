@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 def main():
-    """Main entry point for the OpenLinkToken application."""
+    """Main entry point for the Open Link Token application."""
     exit_code = OpenLinkTokenCommand.main(sys.argv[1:])
     sys.exit(exit_code)
 

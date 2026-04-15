@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Setup script for OpenLinkToken PySpark package."""
+"""Setup script for Open Link Token PySpark package."""
 
 import os
 
@@ -14,7 +14,7 @@ try:
         long_description = f.read()
 except FileNotFoundError:
     # Fallback to a short description if README is unavailable
-    long_description = "OpenLinkToken PySpark bridge for distributed token generation."
+    long_description = "Open Link Token PySpark bridge for distributed token generation."
 
 # Core dependencies (version-agnostic, no PySpark)
 core_requirements = [
@@ -27,7 +27,7 @@ setup(
     name="openlinktoken-pyspark",
     version="2.0.0-alpha",
     author="Open Link Token Contributors",
-    description="OpenLinkToken PySpark bridge for distributed token generation",
+    description="Open Link Token PySpark bridge for distributed token generation",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/TruvetaPublic/OpenLinkToken",

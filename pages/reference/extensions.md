@@ -4,13 +4,13 @@ layout: default
 
 # Extension Author Reference
 
-Complete reference for building OpenLinkToken CLI extensions. This page documents the `OpenLinkTokenExtension` ABC contract, entry-point declaration, extension lifecycle, conflict rules, security and trust model, and binary compatibility requirements.
+Complete reference for building Open Link Token CLI extensions. This page documents the `OpenLinkTokenExtension` ABC contract, entry-point declaration, extension lifecycle, conflict rules, security and trust model, and binary compatibility requirements.
 
 ---
 
 ## Overview
 
-OpenLinkToken extensions are self-contained Python packages that add top-level subcommands to the `openlinktoken` CLI. Each extension registers exactly one top-level subcommand (for example, `olt hello-world`) by implementing the `OpenLinkTokenExtension` abstract base class and declaring an entry point in the `openlinktoken.extensions` group.
+Open Link Token extensions are self-contained Python packages that add top-level subcommands to the `openlinktoken` CLI. Each extension registers exactly one top-level subcommand (for example, `olt hello-world`) by implementing the `OpenLinkTokenExtension` abstract base class and declaring an entry point in the `openlinktoken.extensions` group.
 
 Extensions are installed to a user-local directory and loaded at CLI startup, so they appear alongside built-in commands in `olt --help`.
 
@@ -25,7 +25,7 @@ from abc import ABC, abstractmethod
 
 
 class OpenLinkTokenExtension(ABC):
-    """Abstract base class for all OpenLinkToken CLI extensions.
+    """Abstract base class for all Open Link Token CLI extensions.
 
     Implement this class and declare it as an entry point in the
     ``openlinktoken.extensions`` group to register a top-level subcommand.
@@ -37,7 +37,7 @@ class OpenLinkTokenExtension(ABC):
         """The top-level subcommand name.
 
         Must be unique across all installed extensions and must not
-        conflict with any built-in OpenLinkToken subcommand.
+        conflict with any built-in Open Link Token subcommand.
 
         Example: ``"hello-world"``
         """
@@ -90,7 +90,7 @@ class HelloWorldExtension(OpenLinkTokenExtension):
 
     @property
     def description(self) -> str:
-        return "Greet the world from an OpenLinkToken extension"
+        return "Greet the world from an Open Link Token extension"
 
     @property
     def version(self) -> str:
@@ -167,18 +167,18 @@ install → discover → load → register → invoke → uninstall
 
 ## Security and Trust Model
 
-OpenLinkToken does not perform hash or signature verification on extension wheel files. There is no checksum comparison, code-signing check, or certificate validation during installation — the CLI installs whatever `.whl` is located at the given URL or path. Verifying the source and integrity of an extension wheel is the responsibility of the person running the install command.
+Open Link Token does not perform hash or signature verification on extension wheel files. There is no checksum comparison, code-signing check, or certificate validation during installation — the CLI installs whatever `.whl` is located at the given URL or path. Verifying the source and integrity of an extension wheel is the responsibility of the person running the install command.
 
 ### What the CLI does at install time
 
-- Prints a `_SECURITY_WARNING` banner before taking any action. This banner is intentional and cannot be suppressed; it reads: _"Extensions are arbitrary Python code and are not verified by the OpenLinkToken project. Install only extensions from sources you trust."_
+- Prints a `_SECURITY_WARNING` banner before taking any action. This banner is intentional and cannot be suppressed; it reads: _"Extensions are arbitrary Python code and are not verified by the Open Link Token project. Install only extensions from sources you trust."_
 - Displays the source URL and prompts for confirmation.
 - Confirmation is required unless `--yes` is passed. In automated environments, pass `--yes` explicitly and ensure you have independently validated the source before running the command.
 
 **Sample install prompt:**
 
 ```
-WARNING: Extensions are arbitrary Python code and are not verified by the OpenLinkToken project.
+WARNING: Extensions are arbitrary Python code and are not verified by the Open Link Token project.
 Install only extensions from sources you trust.
 You are about to install an extension from:
   https://example.com/openlinktoken-ext-hello-world-1.0.0-py3-none-any.whl
@@ -214,23 +214,23 @@ This limits the install-time attack surface without requiring changes to the CLI
 
 ## Binary Compatibility
 
-The pre-built OpenLinkToken binary is a PyInstaller-frozen executable. Extensions that depend on packages not bundled in the binary cannot be loaded under it.
+The pre-built Open Link Token binary is a PyInstaller-frozen executable. Extensions that depend on packages not bundled in the binary cannot be loaded under it.
 
 ### Three Dependency Tiers
 
-| Tier                           | Dependencies                                                                                                            | Binary compatible? |
-| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------- | :----------------: |
-| **1 — Zero-dep**               | None (stdlib only)                                                                                                      |       ✅ Yes       |
-| **2 — OpenLinkToken-provided** | Only packages bundled in the binary (e.g., `pyarrow`, `pandas`, `csv2parquet`, `cryptography`, `jwcrypto`, `packaging`) |       ✅ Yes       |
-| **3 — External**               | Any other packages                                                                                                      |       ❌ No        |
+| Tier                             | Dependencies                                                                                                            | Binary compatible? |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | :----------------: |
+| **1 — Zero-dep**                 | None (stdlib only)                                                                                                      |       ✅ Yes       |
+| **2 — Open Link Token-provided** | Only packages bundled in the binary (e.g., `pyarrow`, `pandas`, `csv2parquet`, `cryptography`, `jwcrypto`, `packaging`) |       ✅ Yes       |
+| **3 — External**                 | Any other packages                                                                                                      |       ❌ No        |
 
 **Recommendation:** Keep extensions at Tier 1 whenever possible. Tier 1 extensions work under both the binary and a Python package install.
 
 `olt extension install` aborts with a clear error when it detects a Tier-3 extension under the binary:
 
 ```
-Error: This extension requires external dependencies that are not bundled in the OpenLinkToken binary: requests, boto3
-Install the Python package version of OpenLinkToken CLI to use this extension.
+Error: This extension requires external dependencies that are not bundled in the Open Link Token binary: requests, boto3
+Install the Python package version of Open Link Token CLI to use this extension.
 ```
 
 ---
@@ -241,7 +241,7 @@ PyInstaller produces a frozen binary that bundles the Python interpreter and all
 
 ### Two-Track Loader
 
-OpenLinkToken uses a two-track loader to work around this constraint:
+Open Link Token uses a two-track loader to work around this constraint:
 
 | Install type           | Discovery mechanism                                                       |
 | ---------------------- | ------------------------------------------------------------------------- |

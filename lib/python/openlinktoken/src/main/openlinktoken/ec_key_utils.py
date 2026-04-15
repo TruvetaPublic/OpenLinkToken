@@ -108,7 +108,7 @@ def generate_key_pair(curve: str) -> Tuple[bytes, bytes]:
 
 
 def _curve_name_from_private_key(private_key) -> str:
-    """Map a cryptography EC private key's curve to an OpenLinkToken curve name."""
+    """Map a cryptography EC private key's curve to an Open Link Token curve name."""
     curve_name_map = {
         "secp256r1": "P-256",
         "secp384r1": "P-384",
@@ -121,7 +121,7 @@ def _curve_name_from_private_key(private_key) -> str:
 
 
 def derive_public_key_from_private_pem(private_pem: bytes) -> Tuple[bytes, str]:
-    """Load an EC private key PEM and return its public key PEM plus OpenLinkToken curve name."""
+    """Load an EC private key PEM and return its public key PEM plus Open Link Token curve name."""
     from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat, load_pem_private_key
 
     private_key = load_pem_private_key(private_pem, password=None)

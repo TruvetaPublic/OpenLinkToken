@@ -1,4 +1,4 @@
-name: Build OpenLinkToken CLI (PyInstaller)
+name: Build Open Link Token CLI (PyInstaller)
 
 on:
   workflow_dispatch:

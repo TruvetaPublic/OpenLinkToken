@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Setup script for OpenLinkToken Python package."""
+"""Setup script for Open Link Token Python package."""
 
 import os
 
@@ -14,7 +14,7 @@ try:
         long_description = f.read()
 except FileNotFoundError:
     # Fallback to a short description if README is unavailable
-    long_description = "OpenLinkToken Python implementation for record linkage."
+    long_description = "Open Link Token Python implementation for record linkage."
 
 # Read requirements from requirements.txt
 with open(os.path.join(this_directory, "requirements.txt"), encoding="utf-8") as f:
@@ -24,7 +24,7 @@ setup(
     name="openlinktoken",
     version="2.0.0-alpha",
     author="Open Link Token Contributors",
-    description="OpenLinkToken Python core library for record linkage",
+    description="Open Link Token Python core library for record linkage",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/TruvetaPublic/OpenLinkToken",

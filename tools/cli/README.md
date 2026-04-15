@@ -1,6 +1,6 @@
 # CLI Matrix Harness Commands
 
-`tools/cli/run_cli_matrix.sh` runs the OpenLinkToken CLI from the current worktree
+`tools/cli/run_cli_matrix.sh` runs the Open Link Token CLI from the current worktree
 with a temporary workspace. The script exports:
 
 - `HOME=<WORKSPACE>/home`

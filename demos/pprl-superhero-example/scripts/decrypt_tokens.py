@@ -1,7 +1,7 @@
 """
-Utility to decrypt OpenLinkToken encrypted tokens.
+Utility to decrypt Open Link Token encrypted tokens.
 
-OpenLinkToken uses AES-256-GCM encryption with random IVs. To compare tokens across
+Open Link Token uses AES-256-GCM encryption with random IVs. To compare tokens across
 independently tokenized datasets, we need to decrypt them first to get the
 underlying HMAC-SHA256 hash values, which are deterministic and comparable.
 """
@@ -14,7 +14,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 def decrypt_token(encrypted_token, encryption_key):
     """
-    Decrypt an OpenLinkToken encrypted token.
+    Decrypt an Open Link Token encrypted token.
 
     Args:
         encrypted_token: Base64-encoded encrypted token with prepended IV

@@ -16,7 +16,7 @@
     <version>2.0.0-alpha</version>
 
     <name>openlinktoken</name>
-    <description>OpenLinkToken Core Library - Privacy-preserving record linkage using cryptographically secure token generation</description>
+    <description>Open Link Token Core Library - Privacy-preserving record linkage using cryptographically secure token generation</description>
     <url>https://truvetapublic.github.io/OpenLinkToken/</url>
 
     <properties>

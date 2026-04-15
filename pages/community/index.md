@@ -5,7 +5,7 @@ title: Community
 
 # Community
 
-Join the OpenLinkToken community.
+Join the Open Link Token community.
 
 - [Contributing](contributing.md) — How to contribute code and documentation
 - [Code of Conduct](code-of-conduct.md) — Community standards

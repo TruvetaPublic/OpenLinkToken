@@ -1,10 +1,10 @@
-# OpenLinkToken PySpark Bridge
+# Open Link Token PySpark Bridge
 
-A PySpark integration for the OpenLinkToken library, enabling distributed privacy-preserving token generation for large-scale record linkage workflows.
+A PySpark integration for the Open Link Token library, enabling distributed privacy-preserving token generation for large-scale record linkage workflows.
 
 ## Overview
 
-The OpenLinkToken PySpark Bridge provides a seamless interface between PySpark DataFrames and the OpenLinkToken library, allowing you to generate cryptographically secure tokens for record linkage in a distributed computing environment.
+The Open Link Token PySpark Bridge provides a seamless interface between PySpark DataFrames and the Open Link Token library, allowing you to generate cryptographically secure tokens for record linkage in a distributed computing environment.
 
 ## Features
 
@@ -19,12 +19,12 @@ The OpenLinkToken PySpark Bridge provides a seamless interface between PySpark D
 ### Prerequisites
 
 - Python 3.10 or higher
-- OpenLinkToken core library (automatically installed as dependency)
+- Open Link Token core library (automatically installed as dependency)
 - Apache Spark or PySpark environment
 
 ### Version Compatibility
 
-OpenLinkToken PySpark supports multiple Spark versions to accommodate different Java environments and cluster configurations:
+Open Link Token PySpark supports multiple Spark versions to accommodate different Java environments and cluster configurations:
 
 | Spark Version | PySpark Version | PyArrow Version | Pandas Version | Java Version | Installation Extra            |
 | ------------- | --------------- | --------------- | -------------- | ------------ | ----------------------------- |
@@ -80,7 +80,7 @@ This installs only the core dependencies without PySpark. You'll use the cluster
 For local development with editable install:
 
 ```bash
-# Install OpenLinkToken core library first
+# Install Open Link Token core library first
 cd lib/python/openlinktoken
 uv pip install -e .
 
@@ -317,7 +317,7 @@ See the included Jupyter notebooks for complete examples:
 
 ```bash
 cd notebooks
-jupyter notebook OpenLinkToken_PySpark_Example.ipynb
+jupyter notebook OpenToken_PySpark_Example.ipynb
 ```
 
 **Custom Token Definitions:**
@@ -429,7 +429,7 @@ The PySpark bridge uses Pandas UDFs (User Defined Functions) to efficiently proc
 
 1. Data is partitioned across the Spark cluster
 2. Each partition is processed by a Pandas UDF
-3. Within each batch, the OpenLinkToken library generates tokens
+3. Within each batch, the Open Link Token library generates tokens
 4. Results are collected back into a PySpark DataFrame
 
 This architecture balances the benefits of distributed computing with the cryptographic requirements of token generation.
@@ -442,7 +442,7 @@ This architecture balances the benefits of distributed computing with the crypto
 
 ## Related Documentation
 
-- [OpenLinkToken Core Library](../openlinktoken/) - Python core implementation
-- [OpenLinkToken CLI](../openlinktoken-cli/) - Python CLI with I/O support (CSV, Parquet)
-- [Main OpenLinkToken Documentation](../../../README.md) - Project overview and setup
+- [Open Link Token Core Library](../openlinktoken/) - Python core implementation
+- [Open Link Token CLI](../openlinktoken-cli/) - Python CLI with I/O support (CSV, Parquet)
+- [Main Open Link Token Documentation](../../../README.md) - Project overview and setup
 - [Development Guide](../../../docs/dev-guide-development.md) - Contributor documentation

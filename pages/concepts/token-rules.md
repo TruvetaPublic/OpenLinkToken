@@ -4,7 +4,7 @@ layout: default
 
 # Token Rules
 
-OpenLinkToken generates five distinct token types (T1-T5). Each rule defines a **token signature** (a deterministic, normalized string) which is then transformed into the output token via hashing (and optionally encryption).
+Open Link Token generates five distinct token types (T1-T5). Each rule defines a **token signature** (a deterministic, normalized string) which is then transformed into the output token via hashing (and optionally encryption).
 
 ---
 
@@ -227,7 +227,7 @@ Notes:
 
 ## Custom Token Rules
 
-OpenLinkToken supports defining custom token rules:
+Open Link Token supports defining custom token rules:
 
 ### Java
 

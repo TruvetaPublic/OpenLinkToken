@@ -2,7 +2,7 @@
 package org.openlinktoken;
 
 /**
- * Placeholder for Python-side EC key utilities used by the OpenLinkToken CLI exchange workflow.
+ * Placeholder for Python-side EC key utilities used by the Open Link Token CLI exchange workflow.
  *
  * <p>The full implementation lives in the Python package under
  * {@code openlinktoken.ec_key_utils} and handles key-pair generation, PEM serialization,

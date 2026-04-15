@@ -23,7 +23,7 @@ class TestHelloWorldProperties:
         assert self.ext.command_name == "hello-world"
 
     def test_description(self):
-        assert self.ext.description == "OpenLinkToken hello-world reference extension"
+        assert self.ext.description == "Open Link Token hello-world reference extension"
 
     def test_version(self):
         assert self.ext.version == "1.0.0"

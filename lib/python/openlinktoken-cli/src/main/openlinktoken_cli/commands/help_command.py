@@ -16,7 +16,7 @@ class HelpCommand:
         help_parser = subparsers.add_parser(
             "help",
             help="Display help information about the specified command",
-            description="Display help information about OpenLinkToken commands",
+            description="Display help information about Open Link Token commands",
         )
         help_parser.add_argument(
             "subcommand",

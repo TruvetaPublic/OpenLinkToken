@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
 """
-OpenLinkToken PySpark Bridge - Distributed token generation for PySpark DataFrames.
+Open Link Token PySpark Bridge - Distributed token generation for PySpark DataFrames.
 """
 
 __version__ = "2.0.0-alpha"

@@ -1,5 +1,5 @@
 """
-CSV subpackage for person attribute I/O in the OpenLinkToken CLI project.
+CSV subpackage for person attribute I/O in the Open Link Token CLI project.
 """
 
 from openlinktoken_cli.io.csv.person_attributes_csv_reader import PersonAttributesCSVReader
