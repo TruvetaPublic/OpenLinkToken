@@ -148,7 +148,7 @@ class JweMatchTokenFormatterTest {
                 TEST_ENCRYPTION_KEY,
                 TEST_RING_ID,
                 TEST_RULE_ID,
-                null // null issuer should default to "truveta.openlinktoken"
+                null // null issuer should default to "org.openlinktoken"
         );
 
         assertNotNull(formatter);

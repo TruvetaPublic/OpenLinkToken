@@ -136,7 +136,7 @@ The encrypted payload contains the actual token data:
   "mac_alg": "HS256",
   "ppid": ["7Kx9mL2pNqRsTuVw8yZaB3cD4eF5gH6iJ7kL8mN9oP0q"],
   "rid": "ring-2026-q1",
-  "iss": "truveta.openlinktoken",
+  "iss": "org.openlinktoken",
   "iat": 1738339200
 }
 ```
@@ -228,7 +228,7 @@ The `rlid` field identifies which token signature rule was used:
   "mac_alg": "HS256",
   "ppid": ["7Kx9mL2pNqRsTuVw8yZaB3cD4eF5gH6iJ7kL8mN9oP0q"],
   "rid": "ring-2026-q1",
-  "iss": "truveta.openlinktoken",
+  "iss": "org.openlinktoken",
   "iat": 1738339200
 }
 ```
@@ -257,7 +257,7 @@ The `rlid` field identifies which token signature rule was used:
     "dGhpcyBpcyBhIDY0IGJ5dGUgaGFzaCBvdXRwdXQgZnJvbSBTSEEzLTUxMiBhbmQgSE1BQy1TSEE1MTI"
   ],
   "rid": "ring-2026-q1-highsec",
-  "iss": "truveta.openlinktoken",
+  "iss": "org.openlinktoken",
   "iat": 1738339200
 }
 ```
@@ -287,7 +287,7 @@ For ML-based matching with vector embeddings, the `ppid` contains base64-encoded
   "ppid_dtype": "float32",
   "ppid_dims": 768,
   "rid": "ring-2026-q1",
-  "iss": "truveta.openlinktoken",
+  "iss": "org.openlinktoken",
   "iat": 1738339200
 }
 ```

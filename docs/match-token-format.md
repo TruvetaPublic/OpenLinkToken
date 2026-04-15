@@ -251,7 +251,7 @@ ot.V1.eyJhbGciOiJBMjU2R0NNS1ciLCJlbmMiOiJBMjU2R0NNIiwidHlwIjoibWF0Y2gtdG9rZW4iLC
   "mac_alg": "HS256",
   "ppid": ["7Kx9mL2pNqRsTuVw8yZaB3cD4eF5gH6iJ7kL8mN9oP0qRs"],
   "rid": "ring-2026-q1",
-  "iss": "truveta.openlinktoken",
+  "iss": "org.openlinktoken",
   "iat": 1738339200
 }
 ```
@@ -280,7 +280,7 @@ ot.V1.eyJhbGciOiJBMjU2R0NNS1ciLCJlbmMiOiJBMjU2R0NNIiwidHlwIjoibWF0Y2gtdG9rZW4iLC
     "dGhpcyBpcyBhIFNIQTMtNTEyIHRoZW4gSE1BQy1TSEE1MTIgaGFzaCB3aGljaCBpcyA2NCBieXRlcw"
   ],
   "rid": "ring-2026-q1-highsec",
-  "iss": "truveta.openlinktoken",
+  "iss": "org.openlinktoken",
   "iat": 1738339200
 }
 ```
@@ -308,7 +308,7 @@ For ML-based matching with vector embeddings, the `ppid` contains base64-encoded
   "ppid_dtype": "float32",
   "ppid_dims": 768,
   "rid": "ring-2026-q1",
-  "iss": "truveta.openlinktoken",
+  "iss": "org.openlinktoken",
   "iat": 1738339200
 }
 ```

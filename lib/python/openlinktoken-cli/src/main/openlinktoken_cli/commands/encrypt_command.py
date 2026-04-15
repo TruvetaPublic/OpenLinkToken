@@ -213,7 +213,7 @@ class EncryptCommand:
 
         formatter = jwe_formatters.get(rule_id)
         if formatter is None:
-            formatter = JweMatchTokenFormatter(encryption_key, ring_id, rule_id, "truveta.openlinktoken")
+            formatter = JweMatchTokenFormatter(encryption_key, ring_id, rule_id, "org.openlinktoken")
             jwe_formatters[rule_id] = formatter
 
         return formatter.transform(encrypted_token)

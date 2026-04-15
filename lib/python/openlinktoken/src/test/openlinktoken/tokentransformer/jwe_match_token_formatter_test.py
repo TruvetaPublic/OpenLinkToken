@@ -162,10 +162,10 @@ class TestJweMatchTokenFormatter(unittest.TestCase):
             self.TEST_ENCRYPTION_KEY,
             self.TEST_RING_ID,
             self.TEST_RULE_ID,
-            None,  # null issuer should default to "truveta.openlinktoken"
+            None,  # null issuer should default to "org.openlinktoken"
         )
 
-        self.assertEqual("truveta.openlinktoken", formatter.issuer)
+        self.assertEqual("org.openlinktoken", formatter.issuer)
 
     def test_different_tokens_produce_different_outputs(self):
         """Test that different tokens produce different encrypted outputs."""

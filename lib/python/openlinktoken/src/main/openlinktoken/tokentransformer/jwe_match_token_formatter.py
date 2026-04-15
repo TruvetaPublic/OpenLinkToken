@@ -50,7 +50,7 @@ class JweMatchTokenFormatter(TokenTransformer):
             encryption_key: The encryption key (must be exactly 32 bytes for AES-256).
             ring_id: The ring identifier for key management.
             rule_id: The token rule identifier (e.g., "T1", "T2", etc.).
-            issuer: The issuer identifier (optional, defaults to "truveta.openlinktoken").
+            issuer: The issuer identifier (optional, defaults to "org.openlinktoken").
 
         Raises:
             ValueError: If encryption_key, ring_id, or rule_id are invalid.
@@ -69,7 +69,7 @@ class JweMatchTokenFormatter(TokenTransformer):
 
         self.ring_id = ring_id
         self.rule_id = rule_id
-        self.issuer = issuer if issuer else "truveta.openlinktoken"
+        self.issuer = issuer if issuer else "org.openlinktoken"
 
         # Create JWK from the encryption key - needs to be base64url-encoded
         key_b64 = base64.urlsafe_b64encode(key_bytes).decode("utf-8").rstrip("=")

@@ -270,7 +270,7 @@ class OpenLinkTokenProcessor:
                         encryption_key=encryption_key_bytes,
                         ring_id=ring_id,
                         rule_id=token_id,
-                        issuer="truveta.openlinktoken",
+                        issuer="org.openlinktoken",
                     )
 
             # Initialize token generator with custom tokenizer

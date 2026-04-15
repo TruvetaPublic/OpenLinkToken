@@ -140,7 +140,7 @@ class PersonAttributesProcessor:
             for token_id in token_definition.get_token_identifiers():
                 try:
                     jwe_formatters[token_id] = JweMatchTokenFormatter(
-                        encryption_key, ring_id, token_id, "truveta.openlinktoken"
+                        encryption_key, ring_id, token_id, "org.openlinktoken"
                     )
                 except Exception as e:
                     error_msg = f"Failed to initialize JWE formatter for token rule {token_id}"

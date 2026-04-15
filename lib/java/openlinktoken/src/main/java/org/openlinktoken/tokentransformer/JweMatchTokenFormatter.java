@@ -48,7 +48,7 @@ public class JweMatchTokenFormatter implements TokenTransformer {
      * @param encryptionKey the encryption key (must be 32 bytes for AES-256)
      * @param ringId the ring identifier for key management
      * @param ruleId the token rule identifier (e.g., "T1", "T2", etc.)
-     * @param issuer the issuer identifier (optional, defaults to "truveta.openlinktoken")
+     * @param issuer the issuer identifier (optional, defaults to "org.openlinktoken")
      * @throws JOSEException if the encrypter cannot be initialized
      */
     public JweMatchTokenFormatter(String encryptionKey, String ringId, String ruleId, String issuer)
@@ -62,7 +62,7 @@ public class JweMatchTokenFormatter implements TokenTransformer {
      * @param encryptionKey the raw encryption key (must be exactly 32 bytes for AES-256)
      * @param ringId the ring identifier for key management
      * @param ruleId the token rule identifier (e.g., "T1", "T2", etc.)
-     * @param issuer the issuer identifier (optional, defaults to "truveta.openlinktoken")
+     * @param issuer the issuer identifier (optional, defaults to "org.openlinktoken")
      * @throws JOSEException if the encrypter cannot be initialized
      */
     public JweMatchTokenFormatter(byte[] encryptionKey, String ringId, String ruleId, String issuer)
@@ -77,7 +77,7 @@ public class JweMatchTokenFormatter implements TokenTransformer {
 
         this.ringId = ringId;
         this.ruleId = ruleId;
-        this.issuer = (issuer != null && !issuer.isEmpty()) ? issuer : "truveta.openlinktoken";
+        this.issuer = (issuer != null && !issuer.isEmpty()) ? issuer : "org.openlinktoken";
         this.encryptionKey = keyBytes;
         this.encrypter = createEncrypter(this.encryptionKey);
     }
