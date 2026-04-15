@@ -27,7 +27,7 @@ Organizations often need to identify overlapping individuals across datasets wit
          │                                      │
          ▼                                      ▼
 ┌─────────────────┐                    ┌─────────────────┐
-│   Open Link Token     │                    │   Open Link Token     │
+│ Open Link Token │                    │ Open Link Token │
 │ (same secrets)  │                    │ (same secrets)  │
 └────────┬────────┘                    └────────┬────────┘
          │                                      │
