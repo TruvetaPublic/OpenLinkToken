@@ -37,6 +37,7 @@ jobs:
       - name: Publish Maven Surefire report
         if: success() || failure()
         uses: scacap/action-surefire-report@v1
+        continue-on-error: true
 
       - name: Publish Java unit test results
         if: always()
@@ -139,6 +140,7 @@ jobs:
       - name: Add Python code coverage to PR
         if: matrix.python-version == '3.10'
         uses: orgoro/coverage@v3.2
+        continue-on-error: true
         with:
           coverageFile: lib/python/openlinktoken/coverage.xml
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -319,6 +321,7 @@ jobs:
       - name: Add PySpark code coverage to PR
         if: matrix.python-version == '3.10' && matrix.spark-version == '4.0'
         uses: orgoro/coverage@v3.2
+        continue-on-error: true
         with:
           coverageFile: lib/python/openlinktoken-pyspark/coverage-${{ matrix.python-version }}-spark${{ matrix.spark-version }}.xml
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -446,6 +449,7 @@ jobs:
 
       - name: Upsert sticky Python test comment
         if: always() && steps.build-summary.outcome == 'success' && steps.build-summary.outputs.body != ''
+        continue-on-error: true
         uses: actions/github-script@v7
         with:
           script: |
