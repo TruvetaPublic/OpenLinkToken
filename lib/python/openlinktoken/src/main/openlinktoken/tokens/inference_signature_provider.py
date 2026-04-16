@@ -1,8 +1,4 @@
-"""
-Copyright (c) Truveta. All rights reserved.
-
-Generic SPI for inference-based token signature generation.
-"""
+# SPDX-License-Identifier: MIT
 
 from __future__ import annotations
 

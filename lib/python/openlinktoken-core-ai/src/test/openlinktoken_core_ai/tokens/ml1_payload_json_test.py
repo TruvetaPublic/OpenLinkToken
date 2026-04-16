@@ -1,6 +1,4 @@
-"""
-Copyright (c) Truveta. All rights reserved.
-"""
+# SPDX-License-Identifier: MIT
 
 from openlinktoken_core_ai.tokens.ml1_onnx_signature_generator import ml1_payload_to_json
 

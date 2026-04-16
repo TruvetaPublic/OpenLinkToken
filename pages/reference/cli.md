@@ -37,7 +37,7 @@ The `tokenize` subcommand is primarily used to build **internal overlap-analysis
 
 ```bash
 # Self-contained executable
-./openlinktoken [OPTIONS]
+./olt [OPTIONS]
 
 # Python
 python -m openlinktoken_cli.main <subcommand> [OPTIONS]
@@ -47,7 +47,7 @@ python -m openlinktoken_cli.main <subcommand> [OPTIONS]
 
 ```powershell
 # Self-contained executable
-.\openlinktoken.exe [OPTIONS]
+.\olt.exe [OPTIONS]
 
 # Python
 python -m openlinktoken_cli.main <subcommand> [OPTIONS]
