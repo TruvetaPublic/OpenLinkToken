@@ -3,7 +3,7 @@
 ## Overview
 
 This document tracks the design and implementation of rotation matrix support
-for OpenToken's T6 embeddings. It covers both the Java and Python libraries.
+for Open Link Token's T6 embeddings. It covers both the Java and Python libraries.
 
 The goal is to enable **privacy-preserving approximate matching** by rotating
 T6 ONNX embeddings with deterministic orthogonal matrices derived from a shared
@@ -24,7 +24,7 @@ service, which operates on 1024-dimensional BERT embeddings using:
 - Per-rotation quantization into discrete bins (bin width 0.05)
 - Position-sensitive token hashing against blocking keys (T1)
 
-OpenToken adapts this for its T6 ONNX embeddings (768-dim CLS vectors) with a
+Open Link Token adapts this for its T6 ONNX embeddings (768-dim CLS vectors) with a
 portable, language-agnostic algorithm.
 
 ---
@@ -41,7 +41,7 @@ portable, language-agnostic algorithm.
 ### Cross-Language Determinism
 
 PersonMatching uses `numpy.random.RandomState` (Mersenne Twister), which Java
-cannot replicate exactly. OpenToken instead uses:
+cannot replicate exactly. Open Link Token instead uses:
 
 1. **HMAC-SHA256 counter mode** as a portable PRNG  
    `h = HMAC-SHA256(key=SHA-256(IV), msg=counter_as_8_byte_big_endian)`
@@ -93,22 +93,22 @@ tests-interop 🔄 (covers full Java↔Python parity once Java builds)
 
 | File | Language | Description |
 |------|----------|-------------|
-| `lib/java/opentoken/src/main/java/com/truveta/opentoken/tokentransformer/rotation/RotationMatrixGenerator.java` | Java | HMAC-PRNG + Box-Muller + Modified Gram-Schmidt |
-| `lib/python/opentoken/src/main/opentoken/tokentransformer/rotation/rotation_matrix_generator.py` | Python | Identical algorithm using only `hashlib`, `hmac`, `math` |
-| `lib/python/opentoken/src/main/opentoken/tokentransformer/rotation/__init__.py` | Python | Package marker |
+| `lib/java/openlinktoken-core-ai/src/main/java/org/openlinktoken/tokentransformer/rotation/RotationMatrixGenerator.java` | Java | HMAC-PRNG + Box-Muller + Modified Gram-Schmidt |
+| `lib/python/openlinktoken-core-ai/src/main/openlinktoken_core_ai/tokentransformer/rotation/rotation_matrix_generator.py` | Python | Identical algorithm using only `hashlib`, `hmac`, `math` |
+| `lib/python/openlinktoken-core-ai/src/main/openlinktoken_core_ai/tokentransformer/rotation/__init__.py` | Python | Package marker |
 
 ### Unit Tests
 
 | File | Language | Coverage |
 |------|----------|----------|
-| `lib/java/opentoken/src/test/java/com/truveta/opentoken/tokentransformer/rotation/RotationMatrixGeneratorTest.java` | Java | 11 tests: count, dimensions, orthogonality, det=+1, determinism, different IVs, rotation indices, dim-2, dim-8, thread-safety |
-| `lib/python/opentoken/src/test/opentoken/tokentransformer/rotation/rotation_matrix_generator_test.py` | Python | Same 11 tests — all passing ✅ |
+| `lib/java/openlinktoken-core-ai/src/test/java/org/openlinktoken/tokentransformer/rotation/RotationMatrixGeneratorTest.java` | Java | 11 tests: count, dimensions, orthogonality, det=+1, determinism, different IVs, rotation indices, dim-2, dim-8, thread-safety |
+| `lib/python/openlinktoken-core-ai/src/test/openlinktoken_core_ai/tokentransformer/rotation/rotation_matrix_generator_test.py` | Python | Same 11 tests — all passing ✅ |
 
 ### Interoperability Infrastructure
 
 | File | Description |
 |------|-------------|
-| `lib/java/opentoken/src/test/java/com/truveta/opentoken/tools/RotationMatrixInteropHarness.java` | Java harness: accepts `<iv> <rotation_count> <dimension> <output.json>`, writes full-precision JSON |
+| `lib/java/openlinktoken-core-ai/src/test/java/org/openlinktoken/tools/RotationMatrixInteropHarness.java` | Java harness: accepts `<iv> <rotation_count> <dimension> <output.json>`, writes full-precision JSON |
 | `tools/interoperability/rotation_matrix_interop_test.py` | Cross-language test: invokes Java harness via Maven, runs Python generator in-process, compares element-by-element within 1e-12 tolerance |
 
 ---
@@ -215,5 +215,5 @@ New `EmbeddingTransformer` interface (`float[] → List<String>`) composing step
 ## Out of Scope
 
 - **Dimension bias** (median-per-dimension from sampled embeddings) — use zero vector bias for now
-- **Rotation-based matching** — handled downstream by PersonMatching, not OpenToken
-- **Blocking-key hashing** — PersonMatching hashes quantized tokens with a T1 blocking key; OpenToken emits raw quantized tokens and leaves blocking to the consumer
+- **Rotation-based matching** — handled downstream by PersonMatching, not Open Link Token
+- **Blocking-key hashing** — PersonMatching hashes quantized tokens with a T1 blocking key; Open Link Token emits raw quantized tokens and leaves blocking to the consumer

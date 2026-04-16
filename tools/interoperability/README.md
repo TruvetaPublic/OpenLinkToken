@@ -67,11 +67,11 @@ across platforms.
 The test runs in two steps for each test vector:
 
 1. **Java side** — invokes `RotationMatrixInteropHarness` (in
-   `lib/java/opentoken-core-ai/src/test/.../tools/`) via the Maven exec plugin.
+   `lib/java/openlinktoken-core-ai/src/test/.../tools/`) via the Maven exec plugin.
    The harness generates matrices from the IV and writes them to a temporary JSON
    file.
 2. **Python side** — calls
-   `opentoken_core_ai.tokentransformer.rotation.rotation_matrix_generator.generate()`
+   `openlinktoken_core_ai.tokentransformer.rotation.rotation_matrix_generator.generate()`
    directly in-process.
 
 Both sets of matrices are compared element-by-element with a tolerance of `1e-12`
@@ -99,7 +99,7 @@ can also compile manually:
 
 ```bash
 cd <repo-root>/lib/java
-mvn -pl opentoken-core-ai -am -DskipTests test-compile
+mvn -pl openlinktoken-core-ai -am -DskipTests test-compile
 ```
 
 ### Running the Tests
@@ -107,14 +107,14 @@ mvn -pl opentoken-core-ai -am -DskipTests test-compile
 From the repository root with the shared Python virtual environment active:
 
 ```bash
-source /home/vscode/.local/share/opentoken/.venv/bin/activate
+source /home/vscode/.local/share/openlinktoken/.venv/bin/activate
 python tools/interoperability/rotation_matrix_interop_test.py
 ```
 
 Or via pytest (picks up `TestRotationMatrixInterop` automatically):
 
 ```bash
-source /home/vscode/.local/share/opentoken/.venv/bin/activate
+source /home/vscode/.local/share/openlinktoken/.venv/bin/activate
 pytest tools/interoperability/rotation_matrix_interop_test.py -v
 ```
 
@@ -128,7 +128,7 @@ pytest tools/interoperability/rotation_matrix_interop_test.py -v
 ### Java Harness
 
 The Java side of the test is `RotationMatrixInteropHarness.java` in
-`lib/java/opentoken-core-ai/src/test/java/com/truveta/opentoken/tools/`.
+`lib/java/openlinktoken-core-ai/src/test/java/org/openlinktoken/tools/`.
 It accepts four arguments — `<iv> <rotation_count> <dimension> <output.json>` —
 and writes a JSON file in the format:
 
@@ -148,9 +148,9 @@ The harness can also be run standalone for manual spot-checks:
 
 ```bash
 cd <repo-root>/lib/java
-mvn -pl opentoken-core-ai -DskipTests \
+mvn -pl openlinktoken-core-ai -DskipTests \
   org.codehaus.mojo:exec-maven-plugin:3.5.0:java \
-  -Dexec.mainClass=com.truveta.opentoken.tools.RotationMatrixInteropHarness \
+  -Dexec.mainClass=org.openlinktoken.tools.RotationMatrixInteropHarness \
   -Dexec.classpathScope=test \
   "-Dexec.args=my-iv 3 4 /tmp/matrices.json"
 cat /tmp/matrices.json

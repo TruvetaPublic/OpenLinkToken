@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Print the decrypted contents of an OpenToken JWE exchange config file."""
+"""Print the decrypted contents of an Open Link Token JWE exchange config file."""
 
 from __future__ import annotations
 
@@ -11,10 +11,10 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(REPO_ROOT / "lib" / "python" / "opentoken-cli" / "src" / "main"))
-sys.path.insert(0, str(REPO_ROOT / "lib" / "python" / "opentoken" / "src" / "main"))
+sys.path.insert(0, str(REPO_ROOT / "lib" / "python" / "openlinktoken-cli" / "src" / "main"))
+sys.path.insert(0, str(REPO_ROOT / "lib" / "python" / "openlinktoken" / "src" / "main"))
 
-from opentoken.exchange_config import (
+from openlinktoken.exchange_config import (
     ResolvedExchangeConfig,
     resolve_exchange_config_inputs,
 )
@@ -27,8 +27,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog=PROGRAM,
         description=(
-            "Decrypt and print the contents of an OpenToken JWE exchange config file.\n\n"
-            "The private key is resolved automatically from ~/.opentoken/ when omitted."
+            "Decrypt and print the contents of an Open Link Token JWE exchange config file.\n\n"
+            "The private key is resolved automatically from ~/.openlinktoken/ when omitted."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -36,13 +36,13 @@ def parse_args() -> argparse.Namespace:
         "--exchange-config",
         required=True,
         metavar="PATH",
-        help="Path to the .exchange.json file produced by `opentoken initiate-exchange`.",
+        help="Path to the .exchange.json file produced by `olt initiate-exchange`.",
     )
     private_key_group = parser.add_mutually_exclusive_group(required=False)
     private_key_group.add_argument(
         "--private-key",
         metavar="PATH",
-        help="Path to the sender or recipient private key PEM. Auto-resolved from ~/.opentoken/ when omitted.",
+        help="Path to the sender or recipient private key PEM. Auto-resolved from ~/.openlinktoken/ when omitted.",
     )
     private_key_group.add_argument(
         "--private-key-env",

@@ -125,14 +125,14 @@ contents of an exchange config file. This is useful for debugging, verifying
 rotation parameters, and confirming which keys are embedded.
 
 ```bash
-# Print a human-readable summary (auto-resolves key from ~/.opentoken/)
+# Print a human-readable summary (auto-resolves key from ~/.openlinktoken/)
 python tools/exchange/inspect_exchange_config.py \
   --exchange-config sender-q2.exchange.json
 
 # Print with an explicit private key
 python tools/exchange/inspect_exchange_config.py \
   --exchange-config sender-q2.exchange.json \
-  --private-key ~/.opentoken/sender-q2.private.pem
+  --private-key ~/.openlinktoken/sender-q2.private.pem
 
 # Read the private key from an environment variable
 python tools/exchange/inspect_exchange_config.py \
@@ -222,7 +222,7 @@ Java and Python `RotationMatrixGenerator` implementations produce bit-exact
 results for the same inputs. This is the parity gate for T6 inferencing tokens.
 
 ```bash
-source /home/vscode/.local/share/opentoken/.venv/bin/activate
+source /home/vscode/.local/share/openlinktoken/.venv/bin/activate
 python tools/interoperability/rotation_matrix_interop_test.py
 ```
 

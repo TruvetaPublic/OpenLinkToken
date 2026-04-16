@@ -17,9 +17,9 @@ import tempfile
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(PROJECT_ROOT / "lib/python/opentoken-core-ai/src/main"))
+sys.path.insert(0, str(PROJECT_ROOT / "lib/python/openlinktoken-core-ai/src/main"))
 
-from opentoken_core_ai.tokentransformer.rotation.rotation_matrix_generator import generate  # noqa: E402
+from openlinktoken_core_ai.tokentransformer.rotation.rotation_matrix_generator import generate  # noqa: E402
 
 
 # Test vectors: (iv, rotation_count, dimension)
@@ -38,7 +38,7 @@ TEST_VECTORS = [
 # to accommodate any platform-specific variation in transcendental functions.
 FLOAT_TOLERANCE = 1e-12
 
-JAVA_MAIN_CLASS = "com.truveta.opentoken.tools.RotationMatrixInteropHarness"
+JAVA_MAIN_CLASS = "org.openlinktoken.tools.RotationMatrixInteropHarness"
 
 
 class JavaRotationHarness:
@@ -53,14 +53,14 @@ class JavaRotationHarness:
         """Run the Java harness and return parsed matrices.
 
         Uses two Maven invocations: one to compile (with -am for transitive deps),
-        and one to execute only on the opentoken-core-ai module to avoid exec:java
+        and one to execute only on the openlinktoken-core-ai module to avoid exec:java
         running on the parent pom.
         """
         java_dir = self.project_root / "lib/java"
 
         # Step 1: compile with all dependencies
         compile_cmd = [
-            "mvn", "-pl", "opentoken-core-ai", "-am", "-DskipTests", "-q", "test-compile",
+            "mvn", "-pl", "openlinktoken-core-ai", "-am", "-DskipTests", "-q", "test-compile",
         ]
         compile_result = subprocess.run(
             compile_cmd, capture_output=True, text=True, cwd=java_dir, check=False,
@@ -71,10 +71,10 @@ class JavaRotationHarness:
                 f"Java test-compile failed (exit {compile_result.returncode}): {compile_result.stderr[:500]}"
             )
 
-        # Step 2: execute harness only on opentoken-core-ai (no -am avoids parent execution)
+        # Step 2: execute harness only on openlinktoken-core-ai (no -am avoids parent execution)
         exec_cmd = [
             "mvn",
-            "-pl", "opentoken-core-ai",
+            "-pl", "openlinktoken-core-ai",
             "-DskipTests",
             "org.codehaus.mojo:exec-maven-plugin:3.5.0:java",
             f"-Dexec.mainClass={JAVA_MAIN_CLASS}",
