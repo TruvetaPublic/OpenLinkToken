@@ -172,7 +172,7 @@ Generates, reuses, or derives a sender key pair, encrypts a hashing secret into 
 
 \*\* Provide at most one of `--hashingsecret`, `--hashingsecret-stdin`, or `--hashingsecret-env`. If you omit all three, Open Link Token generates a secure random hashing secret. For pre-existing secrets, prefer `--hashingsecret-env` or `--hashingsecret-stdin` so the secret does not appear in shell history or process arguments. Because stdin can only be consumed once per command, `--hashingsecret-stdin` cannot be combined with `--public-key-stdin`.
 
-\*\*\* Provide at most one of `--rotation-iv`, `--rotation-iv-stdin`, or `--rotation-iv-env`. If you omit all three, OpenToken generates a secure random rotation IV. Prefer `--rotation-iv-env` or `--rotation-iv-stdin` over `--rotation-iv` to avoid the value appearing in shell history. The rotation IV, count, and bin width are encrypted into the exchange payload so both parties use identical rotation parameters.
+\*\*\* Provide at most one of `--rotation-iv`, `--rotation-iv-stdin`, or `--rotation-iv-env`. If you omit all three, Open Link Token generates a secure random rotation IV. Prefer `--rotation-iv-env` or `--rotation-iv-stdin` over `--rotation-iv` to avoid the value appearing in shell history. The rotation IV, count, and bin width are encrypted into the exchange payload so both parties use identical rotation parameters.
 
 **Example:**
 

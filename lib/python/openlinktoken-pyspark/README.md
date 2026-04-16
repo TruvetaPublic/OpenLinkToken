@@ -317,7 +317,7 @@ See the included Jupyter notebooks for complete examples:
 
 ```bash
 cd notebooks
-jupyter notebook OpenToken_PySpark_Example.ipynb
+jupyter notebook OpenLinkToken_PySpark_Example.ipynb
 ```
 
 **Custom Token Definitions:**

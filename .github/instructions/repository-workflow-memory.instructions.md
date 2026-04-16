@@ -13,10 +13,11 @@ After finishing changes to files in this repository, run `prek run --files <chan
 
 ## launch.json coverage for CLI commands
 
-Every CLI command must have a corresponding entry in `.vscode/launch.json`. When adding or updating any command in `lib/python/opentoken-cli/src/main/opentoken_cli/commands/`, add or update the matching debug configuration.
+Every CLI command must have a corresponding entry in `.vscode/launch.json`. When adding or updating any command in `lib/python/openlinktoken-cli/src/main/openlinktoken_cli/commands/`, add or update the matching debug configuration.
 
 Requirements for each configuration:
-- `PYTHONPATH` must include all three source roots: `lib/python/opentoken-cli/src/main:lib/python/opentoken/src/main:lib/python/opentoken-core-ai/src/main`
+
+- `PYTHONPATH` must include all three source roots: `lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main`
 - Use `${input:*}` variables for runtime-variable values (file paths, exchange config paths)
 - For commands with potentially destructive side effects, prefer safe defaults (e.g., `--dry-run`, `--demo-mode`)
 - Add any new required `inputs` entries to the shared `inputs` array at the bottom of the file

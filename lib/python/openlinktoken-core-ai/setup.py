@@ -55,10 +55,10 @@ setup(
     description="Open Link Token Core AI package for ML1/ONNX inference",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/Truveta/OpenToken",
+    url="https://github.com/Truveta/OpenTokenPrivate",
     project_urls={
-        "Source": "https://github.com/Truveta/OpenToken",
-        "Documentation": "https://github.com/Truveta/OpenToken/blob/main/README.md",
+        "Source": "https://github.com/Truveta/OpenTokenPrivate",
+        "Documentation": "https://github.com/Truveta/OpenTokenPrivate/blob/main/README.md",
     },
     package_dir={"": "src/main"},
     packages=find_packages(where="src/main"),

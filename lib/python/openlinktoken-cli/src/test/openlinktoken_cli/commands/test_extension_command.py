@@ -30,15 +30,17 @@ def _make_wheel(dest: Path, name: str = "hello-world", version: str = "1.0.0") -
 
     The wheel contains METADATA and entry_points.txt in a dist-info directory.
     """
-    dist_info = f"opentoken_{name.replace('-', '_')}-{version}.dist-info"
+    dist_info = f"openlinktoken_{name.replace('-', '_')}-{version}.dist-info"
     metadata_content = f"Metadata-Version: 2.1\nName: openlinktoken-{name}\nVersion: {version}\n"
-    ep_content = f"[openlinktoken.extensions]\n{name} = opentoken_{name.replace('-', '_')}.extension:FakeExtension\n"
+    ep_content = (
+        f"[openlinktoken.extensions]\n{name} = openlinktoken_{name.replace('-', '_')}.extension:FakeExtension\n"
+    )
 
-    whl_path = dest / f"opentoken_{name.replace('-', '_')}-{version}-py3-none-any.whl"
+    whl_path = dest / f"openlinktoken_{name.replace('-', '_')}-{version}-py3-none-any.whl"
     with zipfile.ZipFile(whl_path, "w") as zf:
         zf.writestr(f"{dist_info}/METADATA", metadata_content)
         zf.writestr(f"{dist_info}/entry_points.txt", ep_content)
-        zf.writestr(f"opentoken_{name.replace('-', '_')}/__init__.py", "")
+        zf.writestr(f"openlinktoken_{name.replace('-', '_')}/__init__.py", "")
     return whl_path
 
 

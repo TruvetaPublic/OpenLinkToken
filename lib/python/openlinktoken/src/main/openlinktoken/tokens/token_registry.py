@@ -44,8 +44,8 @@ class TokenRegistry:
                     token = obj()
                     definitions[token.get_identifier()] = token.get_definition()
 
-        # Discover tokens registered by external packages (e.g. opentoken-core-ai)
-        for ep in entry_points(group="opentoken.tokens.definitions"):
+        # Discover tokens registered by external packages (e.g. openlinktoken-core-ai)
+        for ep in entry_points(group="openlinktoken.tokens.definitions"):
             try:
                 obj = ep.load()
                 if isinstance(obj, type) and issubclass(obj, Token) and obj is not Token:
