@@ -1,8 +1,0 @@
-{
-  "servers": {
-    "github": {
-      "gallery": true,
-      "url": "https://api.githubcopilot.com/mcp/"
-    }
-  }
-}
