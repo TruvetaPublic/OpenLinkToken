@@ -15,13 +15,13 @@ from unittest.mock import patch
 REPO_ROOT = Path(__file__).resolve().parents[2]
 VALIDATOR_SCRIPT = REPO_ROOT / "tools" / "exchange" / "validate_exchange_secret.py"
 sys.path.insert(0, str(REPO_ROOT / "tools" / "exchange"))
-sys.path.insert(0, str(REPO_ROOT / "lib" / "python" / "opentoken-cli" / "src" / "main"))
-sys.path.insert(0, str(REPO_ROOT / "lib" / "python" / "opentoken" / "src" / "main"))
+sys.path.insert(0, str(REPO_ROOT / "lib" / "python" / "openlinktoken-cli" / "src" / "main"))
+sys.path.insert(0, str(REPO_ROOT / "lib" / "python" / "openlinktoken" / "src" / "main"))
 
 from validate_exchange_secret import decrypt_exchange_secret
 
-from opentoken_cli.commands.open_token_command import OpenTokenCommand
-from opentoken_cli.util.ec_key_utils import generate_key_pair
+from openlinktoken_cli.commands.open_token_command import OpenLinkTokenCommand
+from openlinktoken_cli.util.ec_key_utils import generate_key_pair
 
 
 def _generate_exchange_fixture(tmp_path: Path, hashing_secret: str) -> tuple[Path, Path, Path]:
@@ -34,7 +34,7 @@ def _generate_exchange_fixture(tmp_path: Path, hashing_secret: str) -> tuple[Pat
 
     exchange_config_path = tmp_path / "generated.exchange.json"
     with patch("pathlib.Path.home", return_value=tmp_path):
-        exit_code = OpenTokenCommand.execute(
+        exit_code = OpenLinkTokenCommand.execute(
             [
                 "initiate-exchange",
                 "--name",
@@ -50,7 +50,7 @@ def _generate_exchange_fixture(tmp_path: Path, hashing_secret: str) -> tuple[Pat
 
     assert exit_code == 0, "initiate-exchange should generate the JWE exchange config"
     assert json.loads(exchange_config_path.read_text(encoding="utf-8"))["version"] == 1
-    sender_private_key_path = tmp_path / ".opentoken" / "sender-local.private.pem"
+    sender_private_key_path = tmp_path / ".openlinktoken" / "sender-local.private.pem"
     return exchange_config_path, sender_private_key_path, recipient_private_key_path
 
 

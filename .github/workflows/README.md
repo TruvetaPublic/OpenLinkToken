@@ -18,7 +18,7 @@ This folder contains the repository's GitHub Actions workflows for CI, releases,
 - `maven-publish.yml` - Java package publishing
 - `python-publish.yml` - Python package publishing
 - `docker-publish.yml` - container publishing
-- `build-opentoken-cli.yml` - CLI build artifacts
+- `build-openlinktoken-cli.yml` - CLI build artifacts
 
 ### Documentation and repository maintenance
 

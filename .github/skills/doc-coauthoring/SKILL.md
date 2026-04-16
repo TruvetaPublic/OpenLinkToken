@@ -10,6 +10,7 @@ This skill provides a structured workflow for guiding users through collaborativ
 ## When to Offer This Workflow
 
 **Trigger conditions:**
+
 - User mentions writing documentation: "write a doc", "draft a proposal", "create a spec", "write up"
 - User mentions specific doc types: "PRD", "design doc", "decision doc", "RFC"
 - User seems to be starting a substantial writing task
@@ -42,11 +43,13 @@ Start by asking the user for meta-context about the document:
 Inform them they can answer in shorthand or dump information however works best for them.
 
 **If user provides a template or mentions a doc type:**
+
 - Ask if they have a template document to share
 - If they provide a link to a shared document, use the appropriate integration to fetch it
 - If they provide a file, read it
 
 **If user mentions editing an existing shared document:**
+
 - Use the appropriate integration to read the current state
 - Check for images without alt-text
 - If images exist without alt-text, explain that when others use an AI assistant to understand the doc, the assistant won't be able to see them. Ask if they want alt-text generated. If so, request they paste each image into chat for descriptive alt-text generation.
@@ -54,6 +57,7 @@ Inform them they can answer in shorthand or dump information however works best 
 ### Info Dumping
 
 Once initial questions are answered, encourage the user to dump all the context they have. Request information such as:
+
 - Background on the project/problem
 - Related team discussions or shared documents
 - Why alternative solutions aren't being used
@@ -63,6 +67,7 @@ Once initial questions are answered, encourage the user to dump all the context 
 - Stakeholder concerns
 
 Advise them not to worry about organizing it - just get it all out. Offer multiple ways to provide context:
+
 - Info dump stream-of-consciousness
 - Point to team channels or threads to read
 - Link to shared documents
@@ -76,10 +81,12 @@ Inform them clarifying questions will be asked once they've done their initial d
 **During context gathering:**
 
 - If user mentions team channels or shared documents:
+
   - If integrations available: Inform them the content will be read now, then use the appropriate integration
   - If integrations not available: Explain lack of access. Suggest they enable available connectors or integrations, or paste the relevant content directly.
 
 - If user mentions entities/projects that are unknown:
+
   - Ask if connected tools should be searched to learn more
   - Wait for user confirmation before searching
 
@@ -107,6 +114,7 @@ If user wants to add more, let them. When ready, proceed to Stage 2.
 
 **Instructions to user:**
 Explain that the document will be built section by section. For each section:
+
 1. Clarifying questions will be asked about what to include
 2. 5-20 options will be brainstormed
 3. User will indicate what to keep/remove/combine
@@ -162,6 +170,7 @@ Inform them they can answer in shorthand or just indicate what's important to co
 ### Step 2: Brainstorming
 
 For the [SECTION NAME] section, brainstorm [5-20] things that might be included, depending on the section's complexity. Look for:
+
 - Context shared that might have been forgotten
 - Angles or considerations not yet mentioned
 
@@ -172,6 +181,7 @@ Generate 5-20 numbered options based on section complexity. At the end, offer to
 Ask which points should be kept, removed, or combined. Request brief justifications to help learn priorities for the next sections.
 
 Provide examples:
+
 - "Keep 1,4,7,9"
 - "Remove 3 (duplicates 1)"
 - "Remove 6 (audience already knows this)"
@@ -205,6 +215,7 @@ Provide a note: Instead of editing the doc directly, ask them to indicate what t
 ### Step 6: Iterative Refinement
 
 As user provides feedback:
+
 - Use `str_replace` to make edits (never reprint the whole doc)
 - **If using artifacts:** Provide link to artifact after each edit
 - **If using files:** Just confirm edits are complete
@@ -223,6 +234,7 @@ When section is done, confirm [SECTION NAME] is complete. Ask if ready to move t
 ### Near Completion
 
 As approaching completion (80%+ of sections done), announce intention to re-read the entire document and check for:
+
 - Flow and consistency across sections
 - Redundancy or contradictions
 - Anything that feels like "slop" or generic filler
@@ -300,11 +312,13 @@ Generate 5-10 questions that readers would realistically ask.
 ### Step 2: Setup Testing
 
 Provide testing instructions:
+
 1. Open a fresh conversation with an AI assistant (GitHub Copilot Chat, or any available AI assistant)
 2. Paste or share the document content (if using a shared doc platform with connectors enabled, provide the link)
 3. Ask the test reader the generated questions
 
 For each question, instruct the test reader to provide:
+
 - The answer
 - Whether anything was ambiguous or unclear
 - What knowledge/context the doc assumes is already known
@@ -314,6 +328,7 @@ Check if the test reader gives correct answers or misinterprets anything.
 ### Step 3: Additional Checks
 
 Also ask the test reader:
+
 - "What in this doc might be ambiguous or unclear to readers?"
 - "What knowledge or context does this doc assume readers already have?"
 - "Are there any internal contradictions or inconsistencies?"
@@ -343,6 +358,7 @@ Ask if they want one more review, or if the work is done.
 
 **If user wants final review, provide it. Otherwise:**
 Announce document completion. Provide a few final tips:
+
 - Consider linking this conversation in an appendix so readers can see how the doc was developed
 - Use appendices to provide depth without bloating the main doc
 - Update the doc as feedback is received from real readers
@@ -350,26 +366,31 @@ Announce document completion. Provide a few final tips:
 ## Tips for Effective Guidance
 
 **Tone:**
+
 - Be direct and procedural
 - Explain rationale briefly when it affects user behavior
 - Don't try to "sell" the approach - just execute it
 
 **Handling Deviations:**
+
 - If user wants to skip a stage: Ask if they want to skip this and write freeform
 - If user seems frustrated: Acknowledge this is taking longer than expected. Suggest ways to move faster
 - Always give user agency to adjust the process
 
 **Context Management:**
+
 - Throughout, if context is missing on something mentioned, proactively ask
 - Don't let gaps accumulate - address them as they come up
 
 **File Management:**
+
 - Use `create_file` for drafting full sections
 - Use `str_replace` or `edit` for all edits
 - Confirm changes after every edit
 - Never create separate files for brainstorming lists - that's just conversation
 
 **Quality over Speed:**
+
 - Don't rush through stages
 - Each iteration should make meaningful improvements
 - The goal is a document that actually works for readers

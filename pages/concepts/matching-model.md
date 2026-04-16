@@ -4,7 +4,7 @@ layout: default
 
 # Matching Model
 
-OpenToken uses a multi-rule tokenization strategy to enable privacy-preserving record linkage across datasets that contain PII.
+Open Link Token uses a multi-rule tokenization strategy to enable privacy-preserving record linkage across datasets that contain PII.
 
 ---
 
@@ -56,7 +56,7 @@ Real-world data is messy:
 
 Using **five distinct rules** allows matching at different confidence levels:
 
-OpenToken emits tokens with a `RuleId` of `T1`–`T5`. These identifiers are **rule names**, not “tiers” (they don’t imply an ordering). In practice, different rules tend to trade off precision vs. recall based on which attributes they include.
+Open Link Token emits tokens with a `RuleId` of `T1`–`T5`. These identifiers are **rule names**, not “tiers” (they don’t imply an ordering). In practice, different rules tend to trade off precision vs. recall based on which attributes they include.
 
 | RuleId | Attributes (normalized signature)      | Typical use                                             |
 | :----- | :------------------------------------- | :------------------------------------------------------ |
@@ -207,7 +207,7 @@ Consider four fictional person records from two different systems:
 
 ### Step 1: Normalization
 
-OpenToken normalizes each field before token generation. For full rules, see [Normalization and Validation](normalization-and-validation.md).
+Open Link Token normalizes each field before token generation. For full rules, see [Normalization and Validation](normalization-and-validation.md).
 
 | RecordId | FirstName | LastName | BirthDate  | Sex | PostalCode | SSN         |
 | -------- | --------- | -------- | ---------- | --- | ---------- | ----------- |
@@ -313,7 +313,7 @@ For records from different organizations to match:
 2. **Same normalization**: Attribute processing must be identical
 3. **Same rules**: Token generation logic must match exactly
 
-OpenToken ensures this through:
+Open Link Token ensures this through:
 
 - Dual Java/Python implementations with byte-identical outputs
 - Comprehensive normalization documentation

@@ -66,7 +66,7 @@ The `tokenize` subcommand is primarily used to support **overlap analysis workfl
 Use the `tokenize` subcommand. Only the hashing secret is required (no encryption key).
 
 ```bash
-opentoken tokenize \
+olt tokenize \
   -i resources/sample.csv \
   -t csv \
   -o resources/hashed-output.csv \
@@ -77,7 +77,7 @@ opentoken tokenize \
 
 ```bash
 docker run --rm -v $(pwd)/resources:/app/resources \
-  opentoken:latest tokenize \
+  openlinktoken:latest tokenize \
   -i /app/resources/sample.csv \
   -t csv \
   -o /app/resources/hashed-output.csv \
@@ -91,7 +91,7 @@ Add `--hash-record-ids` to replace each input `RecordId` with its SHA-256 hex di
 The `--hash-record-ids` flag is also supported by the `package` subcommand.
 
 ```bash
-opentoken tokenize \
+olt tokenize \
   -i resources/sample.csv \
   -t csv \
   -o resources/hashed-output.csv \
@@ -114,7 +114,7 @@ Each `RecordId` is replaced with a 64-character lowercase SHA-256 hex digest. Th
 In demo mode the full hashing pipeline is skipped. No `--hashingsecret` is required.
 
 ```bash
-opentoken tokenize \
+olt tokenize \
   -i resources/sample.csv \
   -t csv \
   -o resources/demo-output.csv \
@@ -125,7 +125,7 @@ opentoken tokenize \
 
 ```bash
 docker run --rm -v $(pwd)/resources:/app/resources \
-  opentoken:latest tokenize \
+  openlinktoken:latest tokenize \
   -i /app/resources/sample.csv \
   -t csv \
   -o /app/resources/demo-output.csv \
@@ -263,7 +263,7 @@ cat output.metadata.json | jq '.HashingSecretHash'
 **Solution:** Use the `tokenize` subcommand to skip encryption:
 
 ```bash
-opentoken tokenize -i data.csv -t csv -o out.csv -h "Key"
+olt tokenize -i data.csv -t csv -o out.csv -h "Key"
 ```
 
 ---

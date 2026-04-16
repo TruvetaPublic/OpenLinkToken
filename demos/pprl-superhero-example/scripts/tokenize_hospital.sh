@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Tokenize the hospital dataset using OpenToken (Python CLI).
+# Tokenize the hospital dataset using Open Link Token (Python CLI).
 #
 # Output:
 #   outputs/hospital_tokens.csv
@@ -25,15 +25,15 @@ echo "============================================================"
 echo ""
 
 # Ensure Python CLI is available
-if ! command -v opentoken &>/dev/null; then
-  echo "opentoken CLI not found. Installing Python CLI..."
-  (cd "${PROJECT_ROOT}" && uv pip install -e lib/python/opentoken -e lib/python/opentoken-cli)
+if ! command -v olt &>/dev/null; then
+  echo "olt CLI not found. Installing Python CLI..."
+  (cd "${PROJECT_ROOT}" && uv pip install -e lib/python/openlinktoken -e lib/python/openlinktoken-cli)
 fi
 
 mkdir -p "${DEMO_DIR}/outputs"
 
-echo "Running OpenToken CLI (hospital)..."
-opentoken package \
+echo "Running Open Link Token CLI (hospital)..."
+olt package \
   -t csv \
   -i "${DEMO_DIR}/datasets/hospital_superhero_data.csv" \
   -o "${DEMO_DIR}/outputs/hospital_tokens.csv" \

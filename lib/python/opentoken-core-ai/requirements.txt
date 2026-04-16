@@ -1,7 +1,0 @@
-# Core package dependency
-opentoken>=2.0.0-alpha
-
-# T6 ONNX inference
-numpy>=1.26.0
-onnxruntime>=1.22.0
-tokenizers>=0.21.0

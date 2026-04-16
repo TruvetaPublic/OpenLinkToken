@@ -4,11 +4,11 @@ layout: default
 
 # Matching Concepts
 
-Understand how OpenToken tokens work for record linkage and the strategies behind the 5 token rules.
+Understand how Open Link Token tokens work for record linkage and the strategies behind the 5 token rules.
 
 ## Token Generation Rules
 
-OpenToken generates **5 distinct tokens (T1–T5)** per person, each combining different attributes to target different matching scenarios.
+Open Link Token generates **5 distinct tokens (T1–T5)** per person, each combining different attributes to target different matching scenarios.
 
 ### Rule Definitions
 
@@ -139,12 +139,12 @@ Tokens are encrypted to prevent re-identification, but can be decrypted to debug
 
 ```bash
 # Generate encrypted tokens (default mode)
-opentoken package \
+olt package \
   -i data.csv -t csv -o output.csv \
   -h "HashingKey" -e "EncryptionKey"
 
 # Decrypt previously encrypted tokens
-opentoken decrypt \
+olt decrypt \
   -i output.csv -t csv -o decrypted.csv \
   -e "EncryptionKey"
 ```
@@ -174,11 +174,11 @@ The token generation pipeline ensures **high collision resistance**:
 2. **HMAC-SHA256**: Adds secret key; prevents pre-computed tables
 3. **AES-256**: Adds another layer of encryption; prevents token re-identification
 
-Even with SHA-256's theoretical weaknesses, OpenToken's combination is secure for regulated PII use cases.
+Even with SHA-256's theoretical weaknesses, Open Link Token's combination is secure for regulated PII use cases.
 
 ## Next Steps
 
 - **Understand validation rules**: [Security](../security.md)
-- **Decrypt and debug tokens**: [Running OpenToken](../running-opentoken/index.md)
+- **Decrypt and debug tokens**: [Running Open Link Token](../running-openlinktoken/index.md)
 - **View full token specification**: [Specification](../specification.md)
 - **Integrate with your system**: [Configuration](../config/configuration.md)

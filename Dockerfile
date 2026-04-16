@@ -12,13 +12,13 @@ ENV PIP_NO_CACHE_DIR=1 \
 WORKDIR /app
 
 COPY README.md /app/README.md
-COPY lib/python/opentoken /app/lib/python/opentoken
-COPY lib/python/opentoken-cli /app/lib/python/opentoken-cli
+COPY lib/python/openlinktoken /app/lib/python/openlinktoken
+COPY lib/python/openlinktoken-cli /app/lib/python/openlinktoken-cli
 
 RUN python -m pip install --upgrade pip && \
     python -m pip install --prefix=/install \
-        /app/lib/python/opentoken \
-        /app/lib/python/opentoken-cli
+    /app/lib/python/openlinktoken \
+    /app/lib/python/openlinktoken-cli
 
 ##################################################
 # Stage 2: Create the image to run the Python CLI
@@ -38,4 +38,4 @@ WORKDIR /app
 RUN chown -R appuser:appuser /app
 USER appuser
 
-ENTRYPOINT ["opentoken"]
+ENTRYPOINT ["olt"]

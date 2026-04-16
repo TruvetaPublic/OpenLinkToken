@@ -1,0 +1,408 @@
+# SPDX-License-Identifier: MIT
+
+import logging
+from typing import List
+
+from openlinktoken_core_ai.tokens.rotation_config import RotationConfig
+from openlinktoken_core_ai.tokens.t6_inference_config import T6InferenceConfig
+
+from openlinktoken.metadata import Metadata
+from openlinktoken.tokens.tokenizer.passthrough_tokenizer import PassthroughTokenizer
+from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
+from openlinktoken.tokentransformer.token_transformer import TokenTransformer
+from openlinktoken_cli.io.csv.person_attributes_csv_reader import PersonAttributesCSVReader
+from openlinktoken_cli.io.csv.person_attributes_csv_writer import PersonAttributesCSVWriter
+from openlinktoken_cli.io.json.metadata_json_writer import MetadataJsonWriter
+from openlinktoken_cli.io.parquet.person_attributes_parquet_reader import (
+    PersonAttributesParquetReader,
+)
+from openlinktoken_cli.io.parquet.person_attributes_parquet_writer import (
+    PersonAttributesParquetWriter,
+)
+from openlinktoken_cli.processor.person_attributes_processor import (
+    PersonAttributesProcessor,
+)
+from openlinktoken_cli.util.exchange_config import resolve_exchange_config
+
+logger = logging.getLogger(__name__)
+
+
+class TokenizeCommand:
+    """
+    Tokenize command - generates tokens from person attributes.
+
+    Normal mode (default): applies SHA-256 then HMAC-SHA256 hashing on the token
+    signature using the hashing secret from the exchange config.
+
+    Demo mode (``--demo-mode``): skips all hashing so tokens are the raw
+    pipe-separated attribute signature strings. No secret is needed, making it easy
+    to explore the output without managing secrets. Demo-mode output is
+    **not** suitable for production or cross-organisation exchange.
+    """
+
+    TYPE_CSV = "csv"
+    TYPE_PARQUET = "parquet"
+
+    @staticmethod
+    def register_subcommand(subparsers):
+        """Register the tokenize subcommand with the argument parser."""
+        parser = subparsers.add_parser(
+            "tokenize",
+            help="Generate tokens from person attributes (normal mode: HMAC-SHA256; demo mode: plain signatures)",
+            description=(
+                "Generate tokens from person attributes.\n\n"
+                "Normal mode: tokens are HMAC-SHA256 hashed using the exchange config.\n"
+                "Demo mode (--demo-mode): tokens are plain attribute signature strings; no secret needed."
+            ),
+            add_help=False,
+        )
+
+        # Manually add --help (without -h short form)
+        parser.add_argument(
+            "--help",
+            action="help",
+            help="Show this help message and exit",
+        )
+
+        parser.add_argument(
+            "-i",
+            "--input",
+            required=True,
+            dest="input_path",
+            help="Input file path",
+        )
+
+        parser.add_argument(
+            "-o",
+            "--output",
+            required=True,
+            dest="output_path",
+            help="Output file path",
+        )
+
+        parser.add_argument(
+            "-t",
+            "--input-type",
+            required=True,
+            dest="input_type",
+            choices=["csv", "parquet"],
+            help="Input file type: csv or parquet",
+        )
+
+        parser.add_argument(
+            "-ot",
+            "--output-type",
+            dest="output_type",
+            choices=["csv", "parquet"],
+            help="Output file type (defaults to input type): csv or parquet",
+        )
+
+        parser.add_argument(
+            "--demo-mode",
+            action="store_true",
+            default=False,
+            dest="demo_mode",
+            help=(
+                "Enable demo mode: output raw pipe-separated attribute signature strings with no hashing. "
+                "--exchange-config is not allowed in this mode. "
+                "Demo output is NOT suitable for production or cross-organisation exchange."
+            ),
+        )
+
+        parser.add_argument(
+            "--exchange-config",
+            required=False,
+            dest="exchange_config",
+            metavar="PATH",
+            help="Path to the exchange config JSON (default: ./openlinktoken-YYYY-MM-DD.exchange.json)",
+        )
+
+        private_key_group = parser.add_mutually_exclusive_group(required=False)
+        private_key_group.add_argument(
+            "--private-key",
+            dest="private_key",
+            metavar="PATH",
+            help="Path to the private key PEM used to decrypt the exchange config",
+        )
+        private_key_group.add_argument(
+            "--private-key-env",
+            dest="private_key_env",
+            metavar="ENV_VAR",
+            help="Read the private key PEM from the named environment variable",
+        )
+
+        parser.add_argument(
+            "--hash-record-ids",
+            action="store_true",
+            default=False,
+            dest="hash_record_ids",
+            help=(
+                "Hash input RecordId values using SHA-256 before writing to output. "
+                "The hashed value (not the original) appears in the output file. "
+                "This is a one-way operation with no traceability."
+            ),
+        )
+
+        parser.add_argument(
+            "--disable-inferencing",
+            action="store_true",
+            dest="disable_inferencing",
+            help="Disable T6 ONNX inference token generation",
+        )
+
+        parser.add_argument(
+            "--t6-model-path",
+            dest="t6_model_path",
+            default=T6InferenceConfig.DEFAULT_MODEL_PATH,
+            help=f"Path to T6 ONNX model (default: {T6InferenceConfig.DEFAULT_MODEL_PATH})",
+        )
+
+        parser.add_argument(
+            "--t6-tokenizer-path",
+            dest="t6_tokenizer_path",
+            default=T6InferenceConfig.DEFAULT_TOKENIZER_PATH,
+            help=f"Path to T6 tokenizer JSON (default: {T6InferenceConfig.DEFAULT_TOKENIZER_PATH})",
+        )
+
+        parser.add_argument(
+            "--t6-max-seq-length",
+            "--t6-max-sequence-length",
+            dest="t6_max_sequence_length",
+            type=int,
+            default=T6InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH,
+            help="Maximum T6 tokenizer sequence length (default: 128)",
+        )
+
+        parser.add_argument(
+            "--inferencing-batch-size",
+            dest="inferencing_batch_size",
+            type=int,
+            default=T6InferenceConfig.DEFAULT_BATCH_SIZE,
+            help="T6 ONNX inference batch size (default: 64)",
+        )
+
+        parser.add_argument(
+            "--inferencing-num-threads",
+            dest="inferencing_num_threads",
+            type=int,
+            default=0,
+            help="ORT intra/inter-op thread count for T6 inference (0 = auto-detect, default: 0)",
+        )
+
+        parser.add_argument(
+            "--rotation-iv",
+            dest="rotation_iv",
+            default=None,
+            metavar="STRING",
+            help="Initialization vector for rotation-based T6-R* token generation.",
+        )
+
+        parser.set_defaults(func=TokenizeCommand.execute)
+
+    @staticmethod
+    def execute(args):
+        """Execute the tokenize command."""
+        demo_mode = getattr(args, "demo_mode", False)
+        hash_record_ids = getattr(args, "hash_record_ids", False)
+
+        if demo_mode:
+            logger.warning(
+                "Running in DEMO MODE - tokens are raw attribute signature strings with no hashing. "
+                "Do not use demo-mode output in production or share it externally."
+            )
+        else:
+            logger.info("Running tokenize command (normal mode)")
+
+        # Default output type to input type if not specified
+        output_type = args.output_type if args.output_type else args.input_type
+
+        logger.info(f"Input: {args.input_path} ({args.input_type})")
+        logger.info(f"Output: {args.output_path} ({output_type})")
+        if hash_record_ids:
+            logger.info("Record ID hashing enabled: RecordIds will be SHA-256 hashed in output")
+
+        t6_enabled = not getattr(args, "disable_inferencing", False)
+        T6InferenceConfig.configure(
+            enable_t6=t6_enabled,
+            configured_model_path=getattr(args, "t6_model_path", T6InferenceConfig.DEFAULT_MODEL_PATH),
+            configured_tokenizer_path=getattr(args, "t6_tokenizer_path", T6InferenceConfig.DEFAULT_TOKENIZER_PATH),
+            configured_max_sequence_length=getattr(
+                args, "t6_max_sequence_length", T6InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH
+            ),
+            configured_batch_size=getattr(args, "inferencing_batch_size", T6InferenceConfig.DEFAULT_BATCH_SIZE),
+            configured_num_threads=getattr(args, "inferencing_num_threads", 0),
+        )
+        num_threads = getattr(args, "inferencing_num_threads", 0)
+        logger.info(
+            "T6 ONNX inference: enabled=%s, modelPath=%s, tokenizerPath=%s, "
+            "maxSequenceLength=%s, batchSize=%s, numThreads=%s",
+            t6_enabled,
+            getattr(args, "t6_model_path", T6InferenceConfig.DEFAULT_MODEL_PATH),
+            getattr(args, "t6_tokenizer_path", T6InferenceConfig.DEFAULT_TOKENIZER_PATH),
+            getattr(args, "t6_max_sequence_length", T6InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH),
+            getattr(args, "inferencing_batch_size", T6InferenceConfig.DEFAULT_BATCH_SIZE),
+            num_threads if num_threads > 0 else "auto",
+        )
+
+        rotation_iv = getattr(args, "rotation_iv", None)
+
+        if demo_mode and args.exchange_config:
+            logger.error("--demo-mode cannot be combined with --exchange-config.")
+            return 1
+
+        try:
+            if demo_mode:
+                # In demo mode, configure rotation from CLI --rotation-iv only
+                if rotation_iv is not None:
+                    RotationConfig.configure(enable=True, rotation_iv=rotation_iv)
+                logger.info(
+                    "Rotation token generation: enabled=%s, iv=%s, count=%s, hashDimension=%s, binWidth=%s",
+                    RotationConfig.is_enabled(),
+                    RotationConfig.get_rotation_iv(),
+                    RotationConfig.get_rotation_count(),
+                    RotationConfig.get_hash_dimension(),
+                    RotationConfig.get_bin_width(),
+                )
+                TokenizeCommand._process_tokens_demo(
+                    args.input_path,
+                    args.output_path,
+                    args.input_type,
+                    output_type,
+                )
+            else:
+                exchange = resolve_exchange_config(
+                    args.exchange_config,
+                    private_key_path=args.private_key,
+                    private_key_env=args.private_key_env,
+                )
+                logger.info(f"Exchange config: {exchange.path}")
+
+                # Configure rotation from exchange config; CLI --rotation-iv overrides
+                effective_iv = rotation_iv if rotation_iv is not None else None
+                if exchange.rotation_iv:
+                    exchange_iv_str = exchange.rotation_iv.decode("utf-8", errors="replace")
+                    if effective_iv is None:
+                        effective_iv = exchange_iv_str
+                effective_rotation_count = (
+                    exchange.rotation_count if exchange.rotation_count > 0 else RotationConfig.DEFAULT_ROTATION_COUNT
+                )
+                effective_bin_width = exchange.bin_width
+                effective_dimension_bias = exchange.dimension_bias if exchange.dimension_bias else None
+
+                if effective_iv is not None:
+                    RotationConfig.configure(
+                        enable=True,
+                        rotation_iv=effective_iv,
+                        rotation_count=effective_rotation_count,
+                        bin_width=effective_bin_width,
+                        dimension_bias=effective_dimension_bias,
+                    )
+
+                logger.info(
+                    "Rotation token generation: enabled=%s, iv=%s, count=%s, hashDimension=%s, binWidth=%s",
+                    RotationConfig.is_enabled(),
+                    RotationConfig.get_rotation_iv(),
+                    RotationConfig.get_rotation_count(),
+                    RotationConfig.get_hash_dimension(),
+                    RotationConfig.get_bin_width(),
+                )
+
+                TokenizeCommand._process_tokens(
+                    args.input_path,
+                    args.output_path,
+                    args.input_type,
+                    output_type,
+                    exchange.hashing_secret,
+                    hash_record_ids,
+                )
+            logger.info("Token generation completed successfully")
+            return 0
+        except Exception as e:
+            logger.error(f"Error during token generation: {e}", exc_info=True)
+            return 1
+
+    @staticmethod
+    def _process_tokens(
+        input_path: str,
+        output_path: str,
+        input_type: str,
+        output_type: str,
+        hashing_secret: str | bytes,
+        hash_record_ids: bool = False,
+    ):
+        """Process tokens in normal mode using SHA-256 + HMAC-SHA256."""
+        token_transformer_list: List[TokenTransformer] = []
+
+        try:
+            # Add only hash transformer (no encryption in tokenize mode)
+            token_transformer_list.append(HashTokenTransformer(hashing_secret))
+        except Exception as e:
+            logger.error("Error initializing hash transformer", exc_info=e)
+            raise RuntimeError("Failed to initialize transformer") from e
+
+        try:
+            with (
+                TokenizeCommand._create_reader(input_path, input_type) as reader,
+                TokenizeCommand._create_writer(output_path, output_type) as writer,
+            ):
+                metadata = Metadata()
+                metadata_map = metadata.initialize()
+                # Only record the hashing-secret hash in normal mode
+                metadata.add_hashed_secret(Metadata.HASHING_SECRET_HASH, hashing_secret)
+
+                PersonAttributesProcessor.process(
+                    reader, writer, token_transformer_list, metadata_map, hash_record_ids=hash_record_ids
+                )
+
+                MetadataJsonWriter(output_path).write(metadata_map)
+
+        except Exception as e:
+            logger.error("Error processing tokens", exc_info=e)
+            raise
+
+    @staticmethod
+    def _process_tokens_demo(
+        input_path: str,
+        output_path: str,
+        input_type: str,
+        output_type: str,
+    ):
+        """Process tokens in demo mode using PassthroughTokenizer (no hashing)."""
+        try:
+            with (
+                TokenizeCommand._create_reader(input_path, input_type) as reader,
+                TokenizeCommand._create_writer(output_path, output_type) as writer,
+            ):
+                metadata = Metadata()
+                metadata_map = metadata.initialize()
+                # Deliberately omit add_hashed_secret — no secret used in demo mode
+
+                PersonAttributesProcessor.process_with_tokenizer(reader, writer, PassthroughTokenizer([]), metadata_map)
+
+                MetadataJsonWriter(output_path).write(metadata_map)
+
+        except Exception as e:
+            logger.error("Error processing tokens in demo mode", exc_info=e)
+            raise
+
+    @staticmethod
+    def _create_reader(path: str, file_type: str):
+        """Create a PersonAttributesReader based on file type."""
+        file_type_lower = file_type.lower()
+        if file_type_lower == TokenizeCommand.TYPE_CSV:
+            return PersonAttributesCSVReader(path)
+        elif file_type_lower == TokenizeCommand.TYPE_PARQUET:
+            return PersonAttributesParquetReader(path)
+        else:
+            raise ValueError(f"Unsupported input type: {file_type}")
+
+    @staticmethod
+    def _create_writer(path: str, file_type: str):
+        """Create a PersonAttributesWriter based on file type."""
+        file_type_lower = file_type.lower()
+        if file_type_lower == TokenizeCommand.TYPE_CSV:
+            return PersonAttributesCSVWriter(path)
+        elif file_type_lower == TokenizeCommand.TYPE_PARQUET:
+            return PersonAttributesParquetWriter(path)
+        else:
+            raise ValueError(f"Unsupported output type: {file_type}")

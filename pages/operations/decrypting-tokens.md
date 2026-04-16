@@ -25,10 +25,10 @@ Decryption is useful for:
 
 Use the `decrypt` subcommand with the same encryption key used for token generation.
 
-### OpenToken CLI (Python)
+### Open Link Token CLI (Python)
 
 ```bash
-opentoken decrypt \
+olt decrypt \
   -i ../../resources/output.csv \
   -t csv \
   -o ../../resources/decrypted.csv \
@@ -39,7 +39,7 @@ opentoken decrypt \
 
 ```bash
 docker run --rm -v $(pwd)/resources:/app/resources \
-  opentoken:latest decrypt \
+  openlinktoken:latest decrypt \
   -i /app/resources/output.csv \
   -t csv \
   -o /app/resources/decrypted.csv \
@@ -91,16 +91,16 @@ python decryptor.py \
 
 ## Cross-Language Decryption
 
-Tokens can be encrypted by one OpenToken implementation and decrypted by another—all implementations use AES-256-GCM with identical parameters:
+Tokens can be encrypted by one Open Link Token implementation and decrypted by another—all implementations use AES-256-GCM with identical parameters:
 
 ```bash
-# Encrypt with OpenToken CLI
-opentoken package \
+# Encrypt with Open Link Token CLI
+olt package \
   -i data.csv -t csv -o tokens.csv \
   -h "HashingKey" -e "EncryptionKey32Characters!!!!!"
 
-# Decrypt with OpenToken CLI
-opentoken decrypt \
+# Decrypt with Open Link Token CLI
+olt decrypt \
   -i tokens.csv -t csv -o decrypted.csv \
   -e "EncryptionKey32Characters!!!!!"
 ```
@@ -120,8 +120,8 @@ opentoken decrypt \
 - **Never commit encryption keys** to version control
 - **Use environment variables** or secret stores:
   ```bash
-  export OPENTOKEN_ENCRYPTION_KEY="YourKey32Characters!!!!!!!!!!!!"
-  opentoken decrypt -e "$OPENTOKEN_ENCRYPTION_KEY" ...
+  export OLT_ENCRYPTION_KEY="YourKey32Characters!!!!!!!!!!!!"
+  olt decrypt -e "$OLT_ENCRYPTION_KEY" ...
   ```
 - **Rotate keys periodically** and re-encrypt tokens as needed
 

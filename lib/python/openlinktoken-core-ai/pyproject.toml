@@ -1,0 +1,29 @@
+[project]
+name = "openlinktoken-core-ai"
+version = "2.0.0-alpha"
+requires-python = ">=3.10"
+dynamic = [
+  "authors",
+  "dependencies",
+  "description",
+  "optional-dependencies",
+  "readme",
+  "urls",
+]
+
+[project.entry-points."openlinktoken.inference_providers"]
+t6 = "openlinktoken_core_ai.t6_signature_provider:OnnxT6SignatureProvider"
+
+[project.entry-points."openlinktoken.tokens.definitions"]
+t6_token = "openlinktoken_core_ai.tokens.t6_token:T6Token"
+
+[build-system]
+requires = ["setuptools>=40.8.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src/main"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src/main", "src/test", "../../openlinktoken/src/main"]
+testpaths = ["src/test"]

@@ -58,16 +58,16 @@ jobs:
       - name: Publish to GitHub Packages Apache Maven
         run: |
           set -euo pipefail
-          base_url="https://maven.pkg.github.com/TruvetaPublic/OpenToken/com/truveta"
+          base_url="https://maven.pkg.github.com/TruvetaPublic/OpenLinkToken/org/openlinktoken"
           version="${VERSION}"
-          parent_metadata_url="${base_url}/opentoken-parent/maven-metadata.xml"
+          parent_metadata_url="${base_url}/openlinktoken-parent/maven-metadata.xml"
 
           if metadata=$(curl -fsSL \
             -H "Authorization: Bearer ${GITHUB_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
             "$parent_metadata_url"); then
             if echo "$metadata" | grep -q "<version>${version}</version>"; then
-              echo "OpenToken parent ${version} already published. Skipping deploy."
+              echo "Open Link Token parent ${version} already published. Skipping deploy."
               exit 0
             fi
           fi
@@ -85,7 +85,7 @@ jobs:
             const path = require('path');
 
             const tag = '${{ env.TAG }}';
-            const artifactDirs = ['lib/java/opentoken/target'];
+            const artifactDirs = ['lib/java/openlinktoken/target'];
 
             console.log(`[DEBUG] Starting artifact upload process`);
             console.log(`[DEBUG] Tag: ${tag}`);
@@ -115,13 +115,13 @@ jobs:
 
             for (const artifactDir of artifactDirs) {
               console.log(`[DEBUG] Processing artifact directory: ${artifactDir}`);
-              
+
               if (!fs.existsSync(artifactDir)) {
                 console.log(`✗ No artifacts directory found at ${artifactDir}`);
                 continue;
               }
 
-              const files = fs.readdirSync(artifactDir).filter(f => 
+              const files = fs.readdirSync(artifactDir).filter(f =>
                 (f.endsWith('.jar') || f.endsWith('.pom')) && !f.endsWith('javadoc.jar') && !f.endsWith('sources.jar') && !f.startsWith('original-')
               );
 

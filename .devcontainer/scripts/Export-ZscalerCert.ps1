@@ -23,7 +23,7 @@ if ($cert) {
     Write-Host "  Subject: $($cert.Subject)"
     Write-Host "  Issuer:  $($cert.Issuer)"
     Write-Host "  Thumbprint: $($cert.Thumbprint)"
-    
+
     # Export the certificate to PEM format
     try {
         # First export as Base64 (PEM)
@@ -32,10 +32,10 @@ if ($cert) {
         $pemContent = "-----BEGIN CERTIFICATE-----`n"
         $pemContent += [Convert]::ToBase64String($certBytes, "InsertLineBreaks")
         $pemContent += "`n-----END CERTIFICATE-----"
-        
+
         # Save to file
         [System.IO.File]::WriteAllText($OutputFile, $pemContent)
-        
+
         Write-Host "Certificate successfully exported to $OutputFile"
         exit 0
     }
@@ -46,20 +46,20 @@ if ($cert) {
 }
 else {
     Write-Host "No Zscaler certificate found in certificate stores."
-    
+
     # Try to find any certificate with Zscaler in the name
     Write-Host "Looking for any certificate with 'Zscaler' in the name..."
     $zscalerCerts = Get-ChildItem -Path Cert:\LocalMachine\Root | Where-Object {$_.Subject -like "*Zscaler*"} | Select-Object -First 1
-    
+
     if (-not $zscalerCerts) {
         $zscalerCerts = Get-ChildItem -Path Cert:\CurrentUser\Root | Where-Object {$_.Subject -like "*Zscaler*"} | Select-Object -First 1
     }
-    
+
     if ($zscalerCerts) {
         Write-Host "Found certificate with Zscaler in the name:"
         Write-Host "  Subject: $($zscalerCerts.Subject)"
         Write-Host "  Issuer:  $($zscalerCerts.Issuer)"
-        
+
         # Export the certificate
         try {
             # Export as Base64 (PEM)
@@ -68,10 +68,10 @@ else {
             $pemContent = "-----BEGIN CERTIFICATE-----`n"
             $pemContent += [Convert]::ToBase64String($certBytes, "InsertLineBreaks")
             $pemContent += "`n-----END CERTIFICATE-----"
-            
+
             # Save to file
             [System.IO.File]::WriteAllText($OutputFile, $pemContent)
-            
+
             Write-Host "Alternative Zscaler certificate exported to $OutputFile"
             exit 0
         }

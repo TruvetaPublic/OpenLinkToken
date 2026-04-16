@@ -3,13 +3,13 @@
 set -u -o pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-CLI_SOURCE_ROOT="$REPO_ROOT/lib/python/opentoken-cli/src/main"
-CORE_SOURCE_ROOT="$REPO_ROOT/lib/python/opentoken/src/main"
+CLI_SOURCE_ROOT="$REPO_ROOT/lib/python/openlinktoken-cli/src/main"
+CORE_SOURCE_ROOT="$REPO_ROOT/lib/python/openlinktoken/src/main"
 
 DEFAULT_HASHING_SECRET="LocalHarnessHashingSecret"
-HASHING_SECRET_ENV_VAR="OPENTOKEN_MATRIX_HASHING_SECRET"
-RECIPIENT_PUBLIC_KEY_ENV_VAR="OPENTOKEN_MATRIX_RECIPIENT_PUBLIC_KEY_PEM"
-SENDER_PRIVATE_KEY_ENV_VAR="OPENTOKEN_MATRIX_SENDER_PRIVATE_KEY_PEM"
+HASHING_SECRET_ENV_VAR="OLT_MATRIX_HASHING_SECRET"
+RECIPIENT_PUBLIC_KEY_ENV_VAR="OLT_MATRIX_RECIPIENT_PUBLIC_KEY_PEM"
+SENDER_PRIVATE_KEY_ENV_VAR="OLT_MATRIX_SENDER_PRIVATE_KEY_PEM"
 
 PAUSE_SECONDS="0.25"
 INCLUDE_LIVE_UPDATE="false"
@@ -30,7 +30,7 @@ show_usage() {
     cat <<'EOF'
 Usage: tools/cli/run_cli_matrix.sh [OPTIONS]
 
-Run a local OpenToken CLI command matrix against the current worktree.
+Run a local Open Link Token CLI command matrix against the current worktree.
 The script prints each exact command before it runs, pauses between commands,
 and summarizes pass/fail counts plus the slowest command at the end.
 
@@ -107,7 +107,7 @@ setup_workspace() {
     if [[ -n "$WORKSPACE_ROOT" ]]; then
         mkdir -p "$WORKSPACE_ROOT"
     else
-        WORKSPACE_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/opentoken-cli-matrix.XXXXXX")"
+        WORKSPACE_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/openlinktoken-cli-matrix.XXXXXX")"
     fi
 
     INPUT_DIR="$WORKSPACE_ROOT/inputs"
@@ -124,13 +124,13 @@ setup_workspace() {
     DECRYPTED_CSV="$OUTPUT_DIR/decrypted.csv"
     PACKAGED_CSV="$OUTPUT_DIR/packaged.csv"
     EXCHANGE_JSON="$OUTPUT_DIR/local.exchange.json"
-    RECIPIENT_PUBLIC_KEY="$HOME_DIR/.opentoken/recipient.public.pem"
-    SENDER_PRIVATE_KEY="$HOME_DIR/.opentoken/sender-local.private.pem"
+    RECIPIENT_PUBLIC_KEY="$HOME_DIR/.openlinktoken/recipient.public.pem"
+    SENDER_PRIVATE_KEY="$HOME_DIR/.openlinktoken/sender-local.private.pem"
 
-    EXT_HELLO_WORLD_DIR="$REPO_ROOT/lib/python/opentoken_ext_hello_world"
+    EXT_HELLO_WORLD_DIR="$REPO_ROOT/lib/python/openlinktoken_ext_hello_world"
     EXT_HELLO_WORLD_WHEEL=""
     EXT_HELLO_WORLD_WAS_INSTALLED="false"
-    if python -c "import importlib.metadata; importlib.metadata.distribution('opentoken-ext-hello-world')" 2>/dev/null; then
+    if python -c "import importlib.metadata; importlib.metadata.distribution('openlinktoken-ext-hello-world')" 2>/dev/null; then
         EXT_HELLO_WORLD_WAS_INSTALLED="true"
     fi
 
@@ -148,8 +148,8 @@ EOF
 cleanup() {
     # Restore the hello-world editable install if the install round-trip removed it.
     if [[ "$INCLUDE_EXTENSION_INSTALL" == "true" && "$EXT_HELLO_WORLD_WAS_INSTALLED" == "true" ]]; then
-        if ! python -c "import importlib.metadata; importlib.metadata.distribution('opentoken-ext-hello-world')" 2>/dev/null; then
-            echo "Restoring opentoken-ext-hello-world editable install..."
+        if ! python -c "import importlib.metadata; importlib.metadata.distribution('openlinktoken-ext-hello-world')" 2>/dev/null; then
+            echo "Restoring openlinktoken-ext-hello-world editable install..."
             python -m pip install -e "$EXT_HELLO_WORLD_DIR" --quiet
         fi
     fi
@@ -329,7 +329,7 @@ PY
     done
 
     echo
-    echo "OpenToken CLI matrix summary"
+    echo "Open Link Token CLI matrix summary"
     echo "Commands run: $total"
     echo "Passed: $passed"
     echo "Failed: $failed"
@@ -351,7 +351,7 @@ PY
 }
 
 run_matrix() {
-    local -a python_cmd=(python -m opentoken_cli.main --no-update-check)
+    local -a python_cmd=(python -m openlinktoken_cli.main --no-update-check)
 
     run_step "root-help" "$PAUSE_SECONDS" "${python_cmd[@]}" --help
     confirm_before_next_step "help-overview" "$PAUSE_SECONDS" || return 0
@@ -437,7 +437,7 @@ run_matrix() {
         confirm_before_next_step "extension-hello-world-bye" "$PAUSE_SECONDS" || return 0
         run_step "extension-hello-world-bye" "0" "${python_cmd[@]}" hello-world bye --name Bob
     else
-        echo "Skipping hello-world steps (opentoken-ext-hello-world not installed; use --include-extension-install to test the full install/run/uninstall round-trip)"
+        echo "Skipping hello-world steps (openlinktoken-ext-hello-world not installed; use --include-extension-install to test the full install/run/uninstall round-trip)"
     fi
 
     if [[ "$INCLUDE_EXTENSION_INSTALL" == "true" ]]; then
@@ -454,7 +454,7 @@ run_matrix() {
                 return 0
             fi
 
-            EXT_HELLO_WORLD_WHEEL="$(ls "$WHEEL_DIR"/opentoken_ext_hello_world-*.whl 2>/dev/null | head -1)"
+            EXT_HELLO_WORLD_WHEEL="$(ls "$WHEEL_DIR"/openlinktoken_ext_hello_world-*.whl 2>/dev/null | head -1)"
             echo "Built: $EXT_HELLO_WORLD_WHEEL"
 
             confirm_before_next_step "extension-install" "$PAUSE_SECONDS" || return 0

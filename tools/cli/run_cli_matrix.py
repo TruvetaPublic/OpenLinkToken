@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run a local OpenToken CLI command matrix against the current worktree."""
+"""Run a local Open Link Token CLI command matrix against the current worktree."""
 
 from __future__ import annotations
 
@@ -16,8 +16,8 @@ from subprocess import CompletedProcess
 from typing import Callable, Sequence
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-CLI_SOURCE_ROOT = REPO_ROOT / "lib" / "python" / "opentoken-cli" / "src" / "main"
-CORE_SOURCE_ROOT = REPO_ROOT / "lib" / "python" / "opentoken" / "src" / "main"
+CLI_SOURCE_ROOT = REPO_ROOT / "lib" / "python" / "openlinktoken-cli" / "src" / "main"
+CORE_SOURCE_ROOT = REPO_ROOT / "lib" / "python" / "openlinktoken" / "src" / "main"
 
 DEFAULT_HASHING_SECRET = "LocalHarnessHashingSecret"
 
@@ -86,8 +86,8 @@ def build_command_plan(
     decrypted_csv = output_dir / "decrypted.csv"
     packaged_csv = output_dir / "packaged.csv"
     exchange_json = output_dir / "local.exchange.json"
-    recipient_public_key = home_dir / ".opentoken" / "recipient.public.pem"
-    sender_private_key = home_dir / ".opentoken" / "sender-local.private.pem"
+    recipient_public_key = home_dir / ".openlinktoken" / "recipient.public.pem"
+    sender_private_key = home_dir / ".openlinktoken" / "sender-local.private.pem"
 
     env = _build_command_env(home_dir)
     plan = [
@@ -306,7 +306,7 @@ def format_summary(results: Sequence[CommandResult]) -> str:
     failed = total - passed
 
     lines = [
-        "OpenToken CLI matrix summary",
+        "Open Link Token CLI matrix summary",
         f"Commands run: {total}",
         f"Passed: {passed}",
         f"Failed: {failed}",
@@ -339,8 +339,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     """Run the local CLI command matrix harness."""
     parser = argparse.ArgumentParser(
         description=(
-            "Run a local OpenToken CLI command matrix against the current worktree "
-            "using 'python -m opentoken_cli.main'."
+            "Run a local Open Link Token CLI command matrix against the current worktree "
+            "using 'python -m openlinktoken_cli.main'."
         )
     )
     parser.add_argument(
@@ -359,7 +359,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.pause_seconds < 0:
         parser.error("--pause-seconds must be non-negative")
 
-    with tempfile.TemporaryDirectory(prefix="opentoken-cli-matrix-") as temp_dir:
+    with tempfile.TemporaryDirectory(prefix="openlinktoken-cli-matrix-") as temp_dir:
         workspace = Path(temp_dir)
         print(f"Using temporary workspace: {workspace}")
         plan = build_command_plan(
@@ -420,7 +420,7 @@ def _build_people_csv_fixture() -> str:
 
 def _cli_args(*command_args: str) -> list[str]:
     """Build a current-source CLI invocation."""
-    return [sys.executable, "-m", "opentoken_cli.main", *command_args]
+    return [sys.executable, "-m", "openlinktoken_cli.main", *command_args]
 
 
 def _preview_output(output: str, limit: int = 120) -> str:

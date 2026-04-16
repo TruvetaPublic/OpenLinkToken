@@ -4,19 +4,19 @@ layout: default
 
 # Mock Data Workflows
 
-How to generate and process mock datasets for testing OpenToken pipelines.
+How to generate and process mock datasets for testing Open Link Token pipelines.
 
 ---
 
 ## Overview
 
-OpenToken includes a mock data generator for testing and development. The tool creates realistic person records with configurable duplicate rates for overlap analysis testing.
+Open Link Token includes a mock data generator for testing and development. The tool creates realistic person records with configurable duplicate rates for overlap analysis testing.
 
 ---
 
 ## Mock Data Generator
 
-Location: [tools/mockdata/data_generator.py](https://github.com/TruvetaPublic/OpenToken/blob/main/tools/mockdata/data_generator.py)
+Location: [tools/mockdata/data_generator.py](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/tools/mockdata/data_generator.py)
 
 ### Usage
 
@@ -58,7 +58,7 @@ If no arguments provided:
 
 ## Output Format
 
-Generated CSV files include all required OpenToken columns:
+Generated CSV files include all required Open Link Token columns:
 
 ```csv
 RecordId,BirthDate,FirstName,LastName,PostalCode,Sex,SocialSecurityNumber
@@ -112,9 +112,9 @@ Duplicates have **different RecordIds** but **identical attributes**, so they pr
 cd tools/mockdata
 python data_generator.py 100 0.05 test_data.csv
 
-# 2. Process with OpenToken
+# 2. Process with Open Link Token
 cd ../../
-./run-opentoken.sh package \
+./run-openlinktoken.sh package \
   -i tools/mockdata/test_data.csv \
   -o resources/test_output.csv \
   -t csv \
@@ -137,7 +137,7 @@ python data_generator.py 1000 0.0 dataset_a.csv
 python data_generator.py 1000 0.0 dataset_b.csv
 
 # Add some common records manually or use a script
-# Then process both with OpenToken using the same secrets
+# Then process both with Open Link Token using the same secrets
 ```
 
 For automated overlap analysis, see [Spark or Databricks](spark-or-databricks.md).
@@ -146,14 +146,14 @@ For automated overlap analysis, see [Spark or Databricks](spark-or-databricks.md
 
 ## Sample Data Files
 
-Pre-generated sample files are available in [resources/](https://github.com/TruvetaPublic/OpenToken/tree/main/resources):
+Pre-generated sample files are available in [resources/](https://github.com/TruvetaPublic/OpenLinkToken/tree/main/resources):
 
-| File                                                                                                                    | Description                    |
-| ----------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| [sample.csv](https://github.com/TruvetaPublic/OpenToken/blob/main/resources/sample.csv)                                 | Small test file for quickstart |
-| [mockdata/test_data.csv](https://github.com/TruvetaPublic/OpenToken/blob/main/resources/mockdata/test_data.csv)         | 100 records with duplicates    |
-| [mockdata/test_overlap1.csv](https://github.com/TruvetaPublic/OpenToken/blob/main/resources/mockdata/test_overlap1.csv) | Dataset for overlap testing    |
-| [mockdata/test_overlap2.csv](https://github.com/TruvetaPublic/OpenToken/blob/main/resources/mockdata/test_overlap2.csv) | Dataset for overlap testing    |
+| File                                                                                                                        | Description                    |
+| --------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| [sample.csv](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/resources/sample.csv)                                 | Small test file for quickstart |
+| [mockdata/test_data.csv](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/resources/mockdata/test_data.csv)         | 100 records with duplicates    |
+| [mockdata/test_overlap1.csv](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/resources/mockdata/test_overlap1.csv) | Dataset for overlap testing    |
+| [mockdata/test_overlap2.csv](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/resources/mockdata/test_overlap2.csv) | Dataset for overlap testing    |
 
 ---
 
@@ -199,8 +199,8 @@ df = pd.read_csv('large_test.csv')
 df.to_parquet('large_test.parquet')
 "
 
-# Process with OpenToken
-opentoken package \
+# Process with Open Link Token
+olt package \
   -i large_test.parquet -t parquet \
   -o tokens.parquet \
   -h "HashingKey" -e "EncryptionKey"
@@ -210,6 +210,6 @@ opentoken package \
 
 ## Next Steps
 
-- **Run OpenToken**: [Running Batch Jobs](running-batch-jobs.md)
+- **Run Open Link Token**: [Running Batch Jobs](running-batch-jobs.md)
 - **Quickstart guide**: [Quickstarts](../quickstarts/index.md)
 - **Overlap analysis**: [Spark or Databricks](spark-or-databricks.md)

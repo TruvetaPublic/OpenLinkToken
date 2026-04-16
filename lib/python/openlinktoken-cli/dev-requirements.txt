@@ -1,0 +1,6 @@
+# Development dependencies
+pytest
+pytest-cov
+
+# For editable install of openlinktoken core
+-e ../openlinktoken

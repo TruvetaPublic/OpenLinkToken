@@ -4,19 +4,19 @@ layout: default
 
 # Extension Author Reference
 
-Complete reference for building OpenToken CLI extensions. This page documents the `OpenTokenExtension` ABC contract, entry-point declaration, extension lifecycle, conflict rules, security and trust model, and binary compatibility requirements.
+Complete reference for building Open Link Token CLI extensions. This page documents the `OpenLinkTokenExtension` ABC contract, entry-point declaration, extension lifecycle, conflict rules, security and trust model, and binary compatibility requirements.
 
 ---
 
 ## Overview
 
-OpenToken extensions are self-contained Python packages that add top-level subcommands to the `opentoken` CLI. Each extension registers exactly one top-level subcommand (for example, `opentoken hello-world`) by implementing the `OpenTokenExtension` abstract base class and declaring an entry point in the `opentoken.extensions` group.
+Open Link Token extensions are self-contained Python packages that add top-level subcommands to the `openlinktoken` CLI. Each extension registers exactly one top-level subcommand (for example, `olt hello-world`) by implementing the `OpenLinkTokenExtension` abstract base class and declaring an entry point in the `openlinktoken.extensions` group.
 
-Extensions are installed to a user-local directory and loaded at CLI startup, so they appear alongside built-in commands in `opentoken --help`.
+Extensions are installed to a user-local directory and loaded at CLI startup, so they appear alongside built-in commands in `olt --help`.
 
 ---
 
-## `OpenTokenExtension` Interface
+## `OpenLinkTokenExtension` Interface
 
 All extensions must implement the following abstract base class:
 
@@ -24,11 +24,11 @@ All extensions must implement the following abstract base class:
 from abc import ABC, abstractmethod
 
 
-class OpenTokenExtension(ABC):
-    """Abstract base class for all OpenToken CLI extensions.
+class OpenLinkTokenExtension(ABC):
+    """Abstract base class for all Open Link Token CLI extensions.
 
     Implement this class and declare it as an entry point in the
-    ``opentoken.extensions`` group to register a top-level subcommand.
+    ``openlinktoken.extensions`` group to register a top-level subcommand.
     """
 
     @property
@@ -37,7 +37,7 @@ class OpenTokenExtension(ABC):
         """The top-level subcommand name.
 
         Must be unique across all installed extensions and must not
-        conflict with any built-in OpenToken subcommand.
+        conflict with any built-in Open Link Token subcommand.
 
         Example: ``"hello-world"``
         """
@@ -45,7 +45,7 @@ class OpenTokenExtension(ABC):
     @property
     @abstractmethod
     def description(self) -> str:
-        """Short description shown in ``opentoken --help``."""
+        """Short description shown in ``olt --help``."""
 
     @property
     @abstractmethod
@@ -79,18 +79,18 @@ class OpenTokenExtension(ABC):
 ### Example Implementation
 
 ```python
-# opentoken_ext_hello_world/extension.py
-from opentoken_cli.extension import OpenTokenExtension
+# openlinktoken_ext_hello_world/extension.py
+from openlinktoken_cli.extension import OpenLinkTokenExtension
 
 
-class HelloWorldExtension(OpenTokenExtension):
+class HelloWorldExtension(OpenLinkTokenExtension):
     @property
     def command_name(self) -> str:
         return "hello-world"
 
     @property
     def description(self) -> str:
-        return "Greet the world from an OpenToken extension"
+        return "Greet the world from an Open Link Token extension"
 
     @property
     def version(self) -> str:
@@ -128,11 +128,11 @@ class HelloWorldExtension(OpenTokenExtension):
 
 ## Entry-Point Declaration
 
-Declare your extension class in `pyproject.toml` under the `opentoken.extensions` entry-point group:
+Declare your extension class in `pyproject.toml` under the `openlinktoken.extensions` entry-point group:
 
 ```toml
-[project.entry-points."opentoken.extensions"]
-hello-world = "opentoken_ext_hello_world.extension:HelloWorldExtension"
+[project.entry-points."openlinktoken.extensions"]
+hello-world = "openlinktoken_ext_hello_world.extension:HelloWorldExtension"
 ```
 
 The key (`hello-world`) must match `command_name` returned by your class. The CLI uses the entry-point group for discovery; the key is used only as an identifier — the authoritative command name comes from `command_name`.
@@ -145,14 +145,14 @@ The key (`hello-world`) must match `command_name` returned by your class. The CL
 install → discover → load → register → invoke → uninstall
 ```
 
-| Phase         | What happens                                                                                                                                                                                       |
-| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **install**   | `opentoken extension install <url>` downloads the package, validates it, and records it in `registry.json`. A security warning is printed and confirmation is required (unless `--yes` is passed). |
-| **discover**  | At startup the CLI scans the `opentoken.extensions` entry-point group (Python package installs) and/or `registry.json` (binary installs).                                                          |
-| **load**      | Each discovered entry point is imported and instantiated. Load errors print a warning and skip the extension; they do not abort the CLI.                                                           |
-| **register**  | `register_subcommand(subparsers)` is called for each successfully loaded extension.                                                                                                                |
-| **invoke**    | The user runs `opentoken <command_name> [args]`. The CLI dispatches to the `func` set by `set_defaults`.                                                                                           |
-| **uninstall** | `opentoken extension uninstall <name>` removes the package and its registry entry.                                                                                                                 |
+| Phase         | What happens                                                                                                                                                                                 |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **install**   | `olt extension install <url>` downloads the package, validates it, and records it in `registry.json`. A security warning is printed and confirmation is required (unless `--yes` is passed). |
+| **discover**  | At startup the CLI scans the `openlinktoken.extensions` entry-point group (Python package installs) and/or `registry.json` (binary installs).                                                |
+| **load**      | Each discovered entry point is imported and instantiated. Load errors print a warning and skip the extension; they do not abort the CLI.                                                     |
+| **register**  | `register_subcommand(subparsers)` is called for each successfully loaded extension.                                                                                                          |
+| **invoke**    | The user runs `openlinktoken <command_name> [args]`. The CLI dispatches to the `func` set by `set_defaults`.                                                                                 |
+| **uninstall** | `olt extension uninstall <name>` removes the package and its registry entry.                                                                                                                 |
 
 ---
 
@@ -161,27 +161,27 @@ install → discover → load → register → invoke → uninstall
 - **Command name uniqueness**: `command_name` must not duplicate a built-in subcommand name or another installed extension's `command_name`.
 - **Conflict at load time**: If two installed extensions declare the same `command_name`, the CLI prints a warning and loads the extension that sorts first alphabetically by `command_name`. The conflicting extension is skipped.
 - **Built-in precedence**: Built-in subcommands always take precedence. An extension whose `command_name` matches a built-in is skipped with a warning.
-- **Registry records source**: `registry.json` stores the source URL for each installed extension, which is shown in `opentoken extension list` to help diagnose conflicts.
+- **Registry records source**: `registry.json` stores the source URL for each installed extension, which is shown in `olt extension list` to help diagnose conflicts.
 
 ---
 
 ## Security and Trust Model
 
-OpenToken does not perform hash or signature verification on extension wheel files. There is no checksum comparison, code-signing check, or certificate validation during installation — the CLI installs whatever `.whl` is located at the given URL or path. Verifying the source and integrity of an extension wheel is the responsibility of the person running the install command.
+Open Link Token does not perform hash or signature verification on extension wheel files. There is no checksum comparison, code-signing check, or certificate validation during installation — the CLI installs whatever `.whl` is located at the given URL or path. Verifying the source and integrity of an extension wheel is the responsibility of the person running the install command.
 
 ### What the CLI does at install time
 
-- Prints a `_SECURITY_WARNING` banner before taking any action. This banner is intentional and cannot be suppressed; it reads: _"Extensions are arbitrary Python code and are not verified by Truveta. Install only extensions from sources you trust."_
+- Prints a `_SECURITY_WARNING` banner before taking any action. This banner is intentional and cannot be suppressed; it reads: _"Extensions are arbitrary Python code and are not verified by the Open Link Token project. Install only extensions from sources you trust."_
 - Displays the source URL and prompts for confirmation.
 - Confirmation is required unless `--yes` is passed. In automated environments, pass `--yes` explicitly and ensure you have independently validated the source before running the command.
 
 **Sample install prompt:**
 
 ```
-WARNING: Extensions are arbitrary Python code and are not verified by Truveta.
+WARNING: Extensions are arbitrary Python code and are not verified by the Open Link Token project.
 Install only extensions from sources you trust.
 You are about to install an extension from:
-  https://example.com/opentoken-ext-hello-world-1.0.0-py3-none-any.whl
+  https://example.com/openlinktoken-ext-hello-world-1.0.0-py3-none-any.whl
 Do you want to continue? [y/N]
 ```
 
@@ -193,7 +193,7 @@ Do you want to continue? [y/N]
 
 ### Implications for use
 
-Extensions run with the same privileges as the CLI process. A malicious or tampered extension has full access to the system, credentials, and data available to the user running `opentoken`.
+Extensions run with the same privileges as the CLI process. A malicious or tampered extension has full access to the system, credentials, and data available to the user running `openlinktoken`.
 
 Before installing an extension:
 
@@ -214,23 +214,23 @@ This limits the install-time attack surface without requiring changes to the CLI
 
 ## Binary Compatibility
 
-The pre-built OpenToken binary is a PyInstaller-frozen executable. Extensions that depend on packages not bundled in the binary cannot be loaded under it.
+The pre-built Open Link Token binary is a PyInstaller-frozen executable. Extensions that depend on packages not bundled in the binary cannot be loaded under it.
 
 ### Three Dependency Tiers
 
-| Tier                       | Dependencies                                                                                                            | Binary compatible? |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------- | :----------------: |
-| **1 — Zero-dep**           | None (stdlib only)                                                                                                      |       ✅ Yes       |
-| **2 — OpenToken-provided** | Only packages bundled in the binary (e.g., `pyarrow`, `pandas`, `csv2parquet`, `cryptography`, `jwcrypto`, `packaging`) |       ✅ Yes       |
-| **3 — External**           | Any other packages                                                                                                      |       ❌ No        |
+| Tier                             | Dependencies                                                                                                            | Binary compatible? |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | :----------------: |
+| **1 — Zero-dep**                 | None (stdlib only)                                                                                                      |       ✅ Yes       |
+| **2 — Open Link Token-provided** | Only packages bundled in the binary (e.g., `pyarrow`, `pandas`, `csv2parquet`, `cryptography`, `jwcrypto`, `packaging`) |       ✅ Yes       |
+| **3 — External**                 | Any other packages                                                                                                      |       ❌ No        |
 
 **Recommendation:** Keep extensions at Tier 1 whenever possible. Tier 1 extensions work under both the binary and a Python package install.
 
-`opentoken extension install` aborts with a clear error when it detects a Tier-3 extension under the binary:
+`olt extension install` aborts with a clear error when it detects a Tier-3 extension under the binary:
 
 ```
-Error: This extension requires external dependencies that are not bundled in the OpenToken binary: requests, boto3
-Install the Python package version of OpenToken CLI to use this extension.
+Error: This extension requires external dependencies that are not bundled in the Open Link Token binary: requests, boto3
+Install the Python package version of Open Link Token CLI to use this extension.
 ```
 
 ---
@@ -241,14 +241,14 @@ PyInstaller produces a frozen binary that bundles the Python interpreter and all
 
 ### Two-Track Loader
 
-OpenToken uses a two-track loader to work around this constraint:
+Open Link Token uses a two-track loader to work around this constraint:
 
-| Install type           | Discovery mechanism                                                   |
-| ---------------------- | --------------------------------------------------------------------- |
-| **Python package**     | `importlib.metadata` entry points in the `opentoken.extensions` group |
-| **PyInstaller binary** | `registry.json` + `sys.path` injection                                |
+| Install type           | Discovery mechanism                                                       |
+| ---------------------- | ------------------------------------------------------------------------- |
+| **Python package**     | `importlib.metadata` entry points in the `openlinktoken.extensions` group |
+| **PyInstaller binary** | `registry.json` + `sys.path` injection                                    |
 
-Under the binary, `opentoken extension install` writes each extension's package path to `~/.opentoken/extensions/registry.json`. At startup the loader reads `registry.json`, injects each package path into `sys.path`, and then imports the extension class directly using the stored module and class name.
+Under the binary, `olt extension install` writes each extension's package path to `~/.openlinktoken/extensions/registry.json`. At startup the loader reads `registry.json`, injects each package path into `sys.path`, and then imports the extension class directly using the stored module and class name.
 
 **Implication for authors:** You do not need to do anything special to support the binary loader. As long as your class is importable from its module path and you have declared the entry point correctly, both tracks work automatically.
 
@@ -258,12 +258,12 @@ Under the binary, `opentoken extension install` writes each extension's package 
 {
   "hello-world": {
     "version": "1.0.0",
-    "source_url": "file:///home/user/dist/opentoken_ext_hello_world-1.0.0-py3-none-any.whl",
-    "source_path": "/home/user/.opentoken/extensions/hello-world/src",
-    "module": "opentoken_ext_hello_world.extension",
+    "source_url": "file:///home/user/dist/openlinktoken_ext_hello_world-1.0.0-py3-none-any.whl",
+    "source_path": "/home/user/.openlinktoken/extensions/hello-world/src",
+    "module": "openlinktoken_ext_hello_world.extension",
     "class": "HelloWorldExtension",
     "command_name": "hello-world",
-    "dist_name": "opentoken-ext-hello-world"
+    "dist_name": "openlinktoken-ext-hello-world"
   }
 }
 ```
@@ -276,4 +276,4 @@ The top-level keys are the extension `command_name` values. Each value is a meta
 
 - [Managing Extensions](../operations/managing-extensions.md) — Install, list, and uninstall extensions
 - [Extension Quickstart](../quickstarts/extension-quickstart.md) — Build and install your first extension end-to-end
-- [CLI Reference](cli.md) — `opentoken extension` subcommands and environment variables
+- [CLI Reference](cli.md) — `olt extension` subcommands and environment variables

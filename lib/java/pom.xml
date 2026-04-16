@@ -4,25 +4,25 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.truveta</groupId>
-    <artifactId>opentoken-parent</artifactId>
+    <groupId>org.openlinktoken</groupId>
+    <artifactId>openlinktoken-parent</artifactId>
     <packaging>pom</packaging>
     <version>2.0.0-alpha</version>
 
-    <name>opentoken-parent</name>
-    <description>OpenToken Parent POM - Privacy-preserving record linkage library</description>
-    <url>http://www.truveta.com</url>
+    <name>openlinktoken-parent</name>
+    <description>Open Link Token Parent POM - Privacy-preserving record linkage library</description>
+    <url>https://truvetapublic.github.io/OpenLinkToken/</url>
 
     <modules>
-        <module>opentoken</module>
-        <module>opentoken-core-ai</module>
+        <module>openlinktoken</module>
+        <module>openlinktoken-core-ai</module>
     </modules>
 
     <distributionManagement>
         <repository>
             <id>github</id>
             <name>GitHub Packages</name>
-            <url>https://maven.pkg.github.com/TruvetaPublic/OpenToken</url>
+            <url>https://maven.pkg.github.com/TruvetaPublic/OpenLinkToken</url>
         </repository>
     </distributionManagement>
 
@@ -33,7 +33,7 @@
         <maven.compiler.release>17</maven.compiler.release>
         <junit.jupiter.version>6.0.3</junit.jupiter.version>
         <surefire.plugin.version>3.5.5</surefire.plugin.version>
-        <mockito.version>5.21.0</mockito.version>
+        <mockito.version>5.23.0</mockito.version>
         <slf4j.version>2.0.17</slf4j.version>
         <log4j.version>2.25.3</log4j.version>
     </properties>
@@ -42,8 +42,8 @@
         <dependencies>
             <!-- Internal modules -->
             <dependency>
-                <groupId>com.truveta</groupId>
-                <artifactId>opentoken</artifactId>
+                <groupId>org.openlinktoken</groupId>
+                <artifactId>openlinktoken</artifactId>
                 <version>2.0.0-alpha</version>
             </dependency>
 
@@ -65,7 +65,7 @@
             <dependency>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok</artifactId>
-                <version>1.18.42</version>
+                <version>1.18.44</version>
                 <scope>provided</scope>
             </dependency>
 
@@ -94,7 +94,7 @@
             <dependency>
                 <groupId>com.nimbusds</groupId>
                 <artifactId>nimbus-jose-jwt</artifactId>
-                <version>10.8</version>
+                <version>10.9</version>
             </dependency>
 
             <!-- Logging -->
@@ -132,7 +132,7 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>2.21.1</version>
+                <version>2.21.2</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -228,7 +228,7 @@
                     <artifactId>maven-javadoc-plugin</artifactId>
                     <version>3.12.0</version>
                     <configuration>
-                        <excludePackageNames>com.truveta.opentoken</excludePackageNames>
+                        <excludePackageNames>org.openlinktoken</excludePackageNames>
                     </configuration>
                 </plugin>
                 <!-- Versions Plugin -->

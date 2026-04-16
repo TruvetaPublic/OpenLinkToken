@@ -114,5 +114,5 @@ jobs:
       # - name: Update dependency graph
       #   uses: advanced-security/maven-dependency-submission-action@v3
       #   with:
-      #     directory: ${{ github.workspace }}/lib/java/opentoken
+      #     directory: ${{ github.workspace }}/lib/java/openlinktoken
       #     maven-args: "-B -DskipTests"

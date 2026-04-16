@@ -6,8 +6,8 @@ layout: default
 
 For a high-level overview and other entry points, see [Quickstarts](index.md).
 
-Install the Python packages and run the OpenToken CLI with a virtual environment.
-After installation, use the `opentoken` command directly.
+Install the Python packages and run the Open Link Token CLI with a virtual environment.
+After installation, use the `openlinktoken` command directly.
 
 ## Prerequisites
 
@@ -32,7 +32,7 @@ uv --version
 **Important:** The virtual environment should be created at the repository root.
 
 ```bash
-cd /path/to/OpenToken
+cd /path/to/OpenLinkToken
 
 # Create virtual environment at repo root
 uv venv .venv
@@ -48,11 +48,11 @@ source .venv/bin/activate
 
 ```bash
 # Install core library
-cd lib/python/opentoken
+cd lib/python/openlinktoken
 uv pip install -r requirements.txt -e .
 
 # Install CLI
-cd ../opentoken-cli
+cd ../openlinktoken-cli
 uv pip install -r requirements.txt -e .
 ```
 
@@ -61,7 +61,7 @@ uv pip install -r requirements.txt -e .
 ### Package Command (Tokenize + Encrypt)
 
 ```bash
-opentoken package \
+olt package \
   -i ../../../resources/sample.csv \
   -t csv \
   -o ../../../resources/output.csv \
@@ -72,7 +72,7 @@ opentoken package \
 ### Tokenize Command (Hash-Only, No Encryption)
 
 ```bash
-opentoken tokenize \
+olt tokenize \
   -i ../../../resources/sample.csv \
   -t csv \
   -o ../../../resources/output.csv \
@@ -82,7 +82,7 @@ opentoken tokenize \
 ### Parquet Format
 
 ```bash
-opentoken package \
+olt package \
   -i input.parquet \
   -t parquet \
   -o output.parquet \
@@ -93,7 +93,7 @@ opentoken package \
 ### Decrypt Command
 
 ```bash
-opentoken decrypt \
+olt decrypt \
   -i ../../../resources/output.csv \
   -t csv \
   -o ../../../resources/decrypted.csv \
@@ -103,29 +103,29 @@ opentoken decrypt \
 ### Generate ECDH Key Pair
 
 ```bash
-opentoken generate-key-pair \
+olt generate-key-pair \
   --curve P-256 \
   --name my-key
 ```
 
-This writes `~/.opentoken/my-key.private.pem` and `~/.opentoken/my-key.public.pem`. Add `--force` to overwrite
+This writes `~/.openlinktoken/my-key.private.pem` and `~/.openlinktoken/my-key.public.pem`. Add `--force` to overwrite
 existing files.
 
 ## Getting Help
 
 ```bash
 # Show all available commands
-opentoken --help
+olt --help
 
 # Show help for specific command
-opentoken help package
-opentoken package --help
+olt help package
+olt package --help
 ```
 
 If needed, you can still run the module form directly:
 
 ```bash
-python -m opentoken_cli.main --help
+python -m openlinktoken_cli.main --help
 ```
 
 ## Verify Output
@@ -141,17 +141,17 @@ cat ../../../resources/output.metadata.json
 ## Using the Python API Programmatically
 
 ```python
-from opentoken.attributes.person.birth_date_attribute import BirthDateAttribute
-from opentoken.attributes.person.first_name_attribute import FirstNameAttribute
-from opentoken.attributes.person.last_name_attribute import LastNameAttribute
-from opentoken.attributes.person.postal_code_attribute import PostalCodeAttribute
-from opentoken.attributes.person.sex_attribute import SexAttribute
-from opentoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
-from opentoken.tokens.token_definition import TokenDefinition
-from opentoken.tokens.token_generator import TokenGenerator
-from opentoken.tokens.tokenizer.sha256_tokenizer import SHA256Tokenizer
-from opentoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
-from opentoken.tokentransformer.hash_token_transformer import HashTokenTransformer
+from openlinktoken.attributes.person.birth_date_attribute import BirthDateAttribute
+from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute
+from openlinktoken.attributes.person.last_name_attribute import LastNameAttribute
+from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttribute
+from openlinktoken.attributes.person.sex_attribute import SexAttribute
+from openlinktoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
+from openlinktoken.tokens.token_definition import TokenDefinition
+from openlinktoken.tokens.token_generator import TokenGenerator
+from openlinktoken.tokens.tokenizer.sha256_tokenizer import SHA256Tokenizer
+from openlinktoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
+from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 
 record_id = "patient_123"
 
@@ -181,7 +181,7 @@ for rule_id, token in result.tokens.items():
 
 ## Cross-Language Parity
 
-OpenToken guarantees that Java and Python produce **identical tokens** for the same input. This is verified by interoperability tests:
+Open Link Token guarantees that Java and Python produce **identical tokens** for the same input. This is verified by interoperability tests:
 
 ```bash
 cd tools/interoperability
@@ -201,7 +201,7 @@ The test:
 For distributed processing on Spark or Databricks:
 
 ```bash
-cd lib/python/opentoken-pyspark
+cd lib/python/openlinktoken-pyspark
 uv pip install -r requirements.txt -e .
 ```
 
@@ -209,20 +209,20 @@ See [Spark or Databricks](../operations/spark-or-databricks.md) for usage.
 
 ## Troubleshooting
 
-### "ModuleNotFoundError: No module named 'opentoken'"
+### "ModuleNotFoundError: No module named 'openlinktoken'"
 
 Make sure you installed with `-e .` (editable mode) from the correct directory.
 
 ### "Python version not supported"
 
-OpenToken requires Python 3.10+. Check with `python --version`.
+Open Link Token requires Python 3.10+. Check with `python --version`.
 
 ### Virtual Environment Not Activated
 
 If commands fail, ensure venv is active:
 
 ```bash
-cd /path/to/OpenToken
+cd /path/to/OpenLinkToken
 source .venv/bin/activate
 ```
 
@@ -234,20 +234,20 @@ Reinstall the packages:
 uv pip install -e . --reinstall
 ```
 
-### "opentoken: command not found"
+### "openlinktoken: command not found"
 
 The console script is installed into the active environment. Re-activate your venv and reinstall the CLI package:
 
 ```bash
-cd /path/to/OpenToken
+cd /path/to/OpenLinkToken
 source .venv/bin/activate
-cd lib/python/opentoken-cli
+cd lib/python/openlinktoken-cli
 uv pip install -e .
 ```
 
 ## Development Setup
 
-For contributing to OpenToken:
+For contributing to Open Link Token:
 
 ```bash
 # Install development dependencies
@@ -257,7 +257,7 @@ uv pip install -r dev-requirements.txt
 pytest
 
 # Run with coverage
-pytest --cov=opentoken --cov-report=html
+pytest --cov=openlinktoken --cov-report=html
 ```
 
 ## Next Steps

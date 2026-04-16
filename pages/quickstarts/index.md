@@ -4,7 +4,7 @@ layout: default
 
 # Quickstarts
 
-This page is the single “Start here” hub for getting OpenToken running end-to-end.
+This page is the single “Start here” hub for getting Open Link Token running end-to-end.
 
 ## Who This Is For
 
@@ -15,7 +15,7 @@ This page is the single “Start here” hub for getting OpenToken running end-t
 ## What You’ll Do
 
 1. Prepare an input file with person attributes (CSV or Parquet)
-2. Run OpenToken to generate tokens (encrypted or tokenized)
+2. Run Open Link Token to generate tokens (encrypted or tokenized)
 3. Inspect the token output and the `.metadata.json` audit artifact
 
 ## Choose Your Path
@@ -28,7 +28,7 @@ This page is the single “Start here” hub for getting OpenToken running end-t
 
 ## 30-Second Overview
 
-OpenToken reads person attributes (for example: first/last name, birthdate, sex, postal code, SSN) and emits deterministic token fingerprints plus, by default, encrypted `ot.V1` match tokens for privacy-preserving exchange.
+Open Link Token reads person attributes (for example: first/last name, birthdate, sex, postal code, SSN) and emits deterministic token fingerprints plus, by default, encrypted `ot.V1` match tokens for privacy-preserving exchange.
 
 After you run a quickstart:
 
@@ -59,7 +59,7 @@ python data_generator.py 100 0.05 test_data.csv
 - **Explore input formats**: See [Configuration](../config/configuration.md)
 - **Decrypt tokens**: See [Decrypting Tokens](../operations/decrypting-tokens.md)
 - **Advanced: PySpark**: See [Spark or Databricks](../operations/spark-or-databricks.md)
-- **Troubleshooting**: See [Running OpenToken](../running-opentoken/index.md)
+- **Troubleshooting**: See [Running Open Link Token](../running-openlinktoken/index.md)
 
 ## Input File Requirements
 
@@ -92,4 +92,4 @@ See [Configuration](../config/configuration.md) for detailed column mapping and 
 **"Docker image not found"**
 → The script builds it automatically. Make sure you have Docker running.
 
-For more troubleshooting, see [Running OpenToken](../running-opentoken/index.md).
+For more troubleshooting, see [Running Open Link Token](../running-openlinktoken/index.md).

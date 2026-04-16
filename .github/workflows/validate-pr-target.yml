@@ -13,7 +13,7 @@ permissions:
 jobs:
   validate-pr-target:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Validate PR is from release branch
         uses: actions/github-script@v7
@@ -22,11 +22,11 @@ jobs:
           script: |
             const pr = context.payload.pull_request;
             const headRef = pr.head.ref;
-            
+
             console.log(`Validating PR #${pr.number}`);
             console.log(`Head branch: ${headRef}`);
             console.log(`Base branch: ${pr.base.ref}`);
-            
+
             // Check if the head branch matches release/* pattern
             if (!headRef.startsWith('release/')) {
               core.setFailed(
@@ -38,5 +38,5 @@ jobs:
               );
               return;
             }
-            
+
             console.log(`✅ PR is from a release branch (${headRef}), validation passed.`);

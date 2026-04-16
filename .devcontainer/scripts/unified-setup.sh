@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "=== OpenToken Unified Setup ==="
+echo "=== Open Link Token Unified Setup ==="
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-VENV_DIR="${UV_PROJECT_ENVIRONMENT:-/home/vscode/.local/share/opentoken/.venv}"
+VENV_DIR="${UV_PROJECT_ENVIRONMENT:-/home/vscode/.local/share/openlinktoken/.venv}"
 WORKSPACE_VENV_DIR="$REPO_ROOT/.venv"
 STATE_DIR="${VENV_DIR}/.setup-state"
 PHASE="${1:-full}"  # Options: full, post-create, post-start, post-attach
@@ -107,7 +107,7 @@ step_install_packages() {
   uv sync --all-packages --dev
 
   echo "→ Installing default PySpark bridge runtime (Spark 4.0)"
-  uv pip install -e "lib/python/opentoken-pyspark[spark40]"
+  uv pip install -e "lib/python/openlinktoken-pyspark[spark40]"
 }
 
 step_activate_shell_init() {

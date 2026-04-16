@@ -6,7 +6,7 @@ layout: default
 
 For a high-level overview and other entry points, see [Quickstarts](index.md).
 
-Use the OpenToken Java library to generate tokens programmatically from your Java application.
+Use the Open Link Token Java library to generate tokens programmatically from your Java application.
 
 ## Prerequisites
 
@@ -22,12 +22,12 @@ mvn -version    # Should show 3.8 or higher
 
 ## Maven Dependency
 
-Add the OpenToken library to your project's `pom.xml`:
+Add the Open Link Token library to your project's `pom.xml`:
 
 ```xml
 <dependency>
-    <groupId>com.truveta</groupId>
-    <artifactId>opentoken</artifactId>
+    <groupId>org.openlinktoken</groupId>
+    <artifactId>openlinktoken</artifactId>
     <version>2.0.0-alpha</version>
 </dependency>
 ```
@@ -41,20 +41,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.truveta.opentoken.attributes.Attribute;
-import com.truveta.opentoken.attributes.person.BirthDateAttribute;
-import com.truveta.opentoken.attributes.person.FirstNameAttribute;
-import com.truveta.opentoken.attributes.person.LastNameAttribute;
-import com.truveta.opentoken.attributes.person.PostalCodeAttribute;
-import com.truveta.opentoken.attributes.person.SexAttribute;
-import com.truveta.opentoken.attributes.person.SocialSecurityNumberAttribute;
-import com.truveta.opentoken.tokens.TokenDefinition;
-import com.truveta.opentoken.tokens.TokenGenerator;
-import com.truveta.opentoken.tokens.TokenGeneratorResult;
-import com.truveta.opentoken.tokens.tokenizer.SHA256Tokenizer;
-import com.truveta.opentoken.tokentransformer.EncryptTokenTransformer;
-import com.truveta.opentoken.tokentransformer.HashTokenTransformer;
-import com.truveta.opentoken.tokentransformer.TokenTransformer;
+import org.openlinktoken.attributes.Attribute;
+import org.openlinktoken.attributes.person.BirthDateAttribute;
+import org.openlinktoken.attributes.person.FirstNameAttribute;
+import org.openlinktoken.attributes.person.LastNameAttribute;
+import org.openlinktoken.attributes.person.PostalCodeAttribute;
+import org.openlinktoken.attributes.person.SexAttribute;
+import org.openlinktoken.attributes.person.SocialSecurityNumberAttribute;
+import org.openlinktoken.tokens.TokenDefinition;
+import org.openlinktoken.tokens.TokenGenerator;
+import org.openlinktoken.tokens.TokenGeneratorResult;
+import org.openlinktoken.tokens.tokenizer.SHA256Tokenizer;
+import org.openlinktoken.tokentransformer.EncryptTokenTransformer;
+import org.openlinktoken.tokentransformer.HashTokenTransformer;
+import org.openlinktoken.tokentransformer.TokenTransformer;
 
 String recordId = "patient_123";
 

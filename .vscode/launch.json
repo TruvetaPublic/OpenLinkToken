@@ -1,13 +1,16 @@
 {
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
   "configurations": [
     {
       "name": "Python: tokenize (demo mode)",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/lib/python/opentoken-cli/src/main/opentoken_cli/main.py",
+      "program": "${workspaceFolder}/lib/python/openlinktoken-cli/src/main/openlinktoken_cli/main.py",
       "env": {
-        "PYTHONPATH": "lib/python/opentoken-cli/src/main:lib/python/opentoken/src/main:lib/python/opentoken-core-ai/src/main"
+        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main"
       },
       "args": [
         "tokenize",
@@ -17,7 +20,7 @@
         "-t",
         "${input:inputType}",
         "-o",
-        "lib/python/opentoken-cli/target/output.${input:outputType}",
+        "lib/python/openlinktoken-cli/target/output.${input:outputType}",
         "-ot",
         "${input:outputType}"
       ]
@@ -26,9 +29,9 @@
       "name": "Python: tokenize (exchange config)",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/lib/python/opentoken-cli/src/main/opentoken_cli/main.py",
+      "program": "${workspaceFolder}/lib/python/openlinktoken-cli/src/main/openlinktoken_cli/main.py",
       "env": {
-        "PYTHONPATH": "lib/python/opentoken-cli/src/main:lib/python/opentoken/src/main:lib/python/opentoken-core-ai/src/main"
+        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main"
       },
       "args": [
         "tokenize",
@@ -37,7 +40,7 @@
         "-t",
         "${input:inputType}",
         "-o",
-        "lib/python/opentoken-cli/target/output.${input:outputType}",
+        "lib/python/openlinktoken-cli/target/output.${input:outputType}",
         "-ot",
         "${input:outputType}",
         "--exchange-config",
@@ -48,18 +51,18 @@
       "name": "Python: package",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/lib/python/opentoken-cli/src/main/opentoken_cli/main.py",
+      "program": "${workspaceFolder}/lib/python/openlinktoken-cli/src/main/openlinktoken_cli/main.py",
       "env": {
-        "PYTHONPATH": "lib/python/opentoken-cli/src/main:lib/python/opentoken/src/main:lib/python/opentoken-core-ai/src/main"
+        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main"
       },
       "args": [
         "package",
         "-i",
-        "lib/python/opentoken-cli/target/output.${input:inputType}",
+        "lib/python/openlinktoken-cli/target/output.${input:inputType}",
         "-t",
         "${input:inputType}",
         "-o",
-        "lib/python/opentoken-cli/target/packaged.${input:outputType}",
+        "lib/python/openlinktoken-cli/target/packaged.${input:outputType}",
         "-ot",
         "${input:outputType}",
         "--exchange-config",
@@ -70,18 +73,18 @@
       "name": "Python: encrypt",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/lib/python/opentoken-cli/src/main/opentoken_cli/main.py",
+      "program": "${workspaceFolder}/lib/python/openlinktoken-cli/src/main/openlinktoken_cli/main.py",
       "env": {
-        "PYTHONPATH": "lib/python/opentoken-cli/src/main:lib/python/opentoken/src/main:lib/python/opentoken-core-ai/src/main"
+        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main"
       },
       "args": [
         "encrypt",
         "-i",
-        "lib/python/opentoken-cli/target/output.${input:inputType}",
+        "lib/python/openlinktoken-cli/target/output.${input:inputType}",
         "-t",
         "${input:inputType}",
         "-o",
-        "lib/python/opentoken-cli/target/encrypted.${input:outputType}",
+        "lib/python/openlinktoken-cli/target/encrypted.${input:outputType}",
         "-ot",
         "${input:outputType}",
         "--exchange-config",
@@ -92,18 +95,18 @@
       "name": "Python: decrypt",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/lib/python/opentoken-cli/src/main/opentoken_cli/main.py",
+      "program": "${workspaceFolder}/lib/python/openlinktoken-cli/src/main/openlinktoken_cli/main.py",
       "env": {
-        "PYTHONPATH": "lib/python/opentoken-cli/src/main:lib/python/opentoken/src/main:lib/python/opentoken-core-ai/src/main"
+        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main"
       },
       "args": [
         "decrypt",
         "-i",
-        "lib/python/opentoken-cli/target/encrypted.${input:inputType}",
+        "lib/python/openlinktoken-cli/target/encrypted.${input:inputType}",
         "-t",
         "${input:inputType}",
         "-o",
-        "lib/python/opentoken-cli/target/decrypted.${input:outputType}",
+        "lib/python/openlinktoken-cli/target/decrypted.${input:outputType}",
         "-ot",
         "${input:outputType}",
         "--exchange-config",
@@ -114,9 +117,9 @@
       "name": "Python: generate-key-pair",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/lib/python/opentoken-cli/src/main/opentoken_cli/main.py",
+      "program": "${workspaceFolder}/lib/python/openlinktoken-cli/src/main/openlinktoken_cli/main.py",
       "env": {
-        "PYTHONPATH": "lib/python/opentoken-cli/src/main:lib/python/opentoken/src/main:lib/python/opentoken-core-ai/src/main"
+        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main"
       },
       "args": [
         "generate-key-pair",
@@ -131,18 +134,18 @@
       "name": "Python: initiate-exchange",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/lib/python/opentoken-cli/src/main/opentoken_cli/main.py",
+      "program": "${workspaceFolder}/lib/python/openlinktoken-cli/src/main/openlinktoken_cli/main.py",
       "env": {
-        "PYTHONPATH": "lib/python/opentoken-cli/src/main:lib/python/opentoken/src/main:lib/python/opentoken-core-ai/src/main"
+        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main"
       },
       "args": [
         "initiate-exchange",
         "--name",
         "debug-exchange",
         "--public-key",
-        "${env:HOME}/.opentoken/receiver.public.pem",
+        "${env:HOME}/.openlinktoken/receiver.public.pem",
         "--output",
-        "${workspaceFolder}/lib/python/opentoken-cli/target/debug-exchange.exchange.json",
+        "${workspaceFolder}/lib/python/openlinktoken-cli/target/debug-exchange.exchange.json",
         "--rotation-count",
         "30",
         "--rotation-bin-width",
@@ -156,9 +159,9 @@
       "name": "Python: update (dry run)",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/lib/python/opentoken-cli/src/main/opentoken_cli/main.py",
+      "program": "${workspaceFolder}/lib/python/openlinktoken-cli/src/main/openlinktoken_cli/main.py",
       "env": {
-        "PYTHONPATH": "lib/python/opentoken-cli/src/main:lib/python/opentoken/src/main:lib/python/opentoken-core-ai/src/main"
+        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main"
       },
       "args": ["update", "--dry-run"]
     },
@@ -168,11 +171,11 @@
       "request": "launch",
       "program": "${workspaceFolder}/tools/exchange/inspect_exchange_config.py",
       "env": {
-        "PYTHONPATH": "lib/python/opentoken-cli/src/main:lib/python/opentoken/src/main:lib/python/opentoken-core-ai/src/main"
+        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main"
       },
       "args": [
         "--exchange-config",
-        "${input:exchangeConfigPath}",
+        "${input:exchangeConfigPath}"
       ]
     },
     {
@@ -181,7 +184,7 @@
       "request": "launch",
       "program": "${workspaceFolder}/tools/exchange/inspect_exchange_config.py",
       "env": {
-        "PYTHONPATH": "lib/python/opentoken-cli/src/main:lib/python/opentoken/src/main:lib/python/opentoken-core-ai/src/main"
+        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main"
       },
       "args": [
         "--exchange-config",
@@ -209,13 +212,13 @@
       "id": "exchangeConfigPath",
       "type": "promptString",
       "description": "Path to the exchange config JSON",
-      "default": "./opentoken-YYYY-MM-DD.exchange.json"
+      "default": "./openlinktoken-YYYY-MM-DD.exchange.json"
     },
     {
       "id": "exchangeConfigPathForInspect",
       "type": "promptString",
       "description": "Path to the exchange config JSON for inspection",
-      "default": "${workspaceFolder}/lib/python/opentoken-cli/target/debug-exchange.exchange.json"
+      "default": "${workspaceFolder}/lib/python/openlinktoken-cli/target/debug-exchange.exchange.json"
     }
   ]
 }
