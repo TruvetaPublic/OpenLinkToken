@@ -89,7 +89,6 @@ jobs:
 
       - name: Create PR comment with progress tracking
         uses: actions/github-script@v7
-        continue-on-error: true
         with:
           script: |
             const syncReport = ${{ toJSON(steps.sync-check.outputs.SYNC_REPORT) }};

@@ -37,7 +37,6 @@ jobs:
       - name: Publish Maven Surefire report
         if: success() || failure()
         uses: scacap/action-surefire-report@v1
-        continue-on-error: true
 
       - name: Publish Java unit test results
         if: always()
@@ -74,7 +73,6 @@ jobs:
 
       - name: Update dependency graph
         uses: advanced-security/maven-dependency-submission-action@v3
-        continue-on-error: true
         with:
           directory: ${{ github.workspace }}/lib/java
           maven-args: "-B -DskipTests"
@@ -141,7 +139,6 @@ jobs:
       - name: Add Python code coverage to PR
         if: matrix.python-version == '3.10'
         uses: orgoro/coverage@v3.2
-        continue-on-error: true
         with:
           coverageFile: lib/python/openlinktoken/coverage.xml
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -322,7 +319,6 @@ jobs:
       - name: Add PySpark code coverage to PR
         if: matrix.python-version == '3.10' && matrix.spark-version == '4.0'
         uses: orgoro/coverage@v3.2
-        continue-on-error: true
         with:
           coverageFile: lib/python/openlinktoken-pyspark/coverage-${{ matrix.python-version }}-spark${{ matrix.spark-version }}.xml
           token: ${{ secrets.GITHUB_TOKEN }}
