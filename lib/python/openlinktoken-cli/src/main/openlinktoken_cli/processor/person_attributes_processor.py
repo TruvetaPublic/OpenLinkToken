@@ -520,7 +520,7 @@ class PersonAttributesProcessor:
             logger.debug(f"Blank tokens for row {row_counter:,}: {token_generator_result.blank_tokens_by_rule}")
 
             for rule_id in token_generator_result.blank_tokens_by_rule:
-                blank_token_count_by_rule[rule_id] += 1
+                blank_token_count_by_rule[rule_id] = blank_token_count_by_rule.get(rule_id, 0) + 1
 
     @staticmethod
     def _initialize_invalid_attribute_count(

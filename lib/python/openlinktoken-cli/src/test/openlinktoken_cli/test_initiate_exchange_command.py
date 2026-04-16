@@ -1120,7 +1120,7 @@ class TestRotationIvAndCount:
         output_path = tmp_path / "rotation-defaults.exchange.json"
 
         with patch("pathlib.Path.home", return_value=tmp_path):
-            exit_code = OpenTokenCommand.execute(
+            exit_code = OpenLinkTokenCommand.execute(
                 [
                     "initiate-exchange",
                     "--name",
@@ -1148,7 +1148,7 @@ class TestRotationIvAndCount:
         output_path = tmp_path / "custom-rotation-iv.exchange.json"
 
         with patch("pathlib.Path.home", return_value=tmp_path):
-            exit_code = OpenTokenCommand.execute(
+            exit_code = OpenLinkTokenCommand.execute(
                 [
                     "initiate-exchange",
                     "--name",
@@ -1177,7 +1177,7 @@ class TestRotationIvAndCount:
         output_path = tmp_path / "custom-count.exchange.json"
 
         with patch("pathlib.Path.home", return_value=tmp_path):
-            exit_code = OpenTokenCommand.execute(
+            exit_code = OpenLinkTokenCommand.execute(
                 [
                     "initiate-exchange",
                     "--name",
@@ -1205,7 +1205,7 @@ class TestRotationIvAndCount:
         monkeypatch.setenv("OT_ROTATION_IV", "rotation-iv-from-env")
 
         with patch("pathlib.Path.home", return_value=tmp_path):
-            exit_code = OpenTokenCommand.execute(
+            exit_code = OpenLinkTokenCommand.execute(
                 [
                     "initiate-exchange",
                     "--name",
@@ -1238,7 +1238,7 @@ class TestRotationIvAndCount:
         )
 
         with patch("pathlib.Path.home", return_value=tmp_path):
-            exit_code = OpenTokenCommand.execute(
+            exit_code = OpenLinkTokenCommand.execute(
                 [
                     "initiate-exchange",
                     "--name",
@@ -1263,7 +1263,7 @@ class TestRotationIvAndCount:
         output_path = tmp_path / "zero-count.exchange.json"
 
         with patch("pathlib.Path.home", return_value=tmp_path):
-            exit_code = OpenTokenCommand.execute(
+            exit_code = OpenLinkTokenCommand.execute(
                 [
                     "initiate-exchange",
                     "--name",
@@ -1293,7 +1293,7 @@ class TestRotationIvAndCount:
         )
 
         with patch("pathlib.Path.home", return_value=tmp_path):
-            exit_code = OpenTokenCommand.execute(
+            exit_code = OpenLinkTokenCommand.execute(
                 [
                     "initiate-exchange",
                     "--name",

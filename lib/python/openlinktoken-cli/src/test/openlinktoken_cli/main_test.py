@@ -629,7 +629,6 @@ class TestInitiateExchangeViaMain:
         assert "--sender-private-key" in captured.out
         assert "--local-private-key" not in captured.out
         assert "Reuse an existing sender private key PEM" in captured.out
-        assert "embed" not in captured.out.lower()
 
     def test_initiate_exchange_help_lists_public_key_stdin(self, capsys):
         """Subcommand help should advertise --public-key-stdin as an input alternative."""

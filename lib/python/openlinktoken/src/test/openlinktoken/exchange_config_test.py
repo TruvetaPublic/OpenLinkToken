@@ -412,8 +412,8 @@ def test_resolve_exchange_config_exposes_rotation_iv_and_count(tmp_path: Path):
 
 def test_resolve_loaded_exchange_config_missing_rotation_iv_disables_rotation(tmp_path: Path):
     """A payload without rotationIv resolves successfully with rotation_iv=b'' (rotation disabled)."""
-    from opentoken.exchange_config import resolve_loaded_exchange_config
-    from opentoken.exchange_jwe import decrypt_exchange_envelope
+    from openlinktoken.exchange_config import resolve_loaded_exchange_config
+    from openlinktoken.exchange_jwe import decrypt_exchange_envelope
 
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     _, recipient_public_pem = generate_key_pair("P-256")
@@ -464,8 +464,8 @@ def test_resolve_loaded_exchange_config_missing_rotation_iv_disables_rotation(tm
 
 def test_resolve_loaded_exchange_config_zero_rotation_count_disables_rotation(tmp_path: Path):
     """A payload with rotationCount of zero resolves successfully with rotation_count=0 (rotation disabled)."""
-    from opentoken.exchange_config import resolve_loaded_exchange_config
-    from opentoken.exchange_jwe import decrypt_exchange_envelope
+    from openlinktoken.exchange_config import resolve_loaded_exchange_config
+    from openlinktoken.exchange_jwe import decrypt_exchange_envelope
 
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     _, recipient_public_pem = generate_key_pair("P-256")
