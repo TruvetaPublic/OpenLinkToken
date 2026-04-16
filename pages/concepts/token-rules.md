@@ -4,7 +4,7 @@ layout: default
 
 # Token Rules
 
-Open Link Token generates five default token types (T1-T5), and can optionally generate T6 when ONNX inference is enabled. Each rule defines a **token signature** (a deterministic, normalized string) which is then transformed into the output token via hashing (and optionally encryption).
+Open Link Token generates five default token types (T1-T5), and can optionally generate ML1 when ONNX inference is enabled. Each rule defines a **token signature** (a deterministic, normalized string) which is then transformed into the output token via hashing (and optionally encryption).
 
 ---
 
@@ -185,9 +185,9 @@ Token Signature: "SMITH|JON|M"
 | T3     | Last, First, Sex, BirthDate    | High              | Medium-high    |
 | T4     | SSN(digits), Sex, BirthDate    | Very high         | Low            |
 | T5     | Last, First[0:3], Sex          | Lower             | Highest        |
-| T6*    | ONNX embedding from PostalCode, Birthdate, GivenName, Surname, Gender | Model-dependent | Model-dependent |
+| ML1*    | ONNX embedding from PostalCode, Birthdate, GivenName, Surname, Gender | Model-dependent | Model-dependent |
 
-\* T6 is enabled by default. Use `--disable-t6` to opt out, and use `--t6-model-path`, `--t6-tokenizer-path`, and `--t6-max-seq-length` to customize inference settings.
+\* ML1 is enabled by default. Use `--disable-ml1` to opt out, and use `--ml1-model-path`, `--ml1-tokenizer-path`, and `--ml1-max-seq-length` to customize inference settings.
 
 ---
 
@@ -244,7 +244,7 @@ import org.openlinktoken.tokens.Token;
 
 public class CustomToken implements Token {
   private static final long serialVersionUID = 1L;
-  private static final String ID = "T6";
+  private static final String ID = "ML1";
 
   private final ArrayList<AttributeExpression> definition = new ArrayList<>();
 
@@ -277,7 +277,7 @@ from openlinktoken.attributes.person.last_name_attribute import LastNameAttribut
 from openlinktoken.tokens.token import Token
 
 class CustomToken(Token):
-  ID = "T6"
+  ID = "ML1"
 
   def __init__(self):
     # Example signature: U(LastName)|BirthDate

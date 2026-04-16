@@ -110,7 +110,7 @@ class OpenLinkTokenProcessor:
             >>>
             >>> # Using custom token definition
             >>> from openlinktoken_pyspark.notebook_helpers import TokenBuilder, CustomTokenDefinition
-            >>> custom_token = TokenBuilder("T6").add("last_name", "T|U").add("first_name", "T|U").build()
+            >>> custom_token = TokenBuilder("ML1").add("last_name", "T|U").add("first_name", "T|U").build()
             >>> custom_def = CustomTokenDefinition().add_token(custom_token)
             >>> processor = OpenLinkTokenProcessor("hash-secret", "encryption-key-32-chars!!", custom_def)
         """

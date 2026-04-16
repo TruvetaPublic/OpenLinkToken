@@ -1,10 +1,10 @@
-"""Runtime configuration for rotation-based T6 token generation."""
+"""Runtime configuration for rotation-based ML1 token generation."""
 
 from typing import ClassVar, List, Optional
 
 
 class RotationConfig:
-    """Static configuration for rotation-based T6 embedding token generation.
+    """Static configuration for rotation-based ML1 embedding token generation.
 
     Rotation is active by default when the AI module is installed; ``DEFAULT_IV``
     is used automatically so no explicit call to ``configure()`` is required for
@@ -15,7 +15,7 @@ class RotationConfig:
     Call RotationConfig.is_enabled() to check whether rotation is active.
     """
 
-    DEFAULT_IV: ClassVar[str] = "opentoken-t6-v1"
+    DEFAULT_IV: ClassVar[str] = "openlinktoken-ml1-v1"
     DEFAULT_ROTATION_COUNT: ClassVar[int] = 30
     DEFAULT_HASH_DIMENSION: ClassVar[int] = 4
     DEFAULT_BIN_WIDTH: ClassVar[float] = 0.05

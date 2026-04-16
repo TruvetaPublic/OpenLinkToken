@@ -196,7 +196,7 @@ from openlinktoken_pyspark import Open Link TokenProcessor
 from openlinktoken_pyspark.notebook_helpers import TokenBuilder, CustomTokenDefinition
 
 # Define custom token rule
-custom_token = TokenBuilder("T6") \
+custom_token = TokenBuilder("ML1") \
     .add("last_name", "T|U") \
     .add("first_name", "T|U") \
     .add("birth_date", "T|D") \

@@ -37,7 +37,7 @@ class TestTokenGeneratorIntegration:
         # Generate all tokens
         tokens = self.token_generator.get_all_tokens(person_attributes).tokens
 
-        # Validate the tokens — T6 is discovered via entry_points when opentoken-core-ai is installed
+        # Validate the tokens — ML1 is discovered via entry_points when opentoken-core-ai is installed
         assert tokens is not None
         assert len(tokens) >= 5, "Expected at least 5 tokens to be generated (T1-T5)"
 

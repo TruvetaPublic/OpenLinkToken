@@ -2,11 +2,11 @@
 Copyright (c) Truveta. All rights reserved.
 """
 
-from openlinktoken_core_ai.tokens.t6_onnx_signature_generator import t6_payload_to_json
+from openlinktoken_core_ai.tokens.ml1_onnx_signature_generator import ml1_payload_to_json
 
 
-class TestT6PayloadToJson:
-    """Tests for t6_payload_to_json JSON canonicalization.
+class TestML1PayloadToJson:
+    """Tests for ml1_payload_to_json JSON canonicalization.
 
     The payload string is fed directly into the ONNX tokenizer, so its format
     must be byte-identical to what Java's Jackson ObjectMapper produces with
@@ -21,22 +21,22 @@ class TestT6PayloadToJson:
             "Surname": "Doe",
             "Gender": "M",
         }
-        result = t6_payload_to_json(payload)
+        result = ml1_payload_to_json(payload)
         # Must match Jackson ObjectMapper.writeValueAsString() default output exactly.
         assert result == '{"PostalCode":"98052","Birthdate":"1980-01-01","GivenName":"John","Surname":"Doe","Gender":"M"}'
 
     def test_no_space_after_colon(self):
-        result = t6_payload_to_json({"Key": "Value"})
+        result = ml1_payload_to_json({"Key": "Value"})
         assert '": "' not in result, "Space around colon separator diverges from Java Jackson output"
 
     def test_no_space_after_comma(self):
-        result = t6_payload_to_json({"A": "1", "B": "2"})
+        result = ml1_payload_to_json({"A": "1", "B": "2"})
         assert '", "' not in result, "Space after comma separator diverges from Java Jackson output"
 
     def test_key_order_preserved(self):
         # Insertion order must be preserved so the tokenizer input is deterministic.
         keys = ["PostalCode", "Birthdate", "GivenName", "Surname", "Gender"]
         payload = {k: str(i) for i, k in enumerate(keys)}
-        result = t6_payload_to_json(payload)
+        result = ml1_payload_to_json(payload)
         positions = [result.index(f'"{k}"') for k in keys]
         assert positions == sorted(positions), "Key order not preserved in JSON output"

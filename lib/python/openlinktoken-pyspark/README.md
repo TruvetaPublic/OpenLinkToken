@@ -277,7 +277,7 @@ from openlinktoken_pyspark import (
 )
 
 # Method 1: Using TokenBuilder
-custom_token = TokenBuilder("T6") \
+custom_token = TokenBuilder("ML1") \
     .add("last_name", "T|U") \
     .add("first_name", "T|U") \
     .add("birth_date", "T|D") \
@@ -294,7 +294,7 @@ processor = OpenLinkTokenProcessor.from_exchange_config(
     token_definition=custom_definition,
 )
 
-# Process DataFrame - will use T6 instead of default T1-T5
+# Process DataFrame - will use ML1 instead of default T1-T5
 tokens_df = processor.process_dataframe(df)
 
 # For one-off notebook exploration, the package root also exports

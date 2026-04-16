@@ -58,8 +58,8 @@ python tools/interoperability/multi_language_interoperability_test.py
 
 `rotation_matrix_interop_test.py` verifies that the Java and Python
 `RotationMatrixGenerator` implementations produce **bit-exact** rotation matrices
-for the same IV, rotation count, and dimension. This is the parity gate for T6
-inferencing tokens: if the rotation matrices diverge, T6 tokens will never match
+for the same IV, rotation count, and dimension. This is the parity gate for ML1
+inferencing tokens: if the rotation matrices diverge, ML1 tokens will never match
 across platforms.
 
 ### How It Works

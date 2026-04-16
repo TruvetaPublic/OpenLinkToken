@@ -2,10 +2,10 @@
 package org.openlinktoken.tokens;
 
 /**
- * Runtime configuration for rotation-based T6 token generation.
+ * Runtime configuration for rotation-based ML1 token generation.
  *
  * <p>This is a static thread-safe configuration class that mirrors the pattern
- * established by {@link T6InferenceConfig}.  All setters are {@code synchronized}
+ * established by {@link ML1InferenceConfig}.  All setters are {@code synchronized}
  * and all getters read {@code volatile} fields so that configuration changes are
  * immediately visible to reader threads without additional locking.
  */
@@ -27,7 +27,7 @@ public final class RotationConfig {
     public static final double DEFAULT_MAX_VAL = 5.0;
 
     /** Default initialization vector used when rotation is enabled without an explicit IV. */
-    public static final String DEFAULT_IV = "opentoken-t6-v1";
+    public static final String DEFAULT_IV = "opentoken-ml1-v1";
 
     private static volatile boolean enabled = true;
     private static volatile String rotationIv = DEFAULT_IV;

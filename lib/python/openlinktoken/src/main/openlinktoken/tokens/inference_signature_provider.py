@@ -35,12 +35,12 @@ class InferenceSignatureProvider(Protocol):
     When no implementation is installed, inference-based tokens are silently
     disabled and only standard attribute-expression tokens (T1–T5) are generated.
 
-    Each provider is responsible for one token identifier (e.g. ``"T6"``) and
+    Each provider is responsible for one token identifier (e.g. ``"ML1"``) and
     reports it via :meth:`get_token_id`.
     """
 
     def get_token_id(self) -> str:
-        """Return the token identifier this provider handles (e.g. ``"T6"``)."""
+        """Return the token identifier this provider handles (e.g. ``"ML1"``)."""
         ...
 
     def is_enabled(self) -> bool:

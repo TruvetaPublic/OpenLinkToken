@@ -1,4 +1,4 @@
-"""Generates deterministic T6 signatures from ONNX CLS embeddings."""
+"""Generates deterministic ML1 signatures from ONNX CLS embeddings."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ import numpy as np
 import onnxruntime as ort
 from tokenizers import Tokenizer
 
-from openlinktoken_core_ai.tokens.t6_inference_config import T6InferenceConfig
+from openlinktoken_core_ai.tokens.ml1_inference_config import ML1InferenceConfig
 
 logger = logging.getLogger(__name__)
 
@@ -55,8 +55,8 @@ def _resolve_providers() -> List[str | tuple]:
     return ["CPUExecutionProvider"]
 
 
-class T6OnnxSignatureGenerator:
-    """Stateful ONNX inference helper for T6 signature generation."""
+class ML1OnnxSignatureGenerator:
+    """Stateful ONNX inference helper for ML1 signature generation."""
 
     _session: Optional[ort.InferenceSession] = None
     _tokenizer: Optional[Tokenizer] = None
@@ -66,23 +66,23 @@ class T6OnnxSignatureGenerator:
 
     @classmethod
     def generate_signature(cls, input_json: str) -> str:
-        """Generate a deterministic T6 signature for one input JSON row."""
+        """Generate a deterministic ML1 signature for one input JSON row."""
         signatures = cls.generate_signatures([input_json])
         if not signatures:
-            raise RuntimeError("Failed to generate ONNX-based T6 signature.")
+            raise RuntimeError("Failed to generate ONNX-based ML1 signature.")
         return signatures[0]
 
     @classmethod
     def generate_signature_with_raw_embedding(cls, input_json: str) -> tuple[str, np.ndarray]:
-        """Generate a deterministic T6 signature and raw embedding for one input JSON row."""
+        """Generate a deterministic ML1 signature and raw embedding for one input JSON row."""
         signatures, embeddings = cls.generate_signatures_with_raw_embeddings([input_json])
         if not signatures:
-            raise RuntimeError("Failed to generate ONNX-based T6 signature.")
+            raise RuntimeError("Failed to generate ONNX-based ML1 signature.")
         return signatures[0], embeddings[0]
 
     @classmethod
     def generate_signatures(cls, input_json_rows: List[str]) -> List[str]:
-        """Generate deterministic T6 signatures for multiple rows using batched ONNX inference."""
+        """Generate deterministic ML1 signatures for multiple rows using batched ONNX inference."""
         signatures, _ = cls.generate_signatures_with_raw_embeddings(input_json_rows)
         return signatures
 
@@ -104,9 +104,9 @@ class T6OnnxSignatureGenerator:
 
     @classmethod
     def generate_signatures_with_raw_embeddings(cls, input_json_rows: List[str]) -> tuple[List[str], List[np.ndarray]]:
-        """Generate T6 hex signatures AND raw CLS embeddings in a single inference pass.
+        """Generate ML1 hex signatures AND raw CLS embeddings in a single inference pass.
 
-        Use when both T6 token and rotation tokens are needed, to avoid running
+        Use when both ML1 token and rotation tokens are needed, to avoid running
         ONNX inference twice.
 
         Args:
@@ -120,7 +120,7 @@ class T6OnnxSignatureGenerator:
 
         cls._initialize_if_needed()
 
-        configured_batch_size = T6InferenceConfig.get_batch_size()
+        configured_batch_size = ML1InferenceConfig.get_batch_size()
         signatures: List[str] = []
         raw_embeddings: List[np.ndarray] = []
         total_inference_ms = 0.0
@@ -141,7 +141,7 @@ class T6OnnxSignatureGenerator:
 
             if logger.isEnabledFor(logging.INFO):
                 logger.info(
-                    "T6 ONNX batch inference: requestedSize=%s, inferenceSize=%s, totalMs=%s, avgMsPerRow=%s",
+                    "ML1 ONNX batch inference: requestedSize=%s, inferenceSize=%s, totalMs=%s, avgMsPerRow=%s",
                     len(real_batch),
                     len(inference_batch),
                     batch_ms,
@@ -150,7 +150,7 @@ class T6OnnxSignatureGenerator:
 
         if logger.isEnabledFor(logging.INFO):
             logger.info(
-                "T6 ONNX batch inference summary: rowCount=%s, totalMs=%s, avgMsPerRow=%s",
+                "ML1 ONNX batch inference summary: rowCount=%s, totalMs=%s, avgMsPerRow=%s",
                 len(input_json_rows),
                 total_inference_ms,
                 total_inference_ms / len(input_json_rows),
@@ -182,7 +182,7 @@ class T6OnnxSignatureGenerator:
             outputs = cls._session.run(None, inputs)
         except Exception as e:
             if "CoreML" in str(e) or "CoreMLExecutionProvider" in str(cls._session.get_providers()):
-                logger.warning("T6 ONNX: CoreML runtime error; falling back to CPU and retrying.")
+                logger.warning("ML1 ONNX: CoreML runtime error; falling back to CPU and retrying.")
                 cls._reinitialize_with_cpu_only()
                 outputs = cls._session.run(None, inputs)
             else:
@@ -194,12 +194,12 @@ class T6OnnxSignatureGenerator:
             return output[:, 0, :], elapsed_ms
         if output.ndim == 2:
             return output, elapsed_ms
-        raise RuntimeError("Unexpected ONNX output shape for T6 inference.")
+        raise RuntimeError("Unexpected ONNX output shape for ML1 inference.")
 
     @classmethod
     def _build_inputs(cls, input_json_rows: List[str]) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """Build int64 ONNX tensors from input JSON rows using parallel batch tokenization and dynamic padding."""
-        max_sequence_length = T6InferenceConfig.get_max_sequence_length()
+        max_sequence_length = ML1InferenceConfig.get_max_sequence_length()
         batch_size = len(input_json_rows)
 
         # Parallel Rust tokenization — encode_batch processes all rows concurrently
@@ -231,8 +231,8 @@ class T6OnnxSignatureGenerator:
     @classmethod
     def _initialize_if_needed(cls) -> None:
         """Initialize ONNX session and tokenizer if configuration changed or not yet initialized."""
-        model_path = T6InferenceConfig.get_model_path()
-        tokenizer_path = T6InferenceConfig.get_tokenizer_path()
+        model_path = ML1InferenceConfig.get_model_path()
+        tokenizer_path = ML1InferenceConfig.get_tokenizer_path()
 
         already_initialized = (
             cls._session is not None
@@ -253,7 +253,7 @@ class T6OnnxSignatureGenerator:
         session_options.execution_mode = ort.ExecutionMode.ORT_PARALLEL
         session_options.enable_mem_pattern = True
         session_options.enable_cpu_mem_arena = True
-        num_threads = T6InferenceConfig.get_num_threads()
+        num_threads = ML1InferenceConfig.get_num_threads()
         session_options.intra_op_num_threads = num_threads
         session_options.inter_op_num_threads = num_threads
 
@@ -266,7 +266,7 @@ class T6OnnxSignatureGenerator:
                     providers=providers,
                 )
         except Exception as e:
-            logger.warning("T6 ONNX: provider init failed (%s), retrying with CPUExecutionProvider only", e)
+            logger.warning("ML1 ONNX: provider init failed (%s), retrying with CPUExecutionProvider only", e)
             with _suppress_ort_stderr():
                 cls._session = ort.InferenceSession(
                     str(resolved_model_path),
@@ -280,12 +280,12 @@ class T6OnnxSignatureGenerator:
                 with _suppress_ort_stderr():
                     cls._probe_coreml()
             except Exception:
-                logger.warning("T6 ONNX: CoreML probe failed; falling back to CPU.")
+                logger.warning("ML1 ONNX: CoreML probe failed; falling back to CPU.")
                 cls._reinitialize_with_cpu_only()
             else:
-                logger.info("T6 ONNX: CoreML active (subgraph-only) — Neural Engine / GPU acceleration enabled")
+                logger.info("ML1 ONNX: CoreML active (subgraph-only) — Neural Engine / GPU acceleration enabled")
         else:
-            logger.info("T6 ONNX: running on CPUExecutionProvider")
+            logger.info("ML1 ONNX: running on CPUExecutionProvider")
 
         cls._tokenizer = Tokenizer.from_file(str(resolved_tokenizer_path))
         cls._active_model_path = model_path
@@ -298,8 +298,8 @@ class T6OnnxSignatureGenerator:
         Uses the configured batch size since CoreML may compile shape-specific
         subgraphs and fail if the real batch size differs from the probe size.
         """
-        batch_size = T6InferenceConfig.get_batch_size()
-        max_seq = T6InferenceConfig.get_max_sequence_length()
+        batch_size = ML1InferenceConfig.get_batch_size()
+        max_seq = ML1InferenceConfig.get_max_sequence_length()
         dummy = np.zeros((batch_size, max_seq), dtype=np.int64)
         inputs = {"input_ids": dummy, "attention_mask": dummy}
         input_names = {m.name for m in cls._session.get_inputs()}
@@ -317,7 +317,7 @@ class T6OnnxSignatureGenerator:
     @classmethod
     def _reinitialize_with_cpu_only(cls) -> None:
         """Reinitialize the ONNX session using CPUExecutionProvider only."""
-        model_path = T6InferenceConfig.get_model_path()
+        model_path = ML1InferenceConfig.get_model_path()
         resolved_model_path = cls._resolve_path(model_path)
         cls._close_session()
         session_options = ort.SessionOptions()
@@ -325,7 +325,7 @@ class T6OnnxSignatureGenerator:
         session_options.execution_mode = ort.ExecutionMode.ORT_PARALLEL
         session_options.enable_mem_pattern = True
         session_options.enable_cpu_mem_arena = True
-        num_threads = T6InferenceConfig.get_num_threads()
+        num_threads = ML1InferenceConfig.get_num_threads()
         session_options.intra_op_num_threads = num_threads
         session_options.inter_op_num_threads = num_threads
         with _suppress_ort_stderr():
@@ -334,7 +334,7 @@ class T6OnnxSignatureGenerator:
                 sess_options=session_options,
                 providers=["CPUExecutionProvider"],
             )
-        logger.info("T6 ONNX: reinitialized with CPUExecutionProvider")
+        logger.info("ML1 ONNX: reinitialized with CPUExecutionProvider")
 
     @classmethod
     def _resolve_path(cls, configured_path: str) -> Path:
@@ -366,7 +366,7 @@ class T6OnnxSignatureGenerator:
                     return candidate
 
             raise FileNotFoundError(
-                f"T6 resource not found. Configure an explicit path or place the file at: resources/{normalized}"
+                f"ML1 resource not found. Configure an explicit path or place the file at: resources/{normalized}"
             )
         return Path(configured_path)
 
@@ -378,8 +378,8 @@ class T6OnnxSignatureGenerator:
         ).hex()
 
 
-def t6_payload_to_json(payload: Dict[str, str]) -> str:
-    """Convert an ordered payload map to compact JSON used for T6 tokenization.
+def ml1_payload_to_json(payload: Dict[str, str]) -> str:
+    """Convert an ordered payload map to compact JSON used for ML1 tokenization.
 
     Uses compact separators (no spaces) to match Jackson's ObjectMapper default
     output in the Java implementation, ensuring identical tokenizer input across

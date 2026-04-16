@@ -1,7 +1,7 @@
 # Core openlinktoken dependency
 openlinktoken==2.0.0-alpha
 
-# Core AI dependency (T6/rotation classes)
+# Core AI dependency (ML1/rotation classes)
 opentoken-core-ai>=2.0.0-alpha
 
 # Data processing for I/O formats

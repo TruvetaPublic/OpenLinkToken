@@ -266,7 +266,7 @@ class TokenGenerator:
     def store_raw_token(self, result: TokenGeneratorResult, token_id: str, token_value: Optional[str]) -> None:
         """Store a pre-hashed token value, applying only non-hash transformers (e.g. encryption).
 
-        Use for tokens that are already hashed (e.g. T6 HMAC rotation values).
+        Use for tokens that are already hashed (e.g. ML1 HMAC rotation values).
         HashTokenTransformer is skipped to avoid re-hashing; all other transformers
         (e.g. EncryptTokenTransformer) are still applied via PassthroughTokenizer.
 
@@ -298,7 +298,7 @@ class TokenGenerator:
 
         Args:
             result: The token generator result to update.
-            token_id_prefix: Prefix for derived token keys (e.g. ``"T6-R"``).
+            token_id_prefix: Prefix for derived token keys (e.g. ``"ML1-R"``).
             token_strings: Pre-computed token strings from the embedding transformer.
         """
         for i, token_string in enumerate(token_strings):

@@ -32,7 +32,7 @@ class TestPersonAttributesProcessor:
         metadata_map = Metadata().initialize()
         PersonAttributesProcessor.process(reader, writer, token_transformer_list, metadata_map)
 
-        # Verify writer was called at least 5 times (T1-T5; T6 may also fire if opentoken-core-ai is installed)
+        # Verify writer was called at least 5 times (T1-T5; ML1 may also fire if opentoken-core-ai is installed)
         assert writer.write_attributes.call_count >= 5
 
         # Verify metadata was populated

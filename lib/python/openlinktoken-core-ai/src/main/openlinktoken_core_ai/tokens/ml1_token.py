@@ -1,14 +1,14 @@
-"""Optional T6 token definition."""
+"""Optional ML1 token definition."""
 from typing import List
 
 from openlinktoken.attributes.attribute_expression import AttributeExpression
 from openlinktoken.tokens.token import Token
 
 
-class T6Token(Token):
-    """Represents optional T6 token definition."""
+class ML1Token(Token):
+    """Represents optional ML1 token definition."""
 
-    ID = "T6"
+    ID = "ML1"
 
     def __init__(self):
         self._definition: List[AttributeExpression] = []

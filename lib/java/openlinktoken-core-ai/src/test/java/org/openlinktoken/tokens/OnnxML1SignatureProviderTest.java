@@ -18,13 +18,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-class OnnxT6SignatureProviderTest {
+class OnnxML1SignatureProviderTest {
 
-    private OnnxT6SignatureProvider provider;
+    private OnnxML1SignatureProvider provider;
 
     @BeforeEach
     void setUp() {
-        provider = new OnnxT6SignatureProvider();
+        provider = new OnnxML1SignatureProvider();
     }
 
     // -----------------------------------------------------------------------

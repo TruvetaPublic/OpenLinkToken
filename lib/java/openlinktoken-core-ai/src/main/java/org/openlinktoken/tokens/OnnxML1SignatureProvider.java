@@ -26,15 +26,15 @@ import java.util.Map;
 
 /**
  * {@link InferenceSignatureProvider} implementation that delegates to the ONNX-backed
- * {@link T6OnnxSignatureGenerator} for T6 token signature generation.
+ * {@link ML1OnnxSignatureGenerator} for ML1 token signature generation.
  *
  * <p>Registered via {@link java.util.ServiceLoader} so that the core module
  * discovers it at runtime when {@code openlinktoken-core-ai} is on the classpath.
  */
 @Slf4j
-public class OnnxT6SignatureProvider implements InferenceSignatureProvider {
+public class OnnxML1SignatureProvider implements InferenceSignatureProvider {
 
-    private static final String TOKEN_ID = "T6";
+    private static final String TOKEN_ID = "ML1";
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     /**
@@ -48,7 +48,7 @@ public class OnnxT6SignatureProvider implements InferenceSignatureProvider {
     /**
      * No-arg constructor required by {@link java.util.ServiceLoader}.
      */
-    public OnnxT6SignatureProvider() {
+    public OnnxML1SignatureProvider() {
         attributeInstanceMap = new HashMap<>();
         AttributeLoader.load().forEach(attribute -> attributeInstanceMap.put(attribute.getClass(), attribute));
     }
@@ -60,19 +60,19 @@ public class OnnxT6SignatureProvider implements InferenceSignatureProvider {
 
     @Override
     public boolean isEnabled() {
-        return T6InferenceConfig.isEnabled();
+        return ML1InferenceConfig.isEnabled();
     }
 
     @Override
     public String generateSignature(Map<Class<? extends Attribute>, String> personAttributes) {
         TokenGeneratorResult dummyResult = new TokenGeneratorResult();
-        String payload = buildT6Payload(personAttributes, dummyResult);
+        String payload = buildMl1Payload(personAttributes, dummyResult);
         if (payload == null) {
             return null;
         }
         try {
             if (RotationConfig.isEnabled()) {
-                List<float[]> rawEmbeddings = T6OnnxSignatureGenerator.generateRawEmbeddings(List.of(payload));
+                List<float[]> rawEmbeddings = ML1OnnxSignatureGenerator.generateRawEmbeddings(List.of(payload));
                 float[] embedding = rawEmbeddings.get(0);
                 List<String> rotationValues = getOrCreateTransformer(embedding.length).transform(embedding);
                 String t1Sig = computeT1Signature(personAttributes);
@@ -81,9 +81,9 @@ public class OnnxT6SignatureProvider implements InferenceSignatureProvider {
                 }
                 return String.join(",", rotationValues);
             }
-            return T6OnnxSignatureGenerator.generateSignature(payload);
+            return ML1OnnxSignatureGenerator.generateSignature(payload);
         } catch (Exception e) {
-            log.error("Error generating T6 signature", e);
+            log.error("Error generating ML1 signature", e);
             return null;
         }
     }
@@ -95,7 +95,7 @@ public class OnnxT6SignatureProvider implements InferenceSignatureProvider {
 
         for (int i = 0; i < rows.size(); i++) {
             TokenGeneratorResult dummyResult = new TokenGeneratorResult();
-            String payload = buildT6Payload(rows.get(i), dummyResult);
+            String payload = buildMl1Payload(rows.get(i), dummyResult);
             payloads.add(payload); // may be null for invalid rows
             if (payload != null) {
                 validIndices.add(i);
@@ -117,8 +117,8 @@ public class OnnxT6SignatureProvider implements InferenceSignatureProvider {
             return new InferenceBatchResult(emptySigs, emptyEmbs);
         }
 
-        T6OnnxSignatureGenerator.GenerationResult batchResult =
-                T6OnnxSignatureGenerator.generateSignaturesAndRawEmbeddings(validPayloads);
+        ML1OnnxSignatureGenerator.GenerationResult batchResult =
+                ML1OnnxSignatureGenerator.generateSignaturesAndRawEmbeddings(validPayloads);
 
         // Map results back to original row indices (null for invalid rows)
         List<String> signatures = new ArrayList<>(rows.size());
@@ -162,7 +162,7 @@ public class OnnxT6SignatureProvider implements InferenceSignatureProvider {
      */
     private static RotationEmbeddingTransformer getOrCreateTransformer(int embeddingDim) {
         if (rotationTransformer == null) {
-            synchronized (OnnxT6SignatureProvider.class) {
+            synchronized (OnnxML1SignatureProvider.class) {
                 if (rotationTransformer == null) {
                     rotationTransformer = RotationEmbeddingTransformer.withDefaults(
                             RotationConfig.getRotationIv(),
@@ -237,32 +237,32 @@ public class OnnxT6SignatureProvider implements InferenceSignatureProvider {
     }
 
     /**
-     * Builds the deterministic JSON payload for T6 inference from person attributes.
+     * Builds the deterministic JSON payload for ML1 inference from person attributes.
      * Returns {@code null} if any required field is missing or invalid.
      *
      * @param personAttributes normalised attribute map for one record
      * @param result           result object to record invalid attributes into
      * @return JSON string payload, or {@code null} if any required field is missing/invalid
      */
-    public String buildT6Payload(Map<Class<? extends Attribute>, String> personAttributes,
+    public String buildMl1Payload(Map<Class<? extends Attribute>, String> personAttributes,
             TokenGeneratorResult result) {
         if (personAttributes == null) {
             return null;
         }
 
         Map<String, String> payload = new LinkedHashMap<>();
-        if (!addT6Field(PostalCodeAttribute.class, "PostalCode", personAttributes, result, payload)
-                || !addT6Field(BirthDateAttribute.class, "Birthdate", personAttributes, result, payload)
-                || !addT6Field(FirstNameAttribute.class, "GivenName", personAttributes, result, payload)
-                || !addT6Field(LastNameAttribute.class, "Surname", personAttributes, result, payload)
-                || !addT6Field(SexAttribute.class, "Gender", personAttributes, result, payload)) {
+        if (!addMl1Field(PostalCodeAttribute.class, "PostalCode", personAttributes, result, payload)
+                || !addMl1Field(BirthDateAttribute.class, "Birthdate", personAttributes, result, payload)
+                || !addMl1Field(FirstNameAttribute.class, "GivenName", personAttributes, result, payload)
+                || !addMl1Field(LastNameAttribute.class, "Surname", personAttributes, result, payload)
+                || !addMl1Field(SexAttribute.class, "Gender", personAttributes, result, payload)) {
             return null;
         }
 
         return asJson(payload);
     }
 
-    private boolean addT6Field(Class<? extends Attribute> attributeClass, String fieldName,
+    private boolean addMl1Field(Class<? extends Attribute> attributeClass, String fieldName,
             Map<Class<? extends Attribute>, String> personAttributes, TokenGeneratorResult result,
             Map<String, String> payload) {
         if (!personAttributes.containsKey(attributeClass)) {
@@ -294,7 +294,7 @@ public class OnnxT6SignatureProvider implements InferenceSignatureProvider {
         try {
             return OBJECT_MAPPER.writeValueAsString(values);
         } catch (Exception e) {
-            throw new IllegalStateException("Failed to serialize T6 payload to JSON", e);
+            throw new IllegalStateException("Failed to serialize ML1 payload to JSON", e);
         }
     }
 }

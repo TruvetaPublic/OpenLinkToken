@@ -60,7 +60,7 @@ class TokenGeneratorIntegrationTest {
         // Generate all tokens
         Map<String, String> tokens = tokenGenerator.getAllTokens(personAttributes).getTokens();
 
-        // Validate the tokens — core module contains only T1-T5; T6 lives in opentoken-core-ai
+        // Validate the tokens — core module contains only T1-T5; ML1 lives in opentoken-core-ai
         assertNotNull(tokens);
         assertEquals(5, tokens.size(), "Expected 5 tokens to be generated (T1-T5 from core)");
 

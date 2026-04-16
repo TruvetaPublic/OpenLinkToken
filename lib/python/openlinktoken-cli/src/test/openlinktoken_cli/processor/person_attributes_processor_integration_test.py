@@ -102,7 +102,7 @@ class TestPersonAttributesProcessorIntegration:
             str(RESOURCES_DIR / "test_overlap2.csv"), token_transformer_list
         )
 
-        # T6 uses an ONNX neural model whose floating-point output can vary slightly
+        # ML1 uses an ONNX neural model whose floating-point output can vary slightly
         # across separate inference runs (different thread scheduling, warm-up state).
         # Only T1-T5 deterministic tokens are compared here.
         _DETERMINISTIC_RULE_IDS = {"T1", "T2", "T3", "T4", "T5"}
@@ -262,7 +262,7 @@ class TestPersonAttributesProcessorIntegration:
                     "Decrypted tokens should be identical for backward compatibility"
                 )
 
-            # Verify that exactly T1-T5 tokens are generated per record; T6 may also be present
+            # Verify that exactly T1-T5 tokens are generated per record; ML1 may also be present
             t1_t5_results = [t for t in old_results if t.get("RuleId") in ["T1", "T2", "T3", "T4", "T5"]]
             assert len(t1_t5_results) == 5, "Should generate exactly T1-T5 tokens per record for backward compatibility"
 
@@ -273,7 +273,7 @@ class TestPersonAttributesProcessorIntegration:
                 assert "Token" in token, "Token must contain Token"
 
                 rule_id = token.get("RuleId")
-                assert rule_id.startswith("T"), f"RuleId should start with 'T', but got: {rule_id}"
+                assert rule_id.startswith(("T", "ML")), f"RuleId should start with 'T' or 'ML', but got: {rule_id}"
 
             # Test metadata consistency
             metadata_map = {}
@@ -415,7 +415,7 @@ class TestPersonAttributesProcessorIntegration:
             # Process the file with hash-only transformers
             results = self.read_csv_from_person_attributes_processor(tmp_input_file, token_transformer_list)
 
-            # Verify that at least T1-T5 tokens are generated per record; T6 may also be present
+            # Verify that at least T1-T5 tokens are generated per record; ML1 may also be present
             t1_t5_results = [t for t in results if t.get("RuleId") in ["T1", "T2", "T3", "T4", "T5"]]
             assert len(t1_t5_results) == 5, "Should generate exactly T1-T5 tokens per record in hash-only mode"
 
@@ -426,7 +426,7 @@ class TestPersonAttributesProcessorIntegration:
                 assert "Token" in token, "Token must contain Token"
 
                 rule_id = token.get("RuleId")
-                assert rule_id.startswith("T"), f"RuleId should start with 'T', got: {rule_id}"
+                assert rule_id.startswith(("T", "ML")), f"RuleId should start with 'T' or 'ML', got: {rule_id}"
 
                 token_value = token.get("Token")
                 # In hash-only mode, tokens should be base64-encoded HMAC-SHA256 hashes

@@ -222,7 +222,7 @@ class TestTokenizeCommandDemoMode:
             ]
         )
 
-        tokens = _extract_tokens(output_csv, exclude_rule_ids={"T6"})
+        tokens = _extract_tokens(output_csv, exclude_rule_ids={"ML1"})
         assert tokens, "Expected at least one non-blank token in normal mode"
 
         for token in tokens:
@@ -339,7 +339,7 @@ def _extract_tokens(csv_path: Path, exclude_rule_ids: set[str] | None = None) ->
 
     Args:
         csv_path: Path to the CSV file to read.
-        exclude_rule_ids: Optional set of RuleId values to skip (e.g. ``{"T6"}``).
+        exclude_rule_ids: Optional set of RuleId values to skip (e.g. ``{"ML1"}``).
     """
     lines = csv_path.read_text().splitlines()
     if not lines:

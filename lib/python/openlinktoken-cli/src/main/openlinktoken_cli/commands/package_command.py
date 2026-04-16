@@ -4,7 +4,7 @@ import logging
 import uuid
 from typing import List
 
-from openlinktoken_core_ai.tokens.t6_inference_config import T6InferenceConfig
+from openlinktoken_core_ai.tokens.ml1_inference_config import ML1InferenceConfig
 
 from openlinktoken.metadata import Metadata
 from openlinktoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
@@ -122,49 +122,49 @@ class PackageCommand:
         )
 
         parser.add_argument(
-            "--disable-t6",
+            "--disable-ml1",
             action="store_true",
-            dest="disable_t6",
-            help="Disable T6 ONNX inference token generation",
+            dest="disable_ml1",
+            help="Disable ML1 ONNX inference token generation",
         )
 
         parser.add_argument(
-            "--t6-model-path",
-            dest="t6_model_path",
-            default=T6InferenceConfig.DEFAULT_MODEL_PATH,
-            help=f"Path to T6 ONNX model (default: {T6InferenceConfig.DEFAULT_MODEL_PATH})",
+            "--ml1-model-path",
+            dest="ml1_model_path",
+            default=ML1InferenceConfig.DEFAULT_MODEL_PATH,
+            help=f"Path to ML1 ONNX model (default: {ML1InferenceConfig.DEFAULT_MODEL_PATH})",
         )
 
         parser.add_argument(
-            "--t6-tokenizer-path",
-            dest="t6_tokenizer_path",
-            default=T6InferenceConfig.DEFAULT_TOKENIZER_PATH,
-            help=f"Path to T6 tokenizer JSON (default: {T6InferenceConfig.DEFAULT_TOKENIZER_PATH})",
+            "--ml1-tokenizer-path",
+            dest="ml1_tokenizer_path",
+            default=ML1InferenceConfig.DEFAULT_TOKENIZER_PATH,
+            help=f"Path to ML1 tokenizer JSON (default: {ML1InferenceConfig.DEFAULT_TOKENIZER_PATH})",
         )
 
         parser.add_argument(
-            "--t6-max-seq-length",
-            "--t6-max-sequence-length",
-            dest="t6_max_sequence_length",
+            "--ml1-max-seq-length",
+            "--ml1-max-sequence-length",
+            dest="ml1_max_sequence_length",
             type=int,
-            default=T6InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH,
-            help="Maximum T6 tokenizer sequence length (default: 128)",
+            default=ML1InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH,
+            help="Maximum ML1 tokenizer sequence length (default: 128)",
         )
 
         parser.add_argument(
-            "--t6-batch-size",
-            dest="t6_batch_size",
+            "--ml1-batch-size",
+            dest="ml1_batch_size",
             type=int,
-            default=T6InferenceConfig.DEFAULT_BATCH_SIZE,
-            help="T6 ONNX inference batch size (default: 64)",
+            default=ML1InferenceConfig.DEFAULT_BATCH_SIZE,
+            help="ML1 ONNX inference batch size (default: 64)",
         )
 
         parser.add_argument(
-            "--t6-num-threads",
-            dest="t6_num_threads",
+            "--ml1-num-threads",
+            dest="ml1_num_threads",
             type=int,
             default=0,
-            help="ORT intra/inter-op thread count for T6 inference (0 = auto-detect, default: 0)",
+            help="ORT intra/inter-op thread count for ML1 inference (0 = auto-detect, default: 0)",
         )
 
         parser.set_defaults(func=PackageCommand.execute)
@@ -186,25 +186,25 @@ class PackageCommand:
         if hash_record_ids:
             logger.info("Record ID hashing enabled: RecordIds will be SHA-256 hashed in output")
 
-        t6_enabled = not getattr(args, "disable_t6", False)
-        T6InferenceConfig.configure(
-            enable_t6=t6_enabled,
-            configured_model_path=getattr(args, "t6_model_path", T6InferenceConfig.DEFAULT_MODEL_PATH),
-            configured_tokenizer_path=getattr(args, "t6_tokenizer_path", T6InferenceConfig.DEFAULT_TOKENIZER_PATH),
+        ml1_enabled = not getattr(args, "disable_ml1", False)
+        ML1InferenceConfig.configure(
+            enable_ml1=ml1_enabled,
+            configured_model_path=getattr(args, "ml1_model_path", ML1InferenceConfig.DEFAULT_MODEL_PATH),
+            configured_tokenizer_path=getattr(args, "ml1_tokenizer_path", ML1InferenceConfig.DEFAULT_TOKENIZER_PATH),
             configured_max_sequence_length=getattr(
-                args, "t6_max_sequence_length", T6InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH
+                args, "ml1_max_sequence_length", ML1InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH
             ),
-            configured_batch_size=getattr(args, "t6_batch_size", T6InferenceConfig.DEFAULT_BATCH_SIZE),
-            configured_num_threads=getattr(args, "t6_num_threads", 0),
+            configured_batch_size=getattr(args, "ml1_batch_size", ML1InferenceConfig.DEFAULT_BATCH_SIZE),
+            configured_num_threads=getattr(args, "ml1_num_threads", 0),
         )
-        num_threads = getattr(args, "t6_num_threads", 0)
+        num_threads = getattr(args, "ml1_num_threads", 0)
         logger.info(
-            "T6 ONNX inference: enabled=%s, modelPath=%s, tokenizerPath=%s, maxSequenceLength=%s, batchSize=%s, numThreads=%s",
-            t6_enabled,
-            getattr(args, "t6_model_path", T6InferenceConfig.DEFAULT_MODEL_PATH),
-            getattr(args, "t6_tokenizer_path", T6InferenceConfig.DEFAULT_TOKENIZER_PATH),
-            getattr(args, "t6_max_sequence_length", T6InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH),
-            getattr(args, "t6_batch_size", T6InferenceConfig.DEFAULT_BATCH_SIZE),
+            "ML1 ONNX inference: enabled=%s, modelPath=%s, tokenizerPath=%s, maxSequenceLength=%s, batchSize=%s, numThreads=%s",
+            ml1_enabled,
+            getattr(args, "ml1_model_path", ML1InferenceConfig.DEFAULT_MODEL_PATH),
+            getattr(args, "ml1_tokenizer_path", ML1InferenceConfig.DEFAULT_TOKENIZER_PATH),
+            getattr(args, "ml1_max_sequence_length", ML1InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH),
+            getattr(args, "ml1_batch_size", ML1InferenceConfig.DEFAULT_BATCH_SIZE),
             num_threads if num_threads > 0 else "auto",
         )
 

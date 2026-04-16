@@ -1,13 +1,13 @@
-"""Runtime configuration for optional ONNX-backed T6 token generation."""
+"""Runtime configuration for optional ONNX-backed ML1 token generation."""
 
 import os
 
 
-class T6InferenceConfig:
-    """Holds process-wide settings for T6 ONNX inference."""
+class ML1InferenceConfig:
+    """Holds process-wide settings for ML1 ONNX inference."""
 
-    DEFAULT_MODEL_PATH = "classpath:/inferencing/t6/model.onnx"
-    DEFAULT_TOKENIZER_PATH = "classpath:/inferencing/t6/tokenizer.json"
+    DEFAULT_MODEL_PATH = "classpath:/inferencing/ml1/model.onnx"
+    DEFAULT_TOKENIZER_PATH = "classpath:/inferencing/ml1/tokenizer.json"
     DEFAULT_MAX_SEQUENCE_LENGTH = 128
     DEFAULT_BATCH_SIZE = 64
     DEFAULT_NUM_THREADS = os.cpu_count() or 1
@@ -22,20 +22,20 @@ class T6InferenceConfig:
     @classmethod
     def configure(
         cls,
-        enable_t6: bool,
+        enable_ml1: bool,
         configured_model_path: str,
         configured_tokenizer_path: str,
         configured_max_sequence_length: int,
         configured_batch_size: int = DEFAULT_BATCH_SIZE,
         configured_num_threads: int = 0,
     ) -> None:
-        """Apply T6 runtime configuration."""
+        """Apply ML1 runtime configuration."""
         if configured_max_sequence_length <= 0:
-            raise ValueError("T6 max sequence length must be greater than zero.")
+            raise ValueError("ML1 max sequence length must be greater than zero.")
         if configured_batch_size <= 0:
-            raise ValueError("T6 batch size must be greater than zero.")
+            raise ValueError("ML1 batch size must be greater than zero.")
 
-        cls._enabled = enable_t6
+        cls._enabled = enable_ml1
         cls._model_path = (
             configured_model_path.strip()
             if configured_model_path and configured_model_path.strip()
@@ -52,7 +52,7 @@ class T6InferenceConfig:
 
     @classmethod
     def is_enabled(cls) -> bool:
-        """Return whether T6 inference is enabled."""
+        """Return whether ML1 inference is enabled."""
         return cls._enabled
 
     @classmethod

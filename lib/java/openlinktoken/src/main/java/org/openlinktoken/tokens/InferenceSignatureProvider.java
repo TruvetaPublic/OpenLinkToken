@@ -12,13 +12,13 @@ import java.util.Map;
  * When no implementation is on the classpath, inference-based tokens are silently
  * disabled and only standard attribute-expression tokens (T1–T5) are generated.
  *
- * <p>Each provider is responsible for one token identifier (e.g. "T6") and reports
+ * <p>Each provider is responsible for one token identifier (e.g. "ML1") and reports
  * it via {@link #getTokenId()}.
  */
 public interface InferenceSignatureProvider {
 
     /**
-     * Return the token identifier this provider handles (e.g. {@code "T6"}).
+     * Return the token identifier this provider handles (e.g. {@code "ML1"}).
      */
     String getTokenId();
 

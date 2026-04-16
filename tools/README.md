@@ -219,7 +219,7 @@ python tools/interoperability/multi_language_interoperability_test.py
 
 Use `tools/interoperability/rotation_matrix_interop_test.py` to verify that the
 Java and Python `RotationMatrixGenerator` implementations produce bit-exact
-results for the same inputs. This is the parity gate for T6 inferencing tokens.
+results for the same inputs. This is the parity gate for ML1 inferencing tokens.
 
 ```bash
 source /home/vscode/.local/share/openlinktoken/.venv/bin/activate

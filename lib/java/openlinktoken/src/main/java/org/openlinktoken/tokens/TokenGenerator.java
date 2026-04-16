@@ -167,7 +167,7 @@ public class TokenGenerator implements Serializable {
      * Apply pre-computed embedding-derived tokens to the result.
      *
      * <p>Stores each token string under the key {@code tokenIdPrefix + i}, e.g.
-     * {@code "T6-R0"}, {@code "T6-R1"}, …
+     * {@code "ML1-R0"}, {@code "ML1-R1"}, …
      *
      * @param result         the result to update
      * @param tokenIdPrefix  prefix for the derived token keys
@@ -186,7 +186,7 @@ public class TokenGenerator implements Serializable {
      * Apply a pre-computed inference signature as a token in the result.
      *
      * @param result    the token generator result to update
-     * @param tokenId   the token identifier (e.g. {@code "T6"})
+     * @param tokenId   the token identifier (e.g. {@code "ML1"})
      * @param signature the pre-computed hex-encoded signature string
      */
     public void applyPrecomputedSignature(TokenGeneratorResult result, String tokenId, String signature) {
@@ -245,7 +245,7 @@ public class TokenGenerator implements Serializable {
         var signature = getTokenSignature(tokenId, personAttributes, result);
         logger.debug("Token signature for token id {}: {}", tokenId, signature);
 
-        // Tokens from inference providers (e.g. T6) are pre-hashed; skip SHA-256 re-hashing
+        // Tokens from inference providers (e.g. ML1) are pre-hashed; skip SHA-256 re-hashing
         // but still apply any remaining transformers (e.g. encryption) via PassthroughTokenizer.
         Optional<InferenceSignatureProvider> provider = findProvider();
         if (provider.isPresent() && provider.get().getTokenId().equals(tokenId) && provider.get().isEnabled()) {
@@ -277,7 +277,7 @@ public class TokenGenerator implements Serializable {
     /**
      * Store a pre-hashed token value, applying only non-hash transformers (e.g. encryption).
      *
-     * <p>Use for tokens that are already hashed (e.g. T6 HMAC rotation values).
+     * <p>Use for tokens that are already hashed (e.g. ML1 HMAC rotation values).
      * {@link HashTokenTransformer} is skipped to avoid re-hashing; all other
      * transformers (e.g. {@code EncryptTokenTransformer}) are still applied via
      * {@link PassthroughTokenizer}.

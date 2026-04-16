@@ -7,11 +7,11 @@ import org.openlinktoken.attributes.AttributeExpression;
 import org.openlinktoken.tokens.Token;
 
 /**
- * Represents optional T6 token definition.
+ * Represents optional ML1 token definition.
  */
-public class T6Token implements Token {
+public class ML1Token implements Token {
     private static final long serialVersionUID = 1L;
-    private static final String ID = "T6";
+    private static final String ID = "ML1";
 
     private final ArrayList<AttributeExpression> definition = new ArrayList<>();
 

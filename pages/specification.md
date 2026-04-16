@@ -12,7 +12,7 @@ Open Link Token is a privacy-preserving token generation system for deterministi
 
 - Identical inputs always produce identical deterministic matching values (hash-only or decrypted)
 - Tokens reveal nothing about the underlying data (one-way)
-- Matching can occur on different attribute combinations via default token rules (T1–T5), with optional ONNX-backed T6
+- Matching can occur on different attribute combinations via default token rules (T1–T5), with optional ONNX-backed ML1
 
 **Applicability:** This specification applies to both Java and Python implementations. Cross-language deterministic outputs (hash-only and decrypted values) must be byte-identical for the same normalized inputs and secrets.
 
@@ -23,7 +23,7 @@ Open Link Token is a privacy-preserving token generation system for deterministi
 ### In Scope
 
 1. **Person attribute normalization**: Transformation of raw input data into canonical forms
-2. **Token rule definitions**: Five default rules (T1–T5) combining attributes in distinct ways, plus optional T6
+2. **Token rule definitions**: Five default rules (T1–T5) combining attributes in distinct ways, plus optional ML1
 3. **Token generation pipeline**: Deterministic transformation of normalized attributes → final tokens
 4. **Metadata tracking**: Processing statistics, system info, and secret hashes for audit
 5. **Error handling**: Behavior when attributes fail validation
@@ -137,7 +137,7 @@ Apply each enabled token rule independently:
 | **T3** | U(LastName) \| U(FirstName) \| U(Sex) \| BirthDate          | Higher precision match; full name + sex |
 | **T4** | SocialSecurityNumber \| U(Sex) \| BirthDate                 | Authoritative; uses SSN                 |
 | **T5** | U(LastName) \| U(FirstName[0:3]) \| U(Sex)                  | Quick search; no birth date             |
-| **T6*** | ONNX CLS embedding from PostalCode/Birthdate/GivenName/Surname/Gender | Optional model-based rule |
+| **ML1*** | ONNX CLS embedding from PostalCode/Birthdate/GivenName/Surname/Gender | Optional model-based rule |
 
 (U = Uppercase, [0] = first char, [0:3] = first 3 chars)
 
@@ -197,10 +197,10 @@ RecordId,RuleId,Token
 **Columns:**
 
 - `RecordId`: From input (or auto-generated if omitted)
-- `RuleId`: T1, T2, T3, T4, or T5 (plus T6 when enabled)
+- `RuleId`: T1, T2, T3, T4, or T5 (plus ML1 when enabled)
 - `Token`: Encrypted `ot.V1.<JWE>` token in encrypted mode, or base64 HMAC token in hash-only/decrypted mode (or empty string if validation failed)
 
-**Rows per input record:** 5 by default (T1–T5), 6 when optional T6 is enabled; may be fewer if errors occur
+**Rows per input record:** 5 by default (T1–T5), 6 when optional ML1 is enabled; may be fewer if errors occur
 
 **Example:**
 
@@ -283,7 +283,7 @@ Parquet format includes compression and is suitable for large datasets.
 
 This section is **non-normative** (informational) and describes likely evolution areas:
 
-- Extension mechanism for new token rules (T6+) with explicit cross-language parity requirements
+- Extension mechanism for new token rules (ML1+) with explicit cross-language parity requirements
 - Support for additional attribute types (e.g., middle name, phone, email) behind versioned schemas
 - Metadata schema versioning for forward compatibility
 - Formal specification versioning and migration guidance

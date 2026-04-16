@@ -103,15 +103,15 @@ import org.openlinktoken.attributes.person.PostalCodeAttribute;
 import org.openlinktoken.tokens.Token;
 
 /**
- * Token rule T6 - Example custom token.
+ * Token rule ML1 - Example custom token.
  */
-public class T6Token implements Token {
+public class ML1Token implements Token {
     private static final long serialVersionUID = 1L;
-    private static final String ID = "T6";
+    private static final String ID = "ML1";
 
     private final ArrayList<AttributeExpression> definition = new ArrayList<>();
 
-    public T6Token() {
+    public ML1Token() {
         definition.add(new AttributeExpression(LastNameAttribute.class, "T|U"));
         definition.add(new AttributeExpression(FirstNameAttribute.class, "T|U"));
         definition.add(new AttributeExpression(BirthDateAttribute.class, "T|D"));
@@ -138,7 +138,7 @@ org.openlinktoken.tokens.definitions.T2Token
 org.openlinktoken.tokens.definitions.T3Token
 org.openlinktoken.tokens.definitions.T4Token
 org.openlinktoken.tokens.definitions.T5Token
-org.openlinktoken.tokens.definitions.T6Token
+org.openlinktoken.tokens.definitions.ML1Token
 ```
 
 ## Python Registration (Explicit Imports)
@@ -209,7 +209,7 @@ class AttributeLoader:
 1. **Create the token class**:
 
 ```python
-# lib/python/openlinktoken/src/main/openlinktoken/tokens/definitions/t6_token.py
+# lib/python/openlinktoken/src/main/openlinktoken/tokens/definitions/ml1_token.py
 
 from typing import List
 
@@ -220,10 +220,10 @@ from openlinktoken.attributes.person.last_name_attribute import LastNameAttribut
 from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttribute
 from openlinktoken.tokens.token import Token
 
-class T6Token(Token):
-    """Token rule T6 - Example custom token."""
+class ML1Token(Token):
+    """Token rule ML1 - Example custom token."""
 
-    ID = "T6"
+    ID = "ML1"
 
     def __init__(self):
         self._definition = [
@@ -242,7 +242,7 @@ class T6Token(Token):
 
 2. **No registry edit needed for tokens**:
 
-The Python `TokenRegistry.load_all_tokens()` implementation discovers `Token` subclasses by scanning modules in `openlinktoken.tokens.definitions`. As long as your new token lives under that package (for example `t6_token.py`), it will be picked up automatically.
+The Python `TokenRegistry.load_all_tokens()` implementation discovers `Token` subclasses by scanning modules in `openlinktoken.tokens.definitions`. As long as your new token lives under that package (for example `ml1_token.py`), it will be picked up automatically.
 
 ## Cross-Language Sync Verification
 

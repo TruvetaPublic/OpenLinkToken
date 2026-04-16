@@ -2,12 +2,12 @@
 package org.openlinktoken.tokens;
 
 /**
- * Runtime configuration for optional ONNX-backed T6 token generation.
+ * Runtime configuration for optional ONNX-backed ML1 token generation.
  */
-public final class T6InferenceConfig {
+public final class ML1InferenceConfig {
 
-    public static final String DEFAULT_MODEL_PATH = "classpath:/inferencing/t6/model.onnx";
-    public static final String DEFAULT_TOKENIZER_PATH = "classpath:/inferencing/t6/tokenizer.json";
+    public static final String DEFAULT_MODEL_PATH = "classpath:/inferencing/ml1/model.onnx";
+    public static final String DEFAULT_TOKENIZER_PATH = "classpath:/inferencing/ml1/tokenizer.json";
     public static final int DEFAULT_MAX_SEQUENCE_LENGTH = 128;
     public static final int DEFAULT_BATCH_SIZE = 64;
     public static final int DEFAULT_NUM_THREADS = Runtime.getRuntime().availableProcessors();
@@ -19,35 +19,35 @@ public final class T6InferenceConfig {
     private static volatile int batchSize = DEFAULT_BATCH_SIZE;
     private static volatile int numThreads = DEFAULT_NUM_THREADS;
 
-    private T6InferenceConfig() {
+    private ML1InferenceConfig() {
     }
 
-    public static synchronized void configure(boolean enableT6, String configuredModelPath,
+    public static synchronized void configure(boolean enableMl1, String configuredModelPath,
             String configuredTokenizerPath, int configuredMaxSequenceLength) {
-        configure(enableT6, configuredModelPath, configuredTokenizerPath, configuredMaxSequenceLength,
+        configure(enableMl1, configuredModelPath, configuredTokenizerPath, configuredMaxSequenceLength,
                 DEFAULT_BATCH_SIZE);
     }
 
-    public static synchronized void configure(boolean enableT6, String configuredModelPath,
+    public static synchronized void configure(boolean enableMl1, String configuredModelPath,
             String configuredTokenizerPath, int configuredMaxSequenceLength, int configuredBatchSize) {
-        configure(enableT6, configuredModelPath, configuredTokenizerPath, configuredMaxSequenceLength,
+        configure(enableMl1, configuredModelPath, configuredTokenizerPath, configuredMaxSequenceLength,
                 configuredBatchSize, DEFAULT_NUM_THREADS);
     }
 
-    public static synchronized void configure(boolean enableT6, String configuredModelPath,
+    public static synchronized void configure(boolean enableMl1, String configuredModelPath,
             String configuredTokenizerPath, int configuredMaxSequenceLength, int configuredBatchSize,
             int configuredNumThreads) {
         if (configuredMaxSequenceLength <= 0) {
-            throw new IllegalArgumentException("T6 max sequence length must be greater than zero.");
+            throw new IllegalArgumentException("ML1 max sequence length must be greater than zero.");
         }
         if (configuredBatchSize <= 0) {
-            throw new IllegalArgumentException("T6 batch size must be greater than zero.");
+            throw new IllegalArgumentException("ML1 batch size must be greater than zero.");
         }
         if (configuredNumThreads <= 0) {
-            throw new IllegalArgumentException("T6 num threads must be greater than zero.");
+            throw new IllegalArgumentException("ML1 num threads must be greater than zero.");
         }
 
-        enabled = enableT6;
+        enabled = enableMl1;
         modelPath = configuredModelPath == null || configuredModelPath.isBlank()
                 ? DEFAULT_MODEL_PATH
                 : configuredModelPath;

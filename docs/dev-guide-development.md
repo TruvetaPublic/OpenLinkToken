@@ -346,13 +346,13 @@ token_df = processor.process_dataframe(df)
 token_df.show()
 ```
 
-Custom Token Definitions (example adding T6):
+Custom Token Definitions (example adding ML1):
 
 ```python
 from openlinktoken_pyspark import Open Link TokenProcessor
 from openlinktoken_pyspark.notebook_helpers import TokenBuilder, CustomTokenDefinition
 
-t6 = TokenBuilder("T6") \
+ml1 = TokenBuilder("ML1") \
   .add("last_name", "T|U") \
   .add("first_name", "T|U") \
   .add("birth_date", "T|D") \
@@ -564,7 +564,7 @@ Open Link Token supports three processing modes across Java, Python, and the PyS
 
 Notes:
 
-- The underlying signature (before hashing) is produced by ordered attribute expressions for each token rule (e.g., T1→T5 or custom T6+). Plain mode exposes this directly for inspection.
+- The underlying signature (before hashing) is produced by ordered attribute expressions for each token rule (e.g., T1→T5 or custom ML1+). Plain mode exposes this directly for inspection.
 - Encryption uses AES-256-GCM with a random IV; identical hashed inputs yield different encrypted outputs each run. Matching encrypted tokens across datasets therefore requires either: (a) decryption with the shared key (to reach the tokenized representation) or (b) using the `tokenize` subcommand specifically for overlap workflows. Do NOT attempt to match encrypted blobs directly.
 - Tokenizer polymorphism: Java & Python `TokenGenerator` accept an injectable tokenizer. Defaults to SHA-256; when plain mode is active a `PassthroughTokenizer` is used so downstream transformers (if any) receive the raw signature.
 - Security: Plain and tokenized modes reduce protection. Never use plain mode for sharing PHI; tokenized output may leak structural frequency information. Encrypted mode is required for external distribution; tokenized datasets should remain internal and are typically used to join against decrypted partner tokens for overlap analysis.
@@ -614,7 +614,7 @@ Python uses two mechanisms:
 
 Add a Token:
 
-1. Create `lib/python/openlinktoken/src/main/openlinktoken/tokens/definitions/t6_token.py` (example).
+1. Create `lib/python/openlinktoken/src/main/openlinktoken/tokens/definitions/ml1_token.py` (example).
 2. Define a class inheriting `Token` with `get_identifier()` & `get_definition()`.
 3. Ensure file and class names are unique and public.
 4. Run `pytest src/test` to verify auto-discovery.

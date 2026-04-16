@@ -39,10 +39,10 @@ import ai.djl.translate.NoopTranslator;
 import ai.djl.translate.TranslateException;
 
 /**
- * Generates deterministic T6 signatures from ONNX CLS embeddings using DJL.
+ * Generates deterministic ML1 signatures from ONNX CLS embeddings using DJL.
  */
-public final class T6OnnxSignatureGenerator {
-    private static final Logger LOGGER = LoggerFactory.getLogger(T6OnnxSignatureGenerator.class);
+public final class ML1OnnxSignatureGenerator {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ML1OnnxSignatureGenerator.class);
     private static ZooModel<NDList, NDList> model;
     private static Predictor<NDList, NDList> predictor;
     private static HuggingFaceTokenizer tokenizer;
@@ -51,11 +51,11 @@ public final class T6OnnxSignatureGenerator {
     private static String activeTokenizerPath;
     private static final String PAD_INPUT_JSON = "{}";
 
-    private T6OnnxSignatureGenerator() {
+    private ML1OnnxSignatureGenerator() {
     }
 
     /**
-     * Generates a T6 signature for the given JSON-formatted input row.
+     * Generates a ML1 signature for the given JSON-formatted input row.
      *
      * @param inputJson JSON string representing a single person record
      * @return hex-encoded CLS embedding signature
@@ -63,13 +63,13 @@ public final class T6OnnxSignatureGenerator {
     public static synchronized String generateSignature(String inputJson) {
         List<String> signatures = generateSignatures(List.of(inputJson));
         if (signatures.isEmpty()) {
-            throw new IllegalStateException("Failed to generate ONNX-based T6 signature.");
+            throw new IllegalStateException("Failed to generate ONNX-based ML1 signature.");
         }
         return signatures.get(0);
     }
 
     /**
-     * Generates T6 signatures for multiple JSON-formatted input rows using batched ONNX inference.
+     * Generates ML1 signatures for multiple JSON-formatted input rows using batched ONNX inference.
      *
      * @param inputJsonRows list of JSON strings representing person records
      * @return list of hex-encoded CLS embedding signatures in the same order
@@ -93,10 +93,10 @@ public final class T6OnnxSignatureGenerator {
     }
 
     /**
-     * Generates both hex-encoded T6 signatures and raw CLS embedding vectors in a single
+     * Generates both hex-encoded ML1 signatures and raw CLS embedding vectors in a single
      * inference pass.
      *
-     * <p>Use this when both the T6 token and rotation tokens are needed to avoid
+     * <p>Use this when both the ML1 token and rotation tokens are needed to avoid
      * running ONNX inference twice.
      *
      * @param inputJsonRows list of JSON strings representing person records
@@ -111,7 +111,7 @@ public final class T6OnnxSignatureGenerator {
         try {
             initializeIfNeeded();
 
-            int configuredBatchSize = T6InferenceConfig.getBatchSize();
+            int configuredBatchSize = ML1InferenceConfig.getBatchSize();
             List<String> signatures = new ArrayList<>(inputJsonRows.size());
             List<float[]> rawEmbeddings = new ArrayList<>(inputJsonRows.size());
             double totalInferenceMillis = 0.0;
@@ -137,25 +137,25 @@ public final class T6OnnxSignatureGenerator {
 
                 if (LOGGER.isInfoEnabled()) {
                     LOGGER.info(
-                            "T6 ONNX batch inference: requestedSize={}, inferenceSize={}, totalMs={}, avgMsPerRow={}",
+                            "ML1 ONNX batch inference: requestedSize={}, inferenceSize={}, totalMs={}, avgMsPerRow={}",
                             realBatch.size(), inferenceBatch.size(), inferenceElapsedMillis,
                             inferenceElapsedMillis / realBatch.size());
                 }
             }
 
             if (LOGGER.isInfoEnabled()) {
-                LOGGER.info("T6 ONNX batch inference summary: rowCount={}, totalMs={}, avgMsPerRow={}",
+                LOGGER.info("ML1 ONNX batch inference summary: rowCount={}, totalMs={}, avgMsPerRow={}",
                         inputJsonRows.size(), totalInferenceMillis, totalInferenceMillis / inputJsonRows.size());
             }
 
             return new GenerationResult(signatures, rawEmbeddings);
         } catch (Exception e) {
-            throw new IllegalStateException("Failed to generate ONNX-based T6 signatures.", e);
+            throw new IllegalStateException("Failed to generate ONNX-based ML1 signatures.", e);
         }
     }
 
     /**
-     * Bundles T6 hex signatures and raw float embeddings generated in one inference pass.
+     * Bundles ML1 hex signatures and raw float embeddings generated in one inference pass.
      *
      * <p>{@code signatures} and {@code rawEmbeddings} are parallel lists: index {@code i}
      * of each list corresponds to the same input row.
@@ -202,8 +202,8 @@ public final class T6OnnxSignatureGenerator {
     }
 
     private static void initializeIfNeeded() throws IOException, ModelException {
-        String modelPath = T6InferenceConfig.getModelPath();
-        String tokenizerPath = T6InferenceConfig.getTokenizerPath();
+        String modelPath = ML1InferenceConfig.getModelPath();
+        String tokenizerPath = ML1InferenceConfig.getTokenizerPath();
         boolean alreadyInitialized = model != null
                 && tokenizer != null
                 && modelPath.equals(activeModelPath)
@@ -216,7 +216,7 @@ public final class T6OnnxSignatureGenerator {
         Path resolvedModelPath = resolvePath(modelPath);
         Path resolvedTokenizerPath = resolvePath(tokenizerPath);
 
-        int numThreads = T6InferenceConfig.getNumThreads();
+        int numThreads = ML1InferenceConfig.getNumThreads();
         String modelName = resolvedModelPath.getFileName().toString().replaceFirst("\\.onnx$", "");
 
         Criteria<NDList, NDList> criteria = Criteria.builder()
@@ -240,7 +240,7 @@ public final class T6OnnxSignatureGenerator {
                 .collect(Collectors.toSet());
 
         Map<String, String> tokenizerOptions = new HashMap<>();
-        tokenizerOptions.put("maxLength", String.valueOf(T6InferenceConfig.getMaxSequenceLength()));
+        tokenizerOptions.put("maxLength", String.valueOf(ML1InferenceConfig.getMaxSequenceLength()));
         tokenizer = HuggingFaceTokenizer.newInstance(resolvedTokenizerPath, tokenizerOptions);
         activeModelPath = modelPath;
         activeTokenizerPath = tokenizerPath;
@@ -248,20 +248,20 @@ public final class T6OnnxSignatureGenerator {
 
     private static Device selectInferenceDevice() {
         if (CudaUtils.getGpuCount() > 0) {
-            LOGGER.info("T6 inference: CUDA GPU available, using GPU acceleration");
+            LOGGER.info("ML1 inference: CUDA GPU available, using GPU acceleration");
             return Device.gpu();
         }
         String osName = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
         if (osName.contains("mac")) {
-            LOGGER.info("T6 inference: macOS detected, OnnxRuntime will use CoreML execution provider where available");
+            LOGGER.info("ML1 inference: macOS detected, OnnxRuntime will use CoreML execution provider where available");
         } else {
-            LOGGER.info("T6 inference: No GPU detected, using CPU");
+            LOGGER.info("ML1 inference: No GPU detected, using CPU");
         }
         return Device.cpu();
     }
 
     private static float[][] generateEmbeddings(List<String> inputJsonRows) throws TranslateException {
-        int maxSequenceLength = T6InferenceConfig.getMaxSequenceLength();
+        int maxSequenceLength = ML1InferenceConfig.getMaxSequenceLength();
 
         // Tokenize in parallel across available processors
         Encoding[] encodings = new Encoding[inputJsonRows.size()];
@@ -387,9 +387,9 @@ public final class T6OnnxSignatureGenerator {
         String normalized = resourcePath.startsWith("/") ? resourcePath.substring(1) : resourcePath;
 
         // Try bundled classpath first (packaged JARs with embedded resources)
-        try (InputStream stream = T6OnnxSignatureGenerator.class.getClassLoader().getResourceAsStream(normalized)) {
+        try (InputStream stream = ML1OnnxSignatureGenerator.class.getClassLoader().getResourceAsStream(normalized)) {
             if (stream != null) {
-                Path tempDir = Files.createTempDirectory("t6-assets-");
+                Path tempDir = Files.createTempDirectory("ml1-assets-");
                 tempDir.toFile().deleteOnExit();
                 Path target = tempDir.resolve(Paths.get(normalized).getFileName().toString());
                 Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING);
@@ -397,7 +397,7 @@ public final class T6OnnxSignatureGenerator {
 
                 if (normalized.endsWith(".onnx")) {
                     String dataResource = normalized + ".data";
-                    try (InputStream dataStream = T6OnnxSignatureGenerator.class.getClassLoader()
+                    try (InputStream dataStream = ML1OnnxSignatureGenerator.class.getClassLoader()
                             .getResourceAsStream(dataResource)) {
                         if (dataStream != null) {
                             Path dataTarget = tempDir.resolve(Paths.get(dataResource).getFileName().toString());
@@ -424,7 +424,7 @@ public final class T6OnnxSignatureGenerator {
         }
 
         throw new IllegalStateException(
-                "T6 resource not found on classpath or filesystem. "
+                "ML1 resource not found on classpath or filesystem. "
                         + "Configure an explicit path or place the file at: resources/" + normalized);
     }
 

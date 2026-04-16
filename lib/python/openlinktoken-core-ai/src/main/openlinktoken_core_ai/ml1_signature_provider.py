@@ -1,4 +1,4 @@
-"""ONNX-backed T6 signature provider for Open Link Token."""
+"""ONNX-backed ML1 signature provider for Open Link Token."""
 
 from __future__ import annotations
 
@@ -17,8 +17,8 @@ from openlinktoken.tokens.definitions.t1_token import T1Token
 from openlinktoken.tokens.inference_signature_provider import InferenceBatchResult
 from openlinktoken.tokens.token_generator_result import TokenGeneratorResult
 from openlinktoken_core_ai.tokens.rotation_config import RotationConfig
-from openlinktoken_core_ai.tokens.t6_inference_config import T6InferenceConfig
-from openlinktoken_core_ai.tokens.t6_onnx_signature_generator import T6OnnxSignatureGenerator, t6_payload_to_json
+from openlinktoken_core_ai.tokens.ml1_inference_config import ML1InferenceConfig
+from openlinktoken_core_ai.tokens.ml1_onnx_signature_generator import ML1OnnxSignatureGenerator, ml1_payload_to_json
 from openlinktoken_core_ai.tokentransformer.rotation.rotation_embedding_transformer import RotationEmbeddingTransformer
 
 logger = logging.getLogger(__name__)
@@ -67,8 +67,8 @@ def _hash_rotation_values(rotation_values: List[str], t1_signature: str) -> List
     return [hashlib.sha256((rv + t1_signature).encode("utf-8")).hexdigest() for rv in rotation_values]
 
 
-# Ordered field name mapping for T6 payload
-_T6_FIELDS = [
+# Ordered field name mapping for ML1 payload
+_ML1_FIELDS = [
     (PostalCodeAttribute, "PostalCode"),
     (BirthDateAttribute, "Birthdate"),
     (FirstNameAttribute, "GivenName"),
@@ -76,12 +76,12 @@ _T6_FIELDS = [
     (SexAttribute, "Gender"),
 ]
 
-# Pre-built attribute instances for T6 validation and normalization — reused across all calls.
-_T6_ATTRIBUTE_INSTANCES = {attr_cls: attr_cls() for attr_cls, _ in _T6_FIELDS}
+# Pre-built attribute instances for ML1 validation and normalization — reused across all calls.
+_ML1_ATTRIBUTE_INSTANCES = {attr_cls: attr_cls() for attr_cls, _ in _ML1_FIELDS}
 
 
-class OnnxT6SignatureProvider:
-    """ONNX-backed implementation of InferenceSignatureProvider for T6 tokens."""
+class OnnxML1SignatureProvider:
+    """ONNX-backed implementation of InferenceSignatureProvider for ML1 tokens."""
 
     # Class-level rotation transformer cache so expensive matrix generation
     # (O(N^3) for N=embedding_dim) is paid only once per process lifetime.
@@ -89,10 +89,10 @@ class OnnxT6SignatureProvider:
     _rotation_transformer_lock: ClassVar[Lock] = Lock()
 
     def get_token_id(self) -> str:
-        return "T6"
+        return "ML1"
 
     def is_enabled(self) -> bool:
-        return T6InferenceConfig.is_enabled()
+        return ML1InferenceConfig.is_enabled()
 
     @classmethod
     def _get_rotation_transformer(cls, embedding_dim: int) -> Optional[RotationEmbeddingTransformer]:
@@ -115,17 +115,17 @@ class OnnxT6SignatureProvider:
         return cls._rotation_transformer
 
     def generate_signature(self, person_attributes: Dict[Type[Attribute], str]) -> Optional[str]:
-        """Generate a single T6 signature via ONNX inference.
+        """Generate a single ML1 signature via ONNX inference.
 
         Pipeline: ONNX embed → rotate → quantize → SHA-256 hash with T1 signature.
         Falls back to raw hex embedding string when rotation is disabled.
         """
         result = TokenGeneratorResult()
-        payload_json = self.build_t6_payload(person_attributes, result)
+        payload_json = self.build_ml1_payload(person_attributes, result)
         if payload_json is None:
             return None
         try:
-            sig, embedding = T6OnnxSignatureGenerator.generate_signature_with_raw_embedding(payload_json)
+            sig, embedding = ML1OnnxSignatureGenerator.generate_signature_with_raw_embedding(payload_json)
             if RotationConfig.is_enabled() and embedding is not None:
                 transformer = self._get_rotation_transformer(len(embedding))
                 if transformer is not None:
@@ -136,11 +136,11 @@ class OnnxT6SignatureProvider:
                     return ",".join(rotation_values)
             return sig
         except Exception as error:
-            logger.error("Error generating T6 signature", exc_info=error)
+            logger.error("Error generating ML1 signature", exc_info=error)
             return None
 
     def generate_batch(self, rows: List[Dict[Type[Attribute], str]]) -> InferenceBatchResult:
-        """Generate T6 signatures for a batch of records.
+        """Generate ML1 signatures for a batch of records.
 
         Pipeline per record: ONNX embed → rotate → quantize → SHA-256 hash with T1 signature.
         Falls back to raw hex embedding string when rotation is disabled.
@@ -150,7 +150,7 @@ class OnnxT6SignatureProvider:
 
         for i, row in enumerate(rows):
             result = TokenGeneratorResult()
-            payload = self.build_t6_payload(row, result)
+            payload = self.build_ml1_payload(row, result)
             payloads.append(payload)
             if payload is not None:
                 valid_indices.append(i)
@@ -161,7 +161,7 @@ class OnnxT6SignatureProvider:
         raw_embeddings = [None] * len(rows)
 
         if valid_payload_list:
-            batch_sigs, batch_embs = T6OnnxSignatureGenerator.generate_signatures_with_raw_embeddings(
+            batch_sigs, batch_embs = ML1OnnxSignatureGenerator.generate_signatures_with_raw_embeddings(
                 valid_payload_list
             )
 
@@ -185,24 +185,24 @@ class OnnxT6SignatureProvider:
 
         return InferenceBatchResult(signatures=signatures, raw_embeddings=raw_embeddings)
 
-    def build_t6_payload(
+    def build_ml1_payload(
         self,
         person_attributes: Dict[Type[Attribute], str],
         result: TokenGeneratorResult,
     ) -> Optional[str]:
-        """Build the deterministic JSON payload for T6 inference.
+        """Build the deterministic JSON payload for ML1 inference.
 
         Returns None if any required field is missing or fails validation.
         Each of the 5 fields (PostalCode, Birthdate, GivenName, Surname, Gender)
         must be present and non-empty.
         """
         payload: Dict[str, str] = {}
-        for attr_cls, field_name in _T6_FIELDS:
+        for attr_cls, field_name in _ML1_FIELDS:
             value = person_attributes.get(attr_cls)
             if not value:
                 result.invalid_attributes.add(attr_cls.__name__)
                 return None
-            attr = _T6_ATTRIBUTE_INSTANCES[attr_cls]
+            attr = _ML1_ATTRIBUTE_INSTANCES[attr_cls]
             if not attr.validate(value):
                 result.invalid_attributes.add(attr_cls.__name__)
                 return None
@@ -211,4 +211,4 @@ class OnnxT6SignatureProvider:
                 result.invalid_attributes.add(attr_cls.__name__)
                 return None
             payload[field_name] = normalized
-        return t6_payload_to_json(payload)
+        return ml1_payload_to_json(payload)

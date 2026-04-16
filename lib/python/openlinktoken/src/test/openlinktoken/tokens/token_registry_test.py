@@ -45,7 +45,7 @@ def test_load_all_tokens_with_resources_fallback():
         # Don't mock resources - let it actually work
         tokens = TokenRegistry.load_all_tokens()
 
-        # T1-T5 come from core; T6 may be added by opentoken-core-ai via entry_points
+        # T1-T5 come from core; ML1 may be added by opentoken-core-ai via entry_points
         assert len(tokens) >= 5, "Should load at least 5 tokens via resources fallback"
         assert "T1" in tokens
         assert "T2" in tokens
@@ -68,7 +68,7 @@ def test_load_all_tokens_with_hardcoded_fallback():
 
         tokens = TokenRegistry.load_all_tokens()
 
-        # T1-T5 come from hardcoded fallback; T6 may be added by opentoken-core-ai via entry_points
+        # T1-T5 come from hardcoded fallback; ML1 may be added by opentoken-core-ai via entry_points
         assert len(tokens) >= 5, "Should load at least 5 tokens via hardcoded fallback"
         expected_tokens = ["T1", "T2", "T3", "T4", "T5"]
         for token_id in expected_tokens:

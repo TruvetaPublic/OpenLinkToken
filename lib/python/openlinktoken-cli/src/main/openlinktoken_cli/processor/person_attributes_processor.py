@@ -7,7 +7,7 @@ import uuid
 from dataclasses import dataclass
 from typing import Any, Dict, List, Set, Type
 
-from openlinktoken_core_ai.tokens.t6_inference_config import T6InferenceConfig
+from openlinktoken_core_ai.tokens.ml1_inference_config import ML1InferenceConfig
 
 from openlinktoken.attributes.attribute import Attribute
 from openlinktoken.attributes.general.record_id_attribute import RecordIdAttribute
@@ -300,9 +300,9 @@ class PersonAttributesProcessor:
         jwe_formatters: Dict[str, JweMatchTokenFormatter],
         hash_record_ids: bool = False,
     ) -> int:
-        """Process rows with either batched or standard token generation based on T6 configuration."""
-        if T6InferenceConfig.is_enabled():
-            return PersonAttributesProcessor._process_rows_with_batched_t6(
+        """Process rows with either batched or standard token generation based on ML1 configuration."""
+        if ML1InferenceConfig.is_enabled():
+            return PersonAttributesProcessor._process_rows_with_batched_ml1(
                 reader,
                 writer,
                 token_generator,
@@ -313,7 +313,7 @@ class PersonAttributesProcessor:
                 jwe_formatters,
                 hash_record_ids,
             )
-        return PersonAttributesProcessor._process_rows_without_batched_t6(
+        return PersonAttributesProcessor._process_rows_without_batched_ml1(
             reader,
             writer,
             token_generator,
@@ -326,7 +326,7 @@ class PersonAttributesProcessor:
         )
 
     @staticmethod
-    def _process_rows_without_batched_t6(
+    def _process_rows_without_batched_ml1(
         reader: PersonAttributesReader,
         writer: PersonAttributesWriter,
         token_generator: TokenGenerator,
@@ -368,7 +368,7 @@ class PersonAttributesProcessor:
         return row_counter
 
     @staticmethod
-    def _process_rows_with_batched_t6(
+    def _process_rows_with_batched_ml1(
         reader: PersonAttributesReader,
         writer: PersonAttributesWriter,
         token_generator: TokenGenerator,
@@ -379,14 +379,14 @@ class PersonAttributesProcessor:
         jwe_formatters: Dict[str, JweMatchTokenFormatter],
         hash_record_ids: bool = False,
     ) -> int:
-        """Process rows using batched T6 ONNX inference while retaining streaming output behavior."""
+        """Process rows using batched ML1 ONNX inference while retaining streaming output behavior."""
         row_counter = 0
-        t6_batch_size = T6InferenceConfig.get_batch_size()
+        ml1_batch_size = ML1InferenceConfig.get_batch_size()
         pending_rows: List[_PendingRow] = []
 
         for row in reader:
             row_counter += 1
-            token_generator_result = token_generator.generate_tokens_excluding(row, {"T6"})
+            token_generator_result = token_generator.generate_tokens_excluding(row, {"ML1"})
             pending_rows.append(
                 _PendingRow(
                     row=row,
@@ -395,7 +395,7 @@ class PersonAttributesProcessor:
                 )
             )
 
-            if len(pending_rows) >= t6_batch_size:
+            if len(pending_rows) >= ml1_batch_size:
                 PersonAttributesProcessor._flush_pending_rows(
                     writer,
                     token_generator,
@@ -438,24 +438,24 @@ class PersonAttributesProcessor:
         pending_rows: List[_PendingRow],
         hash_record_ids: bool = False,
     ) -> None:
-        """Run batched T6 inference for queued rows and emit final tokens.
+        """Run batched ML1 inference for queued rows and emit final tokens.
 
-        T6 signatures now contain comma-separated rotation-quantized values
-        (produced inside OnnxT6SignatureProvider); no separate T6-R rows are emitted.
+        ML1 signatures now contain comma-separated rotation-quantized values
+        (produced inside OnnxML1SignatureProvider); no separate ML1-R rows are emitted.
         """
-        t6_signatures: List = [None] * len(pending_rows)
+        ml1_signatures: List = [None] * len(pending_rows)
 
         inference_provider = TokenGenerator.get_inference_provider()
         if inference_provider is not None and inference_provider.is_enabled():
             rows = [pr.row for pr in pending_rows]
             batch_result = inference_provider.generate_batch(rows)
-            t6_signatures = batch_result.signatures
+            ml1_signatures = batch_result.signatures
 
         for i, pending_row in enumerate(pending_rows):
-            t6_signature = t6_signatures[i] if i < len(t6_signatures) else None
+            ml1_signature = ml1_signatures[i] if i < len(ml1_signatures) else None
 
-            # T6 is already HMAC-hashed internally; bypass the tokenizer/transformer chain.
-            token_generator.store_raw_token(pending_row.token_generator_result, "T6", t6_signature)
+            # ML1 is already HMAC-hashed internally; bypass the tokenizer/transformer chain.
+            token_generator.store_raw_token(pending_row.token_generator_result, "ML1", ml1_signature)
 
             logger.debug(f"Tokens: {pending_row.token_generator_result.tokens}")
 

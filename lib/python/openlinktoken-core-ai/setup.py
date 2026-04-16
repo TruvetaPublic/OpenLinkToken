@@ -10,7 +10,7 @@ from setuptools.command.build_py import build_py
 THIS_DIR = os.path.abspath(os.path.dirname(__file__))
 
 # Shared inferencing assets live here (single source of truth alongside the Java resources)
-INFERENCING_ASSETS_SRC = os.path.abspath(os.path.join(THIS_DIR, "../../../resources/inferencing/t6"))
+INFERENCING_ASSETS_SRC = os.path.abspath(os.path.join(THIS_DIR, "../../../resources/inferencing/ml1"))
 INFERENCING_ASSETS = ["model.onnx", "model.onnx.data", "tokenizer.json", "vocab.txt"]
 
 # Target: openlinktoken_core_ai/tokens inside the built package tree
@@ -18,10 +18,10 @@ INFERENCING_ASSETS_PKG = os.path.join("openlinktoken_core_ai", "tokens")
 
 
 class BuildWithInferencingAssets(build_py):
-    """Copy shared T6 inferencing assets into the package at wheel-build time.
+    """Copy shared ML1 inferencing assets into the package at wheel-build time.
 
     Mirrors what the Maven <resources> block does for the Java JAR — the files
-    live once in resources/inferencing/t6/ and are included in both artifacts
+    live once in resources/inferencing/ml1/ and are included in both artifacts
     during their respective build processes without duplicating them in source.
     """
 
@@ -42,7 +42,7 @@ try:
     with open(readme_path, encoding="utf-8") as f:
         long_description = f.read()
 except FileNotFoundError:
-    long_description = "Open Link Token Core AI package for T6/ONNX inference."
+    long_description = "Open Link Token Core AI package for ML1/ONNX inference."
 
 # Read requirements from requirements.txt
 with open(os.path.join(THIS_DIR, "requirements.txt"), encoding="utf-8") as f:
@@ -52,7 +52,7 @@ setup(
     name="openlinktoken-core-ai",
     version="2.0.0-alpha",
     author="Truveta",
-    description="Open Link Token Core AI package for T6/ONNX inference",
+    description="Open Link Token Core AI package for ML1/ONNX inference",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/Truveta/OpenToken",
@@ -70,10 +70,10 @@ setup(
     cmdclass={"build_py": BuildWithInferencingAssets},
     entry_points={
         "openlinktoken.inference_providers": [
-            "t6 = openlinktoken_core_ai.t6_signature_provider:OnnxT6SignatureProvider",
+            "ml1 = openlinktoken_core_ai.ml1_signature_provider:OnnxML1SignatureProvider",
         ],
         "openlinktoken.tokens.definitions": [
-            "t6_token = openlinktoken_core_ai.tokens.t6_token:T6Token",
+            "ml1_token = openlinktoken_core_ai.tokens.ml1_token:ML1Token",
         ],
     },
     extras_require={

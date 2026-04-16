@@ -3,10 +3,10 @@
 ## Overview
 
 This document tracks the design and implementation of rotation matrix support
-for Open Link Token's T6 embeddings. It covers both the Java and Python libraries.
+for Open Link Token's ML1 embeddings. It covers both the Java and Python libraries.
 
 The goal is to enable **privacy-preserving approximate matching** by rotating
-T6 ONNX embeddings with deterministic orthogonal matrices derived from a shared
+ML1 ONNX embeddings with deterministic orthogonal matrices derived from a shared
 initialization vector (IV). Both parties derive identical rotation matrices from
 the same IV, rotate their embeddings, quantize the rotated projections into
 discrete tokens, and match those tokens without ever exposing raw embedding
@@ -24,7 +24,7 @@ service, which operates on 1024-dimensional BERT embeddings using:
 - Per-rotation quantization into discrete bins (bin width 0.05)
 - Position-sensitive token hashing against blocking keys (T1)
 
-Open Link Token adapts this for its T6 ONNX embeddings (768-dim CLS vectors) with a
+Open Link Token adapts this for its ML1 ONNX embeddings (768-dim CLS vectors) with a
 portable, language-agnostic algorithm.
 
 ---
@@ -67,7 +67,7 @@ order in both languages, giving bit-exact (or sub-1e-12 tolerance) results.
 | 4 | `embedding-rotation` | `EmbeddingRotator`: `R @ (x - bias)`, project to K dims | ⬜ Pending |
 | 5 | `rotation-quantizer` | Bin-assignment quantizer → space-separated token string | ⬜ Pending |
 | 6 | `rotation-token-transformer` | Composite transformer (matrix gen + rotation + quantization) | ⬜ Pending |
-| 7 | `t6-pipeline-integration` | Expose raw float[] from T6; produce `T6-R*` output tokens | ⬜ Pending |
+| 7 | `ml1-pipeline-integration` | Expose raw float[] from ML1; produce `ML1-R*` output tokens | ⬜ Pending |
 | 8 | `iv-configuration` | Exchange config + CLI args (`--rotation-iv`, `--rotation-count`, etc.) | ⬜ Pending |
 
 ### Dependencies
@@ -77,7 +77,7 @@ rotation-matrix-core ✅
     ├── embedding-rotation ⬜
     │       └── rotation-token-transformer ⬜
     │               ├── rotation-quantizer ⬜
-    │               └── t6-pipeline-integration ⬜
+    │               └── ml1-pipeline-integration ⬜
     │                       └── iv-configuration ⬜
     └── tests-interop 🔄
 
@@ -197,12 +197,12 @@ quantize(x: float[], min=-5.0, max=5.0, bin_width=0.05) → String
 New `EmbeddingTransformer` interface (`float[] → List<String>`) composing steps
 3–5. Accepts IV, rotation count, hash dimension, quantization params.
 
-### 7. `t6-pipeline-integration`
+### 7. `ml1-pipeline-integration`
 
-- Add `generateEmbeddingsRaw() → float[][]` to `T6OnnxSignatureGenerator`
-- Modify `TokenGenerator` to produce `T6-R0`…`T6-R{N-1}` tokens per record
+- Add `generateEmbeddingsRaw() → float[][]` to `ML1OnnxSignatureGenerator`
+- Modify `TokenGenerator` to produce `ML1-R0`…`ML1-R{N-1}` tokens per record
 - Add rotation token map to `TokenGeneratorResult`
-- New CSV/Parquet rows: `RuleId=T6-R0`, `Token=<quantized>`, `RecordId=…`
+- New CSV/Parquet rows: `RuleId=ML1-R0`, `Token=<quantized>`, `RecordId=…`
 
 ### 8. `iv-configuration`
 
