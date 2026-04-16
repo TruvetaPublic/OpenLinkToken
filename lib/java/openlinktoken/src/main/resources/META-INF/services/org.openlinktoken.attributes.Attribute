@@ -1,0 +1,16 @@
+org.openlinktoken.attributes.person.AgeAttribute
+org.openlinktoken.attributes.person.BirthDateAttribute
+org.openlinktoken.attributes.person.BirthYearAttribute
+org.openlinktoken.attributes.person.CanadianPostalCodeAttribute
+org.openlinktoken.attributes.person.FirstNameAttribute
+org.openlinktoken.attributes.person.LastNameAttribute
+org.openlinktoken.attributes.person.PostalCodeAttribute
+org.openlinktoken.attributes.person.SexAttribute
+org.openlinktoken.attributes.person.SocialSecurityNumberAttribute
+org.openlinktoken.attributes.person.USPostalCodeAttribute
+org.openlinktoken.attributes.general.DateAttribute
+org.openlinktoken.attributes.general.DecimalAttribute
+org.openlinktoken.attributes.general.IntegerAttribute
+org.openlinktoken.attributes.general.RecordIdAttribute
+org.openlinktoken.attributes.general.StringAttribute
+org.openlinktoken.attributes.general.YearAttribute

@@ -1,5 +1,5 @@
 [project]
-name = "opentoken-workspace"
+name = "openlinktoken-workspace"
 version = "0.0.0"
 requires-python = ">=3.10"
 dependencies = []
@@ -9,13 +9,13 @@ package = false
 
 [tool.uv.workspace]
 members = [
-  "lib/python/opentoken",
-  "lib/python/opentoken-cli",
-  "lib/python/opentoken-pyspark",
+  "lib/python/openlinktoken",
+  "lib/python/openlinktoken-cli",
+  "lib/python/openlinktoken-pyspark",
 ]
 
 [tool.uv.sources]
-opentoken = { workspace = true }
+openlinktoken = { workspace = true }
 
 [dependency-groups]
 dev = [
@@ -49,7 +49,7 @@ select = [
 "*.ipynb" = ["E402"]         # notebook cells don't require imports at top
 
 [tool.ruff.lint.isort]
-known-first-party = ["opentoken", "opentoken_cli", "opentoken_pyspark"]
+known-first-party = ["openlinktoken", "openlinktoken_cli", "openlinktoken_pyspark"]
 
 [tool.ruff.format]
 # Matches black defaults

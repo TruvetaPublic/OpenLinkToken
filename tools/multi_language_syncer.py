@@ -20,19 +20,19 @@ class MultiLanguageSyncer:
     # Language configuration
     LANGUAGES = {
         "java": {
-            "path": "lib/java/opentoken/src/main/java/com/truveta/opentoken/",
+            "path": "lib/java/openlinktoken/src/main/java/org/openlinktoken/",
             "extension": ".java",
             "naming": "PascalCase",
             "group": "core",
         },
         "python": {
-            "path": "lib/python/opentoken/src/main/opentoken/",
+            "path": "lib/python/openlinktoken/src/main/openlinktoken/",
             "extension": ".py",
             "naming": "snake_case",
             "group": "core",
         },
         "python-cli": {
-            "path": "lib/python/opentoken-cli/src/main/opentoken_cli/",
+            "path": "lib/python/openlinktoken-cli/src/main/openlinktoken_cli/",
             "extension": ".py",
             "naming": "snake_case",
             "group": "cli",
@@ -183,6 +183,8 @@ class MultiLanguageSyncer:
         """Check if a file exists"""
         return (self.root_dir / file_path).exists()
 
+    KNOWN_ACRONYMS = {"us", "sha256"}
+
     def convert_filename(self, filename, from_naming, to_naming):
         """Convert filename between naming conventions"""
         # Remove extension
@@ -198,8 +200,11 @@ class MultiLanguageSyncer:
             base_name = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", base_name)
             base_name = re.sub("([a-z0-9])([A-Z])", r"\1_\2", base_name).lower()
         elif from_naming == "snake_case" and to_naming == "PascalCase":
-            # Convert snake_case to PascalCase
-            base_name = "".join(word.capitalize() for word in base_name.split("_"))
+            # Convert snake_case to PascalCase, preserving known acronyms (e.g. us→US, sha256→SHA256)
+            parts = base_name.split("_")
+            base_name = "".join(
+                word.upper() if word.lower() in self.KNOWN_ACRONYMS else word.capitalize() for word in parts
+            )
 
         return base_name
 

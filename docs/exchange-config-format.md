@@ -1,8 +1,8 @@
-# OpenToken Exchange Config Format
+# Open Link Token Exchange Config Format
 
 ## Overview
 
-`opentoken initiate-exchange` writes a single JSON exchange artifact that contains:
+`olt initiate-exchange` writes a single JSON exchange artifact that contains:
 
 - a top-level `version` field with value `1`
 - a JSON JWE envelope with shared ciphertext fields
@@ -14,25 +14,25 @@ key material.
 
 ## Roles
 
-- `sender`: the party that runs `opentoken initiate-exchange`, creates the
+- `sender`: the party that runs `olt initiate-exchange`, creates the
   exchange artifact, and contributes the local sender key entry written into
   `recipients`
 - `recipient`: the counterparty whose public key is supplied to
-  `opentoken initiate-exchange` and whose matching private key can decrypt the
+  `olt initiate-exchange` and whose matching private key can decrypt the
   recipient entry in `recipients`
 
 ## Top-Level Structure
 
 The exchange config is a JSON object with these fields:
 
-| Field        | Type    | Description                                                                         |
-| ------------ | ------- | ----------------------------------------------------------------------------------- |
-| `version`    | integer | Artifact format marker. Current value: `1`.                                         |
-| `protected`  | string  | Base64url-encoded protected JOSE header shared by all recipients.                   |
-| `iv`         | string  | Base64url AES-GCM initialization vector for the ciphertext.                         |
-| `ciphertext` | string  | Base64url ciphertext for the encrypted payload.                                     |
-| `tag`        | string  | Base64url AES-GCM authentication tag.                                               |
-| `recipients` | array   | Per-recipient JWE entries. OpenToken writes one sender entry and one partner entry. |
+| Field        | Type    | Description                                                                               |
+| ------------ | ------- | ----------------------------------------------------------------------------------------- |
+| `version`    | integer | Artifact format marker. Current value: `1`.                                               |
+| `protected`  | string  | Base64url-encoded protected JOSE header shared by all recipients.                         |
+| `iv`         | string  | Base64url AES-GCM initialization vector for the ciphertext.                               |
+| `ciphertext` | string  | Base64url ciphertext for the encrypted payload.                                           |
+| `tag`        | string  | Base64url AES-GCM authentication tag.                                                     |
+| `recipients` | array   | Per-recipient JWE entries. Open Link Token writes one sender entry and one partner entry. |
 
 This is a JWE JSON serialization with shared ciphertext fields and per-recipient
 key-wrapping metadata.
@@ -41,18 +41,18 @@ key-wrapping metadata.
 
 The `protected` value decodes to a JSON object shared by all recipients:
 
-| Field | Type   | Description                                                                 |
-| ----- | ------ | --------------------------------------------------------------------------- |
-| `typ` | string | JWE type marker. Current value: `opentoken-exchange+jwe`.                   |
-| `cty` | string | Payload content type. Current value: `application/opentoken-exchange+json`. |
-| `enc` | string | Content-encryption algorithm. Current value: `A256GCM`.                     |
+| Field | Type   | Description                                                                     |
+| ----- | ------ | ------------------------------------------------------------------------------- |
+| `typ` | string | JWE type marker. Current value: `openlinktoken-exchange+jwe`.                   |
+| `cty` | string | Payload content type. Current value: `application/openlinktoken-exchange+json`. |
+| `enc` | string | Content-encryption algorithm. Current value: `A256GCM`.                         |
 
 Example decoded protected header:
 
 ```json
 {
-  "typ": "opentoken-exchange+jwe",
-  "cty": "application/opentoken-exchange+json",
+  "typ": "openlinktoken-exchange+jwe",
+  "cty": "application/openlinktoken-exchange+json",
   "enc": "A256GCM"
 }
 ```
@@ -74,10 +74,10 @@ Each item in `recipients` contains the wrapped key for one decrypting party.
 | `kid` | string | Portable recipient identifier derived from the recipient public-key fingerprint. |
 | `epk` | object | Ephemeral EC public key used for this recipient's JWE key agreement.             |
 
-`kid` is not a friendly key name. OpenToken derives it from the public-key
+`kid` is not a friendly key name. Open Link Token derives it from the public-key
 fingerprint and writes it in `sha256:<lowercase-hyphenated-hex>` form.
 Friendly names such as `sender-q2` remain local operator-facing names for files in
-`~/.opentoken/`; they are not the portable identifiers embedded in the artifact.
+`~/.openlinktoken/`; they are not the portable identifiers embedded in the artifact.
 
 Example recipient entry:
 
@@ -101,16 +101,16 @@ Example recipient entry:
 
 After decryption, the payload is JSON with these fields:
 
-| Field                     | Type   | Description                                                  |
-| ------------------------- | ------ | ------------------------------------------------------------ |
-| `exchangeName`            | string | Logical exchange name recorded in the payload.               |
-| `hashingSecret`           | string | Hashing secret encoded as unpadded base64url text.           |
-| `hashingSecretEncoding`   | string | Encoding marker. Current value: `base64url`.                 |
-| `senderKeyFingerprint`    | string | SHA-256 fingerprint of the sender public key.                |
-| `recipientKeyFingerprint` | string | SHA-256 fingerprint of the partner public key.               |
-| `curve`                   | string | OpenToken curve name for the exchange keys, such as `P-256`. |
-| `createdAt`               | string | UTC creation timestamp in ISO 8601 `Z` form.                 |
-| `exchangeId`              | string | Random UUID used to identify the exchange artifact.          |
+| Field                     | Type   | Description                                                        |
+| ------------------------- | ------ | ------------------------------------------------------------------ |
+| `exchangeName`            | string | Logical exchange name recorded in the payload.                     |
+| `hashingSecret`           | string | Hashing secret encoded as unpadded base64url text.                 |
+| `hashingSecretEncoding`   | string | Encoding marker. Current value: `base64url`.                       |
+| `senderKeyFingerprint`    | string | SHA-256 fingerprint of the sender public key.                      |
+| `recipientKeyFingerprint` | string | SHA-256 fingerprint of the partner public key.                     |
+| `curve`                   | string | Open Link Token curve name for the exchange keys, such as `P-256`. |
+| `createdAt`               | string | UTC creation timestamp in ISO 8601 `Z` form.                       |
+| `exchangeId`              | string | Random UUID used to identify the exchange artifact.                |
 
 Example decrypted payload:
 
@@ -177,4 +177,4 @@ Example decrypted payload:
   `kid`, even when operators primarily know the key by a friendly local filename.
 - `tools/exchange/validate_exchange_secret.py` decrypts the payload, checks that a
   supplied private key matches one of the recipient `kid` values, or otherwise tries to
-  resolve a matching private key from `~/.opentoken/`.
+  resolve a matching private key from `~/.openlinktoken/`.

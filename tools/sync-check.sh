@@ -67,11 +67,11 @@ EXAMPLES:
 COMPLETION TRACKING FEATURES:
     The tool tracks which target language files have been recently modified,
     helping you see progress on sync items across multiple commits in a PR.
-    
+
     Status indicators:
     ✓ = File exists, ✗ = File missing
     🔄 = Recently modified, ⏳ = Needs update
-    
+
     Progress tracking:
     - Shows completion percentage (e.g., "3/5 completed")
     - Identifies which items are done vs pending
@@ -177,7 +177,7 @@ if [[ $OUTPUT_FORMAT == "github-checklist" ]]; then
     # Capture output for potential issue creation
     SYNC_RESULT=$(python3 tools/multi_language_syncer.py --format "$OUTPUT_FORMAT" --since "$SINCE_COMMIT" "${LANG_ARGS[@]}" 2>&1)
     SYNC_EXIT_CODE=$?
-    
+
     # Always show the result for checklist format
     echo "$SYNC_RESULT"
 else
@@ -200,7 +200,7 @@ if [[ $CREATE_ISSUE == true ]]; then
         RECENT_REPORTS=$(find tools/ -name "sync-report-*.json" -mtime -1 2>/dev/null | head -1)
         if [[ -n "$RECENT_REPORTS" ]]; then
             log_info "Creating GitHub issue for sync tracking..."
-            
+
             # Create issue with the checklist format
             if [[ -n "$SYNC_RESULT" ]]; then
                 # Use the already captured result

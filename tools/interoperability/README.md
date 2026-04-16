@@ -1,7 +1,7 @@
 # Interoperability Tests
 
 This directory contains interoperability checks for the Java core library and the
-Python CLI implementation of OpenToken.
+Python CLI implementation of Open Link Token.
 
 ## CLI Parity Tests
 
@@ -11,9 +11,9 @@ command structure and behavior.
 **Python:**
 
 ```bash
-cd lib/python/opentoken
+cd lib/python/openlinktoken
 uv pip install -r requirements.txt
-cd ../opentoken-cli
+cd ../openlinktoken-cli
 uv pip install -r requirements.txt
 ```
 
@@ -49,7 +49,7 @@ fields for tokenized output.
 
 ```bash
 cd <repo-root>/lib/java
-mvn -pl opentoken -DskipTests test-compile
+mvn -pl openlinktoken -DskipTests test-compile
 cd <repo-root>
 python tools/interoperability/multi_language_interoperability_test.py
 ```

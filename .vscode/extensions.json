@@ -1,19 +1,19 @@
 {
-    "recommendations": [
-        "ms-azuretools.vscode-docker",
-        "streetsidesoftware.code-spell-checker",
-        "esbenp.prettier-vscode",
-        "DavidAnson.vscode-markdownlint",
-        "redhat.java",
-        "vscjava.vscode-java-pack",
-        "DotJoshJohnson.xml",
-        "yzhang.markdown-all-in-one",
-        "SonarSource.sonarlint-vscode",
-        "AdamViola.parquet-explorer",
-        "GitHub.vscode-pull-request-github",
-        "shengchen.vscode-checkstyle",
-        "GitHub.vscode-github-actions",
-        "GitHub.copilot-chat",
-        "ms-python.python"
-    ]
+  "recommendations": [
+    "ms-azuretools.vscode-docker",
+    "streetsidesoftware.code-spell-checker",
+    "esbenp.prettier-vscode",
+    "DavidAnson.vscode-markdownlint",
+    "redhat.java",
+    "vscjava.vscode-java-pack",
+    "DotJoshJohnson.xml",
+    "yzhang.markdown-all-in-one",
+    "SonarSource.sonarlint-vscode",
+    "AdamViola.parquet-explorer",
+    "GitHub.vscode-pull-request-github",
+    "shengchen.vscode-checkstyle",
+    "GitHub.vscode-github-actions",
+    "GitHub.copilot-chat",
+    "ms-python.python"
+  ]
 }

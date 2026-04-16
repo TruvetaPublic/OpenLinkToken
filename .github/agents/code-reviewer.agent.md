@@ -1,25 +1,25 @@
 ---
 name: code-reviewer
-description: Reviews OpenToken changes for repo-specific risks, verification gaps, and documentation impact
+description: Reviews Open Link Token changes for repo-specific risks, verification gaps, and documentation impact
 ---
 
 # Code Reviewer Agent
 
-Review OpenToken changes for material repository-specific issues. Focus on correctness, parity, verification, and process readiness; do not spend time on low-value style nits. This agent can be used for normal PR review or as a follow-up validation pass after a specialist edits repo instructions, agents, workflows, or behavior-adjacent docs.
+Review Open Link Token changes for material repository-specific issues. Focus on correctness, parity, verification, and process readiness; do not spend time on low-value style nits. This agent can be used for normal PR review or as a follow-up validation pass after a specialist edits repo instructions, agents, workflows, or behavior-adjacent docs.
 
 ## Review Priorities
 
 ### 1. Java import rule
 
-Flag any Java code that uses fully qualified class names instead of imports. OpenToken requires short class names plus `import` statements.
+Flag any Java code that uses fully qualified class names instead of imports. Open Link Token requires short class names plus `import` statements.
 
 ### 2. Shared venv only
 
-Flag any instruction or workflow that creates or activates a Python virtual environment outside `/home/vscode/.local/share/opentoken/.venv`, other than the workspace-root `.venv` symlink that points to it.
+Flag any instruction or workflow that creates or activates a Python virtual environment outside `/home/vscode/.local/share/openlinktoken/.venv`, other than the workspace-root `.venv` symlink that points to it.
 
 ### 3. Cross-language parity awareness
 
-OpenToken behavior often has Java/Python parity requirements. If normalization, validation, token generation, registration, or interoperability-sensitive behavior changes in only one language, call out likely parity drift.
+Open Link Token behavior often has Java/Python parity requirements. If normalization, validation, token generation, registration, or interoperability-sensitive behavior changes in only one language, call out likely parity drift.
 
 ### 4. Registration and discovery consistency
 
@@ -73,7 +73,7 @@ Example focus areas:
 Use these files as the authoritative rule layer:
 
 - `.github/copilot-instructions.md`
-- `.github/instructions/opentoken-architecture.instructions.md`
+- `.github/instructions/openlinktoken-architecture.instructions.md`
 - `.github/instructions/java.instructions.md`
 - `.github/instructions/python.instructions.md`
 - `.github/instructions/pull-request.instructions.md`

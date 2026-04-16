@@ -43,31 +43,31 @@ requires `jwcrypto`.
 
 ### Initiating an Exchange
 
-Use `opentoken initiate-exchange` to create an encrypted exchange artifact for
+Use `olt initiate-exchange` to create an encrypted exchange artifact for
 the sender key and the partner's public key.
 
 ```bash
 # Read the partner public key from a file
-opentoken initiate-exchange \
+olt initiate-exchange \
   --public-key partner.public.pem \
   --name sender-q2
 
 # Read the same partner public key from stdin instead
-cat partner.public.pem | opentoken initiate-exchange \
+cat partner.public.pem | olt initiate-exchange \
   --public-key-stdin \
   --name sender-q2
 
 # Read both keys by environment-variable reference in one command
 OT_PARTNER_PUBLIC_KEY="$(az keyvault secret show --vault-name my-vault --name partner-public-key --query value -o tsv)" \
 OT_SENDER_PRIVATE_KEY="$(az keyvault secret show --vault-name my-vault --name sender-private-key --query value -o tsv)" \
-opentoken initiate-exchange \
+olt initiate-exchange \
   --public-key-env OT_PARTNER_PUBLIC_KEY \
   --sender-private-key-env OT_SENDER_PRIVATE_KEY \
   --name sender-q2
 
 # Read a pre-existing hashing secret from an environment variable instead of argv
 OT_HASHING_SECRET="$(az keyvault secret show --vault-name my-vault --name hashing-secret --query value -o tsv)" \
-opentoken initiate-exchange \
+olt initiate-exchange \
   --public-key partner.public.pem \
   --hashingsecret-env OT_HASHING_SECRET \
   --name sender-q2
@@ -79,7 +79,7 @@ replacement for the existing file-based flow.
 `--public-key-env ENV_VAR` and `--sender-private-key-env ENV_VAR` let you pass
 two independent key references in one command without relying on a shared stdin
 stream. When `--sender-private-key-env` is used, the sender key stays in memory
-for the command run and OpenToken does not write local sender key files.
+for the command run and Open Link Token does not write local sender key files.
 
 For pre-existing hashing secrets, prefer `--hashingsecret-env ENV_VAR` or
 `--hashingsecret-stdin` over `--hashingsecret` so the secret does not appear in
@@ -89,21 +89,21 @@ command, `--hashingsecret-stdin` cannot be combined with `--public-key-stdin`.
 ### Exchange Secret Validation
 
 Use `tools/exchange/validate_exchange_secret.py` to verify that an
-`opentoken initiate-exchange` exchange artifact can actually be decrypted with
+`olt initiate-exchange` exchange artifact can actually be decrypted with
 either matching private key.
 
 ```bash
-# Let the validator resolve a matching sender or recipient private key from ~/.opentoken/
+# Let the validator resolve a matching sender or recipient private key from ~/.openlinktoken/
 python tools/exchange/validate_exchange_secret.py \
   --exchange-config sender-q2.exchange.json
 
 # Validate with an explicit sender or recipient private key PEM
 python tools/exchange/validate_exchange_secret.py \
   --exchange-config sender-q2.exchange.json \
-  --private-key ~/.opentoken/recipient-org.private.pem
+  --private-key ~/.openlinktoken/recipient-org.private.pem
 
 # Validate with the same private key PEM provided on stdin instead
-cat ~/.opentoken/recipient-org.private.pem | \
+cat ~/.openlinktoken/recipient-org.private.pem | \
   python tools/exchange/validate_exchange_secret.py \
     --exchange-config sender-q2.exchange.json \
     --private-key-stdin
@@ -113,7 +113,7 @@ The exchange artifact is a version 1 multi-recipient JWE JSON envelope with
 top-level `version`, `protected`, `iv`, `ciphertext`, `tag`, and `recipients`
 fields.
 The validator accepts `--expected-secret` for an explicit pass/fail comparison
-after decryption. If `--private-key` is omitted, it scans `~/.opentoken/` for a
+after decryption. If `--private-key` is omitted, it scans `~/.openlinktoken/` for a
 private key whose fingerprint-derived `kid` matches one of the JWE recipients.
 `--private-key-stdin` is an alternative to `--private-key PATH`, so both the
 existing file-based option and stdin-based secret handling remain supported.
@@ -123,7 +123,7 @@ existing file-based option and stdin-based secret handling remain supported.
 ### Secret Hash Calculator
 
 Use `tools/hash/hash_calculator.py` to compute the SHA-256 secret hashes that
-OpenToken includes in metadata output.
+Open Link Token includes in metadata output.
 
 ```bash
 python tools/hash/hash_calculator.py \
@@ -178,7 +178,7 @@ known deterministic fixture values.
 
 ```bash
 cd lib/java
-mvn -pl opentoken -DskipTests test-compile
+mvn -pl openlinktoken -DskipTests test-compile
 cd ..
 python tools/interoperability/multi_language_interoperability_test.py
 ```
@@ -253,8 +253,8 @@ Language paths are defined directly in `multi_language_syncer.py`:
 
 ```python
 LANGUAGES = {
-    'java':   {'path': 'lib/java/opentoken/src/main/java/com/truveta/opentoken/', ...},
-    'python': {'path': 'lib/python/opentoken/src/main/opentoken/', ...},
+    'java':   {'path': 'lib/java/openlinktoken/src/main/java/org/openlinktoken/', ...},
+    'python': {'path': 'lib/python/openlinktoken/src/main/openlinktoken/', ...},
 }
 ```
 
@@ -280,9 +280,9 @@ PYTHON: 0 files changed
 ============================================================
 Sync Requirements:
 
-Source: lib/java/opentoken/src/main/java/com/truveta/opentoken/TokenGenerator.java
-  → python: ✓ lib/python/opentoken/src/main/opentoken/token_generator.py
-  → nodejs: ✗ lib/nodejs/opentoken/src/TokenGenerator.ts
+Source: lib/java/openlinktoken/src/main/java/org/openlinktoken/TokenGenerator.java
+  → python: ✓ lib/python/openlinktoken/src/main/openlinktoken/token_generator.py
+  → nodejs: ✗ lib/nodejs/openlinktoken/src/TokenGenerator.ts
 ```
 
 #### GitHub Checklist Format
@@ -292,10 +292,10 @@ Source: lib/java/opentoken/src/main/java/com/truveta/opentoken/TokenGenerator.ja
 
 ### 🔹 From JAVA
 
-#### 📁 `lib/java/opentoken/src/.../TokenGenerator.java`
+#### 📁 `lib/java/openlinktoken/src/.../TokenGenerator.java`
 
-- [x] **✓🔄 PYTHON**: `lib/python/opentoken/src/main/opentoken/token_generator.py`
-- [ ] **✗⏳ NODEJS**: `lib/nodejs/opentoken/src/TokenGenerator.ts`
+- [x] **✓🔄 PYTHON**: `lib/python/openlinktoken/src/main/openlinktoken/token_generator.py`
+- [ ] **✗⏳ NODEJS**: `lib/nodejs/openlinktoken/src/TokenGenerator.ts`
 
 ✅ **Progress**: 1 of 2 items completed
 ```
@@ -306,7 +306,7 @@ Source: lib/java/opentoken/src/main/java/com/truveta/opentoken/TokenGenerator.ja
 {
   "sync_requirements": [...],
   "all_changes": {
-    "java": ["lib/java/opentoken/.../TokenGenerator.java"],
+    "java": ["lib/java/openlinktoken/.../TokenGenerator.java"],
     "python": [],
     "nodejs": []
   }

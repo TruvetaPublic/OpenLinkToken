@@ -1,4 +1,4 @@
-# OpenToken Development Guide
+# Open Link Token Development Guide
 
 This guide centralizes contributor-facing information. It covers local setup, language-specific build instructions, development environment, versioning, and key contribution workflows.
 
@@ -8,8 +8,8 @@ This guide centralizes contributor-facing information. It covers local setup, la
 
 - Three packages: Java core (Maven), Python core, Python CLI, plus PySpark bridge
 - Java uses multi-module Maven structure with parent POM at `lib/java/pom.xml`
-- Core packages (`opentoken`) contain pure tokenization logic with minimal dependencies
-- Python CLI package (`opentoken-cli`) contains I/O implementations (CSV, Parquet, JSON) and command-line interface
+- Core packages (`openlinktoken`) contain pure tokenization logic with minimal dependencies
+- Python CLI package (`openlinktoken-cli`) contains I/O implementations (CSV, Parquet, JSON) and command-line interface
 - Deterministic token generation logic is equivalent across languages
 - PySpark bridge enables large-scale distributed token generation & overlap analysis
 - Use this guide for environment setup & day-to-day development
@@ -17,7 +17,7 @@ This guide centralizes contributor-facing information. It covers local setup, la
 
 ## Contents
 
-- [OpenToken Development Guide](#opentoken-development-guide)
+- [Open Link Token Development Guide](#openlinktoken-development-guide)
   - [At a Glance](#at-a-glance)
   - [Contents](#contents)
   - [Prerequisites](#prerequisites)
@@ -68,11 +68,11 @@ This guide centralizes contributor-facing information. It covers local setup, la
 lib/
   java/
     pom.xml            # Parent POM (multi-module Maven build)
-    opentoken/         # Core tokenization library (pure logic, minimal dependencies)
+    openlinktoken/         # Core tokenization library (pure logic, minimal dependencies)
   python/
-    opentoken/         # Core tokenization library
-    opentoken-cli/     # CLI application with I/O support
-    opentoken-pyspark/ # PySpark bridge for distributed processing
+    openlinktoken/         # Core tokenization library
+    openlinktoken-cli/     # CLI application with I/O support
+    openlinktoken-pyspark/ # PySpark bridge for distributed processing
 resources/             # Sample and test data
 tools/                 # Utility scripts (hash calculator, mock data, etc.)
 docs/                  # All developer documentation (this file!)
@@ -103,21 +103,21 @@ Build individual modules:
 
 ```shell
 # Core library only
-cd lib/java/opentoken && mvn clean install
+cd lib/java/openlinktoken && mvn clean install
 ```
 
 Resulting JARs:
 
-- Core library: `lib/java/opentoken/target/opentoken-*.jar`
+- Core library: `lib/java/openlinktoken/target/openlinktoken-*.jar`
 
 Using as Maven dependencies:
 
 ```xml
 <!-- Core library (tokenization logic only) -->
 <dependency>
-  <groupId>com.truveta</groupId>
-  <artifactId>opentoken</artifactId>
-  <version>${opentoken.version}</version>
+  <groupId>org.openlinktoken</groupId>
+  <artifactId>openlinktoken</artifactId>
+  <version>${openlinktoken.version}</version>
 </dependency>
 ```
 
@@ -140,7 +140,7 @@ cd lib/java && mvn test
 
 # Test with coverage report
 cd lib/java && mvn clean test jacoco:report
-# Coverage report: opentoken/target/site/jacoco/index.html
+# Coverage report: openlinktoken/target/site/jacoco/index.html
 ```
 
 Style & docs:
@@ -172,11 +172,11 @@ Install dependencies:
 
 ```shell
 # Core library
-cd lib/python/opentoken
+cd lib/python/openlinktoken
 uv pip install -r requirements.txt -r dev-requirements.txt
 
-# For CLI support, also install opentoken-cli
-cd ../opentoken-cli
+# For CLI support, also install openlinktoken-cli
+cd ../openlinktoken-cli
 uv pip install -r requirements.txt -r dev-requirements.txt
 ```
 
@@ -184,39 +184,39 @@ Editable install for local development:
 
 ```shell
 # Install core library
-cd lib/python/opentoken && uv pip install -e .
+cd lib/python/openlinktoken && uv pip install -e .
 
 # Install CLI (includes core as dependency)
-cd lib/python/opentoken-cli && uv pip install -e .
+cd lib/python/openlinktoken-cli && uv pip install -e .
 ```
 
 #### Build a Self-Contained CLI Locally
 
 For parity with the release artifacts, build the PyInstaller executable with Python 3.11. PyInstaller bundles the
-interpreter used at build time, and `.github/workflows/build-opentoken-cli.yml` currently builds the published
+interpreter used at build time, and `.github/workflows/build-openlinktoken-cli.yml` currently builds the published
 artifacts with Python 3.11.
 
 From the repository root, activate your virtual environment (`.\.venv\Scripts\Activate.ps1` on Windows PowerShell)
 and install the build dependencies:
 
 ```shell
-uv pip install -e lib/python/opentoken
-uv pip install -r lib/python/opentoken-cli/pyinstaller-requirements.txt
-uv pip install -r lib/python/opentoken-cli/requirements.txt
-uv pip install -e lib/python/opentoken-cli --no-deps
+uv pip install -e lib/python/openlinktoken
+uv pip install -r lib/python/openlinktoken-cli/pyinstaller-requirements.txt
+uv pip install -r lib/python/openlinktoken-cli/requirements.txt
+uv pip install -e lib/python/openlinktoken-cli --no-deps
 ```
 
 Build the executable:
 
 ```shell
 # Linux / Windows
-pyinstaller --clean --noconfirm lib/python/opentoken-cli/opentoken-cli.spec
+pyinstaller --clean --noconfirm lib/python/openlinktoken-cli/openlinktoken-cli.spec
 
 # macOS universal2 (Intel + Apple Silicon)
-pyinstaller --clean --noconfirm --target-arch universal2 lib/python/opentoken-cli/opentoken-cli.spec
+pyinstaller --clean --noconfirm --target-arch universal2 lib/python/openlinktoken-cli/openlinktoken-cli.spec
 ```
 
-The built executable is written to `dist/opentoken` (`dist/opentoken.exe` on Windows). Intermediate files are written
+The built executable is written to `dist/openlinktoken` (`dist/openlinktoken.exe` on Windows). Intermediate files are written
 to `build/`.
 
 Smoke-test the local build before packaging it:
@@ -224,7 +224,7 @@ Smoke-test the local build before packaging it:
 ```shell
 mkdir -p smoke
 cp resources/sample.csv smoke/input.csv
-./dist/opentoken tokenize -i smoke/input.csv -t csv -o smoke/out.csv -h secret
+./dist/olt tokenize -i smoke/input.csv -t csv -o smoke/out.csv -h secret
 ```
 
 On Windows PowerShell:
@@ -232,13 +232,13 @@ On Windows PowerShell:
 ```powershell
 New-Item -ItemType Directory -Force -Path smoke | Out-Null
 Copy-Item resources\sample.csv smoke\input.csv
-.\dist\opentoken.exe tokenize -i smoke\input.csv -t csv -o smoke\out.csv -h secret
+.\dist\openlinktoken.exe tokenize -i smoke\input.csv -t csv -o smoke\out.csv -h secret
 ```
 
 If you also want the same ZIP and checksum bundle produced by the release workflow, run:
 
 ```shell
-python -m opentoken_cli.util.release_assets \
+python -m openlinktoken_cli.util.release_assets \
   --version 2.0.0-alpha \
   --runner-os Linux \
   --dist-dir dist \
@@ -251,8 +251,8 @@ the downloadable ZIP, and `.sha256` sidecars to `release-assets/`.
 CLI usage (from project root):
 
 ```shell
-# After installing opentoken-cli
-python -m opentoken_cli.main package [OPTIONS]
+# After installing openlinktoken-cli
+python -m openlinktoken_cli.main package [OPTIONS]
 ```
 
 Arguments are consistent with the Java core library's tokenization logic.
@@ -260,8 +260,8 @@ Arguments are consistent with the Java core library's tokenization logic.
 Example:
 
 ```shell
-# After installing opentoken-cli
-python -m opentoken_cli.main package \
+# After installing openlinktoken-cli
+python -m openlinktoken_cli.main package \
   -i resources/sample.csv -t csv -o resources/output.csv \
   -h "HashingKey" -e "Secret-Encryption-Key-Goes-Here."
 ```
@@ -282,11 +282,11 @@ Testing:
 
 ```shell
 # Core library tests
-cd lib/python/opentoken
+cd lib/python/openlinktoken
 PYTHONPATH=src/main pytest src/test
 
 # CLI tests
-cd lib/python/opentoken-cli
+cd lib/python/openlinktoken-cli
 PYTHONPATH=src/main pytest src/test
 ```
 
@@ -307,7 +307,7 @@ Contributing notes:
 
 ### PySpark Bridge
 
-The PySpark bridge (`lib/python/opentoken-pyspark`) provides a distributed processing interface for generating tokens and performing dataset overlap analysis using Spark DataFrames.
+The PySpark bridge (`lib/python/openlinktoken-pyspark`) provides a distributed processing interface for generating tokens and performing dataset overlap analysis using Spark DataFrames.
 
 Purpose:
 
@@ -329,19 +329,19 @@ Prerequisites:
 Install (from repo root):
 
 ```shell
-uv pip install -r lib/python/opentoken-pyspark/requirements.txt -r lib/python/opentoken-pyspark/dev-requirements.txt
-uv pip install -e lib/python/opentoken-pyspark
+uv pip install -r lib/python/openlinktoken-pyspark/requirements.txt -r lib/python/openlinktoken-pyspark/dev-requirements.txt
+uv pip install -e lib/python/openlinktoken-pyspark
 ```
 
 Basic Usage:
 
 ```python
 from pyspark.sql import SparkSession
-from opentoken_pyspark import OpenTokenProcessor
+from openlinktoken_pyspark import Open Link TokenProcessor
 
-spark = SparkSession.builder.master("local[2]").appName("OpenTokenExample").getOrCreate()
+spark = SparkSession.builder.master("local[2]").appName("Open Link TokenExample").getOrCreate()
 df = spark.read.csv("people.csv", header=True)
-processor = OpenTokenProcessor("HashingKey", "Secret-Encryption-Key-Goes-Here.")
+processor = Open Link TokenProcessor("HashingKey", "Secret-Encryption-Key-Goes-Here.")
 token_df = processor.process_dataframe(df)
 token_df.show()
 ```
@@ -349,8 +349,8 @@ token_df.show()
 Custom Token Definitions (example adding T6):
 
 ```python
-from opentoken_pyspark import OpenTokenProcessor
-from opentoken_pyspark.notebook_helpers import TokenBuilder, CustomTokenDefinition
+from openlinktoken_pyspark import Open Link TokenProcessor
+from openlinktoken_pyspark.notebook_helpers import TokenBuilder, CustomTokenDefinition
 
 t6 = TokenBuilder("T6") \
   .add("last_name", "T|U") \
@@ -359,7 +359,7 @@ t6 = TokenBuilder("T6") \
   .build()
 
 definition = CustomTokenDefinition().add_token(t6)
-processor = OpenTokenProcessor(
+processor = Open Link TokenProcessor(
   hashing_secret="HashingKey",
   encryption_key="Secret-Encryption-Key-Goes-Here.",
   token_definition=definition
@@ -370,22 +370,22 @@ token_df = processor.process_dataframe(df)
 Testing:
 
 ```shell
-cd lib/python/opentoken-pyspark
+cd lib/python/openlinktoken-pyspark
 pytest src/test
 ```
 
 Notebook Guides:
 
-- See `lib/python/opentoken-pyspark/notebooks/` for example workflows (custom tokens & overlap analysis).
+- See `lib/python/openlinktoken-pyspark/notebooks/` for example workflows (custom tokens & overlap analysis).
 
 ### Multi-Language Sync Tool
 
-The sync tool ([tools/multi_language_syncer.py](https://github.com/TruvetaPublic/OpenToken/blob/main/tools/multi_language_syncer.py)) detects changes across all supported languages (Java, Python, Node.js) and produces a cross-language checklist showing which corresponding files need updating. It is bidirectional — changes originating in any language trigger sync items for the others.
+The sync tool ([tools/multi_language_syncer.py](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/tools/multi_language_syncer.py)) detects changes across all supported languages (Java, Python, Node.js) and produces a cross-language checklist showing which corresponding files need updating. It is bidirectional — changes originating in any language trigger sync items for the others.
 
 Key concepts:
 
 - Language paths are configured directly in `multi_language_syncer.py` under the `LANGUAGES` dict.
-- An optional [tools/multi-language-mapping.json](https://github.com/TruvetaPublic/OpenToken/blob/main/tools/multi-language-mapping.json) supplies `ignore_patterns`.
+- An optional [tools/multi-language-mapping.json](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/tools/multi-language-mapping.json) supplies `ignore_patterns`.
 - Sync status logic: A target file is considered up-to-date if it was modified after the source file within the same PR (commit timestamp comparison).
 - Progress is tracked across all commits in a PR so the checklist reflects incremental work.
 
@@ -408,7 +408,7 @@ When adding attributes/tokens: update all applicable language implementations, r
 | Build / Package | `cd lib/java && mvn clean install` | `uv pip install -e .`              |
 | Run Tests       | `mvn test`                         | `pytest src/test`                  |
 | Lint / Style    | `mvn checkstyle:check`             | (pep8 / flake8 if configured)      |
-| Run CLI         | N/A (use Python CLI)               | `opentoken package ...`            |
+| Run CLI         | N/A (use Python CLI)               | `olt package ...`                  |
 | Add Token       | SPI entry & class                  | new module in `tokens/definitions` |
 | Add Attribute   | SPI entry & class                  | class + loader import              |
 
@@ -425,7 +425,7 @@ assistants.
 **Core Principles:**
 
 - **Always use direct imports**: Never use fully qualified class names in code (e.g., `new SHA256Tokenizer()` instead
-  of `new com.truveta.opentoken.tokens.tokenizer.SHA256Tokenizer()`). Add import statements at the top of the file.
+  of `new org.openlinktoken.tokens.tokenizer.SHA256Tokenizer()`). Add import statements at the top of the file.
 - **Follow Google's Java Style Guide**: Use `UpperCamelCase` for classes, `lowerCamelCase` for methods/variables,
   `UPPER_SNAKE_CASE` for constants, `lowercase` for packages.
 - **Leverage Lombok**: Use `@Builder`, `@NonNull`, `@Data`, `@Value`, `@Slf4j` to reduce boilerplate.
@@ -481,7 +481,7 @@ result_df = (
 
 ```bash
 # Run tests with coverage
-cd lib/python/opentoken && pytest --cov=opentoken --cov-report=term
+cd lib/python/openlinktoken && pytest --cov=openlinktoken --cov-report=term
 
 # Auto-remove unused imports (if needed)
 autoflake --remove-all-unused-imports --remove-unused-variables --in-place file.py
@@ -544,7 +544,7 @@ counter++; // Increment counter by one
 5. **Authentication Failures (A07):** Secure session management, rate limiting, account lockout
 6. **Data Integrity (A08):** Avoid insecure deserialization, validate untrusted data
 
-**OpenToken-specific:**
+**Open Link Token-specific:**
 
 - Hashing and encryption keys must only appear in test files with dummy values
 - SSN validation logic is public, but never log actual SSN values
@@ -554,7 +554,7 @@ counter++; // Increment counter by one
 
 ## Token Processing Modes
 
-OpenToken supports three processing modes across Java, Python, and the PySpark bridge. These modes determine how raw token signatures are transformed:
+Open Link Token supports three processing modes across Java, Python, and the PySpark bridge. These modes determine how raw token signatures are transformed:
 
 | Mode      | Secrets Required                | Transform Pipeline                                | Output Example (T1)                  | Deterministic Across Runs | Recommended Use                                                   |
 | --------- | ------------------------------- | ------------------------------------------------- | ------------------------------------ | ------------------------- | ----------------------------------------------------------------- |
@@ -585,15 +585,15 @@ Java uses the standard `ServiceLoader` discovery mechanism.
 
 Steps (Token example):
 
-1. Create class in `com.truveta.opentoken.tokens.definitions` extending `Token`.
+1. Create class in `org.openlinktoken.tokens.definitions` extending `Token`.
 2. Implement required abstract methods (identifier, definition, etc.).
-3. Add fully qualified class name to: `lib/java/opentoken/src/main/resources/META-INF/services/com.truveta.opentoken.tokens.Token` (one per line).
+3. Add fully qualified class name to: `lib/java/openlinktoken/src/main/resources/META-INF/services/org.openlinktoken.tokens.Token` (one per line).
 4. Run `mvn clean install` and add/adjust tests.
 
 Attribute steps are identical except:
 
-- Class extends `com.truveta.opentoken.attributes.Attribute` (e.g., in `attributes.person`).
-- Register in: `lib/java/opentoken/src/main/resources/META-INF/services/com.truveta.opentoken.attributes.Attribute`.
+- Class extends `org.openlinktoken.attributes.Attribute` (e.g., in `attributes.person`).
+- Register in: `lib/java/openlinktoken/src/main/resources/META-INF/services/org.openlinktoken.attributes.Attribute`.
 
 Guidelines:
 
@@ -609,19 +609,19 @@ Troubleshooting:
 
 Python uses two mechanisms:
 
-1. Dynamic discovery for Tokens in `opentoken/tokens/definitions`.
+1. Dynamic discovery for Tokens in `openlinktoken/tokens/definitions`.
 2. Explicit inclusion for Attributes via `attribute_loader.py`.
 
 Add a Token:
 
-1. Create `lib/python/opentoken/src/main/opentoken/tokens/definitions/t6_token.py` (example).
+1. Create `lib/python/openlinktoken/src/main/openlinktoken/tokens/definitions/t6_token.py` (example).
 2. Define a class inheriting `Token` with `get_identifier()` & `get_definition()`.
 3. Ensure file and class names are unique and public.
 4. Run `pytest src/test` to verify auto-discovery.
 
 Add an Attribute:
 
-1. Create module, e.g., `opentoken/attributes/person/middle_name_attribute.py`.
+1. Create module, e.g., `openlinktoken/attributes/person/middle_name_attribute.py`.
 2. Implement subclass of `Attribute`.
 3. In `attribute_loader.py`, import the class and add an instance inside `AttributeLoader.load()`.
 
@@ -668,30 +668,30 @@ Available in both Java and Python for custom rules:
 (cd lib/java && mvn clean install)
 
 # Python core
-(cd lib/python/opentoken && pytest src/test)
+(cd lib/python/openlinktoken && pytest src/test)
 
 # Python CLI
-(cd lib/python/opentoken-cli && pytest src/test)
+(cd lib/python/openlinktoken-cli && pytest src/test)
 
 # PySpark Bridge
-(cd lib/python/opentoken-pyspark && pytest src/test)
+(cd lib/python/openlinktoken-pyspark && pytest src/test)
 ```
 
 ### Docker Image
 
 ```shell
-docker build . -t opentoken
+docker build . -t openlinktoken
 ```
 
 ## Running the Tool (CLI)
 
-The CLI is provided by the Python `opentoken-cli` package.
+The CLI is provided by the Python `openlinktoken-cli` package.
 
 Minimum required arguments:
 
 ```shell
 # Python
-python -m opentoken_cli.main package -i input.csv -t csv -o output.csv --exchange-config ./opentoken-YYYY-MM-DD.exchange.json --private-key ~/.opentoken/opentoken-YYYY-MM-DD.private.pem
+python -m openlinktoken_cli.main package -i input.csv -t csv -o output.csv --exchange-config ./openlinktoken-YYYY-MM-DD.exchange.json --private-key ~/.openlinktoken/openlinktoken-YYYY-MM-DD.private.pem
 ```
 
 Arguments:
@@ -711,32 +711,32 @@ Arguments:
 The `generate-key-pair` subcommand generates an ECDH public/private key pair:
 
 ```shell
-opentoken generate-key-pair --curve P-256 --name my-key
+olt generate-key-pair --curve P-256 --name my-key
 ```
 
 Writes:
 
-- `~/.opentoken/<name>.private.pem` — PKCS#8 PEM (permissions `600`)
-- `~/.opentoken/<name>.public.pem` — SubjectPublicKeyInfo PEM (permissions `644`)
+- `~/.openlinktoken/<name>.private.pem` — PKCS#8 PEM (permissions `600`)
+- `~/.openlinktoken/<name>.public.pem` — SubjectPublicKeyInfo PEM (permissions `644`)
 
 `--curve` options: `P-256` (default), `P-384`, `P-521`. Use `--force` to overwrite existing keys.
 
 ## Local Extension Development
 
-The `opentoken-ext-hello-world` package in `lib/python/opentoken_ext_hello_world/` is the canonical reference extension. Use it as your starting point when developing a new extension locally.
+The `openlinktoken-ext-hello-world` package in `lib/python/openlinktoken_ext_hello_world/` is the canonical reference extension. Use it as your starting point when developing a new extension locally.
 
 ### Setup
 
-Install the hello-world extension in editable mode so the CLI discovers it via the `opentoken.extensions` entry-point group:
+Install the hello-world extension in editable mode so the CLI discovers it via the `openlinktoken.extensions` entry-point group:
 
 ```shell
-source /home/vscode/.local/share/opentoken/.venv/bin/activate
+source /home/vscode/.local/share/openlinktoken/.venv/bin/activate
 
 # Install the CLI in editable mode (if not already)
-cd lib/python/opentoken-cli && uv pip install -e .
+cd lib/python/openlinktoken-cli && uv pip install -e .
 
 # Install the reference extension in editable mode
-cd lib/python/opentoken_ext_hello_world && uv pip install -e .
+cd lib/python/openlinktoken_ext_hello_world && uv pip install -e .
 ```
 
 After the editable install, the entry point is registered in the active Python environment. The CLI discovers it at startup with no further configuration.
@@ -746,17 +746,17 @@ After the editable install, the entry point is registered in the active Python e
 The editable install registers the entry point immediately — no build step required.
 
 ```shell
-cd lib/python/opentoken_ext_hello_world
+cd lib/python/openlinktoken_ext_hello_world
 uv pip install -e .
 
 # Verify it appears in help and the extension list
-opentoken --help
-opentoken extension list
+olt --help
+olt extension list
 
 # Run it
-opentoken hello-world hello --name Alice
+olt hello-world hello --name Alice
 # → Hello, Alice
-opentoken hello-world bye --name Bob
+olt hello-world bye --name Bob
 # → Bye, Bob
 ```
 
@@ -765,61 +765,61 @@ opentoken hello-world bye --name Bob
 Use this to test the complete `extension install` flow, including download, unpacking, and registry write.
 
 ```shell
-cd lib/python/opentoken_ext_hello_world
+cd lib/python/openlinktoken_ext_hello_world
 
 # Build the wheel
 pip install build && python -m build
 
 # Install via the extension command (--yes skips the security prompt; use an absolute path)
-opentoken extension install file://$(pwd)/dist/opentoken_ext_hello_world-1.0.0-py3-none-any.whl --yes
+olt extension install file://$(pwd)/dist/openlinktoken_ext_hello_world-1.0.0-py3-none-any.whl --yes
 
 # Confirm it appears in the registry
-opentoken extension list
+olt extension list
 
 # Run it
-opentoken hello-world hello --name Alice
+olt hello-world hello --name Alice
 # → Hello, Alice
-opentoken hello-world bye --name Bob
+olt hello-world bye --name Bob
 # → Bye, Bob
 ```
 
 ### Run the extension tests
 
 ```shell
-cd lib/python/opentoken_ext_hello_world && pytest src/test
+cd lib/python/openlinktoken_ext_hello_world && pytest src/test
 ```
 
 ### Developing your own extension
 
-1. Create a new directory for your extension package (mirror the `opentoken-hello-world` structure).
-2. Implement `OpenTokenExtension` from `opentoken_cli.extension`:
+1. Create a new directory for your extension package (mirror the `openlinktoken-hello-world` structure).
+2. Implement `OpenLinkTokenExtension` from `openlinktoken_cli.extension`:
    ```python
-   from opentoken_cli.extension import OpenTokenExtension
+   from openlinktoken_cli.extension import OpenLinkTokenExtension
    ```
-3. Declare the `opentoken.extensions` entry point in your `pyproject.toml`:
+3. Declare the `openlinktoken.extensions` entry point in your `pyproject.toml`:
    ```toml
-   [project.entry-points."opentoken.extensions"]
+   [project.entry-points."openlinktoken.extensions"]
    my-ext = "my_package.extension:MyExtension"
    ```
 4. Install in editable mode (`uv pip install -e .`) — the CLI picks it up on next invocation.
 5. Package with `python -m build` and distribute as a `.whl`.
-6. End users install via `opentoken extension install <url-or-file://path>`.
+6. End users install via `olt extension install <url-or-file://path>`.
 
-See `lib/python/opentoken_ext_hello_world/README.md` for the full lifecycle walkthrough and `pages/quickstarts/extension-quickstart.md` for a step-by-step guide.
+See `lib/python/openlinktoken_ext_hello_world/README.md` for the full lifecycle walkthrough and `pages/quickstarts/extension-quickstart.md` for a step-by-step guide.
 
-### Extension tests in `opentoken-cli`
+### Extension tests in `openlinktoken-cli`
 
 The loader, registry, and command tests live in:
 
 ```
-lib/python/opentoken-cli/src/test/opentoken_cli/extension/
-lib/python/opentoken-cli/src/test/opentoken_cli/commands/test_extension_command.py
+lib/python/openlinktoken-cli/src/test/openlinktoken_cli/extension/
+lib/python/openlinktoken-cli/src/test/openlinktoken_cli/commands/test_extension_command.py
 ```
 
 Run them with:
 
 ```shell
-cd lib/python/opentoken-cli && pytest src/test/opentoken_cli/extension src/test/opentoken_cli/commands/test_extension_command.py -v
+cd lib/python/openlinktoken-cli && pytest src/test/openlinktoken_cli/extension src/test/openlinktoken_cli/commands/test_extension_command.py -v
 ```
 
 ## Development Container

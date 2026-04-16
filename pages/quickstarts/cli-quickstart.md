@@ -6,7 +6,7 @@ layout: default
 
 For a high-level overview and other entry points, see [Quickstarts](index.md).
 
-Run the OpenToken CLI end-to-end to generate tokens from a sample dataset in minutes.
+Run the Open Link Token CLI end-to-end to generate tokens from a sample dataset in minutes.
 
 ## Prerequisites
 
@@ -22,11 +22,11 @@ The easiest way to get started. No Docker, Java, or Python installation required
 
 ### Download
 
-Download the appropriate executable for your platform from the [latest release](https://github.com/TruvetaPublic/OpenToken/releases):
+Download the appropriate executable for your platform from the [latest release](https://github.com/TruvetaPublic/OpenLinkToken/releases):
 
-- **Linux**: `opentoken-cli-{version}-linux-x64.zip`
-- **macOS**: `opentoken-cli-{version}-macos-universal.zip` (works on both Intel and Apple Silicon)
-- **Windows**: `opentoken-cli-{version}-windows-x64.zip`
+- **Linux**: `openlinktoken-cli-{version}-linux-x64.zip`
+- **macOS**: `openlinktoken-cli-{version}-macos-universal.zip` (works on both Intel and Apple Silicon)
+- **Windows**: `openlinktoken-cli-{version}-windows-x64.zip`
 
 Each downloadable ZIP is also published with a matching `.sha256` sidecar for manual verification.
 
@@ -36,39 +36,39 @@ Each downloadable ZIP is also published with a matching `.sha256` sidecar for ma
 
 ```bash
 # Extract the zip file
-unzip opentoken-cli-2.0.0-alpha-macos-universal.zip
-cd opentoken-cli-2.0.0-alpha-macos-universal
+unzip openlinktoken-cli-2.0.0-alpha-macos-universal.zip
+cd openlinktoken-cli-2.0.0-alpha-macos-universal
 
 # Make executable (if needed)
-chmod +x opentoken
+chmod +x openlinktoken
 
 # Run the CLI
-./opentoken generate-key-pair --name recipient --force
-./opentoken initiate-exchange --name quickstart --public-key "$HOME/.opentoken/recipient.public.pem" --output /path/to/quickstart.exchange.json
-./opentoken package \
+./olt generate-key-pair --name recipient --force
+./olt initiate-exchange --name quickstart --public-key "$HOME/.openlinktoken/recipient.public.pem" --output /path/to/quickstart.exchange.json
+./olt package \
   -i /path/to/sample.csv \
   -o /path/to/output.csv \
   -t csv \
   --exchange-config /path/to/quickstart.exchange.json \
-  --private-key "$HOME/.opentoken/quickstart.private.pem"
+  --private-key "$HOME/.openlinktoken/quickstart.private.pem"
 ```
 
 **Windows PowerShell:**
 
 ```powershell
 # Extract the zip file
-Expand-Archive opentoken-cli-2.0.0-alpha-windows-x64.zip
-cd opentoken-cli-2.0.0-alpha-windows-x64
+Expand-Archive openlinktoken-cli-2.0.0-alpha-windows-x64.zip
+cd openlinktoken-cli-2.0.0-alpha-windows-x64
 
 # Run the CLI
-.\opentoken.exe generate-key-pair --name recipient --force
-.\opentoken.exe initiate-exchange --name quickstart --public-key "$HOME/.opentoken/recipient.public.pem" --output C:\path\to\quickstart.exchange.json
-.\opentoken.exe package `
+.\openlinktoken.exe generate-key-pair --name recipient --force
+.\openlinktoken.exe initiate-exchange --name quickstart --public-key "$HOME/.openlinktoken/recipient.public.pem" --output C:\path\to\quickstart.exchange.json
+.\openlinktoken.exe package `
   -i C:\path\to\sample.csv `
   -o C:\path\to\output.csv `
   -t csv `
   --exchange-config C:\path\to\quickstart.exchange.json `
-  --private-key "$HOME/.opentoken/quickstart.private.pem"
+  --private-key "$HOME/.openlinktoken/quickstart.private.pem"
 ```
 
 ### Verifying the Executable
@@ -77,7 +77,7 @@ The self-contained executable includes:
 
 - Python 3.11 runtime (bundled)
 - All dependencies (pyarrow, pandas, cryptography)
-- OpenToken CLI and core library
+- Open Link Token CLI and core library
 
 No installation or setup required — just download, extract, and run.
 
@@ -88,9 +88,9 @@ The fastest way to get started. No Python installation required.
 ### Linux/Mac
 
 ```bash
-cd /path/to/OpenToken
+cd /path/to/OpenLinkToken
 
-./run-opentoken.sh package \
+./run-openlinktoken.sh package \
   -i ./resources/sample.csv \
   -o ./resources/output.csv \
   -t csv \
@@ -101,9 +101,9 @@ cd /path/to/OpenToken
 ### Windows PowerShell
 
 ```powershell
-cd C:\path\to\OpenToken
+cd C:\path\to\Open Link Token
 
-.\run-opentoken.ps1 package `
+.\run-openlinktoken.ps1 package `
   -i .\resources\sample.csv `
   -o .\resources\output.csv `
   -t csv `
@@ -138,7 +138,7 @@ These arguments are shared across all subcommands:
 | `--input`           | `-i`  | Input file path (CSV or Parquet)                                                                                      |
 | `--output`          | `-o`  | Output file path                                                                                                      |
 | `--type`            | `-t`  | File type: `csv` or `parquet`                                                                                         |
-| `--exchange-config` |       | Exchange config JSON path. Defaults to `./opentoken-YYYY-MM-DD.exchange.json` when omitted on consumer commands.      |
+| `--exchange-config` |       | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted on consumer commands.  |
 | `--private-key`     |       | Private key PEM used to decrypt the exchange config and derive later transport keys                                   |
 | `--private-key-env` |       | Environment variable containing the private key PEM                                                                   |
 | `--demo-mode`       |       | Skip all hashing; output plain attribute signatures (tokenize only; cannot be combined with `--exchange-config`)      |
@@ -161,14 +161,14 @@ patient_002,Jane,Smith,1975-03-22,Female,90210,987-65-4321
 **Command:**
 
 ```bash
-opentoken generate-key-pair --name recipient --force
-opentoken initiate-exchange --name quickstart --public-key ~/.opentoken/recipient.public.pem --output ./quickstart.exchange.json
-opentoken package \
+olt generate-key-pair --name recipient --force
+olt initiate-exchange --name quickstart --public-key ~/.openlinktoken/recipient.public.pem --output ./quickstart.exchange.json
+olt package \
   -i sample.csv \
   -t csv \
   -o tokens.csv \
   --exchange-config ./quickstart.exchange.json \
-  --private-key ~/.opentoken/quickstart.private.pem
+  --private-key ~/.openlinktoken/quickstart.private.pem
 ```
 
 **Output (`tokens.csv`):**
@@ -186,12 +186,12 @@ patient_002,T1,...
 ### Example: Parquet Input
 
 ```bash
-opentoken package \
+olt package \
   -i input.parquet \
   -t parquet \
   -o tokens.parquet \
   --exchange-config ./quickstart.exchange.json \
-  --private-key ~/.opentoken/quickstart.private.pem
+  --private-key ~/.openlinktoken/quickstart.private.pem
 ```
 
 ## Other Subcommands
@@ -205,24 +205,24 @@ For detail on `tokenize`, `encrypt`, `decrypt`, and `generate-key-pair`, see:
 
 ## `generate-key-pair` Command
 
-Generates an ECDH public/private key pair and writes the keys to `~/.opentoken/`.
+Generates an ECDH public/private key pair and writes the keys to `~/.openlinktoken/`.
 
 ```bash
-opentoken generate-key-pair --curve P-256 --name my-org-key
+olt generate-key-pair --curve P-256 --name my-org-key
 ```
 
 This creates:
 
-- `~/.opentoken/my-org-key.private.pem` — PKCS#8 PEM private key (permissions `600`)
-- `~/.opentoken/my-org-key.public.pem` — SubjectPublicKeyInfo PEM public key (permissions `644`)
+- `~/.openlinktoken/my-org-key.private.pem` — PKCS#8 PEM private key (permissions `600`)
+- `~/.openlinktoken/my-org-key.public.pem` — SubjectPublicKeyInfo PEM public key (permissions `644`)
 
 **Options:**
 
-| Option    | Short | Description                                  | Default                    |
-| --------- | ----- | -------------------------------------------- | -------------------------- |
-| `--curve` | `-c`  | Elliptic curve: `P-256`, `P-384`, or `P-521` | `P-256`                    |
-| `--name`  | `-n`  | Base name for the output key files           | `opentoken-<ISO8601-date>` |
-| `--force` |       | Overwrite existing key files                 | false                      |
+| Option    | Short | Description                                  | Default                        |
+| --------- | ----- | -------------------------------------------- | ------------------------------ |
+| `--curve` | `-c`  | Elliptic curve: `P-256`, `P-384`, or `P-521` | `P-256`                        |
+| `--name`  | `-n`  | Base name for the output key files           | `openlinktoken-<ISO8601-date>` |
+| `--force` |       | Overwrite existing key files                 | false                          |
 
 ## Understanding the Output
 
@@ -244,7 +244,7 @@ A `.metadata.json` file is created alongside the output:
 {
   "Platform": "Python",
   "PythonVersion": "3.11.0",
-  "OpenTokenVersion": "2.0.0",
+  "Version": "2.0.0",
   "TotalRows": 2,
   "TotalRowsWithInvalidAttributes": 0,
   "InvalidAttributesByType": {},
@@ -279,32 +279,32 @@ SSN must be 9 digits. Area code cannot be 000, 666, or 900-999.
 Each time you run the CLI it silently checks (in the background) whether a newer release is available. If one is found, a notice is printed to **stderr** after the command completes:
 
 ```
-⚠ A new version of OpenToken is available: v2.1.0 (you have v2.0.0)
-   Release notes: https://github.com/TruvetaPublic/OpenToken/releases/tag/v2.1.0
-   Run 'opentoken update' to upgrade, or set OPENTOKEN_DISABLE_UPDATE_CHECK=1 to silence this message.
+⚠ A new version of Open Link Token is available: v2.1.0 (you have v2.0.0)
+   Release notes: https://github.com/TruvetaPublic/OpenLinkToken/releases/tag/v2.1.0
+   Run 'olt update' to upgrade, or set OLT_DISABLE_UPDATE_CHECK=1 to silence this message.
 ```
 
 The check never blocks or delays the primary command and is cached for 24 hours. To disable it:
 
 ```bash
 # Disable for a single run
-opentoken --no-update-check package ...
+openlinktoken --no-update-check package ...
 
 # Disable permanently (add to your shell profile)
-export OPENTOKEN_DISABLE_UPDATE_CHECK=1
+export OLT_DISABLE_UPDATE_CHECK=1
 ```
 
-### Self-Update with `opentoken update`
+### Self-Update with `olt update`
 
 ```bash
 # Upgrade to the latest release
-opentoken update
+olt update
 
 # Upgrade to a specific version
-opentoken update --version v2.1.0
+olt update --version v2.1.0
 
 # Preview changes without applying them
-opentoken update --dry-run
+olt update --dry-run
 ```
 
 The updater downloads the correct platform asset, verifies its SHA-256 checksum when available, prompts for confirmation, and replaces the binary in-place.

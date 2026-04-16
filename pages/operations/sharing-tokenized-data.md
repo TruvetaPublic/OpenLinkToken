@@ -4,18 +4,18 @@ layout: default
 
 # Sharing Tokenized Data Between Organizations
 
-How to securely exchange OpenToken outputs for cross-organization record linkage.
+How to securely exchange Open Link Token outputs for cross-organization record linkage.
 
 ---
 
 ## Overview
 
-Organizations often need to identify overlapping individuals across datasets without exposing raw person data. OpenToken enables this by generating deterministic, cryptographically secure tokens that can be shared and matched externally.
+Organizations often need to identify overlapping individuals across datasets without exposing raw person data. Open Link Token enables this by generating deterministic, cryptographically secure tokens that can be shared and matched externally.
 
 **Typical scenario:**
 
 1. Organization A and Organization B each hold patient records
-2. Both organizations run OpenToken on their data using **the same secrets**
+2. Both organizations run Open Link Token on their data using **the same secrets**
 3. They exchange only the token output (no raw PII)
 4. Matching tokens indicate the same person exists in both datasets
 
@@ -27,7 +27,7 @@ Organizations often need to identify overlapping individuals across datasets wit
          │                                      │
          ▼                                      ▼
 ┌─────────────────┐                    ┌─────────────────┐
-│   OpenToken     │                    │   OpenToken     │
+│ Open Link Token │                    │ Open Link Token │
 │ (same secrets)  │                    │ (same secrets)  │
 └────────┬────────┘                    └────────┬────────┘
          │                                      │
@@ -52,7 +52,7 @@ The two-command ECDH bootstrap workflow lets partners establish a shared hashing
 
 For this workflow:
 
-- `sender` means the party that runs `opentoken initiate-exchange` and creates the exchange artifact
+- `sender` means the party that runs `olt initiate-exchange` and creates the exchange artifact
 - `recipient` means the counterparty whose public key is supplied to `initiate-exchange` and who later decrypts with the matching private key
 
 ### Overview
@@ -78,18 +78,18 @@ from sender's local public key
 ### Step 1 — Recipient generates a key pair
 
 ```bash
-opentoken generate-key-pair --name recipient-org
+olt generate-key-pair --name recipient-org
 ```
 
 This writes:
 
-- `~/.opentoken/recipient-org.private.pem` — keep this secret, never share it
-- `~/.opentoken/recipient-org.public.pem` — share this with the sender
+- `~/.openlinktoken/recipient-org.private.pem` — keep this secret, never share it
+- `~/.openlinktoken/recipient-org.public.pem` — share this with the sender
 
 ### Step 2 — Sender initiates the exchange
 
 ```bash
-opentoken initiate-exchange \
+olt initiate-exchange \
   --name sender-q2 \
   --public-key ./recipient-org.public.pem \
   --output ./sender-q2.exchange.json
@@ -99,7 +99,7 @@ To provide the same partner public key via stdin instead of `--public-key`:
 
 ```bash
 cat ./recipient-org.public.pem | \
-  opentoken initiate-exchange \
+  olt initiate-exchange \
     --name sender-q2 \
     --public-key-stdin \
     --output ./sender-q2.exchange.json
@@ -111,7 +111,7 @@ reference in one command, use environment variables:
 ```bash
 OT_RECIPIENT_PUBLIC_KEY="$(az keyvault secret show --vault-name my-vault --name recipient-public-key --query value -o tsv)" \
 OT_SENDER_PRIVATE_KEY="$(az keyvault secret show --vault-name my-vault --name sender-private-key --query value -o tsv)" \
-opentoken initiate-exchange \
+olt initiate-exchange \
   --name sender-q2 \
   --public-key-env OT_RECIPIENT_PUBLIC_KEY \
   --sender-private-key-env OT_SENDER_PRIVATE_KEY \
@@ -120,7 +120,7 @@ opentoken initiate-exchange \
 
 This:
 
-1. Generates a local ECDH key pair for the sender under `~/.opentoken/`, reuses one supplied with `--sender-private-key`, or derives one from `--sender-private-key-env`.
+1. Generates a local ECDH key pair for the sender under `~/.openlinktoken/`, reuses one supplied with `--sender-private-key`, or derives one from `--sender-private-key-env`.
 2. Generates a secure random hashing secret by default, or accepts an existing one via `--hashingsecret-env`, `--hashingsecret-stdin`, or `--hashingsecret`.
 3. Encrypts the hashing secret into a multi-recipient JWE JSON envelope.
 4. Adds one JWE recipient entry for the sender's public key and one for the recipient's public key.
@@ -128,17 +128,17 @@ This:
 
 This means the same exchange artifact can be decrypted by either side with its own private key, but the JSON alone is not enough to recover the hashing secret.
 
-When `--sender-private-key-env` is used, OpenToken derives the sender public key
+When `--sender-private-key-env` is used, Open Link Token derives the sender public key
 from the referenced private key in memory and skips writing sender key files to
-`~/.opentoken/`.
+`~/.openlinktoken/`.
 
 If you want to keep using an existing sender private key instead of generating a new one, use `--sender-private-key`:
 
 ```bash
-opentoken initiate-exchange \
+olt initiate-exchange \
   --name sender-q2 \
   --public-key ./recipient-org.public.pem \
-  --sender-private-key ~/.opentoken/sender-q2.private.pem \
+  --sender-private-key ~/.openlinktoken/sender-q2.private.pem \
   --output ./sender-q2.exchange.json
 ```
 
@@ -147,7 +147,7 @@ If you need to supply a pre-existing hashing secret, prefer an environment-varia
 ```bash
 export OT_HASHING_SECRET="$(az keyvault secret show --vault-name my-vault --name hashing-secret --query value -o tsv)"
 
-opentoken initiate-exchange \
+olt initiate-exchange \
   --name sender-q2 \
   --public-key ./recipient-org.public.pem \
   --hashingsecret-env OT_HASHING_SECRET \
@@ -160,7 +160,7 @@ Transfer `sender-q2.exchange.json` to the recipient over any channel. The hashin
 
 ### Step 4 — Sender or recipient recovers the hashing secret
 
-Either side can decrypt the same exchange artifact with its own private key. If a matching key already exists under `~/.opentoken/`, the validator can resolve it automatically:
+Either side can decrypt the same exchange artifact with its own private key. If a matching key already exists under `~/.openlinktoken/`, the validator can resolve it automatically:
 
 ```bash
 python tools/exchange/validate_exchange_secret.py \
@@ -172,7 +172,7 @@ You can also point at a specific private key file with `--private-key`. For exam
 ```bash
 python tools/exchange/validate_exchange_secret.py \
   --exchange-config sender-q2.exchange.json \
-  --private-key ~/.opentoken/recipient-org.private.pem
+  --private-key ~/.openlinktoken/recipient-org.private.pem
 ```
 
 The sender can do the same with the sender private key:
@@ -180,24 +180,24 @@ The sender can do the same with the sender private key:
 ```bash
 python tools/exchange/validate_exchange_secret.py \
   --exchange-config sender-q2.exchange.json \
-  --private-key ~/.opentoken/sender-q2.private.pem
+  --private-key ~/.openlinktoken/sender-q2.private.pem
 ```
 
 To provide the same private key via stdin instead of `--private-key`, pipe the PEM into `--private-key-stdin`:
 
 ```bash
-cat ~/.opentoken/recipient-org.private.pem | \
+cat ~/.openlinktoken/recipient-org.private.pem | \
   python tools/exchange/validate_exchange_secret.py \
     --exchange-config sender-q2.exchange.json \
     --private-key-stdin
 ```
 
-If the sender provided a known plaintext via `opentoken initiate-exchange --hashingsecret-env ...`, `--hashingsecret-stdin`, or `--hashingsecret ...`, the recipient can also perform an explicit pass/fail check:
+If the sender provided a known plaintext via `olt initiate-exchange --hashingsecret-env ...`, `--hashingsecret-stdin`, or `--hashingsecret ...`, the recipient can also perform an explicit pass/fail check:
 
 ```bash
 python tools/exchange/validate_exchange_secret.py \
   --exchange-config sender-q2.exchange.json \
-  --private-key ~/.opentoken/recipient-org.private.pem \
+  --private-key ~/.openlinktoken/recipient-org.private.pem \
   --expected-secret "$HASHING_SECRET"
 ```
 
@@ -208,11 +208,11 @@ Successful AES-GCM decryption proves the available key material matches one of t
 Once both parties have the exchange artifact and the matching private key, they run the consumer commands directly against the exchange config:
 
 ```bash
-opentoken package \
+olt package \
   -i patient_data.csv -t csv \
   -o tokens_for_partner.csv \
   --exchange-config sender-q2.exchange.json \
-  --private-key ~/.opentoken/sender-q2.private.pem
+  --private-key ~/.openlinktoken/sender-q2.private.pem
 ```
 
 ---
@@ -230,14 +230,14 @@ Before tokenization, both parties must agree on:
 
 **Best practice:** Use a secure channel (encrypted email, secure file transfer, or direct key exchange in person) to share secrets. Never send secrets alongside token files.
 
-### Step 2: Run OpenToken
+### Step 2: Run Open Link Token
 
 Generate tokens using the agreed-upon secrets.
 
 **Encrypted mode (recommended for external sharing):**
 
 ```bash
-opentoken package \
+olt package \
   -i patient_data.csv \
   -t csv \
   -o tokens_for_partner.csv \
@@ -250,7 +250,7 @@ opentoken package \
 Tokenized (unencrypted) output is primarily used **inside your environment** to support overlap analysis against encrypted tokens received from a partner:
 
 ```bash
-opentoken tokenize \
+olt tokenize \
   -i local_patient_data.csv \
   -t csv \
   -o local_hash_only_tokens.csv \
@@ -341,10 +341,10 @@ Compare the output hashes with `HashingSecretHash` and `EncryptionSecretHash` in
 
 ### Step 3: Generate Your Own Tokens
 
-Run OpenToken on your local data using the **same secrets**:
+Run Open Link Token on your local data using the **same secrets**:
 
 ```bash
-opentoken package \
+olt package \
   -i local_patient_data.csv \
   -t csv \
   -o local_tokens.csv \
@@ -381,7 +381,7 @@ See [Matching Model](../concepts/matching-model.md) for matching strategies.
 If tokens are encrypted and you need to debug or verify:
 
 ```bash
-opentoken decrypt \
+olt decrypt \
   -i partner_tokens.csv \
   -t csv \
   -o partner_decrypted.csv \
@@ -422,7 +422,7 @@ Before sharing:
 
 ### Audit and Logging
 
-- **Log token generation events**: Who ran OpenToken, when, with which input file
+- **Log token generation events**: Who ran Open Link Token, when, with which input file
 - **Log token transfers**: When tokens were sent/received, to/from whom
 - **Log matching events**: Who performed matching, what results were produced
 
@@ -446,13 +446,13 @@ With only the token file, an attacker cannot identify individuals.
 
 ## Common Pitfalls
 
-| Issue                         | Cause                     | Solution                                                |
-| ----------------------------- | ------------------------- | ------------------------------------------------------- |
-| Zero matches between datasets | Different secrets used    | Verify secret hashes match in metadata files            |
-| Partial matches only          | Normalization differences | Ensure both parties use the same OpenToken version      |
-| High invalid record counts    | Data quality issues       | Clean data before tokenization; review validation rules |
-| Secrets exposed in logs       | Logging misconfiguration  | Configure logging to exclude sensitive parameters       |
-| Token file intercepted        | Insecure transfer         | Use encrypted file transfer; prefer encrypted tokens    |
+| Issue                         | Cause                     | Solution                                                 |
+| ----------------------------- | ------------------------- | -------------------------------------------------------- |
+| Zero matches between datasets | Different secrets used    | Verify secret hashes match in metadata files             |
+| Partial matches only          | Normalization differences | Ensure both parties use the same Open Link Token version |
+| High invalid record counts    | Data quality issues       | Clean data before tokenization; review validation rules  |
+| Secrets exposed in logs       | Logging misconfiguration  | Configure logging to exclude sensitive parameters        |
+| Token file intercepted        | Insecure transfer         | Use encrypted file transfer; prefer encrypted tokens     |
 
 ---
 

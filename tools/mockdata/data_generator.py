@@ -1,6 +1,7 @@
 import csv
-from faker import Faker
 import sys
+
+from faker import Faker
 
 fake = Faker()
 
@@ -9,18 +10,17 @@ if len(sys.argv) != 4:
     print("Using default values: num_lines=100, repeat_probability=0.05, output_file='test_data.csv'")
     num_lines = 100
     repeat_probability = 0.05
-    output_file = 'test_data.csv'
+    output_file = "test_data.csv"
 else:
     num_lines = int(sys.argv[1])
     repeat_probability = float(sys.argv[2])
     output_file = sys.argv[3]
 
 # Open a CSV file to write the data
-with open(output_file, mode='w', newline='') as file:
+with open(output_file, mode="w", newline="") as file:
     writer = csv.writer(file)
     # Write the header
-    writer.writerow(['RecordId', 'BirthDate', 'FirstName', 'LastName',
-                    'PostalCode', 'Sex', 'SocialSecurityNumber'])
+    writer.writerow(["RecordId", "BirthDate", "FirstName", "LastName", "PostalCode", "Sex", "SocialSecurityNumber"])
 
     # Define a cache to store generated values
     cache = []
@@ -36,10 +36,9 @@ with open(output_file, mode='w', newline='') as file:
         first_name = fake.first_name()
         last_name = fake.last_name()
         zip_code = fake.zipcode()
-        sex = fake.random_element(elements=('Male', 'Female'))
+        sex = fake.random_element(elements=("Male", "Female"))
         ssn = fake.ssn()
-        cache.append(
-            (record_id, birth_date, first_name, last_name, zip_code, sex, ssn))
+        cache.append((record_id, birth_date, first_name, last_name, zip_code, sex, ssn))
 
     for _ in range(num_repeats):
         repeated_record = fake.random_element(cache)

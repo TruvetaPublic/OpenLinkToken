@@ -4,11 +4,11 @@ layout: default
 
 # Metadata Format
 
-Complete reference for the OpenToken metadata JSON file structure, fields, and usage for audit and verification.
+Complete reference for the Open Link Token metadata JSON file structure, fields, and usage for audit and verification.
 
 ## Overview
 
-OpenToken generates a metadata file alongside every token output file. Metadata files provide:
+Open Link Token generates a metadata file alongside every token output file. Metadata files provide:
 
 - **Processing statistics**: Counts of total records, invalid attributes, and blank tokens
 - **System information**: Platform (Java/Python), runtime version, library version
@@ -16,6 +16,7 @@ OpenToken generates a metadata file alongside every token output file. Metadata 
 - **Audit trail**: What was processed and how (platform, version, and validation statistics)
 
 Metadata files:
+
 - Always use JSON format with `.metadata.json` extension
 - Are automatically generated (e.g., `output.csv` → `output.metadata.json`)
 - Contain no raw person data or actual secrets
@@ -33,6 +34,7 @@ Extension: .metadata.json
 ```
 
 **Example filenames:**
+
 - `output.csv` → `output.metadata.json`
 - `tokens.parquet` → `tokens.metadata.json`
 - `/data/results.csv` → `/data/results.metadata.json`
@@ -44,7 +46,7 @@ Extension: .metadata.json
   "Platform": "string",
   "JavaVersion": "string (optional, Java only)",
   "PythonVersion": "string (optional, Python only)",
-  "OpenTokenVersion": "string",
+  "Version": "string",
   "TotalRows": integer,
   "TotalRowsWithInvalidAttributes": integer,
   "InvalidAttributesByType": {
@@ -66,14 +68,15 @@ Extension: .metadata.json
 
 ### Platform Information
 
-| Field              | Type   | Description                          | Example                |
-| ------------------ | ------ | ------------------------------------ | ---------------------- |
-| `Platform`         | String | Processing platform/language         | `"Java"` or `"Python"` |
-| `JavaVersion`      | String | Java runtime version (Java only)     | `"21.0.0"`             |
-| `PythonVersion`    | String | Python runtime version (Python only) | `"3.11.5"`             |
-| `OpenTokenVersion` | String | OpenToken library version            | `"1.12.2"`             |
+| Field           | Type   | Description                          | Example                |
+| --------------- | ------ | ------------------------------------ | ---------------------- |
+| `Platform`      | String | Processing platform/language         | `"Java"` or `"Python"` |
+| `JavaVersion`   | String | Java runtime version (Java only)     | `"21.0.0"`             |
+| `PythonVersion` | String | Python runtime version (Python only) | `"3.11.5"`             |
+| `Version`       | String | Open Link Token library version      | `"1.12.2"`             |
 
 **Notes:**
+
 - Only `JavaVersion` OR `PythonVersion` appears (not both)
 - Platform value determines which version field is present
 
@@ -87,12 +90,14 @@ Extension: .metadata.json
 | `BlankTokensByRule`              | Object  | Count of blank tokens by rule ID          | `{"T1": 5, "T2": 12}`              |
 
 **InvalidAttributesByType:**
+
 - Keys: Attribute names (e.g., `FirstName`, `BirthDate`, `SocialSecurityNumber`)
 - Values: Count of invalid occurrences across all records
 - A single record with 2 invalid attributes contributes 2 to the sum
 - Sum of counts ≥ `TotalRowsWithInvalidAttributes`
 
 **BlankTokensByRule:**
+
 - Keys: Rule IDs (`T1`, `T2`, `T3`, `T4`, `T5`)
 - Values: Count of blank tokens for that rule
 - Blank tokens occur when a rule requires an invalid attribute
@@ -106,6 +111,7 @@ Extension: .metadata.json
 | `EncryptionSecretHash` | String | SHA-256 hash of encryption key (hex, optional) | `"a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6..."` |
 
 **Security:**
+
 - Hashes are **not reversible** (SHA-256 is one-way)
 - Used for verification: calculate hash of your secret and compare to metadata
 - `EncryptionSecretHash` omitted in `tokenize` mode (no encryption used)
@@ -120,7 +126,7 @@ Extension: .metadata.json
 {
   "Platform": "Java",
   "JavaVersion": "21.0.0",
-  "OpenTokenVersion": "2.0.0-alpha",
+  "Version": "2.0.0-alpha",
   "TotalRows": 101,
   "TotalRowsWithInvalidAttributes": 9,
   "InvalidAttributesByType": {
@@ -148,7 +154,7 @@ Extension: .metadata.json
 {
   "Platform": "Python",
   "PythonVersion": "3.11.5",
-  "OpenTokenVersion": "2.0.0-alpha",
+  "Version": "2.0.0-alpha",
   "TotalRows": 50,
   "TotalRowsWithInvalidAttributes": 2,
   "InvalidAttributesByType": {
@@ -170,17 +176,20 @@ Extension: .metadata.json
 ### Valid vs Invalid Records
 
 Calculate valid records:
+
 ```
 Valid Records = TotalRows - TotalRowsWithInvalidAttributes
 ```
 
 **Example:**
+
 ```json
 {
   "TotalRows": 100,
   "TotalRowsWithInvalidAttributes": 5
 }
 ```
+
 - 100 records processed
 - 5 records had errors
 - 95 records were fully valid
@@ -188,6 +197,7 @@ Valid Records = TotalRows - TotalRowsWithInvalidAttributes
 ### Invalid Attribute Counts
 
 Count totals:
+
 ```
 Sum of InvalidAttributesByType values ≥ TotalRowsWithInvalidAttributes
 ```
@@ -195,6 +205,7 @@ Sum of InvalidAttributesByType values ≥ TotalRowsWithInvalidAttributes
 **Why ≥?** A single record can have multiple invalid attributes.
 
 **Example:**
+
 ```json
 {
   "TotalRows": 100,
@@ -206,6 +217,7 @@ Sum of InvalidAttributesByType values ≥ TotalRowsWithInvalidAttributes
   }
 }
 ```
+
 - Total invalid attribute instances: 2 + 3 + 1 = 6
 - Records with errors: 5
 - At least one record had 2+ invalid attributes
@@ -215,6 +227,7 @@ Sum of InvalidAttributesByType values ≥ TotalRowsWithInvalidAttributes
 Blank tokens occur when a rule requires an invalid attribute.
 
 **Token rule dependencies:**
+
 - **T1**: LastName, FirstName, Sex, BirthDate
 - **T2**: LastName, FirstName, BirthDate, PostalCode
 - **T3**: LastName, FirstName, Sex, BirthDate
@@ -222,6 +235,7 @@ Blank tokens occur when a rule requires an invalid attribute.
 - **T5**: LastName, FirstName, Sex
 
 **Example:**
+
 ```json
 {
   "InvalidAttributesByType": {
@@ -236,6 +250,7 @@ Blank tokens occur when a rule requires an invalid attribute.
   }
 }
 ```
+
 - 3 records had invalid BirthDate
 - T1–T4 all use BirthDate → 3 blank tokens each
 - T5 doesn't use BirthDate → 0 blank tokens
@@ -251,11 +266,13 @@ Verify that the secrets used for token generation match expected values without 
 ### Verification Process
 
 1. **Calculate hash of your secret**:
+
    ```bash
    python tools/hash_calculator.py --hashing-secret "HashingKey"
    ```
 
 2. **Compare to metadata**:
+
    ```bash
    cat output.metadata.json | grep HashingSecretHash
    ```
@@ -265,11 +282,13 @@ Verify that the secrets used for token generation match expected values without 
 ### Hash Calculation
 
 The hash is computed as:
+
 ```
 SHA-256(secret) → hex-encoded string (64 hex characters)
 ```
 
 **Python implementation:**
+
 ```python
 import hashlib
 
@@ -281,6 +300,7 @@ encryption_hash = calculate_hash("Secret-Encryption-Key-Goes-Here.")
 ```
 
 **Java implementation:**
+
 ```java
 import java.security.MessageDigest;
 import java.nio.charset.StandardCharsets;
@@ -322,6 +342,7 @@ python tools/hash_calculator.py \
 ### Audit Trail
 
 Metadata provides an audit record of:
+
 - What was processed (record counts and attribute-level statistics)
 - When it was processed (inferred from surrounding system logs or job metadata)
 - How it was processed (platform, version)
@@ -333,12 +354,14 @@ Store metadata files alongside token outputs for compliance and troubleshooting.
 ### Cross-Language Consistency
 
 Both Java and Python implementations produce identical metadata structure. Only differences:
+
 - `JavaVersion` vs `PythonVersion` field name
 - Timestamp format may vary slightly (both ISO 8601 compliant)
 
 ### Retention
 
 Consider retaining metadata longer than token files:
+
 - Metadata contains no person data
 - Provides audit trail for compliance
 - Useful for troubleshooting historic runs
@@ -346,6 +369,7 @@ Consider retaining metadata longer than token files:
 ### Security
 
 Metadata files contain SHA-256 hashes of secrets:
+
 - ✓ Safe to log, store, and share (no secrets exposed)
 - ✓ Enables verification without revealing secrets
 - ✗ Cannot reverse hashes to recover secrets

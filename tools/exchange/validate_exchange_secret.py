@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate that an OpenToken JWE exchange config can be decrypted by either side."""
+"""Validate that an Open Link Token JWE exchange config can be decrypted by either side."""
 
 from __future__ import annotations
 
@@ -12,18 +12,18 @@ from pathlib import Path
 from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(REPO_ROOT / "lib" / "python" / "opentoken-cli" / "src" / "main"))
-sys.path.insert(0, str(REPO_ROOT / "lib" / "python" / "opentoken" / "src" / "main"))
+sys.path.insert(0, str(REPO_ROOT / "lib" / "python" / "openlinktoken-cli" / "src" / "main"))
+sys.path.insert(0, str(REPO_ROOT / "lib" / "python" / "openlinktoken" / "src" / "main"))
 
 from jwcrypto.common import JWException
 
-from opentoken.exchange_jwe import decrypt_exchange_envelope, resolve_private_key_by_kid
-from opentoken_cli.util.ec_key_utils import (
+from openlinktoken.exchange_jwe import decrypt_exchange_envelope, resolve_private_key_by_kid
+from openlinktoken_cli.util.ec_key_utils import (
     derive_public_key_from_private_pem,
     fingerprint_to_kid,
     public_key_fingerprint,
 )
-from opentoken_cli.util.stdin_utils import read_required_stdin_bytes
+from openlinktoken_cli.util.stdin_utils import read_required_stdin_bytes
 
 PROGRAM = "validate_exchange_secret.py"
 
@@ -37,7 +37,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--exchange-config",
         required=True,
-        help="Path to the .exchange.json file produced by `opentoken initiate-exchange`.",
+        help="Path to the .exchange.json file produced by `olt initiate-exchange`.",
     )
     private_key_group = parser.add_mutually_exclusive_group(required=False)
     private_key_group.add_argument(
@@ -111,17 +111,17 @@ def _resolve_private_key_pem(
             raise ValueError("Provided private key does not match any JWE recipient entry in the exchange config.")
         return private_pem
 
-    opentoken_dir = Path.home() / ".opentoken"
+    openlinktoken_dir = Path.home() / ".openlinktoken"
     missing_kids: list[str] = []
     for kid in recipient_kids:
         try:
-            return resolve_private_key_by_kid(opentoken_dir, kid)
+            return resolve_private_key_by_kid(openlinktoken_dir, kid)
         except FileNotFoundError:
             missing_kids.append(kid)
 
     raise ValueError(
         "No local private key could be resolved for any exchange recipient kid "
-        f"in {opentoken_dir}: {', '.join(missing_kids)}"
+        f"in {openlinktoken_dir}: {', '.join(missing_kids)}"
     )
 
 

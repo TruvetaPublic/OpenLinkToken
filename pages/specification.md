@@ -2,11 +2,11 @@
 layout: default
 ---
 
-# OpenToken Specification
+# Open Link Token Specification
 
 ## Overview
 
-OpenToken is a privacy-preserving token generation system for deterministic record linkage across datasets. This specification defines the scope, inputs, processing steps, and outputs of the token generation pipeline.
+Open Link Token is a privacy-preserving token generation system for deterministic record linkage across datasets. This specification defines the scope, inputs, processing steps, and outputs of the token generation pipeline.
 
 **Purpose:** Generate cryptographically secure tokens from person attributes such that:
 
@@ -50,11 +50,11 @@ OpenToken is a privacy-preserving token generation system for deterministic reco
 
 ### Size and Processing Model
 
-OpenToken is designed for **streaming-style** processing: it reads records, normalizes/validates, emits up to 5 tokens, and writes output without needing to hold the full dataset in memory.
+Open Link Token is designed for **streaming-style** processing: it reads records, normalizes/validates, emits up to 5 tokens, and writes output without needing to hold the full dataset in memory.
 
 **Practical constraints:**
 
-- There is **no fixed maximum file size** imposed by OpenToken itself; limits are driven by your machine/cluster resources (CPU, memory, disk) and the underlying CSV/Parquet libraries.
+- There is **no fixed maximum file size** imposed by Open Link Token itself; limits are driven by your machine/cluster resources (CPU, memory, disk) and the underlying CSV/Parquet libraries.
 - Output size is roughly **5× the number of input rows** (one row per rule per record) plus metadata.
 - For Parquet, performance and memory usage depend on row group sizing and the reader implementation.
 
@@ -169,7 +169,7 @@ Signature → SHA-256 → HMAC-SHA256 → Base64
 
 ### 6. Metadata Generation
 
-During processing, OpenToken tracks:
+During processing, Open Link Token tracks:
 
 - **Counts**: Total rows, invalid attributes per type, blank tokens per rule
 - **System Info**: Platform (Java/Python), language version, library version
@@ -241,7 +241,7 @@ Parquet format includes compression and is suitable for large datasets.
 {
   "Platform": "Java",
   "JavaVersion": "21.0.0",
-  "OpenTokenVersion": "1.7.0",
+  "Version": "1.7.0",
   "TotalRows": 100,
   "TotalRowsWithInvalidAttributes": 3,
   "InvalidAttributesByType": {
@@ -265,7 +265,7 @@ Parquet format includes compression and is suitable for large datasets.
 
 ### Current Version
 
-**OpenToken Specification v1.0** (as of 2024)
+**Open Link Token Specification v1.0** (as of 2024)
 
 - 5 token rules (T1–T5) finalized
 - Attribute set: FirstName, LastName, BirthDate, Sex, PostalCode, SSN
@@ -310,7 +310,7 @@ For deeper information, see:
 - **Cryptography & Security**: [Security](security.md)
 - **Metadata Fields**: [Reference: Metadata Format](reference/metadata-format.md)
 - **Configuration**: [Configuration](config/configuration.md)
-- **CLI Usage**: [Running OpenToken](running-opentoken/index.md)
+- **CLI Usage**: [Running Open Link Token](running-openlinktoken/index.md)
 - **Operations**: [Running Batch Jobs](operations/running-batch-jobs.md)
 
 ---
