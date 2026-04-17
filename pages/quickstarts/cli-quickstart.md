@@ -61,9 +61,9 @@ Expand-Archive openlinktoken-cli-2.0.0-alpha-windows-x64.zip
 cd openlinktoken-cli-2.0.0-alpha-windows-x64
 
 # Run the CLI
-.\openlinktoken.exe generate-key-pair --name recipient --force
-.\openlinktoken.exe initiate-exchange --name quickstart --public-key "$HOME/.openlinktoken/recipient.public.pem" --output C:\path\to\quickstart.exchange.json
-.\openlinktoken.exe package `
+.\olt.exe generate-key-pair --name recipient --force
+.\olt.exe initiate-exchange --name quickstart --public-key "$HOME/.openlinktoken/recipient.public.pem" --output C:\path\to\quickstart.exchange.json
+.\olt.exe package `
   -i C:\path\to\sample.csv `
   -o C:\path\to\output.csv `
   -t csv `

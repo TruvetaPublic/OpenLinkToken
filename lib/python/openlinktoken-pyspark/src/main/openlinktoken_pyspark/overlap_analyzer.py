@@ -178,8 +178,7 @@ class OpenLinkTokenOverlapAnalyzer:
         Decrypt an encrypted token for deterministic comparison.
 
         Supports both token formats:
-        - `olt.V1.<JWE compact serialization>` (current format)
-        - `ot.V1.<JWE compact serialization>` (legacy format)
+        - `olt.V1.<JWE compact serialization>`
         - Legacy base64 payload (`IV || ciphertext || tag`)
 
         If the input is not an encrypted token (e.g., plain/hash-only tokens

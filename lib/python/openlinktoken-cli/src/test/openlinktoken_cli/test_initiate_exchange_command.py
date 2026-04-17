@@ -114,16 +114,16 @@ class TestInitiateExchangeCommandUnit:
 
     def test_read_required_env_bytes_returns_utf8_bytes(self, monkeypatch):
         """read_required_env_bytes returns the referenced environment value as bytes."""
-        monkeypatch.setenv("OT_TEST_KEY", "pem-data")
+        monkeypatch.setenv("OLT_TEST_KEY", "pem-data")
 
-        assert read_required_env_bytes("--test-key-env", "OT_TEST_KEY", "test key") == b"pem-data"
+        assert read_required_env_bytes("--test-key-env", "OLT_TEST_KEY", "test key") == b"pem-data"
 
     def test_read_required_env_bytes_rejects_missing_value(self, monkeypatch):
         """read_required_env_bytes rejects missing environment variables."""
-        monkeypatch.delenv("OT_MISSING_KEY", raising=False)
+        monkeypatch.delenv("OLT_MISSING_KEY", raising=False)
 
-        with pytest.raises(ValueError, match="OT_MISSING_KEY"):
-            read_required_env_bytes("--test-key-env", "OT_MISSING_KEY", "test key")
+        with pytest.raises(ValueError, match="OLT_MISSING_KEY"):
+            read_required_env_bytes("--test-key-env", "OLT_MISSING_KEY", "test key")
 
     # -------------------------------------------------------------------------
     # _write_config
@@ -238,8 +238,8 @@ class TestInitiateExchangeCommandIntegration:
         sender_private_pem, sender_public_pem = generate_key_pair("P-256")
         _, partner_public_pem = generate_key_pair("P-256")
         output_path = tmp_path / "env-ref.exchange.json"
-        monkeypatch.setenv("OT_PARTNER_PUBLIC_KEY", partner_public_pem.decode("utf-8"))
-        monkeypatch.setenv("OT_SENDER_PRIVATE_KEY", sender_private_pem.decode("utf-8"))
+        monkeypatch.setenv("OLT_PARTNER_PUBLIC_KEY", partner_public_pem.decode("utf-8"))
+        monkeypatch.setenv("OLT_SENDER_PRIVATE_KEY", sender_private_pem.decode("utf-8"))
 
         with patch("pathlib.Path.home", return_value=tmp_path):
             exit_code = OpenLinkTokenCommand.execute(
@@ -248,9 +248,9 @@ class TestInitiateExchangeCommandIntegration:
                     "--name",
                     "env-ref",
                     "--public-key-env",
-                    "OT_PARTNER_PUBLIC_KEY",
+                    "OLT_PARTNER_PUBLIC_KEY",
                     "--sender-private-key-env",
-                    "OT_SENDER_PRIVATE_KEY",
+                    "OLT_SENDER_PRIVATE_KEY",
                     "--output",
                     str(output_path),
                 ]
@@ -280,7 +280,7 @@ class TestInitiateExchangeCommandIntegration:
         partner_pem_path.write_bytes(partner_public_pem)
         output_path = tmp_path / "hashingsecret-env.exchange.json"
         plaintext_secret = "HashingSecretFromEnv"
-        monkeypatch.setenv("OT_HASHING_SECRET", plaintext_secret)
+        monkeypatch.setenv("OLT_HASHING_SECRET", plaintext_secret)
 
         with patch("pathlib.Path.home", return_value=tmp_path):
             exit_code = OpenLinkTokenCommand.execute(
@@ -293,7 +293,7 @@ class TestInitiateExchangeCommandIntegration:
                     "--output",
                     str(output_path),
                     "--hashingsecret-env",
-                    "OT_HASHING_SECRET",
+                    "OLT_HASHING_SECRET",
                 ]
             )
 
@@ -430,21 +430,21 @@ class TestInitiateExchangeCommandIntegration:
                     "--name",
                     "missing-public-env",
                     "--public-key-env",
-                    "OT_MISSING_PARTNER_PUBLIC_KEY",
+                    "OLT_MISSING_PARTNER_PUBLIC_KEY",
                     "--output",
                     str(output_path),
                 ]
             )
 
         assert exit_code == 1
-        assert "OT_MISSING_PARTNER_PUBLIC_KEY" in caplog.text
+        assert "OLT_MISSING_PARTNER_PUBLIC_KEY" in caplog.text
         assert not output_path.exists()
 
     def test_basic_exchange_rejects_missing_sender_private_key_env(self, tmp_path, monkeypatch, caplog):
         """initiate-exchange fails clearly when --sender-private-key-env references a missing environment variable."""
         _, partner_public_pem = generate_key_pair("P-256")
         output_path = tmp_path / "missing-sender-env.exchange.json"
-        monkeypatch.setenv("OT_PARTNER_PUBLIC_KEY", partner_public_pem.decode("utf-8"))
+        monkeypatch.setenv("OLT_PARTNER_PUBLIC_KEY", partner_public_pem.decode("utf-8"))
 
         with patch("pathlib.Path.home", return_value=tmp_path):
             exit_code = OpenLinkTokenCommand.execute(
@@ -453,16 +453,16 @@ class TestInitiateExchangeCommandIntegration:
                     "--name",
                     "missing-sender-env",
                     "--public-key-env",
-                    "OT_PARTNER_PUBLIC_KEY",
+                    "OLT_PARTNER_PUBLIC_KEY",
                     "--sender-private-key-env",
-                    "OT_MISSING_SENDER_PRIVATE_KEY",
+                    "OLT_MISSING_SENDER_PRIVATE_KEY",
                     "--output",
                     str(output_path),
                 ]
             )
 
         assert exit_code == 1
-        assert "OT_MISSING_SENDER_PRIVATE_KEY" in caplog.text
+        assert "OLT_MISSING_SENDER_PRIVATE_KEY" in caplog.text
         assert not output_path.exists()
 
     def test_basic_exchange_rejects_missing_hashing_secret_env_without_writing_keys(self, tmp_path, caplog):
@@ -481,12 +481,12 @@ class TestInitiateExchangeCommandIntegration:
                     "--output",
                     str(output_path),
                     "--hashingsecret-env",
-                    "OT_MISSING_HASHING_SECRET",
+                    "OLT_MISSING_HASHING_SECRET",
                 ]
             )
 
         assert exit_code == 1
-        assert "OT_MISSING_HASHING_SECRET" in caplog.text
+        assert "OLT_MISSING_HASHING_SECRET" in caplog.text
         assert not output_path.exists()
         openlinktoken_dir = tmp_path / ".openlinktoken"
         assert not (openlinktoken_dir / "missing-hashing-secret-env.private.pem").exists()

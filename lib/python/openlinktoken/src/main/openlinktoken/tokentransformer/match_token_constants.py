@@ -3,11 +3,8 @@
 # Canonical prefix for version 1 match tokens.
 V1_TOKEN_PREFIX = "olt.V1."
 
-# Legacy prefix retained for backward-compatible token consumption.
-LEGACY_V1_TOKEN_PREFIX = "ot.V1."
-
 # Prefixes accepted by readers that consume JWE-wrapped V1 tokens.
-SUPPORTED_V1_TOKEN_PREFIXES = (V1_TOKEN_PREFIX, LEGACY_V1_TOKEN_PREFIX)
+SUPPORTED_V1_TOKEN_PREFIXES = (V1_TOKEN_PREFIX,)
 
 # Token type value used in the protected JWE header.
 TOKEN_TYPE = "match-token"

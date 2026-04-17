@@ -109,12 +109,12 @@ To provide both the recipient public key and the sender private key by
 reference in one command, use environment variables:
 
 ```bash
-OT_RECIPIENT_PUBLIC_KEY="$(az keyvault secret show --vault-name my-vault --name recipient-public-key --query value -o tsv)" \
-OT_SENDER_PRIVATE_KEY="$(az keyvault secret show --vault-name my-vault --name sender-private-key --query value -o tsv)" \
+OLT_RECIPIENT_PUBLIC_KEY="$(az keyvault secret show --vault-name my-vault --name recipient-public-key --query value -o tsv)" \
+OLT_SENDER_PRIVATE_KEY="$(az keyvault secret show --vault-name my-vault --name sender-private-key --query value -o tsv)" \
 olt initiate-exchange \
   --name sender-q2 \
-  --public-key-env OT_RECIPIENT_PUBLIC_KEY \
-  --sender-private-key-env OT_SENDER_PRIVATE_KEY \
+  --public-key-env OLT_RECIPIENT_PUBLIC_KEY \
+  --sender-private-key-env OLT_SENDER_PRIVATE_KEY \
   --output ./sender-q2.exchange.json
 ```
 
@@ -145,12 +145,12 @@ olt initiate-exchange \
 If you need to supply a pre-existing hashing secret, prefer an environment-variable or stdin-based input so the secret does not appear in shell history or process listings:
 
 ```bash
-export OT_HASHING_SECRET="$(az keyvault secret show --vault-name my-vault --name hashing-secret --query value -o tsv)"
+export OLT_HASHING_SECRET="$(az keyvault secret show --vault-name my-vault --name hashing-secret --query value -o tsv)"
 
 olt initiate-exchange \
   --name sender-q2 \
   --public-key ./recipient-org.public.pem \
-  --hashingsecret-env OT_HASHING_SECRET \
+  --hashingsecret-env OLT_HASHING_SECRET \
   --output ./sender-q2.exchange.json
 ```
 

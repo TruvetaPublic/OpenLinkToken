@@ -50,7 +50,7 @@ class TestGenerateKeyPairCommandUnit:
 
     def test_ensure_directory_creates_with_700(self, tmp_path):
         """_ensure_directory creates the directory with owner-only permissions."""
-        target = tmp_path / "dot_opentoken"
+        target = tmp_path / "dot_olt"
         GenerateKeyPairCommand._ensure_directory(target)
 
         assert target.is_dir(), "Directory must be created"

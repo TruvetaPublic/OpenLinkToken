@@ -47,7 +47,7 @@ python -m openlinktoken_cli.main <subcommand> [OPTIONS]
 
 ```powershell
 # Self-contained executable
-.\openlinktoken.exe [OPTIONS]
+.\olt.exe [OPTIONS]
 
 # Python
 python -m openlinktoken_cli.main <subcommand> [OPTIONS]
@@ -200,12 +200,12 @@ cat ./recipient-org.public.pem | olt initiate-exchange \
 To provide an existing hashing secret without exposing it in the process argument list:
 
 ```bash
-export OT_HASHING_SECRET="$(az keyvault secret show --vault-name my-vault --name hashing-secret --query value -o tsv)"
+export OLT_HASHING_SECRET="$(az keyvault secret show --vault-name my-vault --name hashing-secret --query value -o tsv)"
 
 olt initiate-exchange \
   --name sender-q2 \
   --public-key ./recipient-org.public.pem \
-  --hashingsecret-env OT_HASHING_SECRET \
+  --hashingsecret-env OLT_HASHING_SECRET \
   --output ./sender-q2.exchange.json
 ```
 
@@ -213,19 +213,19 @@ To supply both the partner public key and the sender private key by reference in
 one command, use environment-variable references instead of stdin:
 
 ```bash
-OT_PARTNER_PUBLIC_KEY="$(az keyvault secret show --vault-name my-vault --name recipient-public-key --query value -o tsv)" \
-OT_SENDER_PRIVATE_KEY="$(az keyvault secret show --vault-name my-vault --name sender-private-key --query value -o tsv)" \
+OLT_PARTNER_PUBLIC_KEY="$(az keyvault secret show --vault-name my-vault --name recipient-public-key --query value -o tsv)" \
+OLT_SENDER_PRIVATE_KEY="$(az keyvault secret show --vault-name my-vault --name sender-private-key --query value -o tsv)" \
 olt initiate-exchange \
   --name sender-q2 \
-  --public-key-env OT_PARTNER_PUBLIC_KEY \
-  --sender-private-key-env OT_SENDER_PRIVATE_KEY \
+  --public-key-env OLT_PARTNER_PUBLIC_KEY \
+  --sender-private-key-env OLT_SENDER_PRIVATE_KEY \
   --output ./sender-q2.exchange.json
 ```
 
 When `--sender-private-key-env` is used, Open Link Token derives the sender public key
 in memory and does not write local sender key files under `~/.openlinktoken/`.
 
-For `tokenize`, `package`, `encrypt`, and `decrypt`, Open Link Token resolves the exchange config from `--exchange-config` or from the date-based default path `./openlinktoken-YYYY-MM-DD.exchange.json`. When neither `--private-key` nor `--private-key-env` is supplied, the CLI falls back to `~/.openlinktoken/` fingerprint-based key lookup.
+For `tokenize`, `package`, `encrypt`, and `decrypt`, Open Link Token resolves the exchange config from `--exchange-config` or from the date-based default path `./olt-YYYY-MM-DD.exchange.json`. When neither `--private-key` nor `--private-key-env` is supplied, the CLI falls back to `~/.openlinktoken/` fingerprint-based key lookup.
 
 \* Provide at most one of `--private-key` or `--private-key-env`.
 

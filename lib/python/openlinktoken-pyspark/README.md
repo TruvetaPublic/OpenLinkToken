@@ -260,7 +260,7 @@ The output DataFrame contains:
 
 - **RecordId**: The original record identifier
 - **RuleId**: Token rule identifier (T1, T2, T3, T4, T5)
-- **Token**: Encrypted match token in `ot.V1.<JWE>` format (or base64-encoded HMAC in hash-only flows)
+- **Token**: Encrypted match token in `olt.V1.<JWE>` format (or base64-encoded HMAC in hash-only flows)
 
 Each input record produces multiple output rows (one per token rule).
 
@@ -317,7 +317,7 @@ See the included Jupyter notebooks for complete examples:
 
 ```bash
 cd notebooks
-jupyter notebook OpenToken_PySpark_Example.ipynb
+jupyter notebook OpenLinkToken_PySpark_Example.ipynb
 ```
 
 **Custom Token Definitions:**

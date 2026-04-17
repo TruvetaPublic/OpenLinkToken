@@ -253,18 +253,6 @@ class TestAnalyzeOverlap:
         assert v1_encrypted.startswith("olt.V1.")
         assert analyzer._decrypt_token(v1_encrypted) == plaintext
 
-    def test_decrypt_token_accepts_legacy_ot_v1_format(self, encryption_key):
-        """Legacy ot.V1 tokens remain decryptable for compatibility."""
-        analyzer = OpenLinkTokenOverlapAnalyzer(encryption_key)
-        plaintext = "deterministic-hash-value"
-        legacy_encrypted = EncryptTokenTransformer(encryption_key).transform(plaintext)
-        current_token = JweMatchTokenFormatter(
-            encryption_key=encryption_key, ring_id="ring-test", rule_id="T1"
-        ).transform(legacy_encrypted)
-        legacy_token = current_token.replace("olt.V1.", "ot.V1.", 1)
-
-        assert analyzer._decrypt_token(legacy_token) == plaintext
-
 
 class TestCompareWithMultipleRules:
     """Tests for comparing with multiple rule sets."""

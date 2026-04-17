@@ -15,8 +15,7 @@ from collections import defaultdict
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 V1_TOKEN_PREFIX = "olt.V1."
-LEGACY_V1_TOKEN_PREFIX = "ot.V1."
-SUPPORTED_V1_TOKEN_PREFIXES = (V1_TOKEN_PREFIX, LEGACY_V1_TOKEN_PREFIX)
+SUPPORTED_V1_TOKEN_PREFIXES = (V1_TOKEN_PREFIX,)
 
 
 def _base64url_decode(value):
