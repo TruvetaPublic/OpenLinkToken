@@ -81,10 +81,10 @@ class TestJweMatchTokenFormatter(unittest.TestCase):
         result = formatter.transform(self.TEST_TOKEN)
 
         # Verify the token has the correct prefix
-        self.assertTrue(result.startswith("ot.V1."))
+        self.assertTrue(result.startswith("olt.V1."))
 
         # Verify it's a valid JWE token (5 parts separated by dots after the prefix)
-        jwe_compact = result[len("ot.V1.") :]
+        jwe_compact = result[len("olt.V1.") :]
         parts = jwe_compact.split(".")
         self.assertEqual(5, len(parts), "JWE compact serialization should have 5 parts")
 
@@ -109,7 +109,7 @@ class TestJweMatchTokenFormatter(unittest.TestCase):
         )
 
         result = formatter.transform(self.TEST_TOKEN)
-        jwe_compact = result[len("ot.V1.") :]
+        jwe_compact = result[len("olt.V1.") :]
 
         # Parse the JWE object to inspect the header
         jwe_token = jwe.JWE()
@@ -131,7 +131,7 @@ class TestJweMatchTokenFormatter(unittest.TestCase):
         )
 
         result = formatter.transform(self.TEST_TOKEN)
-        jwe_compact = result[len("ot.V1.") :]
+        jwe_compact = result[len("olt.V1.") :]
 
         # Decrypt and parse the payload using the same method as the formatter
         import base64
@@ -178,8 +178,8 @@ class TestJweMatchTokenFormatter(unittest.TestCase):
 
         self.assertNotEqual(result1, result2)
         # But both should have the same prefix
-        self.assertTrue(result1.startswith("ot.V1."))
-        self.assertTrue(result2.startswith("ot.V1."))
+        self.assertTrue(result1.startswith("olt.V1."))
+        self.assertTrue(result2.startswith("olt.V1."))
 
 
 if __name__ == "__main__":

@@ -17,6 +17,11 @@ from pyspark.sql.functions import col, count, udf
 from pyspark.sql.types import StringType
 
 from openlinktoken.exchange_config import derive_transport_encryption_key, resolve_exchange_config_inputs
+from openlinktoken.tokentransformer.match_token_constants import (
+    V1_TOKEN_PREFIX,
+    is_supported_v1_token,
+    strip_supported_v1_token_prefix,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +107,7 @@ class OpenLinkTokenOverlapAnalyzer:
 
     @staticmethod
     def _v1_token_prefix() -> str:
-        return "ot.V1."
+        return V1_TOKEN_PREFIX
 
     def _decrypt_legacy_token(self, encrypted_token: str) -> Optional[str]:
         """Decrypt legacy base64(AES-GCM) token payloads.
@@ -137,17 +142,17 @@ class OpenLinkTokenOverlapAnalyzer:
             return encrypted_token
 
     def _decrypt_v1_token(self, encrypted_token: str) -> Optional[str]:
-        """Decrypt ot.V1 JWE token payloads.
+        """Decrypt V1 JWE token payloads.
 
         Args:
-            encrypted_token: V1 token in format ot.V1.<JWE compact serialization>.
+            encrypted_token: V1 token in format olt.V1.<JWE compact serialization>.
 
         Returns:
             Decrypted deterministic token value when possible.
             Returns the original token if JWE decryption fails.
         """
         try:
-            jwe_compact = encrypted_token[len(self._v1_token_prefix()) :]
+            jwe_compact = strip_supported_v1_token_prefix(encrypted_token)
             key_b64 = base64.urlsafe_b64encode(self.encryption_key).decode("utf-8").rstrip("=")
             jwk_key = jwk.JWK(kty="oct", k=key_b64)
 
@@ -173,7 +178,8 @@ class OpenLinkTokenOverlapAnalyzer:
         Decrypt an encrypted token for deterministic comparison.
 
         Supports both token formats:
-        - `ot.V1.<JWE compact serialization>` (current format)
+        - `olt.V1.<JWE compact serialization>` (current format)
+        - `ot.V1.<JWE compact serialization>` (legacy format)
         - Legacy base64 payload (`IV || ciphertext || tag`)
 
         If the input is not an encrypted token (e.g., plain/hash-only tokens
@@ -187,7 +193,7 @@ class OpenLinkTokenOverlapAnalyzer:
         """
         if encrypted_token is None:
             return None
-        if encrypted_token.startswith(self._v1_token_prefix()):
+        if is_supported_v1_token(encrypted_token):
             return self._decrypt_v1_token(encrypted_token)
         return self._decrypt_legacy_token(encrypted_token)
 

@@ -27,21 +27,21 @@ Traditional token formats store metadata externally (in file headers or separate
 ### Serialization
 
 ```
-ot.V1.<JWE-compact-serialization>
+olt.V1.<JWE-compact-serialization>
 ```
 
 **Components:**
 
 | Part    | Description                                          |
 | ------- | ---------------------------------------------------- |
-| `ot`    | Open Link Token prefix (scanner-safe)                |
+| `olt`   | Open Link Token prefix (scanner-safe)                |
 | `V1`    | Envelope format version                              |
 | `<JWE>` | Standard JWE (RFC 7516) containing encrypted payload |
 
 ### Example Token
 
 ```
-ot.V1.eyJhbGciOiJBMjU2R0NNS1ciLCJlbmMiOiJBMjU2R0NNIiwidHlwIjoibWF0Y2gtdG9rZW4iLCJraWQiOiJyaW5nLTIwMjYtcTEifQ.K7q3nT8Xh2Yk5L9m.Gw5hT2Qk9Lm3Np7R.dGhlIHF1aWNrIGJyb3duIGZveA.4vT8kL2mNpQ9rStYz
+olt.V1.eyJhbGciOiJBMjU2R0NNS1ciLCJlbmMiOiJBMjU2R0NNIiwidHlwIjoibWF0Y2gtdG9rZW4iLCJraWQiOiJyaW5nLTIwMjYtcTEifQ.K7q3nT8Xh2Yk5L9m.Gw5hT2Qk9Lm3Np7R.dGhlIHF1aWNrIGJyb3duIGZveA.4vT8kL2mNpQ9rStYz
 ```
 
 ### Token Structure
@@ -49,7 +49,7 @@ ot.V1.eyJhbGciOiJBMjU2R0NNS1ciLCJlbmMiOiJBMjU2R0NNIiwidHlwIjoibWF0Y2gtdG9rZW4iLC
 The JWE portion has 5 dot-separated components:
 
 ```
-ot.V1.<header>.<encrypted-key>.<iv>.<ciphertext>.<auth-tag>
+olt.V1.<header>.<encrypted-key>.<iv>.<ciphertext>.<auth-tag>
       │        │              │    │            │
       │        │              │    │            └─ Integrity proof (GCM tag)
       │        │              │    │
@@ -342,7 +342,7 @@ def create_ot_token(
         headers=protected
     )
 
-    return f"ot.V1.{jwe_token.decode()}"
+    return f"olt.V1.{jwe_token.decode()}"
 ```
 
 ### Parsing Without Decryption
@@ -385,10 +385,10 @@ def parse_ot_token_header(token: str) -> dict:
 def decrypt_ot_token(token: str, encryption_key: bytes) -> dict:
     """Decrypt and return full payload."""
 
-    if not token.startswith("ot.V1."):
+    if not token.startswith("olt.V1."):
         raise ValueError("Unsupported format version")
 
-    jwe_token = token[len("ot.V1."):]
+    jwe_token = token[len("olt.V1."):]
     payload_bytes = jwe.decrypt(jwe_token, encryption_key)
 
     return json.loads(payload_bytes)
@@ -400,10 +400,10 @@ def decrypt_ot_token(token: str, encryption_key: bytes) -> dict:
 
 ### Scanner Safety
 
-The `ot.V1.` prefix clearly identifies these tokens:
+The `olt.V1.` prefix clearly identifies these tokens:
 
 ```
-ot.V1.eyJhbGci...  ← Open Link Token (clearly labeled)
+olt.V1.eyJhbGci... ← Open Link Token (clearly labeled)
 eyJhbGciOiJIUzI1NiIs...     ← JWT (could trigger scanners)
 AKIA1234567890ABCDEF...     ← AWS key (definitely triggers scanners)
 ```

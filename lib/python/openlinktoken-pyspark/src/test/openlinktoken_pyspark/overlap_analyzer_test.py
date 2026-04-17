@@ -242,7 +242,7 @@ class TestAnalyzeOverlap:
         assert analyzer._decrypt_token(encrypted) == plaintext
 
     def test_decrypt_token_v1_format(self, encryption_key):
-        """ot.V1 tokens decrypt to deterministic values for matching."""
+        """olt.V1 tokens decrypt to deterministic values for matching."""
         analyzer = OpenLinkTokenOverlapAnalyzer(encryption_key)
         plaintext = "deterministic-hash-value"
         legacy_encrypted = EncryptTokenTransformer(encryption_key).transform(plaintext)
@@ -250,8 +250,20 @@ class TestAnalyzeOverlap:
             encryption_key=encryption_key, ring_id="ring-test", rule_id="T1"
         ).transform(legacy_encrypted)
 
-        assert v1_encrypted.startswith("ot.V1.")
+        assert v1_encrypted.startswith("olt.V1.")
         assert analyzer._decrypt_token(v1_encrypted) == plaintext
+
+    def test_decrypt_token_accepts_legacy_ot_v1_format(self, encryption_key):
+        """Legacy ot.V1 tokens remain decryptable for compatibility."""
+        analyzer = OpenLinkTokenOverlapAnalyzer(encryption_key)
+        plaintext = "deterministic-hash-value"
+        legacy_encrypted = EncryptTokenTransformer(encryption_key).transform(plaintext)
+        current_token = JweMatchTokenFormatter(
+            encryption_key=encryption_key, ring_id="ring-test", rule_id="T1"
+        ).transform(legacy_encrypted)
+        legacy_token = current_token.replace("olt.V1.", "ot.V1.", 1)
+
+        assert analyzer._decrypt_token(legacy_token) == plaintext
 
 
 class TestCompareWithMultipleRules:

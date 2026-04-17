@@ -2,7 +2,7 @@
 Open Link Token Decryptor Tool
 
 Decrypts AES-GCM encrypted tokens from CSV files.
-Supports both legacy base64-encoded tokens and V1 JWE tokens (ot.V1.<JWE>).
+Supports both legacy base64-encoded tokens and V1 JWE tokens (olt.V1.<JWE>).
 
 Usage: python decryptor.py -e "encryption_key" -i input.csv -o output.csv
 Requirements: pycryptodome library, jwcrypto library, CSV with RuleId,Token,RecordId columns
@@ -25,7 +25,18 @@ except ImportError:
 PROGRAM = "decryptor.py"
 UTF8 = "utf-8"
 BLANK_TOKEN = "0000000000000000000000000000000000000000000000000000000000000000"
-V1_TOKEN_PREFIX = "ot.V1."
+V1_TOKEN_PREFIX = "olt.V1."
+LEGACY_V1_TOKEN_PREFIX = "ot.V1."
+SUPPORTED_V1_TOKEN_PREFIXES = (V1_TOKEN_PREFIX, LEGACY_V1_TOKEN_PREFIX)
+
+
+def strip_supported_v1_token_prefix(token):
+    """Strip the canonical or legacy V1 prefix from a token."""
+    for prefix in SUPPORTED_V1_TOKEN_PREFIXES:
+        if token.startswith(prefix):
+            return token[len(prefix) :]
+
+    raise ValueError("Token does not start with a supported V1 prefix")
 
 
 def decrypt_v1_token(token, encryption_key):
@@ -37,8 +48,8 @@ def decrypt_v1_token(token, encryption_key):
     if not JWE_SUPPORT:
         raise RuntimeError("jwcrypto library required for V1 token decryption. Install with: uv pip install jwcrypto")
 
-    # Remove the ot.V1. prefix
-    jwe_compact = token[len(V1_TOKEN_PREFIX) :]
+    # Remove the supported V1 prefix
+    jwe_compact = strip_supported_v1_token_prefix(token)
 
     # Create JWK from encryption key
     key_bytes = encryption_key.encode("utf-8")
@@ -88,7 +99,7 @@ def decrypt_legacy_token(token, encryption_key):
 def decrypt_tokens(key, input_file, output_file):
     """
     Decrypt tokens from CSV using AES-GCM.
-    Supports both legacy base64 tokens and V1 JWE tokens (ot.V1.<JWE>).
+    Supports both legacy base64 tokens and V1 JWE tokens (olt.V1.<JWE>).
     """
     with open(output_file, mode="w", encoding=UTF8, newline="") as outfile:
         columns = ["RuleId", "Token", "RecordId"]
@@ -103,7 +114,7 @@ def decrypt_tokens(key, input_file, output_file):
                 if token != BLANK_TOKEN:
                     try:
                         # Check if it's a V1 JWE token
-                        if token.startswith(V1_TOKEN_PREFIX):
+                        if any(token.startswith(prefix) for prefix in SUPPORTED_V1_TOKEN_PREFIXES):
                             token = decrypt_v1_token(token, key)
                         else:
                             # Legacy base64-encoded token

@@ -197,3 +197,24 @@ class TestTokenDecryptionProcessor:
         assert written_row[TokenConstants.TOKEN] == plain_token
 
         mock_writer.write_token.assert_called_once()
+
+    def test_process_decrypts_legacy_ot_v1_jwe_tokens(self):
+        """Legacy ot.V1 JWE tokens remain decryptable for compatibility."""
+        plain_token = "plain-token"
+        encryptor = EncryptTokenTransformer(self.ENCRYPTION_KEY)
+        decryptor = DecryptTokenTransformer(self.ENCRYPTION_KEY)
+        formatter = JweMatchTokenFormatter(self.ENCRYPTION_KEY, self.RING_ID, "T1")
+
+        encrypted_token = encryptor.transform(plain_token)
+        current_token = formatter.transform(encrypted_token)
+        legacy_token = current_token.replace("olt.V1.", "ot.V1.", 1)
+
+        row = {TokenConstants.RECORD_ID: "record-1", TokenConstants.RULE_ID: "T1", TokenConstants.TOKEN: legacy_token}
+
+        mock_reader = iter([row])
+        mock_writer = Mock()
+
+        TokenDecryptionProcessor.process_with_key(mock_reader, mock_writer, decryptor, self.ENCRYPTION_KEY)
+
+        written_row = mock_writer.write_token.call_args[0][0]
+        assert written_row[TokenConstants.TOKEN] == plain_token

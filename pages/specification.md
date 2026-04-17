@@ -149,10 +149,10 @@ Each token rule signature is transformed through the cryptographic pipeline.
 **Default mode (encrypted):**
 
 ```
-Signature → SHA-256 → HMAC-SHA256 → JWE (AES-256-GCM) → Prefix `ot.V1.`
+Signature → SHA-256 → HMAC-SHA256 → JWE (AES-256-GCM) → Prefix `olt.V1.`
 ```
 
-Encrypted `ot.V1` token strings are intentionally non-deterministic due to randomized IVs.
+Encrypted `olt.V1` token strings are intentionally non-deterministic due to randomized IVs.
 
 **Hash-only mode (optional):**
 
@@ -197,7 +197,7 @@ RecordId,RuleId,Token
 
 - `RecordId`: From input (or auto-generated if omitted)
 - `RuleId`: T1, T2, T3, T4, or T5
-- `Token`: Encrypted `ot.V1.<JWE>` token in encrypted mode, or base64 HMAC token in hash-only/decrypted mode (or empty string if validation failed)
+- `Token`: Encrypted `olt.V1.<JWE>` token in encrypted mode, or base64 HMAC token in hash-only/decrypted mode (or empty string if validation failed)
 
 **Rows per input record:** 5 (one per rule); may be fewer if errors occur
 

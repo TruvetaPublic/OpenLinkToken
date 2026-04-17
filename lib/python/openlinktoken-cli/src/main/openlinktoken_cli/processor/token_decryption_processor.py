@@ -8,7 +8,11 @@ from jwcrypto import jwe, jwk
 
 from openlinktoken.tokens.token import Token
 from openlinktoken.tokentransformer.decrypt_token_transformer import DecryptTokenTransformer
-from openlinktoken.tokentransformer.match_token_constants import PAYLOAD_KEY_PPID, V1_TOKEN_PREFIX
+from openlinktoken.tokentransformer.match_token_constants import (
+    PAYLOAD_KEY_PPID,
+    is_supported_v1_token,
+    strip_supported_v1_token_prefix,
+)
 from openlinktoken_cli.io.token_reader import TokenReader
 from openlinktoken_cli.io.token_writer import TokenWriter
 from openlinktoken_cli.processor.token_constants import TokenConstants
@@ -93,7 +97,7 @@ class TokenDecryptionProcessor:
         decryptor: DecryptTokenTransformer,
         encryption_key: str | bytes | None,
     ) -> str:
-        if token.startswith(V1_TOKEN_PREFIX):
+        if is_supported_v1_token(token):
             return TokenDecryptionProcessor._decrypt_v1_token(token, decryptor, encryption_key)
         return decryptor.transform(token)
 
@@ -106,7 +110,7 @@ class TokenDecryptionProcessor:
         if not encryption_key:
             raise ValueError("Encryption key is required for JWE token decryption")
 
-        jwe_compact = token[len(V1_TOKEN_PREFIX) :]
+        jwe_compact = strip_supported_v1_token_prefix(token)
         key_bytes = encryption_key if isinstance(encryption_key, bytes) else encryption_key.encode("utf-8")
         key_b64 = base64.urlsafe_b64encode(key_bytes).decode("utf-8").rstrip("=")
         jwk_key = jwk.JWK(kty="oct", k=key_b64)

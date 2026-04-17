@@ -86,10 +86,10 @@ class TestOpenLinkTokenProcessor:
         tokens = [row.Token for row in result_df.collect()]
 
         assert tokens
-        assert any(token.startswith("ot.V1.") for token in tokens)
+        assert any(token.startswith("olt.V1.") for token in tokens)
 
     def test_from_exchange_config_resolves_bytes_and_uses_derived_transport_key(self, spark, sample_data, tmp_path):
-        """Test exchange-config factory resolves byte secrets and emits ot.V1 tokens with the derived key."""
+        """Test exchange-config factory resolves byte secrets and emits olt.V1 tokens with the derived key."""
         exchange_config_path, private_key_path = _write_exchange_config(tmp_path)
         exchange = resolve_exchange_config_inputs(exchange_config_path, private_key_path=private_key_path)
 
@@ -254,8 +254,8 @@ class TestOpenLinkTokenProcessor:
         rule_ids = set(row.RuleId for row in results)
         assert len(rule_ids) > 1
 
-        # Encrypted output should use ot.V1 JWE format
-        assert any(row.Token.startswith("ot.V1.") for row in results if row.Token)
+        # Encrypted output should use olt.V1 JWE format
+        assert any(row.Token.startswith("olt.V1.") for row in results if row.Token)
 
     def test_process_dataframe_with_alternative_column_names(self, spark):
         """Test processing with alternative column names."""
@@ -504,10 +504,10 @@ class TestOpenLinkTokenProcessor:
 
         # Should produce tokens without hashing
         assert result.count() > 0
-        # Verify tokens are encrypted (ot.V1 JWE strings)
+        # Verify tokens are encrypted (olt.V1 JWE strings)
         token_sample = result.select("Token").first()[0]
         assert isinstance(token_sample, str)
-        assert token_sample.startswith("ot.V1.")
+        assert token_sample.startswith("olt.V1.")
 
     def test_process_with_bad_data_handles_errors(self, spark):
         """Test that processor handles bad data gracefully by returning empty token lists."""
@@ -603,8 +603,8 @@ def _write_future_exchange_config(tmp_path: Path) -> tuple[Path, Path]:
 
 
 def _decrypt_v1_payload(token: str, encryption_key: bytes) -> dict[str, object]:
-    """Decrypt an ot.V1 token payload using raw AES key bytes."""
-    token_body = token.removeprefix("ot.V1.")
+    """Decrypt an olt.V1 token payload using raw AES key bytes."""
+    token_body = token.removeprefix("olt.V1.")
     key_b64 = base64.urlsafe_b64encode(encryption_key).decode("utf-8").rstrip("=")
     jwk_key = jwk.JWK(kty="oct", k=key_b64)
     encrypted_token = jwe.JWE()

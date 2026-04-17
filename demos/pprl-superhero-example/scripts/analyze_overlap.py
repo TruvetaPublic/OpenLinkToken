@@ -14,6 +14,10 @@ from collections import defaultdict
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
+V1_TOKEN_PREFIX = "olt.V1."
+LEGACY_V1_TOKEN_PREFIX = "ot.V1."
+SUPPORTED_V1_TOKEN_PREFIXES = (V1_TOKEN_PREFIX, LEGACY_V1_TOKEN_PREFIX)
+
 
 def _base64url_decode(value):
     """Decode base64url text with optional missing padding."""
@@ -33,11 +37,14 @@ def decrypt_legacy_token(encrypted_token, encryption_key):
 
 
 def decrypt_v1_token(v1_token, encryption_key):
-    """Decrypt ot.V1 JWE token and return deterministic comparable token value."""
-    if not v1_token.startswith("ot.V1."):
-        raise ValueError("Token does not use ot.V1 format")
+    """Decrypt olt.V1 JWE token and return deterministic comparable token value."""
+    for prefix in SUPPORTED_V1_TOKEN_PREFIXES:
+        if v1_token.startswith(prefix):
+            jwe_compact = v1_token[len(prefix) :]
+            break
+    else:
+        raise ValueError("Token does not use a supported V1 format")
 
-    jwe_compact = v1_token[len("ot.V1.") :]
     parts = jwe_compact.split(".")
     if len(parts) != 5:
         raise ValueError("Invalid JWE compact serialization")
@@ -77,7 +84,7 @@ def decrypt_token(encrypted_token, encryption_key):
         Decrypted token (HMAC-SHA256 hash in Base64)
     """
     try:
-        if encrypted_token.startswith("ot.V1."):
+        if any(encrypted_token.startswith(prefix) for prefix in SUPPORTED_V1_TOKEN_PREFIXES):
             return decrypt_v1_token(encrypted_token, encryption_key)
         return decrypt_legacy_token(encrypted_token, encryption_key)
     except Exception as e:

@@ -25,8 +25,8 @@
 ### CSV Token Decryptor
 
 Use `tools/decryptor/decryptor.py` to decrypt token CSV files for inspection or
-interoperability checks. The script supports both legacy base64 AES-GCM tokens
-and `ot.V1.` JWE-wrapped tokens.
+interoperability checks. The script supports both legacy base64 AES-GCM tokens,
+canonical `olt.V1.` JWE-wrapped tokens, and legacy `ot.V1.` JWE-wrapped tokens.
 
 ```bash
 python tools/decryptor/decryptor.py \
