@@ -122,7 +122,7 @@ public final class RotationEmbeddingTransformer implements EmbeddingTransformer 
 
     private synchronized void ensureMatrices() {
         if (matrices == null) {
-            matrices = RotationMatrixGenerator.generate(iv, rotationCount, dimension);
+            matrices = RotationMatrixGenerator.generate(iv, rotationCount, dimension, hashDimension);
         }
     }
 }

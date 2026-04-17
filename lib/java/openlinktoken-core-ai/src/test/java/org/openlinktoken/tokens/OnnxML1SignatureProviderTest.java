@@ -6,14 +6,18 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.openlinktoken.tokentransformer.rotation.RotationEmbeddingTransformer;
 import org.openlinktoken.attributes.Attribute;
 import org.openlinktoken.attributes.person.BirthDateAttribute;
 import org.openlinktoken.attributes.person.FirstNameAttribute;
 import org.openlinktoken.attributes.person.LastNameAttribute;
 import org.openlinktoken.attributes.person.SexAttribute;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +29,19 @@ class OnnxML1SignatureProviderTest {
     @BeforeEach
     void setUp() {
         provider = new OnnxML1SignatureProvider();
+    }
+
+    @AfterEach
+    void tearDown() throws Exception {
+        RotationConfig.configure(
+                true,
+                RotationConfig.DEFAULT_IV,
+                RotationConfig.DEFAULT_ROTATION_COUNT,
+                RotationConfig.DEFAULT_HASH_DIMENSION,
+                RotationConfig.DEFAULT_BIN_WIDTH,
+                RotationConfig.DEFAULT_MIN_VAL,
+                RotationConfig.DEFAULT_MAX_VAL);
+        resetRotationTransformer();
     }
 
     // -----------------------------------------------------------------------
@@ -115,6 +132,28 @@ class OnnxML1SignatureProviderTest {
         assertEquals("SMITH|A|MALE|2000-01-15", sig);
     }
 
+    @Test
+    void rotationConfig_defaultIv_matchesPythonParityValue() {
+        assertEquals("openlinktoken-ml1-v1", RotationConfig.DEFAULT_IV);
+    }
+
+    @Test
+    void getOrCreateTransformer_usesConfiguredRotationParameters() throws Exception {
+        RotationConfig.configure(true, "", 3, 2, 0.25, -2.5, 2.5, new float[] { 1.5f, -0.5f, 0.0f, 2.0f });
+        resetRotationTransformer();
+
+        RotationEmbeddingTransformer transformer = getRotationTransformer(4);
+
+        assertEquals(RotationConfig.DEFAULT_IV, readField(transformer, "iv"));
+        assertEquals(3, readField(transformer, "rotationCount"));
+        assertEquals(2, readField(transformer, "hashDimension"));
+        assertEquals(0.25d, (double) readField(transformer, "binWidth"));
+        assertEquals(-2.5d, (double) readField(transformer, "minVal"));
+        assertEquals(2.5d, (double) readField(transformer, "maxVal"));
+        float[] bias = (float[]) readField(transformer, "bias");
+        assertEquals(List.of(1.5f, -0.5f, 0.0f, 2.0f), List.of(bias[0], bias[1], bias[2], bias[3]));
+    }
+
     // -----------------------------------------------------------------------
     // hashRotationValues
     // -----------------------------------------------------------------------
@@ -162,5 +201,25 @@ class OnnxML1SignatureProviderTest {
                 List.of("94 104 96 97"), "WRIGHT|R|FEMALE|1990-07-09");
         assertNotNull(result.get(0));
         assertEquals(64, result.get(0).length());
+    }
+
+    private static RotationEmbeddingTransformer getRotationTransformer(int embeddingDim) throws Exception {
+        Method getOrCreateTransformer = OnnxML1SignatureProvider.class.getDeclaredMethod(
+                "getOrCreateTransformer",
+                int.class);
+        getOrCreateTransformer.setAccessible(true);
+        return (RotationEmbeddingTransformer) getOrCreateTransformer.invoke(null, embeddingDim);
+    }
+
+    private static Object readField(Object target, String fieldName) throws Exception {
+        Field field = target.getClass().getDeclaredField(fieldName);
+        field.setAccessible(true);
+        return field.get(target);
+    }
+
+    private static void resetRotationTransformer() throws Exception {
+        Field transformerField = OnnxML1SignatureProvider.class.getDeclaredField("rotationTransformer");
+        transformerField.setAccessible(true);
+        transformerField.set(null, null);
     }
 }

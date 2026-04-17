@@ -50,22 +50,46 @@ public final class RotationMatrixGenerator {
      *         (row, col). Each matrix is an orthogonal proper-rotation matrix.
      */
     public static List<double[][]> generate(String iv, int rotationCount, int dimension) {
+        return generate(iv, rotationCount, dimension, dimension);
+    }
+
+    /**
+     * Generate a list of deterministic orthogonal projection matrices from an IV.
+     *
+     * <p>When {@code hashDimension < dimension}, this uses the same reduced {@code k x N}
+     * generation path as Python: only the first {@code hashDimension} rows are generated
+     * and row-based modified Gram-Schmidt produces orthonormal rows. When
+     * {@code hashDimension >= dimension}, this falls back to the full {@code N x N}
+     * proper-rotation matrix generation.
+     *
+     * @param iv            initialization vector string; same IV always produces the same matrices.
+     * @param rotationCount number of rotation matrices to generate.
+     * @param dimension     number of columns in each matrix (= embedding dimension).
+     * @param hashDimension number of rows to produce; values less than {@code dimension}
+     *                      enable the reduced projection path.
+     * @return a list of {@code rotationCount} matrices, each of shape
+     *         {@code hashDimension x dimension} when {@code hashDimension < dimension},
+     *         otherwise {@code dimension x dimension}
+     */
+    public static List<double[][]> generate(String iv, int rotationCount, int dimension, int hashDimension) {
         byte[] keyMaterial = sha256(iv.getBytes(StandardCharsets.UTF_8));
+        int effectiveHashDimension = hashDimension > 0 && hashDimension < dimension ? hashDimension : dimension;
         List<double[][]> matrices = new ArrayList<>(rotationCount);
         for (int r = 0; r < rotationCount; r++) {
-            matrices.add(generateOne(keyMaterial, r, dimension));
+            matrices.add(generateOne(keyMaterial, r, dimension, effectiveHashDimension));
         }
         return matrices;
     }
 
-    private static double[][] generateOne(byte[] keyMaterial, int rotationIndex, int n) {
+    private static double[][] generateOne(byte[] keyMaterial, int rotationIndex, int n, int k) {
         int pairsPerCol = (n + 1) / 2;
+        int pairsNeeded = (k + 1) / 2;
 
         // Build row-major raw matrix filled column-by-column via Box-Muller.
-        double[][] raw = new double[n][n];
+        double[][] raw = new double[k][n];
         for (int col = 0; col < n; col++) {
             int offset = 0;
-            for (int pair = 0; pair < pairsPerCol; pair++) {
+            for (int pair = 0; pair < pairsNeeded; pair++) {
                 long counter = ((long) (rotationIndex * n + col)) * pairsPerCol + pair;
                 byte[] h = hmacSha256(keyMaterial, longToBytes(counter));
                 double u1 = Math.max(extractUniform(h, 0), MIN_UNIFORM);
@@ -76,11 +100,15 @@ public final class RotationMatrixGenerator {
                 double z1 = rVal * Math.sin(theta);
                 raw[offset][col] = z0;
                 offset++;
-                if (offset < n) {
+                if (offset < k) {
                     raw[offset][col] = z1;
                     offset++;
                 }
             }
+        }
+
+        if (k < n) {
+            return rowMgs(raw, k, n);
         }
 
         // Modified Gram-Schmidt orthonormalization on columns.
@@ -91,13 +119,13 @@ public final class RotationMatrixGenerator {
             for (int row = 0; row < n; row++) {
                 vj[row] = raw[row][j];
             }
-            for (int k = 0; k < j; k++) {
+            for (int previousColumn = 0; previousColumn < j; previousColumn++) {
                 double proj = 0.0;
                 for (int row = 0; row < n; row++) {
-                    proj += vj[row] * q[row][k];
+                    proj += vj[row] * q[row][previousColumn];
                 }
                 for (int row = 0; row < n; row++) {
-                    vj[row] -= proj * q[row][k];
+                    vj[row] -= proj * q[row][previousColumn];
                 }
             }
             double norm = 0.0;
@@ -117,6 +145,31 @@ public final class RotationMatrixGenerator {
             }
         }
 
+        return q;
+    }
+
+    private static double[][] rowMgs(double[][] raw, int k, int n) {
+        double[][] q = new double[k][n];
+        for (int row = 0; row < k; row++) {
+            double[] v = raw[row].clone();
+            for (int previousRow = 0; previousRow < row; previousRow++) {
+                double proj = 0.0;
+                for (int col = 0; col < n; col++) {
+                    proj += q[previousRow][col] * v[col];
+                }
+                for (int col = 0; col < n; col++) {
+                    v[col] -= q[previousRow][col] * proj;
+                }
+            }
+            double norm = 0.0;
+            for (int col = 0; col < n; col++) {
+                norm += v[col] * v[col];
+            }
+            norm = Math.sqrt(norm);
+            for (int col = 0; col < n; col++) {
+                q[row][col] = v[col] / norm;
+            }
+        }
         return q;
     }
 

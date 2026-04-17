@@ -27,7 +27,7 @@ public final class RotationConfig {
     public static final double DEFAULT_MAX_VAL = 5.0;
 
     /** Default initialization vector used when rotation is enabled without an explicit IV. */
-    public static final String DEFAULT_IV = "opentoken-ml1-v1";
+    public static final String DEFAULT_IV = "openlinktoken-ml1-v1";
 
     private static volatile boolean enabled = true;
     private static volatile String rotationIv = DEFAULT_IV;
@@ -36,6 +36,7 @@ public final class RotationConfig {
     private static volatile double binWidth = DEFAULT_BIN_WIDTH;
     private static volatile double minVal = DEFAULT_MIN_VAL;
     private static volatile double maxVal = DEFAULT_MAX_VAL;
+    private static volatile float[] dimensionBias = null;
 
     private RotationConfig() {
     }
@@ -63,6 +64,7 @@ public final class RotationConfig {
         binWidth = DEFAULT_BIN_WIDTH;
         minVal = DEFAULT_MIN_VAL;
         maxVal = DEFAULT_MAX_VAL;
+        dimensionBias = null;
     }
 
     /**
@@ -89,6 +91,40 @@ public final class RotationConfig {
             double configuredBinWidth,
             double configuredMinVal,
             double configuredMaxVal) {
+        configure(
+                enable,
+                iv,
+                configuredRotationCount,
+                configuredHashDimension,
+                configuredBinWidth,
+                configuredMinVal,
+                configuredMaxVal,
+                null);
+    }
+
+    /**
+     * Apply rotation configuration with full parameter control, including optional centering bias.
+     *
+     * @param enable                 whether rotation tokens are active
+     * @param iv                     initialization vector; may be {@code null} or blank when
+     *                               {@code enable} is {@code false}, or to accept the default IV
+     * @param configuredRotationCount number of rotation matrices; must be &gt; 0
+     * @param configuredHashDimension number of projected dimensions; must be &gt; 0
+     * @param configuredBinWidth     quantizer bin width; must be &gt; 0
+     * @param configuredMinVal       quantizer lower bound
+     * @param configuredMaxVal       quantizer upper bound
+     * @param configuredDimensionBias optional per-dimension bias vector; {@code null} or empty means zeros
+     * @throws IllegalArgumentException if any numeric parameter violates its constraint
+     */
+    public static synchronized void configure(
+            boolean enable,
+            String iv,
+            int configuredRotationCount,
+            int configuredHashDimension,
+            double configuredBinWidth,
+            double configuredMinVal,
+            double configuredMaxVal,
+            float[] configuredDimensionBias) {
         if (configuredRotationCount <= 0) {
             throw new IllegalArgumentException("rotationCount must be greater than zero.");
         }
@@ -110,6 +146,9 @@ public final class RotationConfig {
         binWidth = configuredBinWidth;
         minVal = configuredMinVal;
         maxVal = configuredMaxVal;
+        dimensionBias = configuredDimensionBias == null || configuredDimensionBias.length == 0
+                ? null
+                : configuredDimensionBias.clone();
     }
 
     /**
@@ -173,5 +212,14 @@ public final class RotationConfig {
      */
     public static double getMaxVal() {
         return maxVal;
+    }
+
+    /**
+     * Return the configured dimension bias vector.
+     *
+     * @return cloned bias vector, or {@code null} when zero-bias defaults should be used
+     */
+    public static float[] getDimensionBias() {
+        return dimensionBias == null ? null : dimensionBias.clone();
     }
 }

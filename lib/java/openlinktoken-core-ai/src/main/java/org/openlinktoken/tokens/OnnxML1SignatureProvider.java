@@ -164,11 +164,17 @@ public class OnnxML1SignatureProvider implements InferenceSignatureProvider {
         if (rotationTransformer == null) {
             synchronized (OnnxML1SignatureProvider.class) {
                 if (rotationTransformer == null) {
-                    rotationTransformer = RotationEmbeddingTransformer.withDefaults(
+                    float[] configuredBias = RotationConfig.getDimensionBias();
+                    float[] effectiveBias = configuredBias == null ? new float[embeddingDim] : configuredBias;
+                    rotationTransformer = new RotationEmbeddingTransformer(
                             RotationConfig.getRotationIv(),
                             RotationConfig.getRotationCount(),
                             embeddingDim,
-                            RotationConfig.getHashDimension());
+                            RotationConfig.getHashDimension(),
+                            effectiveBias,
+                            RotationConfig.getMinVal(),
+                            RotationConfig.getMaxVal(),
+                            RotationConfig.getBinWidth());
                 }
             }
         }

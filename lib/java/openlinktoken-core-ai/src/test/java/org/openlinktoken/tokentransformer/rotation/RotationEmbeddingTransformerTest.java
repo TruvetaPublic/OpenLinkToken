@@ -83,6 +83,18 @@ class RotationEmbeddingTransformerTest {
     }
 
     @Test
+    void testHashDimensionProjectionMatchesPythonParityFixture() {
+        RotationEmbeddingTransformer transformer =
+                RotationEmbeddingTransformer.withDefaults("openlinktoken-ml1-v1", 2, 8, 3);
+
+        float[] embedding = { 0.125f, -0.25f, 0.375f, -0.5f, 0.625f, -0.75f, 0.875f, -1.0f };
+
+        List<String> tokens = transformer.transform(embedding);
+
+        assertEquals(List.of("98 111 102", "87 96 120"), tokens);
+    }
+
+    @Test
     void testThreadSafetyProducesConsistentResults() throws InterruptedException {
         int threadCount = 20;
         RotationEmbeddingTransformer transformer =
