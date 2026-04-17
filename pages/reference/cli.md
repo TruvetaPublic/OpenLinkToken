@@ -225,7 +225,7 @@ olt initiate-exchange \
 When `--sender-private-key-env` is used, Open Link Token derives the sender public key
 in memory and does not write local sender key files under `~/.openlinktoken/`.
 
-For `tokenize`, `package`, `encrypt`, and `decrypt`, Open Link Token resolves the exchange config from `--exchange-config` or from the date-based default path `./olt-YYYY-MM-DD.exchange.json`. When neither `--private-key` nor `--private-key-env` is supplied, the CLI falls back to `~/.openlinktoken/` fingerprint-based key lookup.
+For `tokenize`, `package`, `encrypt`, and `decrypt`, Open Link Token resolves the exchange config from `--exchange-config` or from the date-based default path `./openlinktoken-YYYY-MM-DD.exchange.json`. When neither `--private-key` nor `--private-key-env` is supplied, the CLI falls back to `~/.openlinktoken/` fingerprint-based key lookup.
 
 \* Provide at most one of `--private-key` or `--private-key-env`.
 
