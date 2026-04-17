@@ -21,12 +21,12 @@ Match tokens are privacy-protected identifiers generated from normalized person 
 ### Serialization Format
 
 ```
-ot.V1.<base64url(JWE)>
+olt.V1.<base64url(JWE)>
 ```
 
 | Component | Description                                                        |
 | --------- | ------------------------------------------------------------------ |
-| `ot`      | Open Link Token prefix (scanner-safe, clearly not an access token) |
+| `olt`     | Open Link Token prefix (scanner-safe, clearly not an access token) |
 | `V1`      | Format version (allows future evolution of the envelope structure) |
 | `<JWE>`   | Standard JWE Compact Serialization (RFC 7516)                      |
 
@@ -43,7 +43,7 @@ All components are base64url-encoded.
 **Component breakdown:**
 
 ```
-ot.V1.<header>.<encrypted-key>.<iv>.<ciphertext>.<auth-tag>
+olt.V1.<header>.<encrypted-key>.<iv>.<ciphertext>.<auth-tag>
       │        │              │    │            │
       │        │              │    │            └─ Integrity proof (GCM tag)
       │        │              │    │
@@ -228,7 +228,7 @@ OREILLY|T|M|1995-11-03
 **Match Token:**
 
 ```
-ot.V1.eyJhbGciOiJBMjU2R0NNS1ciLCJlbmMiOiJBMjU2R0NNIiwidHlwIjoibWF0Y2gtdG9rZW4iLCJraWQiOiJyaW5nLTIwMjYtcTEifQ.K7q3nT8Xh2Yk5L9mNpQ4rS.Gw5hT2Qk9Lm3Np7R.dGhlIHF1aWNrIGJyb3duIGZveA.4vT8kL2mNpQ9rStYz
+olt.V1.eyJhbGciOiJBMjU2R0NNS1ciLCJlbmMiOiJBMjU2R0NNIiwidHlwIjoibWF0Y2gtdG9rZW4iLCJraWQiOiJyaW5nLTIwMjYtcTEifQ.K7q3nT8Xh2Yk5L9mNpQ4rS.Gw5hT2Qk9Lm3Np7R.dGhlIHF1aWNrIGJyb3duIGZveA.4vT8kL2mNpQ9rStYz
 ```
 
 **Protected Header (decoded):**
@@ -323,7 +323,7 @@ For ML-based matching with vector embeddings, the `ppid` contains base64-encoded
 3. HMAC(hash, ring_key, mac_alg) → PPID
 4. Build payload JSON with metadata (rlid, hash_alg, mac_alg, ppid, rid, ...)
 5. Encrypt payload with JWE (alg, enc from header)
-6. Prepend "ot.V1." prefix
+6. Prepend "olt.V1." prefix
 ```
 
 ### Parsing (Without Decryption)
@@ -359,10 +359,10 @@ Full decryption requires the ring-specific encryption key:
 ```python
 def decrypt_ot_token(token: str, key: bytes) -> dict:
     """Decrypt and return full payload."""
-    if not token.startswith("ot.V1."):
+    if not token.startswith("olt.V1."):
         raise ValueError("Invalid ot token format")
 
-    jwe_token = token[len("ot.V1."):]
+    jwe_token = token[len("olt.V1."):]
     payload_bytes = jwe.decrypt(jwe_token, key)
     return json.loads(payload_bytes)
 ```
@@ -371,7 +371,7 @@ def decrypt_ot_token(token: str, key: bytes) -> dict:
 
 ### Scanner Safety
 
-The `ot.V1.` prefix clearly distinguishes these tokens from:
+The `olt.V1.` prefix clearly distinguishes these tokens from:
 
 - JWT access tokens (which start with `eyJ`)
 - API keys (which have provider-specific prefixes)

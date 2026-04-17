@@ -221,7 +221,7 @@ def test_resolve_exchange_config_private_key_reads_private_key_env(tmp_path: Pat
     assert resolved_private_pem == sender_private_pem
 
 
-def test_resolve_exchange_config_private_key_falls_back_to_opentoken_kid_lookup(tmp_path: Path, monkeypatch):
+def test_resolve_exchange_config_private_key_falls_back_to_olt_kid_lookup(tmp_path: Path, monkeypatch):
     """Recipient kids should resolve against ~/.openlinktoken when no path or env is supplied."""
     exchange_config_path, sender_private_pem = _write_current_exchange_config(tmp_path)
     loaded_exchange = load_exchange_config(exchange_config_path)

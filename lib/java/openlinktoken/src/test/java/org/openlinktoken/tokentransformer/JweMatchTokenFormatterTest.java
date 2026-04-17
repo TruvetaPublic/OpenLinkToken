@@ -89,10 +89,10 @@ class JweMatchTokenFormatterTest {
         String result = formatter.transform(TEST_TOKEN);
 
         // Verify the token has the correct prefix
-        assertTrue(result.startsWith("ot.V1."));
+        assertTrue(result.startsWith("olt.V1."));
 
         // Verify it's a valid JWE token (5 parts separated by dots after the prefix)
-        String jweCompact = result.substring("ot.V1.".length());
+        String jweCompact = result.substring("olt.V1.".length());
         String[] parts = jweCompact.split("\\.");
         assertEquals(5, parts.length, "JWE compact serialization should have 5 parts");
     }
@@ -130,7 +130,7 @@ class JweMatchTokenFormatterTest {
                 "test.issuer");
 
         String result = formatter.transform(TEST_TOKEN);
-        String jweCompact = result.substring("ot.V1.".length());
+        String jweCompact = result.substring("olt.V1.".length());
 
         // Parse the JWE object to inspect the header
         JWEObject jweObject = JWEObject.parse(jweCompact);

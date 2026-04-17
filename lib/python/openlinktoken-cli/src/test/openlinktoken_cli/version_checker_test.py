@@ -338,7 +338,7 @@ class TestGetCachePath:
         assert isinstance(path, Path)
         assert path.name == "update-check.json"
 
-    def test_returns_dot_opentoken_path_under_home(self):
+    def test_returns_dot_openlinktoken_path_under_home(self):
         expected_path = Path("/home/tester/.openlinktoken/update-check.json")
 
         with patch.object(Path, "home", return_value=Path("/home/tester")):
@@ -347,7 +347,7 @@ class TestGetCachePath:
 
         assert path == expected_path
 
-    def test_returns_dot_opentoken_path_under_appdata_on_windows(self, monkeypatch):
+    def test_returns_dot_openlinktoken_path_under_appdata_on_windows(self, monkeypatch):
         appdata = r"C:\Users\tester\AppData\Roaming"
         expected_path = Path(appdata) / ".openlinktoken" / "update-check.json"
 

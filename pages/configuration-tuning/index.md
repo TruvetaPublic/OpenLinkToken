@@ -118,13 +118,13 @@ ID002,T1,...
 
 - `RecordId`: From input (or auto-generated UUID)
 - `RuleId`: Token rule identifier (T1–T5)
-- `Token`: Encrypted `ot.V1.<JWE compact serialization>` token (or base64 HMAC token when generated via `olt tokenize`)
+- `Token`: Encrypted `olt.V1.<JWE compact serialization>` token (or base64 HMAC token when generated via `olt tokenize`)
 
 **Notes:**
 
 - **One row per rule per record**: 5 rows for each valid record
 - **Blank tokens**: If a record is invalid, tokens may be blank (logged in metadata)
-- **Token length**: Varies by mode and payload size (encrypted `ot.V1` tokens are longer than hash-only tokens)
+- **Token length**: Varies by mode and payload size (encrypted `olt.V1` tokens are longer than hash-only tokens)
 
 ### Metadata Output
 
@@ -161,7 +161,7 @@ See [Reference: Metadata Format](../reference/metadata-format.md) for detailed f
 
 ### Encryption Mode (Default)
 
-Generates encrypted `ot.V1` match tokens using HMAC-SHA256 + JWE/AES-256-GCM.
+Generates encrypted `olt.V1` match tokens using HMAC-SHA256 + JWE/AES-256-GCM.
 
 ```bash
 olt package \
@@ -172,12 +172,12 @@ olt package \
 **Process:**
 
 ```
-Token Signature → SHA-256 Hash → HMAC-SHA256(hash, key) → JWE (AES-256-GCM) → Prefix `ot.V1.`
+Token Signature → SHA-256 Hash → HMAC-SHA256(hash, key) → JWE (AES-256-GCM) → Prefix `olt.V1.`
 ```
 
 **Requires:** Hashing secret (`-h`) and encryption key (`-e`)
 
-Encrypted `ot.V1` tokens include randomized IVs, so ciphertext values are not deterministic across runs.
+Encrypted `olt.V1` tokens include randomized IVs, so ciphertext values are not deterministic across runs.
 
 ### Hash-Only Mode
 
