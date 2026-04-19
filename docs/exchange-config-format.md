@@ -175,6 +175,9 @@ Example decrypted payload:
   key must be available locally.
 - A validator or other tool can resolve a private key by the fingerprint-derived
   `kid`, even when operators primarily know the key by a friendly local filename.
+- `tools/exchange/print_exchange_envelope.py` prints the raw serialized envelope,
+  adds a `protectedDecoded` object for the shared JOSE header, and decrypts the inner
+  payload into `decryptedPayload` when a matching private key is available.
 - `tools/exchange/validate_exchange_secret.py` decrypts the payload, checks that a
   supplied private key matches one of the recipient `kid` values, or otherwise tries to
   resolve a matching private key from `~/.openlinktoken/`.
