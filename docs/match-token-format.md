@@ -331,10 +331,10 @@ For ML-based matching with vector embeddings, the `ppid` contains base64-encoded
 The following metadata is extractable from the JWE header without decryption:
 
 ```python
-def parse_ot_token(token: str) -> dict:
+def parse_olt_token(token: str) -> dict:
     """Extract metadata without decryption."""
     if not token.startswith("olt."):
-        raise ValueError("Invalid ot token format")
+        raise ValueError("Invalid olt token format")
 
     parts = token.split(".")
     format_version = parts[1]  # "V1"
@@ -357,10 +357,10 @@ def parse_ot_token(token: str) -> dict:
 Full decryption requires the ring-specific encryption key:
 
 ```python
-def decrypt_ot_token(token: str, key: bytes) -> dict:
+def decrypt_olt_token(token: str, key: bytes) -> dict:
     """Decrypt and return full payload."""
     if not token.startswith("olt.V1."):
-        raise ValueError("Invalid ot token format")
+        raise ValueError("Invalid olt token format")
 
     jwe_token = token[len("olt.V1."):]
     payload_bytes = jwe.decrypt(jwe_token, key)
