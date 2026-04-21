@@ -279,8 +279,8 @@ For detailed rule compositions, see [Token Rules](token-rules.md).
 
 When comparing hash-only (or decrypted) token values across the two systems:
 
-| Record Pair       | T1  | T2  | T3  | T4  | T5  | Match?                |
-| ----------------- | --- | --- | --- | --- | --- | --------------------- |
+| Record Pair        | T1  | T2  | T3  | T4  | T5  | Match?                |
+| ------------------ | --- | --- | --- | --- | --- | --------------------- |
 | HOS-101 ↔ CLN-201 | ✓   | ✓   | ✓   | ✓   | ✓   | **Yes** (all rules)   |
 | HOS-102 ↔ CLN-202 | ✓   | ✗   | ✗   | —   | ✗   | **Depends** (T1 only) |
 | HOS-101 ↔ HOS-102 | ✗   | ✗   | ✗   | ✗   | ✗   | No                    |
