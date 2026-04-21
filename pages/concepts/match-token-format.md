@@ -303,7 +303,7 @@ from jose import jwe
 import json
 from datetime import datetime
 
-def create_ot_token(
+def create_olt_token(
     ppid: list,
     rlid: str,
     ring_id: str,
@@ -353,10 +353,10 @@ Extract metadata from the header without needing the decryption key:
 import json
 import base64
 
-def parse_ot_token_header(token: str) -> dict:
+def parse_olt_token_header(token: str) -> dict:
     """Extract header metadata without decryption."""
 
-    if not token.startswith("ot."):
+    if not token.startswith("olt."):
         raise ValueError("Not an Open Link Token")
 
     parts = token.split(".")
@@ -382,7 +382,7 @@ def parse_ot_token_header(token: str) -> dict:
 ### Full Decryption
 
 ```python
-def decrypt_ot_token(token: str, encryption_key: bytes) -> dict:
+def decrypt_olt_token(token: str, encryption_key: bytes) -> dict:
     """Decrypt and return full payload."""
 
     if not token.startswith("olt.V1."):

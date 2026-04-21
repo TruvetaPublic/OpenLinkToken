@@ -25,7 +25,7 @@ John Doe | 1975-03-15 | 98004 → [STORED OR COMPARED]
 Open Link Token generates secure tokens derived from those attributes:
 
 ```
-John Doe | 1975-03-15 | 98004 → SHA-256 HASH → HMAC-SHA256 → AES-256/JWE (ot.V1) → Token
+John Doe | 1975-03-15 | 98004 → SHA-256 HASH → HMAC-SHA256 → AES-256/JWE (olt.V1) → Token
 ```
 
 Matching is performed on deterministic hash-only values (or decrypted token payloads), not on raw PII.
@@ -35,8 +35,8 @@ Matching is performed on deterministic hash-only values (or decrypted token payl
 1. **Input**: Person records with attributes (name, birthdate, SSN, postal code, sex)
 2. **Validation & Normalization**: Attributes are validated and normalized (uppercase, diacritic removal, title stripping)
 3. **Token Generation**: Multiple token rules (T1–T5) combine different attributes
-4. **Transformation**: Deterministic HMAC-SHA256 hashes are produced; encrypted mode wraps them as `ot.V1` JWE match tokens
-5. **Output**: Encrypted `ot.V1` tokens (default) or hash-only values, plus metadata
+4. **Transformation**: Deterministic HMAC-SHA256 hashes are produced; encrypted mode wraps them as `olt.V1` JWE match tokens
+5. **Output**: Encrypted `olt.V1` tokens (default) or hash-only values, plus metadata
 
 ## Key Concepts
 
@@ -104,7 +104,7 @@ Open Link Token is implemented in **Java and Python**. Both produce **byte-ident
 
 - **No Reversal**: Tokens cannot be decrypted back to original data without the encryption key
 - **Deterministic matching basis**: Same normalized input produces the same hash-only/decrypted value
-- **Randomized encrypted representation**: Encrypted `ot.V1` tokens use random IVs, so ciphertext differs across runs
+- **Randomized encrypted representation**: Encrypted `olt.V1` tokens use random IVs, so ciphertext differs across runs
 - **Privacy-Focused**: Designed for regulated environments where PII must be protected
 - **Validation**: Rejects invalid or placeholder values before processing
 

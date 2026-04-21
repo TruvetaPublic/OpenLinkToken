@@ -104,7 +104,7 @@ class TestOpenLinkTokenOverlapAnalyzerInit:
         assert analyzer.encryption_key == derive_transport_encryption_key(resolved_exchange)
 
     def test_from_exchange_config_decrypts_v1_tokens(self, tmp_path):
-        """Factory-created analyzers should decrypt ot.V1 tokens with the derived key."""
+        """Factory-created analyzers should decrypt olt.V1 tokens with the derived key."""
         exchange_config_path, sender_private_pem = _write_exchange_config(tmp_path)
         private_key_path = tmp_path / "sender.private.pem"
         private_key_path.write_bytes(sender_private_pem)

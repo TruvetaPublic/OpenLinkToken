@@ -28,7 +28,7 @@ This page is the single “Start here” hub for getting Open Link Token running
 
 ## 30-Second Overview
 
-Open Link Token reads person attributes (for example: first/last name, birthdate, sex, postal code, SSN) and emits deterministic token fingerprints plus, by default, encrypted `ot.V1` match tokens for privacy-preserving exchange.
+Open Link Token reads person attributes (for example: first/last name, birthdate, sex, postal code, SSN) and emits deterministic token fingerprints plus, by default, encrypted `olt.V1` match tokens for privacy-preserving exchange.
 
 After you run a quickstart:
 

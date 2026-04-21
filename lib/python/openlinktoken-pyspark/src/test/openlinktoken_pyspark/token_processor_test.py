@@ -230,7 +230,7 @@ class TestOpenLinkTokenProcessor:
             OpenLinkTokenProcessor("HashingKey", b"   ")
 
     def test_process_dataframe_with_valid_data(self, spark, sample_data):
-        """Test processing a DataFrame with valid data and ot.V1 encrypted output."""
+        """Test processing a DataFrame with valid data and olt.V1 encrypted output."""
         processor = OpenLinkTokenProcessor("HashingKey", "Secret-Encryption-Key-Goes-Here.")
 
         # Create DataFrame
