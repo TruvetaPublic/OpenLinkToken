@@ -356,7 +356,7 @@ import base64
 def parse_ot_token_header(token: str) -> dict:
     """Extract header metadata without decryption."""
 
-    if not token.startswith("ot."):
+    if not token.startswith("olt."):
         raise ValueError("Not an Open Link Token")
 
     parts = token.split(".")

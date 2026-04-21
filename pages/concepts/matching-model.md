@@ -227,7 +227,7 @@ Open Link Token normalizes each field before token generation. For full rules, s
 
 ### Step 2: Token Generation
 
-Each record produces up to five tokens (T1–T5). In encrypted mode, tokens are emitted as `ot.V1` JWE strings. In hash-only mode (or after decryption), tokens are base64-encoded HMAC values used for deterministic equality checks.
+Each record produces up to five tokens (T1–T5). In encrypted mode, tokens are emitted as `olt.V1` JWE strings. In hash-only mode (or after decryption), tokens are base64-encoded HMAC values used for deterministic equality checks.
 
 For detailed rule compositions, see [Token Rules](token-rules.md).
 
@@ -251,7 +251,7 @@ For detailed rule compositions, see [Token Rules](token-rules.md).
 | T4   | `452387291\|F\|1988-03-22`       | `ZnBOdFdtS2haQWdWcko...` |
 | T5   | `GARCIA\|MAR\|F`                 | `RWtqVXhMY0dTcldmbVk...` |
 
-**Observation:** HOS-101 and CLN-201 produce **identical token signatures** for all five rules because their normalized attributes are identical. Their hash-only values (or decrypted values) match exactly; encrypted `ot.V1` token strings can differ because encryption uses random IVs.
+**Observation:** HOS-101 and CLN-201 produce **identical token signatures** for all five rules because their normalized attributes are identical. Their hash-only values (or decrypted values) match exactly; encrypted `olt.V1` token strings can differ because encryption uses random IVs.
 
 **HOS-102 (tom O'Reilly, 1995-11-03):**
 
@@ -279,8 +279,8 @@ For detailed rule compositions, see [Token Rules](token-rules.md).
 
 When comparing hash-only (or decrypted) token values across the two systems:
 
-| Record Pair        | T1  | T2  | T3  | T4  | T5  | Match?                |
-| ------------------ | --- | --- | --- | --- | --- | --------------------- |
+| Record Pair       | T1  | T2  | T3  | T4  | T5  | Match?                |
+| ----------------- | --- | --- | --- | --- | --- | --------------------- |
 | HOS-101 ↔ CLN-201 | ✓   | ✓   | ✓   | ✓   | ✓   | **Yes** (all rules)   |
 | HOS-102 ↔ CLN-202 | ✓   | ✗   | ✗   | —   | ✗   | **Depends** (T1 only) |
 | HOS-101 ↔ HOS-102 | ✗   | ✗   | ✗   | ✗   | ✗   | No                    |

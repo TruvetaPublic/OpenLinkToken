@@ -230,11 +230,11 @@ This creates:
 
 Each input record produces 5 tokens (T1–T5):
 
-| Column     | Description                                                             |
-| ---------- | ----------------------------------------------------------------------- |
-| `RecordId` | Original record identifier                                              |
-| `RuleId`   | Token rule (T1, T2, T3, T4, or T5)                                      |
-| `Token`    | Encrypted match token (ot.V1 format) or base64-encoded HMAC (hash-only) |
+| Column     | Description                                                              |
+| ---------- | ------------------------------------------------------------------------ |
+| `RecordId` | Original record identifier                                               |
+| `RuleId`   | Token rule (T1, T2, T3, T4, or T5)                                       |
+| `Token`    | Encrypted match token (olt.V1 format) or base64-encoded HMAC (hash-only) |
 
 ### Metadata File
 

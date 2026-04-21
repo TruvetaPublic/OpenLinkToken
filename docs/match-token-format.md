@@ -333,7 +333,7 @@ The following metadata is extractable from the JWE header without decryption:
 ```python
 def parse_ot_token(token: str) -> dict:
     """Extract metadata without decryption."""
-    if not token.startswith("ot."):
+    if not token.startswith("olt."):
         raise ValueError("Invalid ot token format")
 
     parts = token.split(".")
