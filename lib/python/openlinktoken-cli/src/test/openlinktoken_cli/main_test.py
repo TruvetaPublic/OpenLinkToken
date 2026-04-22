@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from openlinktoken_cli.commands.open_token_command import OpenLinkTokenCommand
+from openlinktoken_cli.commands.open_link_token_command import OpenLinkTokenCommand
 from openlinktoken_cli.util.ec_key_utils import generate_key_pair
 
 

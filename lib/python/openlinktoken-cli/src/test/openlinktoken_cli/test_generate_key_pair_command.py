@@ -11,7 +11,7 @@ from unittest.mock import patch
 import pytest
 
 from openlinktoken_cli.commands.generate_key_pair_command import SUPPORTED_CURVES, GenerateKeyPairCommand
-from openlinktoken_cli.commands.open_token_command import OpenLinkTokenCommand
+from openlinktoken_cli.commands.open_link_token_command import OpenLinkTokenCommand
 
 
 class TestGenerateKeyPairCommandUnit:

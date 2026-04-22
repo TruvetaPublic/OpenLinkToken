@@ -49,12 +49,11 @@ class OpenLinkTokenCommand:
         reset = "\033[0m"
 
         return (
-            f"{cyan}  ___                 _____     _              {reset}\n"
-            f"{cyan} / _ \\ _ __   ___ _ _|_   _|__ | | _____ _ __  {reset}\n"
-            f"{cyan}| | | | '_ \\ / _ \\ '_ \\| |/ _ \\| |/ / _ \\ '_ \\ {reset}\n"
-            f"{cyan}| |_| | |_) |  __/ | | | | (_) |   <  __/ | | |{reset}\n"
-            f"{cyan} \\___/| .__/ \\___|_| |_|_|\\___/|_|\\_\\___|_| |_|{reset}\n"
-            f"{cyan}      |_|                                       {reset}\n"
+            f"{cyan}  ___                   _    _      _     _____    _            {reset}\n"
+            f"{cyan} / _ \\ _ __  ___ _ _   | |  (_)_ _ | |__ |_   _|__| |_____ _ _  {reset}\n"
+            f"{cyan}| (_) | '_ \\/ -_) ' \\  | |__| | ' \\| / /   | |/ _ \\ / / -_) ' \\ {reset}\n"
+            f"{cyan} \\___/| .__/\\___|_||_| |____|_|_||_|_\\_\\   |_|\\___/_\\_\\___|_||_|{reset}\n"
+            f"{cyan}      |_|{reset}\n"
             f"{blue}Privacy-Preserving Record Linkage v{OpenLinkTokenCommand.VERSION}{reset}\n"
         )
 
