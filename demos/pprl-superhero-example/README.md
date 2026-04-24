@@ -312,7 +312,7 @@ This demo creates files under `datasets/` (raw synthetic data) and `outputs/` (t
    | Column   | Description                                    |
    | -------- | ---------------------------------------------- |
    | RuleId   | Token type (T1, T2, T3, T4, or T5)             |
-   | Token    | Encrypted match token (ot.V1 format)           |
+   | Token    | Encrypted match token (olt.V1 format)          |
    | RecordId | The original record ID from the source dataset |
 
 1. **Metadata JSON files** (created alongside tokenization)

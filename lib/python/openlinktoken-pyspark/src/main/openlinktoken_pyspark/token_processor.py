@@ -92,7 +92,7 @@ class OpenLinkTokenProcessor:
                             String inputs are encoded as UTF-8 at the Spark worker boundary.
             token_definition: Optional custom token definition. If None, uses default tokens (T1-T5).
                              Use this to pass custom tokens created with TokenBuilder or CustomTokenDefinition.
-            ring_id: Optional ring identifier used in ot.V1 token wrapping when encryption is enabled.
+            ring_id: Optional ring identifier used in olt.V1 token wrapping when encryption is enabled.
                      If not provided and encryption is enabled, a UUID is generated per processor instance.
 
         Raises:
@@ -163,7 +163,7 @@ class OpenLinkTokenProcessor:
             private_key_env: Optional environment variable name containing private key PEM data.
             private_key_value: Optional in-memory participant private key PEM text or bytes.
             token_definition: Optional custom token definition to use during processing.
-            ring_id: Optional ring identifier for ot.V1 wrapping. If omitted, a UUID is generated.
+            ring_id: Optional ring identifier for olt.V1 wrapping. If omitted, a UUID is generated.
 
         Returns:
             A processor configured with resolved hashing-secret bytes and the

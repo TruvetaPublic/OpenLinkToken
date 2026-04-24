@@ -114,7 +114,7 @@ EncryptTokenTransformer encryptor = new EncryptTokenTransformer(
 
 String signature = "DOE|J|MALE|1980-01-15";
 String encryptedToken = encryptor.transform(signature);
-// Returns: Open Link Token encrypted match token string (ot.V1.<JWE compact serialization>)
+// Returns: Open Link Token encrypted match token string (olt.V1.<JWE compact serialization>)
 ```
 
 ## Complete Example

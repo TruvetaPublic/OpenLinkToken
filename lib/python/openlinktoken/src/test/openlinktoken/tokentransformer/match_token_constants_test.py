@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: MIT
+
+import pytest
+
+from openlinktoken.tokentransformer.match_token_constants import (
+    SUPPORTED_V1_TOKEN_PREFIXES,
+    V1_TOKEN_PREFIX,
+    is_supported_v1_token,
+    strip_supported_v1_token_prefix,
+)
+
+
+class TestMatchTokenConstants:
+    """Test cases for V1 token prefix helpers."""
+
+    def test_supported_prefixes_include_only_canonical_value(self):
+        """Readers should accept only the canonical V1 prefix."""
+        assert SUPPORTED_V1_TOKEN_PREFIXES == (V1_TOKEN_PREFIX,)
+
+    @pytest.mark.parametrize("prefix", [V1_TOKEN_PREFIX])
+    def test_is_supported_v1_token_accepts_supported_prefixes(self, prefix):
+        """The canonical V1 prefix should be recognized."""
+        assert is_supported_v1_token(f"{prefix}header.payload.tag")
+
+    def test_is_supported_v1_token_rejects_unsupported_prefixes(self):
+        """Non-V1 and malformed prefixes must not be treated as supported JWE tokens."""
+        assert not is_supported_v1_token("not-a-v1-token")
+
+    @pytest.mark.parametrize("prefix", [V1_TOKEN_PREFIX])
+    def test_strip_supported_v1_token_prefix_returns_compact_jwe_body(self, prefix):
+        """Prefix stripping should return the JWE body for the accepted format."""
+        token_body = "header.encrypted-key.iv.ciphertext.tag"
+
+        assert strip_supported_v1_token_prefix(f"{prefix}{token_body}") == token_body
+
+    def test_strip_supported_v1_token_prefix_raises_for_unsupported_prefixes(self):
+        """Unsupported prefixes should fail loudly instead of being silently accepted."""
+        with pytest.raises(ValueError, match="supported V1 prefix"):
+            strip_supported_v1_token_prefix("invalid.V1.header.payload.tag")

@@ -87,6 +87,7 @@ demos/pprl-superhero-example/datasets/
 .venv
 .ruff_cache/
 *.exchange.json
+uv.lock
 apm.lock
 apm.lock.yaml
 

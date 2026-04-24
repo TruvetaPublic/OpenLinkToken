@@ -26,7 +26,7 @@
 
 Use `tools/decryptor/decryptor.py` to decrypt token CSV files for inspection or
 interoperability checks. The script supports both legacy base64 AES-GCM tokens
-and `ot.V1.` JWE-wrapped tokens.
+and canonical `olt.V1.` JWE-wrapped tokens.
 
 ```bash
 python tools/decryptor/decryptor.py \
@@ -58,18 +58,18 @@ cat partner.public.pem | olt initiate-exchange \
   --name sender-q2
 
 # Read both keys by environment-variable reference in one command
-OT_PARTNER_PUBLIC_KEY="$(az keyvault secret show --vault-name my-vault --name partner-public-key --query value -o tsv)" \
-OT_SENDER_PRIVATE_KEY="$(az keyvault secret show --vault-name my-vault --name sender-private-key --query value -o tsv)" \
+OLT_PARTNER_PUBLIC_KEY="$(az keyvault secret show --vault-name my-vault --name partner-public-key --query value -o tsv)" \
+OLT_SENDER_PRIVATE_KEY="$(az keyvault secret show --vault-name my-vault --name sender-private-key --query value -o tsv)" \
 olt initiate-exchange \
-  --public-key-env OT_PARTNER_PUBLIC_KEY \
-  --sender-private-key-env OT_SENDER_PRIVATE_KEY \
+  --public-key-env OLT_PARTNER_PUBLIC_KEY \
+  --sender-private-key-env OLT_SENDER_PRIVATE_KEY \
   --name sender-q2
 
 # Read a pre-existing hashing secret from an environment variable instead of argv
-OT_HASHING_SECRET="$(az keyvault secret show --vault-name my-vault --name hashing-secret --query value -o tsv)" \
+OLT_HASHING_SECRET="$(az keyvault secret show --vault-name my-vault --name hashing-secret --query value -o tsv)" \
 olt initiate-exchange \
   --public-key partner.public.pem \
-  --hashingsecret-env OT_HASHING_SECRET \
+  --hashingsecret-env OLT_HASHING_SECRET \
   --name sender-q2
 ```
 

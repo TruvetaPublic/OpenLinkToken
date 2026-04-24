@@ -260,7 +260,7 @@ The output DataFrame contains:
 
 - **RecordId**: The original record identifier
 - **RuleId**: Token rule identifier (T1, T2, T3, T4, T5)
-- **Token**: Encrypted match token in `ot.V1.<JWE>` format (or base64-encoded HMAC in hash-only flows)
+- **Token**: Encrypted match token in `olt.V1.<JWE>` format (or base64-encoded HMAC in hash-only flows)
 
 Each input record produces multiple output rows (one per token rule).
 
@@ -405,7 +405,7 @@ for result in results:
 2. Matching rules specify which token types must match (e.g., ["T1", "T2"])
 3. Records are considered matching only if ALL specified token types match
 4. The analyzer provides statistics and a DataFrame of matched record pairs
-5. Uses the exchange-derived transport key that was used to generate the tokens, supporting both `ot.V1` JWE tokens and legacy encrypted token format
+5. Uses the exchange-derived transport key that was used to generate the tokens, supporting both `olt.V1` JWE tokens and legacy encrypted token format
 
 ## Testing
 

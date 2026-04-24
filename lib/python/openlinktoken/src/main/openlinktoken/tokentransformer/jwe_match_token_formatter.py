@@ -30,7 +30,7 @@ from openlinktoken.tokentransformer.token_transformer import TokenTransformer
 
 class JweMatchTokenFormatter(TokenTransformer):
     """
-    Formats tokens in the JWE-based match token format (ot.V1.<JWE>).
+    Formats tokens in the JWE-based match token format (olt.V1.<JWE>).
 
     This formatter wraps the privacy-protected identifier (PPID) in a
     self-contained JWE structure with all necessary metadata for versioning
@@ -80,13 +80,13 @@ class JweMatchTokenFormatter(TokenTransformer):
         Transform a token (PPID) into the JWE match token format.
 
         The input token should be the base64-encoded HMAC output from previous transformers.
-        This method wraps it in a JWE structure with metadata and prepends the "ot.V1." prefix.
+        This method wraps it in a JWE structure with metadata and prepends the "olt.V1." prefix.
 
         Args:
             token: The privacy-protected identifier (PPID) to wrap in JWE format
 
         Returns:
-            The formatted match token: ot.V1.<JWE compact serialization>
+            The formatted match token: olt.V1.<JWE compact serialization>
 
         Raises:
             Exception: If JWE encryption or serialization fails
@@ -120,7 +120,7 @@ class JweMatchTokenFormatter(TokenTransformer):
                 plaintext=json.dumps(payload).encode("utf-8"), recipient=self.jwk_key, protected=protected_header
             )
 
-            # Serialize to compact form and prepend the ot.V1. prefix
+            # Serialize to compact form and prepend the olt.V1. prefix
             jwe_compact = jwe_token.serialize(compact=True)
             return V1_TOKEN_PREFIX + jwe_compact
 

@@ -11,7 +11,7 @@ public final class MatchTokenConstants {
     }
 
     /** Prefix for version 1 match tokens. */
-    public static final String V1_TOKEN_PREFIX = "ot.V1.";
+    public static final String V1_TOKEN_PREFIX = "olt.V1.";
 
     /** Token type value for JWE header. */
     public static final String TOKEN_TYPE = "match-token";

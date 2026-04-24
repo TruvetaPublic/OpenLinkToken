@@ -65,13 +65,13 @@ def decrypt_exchange_secret(
     private_key_stdin: bool = False,
 ) -> bytes:
     """Recover the plaintext hashing secret bytes from a JWE exchange config."""
-    exchange_config = _load_exchange_config(exchange_config_path)
-    private_pem = _resolve_private_key_pem(exchange_config, private_key_path, private_key_stdin=private_key_stdin)
-    payload = _decrypt_payload(exchange_config, private_pem)
+    exchange_config = load_exchange_config(exchange_config_path)
+    private_pem = resolve_private_key_pem(exchange_config, private_key_path, private_key_stdin=private_key_stdin)
+    payload = decrypt_exchange_payload(exchange_config, private_pem)
     return _extract_hashing_secret(payload)
 
 
-def _load_exchange_config(exchange_config_path: Path) -> dict[str, Any]:
+def load_exchange_config(exchange_config_path: Path) -> dict[str, Any]:
     """Load and validate the top-level exchange config structure."""
     exchange_config = json.loads(exchange_config_path.read_text(encoding="utf-8"))
     if not isinstance(exchange_config, dict):
@@ -87,7 +87,7 @@ def _load_exchange_config(exchange_config_path: Path) -> dict[str, Any]:
     return exchange_config
 
 
-def _resolve_private_key_pem(
+def resolve_private_key_pem(
     exchange_config: dict[str, Any],
     private_key_path: Path | None,
     private_key_stdin: bool = False,
@@ -151,7 +151,7 @@ def _kid_for_private_key(private_pem: bytes) -> str:
     return fingerprint_to_kid(public_key_fingerprint(public_pem))
 
 
-def _decrypt_payload(exchange_config: dict[str, Any], private_pem: bytes) -> dict[str, Any]:
+def decrypt_exchange_payload(exchange_config: dict[str, Any], private_pem: bytes) -> dict[str, Any]:
     """Decrypt the exchange envelope and parse the payload JSON."""
     try:
         payload_bytes = decrypt_exchange_envelope(exchange_config, private_pem)

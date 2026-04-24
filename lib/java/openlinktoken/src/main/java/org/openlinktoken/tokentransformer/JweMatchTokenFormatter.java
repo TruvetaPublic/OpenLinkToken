@@ -24,7 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Formats tokens in the JWE-based match token format (ot.V1.&lt;JWE&gt;).
+ * Formats tokens in the JWE-based match token format (olt.V1.&lt;JWE&gt;).
  * <p>
  * This transformer wraps the privacy-protected identifier (PPID) in a
  * self-contained JWE structure with all necessary metadata for versioning
@@ -111,10 +111,10 @@ public class JweMatchTokenFormatter implements TokenTransformer {
      * Transforms a token (PPID) into the JWE match token format.
      * <p>
      * The input token should be the base64-encoded HMAC output from previous transformers.
-     * This method wraps it in a JWE structure with metadata and prepends the "ot.V1." prefix.
+     * This method wraps it in a JWE structure with metadata and prepends the "olt.V1." prefix.
      *
      * @param token the privacy-protected identifier (PPID) to wrap in JWE format
-     * @return the formatted match token: ot.V1.&lt;JWE compact serialization&gt;
+     * @return the formatted match token: olt.V1.&lt;JWE compact serialization&gt;
      * @throws Exception if JWE encryption or serialization fails
      */
     @Override
@@ -147,7 +147,7 @@ public class JweMatchTokenFormatter implements TokenTransformer {
             // Encrypt the JWE object
             jweObject.encrypt(encrypter);
 
-            // Serialize to compact form and prepend the ot.V1. prefix
+            // Serialize to compact form and prepend the olt.V1. prefix
             String jweCompact = jweObject.serialize();
             return MatchTokenConstants.V1_TOKEN_PREFIX + jweCompact;
 

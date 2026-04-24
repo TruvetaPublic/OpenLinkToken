@@ -11,7 +11,7 @@ from unittest.mock import patch
 import pytest
 
 from openlinktoken_cli.commands.generate_key_pair_command import SUPPORTED_CURVES, GenerateKeyPairCommand
-from openlinktoken_cli.commands.open_token_command import OpenLinkTokenCommand
+from openlinktoken_cli.commands.open_link_token_command import OpenLinkTokenCommand
 
 
 class TestGenerateKeyPairCommandUnit:
@@ -50,7 +50,7 @@ class TestGenerateKeyPairCommandUnit:
 
     def test_ensure_directory_creates_with_700(self, tmp_path):
         """_ensure_directory creates the directory with owner-only permissions."""
-        target = tmp_path / "dot_openlinktoken"
+        target = tmp_path / "dot_olt"
         GenerateKeyPairCommand._ensure_directory(target)
 
         assert target.is_dir(), "Directory must be created"

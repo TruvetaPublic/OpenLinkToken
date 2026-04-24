@@ -104,7 +104,7 @@ class TestOpenLinkTokenOverlapAnalyzerInit:
         assert analyzer.encryption_key == derive_transport_encryption_key(resolved_exchange)
 
     def test_from_exchange_config_decrypts_v1_tokens(self, tmp_path):
-        """Factory-created analyzers should decrypt ot.V1 tokens with the derived key."""
+        """Factory-created analyzers should decrypt olt.V1 tokens with the derived key."""
         exchange_config_path, sender_private_pem = _write_exchange_config(tmp_path)
         private_key_path = tmp_path / "sender.private.pem"
         private_key_path.write_bytes(sender_private_pem)
@@ -242,7 +242,7 @@ class TestAnalyzeOverlap:
         assert analyzer._decrypt_token(encrypted) == plaintext
 
     def test_decrypt_token_v1_format(self, encryption_key):
-        """ot.V1 tokens decrypt to deterministic values for matching."""
+        """olt.V1 tokens decrypt to deterministic values for matching."""
         analyzer = OpenLinkTokenOverlapAnalyzer(encryption_key)
         plaintext = "deterministic-hash-value"
         legacy_encrypted = EncryptTokenTransformer(encryption_key).transform(plaintext)
@@ -250,7 +250,7 @@ class TestAnalyzeOverlap:
             encryption_key=encryption_key, ring_id="ring-test", rule_id="T1"
         ).transform(legacy_encrypted)
 
-        assert v1_encrypted.startswith("ot.V1.")
+        assert v1_encrypted.startswith("olt.V1.")
         assert analyzer._decrypt_token(v1_encrypted) == plaintext
 
 

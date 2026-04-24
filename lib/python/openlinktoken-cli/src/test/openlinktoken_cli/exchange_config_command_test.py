@@ -14,7 +14,7 @@ from openlinktoken.exchange_jwe import (
     EXCHANGE_JWE_TYPE,
     build_exchange_envelope,
 )
-from openlinktoken_cli.commands.open_token_command import OpenLinkTokenCommand
+from openlinktoken_cli.commands.open_link_token_command import OpenLinkTokenCommand
 from openlinktoken_cli.util.ec_key_utils import fingerprint_to_kid, generate_key_pair, public_key_fingerprint
 from openlinktoken_cli.util.exchange_config import default_exchange_config_path
 
