@@ -229,7 +229,7 @@ class PackageCommand:
             logger.info("Token generation and encryption completed successfully")
             return 0
         except Exception as e:
-            logger.error(f"Error during token processing: {e}", exc_info=True)
+            logger.error(f"Error during token processing: {e}")
             return 1
 
     @staticmethod

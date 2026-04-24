@@ -35,7 +35,7 @@ class PersonAttributesParquetWriter(PersonAttributesWriter):
         self.file_path = file_path
 
         # Create directory if it doesn't exist
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        os.makedirs(os.path.dirname(file_path) or ".", exist_ok=True)
 
         self.schema: Optional[pa.Schema] = None
         self.writer: Optional[pq.ParquetWriter] = None

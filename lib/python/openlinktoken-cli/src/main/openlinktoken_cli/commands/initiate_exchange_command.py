@@ -423,7 +423,7 @@ class InitiateExchangeCommand:
             logger.error("Validation or file system error during initiate-exchange: %s", error)
             return 1
         except Exception as e:
-            logger.error("Unexpected error during initiate-exchange: %s", e, exc_info=True)
+            logger.error("Unexpected error during initiate-exchange: %s", e)
             return 1
 
         if persist_local_key_files:

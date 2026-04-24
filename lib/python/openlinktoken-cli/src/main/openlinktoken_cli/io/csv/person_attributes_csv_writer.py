@@ -30,7 +30,7 @@ class PersonAttributesCSVWriter(PersonAttributesWriter):
         self.file_path = file_path
 
         # Create directory if it doesn't exist
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        os.makedirs(os.path.dirname(file_path) or ".", exist_ok=True)
 
         self.file_handle = open(file_path, "w", newline="", encoding="utf-8")
         self.csv_writer = csv.writer(self.file_handle, lineterminator="\n")

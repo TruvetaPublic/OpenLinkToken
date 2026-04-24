@@ -2,6 +2,7 @@
 
 import os
 import tempfile
+from pathlib import Path
 
 from openlinktoken_cli.io.csv.person_attributes_csv_writer import PersonAttributesCSVWriter
 
@@ -79,3 +80,18 @@ class TestPersonAttributesCSVWriter:
 
             record2 = lines[2].strip()
             assert record2 == "456,Jane Smith"
+
+    def test_write_to_current_directory_with_filename_only(self, tmp_path: Path, monkeypatch):
+        """Test writing to a bare filename in the current working directory."""
+        monkeypatch.chdir(tmp_path)
+
+        writer = PersonAttributesCSVWriter("output.csv")
+        writer.write_attributes({"RecordId": "123", "Name": "John Doe"})
+        writer.close()
+
+        output_path = tmp_path / "output.csv"
+        assert output_path.exists()
+        assert output_path.read_text(encoding="utf-8").splitlines() == [
+            "RecordId,Name",
+            "123,John Doe",
+        ]

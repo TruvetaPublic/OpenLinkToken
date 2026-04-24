@@ -3,6 +3,7 @@
 import json
 import os
 import tempfile
+from pathlib import Path
 from typing import Any, Dict
 
 from openlinktoken.metadata import Metadata
@@ -199,3 +200,14 @@ class TestMetadataJsonWriter:
         assert isinstance(self.default_writer, MetadataWriter), "MetadataJsonWriter should inherit from MetadataWriter"
         assert hasattr(self.default_writer, "write"), "MetadataJsonWriter should have write method"
         assert hasattr(self.default_writer, "output_path"), "MetadataJsonWriter should have output_path attribute"
+
+    def test_write_metadata_to_current_directory_with_filename_only(self, tmp_path: Path, monkeypatch):
+        """Test writing metadata beside a bare output filename in the current directory."""
+        monkeypatch.chdir(tmp_path)
+        writer = MetadataJsonWriter("output.csv")
+
+        writer.write({"key": "value"})
+
+        metadata_path = tmp_path / ("output" + Metadata.METADATA_FILE_EXTENSION)
+        assert metadata_path.exists()
+        assert json.loads(metadata_path.read_text(encoding="utf-8")) == {"key": "value"}

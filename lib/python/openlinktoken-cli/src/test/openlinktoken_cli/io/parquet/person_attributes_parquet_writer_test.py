@@ -2,6 +2,7 @@
 
 import os
 import tempfile
+from pathlib import Path
 
 from openlinktoken.attributes.general.record_id_attribute import RecordIdAttribute
 from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute
@@ -65,3 +66,20 @@ class TestPersonAttributesParquetWriter:
             assert record[RecordIdAttribute] == "456"
             assert record[SocialSecurityNumberAttribute] == "987-65-4321"
             assert record[FirstNameAttribute] == "Jane"
+
+    def test_write_to_current_directory_with_filename_only(self, tmp_path: Path, monkeypatch):
+        """Test writing a Parquet file to a bare filename in the current directory."""
+        monkeypatch.chdir(tmp_path)
+
+        writer = PersonAttributesParquetWriter("output.parquet")
+        writer.write_attributes({"RecordId": "123", "FirstName": "John"})
+        writer.close()
+
+        output_path = tmp_path / "output.parquet"
+        assert output_path.exists()
+
+        with PersonAttributesParquetReader(str(output_path)) as reader:
+            record = next(reader)
+            assert record is not None
+            assert record[RecordIdAttribute] == "123"
+            assert record[FirstNameAttribute] == "John"

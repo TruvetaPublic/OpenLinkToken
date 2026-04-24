@@ -162,7 +162,7 @@ class OpenLinkTokenCommand:
         try:
             exit_code = parsed_args.func(parsed_args)
         except Exception as e:
-            logger.error(f"Command execution failed: {e}", exc_info=True)
+            logger.error(f"Command execution failed: {e}")
             exit_code = 1
 
         # Wait for the version check and surface any update notice after command output

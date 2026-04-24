@@ -109,7 +109,7 @@ class GenerateKeyPairCommand:
             logger.error("Validation or file system error while generating key pair: %s", error)
             return 1
         except Exception as e:
-            logger.error("Unexpected error while generating key pair: %s", e, exc_info=True)
+            logger.error("Unexpected error while generating key pair: %s", e)
             return 1
 
         print(f"Private key: {private_key_path.resolve()}")

@@ -35,7 +35,7 @@ class MetadataJsonWriter(MetadataWriter):
         """
         try:
             # Ensure the output directory exists
-            os.makedirs(os.path.dirname(self.metadata_file_path), exist_ok=True)
+            os.makedirs(os.path.dirname(self.metadata_file_path) or ".", exist_ok=True)
 
             # Write metadata as JSON with pretty formatting
             with open(self.metadata_file_path, "w", encoding="utf-8") as f:

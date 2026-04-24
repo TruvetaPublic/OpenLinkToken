@@ -138,7 +138,7 @@ class EncryptCommand:
             logger.info("Token encryption completed successfully")
             return 0
         except Exception as e:
-            logger.error(f"Error during token encryption: {e}", exc_info=True)
+            logger.error(f"Error during token encryption: {e}")
             return 1
 
     @staticmethod
@@ -196,7 +196,7 @@ class EncryptCommand:
                 logger.warning(f"Failed to encrypt {error_counter:,} tokens")
 
         except Exception as e:
-            logger.error(f"Error during token encryption: {e}", exc_info=True)
+            logger.error(f"Error during token encryption: {e}")
             raise
 
     @staticmethod
