@@ -5,6 +5,7 @@ Tests the end-to-end workflows for token generation and decryption using new sub
 """
 
 from pathlib import Path
+import zipfile
 from unittest.mock import patch
 
 import pytest
@@ -67,8 +68,6 @@ class TestOpenLinkTokenCommand:
             "package",
             "-i",
             str(input_csv),
-            "-t",
-            "csv",
             "-o",
             str(output_csv),
             "--exchange-config",
@@ -169,8 +168,6 @@ class TestOpenLinkTokenCommand:
             "decrypt",
             "-i",
             str(output_csv),
-            "-t",
-            "csv",
             "-o",
             str(decrypted_csv),
             "--exchange-config",
@@ -195,8 +192,6 @@ class TestOpenLinkTokenCommand:
             "package",
             "-i",
             str(input_csv),
-            "-t",
-            "csv",
             "-o",
             str(output_csv),
             "--exchange-config",
@@ -213,6 +208,33 @@ class TestOpenLinkTokenCommand:
         # Verify CSV output was created (same as input type)
         content = output_csv.read_text()
         assert "RecordId" in content, "Output should contain CSV headers"
+
+    def test_package_command_output_type_auto_detects_zip(self, temp_dir):
+        """Test that .zip output path automatically selects ZIP output."""
+        input_csv = temp_dir / "input.csv"
+        output_zip = temp_dir / "output.zip"
+        exchange_config, private_key = self._create_exchange_config(temp_dir, "zip-output")
+
+        args = [
+            "package",
+            "-i",
+            str(input_csv),
+            "-o",
+            str(output_zip),
+            "--exchange-config",
+            str(exchange_config),
+            "--private-key",
+            str(private_key),
+        ]
+
+        exit_code = OpenLinkTokenCommand.execute(args)
+
+        assert exit_code == 0, "Command should execute successfully"
+        assert output_zip.exists(), "Output ZIP should be created"
+        with zipfile.ZipFile(output_zip, "r") as archive:
+            names = archive.namelist()
+            assert len(names) == 1
+            assert names[0].endswith(".csv")
 
     def test_parquet_input_to_parquet_output(self, temp_dir):
         """Test Parquet input to Parquet output."""

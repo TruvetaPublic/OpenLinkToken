@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: MIT
 
 import logging
+from pathlib import Path
 from typing import List
 
 from openlinktoken.metadata import Metadata
@@ -16,6 +17,7 @@ from openlinktoken_cli.io.parquet.person_attributes_parquet_reader import (
 from openlinktoken_cli.io.parquet.person_attributes_parquet_writer import (
     PersonAttributesParquetWriter,
 )
+from openlinktoken_cli.io.zip.person_attributes_zip_writer import PersonAttributesZipWriter
 from openlinktoken_cli.processor.person_attributes_processor import (
     PersonAttributesProcessor,
 )
@@ -39,6 +41,7 @@ class TokenizeCommand:
 
     TYPE_CSV = "csv"
     TYPE_PARQUET = "parquet"
+    TYPE_ZIP = "zip"
 
     @staticmethod
     def register_subcommand(subparsers):
@@ -80,18 +83,18 @@ class TokenizeCommand:
         parser.add_argument(
             "-t",
             "--input-type",
-            required=True,
+            required=False,
             dest="input_type",
             choices=["csv", "parquet"],
-            help="Input file type: csv or parquet",
+            help="Input file type (auto-detected from input extension if omitted): csv or parquet",
         )
 
         parser.add_argument(
             "-ot",
             "--output-type",
             dest="output_type",
-            choices=["csv", "parquet"],
-            help="Output file type (defaults to input type): csv or parquet",
+            choices=["csv", "parquet", "zip"],
+            help="Output file type (auto-detected from output extension if omitted): csv, parquet, or zip",
         )
 
         parser.add_argument(
@@ -156,10 +159,17 @@ class TokenizeCommand:
         else:
             logger.info("Running tokenize command (normal mode)")
 
-        # Default output type to input type if not specified
-        output_type = args.output_type if args.output_type else args.input_type
+        input_type = args.input_type if args.input_type else TokenizeCommand._detect_input_type(args.input_path)
+        if not input_type:
+            logger.error("Unable to auto-detect input type. Supported input formats: csv, parquet")
+            return 1
 
-        logger.info(f"Input: {args.input_path} ({args.input_type})")
+        output_type = args.output_type if args.output_type else TokenizeCommand._detect_output_type(args.output_path)
+        if not output_type:
+            logger.error("Unable to auto-detect output type. Supported output formats: csv, parquet, zip")
+            return 1
+
+        logger.info(f"Input: {args.input_path} ({input_type})")
         logger.info(f"Output: {args.output_path} ({output_type})")
         if hash_record_ids:
             logger.info("Record ID hashing enabled: RecordIds will be SHA-256 hashed in output")
@@ -173,7 +183,7 @@ class TokenizeCommand:
                 TokenizeCommand._process_tokens_demo(
                     args.input_path,
                     args.output_path,
-                    args.input_type,
+                    input_type,
                     output_type,
                 )
             else:
@@ -186,7 +196,7 @@ class TokenizeCommand:
                 TokenizeCommand._process_tokens(
                     args.input_path,
                     args.output_path,
-                    args.input_type,
+                    input_type,
                     output_type,
                     exchange.hashing_secret,
                     hash_record_ids,
@@ -280,5 +290,27 @@ class TokenizeCommand:
             return PersonAttributesCSVWriter(path)
         elif file_type_lower == TokenizeCommand.TYPE_PARQUET:
             return PersonAttributesParquetWriter(path)
+        elif file_type_lower == TokenizeCommand.TYPE_ZIP:
+            return PersonAttributesZipWriter(path)
         else:
             raise ValueError(f"Unsupported output type: {file_type}")
+
+    @staticmethod
+    def _detect_input_type(path: str) -> str:
+        suffix = Path(path).suffix.lower()
+        if suffix == ".csv":
+            return TokenizeCommand.TYPE_CSV
+        if suffix == ".parquet":
+            return TokenizeCommand.TYPE_PARQUET
+        return ""
+
+    @staticmethod
+    def _detect_output_type(path: str) -> str:
+        suffix = Path(path).suffix.lower()
+        if suffix == ".csv":
+            return TokenizeCommand.TYPE_CSV
+        if suffix == ".parquet":
+            return TokenizeCommand.TYPE_PARQUET
+        if suffix == ".zip":
+            return TokenizeCommand.TYPE_ZIP
+        return ""
