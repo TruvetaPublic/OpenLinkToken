@@ -1,16 +1,15 @@
 # SPDX-License-Identifier: MIT
 
 import logging
-from pathlib import Path
 
 from openlinktoken.tokentransformer.decrypt_token_transformer import DecryptTokenTransformer
 from openlinktoken_cli.io.csv.token_csv_reader import TokenCSVReader
 from openlinktoken_cli.io.csv.token_csv_writer import TokenCSVWriter
 from openlinktoken_cli.io.parquet.token_parquet_reader import TokenParquetReader
 from openlinktoken_cli.io.parquet.token_parquet_writer import TokenParquetWriter
-from openlinktoken_cli.io.zip.token_zip_writer import TokenZipWriter
 from openlinktoken_cli.processor.token_decryption_processor import TokenDecryptionProcessor
 from openlinktoken_cli.util.exchange_config import derive_transport_encryption_key, resolve_exchange_config
+from openlinktoken_cli.util.file_type_detector import FileTypeDetector
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +19,7 @@ class DecryptCommand:
     Decrypt command - decrypts encrypted tokens.
     """
 
-    TYPE_CSV = "csv"
-    TYPE_PARQUET = "parquet"
-    TYPE_ZIP = "zip"
+
 
     @staticmethod
     def register_subcommand(subparsers):
@@ -57,22 +54,7 @@ class DecryptCommand:
             help="Output file path for decrypted tokens",
         )
 
-        parser.add_argument(
-            "-t",
-            "--input-type",
-            required=False,
-            dest="input_type",
-            choices=["csv", "parquet"],
-            help="Input file type (auto-detected from input extension if omitted): csv or parquet",
-        )
 
-        parser.add_argument(
-            "-ot",
-            "--output-type",
-            dest="output_type",
-            choices=["csv", "parquet", "zip"],
-            help="Output file type (auto-detected from output extension if omitted): csv, parquet, or zip",
-        )
 
         parser.add_argument(
             "--exchange-config",
@@ -103,14 +85,14 @@ class DecryptCommand:
         """Execute the decrypt command."""
         logger.info("Running decrypt command")
 
-        input_type = args.input_type if args.input_type else DecryptCommand._detect_input_type(args.input_path)
+        input_type = FileTypeDetector.detect_input_type(args.input_path)
         if not input_type:
             logger.error("Unable to auto-detect input type. Supported input formats: csv, parquet")
             return 1
 
-        output_type = args.output_type if args.output_type else DecryptCommand._detect_output_type(args.output_path)
+        output_type = FileTypeDetector.detect_output_type(args.output_path)
         if not output_type:
-            logger.error("Unable to auto-detect output type. Supported output formats: csv, parquet, zip")
+            logger.error("Unable to auto-detect output type. Supported output formats: csv, parquet")
             return 1
 
         # Log parameters (mask key)
@@ -164,9 +146,9 @@ class DecryptCommand:
     def _create_token_reader(path: str, file_type: str):
         """Create a TokenReader based on file type."""
         file_type_lower = file_type.lower()
-        if file_type_lower == DecryptCommand.TYPE_CSV:
+        if file_type_lower == FileTypeDetector.TYPE_CSV:
             return TokenCSVReader(path)
-        elif file_type_lower == DecryptCommand.TYPE_PARQUET:
+        elif file_type_lower == FileTypeDetector.TYPE_PARQUET:
             return TokenParquetReader(path)
         else:
             raise ValueError(f"Unsupported input type: {file_type}")
@@ -175,31 +157,9 @@ class DecryptCommand:
     def _create_token_writer(path: str, file_type: str):
         """Create a TokenWriter based on file type."""
         file_type_lower = file_type.lower()
-        if file_type_lower == DecryptCommand.TYPE_CSV:
+        if file_type_lower == FileTypeDetector.TYPE_CSV:
             return TokenCSVWriter(path)
-        elif file_type_lower == DecryptCommand.TYPE_PARQUET:
+        elif file_type_lower == FileTypeDetector.TYPE_PARQUET:
             return TokenParquetWriter(path)
-        elif file_type_lower == DecryptCommand.TYPE_ZIP:
-            return TokenZipWriter(path)
         else:
             raise ValueError(f"Unsupported output type: {file_type}")
-
-    @staticmethod
-    def _detect_input_type(path: str) -> str:
-        suffix = Path(path).suffix.lower()
-        if suffix == ".csv":
-            return DecryptCommand.TYPE_CSV
-        if suffix == ".parquet":
-            return DecryptCommand.TYPE_PARQUET
-        return ""
-
-    @staticmethod
-    def _detect_output_type(path: str) -> str:
-        suffix = Path(path).suffix.lower()
-        if suffix == ".csv":
-            return DecryptCommand.TYPE_CSV
-        if suffix == ".parquet":
-            return DecryptCommand.TYPE_PARQUET
-        if suffix == ".zip":
-            return DecryptCommand.TYPE_ZIP
-        return ""
