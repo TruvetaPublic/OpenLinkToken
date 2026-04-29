@@ -13,6 +13,7 @@ from openlinktoken_cli.io.csv.person_attributes_csv_writer import PersonAttribut
 from openlinktoken_cli.io.json.metadata_json_writer import MetadataJsonWriter
 from openlinktoken_cli.io.parquet.person_attributes_parquet_reader import PersonAttributesParquetReader
 from openlinktoken_cli.io.parquet.person_attributes_parquet_writer import PersonAttributesParquetWriter
+from openlinktoken_cli.io.zip.person_attributes_zip_writer import PersonAttributesZipWriter
 from openlinktoken_cli.processor.person_attributes_processor import PersonAttributesProcessor
 from openlinktoken_cli.util.exchange_config import derive_transport_encryption_key, resolve_exchange_config
 from openlinktoken_cli.util.file_type_detector import FileTypeDetector
@@ -114,7 +115,7 @@ class PackageCommand:
 
         output_type = FileTypeDetector.detect_output_type(args.output_path)
         if not output_type:
-            logger.error("Unable to auto-detect output type. Supported output formats: csv, parquet")
+            logger.error("Unable to auto-detect output type. Supported output formats: csv, parquet, zip")
             return 1
 
         ring_id = args.ring_id if args.ring_id and args.ring_id.strip() else str(uuid.uuid4())
@@ -222,5 +223,7 @@ class PackageCommand:
             return PersonAttributesCSVWriter(path)
         elif file_type_lower == FileTypeDetector.TYPE_PARQUET:
             return PersonAttributesParquetWriter(path)
+        elif file_type_lower == FileTypeDetector.TYPE_ZIP:
+            return PersonAttributesZipWriter(path)
         else:
             raise ValueError(f"Unsupported output type: {file_type}")

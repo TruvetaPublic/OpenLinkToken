@@ -16,6 +16,7 @@ from openlinktoken_cli.io.parquet.person_attributes_parquet_reader import (
 from openlinktoken_cli.io.parquet.person_attributes_parquet_writer import (
     PersonAttributesParquetWriter,
 )
+from openlinktoken_cli.io.zip.person_attributes_zip_writer import PersonAttributesZipWriter
 from openlinktoken_cli.processor.person_attributes_processor import (
     PersonAttributesProcessor,
 )
@@ -148,7 +149,7 @@ class TokenizeCommand:
 
         output_type = FileTypeDetector.detect_output_type(args.output_path)
         if not output_type:
-            logger.error("Unable to auto-detect output type. Supported output formats: csv, parquet")
+            logger.error("Unable to auto-detect output type. Supported output formats: csv, parquet, zip")
             return 1
 
         logger.info(f"Input: {args.input_path} ({input_type})")
@@ -272,5 +273,7 @@ class TokenizeCommand:
             return PersonAttributesCSVWriter(path)
         elif file_type_lower == FileTypeDetector.TYPE_PARQUET:
             return PersonAttributesParquetWriter(path)
+        elif file_type_lower == FileTypeDetector.TYPE_ZIP:
+            return PersonAttributesZipWriter(path)
         else:
             raise ValueError(f"Unsupported output type: {file_type}")

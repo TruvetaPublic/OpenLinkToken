@@ -10,6 +10,7 @@ from openlinktoken_cli.io.csv.token_csv_reader import TokenCSVReader
 from openlinktoken_cli.io.csv.token_csv_writer import TokenCSVWriter
 from openlinktoken_cli.io.parquet.token_parquet_reader import TokenParquetReader
 from openlinktoken_cli.io.parquet.token_parquet_writer import TokenParquetWriter
+from openlinktoken_cli.io.zip.token_zip_writer import TokenZipWriter
 from openlinktoken_cli.processor.token_constants import TokenConstants
 from openlinktoken_cli.util.exchange_config import derive_transport_encryption_key, resolve_exchange_config
 from openlinktoken_cli.util.file_type_detector import FileTypeDetector
@@ -18,11 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 class EncryptCommand:
-    """
-    Encrypt command - encrypts hashed tokens.
-    """
-
-
+    """Encrypt command - encrypts hashed tokens."""
 
     @staticmethod
     def register_subcommand(subparsers):
@@ -56,8 +53,6 @@ class EncryptCommand:
             dest="output_path",
             help="Output file path for encrypted tokens",
         )
-
-
 
         parser.add_argument(
             "--exchange-config",
@@ -102,7 +97,7 @@ class EncryptCommand:
 
         output_type = FileTypeDetector.detect_output_type(args.output_path)
         if not output_type:
-            logger.error("Unable to auto-detect output type. Supported output formats: csv, parquet")
+            logger.error("Unable to auto-detect output type. Supported output formats: csv, parquet, zip")
             return 1
 
         ring_id = args.ring_id if args.ring_id and args.ring_id.strip() else str(uuid.uuid4())
@@ -230,5 +225,7 @@ class EncryptCommand:
             return TokenCSVWriter(path)
         elif file_type_lower == FileTypeDetector.TYPE_PARQUET:
             return TokenParquetWriter(path)
+        elif file_type_lower == FileTypeDetector.TYPE_ZIP:
+            return TokenZipWriter(path)
         else:
             raise ValueError(f"Unsupported output type: {file_type}")
