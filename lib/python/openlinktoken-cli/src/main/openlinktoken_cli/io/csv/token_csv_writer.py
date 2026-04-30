@@ -2,9 +2,9 @@
 
 import csv
 import logging
-import os
 from typing import Dict
 
+from openlinktoken_cli.io.path_utils import ensure_parent_directory
 from openlinktoken_cli.io.token_writer import TokenWriter
 from openlinktoken_cli.processor.token_constants import TokenConstants
 
@@ -34,7 +34,7 @@ class TokenCSVWriter(TokenWriter):
         self.file_path = file_path
 
         # Create directory if it doesn't exist
-        os.makedirs(os.path.dirname(file_path) if os.path.dirname(file_path) else ".", exist_ok=True)
+        ensure_parent_directory(file_path)
 
         self.file_handle = open(file_path, "w", newline="", encoding="utf-8")
         self.csv_writer = csv.DictWriter(
