@@ -4,8 +4,8 @@ Integration tests for the main module.
 Tests the end-to-end workflows for token generation and decryption using new subcommand interface.
 """
 
-from pathlib import Path
 import zipfile
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest

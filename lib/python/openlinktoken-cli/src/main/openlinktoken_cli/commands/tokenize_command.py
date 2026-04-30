@@ -20,8 +20,8 @@ from openlinktoken_cli.io.zip.person_attributes_zip_writer import PersonAttribut
 from openlinktoken_cli.processor.person_attributes_processor import (
     PersonAttributesProcessor,
 )
-from openlinktoken_cli.util.file_type_detector import FileTypeDetector
 from openlinktoken_cli.util.exchange_config import resolve_exchange_config
+from openlinktoken_cli.util.file_type_detector import FileTypeDetector
 
 logger = logging.getLogger(__name__)
 
