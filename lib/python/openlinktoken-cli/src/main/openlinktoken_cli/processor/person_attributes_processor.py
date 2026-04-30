@@ -144,7 +144,7 @@ class PersonAttributesProcessor:
                     )
                 except Exception as e:
                     error_msg = f"Failed to initialize JWE formatter for token rule {token_id}"
-                    logger.error(error_msg, exc_info=True)
+                    logger.error(error_msg)
                     raise RuntimeError(error_msg) from e
 
         try:
@@ -177,7 +177,7 @@ class PersonAttributesProcessor:
                     logger.info(f"Processed {row_counter:,} records")
 
         except Exception as e:
-            logger.error(f"Error processing records: {e}", exc_info=True)
+            logger.error("Error processing records: %s", e)
             raise
 
         logger.info(f"Processed a total of {row_counter:,} records")
@@ -256,7 +256,7 @@ class PersonAttributesProcessor:
                         token = jwe_formatter.transform(token)
                     except Exception as e:
                         error_msg = f"Error wrapping token in JWE format for row {row_counter:,}, rule {token_id}"
-                        logger.error(error_msg, exc_info=True)
+                        logger.error(error_msg)
                         raise RuntimeError(error_msg) from e
 
             row_result = {
@@ -268,10 +268,7 @@ class PersonAttributesProcessor:
             try:
                 writer.write_attributes(row_result)
             except IOError:
-                logger.error(
-                    f"Error writing attributes to file for row {row_counter:,}",
-                    exc_info=True,
-                )
+                logger.error("Error writing attributes to file for row %s", f"{row_counter:,}")
 
     @staticmethod
     def _keep_track_of_invalid_attributes(

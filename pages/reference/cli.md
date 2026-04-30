@@ -512,6 +512,8 @@ When `OLT_EXTENSIONS_DIR` is set, the registry is stored in that directory inste
 | "Unsupported curve '…'"                | Invalid `--curve` value      | Use `P-256`, `P-384`, or `P-521` |
 | "Key files for '…' already exist"      | Name collision without force | Use `--force` to overwrite       |
 
+Unexpected internal CLI errors archive a redacted traceback under the Open Link Token logs directory. The CLI prints the exact archive path to **stderr** as `Stack trace: <path>`. By default, logs are written to `~/.openlinktoken/logs` on Linux and macOS and `%APPDATA%\.openlinktoken\logs` on Windows.
+
 ## Exit Codes
 
 | Code | Meaning           |

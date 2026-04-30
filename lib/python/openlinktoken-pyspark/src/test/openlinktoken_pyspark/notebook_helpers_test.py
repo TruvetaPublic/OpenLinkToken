@@ -8,6 +8,8 @@ from pathlib import Path
 
 import pytest
 
+pytest.importorskip("pyspark")
+
 import openlinktoken_pyspark.notebook_helpers as notebook_helpers
 from openlinktoken.attributes.person.birth_date_attribute import BirthDateAttribute
 from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute

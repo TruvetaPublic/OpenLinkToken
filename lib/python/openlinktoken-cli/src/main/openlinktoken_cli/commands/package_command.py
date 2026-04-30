@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: MIT
 
 import logging
+import sys
 import uuid
 from typing import List
 
@@ -14,6 +15,7 @@ from openlinktoken_cli.io.json.metadata_json_writer import MetadataJsonWriter
 from openlinktoken_cli.io.parquet.person_attributes_parquet_reader import PersonAttributesParquetReader
 from openlinktoken_cli.io.parquet.person_attributes_parquet_writer import PersonAttributesParquetWriter
 from openlinktoken_cli.processor.person_attributes_processor import PersonAttributesProcessor
+from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
 from openlinktoken_cli.util.exchange_config import derive_transport_encryption_key, resolve_exchange_config
 
 logger = logging.getLogger(__name__)
@@ -158,8 +160,10 @@ class PackageCommand:
             )
             logger.info("Token generation and encryption completed successfully")
             return 0
-        except Exception as e:
-            logger.error(f"Error during token processing: {e}", exc_info=True)
+        except (OSError, ValueError) as error:
+            logger.error("Error during token processing: %s", error)
+            report = archive_cli_error(error, command_name="package")
+            print(format_error_reference_message(report), file=sys.stderr)
             return 1
 
     @staticmethod
@@ -181,7 +185,6 @@ class PackageCommand:
             token_transformer_list.append(HashTokenTransformer(hashing_secret))
             token_transformer_list.append(EncryptTokenTransformer(encryption_key))
         except Exception as e:
-            logger.error("Error initializing transformers", exc_info=e)
             raise RuntimeError("Failed to initialize transformers") from e
 
         try:
@@ -210,8 +213,7 @@ class PackageCommand:
                 metadata_writer = MetadataJsonWriter(output_path)
                 metadata_writer.write(metadata_map)
 
-        except Exception as e:
-            logger.error("Error processing tokens", exc_info=e)
+        except Exception:
             raise
 
     @staticmethod

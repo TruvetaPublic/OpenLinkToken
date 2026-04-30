@@ -11,6 +11,8 @@ from typing import Optional
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
+from openlinktoken_cli.util.app_paths import get_openlinktoken_home
+
 logger = logging.getLogger(__name__)
 
 _GITHUB_API_URL = "https://api.github.com/repos/TruvetaPublic/OpenLinkToken/releases/latest"
@@ -18,7 +20,6 @@ _CACHE_TTL_SECONDS = 24 * 60 * 60  # 24 hours
 _REQUEST_TIMEOUT_SECONDS = 2
 _ENV_DISABLE = "OLT_DISABLE_UPDATE_CHECK"
 _CACHE_FILENAME = "update-check.json"
-_CACHE_DIR_NAME = ".openlinktoken"
 
 
 class VersionChecker:
@@ -131,11 +132,7 @@ class VersionChecker:
     @staticmethod
     def _get_cache_path() -> Path:
         """Return the platform-appropriate path for the cache file."""
-        if sys.platform == "win32":
-            appdata = os.getenv("APPDATA", "").strip()
-            if appdata:
-                return Path(appdata) / _CACHE_DIR_NAME / _CACHE_FILENAME
-        return Path.home() / _CACHE_DIR_NAME / _CACHE_FILENAME
+        return get_openlinktoken_home() / _CACHE_FILENAME
 
     def _read_cache(self) -> Optional[str]:
         """

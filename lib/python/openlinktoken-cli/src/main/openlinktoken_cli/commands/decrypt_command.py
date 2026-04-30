@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: MIT
 
 import logging
+import sys
 
 from openlinktoken.tokentransformer.decrypt_token_transformer import DecryptTokenTransformer
 from openlinktoken_cli.io.csv.token_csv_reader import TokenCSVReader
@@ -8,6 +9,7 @@ from openlinktoken_cli.io.csv.token_csv_writer import TokenCSVWriter
 from openlinktoken_cli.io.parquet.token_parquet_reader import TokenParquetReader
 from openlinktoken_cli.io.parquet.token_parquet_writer import TokenParquetWriter
 from openlinktoken_cli.processor.token_decryption_processor import TokenDecryptionProcessor
+from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
 from openlinktoken_cli.util.exchange_config import derive_transport_encryption_key, resolve_exchange_config
 
 logger = logging.getLogger(__name__)
@@ -124,8 +126,10 @@ class DecryptCommand:
             )
             logger.info("Token decryption completed successfully")
             return 0
-        except Exception as e:
-            logger.error(f"Error during token decryption: {e}", exc_info=True)
+        except (OSError, ValueError) as error:
+            logger.error("Error during token decryption: %s", error)
+            report = archive_cli_error(error, command_name="decrypt")
+            print(format_error_reference_message(report), file=sys.stderr)
             return 1
 
     @staticmethod
@@ -146,8 +150,7 @@ class DecryptCommand:
             ):
                 TokenDecryptionProcessor.process_with_key(reader, writer, decryptor, encryption_key)
 
-        except Exception as e:
-            logger.error(f"Error during token decryption: {e}", exc_info=True)
+        except Exception:
             raise
 
     @staticmethod
