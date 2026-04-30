@@ -193,8 +193,8 @@ class TokenizeCommand:
                 )
             logger.info("Token generation completed successfully")
             return 0
-        except Exception as e:
-            logger.error(f"Error during token generation: {e}", exc_info=True)
+        except (OSError, ValueError) as error:
+            logger.error("Error during token generation: %s", error)
             return 1
 
     @staticmethod
@@ -213,7 +213,6 @@ class TokenizeCommand:
             # Add only hash transformer (no encryption in tokenize mode)
             token_transformer_list.append(HashTokenTransformer(hashing_secret))
         except Exception as e:
-            logger.error("Error initializing hash transformer", exc_info=e)
             raise RuntimeError("Failed to initialize transformer") from e
 
         try:
@@ -232,8 +231,7 @@ class TokenizeCommand:
 
                 MetadataJsonWriter(output_path).write(metadata_map)
 
-        except Exception as e:
-            logger.error("Error processing tokens", exc_info=e)
+        except Exception:
             raise
 
     @staticmethod
@@ -257,8 +255,7 @@ class TokenizeCommand:
 
                 MetadataJsonWriter(output_path).write(metadata_map)
 
-        except Exception as e:
-            logger.error("Error processing tokens in demo mode", exc_info=e)
+        except Exception:
             raise
 
     @staticmethod

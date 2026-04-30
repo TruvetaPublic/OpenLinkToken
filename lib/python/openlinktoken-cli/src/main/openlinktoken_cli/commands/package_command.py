@@ -158,8 +158,8 @@ class PackageCommand:
             )
             logger.info("Token generation and encryption completed successfully")
             return 0
-        except Exception as e:
-            logger.error(f"Error during token processing: {e}", exc_info=True)
+        except (OSError, ValueError) as error:
+            logger.error("Error during token processing: %s", error)
             return 1
 
     @staticmethod
@@ -181,7 +181,6 @@ class PackageCommand:
             token_transformer_list.append(HashTokenTransformer(hashing_secret))
             token_transformer_list.append(EncryptTokenTransformer(encryption_key))
         except Exception as e:
-            logger.error("Error initializing transformers", exc_info=e)
             raise RuntimeError("Failed to initialize transformers") from e
 
         try:
@@ -210,8 +209,7 @@ class PackageCommand:
                 metadata_writer = MetadataJsonWriter(output_path)
                 metadata_writer.write(metadata_map)
 
-        except Exception as e:
-            logger.error("Error processing tokens", exc_info=e)
+        except Exception:
             raise
 
     @staticmethod

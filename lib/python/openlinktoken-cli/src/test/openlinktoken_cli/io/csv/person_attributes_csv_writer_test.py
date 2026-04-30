@@ -79,3 +79,16 @@ class TestPersonAttributesCSVWriter:
 
             record2 = lines[2].strip()
             assert record2 == "456,Jane Smith"
+
+    def test_write_basename_output_path_in_current_directory(self, tmp_path, monkeypatch):
+        """Test that a basename-only output path writes to the current directory."""
+        monkeypatch.chdir(tmp_path)
+        writer = PersonAttributesCSVWriter("output.csv")
+
+        try:
+            writer.write_attributes({"RecordId": "123", "Name": "John Doe"})
+        finally:
+            writer.close()
+
+        output_path = tmp_path / "output.csv"
+        assert output_path.exists()

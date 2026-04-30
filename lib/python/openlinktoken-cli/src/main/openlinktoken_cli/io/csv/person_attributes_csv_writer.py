@@ -2,10 +2,10 @@
 
 import csv
 import logging
-import os
 from typing import Dict
 
 from openlinktoken_cli.io.person_attributes_writer import PersonAttributesWriter
+from openlinktoken_cli.util.path_utils import ensure_parent_directory
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +29,7 @@ class PersonAttributesCSVWriter(PersonAttributesWriter):
         """
         self.file_path = file_path
 
-        # Create directory if it doesn't exist
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        ensure_parent_directory(file_path)
 
         self.file_handle = open(file_path, "w", newline="", encoding="utf-8")
         self.csv_writer = csv.writer(self.file_handle, lineterminator="\n")

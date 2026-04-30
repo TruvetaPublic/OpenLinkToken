@@ -491,6 +491,107 @@ class TestOpenLinkTokenCommand:
         exit_code = OpenLinkTokenCommand.execute(args)
         assert exit_code != 0, "Command should fail with invalid subcommand"
 
+    def test_unexpected_command_error_writes_reference_log(self, tmp_path, capsys):
+        """Unexpected command failures should write a referenceable traceback log."""
+        with patch(
+            "openlinktoken_cli.commands.tokenize_command.TokenizeCommand.execute",
+            side_effect=RuntimeError("boom"),
+        ):
+            with patch("pathlib.Path.home", return_value=tmp_path):
+                exit_code = OpenLinkTokenCommand.execute(
+                    [
+                        "--no-update-check",
+                        "tokenize",
+                        "-i",
+                        "input.csv",
+                        "-t",
+                        "csv",
+                        "-o",
+                        "output.csv",
+                    ]
+                )
+
+        captured = capsys.readouterr()
+        log_dir = tmp_path / ".openlinktoken" / "logs"
+        log_files = list(log_dir.glob("*.log"))
+
+        assert exit_code != 0
+        assert "Traceback" not in captured.err
+        assert "Reference:" in captured.err
+        assert len(log_files) == 1
+        assert str(log_files[0]) in captured.err
+        assert "Traceback" in log_files[0].read_text()
+        assert "RuntimeError: boom" in log_files[0].read_text()
+
+    def test_tokenize_command_allows_basename_output_path_in_current_directory(self, tmp_path, monkeypatch):
+        """Tokenize should support basename-only output paths in the current directory."""
+        input_csv = tmp_path / "input.csv"
+        input_csv.write_text(
+            "RecordId,FirstName,LastName,PostalCode,Sex,BirthDate,SocialSecurityNumber\n"
+            "test-001,John,Doe,98004,Male,2000-01-01,123-45-6789\n",
+            encoding="utf-8",
+        )
+
+        monkeypatch.chdir(tmp_path)
+
+        exit_code = OpenLinkTokenCommand.execute(
+            [
+                "--no-update-check",
+                "tokenize",
+                "-i",
+                "input.csv",
+                "-t",
+                "csv",
+                "-o",
+                "output.csv",
+                "--demo-mode",
+            ]
+        )
+
+        assert exit_code == 0
+        assert (tmp_path / "output.csv").exists()
+        assert (tmp_path / "output.metadata.json").exists()
+
+    def test_tokenize_unexpected_processing_error_writes_reference_log(self, tmp_path, capsys):
+        """Unexpected tokenize failures should archive the traceback and print a reference."""
+        input_csv = tmp_path / "input.csv"
+        input_csv.write_text(
+            "RecordId,FirstName,LastName,PostalCode,Sex,BirthDate,SocialSecurityNumber\n"
+            "test-001,John,Doe,98004,Male,2000-01-01,123-45-6789\n",
+            encoding="utf-8",
+        )
+
+        with patch(
+            "openlinktoken_cli.commands.tokenize_command.TokenizeCommand._process_tokens_demo",
+            side_effect=RuntimeError("boom"),
+        ):
+            with patch("pathlib.Path.home", return_value=tmp_path):
+                exit_code = OpenLinkTokenCommand.execute(
+                    [
+                        "--no-update-check",
+                        "tokenize",
+                        "-i",
+                        str(input_csv),
+                        "-t",
+                        "csv",
+                        "-o",
+                        "output.csv",
+                        "--demo-mode",
+                    ]
+                )
+
+        captured = capsys.readouterr()
+        log_dir = tmp_path / ".openlinktoken" / "logs"
+        log_files = list(log_dir.glob("*.log"))
+
+        assert exit_code != 0
+        assert "Traceback" not in captured.err
+        assert "Reference:" in captured.err
+        assert len(log_files) == 1
+        assert str(log_files[0]) in captured.err
+        assert "Traceback" in log_files[0].read_text()
+        assert "RuntimeError: boom" in log_files[0].read_text()
+
     def test_help_shows_banner_for_interactive_runs(self, monkeypatch, capsys):
         """Interactive help output should include the Open Link Token banner."""
         monkeypatch.setattr("sys.stdout.isatty", lambda: True)

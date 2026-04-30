@@ -287,9 +287,8 @@ class InitiateExchangeCommand:
         except (OSError, ValueError) as error:
             logger.error("Validation or file system error during initiate-exchange: %s", error)
             return 1
-        except Exception as e:
-            logger.error("Unexpected error during initiate-exchange: %s", e, exc_info=True)
-            return 1
+        except Exception:
+            raise
 
         if persist_local_key_files:
             print(f"Private key:     {private_key_path.resolve()}")

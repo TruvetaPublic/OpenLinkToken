@@ -124,8 +124,8 @@ class DecryptCommand:
             )
             logger.info("Token decryption completed successfully")
             return 0
-        except Exception as e:
-            logger.error(f"Error during token decryption: {e}", exc_info=True)
+        except (OSError, ValueError) as error:
+            logger.error("Error during token decryption: %s", error)
             return 1
 
     @staticmethod
@@ -146,8 +146,7 @@ class DecryptCommand:
             ):
                 TokenDecryptionProcessor.process_with_key(reader, writer, decryptor, encryption_key)
 
-        except Exception as e:
-            logger.error(f"Error during token decryption: {e}", exc_info=True)
+        except Exception:
             raise
 
     @staticmethod
