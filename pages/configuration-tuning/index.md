@@ -165,7 +165,7 @@ Generates encrypted `olt.V1` match tokens using HMAC-SHA256 + JWE/AES-256-GCM.
 
 ```bash
 olt package \
-  -i data.csv -t csv -o tokens.csv \
+  -i data.csv -o tokens.csv \
   -h "HashingKey" -e "EncryptionKey"
 ```
 
@@ -185,7 +185,7 @@ Generates hashed tokens without encryption. Useful for token matching scenarios 
 
 ```bash
 olt tokenize \
-  -i data.csv -t csv -o tokens.csv \
+  -i data.csv -o tokens.csv \
   -h "HashingKey"
 ```
 
@@ -210,7 +210,7 @@ Reverse previous encryption to inspect or verify token generation.
 
 ```bash
 olt decrypt \
-  -i encrypted-tokens.csv -t csv -o decrypted-tokens.csv \
+  -i encrypted-tokens.csv -o decrypted-tokens.csv \
   -e "EncryptionKey"
 ```
 

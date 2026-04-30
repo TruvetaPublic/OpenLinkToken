@@ -117,7 +117,6 @@ cd ../../
 ./run-openlinktoken.sh package \
   -i tools/mockdata/test_data.csv \
   -o resources/test_output.csv \
-  -t csv \
   -h "HashingKey" \
   -e "Secret-Encryption-Key-Goes-Here."
 
@@ -201,7 +200,7 @@ df.to_parquet('large_test.parquet')
 
 # Process with Open Link Token
 olt package \
-  -i large_test.parquet -t parquet \
+  -i large_test.parquet \
   -o tokens.parquet \
   -h "HashingKey" -e "EncryptionKey"
 ```

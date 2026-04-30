@@ -30,7 +30,6 @@ olt <subcommand> [OPTIONS]
 | Argument | Alias             | Description                          | Example         |
 | -------- | ----------------- | ------------------------------------ | --------------- |
 | `-i`     | `--input`         | Input file path                      | `-i data.csv`   |
-| `-t`     | `--type`          | Input file type (`csv` or `parquet`) | `-t csv`        |
 | `-o`     | `--output`        | Output file path                     | `-o tokens.csv` |
 | `-h`     | `--hashingsecret` | HMAC-SHA256 hashing secret           | `-h "MyKey"`    |
 
@@ -39,7 +38,6 @@ olt <subcommand> [OPTIONS]
 | Argument | Alias             | Description                 | Default                    |
 | -------- | ----------------- | --------------------------- | -------------------------- |
 | `-e`     | `--encryptionkey` | AES-256 encryption key      | Required in `package` mode |
-| `-ot`    | `--output-type`   | Output file type            | Same as input              |
 |          | `tokenize`        | Tokenize without encryption | Subcommand                 |
 |          | `decrypt`         | Decrypt mode                | Subcommand                 |
 
@@ -52,7 +50,7 @@ uv pip install -r requirements.txt -e . -e ../openlinktoken
 
 olt package \
   -i ../../../resources/sample.csv \
-  -t csv \
+
   -o ../../../resources/output.csv \
   -h "HashingKey" \
   -e "Secret-Encryption-Key-Goes-Here."
@@ -72,7 +70,7 @@ cd /path/to/OpenLinkToken
 ./run-openlinktoken.sh package \
   -i ./resources/sample.csv \
   -o ./resources/output.csv \
-  -t csv \
+
   -h "HashingKey" \
   -e "Secret-Encryption-Key-Goes-Here."
 ```
@@ -108,7 +106,7 @@ docker build -t openlinktoken:latest .
 docker run --rm -v $(pwd)/resources:/app/resources \
   openlinktoken:latest package \
   -i /app/resources/sample.csv \
-  -t csv \
+
   -o /app/resources/output.csv \
   -h "HashingKey" \
   -e "Secret-Encryption-Key-Goes-Here."
@@ -172,7 +170,7 @@ export OLT_HASHING_SECRET="MyHashingKey"
 export OLT_ENCRYPTION_KEY="MyEncryptionKey32CharactersLong"
 
 olt package \
-  -i data.csv -t csv -o tokens.csv \
+  -i data.csv -o tokens.csv \
   -h "$OLT_HASHING_SECRET" \
   -e "$OLT_ENCRYPTION_KEY"
 ```

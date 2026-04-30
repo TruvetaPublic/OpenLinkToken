@@ -68,7 +68,6 @@ Use the `tokenize` subcommand. Only the hashing secret is required (no encryptio
 ```bash
 olt tokenize \
   -i resources/sample.csv \
-  -t csv \
   -o resources/hashed-output.csv \
   -h "HashingKey"
 ```
@@ -79,7 +78,6 @@ olt tokenize \
 docker run --rm -v $(pwd)/resources:/app/resources \
   openlinktoken:latest tokenize \
   -i /app/resources/sample.csv \
-  -t csv \
   -o /app/resources/hashed-output.csv \
   -h "HashingKey"
 ```
@@ -93,7 +91,6 @@ The `--hash-record-ids` flag is also supported by the `package` subcommand.
 ```bash
 olt tokenize \
   -i resources/sample.csv \
-  -t csv \
   -o resources/hashed-output.csv \
   -h "HashingKey" \
   --hash-record-ids
@@ -116,7 +113,6 @@ In demo mode the full hashing pipeline is skipped. No `--hashingsecret` is requi
 ```bash
 olt tokenize \
   -i resources/sample.csv \
-  -t csv \
   -o resources/demo-output.csv \
   --demo-mode
 ```
@@ -127,7 +123,6 @@ olt tokenize \
 docker run --rm -v $(pwd)/resources:/app/resources \
   openlinktoken:latest tokenize \
   -i /app/resources/sample.csv \
-  -t csv \
   -o /app/resources/demo-output.csv \
   --demo-mode
 ```
@@ -263,7 +258,7 @@ cat output.metadata.json | jq '.HashingSecretHash'
 **Solution:** Use the `tokenize` subcommand to skip encryption:
 
 ```bash
-olt tokenize -i data.csv -t csv -o out.csv -h "Key"
+olt tokenize -i data.csv -o out.csv -h "Key"
 ```
 
 ---

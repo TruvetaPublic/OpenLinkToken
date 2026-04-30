@@ -209,7 +209,7 @@ Once both parties have the exchange artifact and the matching private key, they 
 
 ```bash
 olt package \
-  -i patient_data.csv -t csv \
+  -i patient_data.csv \
   -o tokens_for_partner.csv \
   --exchange-config sender-q2.exchange.json \
   --private-key ~/.openlinktoken/sender-q2.private.pem
@@ -239,7 +239,6 @@ Generate tokens using the agreed-upon secrets.
 ```bash
 olt package \
   -i patient_data.csv \
-  -t csv \
   -o tokens_for_partner.csv \
   -h "$SHARED_HASHING_SECRET" \
   -e "$SHARED_ENCRYPTION_KEY"
@@ -252,7 +251,6 @@ Tokenized (unencrypted) output is primarily used **inside your environment** to 
 ```bash
 olt tokenize \
   -i local_patient_data.csv \
-  -t csv \
   -o local_hash_only_tokens.csv \
   -h "$SHARED_HASHING_SECRET"
 ```
@@ -346,7 +344,6 @@ Run Open Link Token on your local data using the **same secrets**:
 ```bash
 olt package \
   -i local_patient_data.csv \
-  -t csv \
   -o local_tokens.csv \
   -h "$SHARED_HASHING_SECRET" \
   -e "$SHARED_ENCRYPTION_KEY"
@@ -383,7 +380,6 @@ If tokens are encrypted and you need to debug or verify:
 ```bash
 olt decrypt \
   -i partner_tokens.csv \
-  -t csv \
   -o partner_decrypted.csv \
   -e "$SHARED_ENCRYPTION_KEY"
 ```

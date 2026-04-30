@@ -63,7 +63,6 @@ uv pip install -r requirements.txt -e .
 ```bash
 olt package \
   -i ../../../resources/sample.csv \
-  -t csv \
   -o ../../../resources/output.csv \
   -h "YourHashingSecret" \
   -e "YourEncryptionKey-32Chars-Here!"
@@ -74,7 +73,6 @@ olt package \
 ```bash
 olt tokenize \
   -i ../../../resources/sample.csv \
-  -t csv \
   -o ../../../resources/output.csv \
   -h "YourHashingSecret"
 ```
@@ -84,7 +82,6 @@ olt tokenize \
 ```bash
 olt package \
   -i input.parquet \
-  -t parquet \
   -o output.parquet \
   -h "YourHashingSecret" \
   -e "YourEncryptionKey-32Chars-Here!"
@@ -95,7 +92,6 @@ olt package \
 ```bash
 olt decrypt \
   -i ../../../resources/output.csv \
-  -t csv \
   -o ../../../resources/decrypted.csv \
   -e "YourEncryptionKey-32Chars-Here!"
 ```

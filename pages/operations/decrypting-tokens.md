@@ -30,7 +30,6 @@ Use the `decrypt` subcommand with the same encryption key used for token generat
 ```bash
 olt decrypt \
   -i ../../resources/output.csv \
-  -t csv \
   -o ../../resources/decrypted.csv \
   -e "Secret-Encryption-Key-Goes-Here."
 ```
@@ -41,7 +40,6 @@ olt decrypt \
 docker run --rm -v $(pwd)/resources:/app/resources \
   openlinktoken:latest decrypt \
   -i /app/resources/output.csv \
-  -t csv \
   -o /app/resources/decrypted.csv \
   -e "Secret-Encryption-Key-Goes-Here."
 ```
@@ -96,12 +94,12 @@ Tokens can be encrypted by one Open Link Token implementation and decrypted by a
 ```bash
 # Encrypt with Open Link Token CLI
 olt package \
-  -i data.csv -t csv -o tokens.csv \
+  -i data.csv -o tokens.csv \
   -h "HashingKey" -e "EncryptionKey32Characters!!!!!"
 
 # Decrypt with Open Link Token CLI
 olt decrypt \
-  -i tokens.csv -t csv -o decrypted.csv \
+  -i tokens.csv -o decrypted.csv \
   -e "EncryptionKey32Characters!!!!!"
 ```
 

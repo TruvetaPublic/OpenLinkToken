@@ -33,7 +33,7 @@ export OLT_HASHING_SECRET="MyHashingKey"
 export OLT_ENCRYPTION_KEY="MyEncryptionKey32CharactersLong"
 
 olt package \
-  -i data.csv -t csv -o tokens.csv \
+  -i data.csv -o tokens.csv \
   -h "$OLT_HASHING_SECRET" \
   -e "$OLT_ENCRYPTION_KEY"
 ```
@@ -47,7 +47,6 @@ docker run --rm \
   -v $(pwd)/resources:/app/resources \
   openlinktoken:latest package \
   -i /app/resources/sample.csv \
-  -t csv \
   -o /app/resources/output.csv \
   -h "$OLT_HASHING_SECRET" \
   -e "$OLT_ENCRYPTION_KEY"
@@ -121,8 +120,8 @@ Use `-ot` to specify a different output format:
 ```bash
 # Input CSV, output Parquet
 olt package \
-  -i data.csv -t csv \
-  -o tokens.parquet -ot parquet \
+  -i data.csv \
+  -o tokens.parquet \
   -h "HashingKey" -e "EncryptionKey"
 ```
 
@@ -171,7 +170,7 @@ For the exact CLI flags that enable each mode, see the [CLI Reference](../refere
 # Python
 source ../../.venv/bin/activate
 python -m openlinktoken_cli.main package \
-  -i ../../resources/sample.csv -t csv -o ../../resources/output.csv \
+  -i ../../resources/sample.csv -o ../../resources/output.csv \
   -h "HashingKey" -e "EncryptionKey32Characters!!!!!"
 ```
 
@@ -181,7 +180,6 @@ python -m openlinktoken_cli.main package \
 ./run-openlinktoken.sh package \
   -i ./resources/sample.csv \
   -o ./resources/output.csv \
-  -t csv \
   -h "HashingKey" \
   -e "EncryptionKey32Characters!!!!!"
 ```

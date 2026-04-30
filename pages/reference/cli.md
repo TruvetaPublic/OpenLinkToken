@@ -71,11 +71,9 @@ The automatic version check can also be disabled permanently by setting the envi
 | ------------------- | ----- | -------- | ----------------------------------------------------------------------------------------------- |
 | `--input`           | `-i`  | Yes      | Path to input file (CSV or Parquet)                                                             |
 | `--output`          | `-o`  | Yes      | Path to output file                                                                             |
-| `--type`            | `-t`  | Yes      | File type: `csv` or `parquet`                                                                   |
 | `--exchange-config` |       | No       | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted. |
 | `--private-key`     |       | No\*     | Private key PEM used to decrypt the exchange config and derive the transport encryption key     |
 | `--private-key-env` |       | No\*     | Environment variable containing the private key PEM                                             |
-| `--output-type`     | `-ot` | No       | Output file type if different from input                                                        |
 | `--hash-record-ids` |       | No       | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability)          |
 
 ### `tokenize` (Hashed Tokens Only)
@@ -84,12 +82,10 @@ The automatic version check can also be disabled permanently by setting the envi
 | ------------------- | ----- | ---------------- | ----------------------------------------------------------------------------------------------- |
 | `--input`           | `-i`  | Yes              | Path to input file (CSV or Parquet)                                                             |
 | `--output`          | `-o`  | Yes              | Path to output file                                                                             |
-| `--type`            | `-t`  | Yes              | File type: `csv` or `parquet`                                                                   |
 | `--exchange-config` |       | Normal mode only | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted. |
 | `--private-key`     |       | No\*             | Private key PEM used to decrypt the exchange config                                             |
 | `--private-key-env` |       | No\*             | Environment variable containing the private key PEM                                             |
 | `--demo-mode`       |       | No               | No hashing; outputs raw attribute signatures. Cannot be combined with `--exchange-config`.      |
-| `--output-type`     | `-ot` | No               | Output file type if different from input                                                        |
 | `--hash-record-ids` |       | No               | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability)          |
 
 ### `encrypt` (Encrypt Input Tokens)
@@ -98,11 +94,9 @@ The automatic version check can also be disabled permanently by setting the envi
 | ------------------- | ----- | -------- | ----------------------------------------------------------------------------------------------- |
 | `--input`           | `-i`  | Yes      | Path to input file (CSV or Parquet)                                                             |
 | `--output`          | `-o`  | Yes      | Path to output file                                                                             |
-| `--type`            | `-t`  | Yes      | File type: `csv` or `parquet`                                                                   |
 | `--exchange-config` |       | No       | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted. |
 | `--private-key`     |       | No\*     | Private key PEM used to decrypt the exchange config and derive the transport encryption key     |
 | `--private-key-env` |       | No\*     | Environment variable containing the private key PEM                                             |
-| `--output-type`     | `-ot` | No       | Output file type if different from input                                                        |
 
 ### `decrypt` (Decrypt Encrypted Tokens)
 
@@ -110,11 +104,9 @@ The automatic version check can also be disabled permanently by setting the envi
 | ------------------- | ----- | -------- | ----------------------------------------------------------------------------------------------- |
 | `--input`           | `-i`  | Yes      | Path to input file (must be encrypted)                                                          |
 | `--output`          | `-o`  | Yes      | Path to output file                                                                             |
-| `--type`            | `-t`  | Yes      | File type: `csv` or `parquet`                                                                   |
 | `--exchange-config` |       | No       | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted. |
 | `--private-key`     |       | No\*     | Private key PEM used to decrypt the exchange config and derive the transport encryption key     |
 | `--private-key-env` |       | No\*     | Environment variable containing the private key PEM                                             |
-| `--output-type`     | `-ot` | No       | Output file type if different from input                                                        |
 
 ### `generate-key-pair` (ECDH Key Generation)
 
@@ -266,7 +258,7 @@ Generates fully encrypted tokens using AES-256-GCM. Tokens can be decrypted late
 
 ```bash
 olt package \
-  -i input.csv -t csv -o output.csv \
+  -i input.csv -o output.csv \
   -h "HashingSecret" \
   -e "EncryptionKey-Exactly32Chars!!"
 ```
@@ -283,7 +275,7 @@ Generates one-way hashed tokens. Faster but tokens cannot be decrypted.
 
 ```bash
 olt tokenize \
-  -i input.csv -t csv -o output.csv \
+  -i input.csv -o output.csv \
   -h "HashingSecret"
 
 ```
@@ -306,7 +298,7 @@ attribute values compose each token for development, testing, or demos.
 
 ```bash
 olt tokenize \
-  -i input.csv -t csv -o output.csv \
+  -i input.csv -o output.csv \
   --demo-mode
 ```
 
@@ -419,7 +411,7 @@ Every run generates a `.metadata.json` file:
 ./run-openlinktoken.sh package \
   -i ./input.csv \
   -o ./output.csv \
-  -t csv \
+
   -h "HashingKey" \
   -e "EncryptionKey" \
   [--skip-build] \
