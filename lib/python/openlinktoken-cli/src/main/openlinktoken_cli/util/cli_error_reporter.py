@@ -1,13 +1,13 @@
 # SPDX-License-Identifier: MIT
 
-from dataclasses import dataclass
-from datetime import datetime, timezone
 import os
-from pathlib import Path
 import re
 import sys
 import traceback
 import uuid
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
 
 from openlinktoken_cli.util.app_paths import get_logs_dir
 
@@ -32,7 +32,12 @@ _SENSITIVE_KV_PATTERN = re.compile(
 def _redact_sensitive_text(value: str) -> str:
     redacted = value
     for pattern in _SENSITIVE_FLAG_PATTERNS:
-        redacted = pattern.sub(lambda m: f"{m.group(1)}{m.group(2) if m.lastindex and m.lastindex >= 2 else ''}[REDACTED]", redacted)
+        redacted = pattern.sub(
+            lambda match: (
+                f"{match.group(1)}{match.group(2) if match.lastindex and match.lastindex >= 2 else ''}[REDACTED]"
+            ),
+            redacted,
+        )
     redacted = _SENSITIVE_KV_PATTERN.sub(r"\1\2[REDACTED]", redacted)
     return redacted
 
@@ -85,7 +90,4 @@ def format_error_reference_message(report: CliErrorReport) -> str:
 def format_unexpected_error_message(report: CliErrorReport, command_name: str | None = None) -> str:
     """Build the stderr message shown to users for archived unexpected failures."""
     command_context = f" while running '{command_name}'" if command_name else ""
-    return (
-        f"Error: Unexpected internal error{command_context}.\n"
-        f"{format_error_reference_message(report)}"
-    )
+    return f"Error: Unexpected internal error{command_context}.\n{format_error_reference_message(report)}"
