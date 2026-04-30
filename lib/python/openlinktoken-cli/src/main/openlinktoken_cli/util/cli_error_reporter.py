@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 import os
 from pathlib import Path
+import re
 import sys
 import traceback
 import uuid
@@ -19,6 +20,23 @@ class CliErrorReport:
     log_path: Path
 
 
+_SENSITIVE_FLAG_PATTERNS = [
+    re.compile(r"(?i)(--hashingsecret)(\s+)(\S+)"),
+    re.compile(r"(?i)(--hashingsecret=)(\S+)"),
+]
+_SENSITIVE_KV_PATTERN = re.compile(
+    r"(?i)\b(hashingsecret|password|passwd|secret|token|api[_-]?key|private[_-]?key)\b(\s*[:=]\s*)([^\s,;]+)"
+)
+
+
+def _redact_sensitive_text(value: str) -> str:
+    redacted = value
+    for pattern in _SENSITIVE_FLAG_PATTERNS:
+        redacted = pattern.sub(lambda m: f"{m.group(1)}{m.group(2) if m.lastindex and m.lastindex >= 2 else ''}[REDACTED]", redacted)
+    redacted = _SENSITIVE_KV_PATTERN.sub(r"\1\2[REDACTED]", redacted)
+    return redacted
+
+
 def archive_cli_error(error: BaseException, command_name: str | None = None) -> CliErrorReport:
     """Persist an exception traceback under the Open Link Token logs directory."""
     logs_dir = get_logs_dir()
@@ -28,8 +46,10 @@ def archive_cli_error(error: BaseException, command_name: str | None = None) -> 
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     log_path = logs_dir / f"{timestamp}-{reference_id}.log"
 
-    command_line = command_name or "<unknown>"
-    traceback_text = "".join(traceback.format_exception(type(error), error, error.__traceback__))
+    command_line = _redact_sensitive_text(command_name or "<unknown>")
+    traceback_text = _redact_sensitive_text(
+        "".join(traceback.format_exception(type(error), error, error.__traceback__))
+    )
     log_path.write_text(
         "\n".join(
             [
