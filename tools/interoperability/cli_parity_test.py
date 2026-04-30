@@ -80,24 +80,21 @@ def test_help_for_subcommands():
     """Test that the Python CLI supports help for each subcommand."""
     print(f"\n{YELLOW}Testing help for subcommands...{RESET}")
 
-    commands = ["tokenize", "encrypt", "decrypt", "package"]
+    command_requirements = {
+        "tokenize": ["--exchange-config", "--private-key"],
+        "encrypt": ["--exchange-config", "--private-key"],
+        "decrypt": ["--exchange-config", "--private-key"],
+        "package": ["--exchange-config", "--private-key"],
+    }
 
-    for cmd in commands:
+    for cmd, required_flags in command_requirements.items():
         # Test with --help flag
         python_code, python_out, python_err = run_python_cli(cmd, "--help")
 
         assert python_code == 0, f"Python '{cmd} --help' failed with code {python_code}"
 
-        # Check for required parameters in help output
-        if cmd in ["tokenize", "package"]:
-            assert "--hashingsecret" in python_out or "hashingsecret" in python_out, (
-                f"Python '{cmd}' help missing hashingsecret"
-            )
-
-        if cmd in ["encrypt", "decrypt", "package"]:
-            assert "--encryptionkey" in python_out or "encryptionkey" in python_out, (
-                f"Python '{cmd}' help missing encryptionkey"
-            )
+        for required_flag in required_flags:
+            assert required_flag in python_out, f"Python '{cmd}' help missing {required_flag}"
 
         # Test with help command
         python_code, python_out, python_err = run_python_cli("help", cmd)
