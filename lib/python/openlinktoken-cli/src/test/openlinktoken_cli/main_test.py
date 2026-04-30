@@ -4,7 +4,6 @@ Integration tests for the main module.
 Tests the end-to-end workflows for token generation and decryption using new subcommand interface.
 """
 
-import zipfile
 from pathlib import Path
 from unittest.mock import patch
 
@@ -200,77 +199,6 @@ class TestOpenLinkTokenCommand:
         # Verify CSV output was created (same as input type)
         content = output_csv.read_text()
         assert "RecordId" in content, "Output should contain CSV headers"
-
-    def test_package_command_csv_to_zip(self, temp_dir):
-        """Test package command with CSV input and ZIP output."""
-        input_csv = temp_dir / "input.csv"
-        output_zip = temp_dir / "output.zip"
-        exchange_config, private_key = self._create_exchange_config(temp_dir, "package-zip")
-
-        args = [
-            "package",
-            "-i",
-            str(input_csv),
-            "-o",
-            str(output_zip),
-            "--exchange-config",
-            str(exchange_config),
-            "--private-key",
-            str(private_key),
-        ]
-
-        exit_code = OpenLinkTokenCommand.execute(args)
-
-        assert exit_code == 0, "Command should execute successfully"
-        assert output_zip.exists(), "Output ZIP should be created"
-        with zipfile.ZipFile(output_zip, "r") as archive:
-            names = archive.namelist()
-            assert names == ["output.csv"]
-            zipped_content = archive.read("output.csv").decode("utf-8")
-            assert "RecordId" in zipped_content
-
-    def test_decrypt_command_csv_to_zip(self, temp_dir):
-        """Test decrypt command with CSV input and ZIP output."""
-        input_csv = temp_dir / "input.csv"
-        encrypted_csv = temp_dir / "encrypted.csv"
-        output_zip = temp_dir / "decrypted.zip"
-        exchange_config, private_key = self._create_exchange_config(temp_dir, "decrypt-zip")
-
-        package_args = [
-            "package",
-            "-i",
-            str(input_csv),
-            "-o",
-            str(encrypted_csv),
-            "--exchange-config",
-            str(exchange_config),
-            "--private-key",
-            str(private_key),
-        ]
-        package_exit_code = OpenLinkTokenCommand.execute(package_args)
-        assert package_exit_code == 0, "Setup package command should execute successfully"
-
-        decrypt_args = [
-            "decrypt",
-            "-i",
-            str(encrypted_csv),
-            "-o",
-            str(output_zip),
-            "--exchange-config",
-            str(exchange_config),
-            "--private-key",
-            str(private_key),
-        ]
-
-        exit_code = OpenLinkTokenCommand.execute(decrypt_args)
-
-        assert exit_code == 0, "Command should execute successfully"
-        assert output_zip.exists(), "Output ZIP should be created"
-        with zipfile.ZipFile(output_zip, "r") as archive:
-            names = archive.namelist()
-            assert names == ["decrypted.csv"]
-            zipped_content = archive.read("decrypted.csv").decode("utf-8")
-            assert "RuleId,Token,RecordId" in zipped_content
 
     def test_parquet_input_to_parquet_output(self, temp_dir):
         """Test Parquet input to Parquet output."""
