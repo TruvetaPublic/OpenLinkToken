@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: MIT
 
 import logging
+import sys
 from typing import List
 
 from openlinktoken.metadata import Metadata
@@ -19,6 +20,7 @@ from openlinktoken_cli.io.parquet.person_attributes_parquet_writer import (
 from openlinktoken_cli.processor.person_attributes_processor import (
     PersonAttributesProcessor,
 )
+from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
 from openlinktoken_cli.util.exchange_config import resolve_exchange_config
 
 logger = logging.getLogger(__name__)
@@ -195,6 +197,8 @@ class TokenizeCommand:
             return 0
         except (OSError, ValueError) as error:
             logger.error("Error during token generation: %s", error)
+            report = archive_cli_error(error, command_name="tokenize")
+            print(format_error_reference_message(report), file=sys.stderr)
             return 1
 
     @staticmethod

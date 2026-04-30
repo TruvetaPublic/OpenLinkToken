@@ -5,12 +5,14 @@ import json
 import logging
 import os
 import secrets
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 from uuid import uuid4
 
 from openlinktoken.exchange_jwe import EXCHANGE_JWE_VERSION, build_exchange_envelope
+from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
 from openlinktoken_cli.util.ec_key_utils import (
     SUPPORTED_CURVES,
     derive_public_key_from_private_pem,
@@ -286,6 +288,8 @@ class InitiateExchangeCommand:
             InitiateExchangeCommand._write_config(output_path, config, overwrite=force)
         except (OSError, ValueError) as error:
             logger.error("Validation or file system error during initiate-exchange: %s", error)
+            report = archive_cli_error(error, command_name="initiate-exchange")
+            print(format_error_reference_message(report), file=sys.stderr)
             return 1
         except Exception:
             raise
