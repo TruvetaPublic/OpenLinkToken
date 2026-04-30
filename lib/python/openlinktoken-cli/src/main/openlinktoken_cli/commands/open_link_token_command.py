@@ -163,9 +163,8 @@ class OpenLinkTokenCommand:
         try:
             exit_code = parsed_args.func(parsed_args)
         except Exception as error:
-            command_name = getattr(parsed_args, "command", None)
-            report = archive_unexpected_error(error, command_name=command_name)
-            print(format_unexpected_error_message(report, command_name=command_name), file=sys.stderr)
+            report = archive_unexpected_error(error)
+            print(format_unexpected_error_message(report), file=sys.stderr)
             logger.debug("Command execution failed", exc_info=error)
             exit_code = 1
 
