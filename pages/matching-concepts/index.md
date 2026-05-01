@@ -140,12 +140,12 @@ Tokens are encrypted to prevent re-identification, but can be decrypted to debug
 ```bash
 # Generate encrypted tokens (default mode)
 olt package \
-  -i data.csv -t csv -o output.csv \
+  -i data.csv -o output.csv \
   -h "HashingKey" -e "EncryptionKey"
 
 # Decrypt previously encrypted tokens
 olt decrypt \
-  -i output.csv -t csv -o decrypted.csv \
+  -i output.csv -o decrypted.csv \
   -e "EncryptionKey"
 ```
 

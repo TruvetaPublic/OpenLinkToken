@@ -67,13 +67,13 @@ EXAMPLES:
     $0 package -i input.csv -o output.csv -h "HashKey" -e "EncryptionKey"
 
     # Hash-only mode (no encryption)
-    $0 tokenize -i input.csv -t csv -o hashed.csv -h "HashKey"
+    $0 tokenize -i input.csv -o hashed.csv -h "HashKey"
 
     # Decrypt previously encrypted tokens
-    $0 decrypt -i tokens.csv -t csv -o decrypted.csv -e "EncryptionKey"
+    $0 decrypt -i tokens.csv -o decrypted.csv -e "EncryptionKey"
 
     # Encrypt previously tokenized (hashed) output
-    $0 encrypt -i hashed.csv -t csv -o encrypted.csv -e "EncryptionKey"
+    $0 encrypt -i hashed.csv -o encrypted.csv -e "EncryptionKey"
 
     # Skip Docker build if image already exists
     $0 -i ./input.csv -o ./output.csv -h "secret" -e "key" --skip-build

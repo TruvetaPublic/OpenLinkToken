@@ -127,7 +127,7 @@ Use clearly marked placeholder values:
 ```bash
 # Placeholder secrets for local testing only
 olt package \
-  -i sample.csv -t csv -o output.csv \
+  -i sample.csv -o output.csv \
   -h "HashingKey" \
   -e "Secret-Encryption-Key-Goes-Here."
 ```
@@ -145,7 +145,7 @@ Load and use:
 ```bash
 source .env
 olt package \
-  -i sample.csv -t csv -o output.csv \
+  -i sample.csv -o output.csv \
   -h "$OLT_HASHING_SECRET" \
   -e "$OLT_ENCRYPTION_KEY"
 ```
@@ -171,7 +171,7 @@ export OLT_ENCRYPTION_KEY=$(aws secretsmanager get-secret-value \
   --secret-id openlinktoken-enc-key --query SecretString --output text)
 
 olt package \
-  -i data.csv -t csv -o tokens.csv \
+  -i data.csv -o tokens.csv \
   -h "$OLT_HASHING_SECRET" \
   -e "$OLT_ENCRYPTION_KEY"
 ```

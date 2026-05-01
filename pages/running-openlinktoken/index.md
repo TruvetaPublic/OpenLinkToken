@@ -20,11 +20,10 @@ olt <subcommand> [OPTIONS]
 
 #### Required Arguments (All Subcommands)
 
-| Argument | Alias      | Description                      | Example                  |
-| -------- | ---------- | -------------------------------- | ------------------------ |
-| `-i`     | `--input`  | Input file path (CSV or Parquet) | `-i data.csv`            |
-| `-t`     | `--type`   | Input file type                  | `-t csv` or `-t parquet` |
-| `-o`     | `--output` | Output file path                 | `-o tokens.csv`          |
+| Argument | Alias      | Description                      | Example       |
+| -------- | ---------- | -------------------------------- | ------------- |
+| `-i`     | `--input`  | Input file path (CSV or Parquet) | `-i data.csv` |
+| `-o`     | `--output` | Output file path                 | `-o tokens.csv` |
 
 #### Optional Arguments by Subcommand
 
@@ -32,7 +31,6 @@ olt <subcommand> [OPTIONS]
 | -------- | ----------------- | --------- | ---------- | --------- | --------------------------------- | ------------------ | ---------------------- |
 | `-h`     | `--hashingkey`    | ✓         | ✓          |           | HMAC-SHA256 hashing secret        | Required           | `-h "HashingKey"`      |
 | `-e`     | `--encryptionkey` | ✓         |            | ✓         | AES-256 encryption key            | Required           | `-e "MyEncryptionKey"` |
-| `-ot`    | `--output-type`   | ✓         | ✓          | ✓         | Output file type (CSV or Parquet) | Same as input type | `-ot parquet`          |
 
 ### Usage Examples
 
@@ -47,7 +45,7 @@ uv pip install -r requirements.txt -e . -e ../openlinktoken
 
 olt package \
   -i ../../../resources/sample.csv \
-  -t csv \
+
   -o ../../../resources/output.csv \
   -h "HashingKey" \
   -e "Secret-Encryption-Key-Goes-Here."
@@ -60,7 +58,7 @@ Generates HMAC-SHA256 hashed tokens without AES encryption. Only hashing secret 
 ```bash
 olt tokenize \
   -i ../../../resources/sample.csv \
-  -t csv \
+
   -o ../../../resources/hashed-output.csv \
   -h "HashingKey"
 ```
@@ -72,7 +70,7 @@ Decrypts previously encrypted tokens. Only encryption key required.
 ```bash
 olt decrypt \
   -i ../../../resources/output.csv \
-  -t csv \
+
   -o ../../../resources/decrypted.csv \
   -e "Secret-Encryption-Key-Goes-Here."
 ```
@@ -158,7 +156,7 @@ cd /path/to/OpenLinkToken
 ./run-openlinktoken.sh package \
   -i ./resources/sample.csv \
   -o ./resources/output.csv \
-  -t csv \
+
   -h "HashingKey" \
   -e "Secret-Encryption-Key-Goes-Here."
 ```
@@ -198,7 +196,7 @@ docker build -t openlinktoken:latest .
 docker run --rm -v $(pwd)/resources:/app/resources \
   openlinktoken:latest package \
   -i /app/resources/sample.csv \
-  -t csv \
+
   -o /app/resources/output.csv \
   -h "HashingKey" \
   -e "Secret-Encryption-Key-Goes-Here."
@@ -287,7 +285,7 @@ See example notebooks in `lib/python/openlinktoken-pyspark/notebooks/`:
 **Solution**: Either provide encryption key `-e "YourKey"` or use `tokenize`:
 
 ```bash
-olt tokenize -i data.csv -t csv -o output.csv -h "HashingKey"
+olt tokenize -i data.csv -o output.csv -h "HashingKey"
 ```
 
 ### "Invalid BirthDate" or "Date out of range"

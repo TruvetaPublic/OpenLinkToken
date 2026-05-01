@@ -136,7 +136,7 @@ The CLI processes CSV or Parquet files without writing code.
 
 ```bash
 olt package \
-  -i input.csv -t csv -o output.csv \
+  -i input.csv -o output.csv \
   -h "HashingSecret" -e "EncryptionKey32Chars!!!!!!!!!!"
 ```
 
@@ -144,7 +144,7 @@ Or with Python:
 
 ```bash
 python -m openlinktoken_cli.main package \
-  -i input.csv -t csv -o output.csv \
+  -i input.csv -o output.csv \
   -h "HashingSecret" -e "EncryptionKey32Chars!!!!!!!!!!"
 ```
 

@@ -86,13 +86,13 @@ EXAMPLES:
     .\run-openlinktoken.ps1 -Subcommand package -i .\input.csv -o .\output.csv -h "HashKey" -e "EncryptionKey"
 
     # Hash-only mode (no encryption)
-    .\run-openlinktoken.ps1 -Subcommand tokenize -i .\input.csv -t csv -o .\hashed.csv -h "HashKey"
+    .\run-openlinktoken.ps1 -Subcommand tokenize -i .\input.csv -o .\hashed.csv -h "HashKey"
 
     # Decrypt previously encrypted tokens
-    .\run-openlinktoken.ps1 -Subcommand decrypt -i .\tokens.csv -t csv -o .\decrypted.csv -e "EncryptionKey"
+    .\run-openlinktoken.ps1 -Subcommand decrypt -i .\tokens.csv -o .\decrypted.csv -e "EncryptionKey"
 
     # Encrypt previously tokenized (hashed) output
-    .\run-openlinktoken.ps1 -Subcommand encrypt -i .\hashed.csv -t csv -o .\encrypted.csv -e "EncryptionKey"
+    .\run-openlinktoken.ps1 -Subcommand encrypt -i .\hashed.csv -o .\encrypted.csv -e "EncryptionKey"
 
     # Skip Docker build if image already exists
     .\run-openlinktoken.ps1 -i .\input.csv -o .\output.csv -h "secret" -e "key" -SkipBuild

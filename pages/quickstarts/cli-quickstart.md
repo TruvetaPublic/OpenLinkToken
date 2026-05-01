@@ -48,7 +48,6 @@ chmod +x openlinktoken
 ./olt package \
   -i /path/to/sample.csv \
   -o /path/to/output.csv \
-  -t csv \
   --exchange-config /path/to/quickstart.exchange.json \
   --private-key "$HOME/.openlinktoken/quickstart.private.pem"
 ```
@@ -66,7 +65,6 @@ cd openlinktoken-cli-2.0.0-alpha-windows-x64
 .\olt.exe package `
   -i C:\path\to\sample.csv `
   -o C:\path\to\output.csv `
-  -t csv `
   --exchange-config C:\path\to\quickstart.exchange.json `
   --private-key "$HOME/.openlinktoken/quickstart.private.pem"
 ```
@@ -93,7 +91,6 @@ cd /path/to/OpenLinkToken
 ./run-openlinktoken.sh package \
   -i ./resources/sample.csv \
   -o ./resources/output.csv \
-  -t csv \
   -h "HashingKey" \
   -e "Secret-Encryption-Key-Goes-Here."
 ```
@@ -106,7 +103,6 @@ cd C:\path\to\Open Link Token
 .\run-openlinktoken.ps1 package `
   -i .\resources\sample.csv `
   -o .\resources\output.csv `
-  -t csv `
   -h "HashingKey" `
   -e "Secret-Encryption-Key-Goes-Here."
 ```
@@ -165,7 +161,6 @@ olt generate-key-pair --name recipient --force
 olt initiate-exchange --name quickstart --public-key ~/.openlinktoken/recipient.public.pem --output ./quickstart.exchange.json
 olt package \
   -i sample.csv \
-  -t csv \
   -o tokens.csv \
   --exchange-config ./quickstart.exchange.json \
   --private-key ~/.openlinktoken/quickstart.private.pem
@@ -188,7 +183,6 @@ patient_002,T1,...
 ```bash
 olt package \
   -i input.parquet \
-  -t parquet \
   -o tokens.parquet \
   --exchange-config ./quickstart.exchange.json \
   --private-key ~/.openlinktoken/quickstart.private.pem

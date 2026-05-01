@@ -81,7 +81,7 @@ jobs:
           cp resources/sample.csv smoke/input.csv
           ./dist/olt generate-key-pair --name recipient --force
           ./dist/olt initiate-exchange --name smoke --public-key "$HOME/.openlinktoken/recipient.public.pem" --output smoke/smoke.exchange.json --hashingsecret secret
-          ./dist/olt tokenize -i smoke/input.csv -t csv -o smoke/out.csv --exchange-config smoke/smoke.exchange.json --private-key "$HOME/.openlinktoken/smoke.private.pem"
+          ./dist/olt tokenize -i smoke/input.csv -o smoke/out.csv --exchange-config smoke/smoke.exchange.json --private-key "$HOME/.openlinktoken/smoke.private.pem"
 
       - name: Smoke test (Windows)
         if: runner.os == 'Windows'
@@ -91,7 +91,7 @@ jobs:
           Copy-Item resources\sample.csv smoke\input.csv
           .\dist\olt.exe generate-key-pair --name recipient --force
           .\dist\olt.exe initiate-exchange --name smoke --public-key "$HOME/.openlinktoken/recipient.public.pem" --output smoke\smoke.exchange.json --hashingsecret secret
-          .\dist\olt.exe tokenize -i smoke\input.csv -t csv -o smoke\out.csv --exchange-config smoke\smoke.exchange.json --private-key "$HOME/.openlinktoken/smoke.private.pem"
+          .\dist\olt.exe tokenize -i smoke\input.csv -o smoke\out.csv --exchange-config smoke\smoke.exchange.json --private-key "$HOME/.openlinktoken/smoke.private.pem"
 
       - name: Prepare release assets
         shell: bash

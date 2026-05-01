@@ -67,8 +67,6 @@ class TestOpenLinkTokenCommand:
             "package",
             "-i",
             str(input_csv),
-            "-t",
-            "csv",
             "-o",
             str(output_csv),
             "--exchange-config",
@@ -97,12 +95,8 @@ class TestOpenLinkTokenCommand:
             "package",
             "-i",
             str(input_csv),
-            "-t",
-            "csv",
             "-o",
             str(output_parquet),
-            "-ot",
-            "parquet",
             "--exchange-config",
             str(exchange_config),
             "--private-key",
@@ -125,8 +119,6 @@ class TestOpenLinkTokenCommand:
             "tokenize",
             "-i",
             str(input_csv),
-            "-t",
-            "csv",
             "-o",
             str(output_csv),
             "--exchange-config",
@@ -153,8 +145,6 @@ class TestOpenLinkTokenCommand:
             "package",
             "-i",
             str(input_csv),
-            "-t",
-            "csv",
             "-o",
             str(output_csv),
             "--exchange-config",
@@ -169,8 +159,6 @@ class TestOpenLinkTokenCommand:
             "decrypt",
             "-i",
             str(output_csv),
-            "-t",
-            "csv",
             "-o",
             str(decrypted_csv),
             "--exchange-config",
@@ -195,8 +183,6 @@ class TestOpenLinkTokenCommand:
             "package",
             "-i",
             str(input_csv),
-            "-t",
-            "csv",
             "-o",
             str(output_csv),
             "--exchange-config",
@@ -226,12 +212,8 @@ class TestOpenLinkTokenCommand:
             "package",
             "-i",
             str(input_csv),
-            "-t",
-            "csv",
             "-o",
             str(temp_parquet),
-            "-ot",
-            "parquet",
             "--exchange-config",
             str(exchange_config),
             "--private-key",
@@ -244,8 +226,6 @@ class TestOpenLinkTokenCommand:
             "decrypt",
             "-i",
             str(temp_parquet),
-            "-t",
-            "parquet",
             "-o",
             str(output_parquet),
             "--exchange-config",
@@ -269,8 +249,6 @@ class TestOpenLinkTokenCommand:
             "package",
             "-i",
             str(input_csv),
-            "-t",
-            "csv",
             "-o",
             str(output_csv),
             "--exchange-config",
@@ -285,12 +263,8 @@ class TestOpenLinkTokenCommand:
             "decrypt",
             "-i",
             str(output_csv),
-            "-t",
-            "csv",
             "-o",
             str(decrypted_parquet),
-            "-ot",
-            "parquet",
             "--exchange-config",
             str(exchange_config),
             "--private-key",
@@ -312,8 +286,6 @@ class TestOpenLinkTokenCommand:
             "tokenize",
             "-i",
             str(input_csv),
-            "-t",
-            "csv",
             "-o",
             str(output_csv),
             # Missing --exchange-config
@@ -331,8 +303,6 @@ class TestOpenLinkTokenCommand:
             "encrypt",
             "-i",
             str(input_csv),
-            "-t",
-            "csv",
             "-o",
             str(output_csv),
             # Missing --exchange-config
@@ -349,8 +319,6 @@ class TestOpenLinkTokenCommand:
         args = [
             "tokenize",
             # Missing -i/--input
-            "-t",
-            "csv",
             "-o",
             str(output_csv),
             "--exchange-config",
@@ -371,8 +339,6 @@ class TestOpenLinkTokenCommand:
             "tokenize",
             "-i",
             str(input_csv),
-            "-t",
-            "csv",
             # Missing -o/--output
             "--exchange-config",
             str(exchange_config),
@@ -384,17 +350,16 @@ class TestOpenLinkTokenCommand:
         assert exit_code != 0, "Command should fail with missing required parameter"
 
     def test_invalid_input_type(self, temp_dir):
-        """Test that invalid input type is caught."""
-        input_csv = temp_dir / "input.csv"
+        """Test that unsupported input file extension is caught."""
+        unsupported_file = temp_dir / "input.txt"  # .txt is not supported
+        unsupported_file.write_text("some data")
         output_csv = temp_dir / "output.csv"
         exchange_config, private_key = self._create_exchange_config(temp_dir, "invalid-input-type")
 
         args = [
             "tokenize",
             "-i",
-            str(input_csv),
-            "-t",
-            "invalid_type",  # Invalid input type
+            str(unsupported_file),
             "-o",
             str(output_csv),
             "--exchange-config",
@@ -404,24 +369,20 @@ class TestOpenLinkTokenCommand:
         ]
 
         exit_code = OpenLinkTokenCommand.execute(args)
-        assert exit_code != 0, "Command should fail with invalid input type"
+        assert exit_code != 0, "Command should fail with unsupported input extension"
 
     def test_invalid_output_type(self, temp_dir):
-        """Test that invalid output type is caught."""
+        """Test that unsupported output file extension is caught."""
         input_csv = temp_dir / "input.csv"
-        output_csv = temp_dir / "output.csv"
+        unsupported_output = temp_dir / "output.txt"  # .txt is not supported
         exchange_config, private_key = self._create_exchange_config(temp_dir, "invalid-output-type")
 
         args = [
             "tokenize",
             "-i",
             str(input_csv),
-            "-t",
-            "csv",
             "-o",
-            str(output_csv),
-            "-ot",
-            "invalid_type",  # Invalid output type
+            str(unsupported_output),
             "--exchange-config",
             str(exchange_config),
             "--private-key",
@@ -429,7 +390,7 @@ class TestOpenLinkTokenCommand:
         ]
 
         exit_code = OpenLinkTokenCommand.execute(args)
-        assert exit_code != 0, "Command should fail with invalid output type"
+        assert exit_code != 0, "Command should fail with unsupported output extension"
 
     def test_non_existent_input_file(self, temp_dir):
         """Test that non-existent input file is caught."""
@@ -441,8 +402,6 @@ class TestOpenLinkTokenCommand:
             "tokenize",
             "-i",
             str(nonexistent_file),
-            "-t",
-            "csv",
             "-o",
             str(output_csv),
             "--exchange-config",
@@ -463,8 +422,6 @@ class TestOpenLinkTokenCommand:
             "package",
             "-i",
             str(input_csv),
-            "-t",
-            "csv",
             "-o",
             str(output_csv),
             # Missing --exchange-config
@@ -482,8 +439,6 @@ class TestOpenLinkTokenCommand:
             "invalid_command",  # Invalid subcommand
             "-i",
             str(input_csv),
-            "-t",
-            "csv",
             "-o",
             str(output_csv),
         ]
@@ -656,8 +611,6 @@ class TestOpenLinkTokenCommand:
             "tokenize",
             "-i",
             str(input_csv),
-            "-t",
-            "csv",
             "-o",
             str(output_csv),
             "--exchange-config",
@@ -694,8 +647,6 @@ class TestOpenLinkTokenCommand:
             "tokenize",
             "-i",
             str(input_csv),
-            "-t",
-            "csv",
             "-o",
             str(output_csv),
             "--exchange-config",
@@ -720,8 +671,6 @@ class TestOpenLinkTokenCommand:
             "package",
             "-i",
             str(input_csv),
-            "-t",
-            "csv",
             "-o",
             str(output_csv),
             "--exchange-config",

@@ -22,6 +22,7 @@ from openlinktoken_cli.processor.person_attributes_processor import (
 )
 from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
 from openlinktoken_cli.util.exchange_config import resolve_exchange_config
+from openlinktoken_cli.util.file_type_detector import FileTypeDetector
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +40,7 @@ class TokenizeCommand:
     **not** suitable for production or cross-organisation exchange.
     """
 
-    TYPE_CSV = "csv"
-    TYPE_PARQUET = "parquet"
+
 
     @staticmethod
     def register_subcommand(subparsers):
@@ -79,22 +79,7 @@ class TokenizeCommand:
             help="Output file path",
         )
 
-        parser.add_argument(
-            "-t",
-            "--input-type",
-            required=True,
-            dest="input_type",
-            choices=["csv", "parquet"],
-            help="Input file type: csv or parquet",
-        )
 
-        parser.add_argument(
-            "-ot",
-            "--output-type",
-            dest="output_type",
-            choices=["csv", "parquet"],
-            help="Output file type (defaults to input type): csv or parquet",
-        )
 
         parser.add_argument(
             "--demo-mode",
@@ -158,10 +143,17 @@ class TokenizeCommand:
         else:
             logger.info("Running tokenize command (normal mode)")
 
-        # Default output type to input type if not specified
-        output_type = args.output_type if args.output_type else args.input_type
+        input_type = FileTypeDetector.detect_input_type(args.input_path)
+        if not input_type:
+            logger.error("Unable to auto-detect input type. Supported input formats: csv, parquet")
+            return 1
 
-        logger.info(f"Input: {args.input_path} ({args.input_type})")
+        output_type = FileTypeDetector.detect_output_type(args.output_path)
+        if not output_type:
+            logger.error("Unable to auto-detect output type. Supported output formats: csv, parquet, zip")
+            return 1
+
+        logger.info(f"Input: {args.input_path} ({input_type})")
         logger.info(f"Output: {args.output_path} ({output_type})")
         if hash_record_ids:
             logger.info("Record ID hashing enabled: RecordIds will be SHA-256 hashed in output")
@@ -175,7 +167,7 @@ class TokenizeCommand:
                 TokenizeCommand._process_tokens_demo(
                     args.input_path,
                     args.output_path,
-                    args.input_type,
+                    input_type,
                     output_type,
                 )
             else:
@@ -188,7 +180,7 @@ class TokenizeCommand:
                 TokenizeCommand._process_tokens(
                     args.input_path,
                     args.output_path,
-                    args.input_type,
+                    input_type,
                     output_type,
                     exchange.hashing_secret,
                     hash_record_ids,
@@ -266,9 +258,9 @@ class TokenizeCommand:
     def _create_reader(path: str, file_type: str):
         """Create a PersonAttributesReader based on file type."""
         file_type_lower = file_type.lower()
-        if file_type_lower == TokenizeCommand.TYPE_CSV:
+        if file_type_lower == FileTypeDetector.TYPE_CSV:
             return PersonAttributesCSVReader(path)
-        elif file_type_lower == TokenizeCommand.TYPE_PARQUET:
+        elif file_type_lower == FileTypeDetector.TYPE_PARQUET:
             return PersonAttributesParquetReader(path)
         else:
             raise ValueError(f"Unsupported input type: {file_type}")
@@ -277,9 +269,9 @@ class TokenizeCommand:
     def _create_writer(path: str, file_type: str):
         """Create a PersonAttributesWriter based on file type."""
         file_type_lower = file_type.lower()
-        if file_type_lower == TokenizeCommand.TYPE_CSV:
+        if file_type_lower == FileTypeDetector.TYPE_CSV:
             return PersonAttributesCSVWriter(path)
-        elif file_type_lower == TokenizeCommand.TYPE_PARQUET:
+        elif file_type_lower == FileTypeDetector.TYPE_PARQUET:
             return PersonAttributesParquetWriter(path)
         else:
             raise ValueError(f"Unsupported output type: {file_type}")
