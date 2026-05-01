@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: MIT
 
 import logging
+import sys
 import uuid
 
 from openlinktoken.tokens.token import Token
@@ -11,6 +12,7 @@ from openlinktoken_cli.io.csv.token_csv_writer import TokenCSVWriter
 from openlinktoken_cli.io.parquet.token_parquet_reader import TokenParquetReader
 from openlinktoken_cli.io.parquet.token_parquet_writer import TokenParquetWriter
 from openlinktoken_cli.processor.token_constants import TokenConstants
+from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
 from openlinktoken_cli.util.exchange_config import derive_transport_encryption_key, resolve_exchange_config
 
 logger = logging.getLogger(__name__)
@@ -137,8 +139,10 @@ class EncryptCommand:
             )
             logger.info("Token encryption completed successfully")
             return 0
-        except Exception as e:
-            logger.error(f"Error during token encryption: {e}", exc_info=True)
+        except (OSError, ValueError) as error:
+            logger.error("Error during token encryption: %s", error)
+            report = archive_cli_error(error, command_name="encrypt")
+            print(format_error_reference_message(report), file=sys.stderr)
             return 1
 
     @staticmethod
@@ -195,8 +199,7 @@ class EncryptCommand:
             if error_counter > 0:
                 logger.warning(f"Failed to encrypt {error_counter:,} tokens")
 
-        except Exception as e:
-            logger.error(f"Error during token encryption: {e}", exc_info=True)
+        except Exception:
             raise
 
     @staticmethod

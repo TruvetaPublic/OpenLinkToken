@@ -272,6 +272,10 @@ Check that input file path is correct and file exists.
 
 SSN must be 9 digits. Area code cannot be 000, 666, or 900-999.
 
+### Unexpected internal error
+
+If a command fails unexpectedly, check the `Stack trace: <path>` line printed to **stderr**. The CLI archives a redacted traceback under `~/.openlinktoken/logs` on Linux and macOS or `%APPDATA%\.openlinktoken\logs` on Windows.
+
 ## Keeping the CLI Up to Date
 
 ### Automatic Version Check

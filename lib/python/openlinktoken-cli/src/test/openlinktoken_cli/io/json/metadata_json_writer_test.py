@@ -156,6 +156,16 @@ class TestMetadataJsonWriter:
         if os.path.exists(expected_metadata_path):
             os.remove(expected_metadata_path)
 
+    def test_write_metadata_for_basename_output_path_in_current_directory(self, tmp_path, monkeypatch):
+        """Test that basename-only output paths create metadata in the current directory."""
+        monkeypatch.chdir(tmp_path)
+        writer = MetadataJsonWriter("output.csv")
+
+        writer.write({"test_key": "test_value"})
+
+        metadata_path = tmp_path / ("output" + Metadata.METADATA_FILE_EXTENSION)
+        assert metadata_path.exists()
+
     def test_write_metadata_with_special_characters(self):
         """Test writing metadata with special characters and unicode."""
         metadata_map: Dict[str, Any] = {

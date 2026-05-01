@@ -6,6 +6,7 @@ import os
 import sys
 
 from openlinktoken.metadata import Metadata
+from openlinktoken_cli.util.cli_error_reporter import archive_unexpected_error, format_unexpected_error_message
 from openlinktoken_cli.util.version_checker import start_version_check
 
 logger = logging.getLogger(__name__)
@@ -161,8 +162,10 @@ class OpenLinkTokenCommand:
         # Execute the command
         try:
             exit_code = parsed_args.func(parsed_args)
-        except Exception as e:
-            logger.error(f"Command execution failed: {e}", exc_info=True)
+        except Exception as error:
+            report = archive_unexpected_error(error)
+            print(format_unexpected_error_message(report), file=sys.stderr)
+            logger.debug("Command execution failed", exc_info=error)
             exit_code = 1
 
         # Wait for the version check and surface any update notice after command output

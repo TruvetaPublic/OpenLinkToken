@@ -6,7 +6,7 @@ from typing import Any, Dict
 
 from openlinktoken.metadata import Metadata
 from openlinktoken_cli.io.metadata_writer import MetadataWriter
-from openlinktoken_cli.io.path_utils import ensure_parent_directory
+from openlinktoken_cli.util.path_utils import ensure_parent_directory
 
 
 class MetadataJsonWriter(MetadataWriter):
@@ -20,7 +20,13 @@ class MetadataJsonWriter(MetadataWriter):
             output_path: The output file path (used to derive metadata file name)
         """
         super().__init__(output_path)
-        self.metadata_file_path = str(Path(output_path).with_suffix(Metadata.METADATA_FILE_EXTENSION))
+        # Get the directory and base name of the output file
+        output_path_value = ensure_parent_directory(output_path)
+        output_dir = output_path_value.parent
+        output_base = output_path_value.stem
+
+        # Create metadata file path
+        self.metadata_file_path = str(Path(output_dir).with_suffix(Metadata.METADATA_FILE_EXTENSION))
 
     def write(self, metadata_map: Dict[str, Any]) -> None:
         """

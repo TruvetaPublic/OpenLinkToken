@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: MIT
 
 import logging
+import sys
 from typing import List
 
 from openlinktoken.metadata import Metadata
@@ -19,6 +20,7 @@ from openlinktoken_cli.io.parquet.person_attributes_parquet_writer import (
 from openlinktoken_cli.processor.person_attributes_processor import (
     PersonAttributesProcessor,
 )
+from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
 from openlinktoken_cli.util.exchange_config import resolve_exchange_config
 
 logger = logging.getLogger(__name__)
@@ -193,8 +195,10 @@ class TokenizeCommand:
                 )
             logger.info("Token generation completed successfully")
             return 0
-        except Exception as e:
-            logger.error(f"Error during token generation: {e}", exc_info=True)
+        except (OSError, ValueError) as error:
+            logger.error("Error during token generation: %s", error)
+            report = archive_cli_error(error, command_name="tokenize")
+            print(format_error_reference_message(report), file=sys.stderr)
             return 1
 
     @staticmethod
@@ -213,7 +217,6 @@ class TokenizeCommand:
             # Add only hash transformer (no encryption in tokenize mode)
             token_transformer_list.append(HashTokenTransformer(hashing_secret))
         except Exception as e:
-            logger.error("Error initializing hash transformer", exc_info=e)
             raise RuntimeError("Failed to initialize transformer") from e
 
         try:
@@ -232,8 +235,7 @@ class TokenizeCommand:
 
                 MetadataJsonWriter(output_path).write(metadata_map)
 
-        except Exception as e:
-            logger.error("Error processing tokens", exc_info=e)
+        except Exception:
             raise
 
     @staticmethod
@@ -257,8 +259,7 @@ class TokenizeCommand:
 
                 MetadataJsonWriter(output_path).write(metadata_map)
 
-        except Exception as e:
-            logger.error("Error processing tokens in demo mode", exc_info=e)
+        except Exception:
             raise
 
     @staticmethod

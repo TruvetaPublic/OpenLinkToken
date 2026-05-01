@@ -65,3 +65,16 @@ class TestPersonAttributesParquetWriter:
             assert record[RecordIdAttribute] == "456"
             assert record[SocialSecurityNumberAttribute] == "987-65-4321"
             assert record[FirstNameAttribute] == "Jane"
+
+    def test_write_basename_output_path_in_current_directory(self, tmp_path, monkeypatch):
+        """Test that a basename-only output path writes to the current directory."""
+        monkeypatch.chdir(tmp_path)
+        writer = PersonAttributesParquetWriter("output.parquet")
+
+        try:
+            writer.write_attributes({"RecordId": "123", "FirstName": "John"})
+        finally:
+            writer.close()
+
+        output_path = tmp_path / "output.parquet"
+        assert output_path.exists()

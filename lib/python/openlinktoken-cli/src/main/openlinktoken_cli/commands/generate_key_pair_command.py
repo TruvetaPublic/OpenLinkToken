@@ -1,9 +1,11 @@
 # SPDX-License-Identifier: MIT
 
 import logging
+import sys
 from pathlib import Path
 from typing import Optional, Tuple
 
+from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
 from openlinktoken_cli.util.ec_key_utils import (
     SUPPORTED_CURVES,
     ensure_directory,
@@ -107,10 +109,11 @@ class GenerateKeyPairCommand:
             write_key(public_key_path, public_pem, 0o644, overwrite=force)
         except (OSError, ValueError) as error:
             logger.error("Validation or file system error while generating key pair: %s", error)
+            report = archive_cli_error(error, command_name="generate-key-pair")
+            print(format_error_reference_message(report), file=sys.stderr)
             return 1
-        except Exception as e:
-            logger.error("Unexpected error while generating key pair: %s", e, exc_info=True)
-            return 1
+        except Exception:
+            raise
 
         print(f"Private key: {private_key_path.resolve()}")
         print(f"Public key:  {public_key_path.resolve()}")
