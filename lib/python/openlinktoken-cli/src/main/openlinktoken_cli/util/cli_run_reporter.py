@@ -15,6 +15,7 @@ from openlinktoken_cli.util.cli_error_reporter import (
 )
 
 _DEFAULT_LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+_DEFAULT_CONSOLE_FORMAT = "%(message)s"
 _CONSOLE_HANDLER_MARKER = "_openlinktoken_console_handler"
 
 
@@ -27,7 +28,7 @@ def configure_default_logging() -> None:
 
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.INFO)
-    console_handler.setFormatter(RedactingFormatter(_DEFAULT_LOG_FORMAT))
+    console_handler.setFormatter(RedactingFormatter(_DEFAULT_CONSOLE_FORMAT))
     setattr(console_handler, _CONSOLE_HANDLER_MARKER, True)
     root_logger.addHandler(console_handler)
     if root_logger.level == logging.NOTSET or root_logger.level > logging.INFO:

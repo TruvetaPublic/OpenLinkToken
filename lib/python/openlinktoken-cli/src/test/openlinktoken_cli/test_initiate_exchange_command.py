@@ -6,6 +6,7 @@ Unit and integration tests for InitiateExchangeCommand.
 import base64
 import io
 import json
+import logging
 import os
 import sys
 from pathlib import Path
@@ -16,6 +17,7 @@ import pytest
 from openlinktoken.exchange_jwe import decrypt_exchange_envelope
 from openlinktoken_cli.commands.initiate_exchange_command import InitiateExchangeCommand
 from openlinktoken_cli.commands.open_link_token_command import OpenLinkTokenCommand
+from openlinktoken_cli.util.cli_run_reporter import configure_default_logging
 from openlinktoken_cli.util.ec_key_utils import SUPPORTED_CURVES, generate_key_pair, public_key_fingerprint
 from openlinktoken_cli.util.stdin_utils import read_required_env_bytes
 
@@ -232,6 +234,45 @@ class TestInitiateExchangeCommandIntegration:
         assert (openlinktoken_dir / "stdin-exchange.private.pem").exists()
         assert (openlinktoken_dir / "stdin-exchange.public.pem").exists()
         assert output_path.exists()
+
+    def test_basic_exchange_existing_key_files_prints_concise_stderr(self, tmp_path):
+        """initiate-exchange should surface quick-command validation errors without raw log formatting."""
+        partner_pem = _partner_key_pem(tmp_path)
+        output_path = tmp_path / "existing-keys.exchange.json"
+        openlinktoken_dir = tmp_path / ".openlinktoken"
+        openlinktoken_dir.mkdir(parents=True, exist_ok=True)
+        (openlinktoken_dir / "existing-keys.private.pem").write_text("private", encoding="utf-8")
+        (openlinktoken_dir / "existing-keys.public.pem").write_text("public", encoding="utf-8")
+        configure_default_logging()
+        console_handler = next(
+            handler
+            for handler in logging.getLogger().handlers
+            if getattr(handler, "_openlinktoken_console_handler", False)
+        )
+        stderr_buffer = io.StringIO()
+        original_stream = console_handler.setStream(stderr_buffer)
+
+        try:
+            with patch("pathlib.Path.home", return_value=tmp_path):
+                exit_code = OpenLinkTokenCommand.execute(
+                    [
+                        "initiate-exchange",
+                        "--name",
+                        "existing-keys",
+                        "--public-key",
+                        str(partner_pem),
+                        "--output",
+                        str(output_path),
+                    ]
+                )
+        finally:
+            console_handler.setStream(original_stream)
+
+        assert exit_code == 1
+        assert "Key files for 'existing-keys' already exist" in stderr_buffer.getvalue()
+        assert " - ERROR - " not in stderr_buffer.getvalue()
+        assert "openlinktoken_cli.commands" not in stderr_buffer.getvalue()
+        assert not output_path.exists()
 
     def test_basic_exchange_accepts_public_and_sender_key_refs_from_env(self, tmp_path, monkeypatch):
         """initiate-exchange accepts env-var references for both partner and sender keys in one command."""
