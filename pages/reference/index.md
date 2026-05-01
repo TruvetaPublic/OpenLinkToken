@@ -150,14 +150,13 @@ python -m openlinktoken_cli.main package \
 
 **Key options:**
 
-| Flag                     | Purpose                        |
-| ------------------------ | ------------------------------ |
-| `-i` / `--input`         | Input file path                |
-| `-o` / `--output`        | Output file path               |
-| `-t` / `--type`          | File type (`csv` or `parquet`) |
-| `-h` / `--hashingsecret` | HMAC-SHA256 secret             |
-| `-e` / `--encryptionkey` | AES-256 key (32 chars)         |
-| `tokenize`               | Tokenize without encryption    |
+| Flag                     | Purpose                     |
+| ------------------------ | --------------------------- |
+| `-i` / `--input`         | Input file path             |
+| `-o` / `--output`        | Output file path            |
+| `-h` / `--hashingsecret` | HMAC-SHA256 secret          |
+| `-e` / `--encryptionkey` | AES-256 key (32 chars)      |
+| `tokenize`               | Tokenize without encryption |
 
 **Full reference:** [CLI Reference](cli.md)
 

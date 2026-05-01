@@ -27,11 +27,11 @@ olt <subcommand> [OPTIONS]
 
 ### Required Arguments
 
-| Argument | Alias             | Description                          | Example         |
-| -------- | ----------------- | ------------------------------------ | --------------- |
-| `-i`     | `--input`         | Input file path                      | `-i data.csv`   |
-| `-o`     | `--output`        | Output file path                     | `-o tokens.csv` |
-| `-h`     | `--hashingsecret` | HMAC-SHA256 hashing secret           | `-h "MyKey"`    |
+| Argument | Alias             | Description                | Example         |
+| -------- | ----------------- | -------------------------- | --------------- |
+| `-i`     | `--input`         | Input file path            | `-i data.csv`   |
+| `-o`     | `--output`        | Output file path           | `-o tokens.csv` |
+| `-h`     | `--hashingsecret` | HMAC-SHA256 hashing secret | `-h "MyKey"`    |
 
 ### Optional Arguments
 
@@ -83,7 +83,6 @@ cd C:\path\to\Open Link Token
 .\run-openlinktoken.ps1 package `
   -i .\resources\sample.csv `
   -o .\resources\output.csv `
-  -FileType csv `
   -h "HashingKey" `
   -e "Secret-Encryption-Key-Goes-Here."
 ```
@@ -92,7 +91,6 @@ cd C:\path\to\Open Link Token
 
 | Option       | Bash | PowerShell   | Description          |
 | ------------ | ---- | ------------ | -------------------- |
-| File type    | `-t` | `-FileType`  | `csv` or `parquet`   |
 | Skip rebuild | `-s` | `-SkipBuild` | Reuse existing image |
 | Verbose      | `-v` | `-Verbose`   | Show detailed output |
 

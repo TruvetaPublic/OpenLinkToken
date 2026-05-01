@@ -12,7 +12,9 @@ from openlinktoken_cli.io.csv.token_csv_writer import TokenCSVWriter
 from openlinktoken_cli.io.parquet.token_parquet_reader import TokenParquetReader
 from openlinktoken_cli.io.parquet.token_parquet_writer import TokenParquetWriter
 from openlinktoken_cli.processor.token_constants import TokenConstants
+from openlinktoken_cli.processor.token_transformation_processor import TokenTransformationSummary
 from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
+from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
 from openlinktoken_cli.util.exchange_config import derive_transport_encryption_key, resolve_exchange_config
 from openlinktoken_cli.util.file_type_detector import FileTypeDetector
 
@@ -89,8 +91,6 @@ class EncryptCommand:
     @staticmethod
     def execute(args):
         """Execute the encrypt command."""
-        logger.info("Running encrypt command")
-
         input_type = FileTypeDetector.detect_input_type(args.input_path)
         if not input_type:
             logger.error("Unable to auto-detect input type. Supported input formats: csv, parquet")
@@ -102,33 +102,44 @@ class EncryptCommand:
             return 1
 
         ring_id = args.ring_id if args.ring_id and args.ring_id.strip() else str(uuid.uuid4())
-
-        # Log parameters (mask key)
-        logger.info(f"Input: {args.input_path} ({input_type})")
-        logger.info(f"Output: {args.output_path} ({output_type})")
-        logger.info(f"Ring ID: {ring_id}")
+        reporter = CliRunReporter("encrypt")
 
         try:
-            exchange = resolve_exchange_config(
-                args.exchange_config,
-                private_key_path=args.private_key,
-                private_key_env=args.private_key_env,
-            )
-            encryption_key = derive_transport_encryption_key(exchange)
-            logger.info(f"Exchange config: {exchange.path}")
-            EncryptCommand._encrypt_tokens(
-                args.input_path,
-                args.output_path,
-                input_type,
-                output_type,
-                encryption_key,
-                ring_id,
-            )
-            logger.info("Token encryption completed successfully")
+            with reporter:
+                try:
+                    logger.info("Running encrypt command")
+                    logger.info(f"Input: {args.input_path} ({input_type})")
+                    logger.info(f"Output: {args.output_path} ({output_type})")
+                    logger.info(f"Ring ID: {ring_id}")
+
+                    reporter.update_status("Resolving exchange config")
+                    exchange = resolve_exchange_config(
+                        args.exchange_config,
+                        private_key_path=args.private_key,
+                        private_key_env=args.private_key_env,
+                    )
+                    encryption_key = derive_transport_encryption_key(exchange)
+                    logger.info(f"Exchange config: {exchange.path}")
+
+                    reporter.update_status("Encrypting tokens")
+                    summary = EncryptCommand._encrypt_tokens(
+                        args.input_path,
+                        args.output_path,
+                        input_type,
+                        output_type,
+                        encryption_key,
+                        ring_id,
+                        progress_callback=reporter.make_progress_callback("Encrypting tokens", "tokens"),
+                    )
+                    logger.info("Token encryption completed successfully")
+                except Exception as error:
+                    logger.error("Error during token encryption: %s", error)
+                    raise
+            reporter.finish_success("Encrypt complete", EncryptCommand._build_summary_lines(args.output_path, summary))
             return 0
-        except (OSError, ValueError) as error:
-            logger.error("Error during token encryption: %s", error)
-            report = archive_cli_error(error, command_name="encrypt")
+        except Exception as error:
+            report = archive_cli_error(error, command_name="encrypt", existing_report=reporter.log_report)
+            print(f"Error: {error}", file=sys.stderr)
             print(format_error_reference_message(report), file=sys.stderr)
             return 1
 
@@ -140,7 +151,8 @@ class EncryptCommand:
         output_type: str,
         encryption_key: bytes,
         ring_id: str,
-    ):
+        progress_callback=None,
+    ) -> TokenTransformationSummary:
         """Encrypt tokens from input file."""
         try:
             encryptor = EncryptTokenTransformer(encryption_key)
@@ -148,6 +160,7 @@ class EncryptCommand:
             row_counter = 0
             encrypted_counter = 0
             error_counter = 0
+            last_reported_count = 0
 
             with (
                 EncryptCommand._create_token_reader(input_path, input_type) as reader,
@@ -180,14 +193,33 @@ class EncryptCommand:
 
                     if row_counter % 10000 == 0:
                         logger.info(f'Processed "{row_counter:,}" tokens')
+                        last_reported_count = row_counter
+                        if progress_callback is not None:
+                            progress_callback(row_counter)
 
             logger.info(f"Processed a total of {row_counter:,} tokens")
             logger.info(f"Successfully encrypted {encrypted_counter:,} tokens")
             if error_counter > 0:
                 logger.warning(f"Failed to encrypt {error_counter:,} tokens")
+            if progress_callback is not None and row_counter != last_reported_count:
+                progress_callback(row_counter)
+            return TokenTransformationSummary(
+                total_tokens=row_counter,
+                transformed_tokens=encrypted_counter,
+                failed_tokens=error_counter,
+            )
 
         except Exception:
             raise
+
+    @staticmethod
+    def _build_summary_lines(output_path: str, summary: TokenTransformationSummary) -> list[str]:
+        return [
+            f"Output: {output_path}",
+            f"Tokens processed: {summary.total_tokens:,}",
+            f"Successfully encrypted: {summary.transformed_tokens:,}",
+            f"Failed to encrypt: {summary.failed_tokens:,}",
+        ]
 
     @staticmethod
     def _wrap_as_v1_token(

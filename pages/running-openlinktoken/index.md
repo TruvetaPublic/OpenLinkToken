@@ -20,17 +20,17 @@ olt <subcommand> [OPTIONS]
 
 #### Required Arguments (All Subcommands)
 
-| Argument | Alias      | Description                      | Example       |
-| -------- | ---------- | -------------------------------- | ------------- |
-| `-i`     | `--input`  | Input file path (CSV or Parquet) | `-i data.csv` |
+| Argument | Alias      | Description                      | Example         |
+| -------- | ---------- | -------------------------------- | --------------- |
+| `-i`     | `--input`  | Input file path (CSV or Parquet) | `-i data.csv`   |
 | `-o`     | `--output` | Output file path                 | `-o tokens.csv` |
 
 #### Optional Arguments by Subcommand
 
-| Argument | Alias             | `package` | `tokenize` | `decrypt` | Description                       | Default            | Example                |
-| -------- | ----------------- | --------- | ---------- | --------- | --------------------------------- | ------------------ | ---------------------- |
-| `-h`     | `--hashingkey`    | ✓         | ✓          |           | HMAC-SHA256 hashing secret        | Required           | `-h "HashingKey"`      |
-| `-e`     | `--encryptionkey` | ✓         |            | ✓         | AES-256 encryption key            | Required           | `-e "MyEncryptionKey"` |
+| Argument | Alias             | `package` | `tokenize` | `decrypt` | Description                | Default  | Example                |
+| -------- | ----------------- | --------- | ---------- | --------- | -------------------------- | -------- | ---------------------- |
+| `-h`     | `--hashingkey`    | ✓         | ✓          |           | HMAC-SHA256 hashing secret | Required | `-h "HashingKey"`      |
+| `-e`     | `--encryptionkey` | ✓         |            | ✓         | AES-256 encryption key     | Required | `-e "MyEncryptionKey"` |
 
 ### Usage Examples
 
@@ -138,6 +138,18 @@ record1,T2,pUxPgYL9+cMxkA+8928Pil+9W+dm9kISwHYPdkZS+I2nQ/bQ/8HyL3FOVf3NYPW5NKZZO
 
 See [Reference: Metadata Format](../reference/metadata-format.md) for detailed field descriptions.
 
+### Console Output and Detailed Logs
+
+For the long-running processing commands (`package`, `tokenize`, `encrypt`, and `decrypt`), the CLI keeps terminal output brief:
+
+- Interactive terminals show a progress indicator while the command runs
+- The command finishes with a short summary that surfaces the output path and the most important counts
+- A detailed per-run log is written under the Open Link Token logs directory:
+  - Linux / macOS: `~/.openlinktoken/logs`
+  - Windows: `%APPDATA%\.openlinktoken\logs`
+
+If a processing command fails after it starts, the CLI prints `Stack trace: <path>` and the traceback is appended to that same detailed log file.
+
 ---
 
 ## Docker
@@ -169,7 +181,6 @@ cd C:\path\to\Open Link Token
 .\run-openlinktoken.ps1 package `
   -i .\resources\sample.csv `
   -o .\resources\output.csv `
-  -FileType csv `
   -h "HashingKey" `
   -e "Secret-Encryption-Key-Goes-Here."
 ```
@@ -178,7 +189,6 @@ cd C:\path\to\Open Link Token
 
 | Option       | Bash Alias | PowerShell   | Description          |
 | ------------ | ---------- | ------------ | -------------------- |
-| File type    | `-t`       | `-FileType`  | `csv` or `parquet`   |
 | Skip rebuild | `-s`       | `-SkipBuild` | Reuse existing image |
 | Verbose      | `-v`       | `-Verbose`   | Show detailed output |
 

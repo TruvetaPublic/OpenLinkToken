@@ -3,6 +3,7 @@
 import base64
 import json
 import logging
+from typing import Callable
 
 from jwcrypto import jwe, jwk
 
@@ -16,6 +17,7 @@ from openlinktoken.tokentransformer.match_token_constants import (
 from openlinktoken_cli.io.token_reader import TokenReader
 from openlinktoken_cli.io.token_writer import TokenWriter
 from openlinktoken_cli.processor.token_constants import TokenConstants
+from openlinktoken_cli.processor.token_transformation_processor import TokenTransformationSummary
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +31,12 @@ class TokenDecryptionProcessor:
     """
 
     @staticmethod
-    def process(reader: TokenReader, writer: TokenWriter, decryptor: DecryptTokenTransformer):
+    def process(
+        reader: TokenReader,
+        writer: TokenWriter,
+        decryptor: DecryptTokenTransformer,
+        progress_callback: Callable[[int], None] | None = None,
+    ) -> TokenTransformationSummary:
         """
         Reads encrypted tokens from the input data source, decrypts them, and
         writes the result back to the output data source.
@@ -39,7 +46,7 @@ class TokenDecryptionProcessor:
             writer: Writer instance with write_token method
             decryptor: The decryption transformer
         """
-        TokenDecryptionProcessor.process_with_key(reader, writer, decryptor, None)
+        return TokenDecryptionProcessor.process_with_key(reader, writer, decryptor, None, progress_callback)
 
     @staticmethod
     def process_with_key(
@@ -47,7 +54,8 @@ class TokenDecryptionProcessor:
         writer: TokenWriter,
         decryptor: DecryptTokenTransformer,
         encryption_key: str | bytes | None,
-    ):
+        progress_callback: Callable[[int], None] | None = None,
+    ) -> TokenTransformationSummary:
         """
         Reads encrypted tokens from the input data source, decrypts them, and
         writes the result back to the output data source.
@@ -61,6 +69,7 @@ class TokenDecryptionProcessor:
         row_counter = 0
         decrypted_counter = 0
         error_counter = 0
+        last_reported_count = 0
 
         for row in reader:
             row_counter += 1
@@ -85,11 +94,22 @@ class TokenDecryptionProcessor:
 
             if row_counter % 10000 == 0:
                 logger.info(f'Processed "{row_counter:,}" tokens')
+                last_reported_count = row_counter
+                if progress_callback is not None:
+                    progress_callback(row_counter)
 
         logger.info(f"Processed a total of {row_counter:,} tokens")
         logger.info(f"Successfully decrypted {decrypted_counter:,} tokens")
         if error_counter > 0:
             logger.warning(f"Failed to decrypt {error_counter:,} tokens")
+        if progress_callback is not None and row_counter != last_reported_count:
+            progress_callback(row_counter)
+
+        return TokenTransformationSummary(
+            total_tokens=row_counter,
+            transformed_tokens=decrypted_counter,
+            failed_tokens=error_counter,
+        )
 
     @staticmethod
     def _decrypt_token(

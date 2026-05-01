@@ -7,6 +7,7 @@ import sys
 
 from openlinktoken.metadata import Metadata
 from openlinktoken_cli.util.cli_error_reporter import archive_unexpected_error, format_unexpected_error_message
+from openlinktoken_cli.util.cli_run_reporter import configure_default_logging
 from openlinktoken_cli.util.version_checker import start_version_check
 
 logger = logging.getLogger(__name__)
@@ -134,6 +135,7 @@ class OpenLinkTokenCommand:
     @staticmethod
     def main(args=None):
         """Main entry point for the command-line application."""
+        configure_default_logging()
         parser = OpenLinkTokenCommand.create_parser()
 
         # Show banner for interactive runs.

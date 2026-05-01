@@ -16,11 +16,6 @@ param(
     [Alias("o")]
     [string]$OutputFile,
 
-    [Parameter(Mandatory=$false, HelpMessage="File type: csv or parquet (default: csv)")]
-    [Alias("t")]
-    [ValidateSet("csv", "parquet")]
-    [string]$FileType = "csv",
-
     [Parameter(Mandatory=$false, HelpMessage="Hashing secret key")]
     [Alias("h")]
     [string]$HashingSecret,
@@ -72,7 +67,6 @@ SUBCOMMAND-SPECIFIC PARAMETERS:
     -EncryptionKey, -e <key>    32-character encryption key (package, encrypt, decrypt)
 
 OPTIONAL PARAMETERS:
-    -FileType, -t <type>        File type: csv or parquet (default: csv)
     -SkipBuild, -s              Skip Docker image build (use existing image)
     -DockerImage <name>         Docker image name (default: openlinktoken:latest)
     -Verbose, -v                Enable verbose output
@@ -221,7 +215,6 @@ if ($VerboseOutput) {
     Write-Info "Subcommand: $Subcommand"
     Write-Info "Input file: $InputFile"
     Write-Info "Output file: $OutputFile"
-    Write-Info "File type: $FileType"
     Write-Info "Docker image: $DockerImage"
 }
 
@@ -293,7 +286,6 @@ if ($InputDir -eq $OutputDir) {
         $DockerImage `
         $Subcommand `
         -i "/data/$InputFilename" `
-        -t $FileType `
         -o "/data/$OutputFilename" `
         @CliArgs
 } else {
@@ -309,7 +301,6 @@ if ($InputDir -eq $OutputDir) {
         $DockerImage `
         $Subcommand `
         -i "/data/input/$InputFilename" `
-        -t $FileType `
         -o "/data/output/$OutputFilename" `
         @CliArgs
 }

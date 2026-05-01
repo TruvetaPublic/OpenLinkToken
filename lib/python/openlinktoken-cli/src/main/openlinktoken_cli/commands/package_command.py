@@ -14,8 +14,12 @@ from openlinktoken_cli.io.csv.person_attributes_csv_writer import PersonAttribut
 from openlinktoken_cli.io.json.metadata_json_writer import MetadataJsonWriter
 from openlinktoken_cli.io.parquet.person_attributes_parquet_reader import PersonAttributesParquetReader
 from openlinktoken_cli.io.parquet.person_attributes_parquet_writer import PersonAttributesParquetWriter
-from openlinktoken_cli.processor.person_attributes_processor import PersonAttributesProcessor
+from openlinktoken_cli.processor.person_attributes_processor import (
+    PersonAttributesProcessingSummary,
+    PersonAttributesProcessor,
+)
 from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
+from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
 from openlinktoken_cli.util.exchange_config import derive_transport_encryption_key, resolve_exchange_config
 from openlinktoken_cli.util.file_type_detector import FileTypeDetector
 
@@ -107,8 +111,6 @@ class PackageCommand:
     @staticmethod
     def execute(args):
         """Execute the package command."""
-        logger.info("Running package command (tokenize + encrypt)")
-
         input_type = FileTypeDetector.detect_input_type(args.input_path)
         if not input_type:
             logger.error("Unable to auto-detect input type. Supported input formats: csv, parquet")
@@ -121,37 +123,51 @@ class PackageCommand:
 
         ring_id = args.ring_id if args.ring_id and args.ring_id.strip() else str(uuid.uuid4())
         hash_record_ids = getattr(args, "hash_record_ids", False)
-
-        # Log parameters (mask secrets)
-        logger.info(f"Input: {args.input_path} ({input_type})")
-        logger.info(f"Output: {args.output_path} ({output_type})")
-        logger.info(f"Ring ID: {ring_id}")
-        if hash_record_ids:
-            logger.info("Record ID hashing enabled: RecordIds will be SHA-256 hashed in output")
+        reporter = CliRunReporter("package")
 
         try:
-            exchange = resolve_exchange_config(
-                args.exchange_config,
-                private_key_path=args.private_key,
-                private_key_env=args.private_key_env,
+            with reporter:
+                try:
+                    logger.info("Running package command (tokenize + encrypt)")
+                    logger.info(f"Input: {args.input_path} ({input_type})")
+                    logger.info(f"Output: {args.output_path} ({output_type})")
+                    logger.info(f"Ring ID: {ring_id}")
+                    if hash_record_ids:
+                        logger.info("Record ID hashing enabled: RecordIds will be SHA-256 hashed in output")
+
+                    reporter.update_status("Resolving exchange config")
+                    exchange = resolve_exchange_config(
+                        args.exchange_config,
+                        private_key_path=args.private_key,
+                        private_key_env=args.private_key_env,
+                    )
+                    encryption_key = derive_transport_encryption_key(exchange)
+                    logger.info(f"Exchange config: {exchange.path}")
+
+                    reporter.update_status("Packaging records")
+                    summary, metadata_path = PackageCommand._process_tokens(
+                        args.input_path,
+                        args.output_path,
+                        input_type,
+                        output_type,
+                        exchange.hashing_secret,
+                        encryption_key,
+                        ring_id,
+                        hash_record_ids,
+                        progress_callback=reporter.make_progress_callback("Packaging records", "records"),
+                    )
+                    logger.info("Token generation and encryption completed successfully")
+                except Exception as error:
+                    logger.error("Error during token processing: %s", error)
+                    raise
+            reporter.finish_success(
+                "Package complete",
+                PackageCommand._build_summary_lines(args.output_path, metadata_path, summary, hash_record_ids),
             )
-            encryption_key = derive_transport_encryption_key(exchange)
-            logger.info(f"Exchange config: {exchange.path}")
-            PackageCommand._process_tokens(
-                args.input_path,
-                args.output_path,
-                input_type,
-                output_type,
-                exchange.hashing_secret,
-                encryption_key,
-                ring_id,
-                hash_record_ids,
-            )
-            logger.info("Token generation and encryption completed successfully")
             return 0
-        except (OSError, ValueError) as error:
-            logger.error("Error during token processing: %s", error)
-            report = archive_cli_error(error, command_name="package")
+        except Exception as error:
+            report = archive_cli_error(error, command_name="package", existing_report=reporter.log_report)
+            print(f"Error: {error}", file=sys.stderr)
             print(format_error_reference_message(report), file=sys.stderr)
             return 1
 
@@ -165,7 +181,8 @@ class PackageCommand:
         encryption_key: bytes,
         ring_id: str,
         hash_record_ids: bool = False,
-    ):
+        progress_callback=None,
+    ) -> tuple[PersonAttributesProcessingSummary, str]:
         """Process tokens from person attributes."""
         token_transformer_list: List[TokenTransformer] = []
 
@@ -188,7 +205,7 @@ class PackageCommand:
                 metadata.add_hashed_secret(Metadata.ENCRYPTION_SECRET_HASH, encryption_key)
 
                 # Process data with JWE wrapping support for v1 token format
-                PersonAttributesProcessor.process(
+                summary = PersonAttributesProcessor.process(
                     reader,
                     writer,
                     token_transformer_list,
@@ -196,14 +213,37 @@ class PackageCommand:
                     encryption_key,
                     ring_id,
                     hash_record_ids,
+                    progress_callback=progress_callback,
                 )
 
                 # Write metadata
                 metadata_writer = MetadataJsonWriter(output_path)
                 metadata_writer.write(metadata_map)
+                return summary, metadata_writer.metadata_file_path
 
         except Exception:
             raise
+
+    @staticmethod
+    def _build_summary_lines(
+        output_path: str,
+        metadata_path: str,
+        summary: PersonAttributesProcessingSummary,
+        hash_record_ids: bool,
+    ) -> list[str]:
+        lines = [
+            f"Output: {output_path}",
+            f"Metadata: {metadata_path}",
+            f"Rows processed: {summary.total_rows:,}",
+            f"Rows with invalid attributes: {summary.total_rows_with_invalid_attributes:,}",
+        ]
+        lines.extend(
+            CliRunReporter.summarize_count_lines("Top invalid attributes", summary.invalid_attributes_by_type, limit=3)
+        )
+        lines.extend(CliRunReporter.summarize_count_lines("Blank tokens by rule", summary.blank_tokens_by_rule))
+        if hash_record_ids:
+            lines.append("Record ID hashing: enabled")
+        return lines
 
     @staticmethod
     def _create_reader(path: str, file_type: str):

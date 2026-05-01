@@ -2,6 +2,7 @@
 
 import logging
 import uuid
+from dataclasses import dataclass
 from typing import Any, Dict, List, Set, Type
 
 from openlinktoken.attributes.attribute import Attribute
@@ -19,6 +20,16 @@ from openlinktoken_cli.processor.token_constants import TokenConstants
 from openlinktoken_cli.util.record_id_hasher import RecordIdHasher
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class PersonAttributesProcessingSummary:
+    """Summary counters for a token generation run."""
+
+    total_rows: int
+    total_rows_with_invalid_attributes: int
+    invalid_attributes_by_type: Dict[str, int]
+    blank_tokens_by_rule: Dict[str, int]
 
 
 class PersonAttributesProcessor:
@@ -47,7 +58,8 @@ class PersonAttributesProcessor:
         encryption_key: str = None,
         ring_id: str = None,
         hash_record_ids: bool = False,
-    ) -> None:
+        progress_callback=None,
+    ) -> PersonAttributesProcessingSummary:
         """
         Read person attributes from the input data source, generate tokens, and
         write the result back to the output data source. The tokens can be optionally
@@ -66,7 +78,7 @@ class PersonAttributesProcessor:
         """
         # TokenGenerator code
         token_definition = TokenDefinition()
-        PersonAttributesProcessor._process_with_tokenizer(
+        return PersonAttributesProcessor._process_with_tokenizer(
             reader,
             writer,
             SHA256Tokenizer(token_transformer_list),
@@ -75,6 +87,7 @@ class PersonAttributesProcessor:
             encryption_key,
             ring_id,
             hash_record_ids,
+            progress_callback,
         )
 
     @staticmethod
@@ -83,7 +96,8 @@ class PersonAttributesProcessor:
         writer: PersonAttributesWriter,
         tokenizer: Tokenizer,
         metadata_map: Dict[str, Any] = None,
-    ) -> None:
+        progress_callback=None,
+    ) -> PersonAttributesProcessingSummary:
         """
         Read person attributes from the input data source, generate tokens using
         the provided tokenizer, and write the result to the output data source.
@@ -98,7 +112,14 @@ class PersonAttributesProcessor:
             metadata_map: Optional metadata map to update with processing statistics.
         """
         token_definition = TokenDefinition()
-        PersonAttributesProcessor._process_with_tokenizer(reader, writer, tokenizer, token_definition, metadata_map)
+        return PersonAttributesProcessor._process_with_tokenizer(
+            reader,
+            writer,
+            tokenizer,
+            token_definition,
+            metadata_map,
+            progress_callback=progress_callback,
+        )
 
     @staticmethod
     def _process_with_tokenizer(
@@ -110,7 +131,8 @@ class PersonAttributesProcessor:
         encryption_key: str = None,
         ring_id: str = None,
         hash_record_ids: bool = False,
-    ) -> None:
+        progress_callback=None,
+    ) -> PersonAttributesProcessingSummary:
         """
         Core row-processing logic shared by all process() overloads.
 
@@ -127,6 +149,7 @@ class PersonAttributesProcessor:
         token_generator = TokenGenerator(token_definition, tokenizer)
 
         row_counter = 0
+        last_reported_count = 0
         invalid_attribute_count: Dict[str, int] = PersonAttributesProcessor._initialize_invalid_attribute_count(
             token_definition
         )
@@ -175,6 +198,9 @@ class PersonAttributesProcessor:
 
                 if row_counter % 10000 == 0:
                     logger.info(f"Processed {row_counter:,} records")
+                    last_reported_count = row_counter
+                    if progress_callback is not None:
+                        progress_callback(row_counter)
 
         except Exception as e:
             logger.error("Error processing records: %s", e)
@@ -195,6 +221,8 @@ class PersonAttributesProcessor:
 
         total_blank_tokens = sum(blank_tokens_by_rule_count.values())
         logger.info(f"Total blank tokens generated: {total_blank_tokens:,}")
+        if progress_callback is not None and row_counter != last_reported_count:
+            progress_callback(row_counter)
 
         # Update metadata if provided
         if metadata_map is not None:
@@ -207,6 +235,13 @@ class PersonAttributesProcessor:
             metadata_map[PersonAttributesProcessor.BLANK_TOKENS_BY_RULE] = dict(
                 sorted(blank_tokens_by_rule_count.items())
             )
+
+        return PersonAttributesProcessingSummary(
+            total_rows=row_counter,
+            total_rows_with_invalid_attributes=total_invalid_records,
+            invalid_attributes_by_type=dict(sorted(invalid_attribute_count.items())),
+            blank_tokens_by_rule=dict(sorted(blank_tokens_by_rule_count.items())),
+        )
 
     @staticmethod
     def _write_tokens(

@@ -9,7 +9,9 @@ from openlinktoken_cli.io.csv.token_csv_writer import TokenCSVWriter
 from openlinktoken_cli.io.parquet.token_parquet_reader import TokenParquetReader
 from openlinktoken_cli.io.parquet.token_parquet_writer import TokenParquetWriter
 from openlinktoken_cli.processor.token_decryption_processor import TokenDecryptionProcessor
+from openlinktoken_cli.processor.token_transformation_processor import TokenTransformationSummary
 from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
+from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
 from openlinktoken_cli.util.exchange_config import derive_transport_encryption_key, resolve_exchange_config
 from openlinktoken_cli.util.file_type_detector import FileTypeDetector
 
@@ -79,8 +81,6 @@ class DecryptCommand:
     @staticmethod
     def execute(args):
         """Execute the decrypt command."""
-        logger.info("Running decrypt command")
-
         input_type = FileTypeDetector.detect_input_type(args.input_path)
         if not input_type:
             logger.error("Unable to auto-detect input type. Supported input formats: csv, parquet")
@@ -91,30 +91,42 @@ class DecryptCommand:
             logger.error("Unable to auto-detect output type. Supported output formats: csv, parquet, zip")
             return 1
 
-        # Log parameters (mask key)
-        logger.info(f"Input: {args.input_path} ({input_type})")
-        logger.info(f"Output: {args.output_path} ({output_type})")
+        reporter = CliRunReporter("decrypt")
 
         try:
-            exchange = resolve_exchange_config(
-                args.exchange_config,
-                private_key_path=args.private_key,
-                private_key_env=args.private_key_env,
-            )
-            encryption_key = derive_transport_encryption_key(exchange)
-            logger.info(f"Exchange config: {exchange.path}")
-            DecryptCommand._decrypt_tokens(
-                args.input_path,
-                args.output_path,
-                input_type,
-                output_type,
-                encryption_key,
-            )
-            logger.info("Token decryption completed successfully")
+            with reporter:
+                try:
+                    logger.info("Running decrypt command")
+                    logger.info(f"Input: {args.input_path} ({input_type})")
+                    logger.info(f"Output: {args.output_path} ({output_type})")
+
+                    reporter.update_status("Resolving exchange config")
+                    exchange = resolve_exchange_config(
+                        args.exchange_config,
+                        private_key_path=args.private_key,
+                        private_key_env=args.private_key_env,
+                    )
+                    encryption_key = derive_transport_encryption_key(exchange)
+                    logger.info(f"Exchange config: {exchange.path}")
+
+                    reporter.update_status("Decrypting tokens")
+                    summary = DecryptCommand._decrypt_tokens(
+                        args.input_path,
+                        args.output_path,
+                        input_type,
+                        output_type,
+                        encryption_key,
+                        progress_callback=reporter.make_progress_callback("Decrypting tokens", "tokens"),
+                    )
+                    logger.info("Token decryption completed successfully")
+                except Exception as error:
+                    logger.error("Error during token decryption: %s", error)
+                    raise
+            reporter.finish_success("Decrypt complete", DecryptCommand._build_summary_lines(args.output_path, summary))
             return 0
-        except (OSError, ValueError) as error:
-            logger.error("Error during token decryption: %s", error)
-            report = archive_cli_error(error, command_name="decrypt")
+        except Exception as error:
+            report = archive_cli_error(error, command_name="decrypt", existing_report=reporter.log_report)
+            print(f"Error: {error}", file=sys.stderr)
             print(format_error_reference_message(report), file=sys.stderr)
             return 1
 
@@ -125,7 +137,8 @@ class DecryptCommand:
         input_type: str,
         output_type: str,
         encryption_key: bytes,
-    ):
+        progress_callback=None,
+    ) -> TokenTransformationSummary:
         """Decrypt tokens from input file."""
         try:
             decryptor = DecryptTokenTransformer(encryption_key)
@@ -134,10 +147,25 @@ class DecryptCommand:
                 DecryptCommand._create_token_reader(input_path, input_type) as reader,
                 DecryptCommand._create_token_writer(output_path, output_type) as writer,
             ):
-                TokenDecryptionProcessor.process_with_key(reader, writer, decryptor, encryption_key)
+                return TokenDecryptionProcessor.process_with_key(
+                    reader,
+                    writer,
+                    decryptor,
+                    encryption_key,
+                    progress_callback,
+                )
 
         except Exception:
             raise
+
+    @staticmethod
+    def _build_summary_lines(output_path: str, summary: TokenTransformationSummary) -> list[str]:
+        return [
+            f"Output: {output_path}",
+            f"Tokens processed: {summary.total_tokens:,}",
+            f"Successfully decrypted: {summary.transformed_tokens:,}",
+            f"Failed to decrypt: {summary.failed_tokens:,}",
+        ]
 
     @staticmethod
     def _create_token_reader(path: str, file_type: str):

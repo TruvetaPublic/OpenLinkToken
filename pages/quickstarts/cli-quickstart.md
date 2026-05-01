@@ -133,7 +133,6 @@ These arguments are shared across all subcommands:
 | ------------------- | ----- | --------------------------------------------------------------------------------------------------------------------- |
 | `--input`           | `-i`  | Input file path (CSV or Parquet)                                                                                      |
 | `--output`          | `-o`  | Output file path                                                                                                      |
-| `--type`            | `-t`  | File type: `csv` or `parquet`                                                                                         |
 | `--exchange-config` |       | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted on consumer commands.  |
 | `--private-key`     |       | Private key PEM used to decrypt the exchange config and derive later transport keys                                   |
 | `--private-key-env` |       | Environment variable containing the private key PEM                                                                   |

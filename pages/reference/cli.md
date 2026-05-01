@@ -403,6 +403,12 @@ Every run generates a `.metadata.json` file:
 }
 ```
 
+For long-running processing commands (`package`, `tokenize`, `encrypt`, and `decrypt`), the CLI now keeps the terminal output concise:
+
+- Interactive terminals show a progress indicator instead of streaming every log line
+- The command ends with a short summary that highlights the most important counts and output paths
+- A per-run detailed log is written under the Open Link Token logs directory and referenced as `Detailed log: <path>`
+
 ## Docker Script Options
 
 ### Bash (run-openlinktoken.sh)
@@ -430,7 +436,6 @@ Every run generates a `.metadata.json` file:
 .\run-openlinktoken.ps1 package `
   -i .\input.csv `
   -o .\output.csv `
-  -FileType csv `
   -h "HashingKey" `
   -e "EncryptionKey" `
   [-SkipBuild] `
@@ -499,12 +504,14 @@ When `OLT_EXTENSIONS_DIR` is set, the registry is stored in that directory inste
 | "Encryption key not provided"          | Missing `-e` in package mode | Add `-e "key"` or use `tokenize` |
 | "Encryption key must be 32 characters" | Key length wrong             | Use exactly 32 characters        |
 | "Input file not found"                 | Invalid path                 | Check file exists                |
-| "Unknown file type"                    | Invalid `-t` value           | Use `csv` or `parquet`           |
+| "Unknown file type"                    | Unsupported file extension   | Use `.csv` or `.parquet` paths   |
 | "Invalid attribute: BirthDate"         | Date validation failed       | Use YYYY-MM-DD format            |
 | "Unsupported curve '…'"                | Invalid `--curve` value      | Use `P-256`, `P-384`, or `P-521` |
 | "Key files for '…' already exist"      | Name collision without force | Use `--force` to overwrite       |
 
 Unexpected internal CLI errors archive a redacted traceback under the Open Link Token logs directory. The CLI prints the exact archive path to **stderr** as `Stack trace: <path>`. By default, logs are written to `~/.openlinktoken/logs` on Linux and macOS and `%APPDATA%\.openlinktoken\logs` on Windows.
+
+For `package`, `tokenize`, `encrypt`, and `decrypt`, the same logs directory also stores the normal per-run detailed logs that back the concise end-of-run summary. If one of those commands fails after it has started processing, the traceback is appended to that same per-run log so there is a single file to inspect.
 
 ## Exit Codes
 

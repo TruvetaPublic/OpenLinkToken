@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: MIT
 
 import json
+import os
 from pathlib import Path
 from unittest.mock import patch
 
@@ -76,14 +77,19 @@ class TestTokenizeCommandDemoMode:
 
     def test_normal_mode_fails_without_exchange_config(self, temp_dir: Path):
         """Normal mode must reject execution when no exchange config can be resolved."""
-        args = [
-            "tokenize",
-            "-i",
-            str(temp_dir / "input.csv"),
-            "-o",
-            str(temp_dir / "output.csv"),
-        ]
-        exit_code = OpenLinkTokenCommand.execute(args)
+        original_cwd = Path.cwd()
+        try:
+            os.chdir(temp_dir)
+            args = [
+                "tokenize",
+                "-i",
+                str(temp_dir / "input.csv"),
+                "-o",
+                str(temp_dir / "output.csv"),
+            ]
+            exit_code = OpenLinkTokenCommand.execute(args)
+        finally:
+            os.chdir(original_cwd)
         assert exit_code != 0
 
     def test_demo_mode_rejects_exchange_config(self, temp_dir: Path):

@@ -10,7 +10,6 @@ set -e  # Exit on error
 SUBCOMMAND="package"
 INPUT_FILE=""
 OUTPUT_FILE=""
-FILE_TYPE="csv"
 HASHING_SECRET=""
 ENCRYPTION_KEY=""
 DOCKER_IMAGE="openlinktoken:latest"
@@ -53,7 +52,6 @@ SUBCOMMAND-SPECIFIC OPTIONS:
     -e, --encrypt KEY       Encryption key            (package, encrypt, decrypt)
 
 OPTIONAL:
-    -t, --type TYPE         File type: csv or parquet (default: csv)
     -s, --skip-build        Skip Docker image build (use existing image)
     --image NAME            Docker image name (default: openlinktoken:latest)
     -v, --verbose           Enable verbose output
@@ -105,14 +103,6 @@ while [[ $# -gt 0 ]]; do
             ;;
         -o|--output)
             OUTPUT_FILE="$2"
-            shift 2
-            ;;
-        -t|--type)
-            FILE_TYPE="$2"
-            if [[ ! "$FILE_TYPE" =~ ^(csv|parquet)$ ]]; then
-                log_error "Invalid file type: $FILE_TYPE. Must be: csv, parquet"
-                exit 1
-            fi
             shift 2
             ;;
         -h|--hash)
@@ -296,7 +286,6 @@ if [[ "$INPUT_DIR" == "$OUTPUT_DIR" ]]; then
         "$DOCKER_IMAGE" \
         "$SUBCOMMAND" \
         -i "/data/$INPUT_FILENAME" \
-        -t "$FILE_TYPE" \
         -o "/data/$OUTPUT_FILENAME" \
         "${CLI_ARGS[@]}"
 else
@@ -312,7 +301,6 @@ else
         "$DOCKER_IMAGE" \
         "$SUBCOMMAND" \
         -i "/data/input/$INPUT_FILENAME" \
-        -t "$FILE_TYPE" \
         -o "/data/output/$OUTPUT_FILENAME" \
         "${CLI_ARGS[@]}"
 fi
