@@ -1,12 +1,11 @@
 # SPDX-License-Identifier: MIT
 
 import json
-from pathlib import Path
 from typing import Any, Dict
 
 from openlinktoken.metadata import Metadata
 from openlinktoken_cli.io.metadata_writer import MetadataWriter
-from openlinktoken_cli.util.path_utils import ensure_parent_directory
+from openlinktoken_cli.io.path_utils import ensure_parent_directory
 
 
 class MetadataJsonWriter(MetadataWriter):
@@ -26,7 +25,7 @@ class MetadataJsonWriter(MetadataWriter):
         output_base = output_path_value.stem
 
         # Create metadata file path
-        self.metadata_file_path = str(Path(output_dir).with_suffix(Metadata.METADATA_FILE_EXTENSION))
+        self.metadata_file_path = str(output_dir / f"{output_base}{Metadata.METADATA_FILE_EXTENSION}")
 
     def write(self, metadata_map: Dict[str, Any]) -> None:
         """
