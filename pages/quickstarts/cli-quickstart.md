@@ -48,8 +48,7 @@ chmod +x openlinktoken
 ./olt package \
   -i /path/to/sample.csv \
   -o /path/to/output.csv \
-  --exchange-config /path/to/quickstart.exchange.json \
-  --private-key "$HOME/.openlinktoken/quickstart.private.pem"
+  --exchange-config /path/to/quickstart.exchange.json
 ```
 
 **Windows PowerShell:**
@@ -65,8 +64,7 @@ cd openlinktoken-cli-2.0.0-alpha-windows-x64
 .\olt.exe package `
   -i C:\path\to\sample.csv `
   -o C:\path\to\output.csv `
-  --exchange-config C:\path\to\quickstart.exchange.json `
-  --private-key "$HOME/.openlinktoken/quickstart.private.pem"
+  --exchange-config C:\path\to\quickstart.exchange.json
 ```
 
 ### Verifying the Executable
@@ -91,8 +89,7 @@ cd /path/to/OpenLinkToken
 ./run-openlinktoken.sh package \
   -i ./resources/sample.csv \
   -o ./resources/output.csv \
-  -h "HashingKey" \
-  -e "Secret-Encryption-Key-Goes-Here."
+  --exchange-config ./resources/quickstart.exchange.json
 ```
 
 ### Windows PowerShell
@@ -103,8 +100,7 @@ cd C:\path\to\Open Link Token
 .\run-openlinktoken.ps1 package `
   -i .\resources\sample.csv `
   -o .\resources\output.csv `
-  -h "HashingKey" `
-  -e "Secret-Encryption-Key-Goes-Here."
+  --exchange-config .\resources\quickstart.exchange.json
 ```
 
 ## Subcommands
@@ -161,8 +157,7 @@ olt initiate-exchange --name quickstart --public-key ~/.openlinktoken/recipient.
 olt package \
   -i sample.csv \
   -o tokens.csv \
-  --exchange-config ./quickstart.exchange.json \
-  --private-key ~/.openlinktoken/quickstart.private.pem
+  --exchange-config ./quickstart.exchange.json
 ```
 
 **Output (`tokens.csv`):**
@@ -183,8 +178,7 @@ patient_002,T1,...
 olt package \
   -i input.parquet \
   -o tokens.parquet \
-  --exchange-config ./quickstart.exchange.json \
-  --private-key ~/.openlinktoken/quickstart.private.pem
+  --exchange-config ./quickstart.exchange.json
 ```
 
 ## Other Subcommands
@@ -249,9 +243,9 @@ A `.metadata.json` file is created alongside the output:
 
 ## Troubleshooting
 
-### "Encryption key not provided"
+### "No private key matching this exchange config was found"
 
-Either provide `-e "YourKey"` with `package` or use the `tokenize` subcommand.
+Pass `--private-key` or `--private-key-env`, or place the matching key under `~/.openlinktoken/`.
 
 ### "Invalid BirthDate"
 

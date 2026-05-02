@@ -117,8 +117,7 @@ cd ../../
 ./run-openlinktoken.sh package \
   -i tools/mockdata/test_data.csv \
   -o resources/test_output.csv \
-  -h "HashingKey" \
-  -e "Secret-Encryption-Key-Goes-Here."
+  --exchange-config ./resources/mockdata.exchange.json
 
 # 3. Check output
 cat resources/test_output.csv
@@ -136,7 +135,7 @@ python data_generator.py 1000 0.0 dataset_a.csv
 python data_generator.py 1000 0.0 dataset_b.csv
 
 # Add some common records manually or use a script
-# Then process both with Open Link Token using the same secrets
+# Then process both with Open Link Token using the same exchange config
 ```
 
 For automated overlap analysis, see [Spark or Databricks](spark-or-databricks.md).
@@ -202,7 +201,7 @@ df.to_parquet('large_test.parquet')
 olt package \
   -i large_test.parquet \
   -o tokens.parquet \
-  -h "HashingKey" -e "EncryptionKey"
+  --exchange-config ./large-test.exchange.json
 ```
 
 ---

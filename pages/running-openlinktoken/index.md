@@ -27,16 +27,20 @@ olt <subcommand> [OPTIONS]
 
 #### Optional Arguments by Subcommand
 
-| Argument | Alias             | `package` | `tokenize` | `decrypt` | Description                | Default  | Example                |
-| -------- | ----------------- | --------- | ---------- | --------- | -------------------------- | -------- | ---------------------- |
-| `-h`     | `--hashingkey`    | ✓         | ✓          |           | HMAC-SHA256 hashing secret | Required | `-h "HashingKey"`      |
-| `-e`     | `--encryptionkey` | ✓         |            | ✓         | AES-256 encryption key     | Required | `-e "MyEncryptionKey"` |
+| Argument            | Alias | `package` | `tokenize` | `encrypt` | `decrypt` | Description                                         | Default                       | Example                                                 |
+| ------------------- | ----- | --------- | ---------- | --------- | --------- | --------------------------------------------------- | ----------------------------- | ------------------------------------------------------- |
+| `--exchange-config` |       | ✓         | ✓          | ✓         | ✓         | Exchange config JSON path                           | Date-based default path       | `--exchange-config ./quickstart.exchange.json`          |
+| `--private-key`     |       | ✓         | ✓          | ✓         | ✓         | Private key PEM used to decrypt the exchange config | Auto-discovered when possible | `--private-key ~/.openlinktoken/quickstart.private.pem` |
+| `--private-key-env` |       | ✓         | ✓          | ✓         | ✓         | Environment variable containing the private key PEM |                               | `--private-key-env OLT_PRIVATE_KEY_PEM`                 |
+| `--demo-mode`       |       |           | ✓          |           |           | Skip hashing and emit raw attribute signatures      | `false`                       | `tokenize --demo-mode`                                  |
+
+If a matching key already exists under `~/.openlinktoken/`, you can omit `--private-key` and `--private-key-env`.
 
 ### Usage Examples
 
 #### Token Generation (Encryption Mode)
 
-Generates encrypted tokens. Both hashing secret and encryption key required.
+Generates encrypted tokens. Consumer commands resolve the hashing secret and transport key from an exchange config plus a matching private key.
 
 ```bash
 cd lib/python/openlinktoken-cli
@@ -45,34 +49,30 @@ uv pip install -r requirements.txt -e . -e ../openlinktoken
 
 olt package \
   -i ../../../resources/sample.csv \
-
   -o ../../../resources/output.csv \
-  -h "HashingKey" \
-  -e "Secret-Encryption-Key-Goes-Here."
+  --exchange-config ../../../resources/quickstart.exchange.json
 ```
 
 #### Token Generation (Tokenize)
 
-Generates HMAC-SHA256 hashed tokens without AES encryption. Only hashing secret required.
+Generates HMAC-SHA256 hashed tokens without transport encryption, using the same exchange-config workflow.
 
 ```bash
 olt tokenize \
   -i ../../../resources/sample.csv \
-
   -o ../../../resources/hashed-output.csv \
-  -h "HashingKey"
+  --exchange-config ../../../resources/quickstart.exchange.json
 ```
 
 #### Token Decryption
 
-Decrypts previously encrypted tokens. Only encryption key required.
+Decrypts previously encrypted tokens using the same exchange config and a matching private key.
 
 ```bash
 olt decrypt \
   -i ../../../resources/output.csv \
-
   -o ../../../resources/decrypted.csv \
-  -e "Secret-Encryption-Key-Goes-Here."
+  --exchange-config ../../../resources/quickstart.exchange.json
 ```
 
 #### Key Pair Generation
@@ -168,9 +168,7 @@ cd /path/to/OpenLinkToken
 ./run-openlinktoken.sh package \
   -i ./resources/sample.csv \
   -o ./resources/output.csv \
-
-  -h "HashingKey" \
-  -e "Secret-Encryption-Key-Goes-Here."
+  --exchange-config ./resources/quickstart.exchange.json
 ```
 
 **PowerShell (Windows):**
@@ -181,8 +179,7 @@ cd C:\path\to\Open Link Token
 .\run-openlinktoken.ps1 package `
   -i .\resources\sample.csv `
   -o .\resources\output.csv `
-  -h "HashingKey" `
-  -e "Secret-Encryption-Key-Goes-Here."
+  --exchange-config .\resources\quickstart.exchange.json
 ```
 
 #### Script Options
@@ -206,10 +203,8 @@ docker build -t openlinktoken:latest .
 docker run --rm -v $(pwd)/resources:/app/resources \
   openlinktoken:latest package \
   -i /app/resources/sample.csv \
-
   -o /app/resources/output.csv \
-  -h "HashingKey" \
-  -e "Secret-Encryption-Key-Goes-Here."
+  --exchange-config /app/resources/quickstart.exchange.json
 
 # View output
 cat resources/output.csv
@@ -288,14 +283,18 @@ See example notebooks in `lib/python/openlinktoken-pyspark/notebooks/`:
 
 ## Troubleshooting
 
-### "Encryption key not provided"
+### "No private key matching this exchange config was found"
 
-**Problem**: Error when running `package` mode without `-e`.
+**Problem**: The CLI found the exchange config but could not auto-discover a matching key under `~/.openlinktoken/`.
 
-**Solution**: Either provide encryption key `-e "YourKey"` or use `tokenize`:
+**Solution**: Pass the correct key explicitly or provide it through an environment variable:
 
 ```bash
-olt tokenize -i data.csv -o output.csv -h "HashingKey"
+olt package \
+  -i data.csv \
+  -o output.csv \
+  --exchange-config ./quickstart.exchange.json \
+  --private-key ~/.openlinktoken/quickstart.private.pem
 ```
 
 ### "Invalid BirthDate" or "Date out of range"

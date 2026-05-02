@@ -254,13 +254,12 @@ Release assets are published with SHA-256 sidecars, and `olt update` verifies th
 
 ### Encrypted Mode (Default)
 
-Generates fully encrypted tokens using AES-256-GCM. Tokens can be decrypted later with the encryption key.
+Generates fully encrypted tokens using the transport key derived from the exchange config. Tokens can be decrypted later by a party with a matching private key.
 
 ```bash
 olt package \
   -i input.csv -o output.csv \
-  -h "HashingSecret" \
-  -e "EncryptionKey-Exactly32Chars!!"
+  --exchange-config ./partner.exchange.json
 ```
 
 **Token Pipeline:**
@@ -276,7 +275,7 @@ Generates one-way hashed tokens. Faster but tokens cannot be decrypted.
 ```bash
 olt tokenize \
   -i input.csv -o output.csv \
-  -h "HashingSecret"
+  --exchange-config ./partner.exchange.json
 
 ```
 
@@ -289,7 +288,7 @@ Signature → SHA-256 → HMAC-SHA256 → Base64
 ### Demo Mode (`tokenize --demo-mode`)
 
 Outputs raw attribute signature strings without any hashing. Both the SHA-256 and HMAC
-steps are skipped. No `--hashingsecret` is required, making it easy to inspect which
+steps are skipped. No exchange config or private key is required, making it easy to inspect which
 attribute values compose each token for development, testing, or demos.
 
 > ⚠️ **Demo-mode output must not be used in production or shared externally.** The raw
@@ -318,7 +317,7 @@ JOHN|DOE|19800115
 
 | Aspect                          | Normal mode                    | Demo mode                                  |
 | ------------------------------- | ------------------------------ | ------------------------------------------ |
-| `--hashingsecret`               | Required                       | Not required (ignored if supplied)         |
+| Exchange config / private key   | Required in normal mode        | Not required                               |
 | Token pipeline                  | SHA-256 → HMAC-SHA256 → Base64 | Passthrough → raw signature string         |
 | Token format                    | Base64-encoded HMAC-SHA256     | Pipe-separated normalised attribute values |
 | `HashingSecretHash` in metadata | Present                        | Absent                                     |
@@ -417,9 +416,7 @@ For long-running processing commands (`package`, `tokenize`, `encrypt`, and `dec
 ./run-openlinktoken.sh package \
   -i ./input.csv \
   -o ./output.csv \
-
-  -h "HashingKey" \
-  -e "EncryptionKey" \
+  --exchange-config ./partner.exchange.json \
   [--skip-build] \
   [--verbose]
 ```
@@ -436,8 +433,7 @@ For long-running processing commands (`package`, `tokenize`, `encrypt`, and `dec
 .\run-openlinktoken.ps1 package `
   -i .\input.csv `
   -o .\output.csv `
-  -h "HashingKey" `
-  -e "EncryptionKey" `
+  --exchange-config .\partner.exchange.json `
   [-SkipBuild] `
   [-Verbose]
 ```
@@ -499,15 +495,15 @@ When `OLT_EXTENSIONS_DIR` is set, the registry is stored in that directory inste
 
 ## Error Messages
 
-| Error                                  | Cause                        | Solution                         |
-| -------------------------------------- | ---------------------------- | -------------------------------- |
-| "Encryption key not provided"          | Missing `-e` in package mode | Add `-e "key"` or use `tokenize` |
-| "Encryption key must be 32 characters" | Key length wrong             | Use exactly 32 characters        |
-| "Input file not found"                 | Invalid path                 | Check file exists                |
-| "Unknown file type"                    | Unsupported file extension   | Use `.csv` or `.parquet` paths   |
-| "Invalid attribute: BirthDate"         | Date validation failed       | Use YYYY-MM-DD format            |
-| "Unsupported curve '…'"                | Invalid `--curve` value      | Use `P-256`, `P-384`, or `P-521` |
-| "Key files for '…' already exist"      | Name collision without force | Use `--force` to overwrite       |
+| Error                                                    | Cause                                                           | Solution                                                               |
+| -------------------------------------------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| "Exchange config '<path>' was not found"                 | Missing default exchange config or bad `--exchange-config` path | Create or pass the correct exchange config JSON                        |
+| "No private key matching this exchange config was found" | No matching key under `~/.openlinktoken/`                       | Pass `--private-key` / `--private-key-env` or install the matching key |
+| "Input file not found"                                   | Invalid path                                                    | Check file exists                                                      |
+| "Unknown file type"                                      | Unsupported file extension                                      | Use `.csv` or `.parquet` paths                                         |
+| "Invalid attribute: BirthDate"                           | Date validation failed                                          | Use YYYY-MM-DD format                                                  |
+| "Unsupported curve '…'"                                  | Invalid `--curve` value                                         | Use `P-256`, `P-384`, or `P-521`                                       |
+| "Key files for '…' already exist"                        | Name collision without force                                    | Use `--force` to overwrite                                             |
 
 Unexpected internal CLI errors archive a redacted traceback under the Open Link Token logs directory. The CLI prints the exact archive path to **stderr** as `Stack trace: <path>`. By default, logs are written to `~/.openlinktoken/logs` on Linux and macOS and `%APPDATA%\.openlinktoken\logs` on Windows.
 

@@ -166,7 +166,7 @@ Generates encrypted `olt.V1` match tokens using HMAC-SHA256 + JWE/AES-256-GCM.
 ```bash
 olt package \
   -i data.csv -o tokens.csv \
-  -h "HashingKey" -e "EncryptionKey"
+  --exchange-config ./tuning.exchange.json
 ```
 
 **Process:**
@@ -175,7 +175,7 @@ olt package \
 Token Signature → SHA-256 Hash → HMAC-SHA256(hash, key) → JWE (AES-256-GCM) → Prefix `olt.V1.`
 ```
 
-**Requires:** Hashing secret (`-h`) and encryption key (`-e`)
+**Requires:** Exchange config plus a matching private key that the CLI can auto-discover (or an explicit override)
 
 Encrypted `olt.V1` tokens include randomized IVs, so ciphertext values are not deterministic across runs.
 
@@ -186,7 +186,7 @@ Generates hashed tokens without encryption. Useful for token matching scenarios 
 ```bash
 olt tokenize \
   -i data.csv -o tokens.csv \
-  -h "HashingKey"
+  --exchange-config ./tuning.exchange.json
 ```
 
 **Process:**
@@ -195,7 +195,7 @@ olt tokenize \
 Token Signature → SHA-256 Hash → HMAC-SHA256(hash, key) → Base64 Encode
 ```
 
-**Requires:** Hashing secret only (`-h`)
+**Requires:** Exchange config plus a matching private key that the CLI can auto-discover (or an explicit override)
 
 **Benefits:**
 
@@ -211,7 +211,7 @@ Reverse previous encryption to inspect or verify token generation.
 ```bash
 olt decrypt \
   -i encrypted-tokens.csv -o decrypted-tokens.csv \
-  -e "EncryptionKey"
+  --exchange-config ./tuning.exchange.json
 ```
 
 **Output:** HMAC-SHA256 hashed tokens (base64 encoded) **before** AES encryption—equivalent to `tokenize` output.

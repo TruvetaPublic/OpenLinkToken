@@ -23,7 +23,7 @@ Decryption is useful for:
 
 ## CLI Decrypt Mode
 
-Use the `decrypt` subcommand with the same encryption key used for token generation.
+Use the `decrypt` subcommand with the same exchange config used for token generation. The CLI auto-discovers the matching private key by default.
 
 ### Open Link Token CLI (Python)
 
@@ -31,17 +31,22 @@ Use the `decrypt` subcommand with the same encryption key used for token generat
 olt decrypt \
   -i ../../resources/output.csv \
   -o ../../resources/decrypted.csv \
-  -e "Secret-Encryption-Key-Goes-Here."
+  --exchange-config ../../resources/decrypt.exchange.json
 ```
 
 ### Docker
 
+If the container cannot auto-discover the matching key under `~/.openlinktoken/`, pass it explicitly:
+
 ```bash
-docker run --rm -v $(pwd)/resources:/app/resources \
+docker run --rm \
+  -e OLT_PRIVATE_KEY_PEM="$(cat ~/.openlinktoken/decrypt.private.pem)" \
+  -v $(pwd)/resources:/app/resources \
   openlinktoken:latest decrypt \
   -i /app/resources/output.csv \
   -o /app/resources/decrypted.csv \
-  -e "Secret-Encryption-Key-Goes-Here."
+  --exchange-config /app/resources/decrypt.exchange.json \
+  --private-key-env OLT_PRIVATE_KEY_PEM
 ```
 
 ---
@@ -95,19 +100,20 @@ Tokens can be encrypted by one Open Link Token implementation and decrypted by a
 # Encrypt with Open Link Token CLI
 olt package \
   -i data.csv -o tokens.csv \
-  -h "HashingKey" -e "EncryptionKey32Characters!!!!!"
+  --exchange-config ./interop.exchange.json
 
 # Decrypt with Open Link Token CLI
 olt decrypt \
   -i tokens.csv -o decrypted.csv \
-  -e "EncryptionKey32Characters!!!!!"
+  --exchange-config ./interop.exchange.json
 ```
 
 **Requirements for cross-language compatibility:**
 
-- Same encryption key (exactly 32 characters/bytes)
+- Same exchange config (or an equivalent config that resolves to the same hashing secret and transport key)
+- Matching private key for one of the exchange recipients
 - Same token file format
-- Both implementations use AES-256-GCM with identical parameters
+- Both implementations use the same JWE/AES-256-GCM token format
 
 ---
 
@@ -115,17 +121,17 @@ olt decrypt \
 
 ### Key Handling
 
-- **Never commit encryption keys** to version control
-- **Use environment variables** or secret stores:
+- **Never commit private keys** to version control
+- **Use environment variables** or secret stores when you need to override local key auto-discovery:
   ```bash
-  export OLT_ENCRYPTION_KEY="YourKey32Characters!!!!!!!!!!!!"
-  olt decrypt -e "$OLT_ENCRYPTION_KEY" ...
+  export OLT_PRIVATE_KEY_PEM="$(cat ~/.openlinktoken/interop.private.pem)"
+  olt decrypt --exchange-config ./interop.exchange.json --private-key-env OLT_PRIVATE_KEY_PEM ...
   ```
-- **Rotate keys periodically** and re-encrypt tokens as needed
+- **Rotate keys periodically** and issue a fresh exchange config as needed
 
 ### Access Control
 
-- **Limit decryption access**: Only authorized personnel should have encryption keys
+- **Limit decryption access**: Only authorized personnel should have the matching private key
 - **Audit decryption events**: Log when and why tokens are decrypted
 - **Secure decrypted output**: Decrypted tokens are still sensitive (HMAC hashes)
 

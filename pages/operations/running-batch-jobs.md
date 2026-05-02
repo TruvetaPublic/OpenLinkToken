@@ -27,19 +27,20 @@ olt <subcommand> [OPTIONS]
 
 ### Required Arguments
 
-| Argument | Alias             | Description                | Example         |
-| -------- | ----------------- | -------------------------- | --------------- |
-| `-i`     | `--input`         | Input file path            | `-i data.csv`   |
-| `-o`     | `--output`        | Output file path           | `-o tokens.csv` |
-| `-h`     | `--hashingsecret` | HMAC-SHA256 hashing secret | `-h "MyKey"`    |
+| Argument            | Alias      | Description               | Example                                   |
+| ------------------- | ---------- | ------------------------- | ----------------------------------------- |
+| `-i`                | `--input`  | Input file path           | `-i data.csv`                             |
+| `-o`                | `--output` | Output file path          | `-o tokens.csv`                           |
+| `--exchange-config` |            | Exchange config JSON path | `--exchange-config ./batch.exchange.json` |
 
 ### Optional Arguments
 
-| Argument | Alias             | Description                 | Default                    |
-| -------- | ----------------- | --------------------------- | -------------------------- |
-| `-e`     | `--encryptionkey` | AES-256 encryption key      | Required in `package` mode |
-|          | `tokenize`        | Tokenize without encryption | Subcommand                 |
-|          | `decrypt`         | Decrypt mode                | Subcommand                 |
+| Argument            | Alias | Description                                         | Default                       |
+| ------------------- | ----- | --------------------------------------------------- | ----------------------------- |
+| `--private-key`     |       | Private key PEM used to decrypt the exchange config | Auto-discovered when possible |
+| `--private-key-env` |       | Environment variable containing the private key PEM |                               |
+| `tokenize`          |       | Tokenize without encryption                         | Subcommand                    |
+| `decrypt`           |       | Decrypt mode                                        | Subcommand                    |
 
 ### CLI Example
 
@@ -50,10 +51,8 @@ uv pip install -r requirements.txt -e . -e ../openlinktoken
 
 olt package \
   -i ../../../resources/sample.csv \
-
   -o ../../../resources/output.csv \
-  -h "HashingKey" \
-  -e "Secret-Encryption-Key-Goes-Here."
+  --exchange-config ../../../resources/batch.exchange.json
 ```
 
 ---
@@ -70,9 +69,7 @@ cd /path/to/OpenLinkToken
 ./run-openlinktoken.sh package \
   -i ./resources/sample.csv \
   -o ./resources/output.csv \
-
-  -h "HashingKey" \
-  -e "Secret-Encryption-Key-Goes-Here."
+  --exchange-config ./resources/batch.exchange.json
 ```
 
 **PowerShell (Windows):**
@@ -83,8 +80,7 @@ cd C:\path\to\Open Link Token
 .\run-openlinktoken.ps1 package `
   -i .\resources\sample.csv `
   -o .\resources\output.csv `
-  -h "HashingKey" `
-  -e "Secret-Encryption-Key-Goes-Here."
+  --exchange-config .\resources\batch.exchange.json
 ```
 
 ### Script Options
@@ -104,10 +100,8 @@ docker build -t openlinktoken:latest .
 docker run --rm -v $(pwd)/resources:/app/resources \
   openlinktoken:latest package \
   -i /app/resources/sample.csv \
-
   -o /app/resources/output.csv \
-  -h "HashingKey" \
-  -e "Secret-Encryption-Key-Goes-Here."
+  --exchange-config /app/resources/batch.exchange.json
 
 # View output
 cat resources/output.csv
@@ -161,16 +155,17 @@ See [Reference: Metadata Format](../reference/metadata-format.md) for complete f
 
 ## Common Patterns
 
-### Environment Variables for Secrets
+### Environment Variables for Private Keys
+
+Use this override when the CLI cannot auto-discover a matching key from `~/.openlinktoken/`.
 
 ```bash
-export OLT_HASHING_SECRET="MyHashingKey"
-export OLT_ENCRYPTION_KEY="MyEncryptionKey32CharactersLong"
+export OLT_PRIVATE_KEY_PEM="$(cat ~/.openlinktoken/batch.private.pem)"
 
 olt package \
   -i data.csv -o tokens.csv \
-  -h "$OLT_HASHING_SECRET" \
-  -e "$OLT_ENCRYPTION_KEY"
+  --exchange-config ./batch.exchange.json \
+  --private-key-env OLT_PRIVATE_KEY_PEM
 ```
 
 ### Logging and Monitoring
@@ -185,12 +180,12 @@ Check the metadata file after each run for:
 
 ## Troubleshooting
 
-| Problem                       | Solution                                                                |
-| ----------------------------- | ----------------------------------------------------------------------- |
-| "Encryption key not provided" | Add `-e "YourKey"` or run `tokenize` subcommand                         |
-| "Invalid BirthDate"           | Use YYYY-MM-DD format; date must be 1910-01-01 to today                 |
-| "Column not found"            | Check column names match [accepted aliases](../config/configuration.md) |
-| Docker build fails            | Ensure Docker is running; use absolute paths                            |
+| Problem                                                  | Solution                                                                                          |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| "No private key matching this exchange config was found" | Pass `--private-key` / `--private-key-env`, or install the matching key under `~/.openlinktoken/` |
+| "Invalid BirthDate"                                      | Use YYYY-MM-DD format; date must be 1910-01-01 to today                                           |
+| "Column not found"                                       | Check column names match [accepted aliases](../config/configuration.md)                           |
+| Docker build fails                                       | Ensure Docker is running; use absolute paths                                                      |
 
 ---
 
