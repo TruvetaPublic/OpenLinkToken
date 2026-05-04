@@ -4,6 +4,7 @@ Integration tests for the main module.
 Tests the end-to-end workflows for token generation and decryption using new subcommand interface.
 """
 
+import os
 from pathlib import Path
 from unittest.mock import patch
 
@@ -281,17 +282,22 @@ class TestOpenLinkTokenCommand:
         """Test that missing exchange-config input is caught."""
         input_csv = temp_dir / "input.csv"
         output_csv = temp_dir / "output.csv"
+        original_cwd = Path.cwd()
 
-        args = [
-            "tokenize",
-            "-i",
-            str(input_csv),
-            "-o",
-            str(output_csv),
-            # Missing --exchange-config
-        ]
+        try:
+            os.chdir(temp_dir)
+            args = [
+                "tokenize",
+                "-i",
+                str(input_csv),
+                "-o",
+                str(output_csv),
+                # Missing --exchange-config
+            ]
 
-        exit_code = OpenLinkTokenCommand.execute(args)
+            exit_code = OpenLinkTokenCommand.execute(args)
+        finally:
+            os.chdir(original_cwd)
         assert exit_code != 0, "Command should fail with missing required parameter"
 
     def test_missing_required_parameter_exchange_config_for_encrypt(self, temp_dir):
@@ -417,17 +423,22 @@ class TestOpenLinkTokenCommand:
         """Test that package command fails when no exchange config can be resolved."""
         input_csv = temp_dir / "input.csv"
         output_csv = temp_dir / "output.csv"
+        original_cwd = Path.cwd()
 
-        args = [
-            "package",
-            "-i",
-            str(input_csv),
-            "-o",
-            str(output_csv),
-            # Missing --exchange-config
-        ]
+        try:
+            os.chdir(temp_dir)
+            args = [
+                "package",
+                "-i",
+                str(input_csv),
+                "-o",
+                str(output_csv),
+                # Missing --exchange-config
+            ]
 
-        exit_code = OpenLinkTokenCommand.execute(args)
+            exit_code = OpenLinkTokenCommand.execute(args)
+        finally:
+            os.chdir(original_cwd)
         assert exit_code != 0, "Command should fail with missing required parameters"
 
     def test_invalid_subcommand(self, temp_dir):
@@ -460,8 +471,6 @@ class TestOpenLinkTokenCommand:
                         "tokenize",
                         "-i",
                         "input.csv",
-                        "-t",
-                        "csv",
                         "-o",
                         "output.csv",
                     ]
@@ -480,6 +489,43 @@ class TestOpenLinkTokenCommand:
         assert "Traceback" in log_files[0].read_text()
         assert "RuntimeError: boom" in log_files[0].read_text()
 
+    def test_package_command_success_summary_references_run_log(self, temp_dir, capsys, monkeypatch):
+        """Successful package runs should print a summary and point at the detailed log."""
+        input_csv = temp_dir / "input.csv"
+        output_csv = temp_dir / "output.csv"
+        exchange_config, private_key = self._create_exchange_config(temp_dir, "package-summary")
+        monkeypatch.setattr("sys.stderr.isatty", lambda: False)
+
+        with patch("pathlib.Path.home", return_value=temp_dir):
+            exit_code = OpenLinkTokenCommand.execute(
+                [
+                    "--no-update-check",
+                    "package",
+                    "-i",
+                    str(input_csv),
+                    "-o",
+                    str(output_csv),
+                    "--exchange-config",
+                    str(exchange_config),
+                    "--private-key",
+                    str(private_key),
+                ]
+            )
+
+        captured = capsys.readouterr()
+        log_dir = temp_dir / ".openlinktoken" / "logs"
+        log_files = list(log_dir.glob("*.log"))
+
+        assert exit_code == 0
+        assert "Package complete" in captured.err
+        assert f"Output: {output_csv}" in captured.err
+        assert "Rows processed: 2" in captured.err
+        assert len(log_files) == 1
+        assert f"Detailed log: {log_files[0]}" in captured.err
+        assert "Running package command (tokenize + encrypt)" not in captured.err
+        assert "Running package command (tokenize + encrypt)" in log_files[0].read_text()
+        assert "Processed a total of 2 records" in log_files[0].read_text()
+
     def test_tokenize_command_allows_basename_output_path_in_current_directory(self, tmp_path, monkeypatch):
         """Tokenize should support basename-only output paths in the current directory."""
         input_csv = tmp_path / "input.csv"
@@ -497,8 +543,6 @@ class TestOpenLinkTokenCommand:
                 "tokenize",
                 "-i",
                 "input.csv",
-                "-t",
-                "csv",
                 "-o",
                 "output.csv",
                 "--demo-mode",
@@ -530,8 +574,6 @@ class TestOpenLinkTokenCommand:
                         "tokenize",
                         "-i",
                         str(input_csv),
-                        "-t",
-                        "csv",
                         "-o",
                         "output.csv",
                         "--demo-mode",
@@ -549,6 +591,45 @@ class TestOpenLinkTokenCommand:
         assert len(log_files) == 1
         assert str(log_files[0]) in captured.err
         assert "Traceback" in log_files[0].read_text()
+        assert "RuntimeError: boom" in log_files[0].read_text()
+
+    def test_tokenize_unexpected_processing_error_reuses_run_log(self, tmp_path, capsys, monkeypatch):
+        """Processing failures should append the traceback to the same per-run log file."""
+        monkeypatch.setattr("sys.stderr.isatty", lambda: True)
+        input_csv = tmp_path / "input.csv"
+        input_csv.write_text(
+            "RecordId,FirstName,LastName,PostalCode,Sex,BirthDate,SocialSecurityNumber\n"
+            "test-001,John,Doe,98004,Male,2000-01-01,123-45-6789\n",
+            encoding="utf-8",
+        )
+
+        with patch(
+            "openlinktoken_cli.commands.tokenize_command.TokenizeCommand._process_tokens_demo",
+            side_effect=RuntimeError("boom"),
+        ):
+            with patch("pathlib.Path.home", return_value=tmp_path):
+                exit_code = OpenLinkTokenCommand.execute(
+                    [
+                        "--no-update-check",
+                        "tokenize",
+                        "-i",
+                        str(input_csv),
+                        "-o",
+                        "output.csv",
+                        "--demo-mode",
+                    ]
+                )
+
+        captured = capsys.readouterr()
+        log_dir = tmp_path / ".openlinktoken" / "logs"
+        log_files = list(log_dir.glob("*.log"))
+
+        assert exit_code != 0
+        assert "Error: boom" in captured.err
+        assert "\x1b[90mStack trace:" in captured.err
+        assert len(log_files) == 1
+        assert str(log_files[0]) in captured.err
+        assert "Running in DEMO MODE" in log_files[0].read_text()
         assert "RuntimeError: boom" in log_files[0].read_text()
 
     def test_package_missing_exchange_config_writes_reference_log(self, tmp_path, monkeypatch, capsys):
@@ -569,8 +650,6 @@ class TestOpenLinkTokenCommand:
                     "package",
                     "-i",
                     str(input_csv),
-                    "-t",
-                    "csv",
                     "-o",
                     "output.csv",
                 ]

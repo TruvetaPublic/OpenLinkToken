@@ -4,8 +4,9 @@ import logging
 import sys
 
 from openlinktoken_cli.commands import OpenLinkTokenCommand
+from openlinktoken_cli.util.cli_run_reporter import configure_default_logging
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+configure_default_logging()
 logger = logging.getLogger(__name__)
 
 

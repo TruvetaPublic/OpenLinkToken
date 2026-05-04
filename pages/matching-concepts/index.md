@@ -141,12 +141,12 @@ Tokens are encrypted to prevent re-identification, but can be decrypted to debug
 # Generate encrypted tokens (default mode)
 olt package \
   -i data.csv -o output.csv \
-  -h "HashingKey" -e "EncryptionKey"
+  --exchange-config ./matching.exchange.json
 
 # Decrypt previously encrypted tokens
 olt decrypt \
   -i output.csv -o decrypted.csv \
-  -e "EncryptionKey"
+  --exchange-config ./matching.exchange.json
 ```
 
 Decrypted tokens show the HMAC-SHA256 hash (base64 encoded) before AES encryption—useful for debugging attribute normalization issues.

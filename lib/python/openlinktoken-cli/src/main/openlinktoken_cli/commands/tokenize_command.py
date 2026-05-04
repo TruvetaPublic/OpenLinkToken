@@ -18,9 +18,11 @@ from openlinktoken_cli.io.parquet.person_attributes_parquet_writer import (
     PersonAttributesParquetWriter,
 )
 from openlinktoken_cli.processor.person_attributes_processor import (
+    PersonAttributesProcessingSummary,
     PersonAttributesProcessor,
 )
 from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
+from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
 from openlinktoken_cli.util.exchange_config import resolve_exchange_config
 from openlinktoken_cli.util.file_type_detector import FileTypeDetector
 
@@ -39,8 +41,6 @@ class TokenizeCommand:
     to explore the output without managing secrets. Demo-mode output is
     **not** suitable for production or cross-organisation exchange.
     """
-
-
 
     @staticmethod
     def register_subcommand(subparsers):
@@ -78,8 +78,6 @@ class TokenizeCommand:
             dest="output_path",
             help="Output file path",
         )
-
-
 
         parser.add_argument(
             "--demo-mode",
@@ -135,14 +133,6 @@ class TokenizeCommand:
         demo_mode = getattr(args, "demo_mode", False)
         hash_record_ids = getattr(args, "hash_record_ids", False)
 
-        if demo_mode:
-            logger.warning(
-                "Running in DEMO MODE - tokens are raw attribute signature strings with no hashing. "
-                "Do not use demo-mode output in production or share it externally."
-            )
-        else:
-            logger.info("Running tokenize command (normal mode)")
-
         input_type = FileTypeDetector.detect_input_type(args.input_path)
         if not input_type:
             logger.error("Unable to auto-detect input type. Supported input formats: csv, parquet")
@@ -153,43 +143,71 @@ class TokenizeCommand:
             logger.error("Unable to auto-detect output type. Supported output formats: csv, parquet, zip")
             return 1
 
-        logger.info(f"Input: {args.input_path} ({input_type})")
-        logger.info(f"Output: {args.output_path} ({output_type})")
-        if hash_record_ids:
-            logger.info("Record ID hashing enabled: RecordIds will be SHA-256 hashed in output")
-
         if demo_mode and args.exchange_config:
             logger.error("--demo-mode cannot be combined with --exchange-config.")
             return 1
 
+        reporter = CliRunReporter("tokenize")
         try:
-            if demo_mode:
-                TokenizeCommand._process_tokens_demo(
-                    args.input_path,
+            with reporter:
+                try:
+                    if demo_mode:
+                        logger.warning(
+                            "Running in DEMO MODE - tokens are raw attribute signature strings with no hashing. "
+                            "Do not use demo-mode output in production or share it externally."
+                        )
+                    else:
+                        logger.info("Running tokenize command (normal mode)")
+                    logger.info(f"Input: {args.input_path} ({input_type})")
+                    logger.info(f"Output: {args.output_path} ({output_type})")
+                    if hash_record_ids:
+                        logger.info("Record ID hashing enabled: RecordIds will be SHA-256 hashed in output")
+
+                    if demo_mode:
+                        reporter.update_status("Tokenizing records")
+                        summary, metadata_path = TokenizeCommand._process_tokens_demo(
+                            args.input_path,
+                            args.output_path,
+                            input_type,
+                            output_type,
+                            progress_callback=reporter.make_progress_callback("Tokenizing records", "records"),
+                        )
+                    else:
+                        reporter.update_status("Resolving exchange config")
+                        exchange = resolve_exchange_config(
+                            args.exchange_config,
+                            private_key_path=args.private_key,
+                            private_key_env=args.private_key_env,
+                        )
+                        logger.info(f"Exchange config: {exchange.path}")
+                        reporter.update_status("Tokenizing records")
+                        summary, metadata_path = TokenizeCommand._process_tokens(
+                            args.input_path,
+                            args.output_path,
+                            input_type,
+                            output_type,
+                            exchange.hashing_secret,
+                            hash_record_ids,
+                            progress_callback=reporter.make_progress_callback("Tokenizing records", "records"),
+                        )
+                    logger.info("Token generation completed successfully")
+                except Exception as error:
+                    logger.error("Error during token generation: %s", error)
+                    raise
+            reporter.finish_success(
+                "Tokenize complete",
+                TokenizeCommand._build_summary_lines(
                     args.output_path,
-                    input_type,
-                    output_type,
-                )
-            else:
-                exchange = resolve_exchange_config(
-                    args.exchange_config,
-                    private_key_path=args.private_key,
-                    private_key_env=args.private_key_env,
-                )
-                logger.info(f"Exchange config: {exchange.path}")
-                TokenizeCommand._process_tokens(
-                    args.input_path,
-                    args.output_path,
-                    input_type,
-                    output_type,
-                    exchange.hashing_secret,
+                    metadata_path,
+                    summary,
+                    demo_mode,
                     hash_record_ids,
-                )
-            logger.info("Token generation completed successfully")
+                ),
+            )
             return 0
-        except (OSError, ValueError) as error:
-            logger.error("Error during token generation: %s", error)
-            report = archive_cli_error(error, command_name="tokenize")
+        except Exception as error:
+            report = archive_cli_error(error, command_name="tokenize", existing_report=reporter.log_report)
+            print(f"Error: {error}", file=sys.stderr)
             print(format_error_reference_message(report), file=sys.stderr)
             return 1
 
@@ -201,7 +219,8 @@ class TokenizeCommand:
         output_type: str,
         hashing_secret: str | bytes,
         hash_record_ids: bool = False,
-    ):
+        progress_callback=None,
+    ) -> tuple[PersonAttributesProcessingSummary, str]:
         """Process tokens in normal mode using SHA-256 + HMAC-SHA256."""
         token_transformer_list: List[TokenTransformer] = []
 
@@ -221,11 +240,18 @@ class TokenizeCommand:
                 # Only record the hashing-secret hash in normal mode
                 metadata.add_hashed_secret(Metadata.HASHING_SECRET_HASH, hashing_secret)
 
-                PersonAttributesProcessor.process(
-                    reader, writer, token_transformer_list, metadata_map, hash_record_ids=hash_record_ids
+                summary = PersonAttributesProcessor.process(
+                    reader,
+                    writer,
+                    token_transformer_list,
+                    metadata_map,
+                    hash_record_ids=hash_record_ids,
+                    progress_callback=progress_callback,
                 )
 
-                MetadataJsonWriter(output_path).write(metadata_map)
+                metadata_writer = MetadataJsonWriter(output_path)
+                metadata_writer.write(metadata_map)
+                return summary, metadata_writer.metadata_file_path
 
         except Exception:
             raise
@@ -236,7 +262,8 @@ class TokenizeCommand:
         output_path: str,
         input_type: str,
         output_type: str,
-    ):
+        progress_callback=None,
+    ) -> tuple[PersonAttributesProcessingSummary, str]:
         """Process tokens in demo mode using PassthroughTokenizer (no hashing)."""
         try:
             with (
@@ -247,12 +274,43 @@ class TokenizeCommand:
                 metadata_map = metadata.initialize()
                 # Deliberately omit add_hashed_secret — no secret used in demo mode
 
-                PersonAttributesProcessor.process_with_tokenizer(reader, writer, PassthroughTokenizer([]), metadata_map)
+                summary = PersonAttributesProcessor.process_with_tokenizer(
+                    reader,
+                    writer,
+                    PassthroughTokenizer([]),
+                    metadata_map,
+                    progress_callback=progress_callback,
+                )
 
-                MetadataJsonWriter(output_path).write(metadata_map)
+                metadata_writer = MetadataJsonWriter(output_path)
+                metadata_writer.write(metadata_map)
+                return summary, metadata_writer.metadata_file_path
 
         except Exception:
             raise
+
+    @staticmethod
+    def _build_summary_lines(
+        output_path: str,
+        metadata_path: str,
+        summary: PersonAttributesProcessingSummary,
+        demo_mode: bool,
+        hash_record_ids: bool,
+    ) -> list[str]:
+        lines = [
+            f"Output: {output_path}",
+            f"Metadata: {metadata_path}",
+            f"Mode: {'demo' if demo_mode else 'hashed'}",
+            f"Rows processed: {summary.total_rows:,}",
+            f"Rows with invalid attributes: {summary.total_rows_with_invalid_attributes:,}",
+        ]
+        lines.extend(
+            CliRunReporter.summarize_count_lines("Top invalid attributes", summary.invalid_attributes_by_type, limit=3)
+        )
+        lines.extend(CliRunReporter.summarize_count_lines("Blank tokens by rule", summary.blank_tokens_by_rule))
+        if hash_record_ids:
+            lines.append("Record ID hashing: enabled")
+        return lines
 
     @staticmethod
     def _create_reader(path: str, file_type: str):

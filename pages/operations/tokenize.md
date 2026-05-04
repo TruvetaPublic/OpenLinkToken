@@ -63,23 +63,28 @@ The `tokenize` subcommand is primarily used to support **overlap analysis workfl
 
 ### Normal Mode
 
-Use the `tokenize` subcommand. Only the hashing secret is required (no encryption key).
+Use the `tokenize` subcommand with an exchange config. The CLI resolves the hashing secret from the exchange config and auto-discovers the matching private key by default.
 
 ```bash
 olt tokenize \
   -i resources/sample.csv \
   -o resources/hashed-output.csv \
-  -h "HashingKey"
+  --exchange-config ./tokenize.exchange.json
 ```
 
-#### Normal Mode — Docker
+#### Normal Mode — Docker Override Example
+
+If the container cannot auto-discover the matching key under `~/.openlinktoken/`, pass it explicitly:
 
 ```bash
-docker run --rm -v $(pwd)/resources:/app/resources \
+docker run --rm \
+  -e OLT_PRIVATE_KEY_PEM="$(cat ~/.openlinktoken/tokenize.private.pem)" \
+  -v $(pwd)/resources:/app/resources \
   openlinktoken:latest tokenize \
   -i /app/resources/sample.csv \
   -o /app/resources/hashed-output.csv \
-  -h "HashingKey"
+  --exchange-config /app/resources/tokenize.exchange.json \
+  --private-key-env OLT_PRIVATE_KEY_PEM
 ```
 
 ### Hashing Record IDs (`--hash-record-ids`)
@@ -92,7 +97,7 @@ The `--hash-record-ids` flag is also supported by the `package` subcommand.
 olt tokenize \
   -i resources/sample.csv \
   -o resources/hashed-output.csv \
-  -h "HashingKey" \
+  --exchange-config ./tokenize.exchange.json \
   --hash-record-ids
 ```
 
@@ -108,7 +113,7 @@ Each `RecordId` is replaced with a 64-character lowercase SHA-256 hex digest. Th
 
 ### Demo Mode (`--demo-mode`)
 
-In demo mode the full hashing pipeline is skipped. No `--hashingsecret` is required.
+In demo mode the full hashing pipeline is skipped. No exchange config or private key is required.
 
 ```bash
 olt tokenize \
@@ -197,15 +202,15 @@ neither `HashingSecretHash` nor `EncryptionSecretHash` appears in demo-mode meta
 
 ## Security Trade-offs
 
-| Aspect               | `package`                       | `tokenize`          | `tokenize --demo-mode`         |
-| -------------------- | ------------------------------- | ------------------- | ------------------------------ |
-| **Token length**     | ~80-100 chars                   | 44 chars (base64)   | Varies (plain text)            |
-| **Processing speed** | Slower                          | Faster              | Fastest                        |
-| **Secret required**  | Hashing secret + encryption key | Hashing secret only | None                           |
-| **Reversibility**    | Decryptable (to HMAC hash)      | Not decryptable     | Directly readable (plain text) |
-| **External sharing** | Recommended                     | Not recommended     | Never — contains raw PII       |
-| **Defense in depth** | Yes                             | No                  | No                             |
-| **Use case**         | Production / sharing            | Internal analysis   | Exploration / debugging only   |
+| Aspect                  | `package`                     | `tokenize`                    | `tokenize --demo-mode`         |
+| ----------------------- | ----------------------------- | ----------------------------- | ------------------------------ |
+| **Token length**        | ~80-100 chars                 | 44 chars (base64)             | Varies (plain text)            |
+| **Processing speed**    | Slower                        | Faster                        | Fastest                        |
+| **CLI inputs required** | Exchange config + private key | Exchange config + private key | None                           |
+| **Reversibility**       | Decryptable (to HMAC hash)    | Not decryptable               | Directly readable (plain text) |
+| **External sharing**    | Recommended                   | Not recommended               | Never — contains raw PII       |
+| **Defense in depth**    | Yes                           | No                            | No                             |
+| **Use case**            | Production / sharing          | Internal analysis             | Exploration / debugging only   |
 
 ### Security Notes
 
@@ -220,7 +225,7 @@ Tokenized (unencrypted) tokens can be matched directly without decryption when *
 
 1. Partner generates and shares **encrypted tokens**.
 2. You run [Decrypting Tokens](decrypting-tokens.md) to convert the partner's encrypted tokens to their unencrypted equivalent.
-3. You generate **tokenized output** for your own dataset using the same hashing secret.
+3. You generate **tokenized output** for your own dataset using the same exchange config.
 4. You join the two tokenized datasets to measure overlap.
 
 ```sql
@@ -231,10 +236,7 @@ JOIN tokens_b b ON a.Token = b.Token AND a.RuleId = b.RuleId
 WHERE a.RuleId = 'T1';
 ```
 
-For encrypted tokens, either:
-
-1. Decrypt both datasets first, then match
-2. Use the same encryption key for both datasets and match encrypted tokens directly
+For encrypted tokens, decrypt them to their hashed form first and then match on `RuleId` plus `Token`.
 
 ---
 
@@ -242,23 +244,26 @@ For encrypted tokens, either:
 
 ### Tokens Don't Match Between Runs
 
-**Cause:** Different hashing secrets.
+**Cause:** Different exchange configs resolved different hashing secrets.
 
-**Solution:** Verify the same hashing secret is used for both runs:
+**Solution:** Verify both runs produced the same secret hashes in metadata:
 
 ```bash
 # Check metadata for secret hash
 cat output.metadata.json | jq '.HashingSecretHash'
 ```
 
-### "Encryption key not provided" Error
+### "No private key matching this exchange config was found" Error
 
-**Cause:** Using package mode without an encryption key.
+**Cause:** The CLI found the exchange config but could not auto-discover a matching private key.
 
-**Solution:** Use the `tokenize` subcommand to skip encryption:
+**Solution:** Provide the correct key explicitly:
 
 ```bash
-olt tokenize -i data.csv -o out.csv -h "Key"
+olt tokenize \
+  -i data.csv \
+  -o out.csv \
+  --exchange-config ./tokenize.exchange.json
 ```
 
 ---

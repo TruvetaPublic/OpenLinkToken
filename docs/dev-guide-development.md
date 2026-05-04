@@ -263,7 +263,7 @@ Example:
 # After installing openlinktoken-cli
 python -m openlinktoken_cli.main package \
   -i resources/sample.csv -o resources/output.csv \
-  -h "HashingKey" -e "Secret-Encryption-Key-Goes-Here."
+  --exchange-config ./openlinktoken-YYYY-MM-DD.exchange.json
 ```
 
 Programmatic API (simplified):
@@ -691,18 +691,18 @@ Minimum required arguments:
 
 ```shell
 # Python
-python -m openlinktoken_cli.main package -i input.csv -o output.csv --exchange-config ./openlinktoken-YYYY-MM-DD.exchange.json --private-key ~/.openlinktoken/openlinktoken-YYYY-MM-DD.private.pem
+python -m openlinktoken_cli.main package -i input.csv -o output.csv --exchange-config ./openlinktoken-YYYY-MM-DD.exchange.json
 ```
 
 Arguments:
 
-| Flag                 | Description                                     |
-| -------------------- | ----------------------------------------------- |
-| `-i, --input`        | Input file path                                 |
-| `-o, --output`       | Output file path                                |
-| `--exchange-config`  | Exchange config JSON path                       |
-| `--private-key`      | Private key PEM used to decrypt the config      |
-| `--private-key-env`  | Environment variable containing the private key |
+| Flag                | Description                                     |
+| ------------------- | ----------------------------------------------- |
+| `-i, --input`       | Input file path                                 |
+| `-o, --output`      | Output file path                                |
+| `--exchange-config` | Exchange config JSON path                       |
+| `--private-key`     | Private key PEM used to decrypt the config      |
+| `--private-key-env` | Environment variable containing the private key |
 
 ### Key Pair Generation
 

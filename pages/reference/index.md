@@ -137,7 +137,7 @@ The CLI processes CSV or Parquet files without writing code.
 ```bash
 olt package \
   -i input.csv -o output.csv \
-  -h "HashingSecret" -e "EncryptionKey32Chars!!!!!!!!!!"
+  --exchange-config ./partner.exchange.json
 ```
 
 Or with Python:
@@ -145,19 +145,18 @@ Or with Python:
 ```bash
 python -m openlinktoken_cli.main package \
   -i input.csv -o output.csv \
-  -h "HashingSecret" -e "EncryptionKey32Chars!!!!!!!!!!"
+  --exchange-config ./partner.exchange.json
 ```
 
 **Key options:**
 
-| Flag                     | Purpose                        |
-| ------------------------ | ------------------------------ |
-| `-i` / `--input`         | Input file path                |
-| `-o` / `--output`        | Output file path               |
-| `-t` / `--type`          | File type (`csv` or `parquet`) |
-| `-h` / `--hashingsecret` | HMAC-SHA256 secret             |
-| `-e` / `--encryptionkey` | AES-256 key (32 chars)         |
-| `tokenize`               | Tokenize without encryption    |
+| Flag                                  | Purpose                                                |
+| ------------------------------------- | ------------------------------------------------------ |
+| `-i` / `--input`                      | Input file path                                        |
+| `-o` / `--output`                     | Output file path                                       |
+| `--exchange-config`                   | Exchange config JSON path                              |
+| `--private-key` / `--private-key-env` | Private key used to decrypt the exchange config        |
+| `tokenize`                            | Hash-only mode using the same exchange-config workflow |
 
 **Full reference:** [CLI Reference](cli.md)
 

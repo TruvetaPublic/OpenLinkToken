@@ -107,37 +107,40 @@ HMAC-SHA256(message, key) = SHA256((key ⊕ opad) || SHA256((key ⊕ ipad) || me
 
 ## Key Management & Secrets
 
-This section consolidates practical guidance for managing the cryptographic secrets Open Link Token requires.
+This section consolidates practical guidance for managing the cryptographic material Open Link Token requires.
 
 ### Types of Secrets
 
-Open Link Token uses two secrets. Which secrets are required depends on the subcommand:
+Open Link Token still relies on a hashing secret and a transport encryption key internally, but the consumer commands no longer take those values directly on the command line. Instead, they resolve them from an exchange config plus a matching private key:
 
-| Secret             | CLI Flag                 | Purpose                                   | Required for subcommands        | Requirements                         |
-| ------------------ | ------------------------ | ----------------------------------------- | ------------------------------- | ------------------------------------ |
-| **Hashing Secret** | `-h` / `--hashingsecret` | HMAC-SHA256 key for deterministic hashing | `package`, `tokenize`           | 8+ characters recommended, 16+ ideal |
-| **Encryption Key** | `-e` / `--encryptionkey` | AES-256-GCM symmetric key                 | `package`, `encrypt`, `decrypt` | **Exactly 32 characters**            |
+| Material            | CLI Input                             | Purpose                                                                                  | Used by subcommands                         | Requirements                                                                       |
+| ------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------- |
+| **Exchange config** | `--exchange-config`                   | Carries the encrypted hashing secret and the metadata needed to derive the transport key | `package`, `tokenize`, `encrypt`, `decrypt` | Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted                |
+| **Private key**     | `--private-key` / `--private-key-env` | Decrypts the exchange config so the CLI can recover the hashing secret and transport key | `package`, `tokenize`, `encrypt`, `decrypt` | Optional only when a matching key can be auto-discovered under `~/.openlinktoken/` |
 
 ### Handling Secrets in Practice
 
 #### Development / Local Testing
 
-Use clearly marked placeholder values:
+Use clearly marked local file names:
 
 ```bash
-# Placeholder secrets for local testing only
+olt generate-key-pair --name local-test --force
+olt initiate-exchange \
+  --name local-test \
+  --public-key ~/.openlinktoken/local-test.public.pem \
+  --output ./local-test.exchange.json
+
 olt package \
   -i sample.csv -o output.csv \
-  -h "HashingKey" \
-  -e "Secret-Encryption-Key-Goes-Here."
+  --exchange-config ./local-test.exchange.json
 ```
 
-Store these in a local `.env` file (not committed):
+Store reusable paths in a local `.env` file (not committed):
 
 ```bash
 # .env (add to .gitignore)
-OLT_HASHING_SECRET=HashingKey
-OLT_ENCRYPTION_KEY=Secret-Encryption-Key-Goes-Here.
+OLT_EXCHANGE_CONFIG=./local-test.exchange.json
 ```
 
 Load and use:
@@ -146,8 +149,7 @@ Load and use:
 source .env
 olt package \
   -i sample.csv -o output.csv \
-  -h "$OLT_HASHING_SECRET" \
-  -e "$OLT_ENCRYPTION_KEY"
+  --exchange-config "$OLT_EXCHANGE_CONFIG"
 ```
 
 #### Production
@@ -162,18 +164,16 @@ Store secrets in a managed secret store and inject via environment variables at 
 | On-prem    | HashiCorp Vault    | `vault kv get` or agent auto-auth                           |
 | Databricks | Databricks Secrets | `dbutils.secrets.get("scope", "key")`                       |
 
-**Example (AWS Secrets Manager):**
+**Example (AWS Secrets Manager override):**
 
 ```bash
-export OLT_HASHING_SECRET=$(aws secretsmanager get-secret-value \
-  --secret-id openlinktoken-hash-key --query SecretString --output text)
-export OLT_ENCRYPTION_KEY=$(aws secretsmanager get-secret-value \
-  --secret-id openlinktoken-enc-key --query SecretString --output text)
+export OLT_PRIVATE_KEY_PEM=$(aws secretsmanager get-secret-value \
+  --secret-id openlinktoken-private-key --query SecretString --output text)
 
 olt package \
   -i data.csv -o tokens.csv \
-  -h "$OLT_HASHING_SECRET" \
-  -e "$OLT_ENCRYPTION_KEY"
+  --exchange-config ./sender-q2.exchange.json \
+  --private-key-env OLT_PRIVATE_KEY_PEM
 ```
 
 **Example (Databricks):**
@@ -191,9 +191,9 @@ processor = SparkPersonTokenProcessor(
 ### Secret Rotation
 
 1. **Generate new secrets** – use a cryptographically secure generator.
-2. **Re-run token generation** – tokens are deterministic; same input + same secrets = same tokens. New secrets = new tokens.
+2. **Re-run token generation** – tokens are deterministic; same input plus the same resolved exchange-config secrets produces the same tokens. New exchange material produces new tokens.
 3. **Version secrets in your store** – keep old versions for auditability.
-4. **Coordinate downstream** – any system that decrypts tokens needs the matching encryption key.
+4. **Coordinate downstream** – any system that decrypts tokens needs a matching private key for the updated exchange config.
 
 ### What NOT to Do
 
@@ -223,7 +223,7 @@ python tools/hash_calculator.py \
 
 ### Cross-References
 
-- **CLI flags for secrets**: [CLI Reference](reference/cli.md)
+- **CLI flags for exchange configs and private keys**: [CLI Reference](reference/cli.md)
 - **Environment variable usage**: [Configuration](config/configuration.md#environment-variables)
 - **Databricks / Spark secrets**: [Spark or Databricks](operations/spark-or-databricks.md)
 - **Running the CLI**: [Running Open Link Token](running-openlinktoken/index.md)
