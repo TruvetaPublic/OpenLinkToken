@@ -33,6 +33,16 @@ class _PendingRow:
     token_generator_result: TokenGeneratorResult
 
 
+@dataclass(frozen=True)
+class PersonAttributesProcessingSummary:
+    """Summary counters for a token generation run."""
+
+    total_rows: int
+    total_rows_with_invalid_attributes: int
+    invalid_attributes_by_type: Dict[str, int]
+    blank_tokens_by_rule: Dict[str, int]
+
+
 class PersonAttributesProcessor:
     """
     Process all person attributes.
@@ -59,7 +69,8 @@ class PersonAttributesProcessor:
         encryption_key: str = None,
         ring_id: str = None,
         hash_record_ids: bool = False,
-    ) -> None:
+        progress_callback=None,
+    ) -> PersonAttributesProcessingSummary:
         """
         Read person attributes from the input data source, generate tokens, and
         write the result back to the output data source. The tokens can be optionally
@@ -78,7 +89,7 @@ class PersonAttributesProcessor:
         """
         # TokenGenerator code
         token_definition = TokenDefinition()
-        PersonAttributesProcessor._process_with_tokenizer(
+        return PersonAttributesProcessor._process_with_tokenizer(
             reader,
             writer,
             SHA256Tokenizer(token_transformer_list),
@@ -87,6 +98,7 @@ class PersonAttributesProcessor:
             encryption_key,
             ring_id,
             hash_record_ids,
+            progress_callback,
         )
 
     @staticmethod
@@ -95,7 +107,8 @@ class PersonAttributesProcessor:
         writer: PersonAttributesWriter,
         tokenizer: Tokenizer,
         metadata_map: Dict[str, Any] = None,
-    ) -> None:
+        progress_callback=None,
+    ) -> PersonAttributesProcessingSummary:
         """
         Read person attributes from the input data source, generate tokens using
         the provided tokenizer, and write the result to the output data source.
@@ -110,7 +123,14 @@ class PersonAttributesProcessor:
             metadata_map: Optional metadata map to update with processing statistics.
         """
         token_definition = TokenDefinition()
-        PersonAttributesProcessor._process_with_tokenizer(reader, writer, tokenizer, token_definition, metadata_map)
+        return PersonAttributesProcessor._process_with_tokenizer(
+            reader,
+            writer,
+            tokenizer,
+            token_definition,
+            metadata_map,
+            progress_callback=progress_callback,
+        )
 
     @staticmethod
     def _process_with_tokenizer(
@@ -122,7 +142,8 @@ class PersonAttributesProcessor:
         encryption_key: str = None,
         ring_id: str = None,
         hash_record_ids: bool = False,
-    ) -> None:
+        progress_callback=None,
+    ) -> PersonAttributesProcessingSummary:
         """
         Core row-processing logic shared by all process() overloads.
 
@@ -138,6 +159,7 @@ class PersonAttributesProcessor:
         """
         token_generator = TokenGenerator(token_definition, tokenizer)
 
+        row_counter = 0
         invalid_attribute_count: Dict[str, int] = PersonAttributesProcessor._initialize_invalid_attribute_count(
             token_definition
         )
@@ -163,10 +185,11 @@ class PersonAttributesProcessor:
                 ring_id,
                 jwe_formatters,
                 hash_record_ids,
+                progress_callback,
             )
 
-        except Exception as e:
-            logger.error(f"Error processing records: {e}")
+        except Exception as error:
+            logger.error("Error processing records: %s", error)
             raise
 
         logger.info(f"Processed a total of {row_counter:,} records")
@@ -196,6 +219,13 @@ class PersonAttributesProcessor:
             metadata_map[PersonAttributesProcessor.BLANK_TOKENS_BY_RULE_KEY] = dict(
                 sorted(blank_tokens_by_rule_count.items())
             )
+
+        return PersonAttributesProcessingSummary(
+            total_rows=row_counter,
+            total_rows_with_invalid_attributes=total_invalid_records,
+            invalid_attributes_by_type=dict(sorted(invalid_attribute_count.items())),
+            blank_tokens_by_rule=dict(sorted(blank_tokens_by_rule_count.items())),
+        )
 
     @staticmethod
     def _write_tokens(
@@ -257,9 +287,7 @@ class PersonAttributesProcessor:
             try:
                 writer.write_attributes(row_result)
             except IOError:
-                logger.error(
-                    f"Error writing attributes to file for row {row_counter:,}",
-                )
+                logger.error("Error writing attributes to file for row %s", f"{row_counter:,}")
 
     @staticmethod
     def _initialize_jwe_formatters(
@@ -298,6 +326,7 @@ class PersonAttributesProcessor:
         ring_id: str,
         jwe_formatters: Dict[str, JweMatchTokenFormatter],
         hash_record_ids: bool = False,
+        progress_callback=None,
     ) -> int:
         """Process rows with either batched or standard token generation based on ML1 configuration."""
         if ML1InferenceConfig.is_enabled():
@@ -311,6 +340,7 @@ class PersonAttributesProcessor:
                 ring_id,
                 jwe_formatters,
                 hash_record_ids,
+                progress_callback,
             )
         return PersonAttributesProcessor._process_rows_without_batched_ml1(
             reader,
@@ -322,6 +352,7 @@ class PersonAttributesProcessor:
             ring_id,
             jwe_formatters,
             hash_record_ids,
+            progress_callback,
         )
 
     @staticmethod
@@ -335,9 +366,11 @@ class PersonAttributesProcessor:
         ring_id: str,
         jwe_formatters: Dict[str, JweMatchTokenFormatter],
         hash_record_ids: bool = False,
+        progress_callback=None,
     ) -> int:
         """Process rows in standard per-row token generation mode."""
         row_counter = 0
+        last_reported_count = 0
         for row in reader:
             row_counter += 1
             token_generator_result = token_generator.get_all_tokens(row)
@@ -364,6 +397,11 @@ class PersonAttributesProcessor:
             )
             if row_counter % 10000 == 0:
                 logger.info(f"Processed {row_counter:,} records")
+                last_reported_count = row_counter
+                if progress_callback is not None:
+                    progress_callback(row_counter)
+        if progress_callback is not None and row_counter != last_reported_count:
+            progress_callback(row_counter)
         return row_counter
 
     @staticmethod
@@ -377,9 +415,11 @@ class PersonAttributesProcessor:
         ring_id: str,
         jwe_formatters: Dict[str, JweMatchTokenFormatter],
         hash_record_ids: bool = False,
+        progress_callback=None,
     ) -> int:
         """Process rows using batched ML1 ONNX inference while retaining streaming output behavior."""
         row_counter = 0
+        last_reported_count = 0
         ml1_batch_size = ML1InferenceConfig.get_batch_size()
         pending_rows: List[_PendingRow] = []
 
@@ -409,6 +449,9 @@ class PersonAttributesProcessor:
 
             if row_counter % 10000 == 0:
                 logger.info(f"Processed {row_counter:,} records")
+                last_reported_count = row_counter
+                if progress_callback is not None:
+                    progress_callback(row_counter)
 
         if pending_rows:
             PersonAttributesProcessor._flush_pending_rows(
@@ -422,6 +465,9 @@ class PersonAttributesProcessor:
                 pending_rows,
                 hash_record_ids,
             )
+
+        if progress_callback is not None and row_counter != last_reported_count:
+            progress_callback(row_counter)
 
         return row_counter
 

@@ -14,8 +14,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from hash_calculator import calculate_secure_hash
 
 
-def test_known_values():
-    """Test hash calculation against known SHA-256 values."""
+def _run_known_values_test() -> bool:
+    """Return whether hash calculation matches the expected SHA-256 values."""
     test_cases = [
         ("hello", "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"),
         ("", None),  # Empty string should return None
@@ -42,8 +42,13 @@ def test_known_values():
     return True
 
 
-def test_java_compatibility():
-    """Test that Python hashes match Java implementation."""
+def test_known_values():
+    """Test hash calculation against known SHA-256 values."""
+    assert _run_known_values_test()
+
+
+def _run_java_compatibility_test() -> bool:
+    """Return whether Python hashes can be computed for representative inputs."""
     # These values should match what the Java implementation produces
     test_cases = [
         "HashingKey",
@@ -64,8 +69,13 @@ def test_java_compatibility():
     return True
 
 
-def test_script_execution():
-    """Test the script can be executed with command line arguments."""
+def test_java_compatibility():
+    """Test that Python hashes match Java implementation."""
+    assert _run_java_compatibility_test()
+
+
+def _run_script_execution_test() -> bool:
+    """Return whether the script executes successfully with command line arguments."""
     script_path = os.path.join(os.path.dirname(__file__), "hash_calculator.py")
 
     # Test with both secrets
@@ -103,6 +113,11 @@ def test_script_execution():
         return False
 
 
+def test_script_execution():
+    """Test the script can be executed with command line arguments."""
+    assert _run_script_execution_test()
+
+
 def main():
     """Run all tests."""
     print("Testing Open Link Token Hash Calculator")
@@ -111,15 +126,15 @@ def main():
     all_passed = True
 
     # Test known values
-    if not test_known_values():
+    if not _run_known_values_test():
         all_passed = False
 
     # Test Java compatibility
-    if not test_java_compatibility():
+    if not _run_java_compatibility_test():
         all_passed = False
 
     # Test script execution
-    if not test_script_execution():
+    if not _run_script_execution_test():
         all_passed = False
 
     print("\n" + "=" * 40)

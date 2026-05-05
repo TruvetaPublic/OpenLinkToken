@@ -58,15 +58,23 @@ uv pip install -r requirements.txt -e .
 
 ## Run Token Generation
 
+Create a local exchange config once before running the consumer commands:
+
+```bash
+olt generate-key-pair --name recipient --force
+olt initiate-exchange \
+  --name quickstart \
+  --public-key ~/.openlinktoken/recipient.public.pem \
+  --output ../../../resources/quickstart.exchange.json
+```
+
 ### Package Command (Tokenize + Encrypt)
 
 ```bash
 olt package \
   -i ../../../resources/sample.csv \
-  -t csv \
   -o ../../../resources/output.csv \
-  -h "YourHashingSecret" \
-  -e "YourEncryptionKey-32Chars-Here!"
+  --exchange-config ../../../resources/quickstart.exchange.json
 ```
 
 ### Tokenize Command (Hash-Only, No Encryption)
@@ -74,9 +82,8 @@ olt package \
 ```bash
 olt tokenize \
   -i ../../../resources/sample.csv \
-  -t csv \
   -o ../../../resources/output.csv \
-  -h "YourHashingSecret"
+  --exchange-config ../../../resources/quickstart.exchange.json
 ```
 
 ### Parquet Format
@@ -84,10 +91,8 @@ olt tokenize \
 ```bash
 olt package \
   -i input.parquet \
-  -t parquet \
   -o output.parquet \
-  -h "YourHashingSecret" \
-  -e "YourEncryptionKey-32Chars-Here!"
+  --exchange-config ../../../resources/quickstart.exchange.json
 ```
 
 ### Decrypt Command
@@ -95,9 +100,8 @@ olt package \
 ```bash
 olt decrypt \
   -i ../../../resources/output.csv \
-  -t csv \
   -o ../../../resources/decrypted.csv \
-  -e "YourEncryptionKey-32Chars-Here!"
+  --exchange-config ../../../resources/quickstart.exchange.json
 ```
 
 ### Generate ECDH Key Pair

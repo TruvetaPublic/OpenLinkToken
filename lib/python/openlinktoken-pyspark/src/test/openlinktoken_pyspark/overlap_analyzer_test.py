@@ -7,6 +7,9 @@ import json
 from pathlib import Path
 
 import pytest
+
+pytest.importorskip("pyspark")
+
 from pyspark.sql import SparkSession
 
 from openlinktoken.ec_key_utils import generate_key_pair

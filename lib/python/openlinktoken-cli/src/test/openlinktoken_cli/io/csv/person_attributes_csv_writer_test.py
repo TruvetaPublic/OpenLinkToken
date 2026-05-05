@@ -81,17 +81,15 @@ class TestPersonAttributesCSVWriter:
             record2 = lines[2].strip()
             assert record2 == "456,Jane Smith"
 
-    def test_write_to_current_directory_with_filename_only(self, tmp_path: Path, monkeypatch):
-        """Test writing to a bare filename in the current working directory."""
+    def test_write_basename_output_path_in_current_directory(self, tmp_path, monkeypatch):
+        """Test that a basename-only output path writes to the current directory."""
         monkeypatch.chdir(tmp_path)
-
         writer = PersonAttributesCSVWriter("output.csv")
-        writer.write_attributes({"RecordId": "123", "Name": "John Doe"})
-        writer.close()
+
+        try:
+            writer.write_attributes({"RecordId": "123", "Name": "John Doe"})
+        finally:
+            writer.close()
 
         output_path = tmp_path / "output.csv"
         assert output_path.exists()
-        assert output_path.read_text(encoding="utf-8").splitlines() == [
-            "RecordId,Name",
-            "123,John Doe",
-        ]

@@ -2,6 +2,7 @@
 
 import csv as csv_module
 import json
+import os
 from pathlib import Path
 from unittest.mock import patch
 
@@ -68,8 +69,6 @@ class TestTokenizeCommandDemoMode:
             "tokenize",
             "-i",
             str(temp_dir / "input.csv"),
-            "-t",
-            "csv",
             "-o",
             str(temp_dir / "output.csv"),
             "--demo-mode",
@@ -79,16 +78,19 @@ class TestTokenizeCommandDemoMode:
 
     def test_normal_mode_fails_without_exchange_config(self, temp_dir: Path):
         """Normal mode must reject execution when no exchange config can be resolved."""
-        args = [
-            "tokenize",
-            "-i",
-            str(temp_dir / "input.csv"),
-            "-t",
-            "csv",
-            "-o",
-            str(temp_dir / "output.csv"),
-        ]
-        exit_code = OpenLinkTokenCommand.execute(args)
+        original_cwd = Path.cwd()
+        try:
+            os.chdir(temp_dir)
+            args = [
+                "tokenize",
+                "-i",
+                str(temp_dir / "input.csv"),
+                "-o",
+                str(temp_dir / "output.csv"),
+            ]
+            exit_code = OpenLinkTokenCommand.execute(args)
+        finally:
+            os.chdir(original_cwd)
         assert exit_code != 0
 
     def test_demo_mode_rejects_exchange_config(self, temp_dir: Path):
@@ -98,8 +100,6 @@ class TestTokenizeCommandDemoMode:
             "tokenize",
             "-i",
             str(temp_dir / "input.csv"),
-            "-t",
-            "csv",
             "-o",
             str(temp_dir / "output.csv"),
             "--demo-mode",
@@ -116,8 +116,6 @@ class TestTokenizeCommandDemoMode:
             "tokenize",
             "-i",
             str(temp_dir / "input.csv"),
-            "-t",
-            "csv",
             "-o",
             str(temp_dir / "output.csv"),
             "--exchange-config",
@@ -139,8 +137,6 @@ class TestTokenizeCommandDemoMode:
             "tokenize",
             "-i",
             str(temp_dir / "input.csv"),
-            "-t",
-            "csv",
             "-o",
             str(temp_dir / "output.csv"),
             "--exchange-config",
@@ -152,13 +148,13 @@ class TestTokenizeCommandDemoMode:
         assert exit_code != 0
 
     def test_invalid_input_type_rejected(self, temp_dir: Path):
-        """An unrecognised -t value should always be rejected."""
+        """An unsupported input extension should be rejected by auto-detection."""
+        bad_input = temp_dir / "input.json"
+        bad_input.write_text('{"k":"v"}')
         args = [
             "tokenize",
             "-i",
-            str(temp_dir / "input.csv"),
-            "-t",
-            "json",
+            str(bad_input),
             "-o",
             str(temp_dir / "output.csv"),
             "--demo-mode",
@@ -182,8 +178,6 @@ class TestTokenizeCommandDemoMode:
                 "tokenize",
                 "-i",
                 str(temp_dir / "input.csv"),
-                "-t",
-                "csv",
                 "-o",
                 str(output_csv),
                 "--demo-mode",
@@ -211,8 +205,6 @@ class TestTokenizeCommandDemoMode:
                 "tokenize",
                 "-i",
                 str(temp_dir / "input.csv"),
-                "-t",
-                "csv",
                 "-o",
                 str(output_csv),
                 "--exchange-config",
@@ -241,8 +233,6 @@ class TestTokenizeCommandDemoMode:
                 "tokenize",
                 "-i",
                 str(temp_dir / "input.csv"),
-                "-t",
-                "csv",
                 "-o",
                 str(demo_output),
                 "--demo-mode",
@@ -253,8 +243,6 @@ class TestTokenizeCommandDemoMode:
                 "tokenize",
                 "-i",
                 str(temp_dir / "input.csv"),
-                "-t",
-                "csv",
                 "-o",
                 str(normal_output),
                 "--exchange-config",
@@ -277,8 +265,6 @@ class TestTokenizeCommandDemoMode:
                 "tokenize",
                 "-i",
                 str(temp_dir / "input.csv"),
-                "-t",
-                "csv",
                 "-o",
                 str(temp_dir / "output.csv"),
                 "--demo-mode",
@@ -296,8 +282,6 @@ class TestTokenizeCommandDemoMode:
                 "tokenize",
                 "-i",
                 str(temp_dir / "input.csv"),
-                "-t",
-                "csv",
                 "-o",
                 str(temp_dir / "output.csv"),
                 "--exchange-config",
@@ -317,8 +301,6 @@ class TestTokenizeCommandDemoMode:
                 "tokenize",
                 "-i",
                 str(temp_dir / "input.csv"),
-                "-t",
-                "csv",
                 "-o",
                 str(temp_dir / "output.csv"),
                 "--demo-mode",

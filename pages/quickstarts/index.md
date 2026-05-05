@@ -83,8 +83,8 @@ See [Configuration](../config/configuration.md) for detailed column mapping and 
 
 ## Common Issues
 
-**"Encryption key not provided"**
-→ Either add `-e "YourKey"` with `package` or use `tokenize` to skip encryption.
+**"No private key matching this exchange config was found"**
+→ Pass `--private-key` or `--private-key-env`, or place the matching key under `~/.openlinktoken/`.
 
 **"Invalid BirthDate"**
 → Use YYYY-MM-DD format or one of the accepted formats. Date must be between 1910-01-01 and today.

@@ -4,7 +4,8 @@ Unified processor for token transformations (encryption/decryption).
 """
 
 import logging
-from typing import Protocol
+from dataclasses import dataclass
+from typing import Callable, Protocol
 
 from openlinktoken.tokens import Token
 
@@ -19,6 +20,15 @@ class TokenTransformer(Protocol):
         ...
 
 
+@dataclass(frozen=True)
+class TokenTransformationSummary:
+    """Summary counters for token encryption or decryption runs."""
+
+    total_tokens: int
+    transformed_tokens: int
+    failed_tokens: int
+
+
 class TokenTransformationProcessor:
     """
     Unified processor for token transformations (encryption/decryption).
@@ -28,7 +38,13 @@ class TokenTransformationProcessor:
     """
 
     @staticmethod
-    def process(reader, writer, transformer: TokenTransformer, operation: str):
+    def process(
+        reader,
+        writer,
+        transformer: TokenTransformer,
+        operation: str,
+        progress_callback: Callable[[int], None] | None = None,
+    ) -> TokenTransformationSummary:
         """
         Read tokens from input, transform them, and write to output.
 
@@ -41,6 +57,7 @@ class TokenTransformationProcessor:
         row_counter = 0
         transformed_counter = 0
         error_counter = 0
+        last_reported_count = 0
 
         for row in reader:
             row_counter += 1
@@ -66,8 +83,19 @@ class TokenTransformationProcessor:
 
             if row_counter % 10000 == 0:
                 logger.info(f'Processed "{row_counter:,}" tokens')
+                last_reported_count = row_counter
+                if progress_callback is not None:
+                    progress_callback(row_counter)
 
         logger.info(f"Processed a total of {row_counter:,} tokens")
         logger.info(f"Successfully {operation} {transformed_counter:,} tokens")
         if error_counter > 0:
             logger.warning(f"Failed to {operation} {error_counter:,} tokens")
+        if progress_callback is not None and row_counter != last_reported_count:
+            progress_callback(row_counter)
+
+        return TokenTransformationSummary(
+            total_tokens=row_counter,
+            transformed_tokens=transformed_counter,
+            failed_tokens=error_counter,
+        )

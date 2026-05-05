@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import re
 import subprocess
 from pathlib import Path
 
@@ -69,4 +70,5 @@ def test_shell_harness_auto_continue_runs_without_confirmation() -> None:
 
     assert completed.returncode == 0, completed.stderr
     assert "Press Enter to continue" not in completed.stdout
-    assert "Commands run: 19" in completed.stdout
+    step_count = len(re.findall(r"^=== .+ ===$", completed.stdout, flags=re.MULTILINE))
+    assert f"Commands run: {step_count}" in completed.stdout

@@ -60,13 +60,13 @@ Download the [latest release](https://github.com/TruvetaPublic/OpenLinkToken/rel
 # Linux/macOS
 ./olt generate-key-pair --name recipient --force
 ./olt initiate-exchange --name quickstart --public-key "$HOME/.openlinktoken/recipient.public.pem" --output ./resources/quickstart.exchange.json
-./olt package -i ./resources/sample.csv -t csv -o ./resources/output.csv \
+./olt package -i ./resources/sample.csv -o ./resources/output.csv \
   --exchange-config ./resources/quickstart.exchange.json --private-key "$HOME/.openlinktoken/quickstart.private.pem"
 
 # Windows
 .\olt.exe generate-key-pair --name recipient --force
 .\olt.exe initiate-exchange --name quickstart --public-key "$HOME/.openlinktoken/recipient.public.pem" --output .\resources\quickstart.exchange.json
-.\olt.exe package -i .\resources\sample.csv -t csv -o .\resources\output.csv `
+.\olt.exe package -i .\resources\sample.csv -o .\resources\output.csv `
   --exchange-config .\resources\quickstart.exchange.json --private-key "$HOME/.openlinktoken/quickstart.private.pem"
 ```
 
@@ -74,7 +74,7 @@ Download the [latest release](https://github.com/TruvetaPublic/OpenLinkToken/rel
 
 ```bash
 ./run-openlinktoken.sh package \
-  -i ./resources/sample.csv -t csv -o ./resources/output.csv \
+  -i ./resources/sample.csv -o ./resources/output.csv \
   --exchange-config ./resources/quickstart.exchange.json \
   --private-key "$HOME/.openlinktoken/quickstart.private.pem"
 ```

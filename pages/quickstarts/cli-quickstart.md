@@ -48,9 +48,7 @@ chmod +x openlinktoken
 ./olt package \
   -i /path/to/sample.csv \
   -o /path/to/output.csv \
-  -t csv \
-  --exchange-config /path/to/quickstart.exchange.json \
-  --private-key "$HOME/.openlinktoken/quickstart.private.pem"
+  --exchange-config /path/to/quickstart.exchange.json
 ```
 
 **Windows PowerShell:**
@@ -66,9 +64,7 @@ cd openlinktoken-cli-2.0.0-alpha-windows-x64
 .\olt.exe package `
   -i C:\path\to\sample.csv `
   -o C:\path\to\output.csv `
-  -t csv `
-  --exchange-config C:\path\to\quickstart.exchange.json `
-  --private-key "$HOME/.openlinktoken/quickstart.private.pem"
+  --exchange-config C:\path\to\quickstart.exchange.json
 ```
 
 ### Verifying the Executable
@@ -93,9 +89,7 @@ cd /path/to/OpenLinkToken
 ./run-openlinktoken.sh package \
   -i ./resources/sample.csv \
   -o ./resources/output.csv \
-  -t csv \
-  -h "HashingKey" \
-  -e "Secret-Encryption-Key-Goes-Here."
+  --exchange-config ./resources/quickstart.exchange.json
 ```
 
 ### Windows PowerShell
@@ -106,9 +100,7 @@ cd C:\path\to\Open Link Token
 .\run-openlinktoken.ps1 package `
   -i .\resources\sample.csv `
   -o .\resources\output.csv `
-  -t csv `
-  -h "HashingKey" `
-  -e "Secret-Encryption-Key-Goes-Here."
+  --exchange-config .\resources\quickstart.exchange.json
 ```
 
 ## Subcommands
@@ -137,7 +129,6 @@ These arguments are shared across all subcommands:
 | ------------------- | ----- | --------------------------------------------------------------------------------------------------------------------- |
 | `--input`           | `-i`  | Input file path (CSV or Parquet)                                                                                      |
 | `--output`          | `-o`  | Output file path                                                                                                      |
-| `--type`            | `-t`  | File type: `csv` or `parquet`                                                                                         |
 | `--exchange-config` |       | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted on consumer commands.  |
 | `--private-key`     |       | Private key PEM used to decrypt the exchange config and derive later transport keys                                   |
 | `--private-key-env` |       | Environment variable containing the private key PEM                                                                   |
@@ -165,10 +156,8 @@ olt generate-key-pair --name recipient --force
 olt initiate-exchange --name quickstart --public-key ~/.openlinktoken/recipient.public.pem --output ./quickstart.exchange.json
 olt package \
   -i sample.csv \
-  -t csv \
   -o tokens.csv \
-  --exchange-config ./quickstart.exchange.json \
-  --private-key ~/.openlinktoken/quickstart.private.pem
+  --exchange-config ./quickstart.exchange.json
 ```
 
 **Output (`tokens.csv`):**
@@ -188,10 +177,8 @@ patient_002,T1,...
 ```bash
 olt package \
   -i input.parquet \
-  -t parquet \
   -o tokens.parquet \
-  --exchange-config ./quickstart.exchange.json \
-  --private-key ~/.openlinktoken/quickstart.private.pem
+  --exchange-config ./quickstart.exchange.json
 ```
 
 ## Other Subcommands
@@ -256,9 +243,9 @@ A `.metadata.json` file is created alongside the output:
 
 ## Troubleshooting
 
-### "Encryption key not provided"
+### "No private key matching this exchange config was found"
 
-Either provide `-e "YourKey"` with `package` or use the `tokenize` subcommand.
+Pass `--private-key` or `--private-key-env`, or place the matching key under `~/.openlinktoken/`.
 
 ### "Invalid BirthDate"
 
@@ -271,6 +258,10 @@ Check that input file path is correct and file exists.
 ### "Invalid SSN"
 
 SSN must be 9 digits. Area code cannot be 000, 666, or 900-999.
+
+### Unexpected internal error
+
+If a command fails unexpectedly, check the `Stack trace: <path>` line printed to **stderr**. The CLI archives a redacted traceback under `~/.openlinktoken/logs` on Linux and macOS or `%APPDATA%\.openlinktoken\logs` on Windows.
 
 ## Keeping the CLI Up to Date
 

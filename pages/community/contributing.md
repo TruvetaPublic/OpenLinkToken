@@ -210,7 +210,7 @@ Include:
 - **Steps to reproduce**: Minimal example
 - **Expected behavior**: What should happen
 - **Actual behavior**: What actually happens
-- **Error messages**: Full stack traces if applicable
+- **Archived CLI logs**: If the CLI prints `Stack trace: <path>`, attach that archived log or include the path in the issue
 
 ### Feature Requests
 

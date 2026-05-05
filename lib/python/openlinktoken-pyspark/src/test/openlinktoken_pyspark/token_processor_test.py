@@ -10,6 +10,9 @@ from types import SimpleNamespace
 
 import pytest
 from jwcrypto import jwe, jwk
+
+pytest.importorskip("pyspark")
+
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StringType, StructField, StructType
 

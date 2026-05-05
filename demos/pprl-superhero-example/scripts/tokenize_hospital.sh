@@ -34,7 +34,6 @@ mkdir -p "${DEMO_DIR}/outputs"
 
 echo "Running Open Link Token CLI (hospital)..."
 olt package \
-  -t csv \
   -i "${DEMO_DIR}/datasets/hospital_superhero_data.csv" \
   -o "${DEMO_DIR}/outputs/hospital_tokens.csv" \
   -h "${HASHING_SECRET}" \

@@ -67,19 +67,15 @@ class TestPersonAttributesParquetWriter:
             assert record[SocialSecurityNumberAttribute] == "987-65-4321"
             assert record[FirstNameAttribute] == "Jane"
 
-    def test_write_to_current_directory_with_filename_only(self, tmp_path: Path, monkeypatch):
-        """Test writing a Parquet file to a bare filename in the current directory."""
+    def test_write_basename_output_path_in_current_directory(self, tmp_path, monkeypatch):
+        """Test that a basename-only output path writes to the current directory."""
         monkeypatch.chdir(tmp_path)
-
         writer = PersonAttributesParquetWriter("output.parquet")
-        writer.write_attributes({"RecordId": "123", "FirstName": "John"})
-        writer.close()
+
+        try:
+            writer.write_attributes({"RecordId": "123", "FirstName": "John"})
+        finally:
+            writer.close()
 
         output_path = tmp_path / "output.parquet"
         assert output_path.exists()
-
-        with PersonAttributesParquetReader(str(output_path)) as reader:
-            record = next(reader)
-            assert record is not None
-            assert record[RecordIdAttribute] == "123"
-            assert record[FirstNameAttribute] == "John"

@@ -233,7 +233,7 @@ Smoke-test the local build before packaging it:
 ```shell
 mkdir -p smoke
 cp resources/sample.csv smoke/input.csv
-./dist/olt tokenize -i smoke/input.csv -t csv -o smoke/out.csv -h secret
+./dist/olt tokenize -i smoke/input.csv -o smoke/out.csv -h secret
 ```
 
 On Windows PowerShell:
@@ -241,7 +241,7 @@ On Windows PowerShell:
 ```powershell
 New-Item -ItemType Directory -Force -Path smoke | Out-Null
 Copy-Item resources\sample.csv smoke\input.csv
-.\dist\olt.exe tokenize -i smoke\input.csv -t csv -o smoke\out.csv -h secret
+.\dist\olt.exe tokenize -i smoke\input.csv -o smoke\out.csv -h secret
 ```
 
 If you also want the same ZIP and checksum bundle produced by the release workflow, run:
@@ -271,8 +271,8 @@ Example:
 ```shell
 # After installing openlinktoken-cli
 python -m openlinktoken_cli.main package \
-  -i resources/sample.csv -t csv -o resources/output.csv \
-  -h "HashingKey" -e "Secret-Encryption-Key-Goes-Here."
+  -i resources/sample.csv -o resources/output.csv \
+  --exchange-config ./openlinktoken-YYYY-MM-DD.exchange.json
 ```
 
 Programmatic API (simplified):
@@ -700,20 +700,18 @@ Minimum required arguments:
 
 ```shell
 # Python
-python -m openlinktoken_cli.main package -i input.csv -t csv -o output.csv --exchange-config ./openlinktoken-YYYY-MM-DD.exchange.json --private-key ~/.openlinktoken/openlinktoken-YYYY-MM-DD.private.pem
+python -m openlinktoken_cli.main package -i input.csv -o output.csv --exchange-config ./openlinktoken-YYYY-MM-DD.exchange.json
 ```
 
 Arguments:
 
-| Flag                 | Description                                     |
-| -------------------- | ----------------------------------------------- |
-| `-t, --type`         | Input file type (`csv` or `parquet`)            |
-| `-i, --input`        | Input file path                                 |
-| `-o, --output`       | Output file path                                |
-| `-ot, --output-type` | (Optional) Output file type (defaults to input) |
-| `--exchange-config`  | Exchange config JSON path                       |
-| `--private-key`      | Private key PEM used to decrypt the config      |
-| `--private-key-env`  | Environment variable containing the private key |
+| Flag                | Description                                     |
+| ------------------- | ----------------------------------------------- |
+| `-i, --input`       | Input file path                                 |
+| `-o, --output`      | Output file path                                |
+| `--exchange-config` | Exchange config JSON path                       |
+| `--private-key`     | Private key PEM used to decrypt the config      |
+| `--private-key-env` | Environment variable containing the private key |
 
 ### Key Pair Generation
 

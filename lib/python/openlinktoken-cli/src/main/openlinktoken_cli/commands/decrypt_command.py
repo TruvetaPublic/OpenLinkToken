@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: MIT
 
 import logging
+import sys
 
 from openlinktoken.tokentransformer.decrypt_token_transformer import DecryptTokenTransformer
 from openlinktoken_cli.io.csv.token_csv_reader import TokenCSVReader
@@ -8,18 +9,17 @@ from openlinktoken_cli.io.csv.token_csv_writer import TokenCSVWriter
 from openlinktoken_cli.io.parquet.token_parquet_reader import TokenParquetReader
 from openlinktoken_cli.io.parquet.token_parquet_writer import TokenParquetWriter
 from openlinktoken_cli.processor.token_decryption_processor import TokenDecryptionProcessor
+from openlinktoken_cli.processor.token_transformation_processor import TokenTransformationSummary
+from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
+from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
 from openlinktoken_cli.util.exchange_config import derive_transport_encryption_key, resolve_exchange_config
+from openlinktoken_cli.util.file_type_detector import FileTypeDetector
 
 logger = logging.getLogger(__name__)
 
 
 class DecryptCommand:
-    """
-    Decrypt command - decrypts encrypted tokens.
-    """
-
-    TYPE_CSV = "csv"
-    TYPE_PARQUET = "parquet"
+    """Decrypt command - decrypts encrypted tokens."""
 
     @staticmethod
     def register_subcommand(subparsers):
@@ -55,23 +55,6 @@ class DecryptCommand:
         )
 
         parser.add_argument(
-            "-t",
-            "--input-type",
-            required=True,
-            dest="input_type",
-            choices=["csv", "parquet"],
-            help="Input file type: csv or parquet",
-        )
-
-        parser.add_argument(
-            "-ot",
-            "--output-type",
-            dest="output_type",
-            choices=["csv", "parquet"],
-            help="Output file type (defaults to input type): csv or parquet",
-        )
-
-        parser.add_argument(
             "--exchange-config",
             required=False,
             dest="exchange_config",
@@ -98,34 +81,53 @@ class DecryptCommand:
     @staticmethod
     def execute(args):
         """Execute the decrypt command."""
-        logger.info("Running decrypt command")
+        input_type = FileTypeDetector.detect_input_type(args.input_path)
+        if not input_type:
+            logger.error("Unable to auto-detect input type. Supported input formats: csv, parquet")
+            return 1
 
-        # Default output type to input type if not specified
-        output_type = args.output_type if args.output_type else args.input_type
+        output_type = FileTypeDetector.detect_output_type(args.output_path)
+        if not output_type:
+            logger.error("Unable to auto-detect output type. Supported output formats: csv, parquet, zip")
+            return 1
 
-        # Log parameters (mask key)
-        logger.info(f"Input: {args.input_path} ({args.input_type})")
-        logger.info(f"Output: {args.output_path} ({output_type})")
+        reporter = CliRunReporter("decrypt")
 
         try:
-            exchange = resolve_exchange_config(
-                args.exchange_config,
-                private_key_path=args.private_key,
-                private_key_env=args.private_key_env,
-            )
-            encryption_key = derive_transport_encryption_key(exchange)
-            logger.info(f"Exchange config: {exchange.path}")
-            DecryptCommand._decrypt_tokens(
-                args.input_path,
-                args.output_path,
-                args.input_type,
-                output_type,
-                encryption_key,
-            )
-            logger.info("Token decryption completed successfully")
+            with reporter:
+                try:
+                    logger.info("Running decrypt command")
+                    logger.info(f"Input: {args.input_path} ({input_type})")
+                    logger.info(f"Output: {args.output_path} ({output_type})")
+
+                    reporter.update_status("Resolving exchange config")
+                    exchange = resolve_exchange_config(
+                        args.exchange_config,
+                        private_key_path=args.private_key,
+                        private_key_env=args.private_key_env,
+                    )
+                    encryption_key = derive_transport_encryption_key(exchange)
+                    logger.info(f"Exchange config: {exchange.path}")
+
+                    reporter.update_status("Decrypting tokens")
+                    summary = DecryptCommand._decrypt_tokens(
+                        args.input_path,
+                        args.output_path,
+                        input_type,
+                        output_type,
+                        encryption_key,
+                        progress_callback=reporter.make_progress_callback("Decrypting tokens", "tokens"),
+                    )
+                    logger.info("Token decryption completed successfully")
+                except Exception as error:
+                    logger.error("Error during token decryption: %s", error)
+                    raise
+            reporter.finish_success("Decrypt complete", DecryptCommand._build_summary_lines(args.output_path, summary))
             return 0
-        except Exception as e:
-            logger.error(f"Error during token decryption: {e}")
+        except Exception as error:
+            report = archive_cli_error(error, command_name="decrypt", existing_report=reporter.log_report)
+            print(f"Error: {error}", file=sys.stderr)
+            print(format_error_reference_message(report), file=sys.stderr)
             return 1
 
     @staticmethod
@@ -135,7 +137,8 @@ class DecryptCommand:
         input_type: str,
         output_type: str,
         encryption_key: bytes,
-    ):
+        progress_callback=None,
+    ) -> TokenTransformationSummary:
         """Decrypt tokens from input file."""
         try:
             decryptor = DecryptTokenTransformer(encryption_key)
@@ -144,19 +147,33 @@ class DecryptCommand:
                 DecryptCommand._create_token_reader(input_path, input_type) as reader,
                 DecryptCommand._create_token_writer(output_path, output_type) as writer,
             ):
-                TokenDecryptionProcessor.process_with_key(reader, writer, decryptor, encryption_key)
+                return TokenDecryptionProcessor.process_with_key(
+                    reader,
+                    writer,
+                    decryptor,
+                    encryption_key,
+                    progress_callback,
+                )
 
-        except Exception as e:
-            logger.error(f"Error during token decryption: {e}")
+        except Exception:
             raise
+
+    @staticmethod
+    def _build_summary_lines(output_path: str, summary: TokenTransformationSummary) -> list[str]:
+        return [
+            f"Output: {output_path}",
+            f"Tokens processed: {summary.total_tokens:,}",
+            f"Successfully decrypted: {summary.transformed_tokens:,}",
+            f"Failed to decrypt: {summary.failed_tokens:,}",
+        ]
 
     @staticmethod
     def _create_token_reader(path: str, file_type: str):
         """Create a TokenReader based on file type."""
         file_type_lower = file_type.lower()
-        if file_type_lower == DecryptCommand.TYPE_CSV:
+        if file_type_lower == FileTypeDetector.TYPE_CSV:
             return TokenCSVReader(path)
-        elif file_type_lower == DecryptCommand.TYPE_PARQUET:
+        elif file_type_lower == FileTypeDetector.TYPE_PARQUET:
             return TokenParquetReader(path)
         else:
             raise ValueError(f"Unsupported input type: {file_type}")
@@ -165,9 +182,9 @@ class DecryptCommand:
     def _create_token_writer(path: str, file_type: str):
         """Create a TokenWriter based on file type."""
         file_type_lower = file_type.lower()
-        if file_type_lower == DecryptCommand.TYPE_CSV:
+        if file_type_lower == FileTypeDetector.TYPE_CSV:
             return TokenCSVWriter(path)
-        elif file_type_lower == DecryptCommand.TYPE_PARQUET:
+        elif file_type_lower == FileTypeDetector.TYPE_PARQUET:
             return TokenParquetWriter(path)
         else:
             raise ValueError(f"Unsupported output type: {file_type}")

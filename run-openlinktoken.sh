@@ -10,7 +10,6 @@ set -e  # Exit on error
 SUBCOMMAND="package"
 INPUT_FILE=""
 OUTPUT_FILE=""
-FILE_TYPE="csv"
 HASHING_SECRET=""
 ENCRYPTION_KEY=""
 DOCKER_IMAGE="openlinktoken:latest"
@@ -57,7 +56,6 @@ SUBCOMMAND-SPECIFIC OPTIONS:
     -e, --encrypt KEY       Encryption key            (package, encrypt, decrypt)
 
 OPTIONAL:
-    -t, --type TYPE         File type: csv or parquet (default: csv)
     -s, --skip-build        Skip Docker image build (use existing image)
     --image NAME            Docker image name (default: openlinktoken:latest)
     -v, --verbose           Enable verbose output
@@ -75,13 +73,13 @@ EXAMPLES:
     $0 package -i input.csv -o output.csv -h "HashKey" -e "EncryptionKey"
 
     # Hash-only mode (no encryption)
-    $0 tokenize -i input.csv -t csv -o hashed.csv -h "HashKey"
+    $0 tokenize -i input.csv -o hashed.csv -h "HashKey"
 
     # Decrypt previously encrypted tokens
-    $0 decrypt -i tokens.csv -t csv -o decrypted.csv -e "EncryptionKey"
+    $0 decrypt -i tokens.csv -o decrypted.csv -e "EncryptionKey"
 
     # Encrypt previously tokenized (hashed) output
-    $0 encrypt -i hashed.csv -t csv -o encrypted.csv -e "EncryptionKey"
+    $0 encrypt -i hashed.csv -o encrypted.csv -e "EncryptionKey"
 
     # Skip Docker build if image already exists
     $0 -i ./input.csv -o ./output.csv -h "secret" -e "key" --skip-build
@@ -113,14 +111,6 @@ while [[ $# -gt 0 ]]; do
             ;;
         -o|--output)
             OUTPUT_FILE="$2"
-            shift 2
-            ;;
-        -t|--type)
-            FILE_TYPE="$2"
-            if [[ ! "$FILE_TYPE" =~ ^(csv|parquet)$ ]]; then
-                log_error "Invalid file type: $FILE_TYPE. Must be: csv, parquet"
-                exit 1
-            fi
             shift 2
             ;;
         -h|--hash)
@@ -335,7 +325,6 @@ if [[ "$INPUT_DIR" == "$OUTPUT_DIR" ]]; then
         "$DOCKER_IMAGE" \
         "$SUBCOMMAND" \
         -i "/data/$INPUT_FILENAME" \
-        -t "$FILE_TYPE" \
         -o "/data/$OUTPUT_FILENAME" \
         "${CLI_ARGS[@]}"
 else
@@ -351,7 +340,6 @@ else
         "$DOCKER_IMAGE" \
         "$SUBCOMMAND" \
         -i "/data/input/$INPUT_FILENAME" \
-        -t "$FILE_TYPE" \
         -o "/data/output/$OUTPUT_FILENAME" \
         "${CLI_ARGS[@]}"
 fi

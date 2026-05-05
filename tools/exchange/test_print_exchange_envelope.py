@@ -13,7 +13,6 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 INSPECTOR_SCRIPT = REPO_ROOT / "tools" / "exchange" / "print_exchange_envelope.py"
-SAMPLE_EXCHANGE_CONFIG = REPO_ROOT / "lib" / "python" / "openlinktoken-cli" / "openlinktoken-2026-04-19.exchange.json"
 
 from test_validate_exchange_secret import _generate_exchange_fixture
 
@@ -99,7 +98,8 @@ def test_inspector_rejects_invalid_protected_header() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_path = Path(temp_dir)
         invalid_exchange_config_path = temp_path / "invalid.exchange.json"
-        invalid_exchange_config = json.loads(SAMPLE_EXCHANGE_CONFIG.read_text(encoding="utf-8"))
+        exchange_config_path, _, _ = _generate_exchange_fixture(temp_path, "shared-secret")
+        invalid_exchange_config = json.loads(exchange_config_path.read_text(encoding="utf-8"))
         invalid_exchange_config["protected"] = "not-valid-base64"
         invalid_exchange_config_path.write_text(json.dumps(invalid_exchange_config), encoding="utf-8")
 

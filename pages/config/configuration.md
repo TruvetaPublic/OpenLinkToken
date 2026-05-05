@@ -16,8 +16,8 @@ At a high level you must always specify:
 
 - the input path and type (CSV or Parquet)
 - an output path for tokens
-- a hashing secret (required)
-- either an encryption key (for `package`) or the `tokenize` subcommand to skip encryption
+- an exchange config for consumer commands (`package`, `tokenize`, `encrypt`, `decrypt`)
+- either a matching private key, a private-key environment variable, or a locally discoverable key under `~/.openlinktoken/`
 - optionally the `decrypt` subcommand when reading previously encrypted tokens
 
 For the complete, authoritative list of flags, short options, and defaults, see the [CLI Reference](../reference/cli.md).
@@ -26,31 +26,27 @@ For the complete, authoritative list of flags, short options, and defaults, see 
 
 ## Environment Variables
 
-Secrets can be passed via environment variables for security:
+Consumer commands usually auto-discover the matching private key from `~/.openlinktoken/` when you provide the exchange config:
 
 ```bash
-export OLT_HASHING_SECRET="MyHashingKey"
-export OLT_ENCRYPTION_KEY="MyEncryptionKey32CharactersLong"
-
 olt package \
-  -i data.csv -t csv -o tokens.csv \
-  -h "$OLT_HASHING_SECRET" \
-  -e "$OLT_ENCRYPTION_KEY"
+  -i data.csv -o tokens.csv \
+  --exchange-config ./openlinktoken-2026-05-01.exchange.json
 ```
 
 ### Docker Environment
 
+If the runtime cannot auto-discover the matching key, override it explicitly with `--private-key-env`:
+
 ```bash
 docker run --rm \
-  -e OLT_HASHING_SECRET="MyHashingKey" \
-  -e OLT_ENCRYPTION_KEY="MyEncryptionKey32CharactersLong" \
+  -e OLT_PRIVATE_KEY_PEM="$(cat ~/.openlinktoken/openlinktoken-2026-05-01.private.pem)" \
   -v $(pwd)/resources:/app/resources \
   openlinktoken:latest package \
   -i /app/resources/sample.csv \
-  -t csv \
   -o /app/resources/output.csv \
-  -h "$OLT_HASHING_SECRET" \
-  -e "$OLT_ENCRYPTION_KEY"
+  --exchange-config /app/resources/openlinktoken-2026-05-01.exchange.json \
+  --private-key-env OLT_PRIVATE_KEY_PEM
 ```
 
 ---
@@ -121,9 +117,9 @@ Use `-ot` to specify a different output format:
 ```bash
 # Input CSV, output Parquet
 olt package \
-  -i data.csv -t csv \
-  -o tokens.parquet -ot parquet \
-  -h "HashingKey" -e "EncryptionKey"
+  -i data.csv \
+  -o tokens.parquet \
+  --exchange-config ./openlinktoken-2026-05-01.exchange.json
 ```
 
 ### Output Files Generated
@@ -139,9 +135,9 @@ Each run produces two files:
 
 Open Link Token supports three processing modes that control how token signatures are transformed:
 
-- **Encryption (default)** – produces encrypted tokens suitable for external exchange; requires both a hashing secret and an encryption key.
-- **Tokenize** – produces one-way hashed tokens for internal matching and overlap analysis; requires only the hashing secret.
-- **Decrypt** – takes previously encrypted tokens and decrypts them back to their hashed form (equivalent to `tokenize` output).
+- **Encryption (default)** – produces encrypted tokens suitable for external exchange; resolves the hashing secret and transport key from an exchange config plus a matching private key.
+- **Tokenize** – produces one-way hashed tokens for internal matching and overlap analysis; resolves the hashing secret from the same exchange-config workflow.
+- **Decrypt** – takes previously encrypted tokens and decrypts them back to their hashed form (equivalent to `tokenize` output) using the exchange config and a matching private key.
 
 For the exact CLI flags that enable each mode, see the [CLI Reference](../reference/cli.md).
 
@@ -171,8 +167,8 @@ For the exact CLI flags that enable each mode, see the [CLI Reference](../refere
 # Python
 source ../../.venv/bin/activate
 python -m openlinktoken_cli.main package \
-  -i ../../resources/sample.csv -t csv -o ../../resources/output.csv \
-  -h "HashingKey" -e "EncryptionKey32Characters!!!!!"
+  -i ../../resources/sample.csv -o ../../resources/output.csv \
+  --exchange-config ../../resources/openlinktoken-2026-05-01.exchange.json
 ```
 
 ### Docker Container
@@ -181,9 +177,7 @@ python -m openlinktoken_cli.main package \
 ./run-openlinktoken.sh package \
   -i ./resources/sample.csv \
   -o ./resources/output.csv \
-  -t csv \
-  -h "HashingKey" \
-  -e "EncryptionKey32Characters!!!!!"
+  --exchange-config ./resources/openlinktoken-2026-05-01.exchange.json
 ```
 
 ### Spark/Databricks Cluster
