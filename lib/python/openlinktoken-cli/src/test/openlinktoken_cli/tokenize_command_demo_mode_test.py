@@ -86,8 +86,6 @@ class TestTokenizeCommandDemoMode:
                 "tokenize",
                 "-i",
                 "input.csv",
-                "-t",
-                "csv",
                 "-o",
                 "output.csv",
                 "--demo-mode",
@@ -109,12 +107,8 @@ class TestTokenizeCommandDemoMode:
                 "tokenize",
                 "-i",
                 "input.csv",
-                "-t",
-                "csv",
                 "-o",
                 "output.parquet",
-                "-ot",
-                "parquet",
                 "--demo-mode",
             ]
         )
