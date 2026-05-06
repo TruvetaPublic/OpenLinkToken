@@ -72,11 +72,29 @@ class TokenizeCommand:
         )
 
         parser.add_argument(
+            "-t",
+            "--input-type",
+            required=False,
+            dest="input_type",
+            choices=["csv", "parquet"],
+            help="Input file type (default: auto-detected from extension)",
+        )
+
+        parser.add_argument(
             "-o",
             "--output",
             required=True,
             dest="output_path",
             help="Output file path",
+        )
+
+        parser.add_argument(
+            "-ot",
+            "--output-type",
+            required=False,
+            dest="output_type",
+            choices=["csv", "parquet"],
+            help="Output file type (default: auto-detected from extension)",
         )
 
         parser.add_argument(
@@ -133,12 +151,12 @@ class TokenizeCommand:
         demo_mode = getattr(args, "demo_mode", False)
         hash_record_ids = getattr(args, "hash_record_ids", False)
 
-        input_type = FileTypeDetector.detect_input_type(args.input_path)
+        input_type = getattr(args, "input_type", None) or FileTypeDetector.detect_input_type(args.input_path)
         if not input_type:
             logger.error("Unable to auto-detect input type. Supported input formats: csv, parquet")
             return 1
 
-        output_type = FileTypeDetector.detect_output_type(args.output_path)
+        output_type = getattr(args, "output_type", None) or FileTypeDetector.detect_output_type(args.output_path)
         if not output_type:
             logger.error("Unable to auto-detect output type. Supported output formats: csv, parquet, zip")
             return 1
