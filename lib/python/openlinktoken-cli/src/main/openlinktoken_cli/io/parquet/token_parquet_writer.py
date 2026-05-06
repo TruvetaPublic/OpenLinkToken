@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: MIT
 
 import logging
-import os
 from typing import Dict, List
 
 try:
@@ -10,6 +9,7 @@ try:
 except ImportError:
     raise ImportError("pyarrow is required for Parquet support. Install with: uv pip install pyarrow")
 
+from openlinktoken_cli.io.path_utils import ensure_parent_directory
 from openlinktoken_cli.io.token_writer import TokenWriter
 from openlinktoken_cli.processor.token_constants import TokenConstants
 
@@ -36,7 +36,7 @@ class TokenParquetWriter(TokenWriter):
         self.rows: List[Dict[str, str]] = []
 
         # Create directory if it doesn't exist
-        os.makedirs(os.path.dirname(file_path) if os.path.dirname(file_path) else ".", exist_ok=True)
+        ensure_parent_directory(file_path)
 
     def write_token(self, data: Dict[str, str]) -> None:
         """

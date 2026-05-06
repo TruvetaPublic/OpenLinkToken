@@ -75,6 +75,54 @@ class TestTokenizeCommandDemoMode:
         exit_code = OpenLinkTokenCommand.execute(args)
         assert exit_code == 0
 
+    def test_demo_mode_accepts_bare_csv_paths_from_working_directory(
+        self, temp_dir: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        """Bare CSV filenames should resolve relative to the working directory."""
+        monkeypatch.chdir(temp_dir)
+
+        exit_code = OpenLinkTokenCommand.execute(
+            [
+                "tokenize",
+                "-i",
+                "input.csv",
+                "-t",
+                "csv",
+                "-o",
+                "output.csv",
+                "--demo-mode",
+            ]
+        )
+
+        assert exit_code == 0
+        assert (temp_dir / "output.csv").exists()
+        assert (temp_dir / "output.metadata.json").exists()
+
+    def test_demo_mode_accepts_bare_parquet_output_path_from_working_directory(
+        self, temp_dir: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        """Bare Parquet output filenames should resolve relative to the working directory."""
+        monkeypatch.chdir(temp_dir)
+
+        exit_code = OpenLinkTokenCommand.execute(
+            [
+                "tokenize",
+                "-i",
+                "input.csv",
+                "-t",
+                "csv",
+                "-o",
+                "output.parquet",
+                "-ot",
+                "parquet",
+                "--demo-mode",
+            ]
+        )
+
+        assert exit_code == 0
+        assert (temp_dir / "output.parquet").exists()
+        assert (temp_dir / "output.metadata.json").exists()
+
     def test_normal_mode_fails_without_exchange_config(self, temp_dir: Path):
         """Normal mode must reject execution when no exchange config can be resolved."""
         original_cwd = Path.cwd()

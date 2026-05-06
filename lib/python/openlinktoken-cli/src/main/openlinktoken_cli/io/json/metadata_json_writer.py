@@ -5,7 +5,7 @@ from typing import Any, Dict
 
 from openlinktoken.metadata import Metadata
 from openlinktoken_cli.io.metadata_writer import MetadataWriter
-from openlinktoken_cli.util.path_utils import ensure_parent_directory
+from openlinktoken_cli.io.path_utils import ensure_parent_directory
 
 
 class MetadataJsonWriter(MetadataWriter):
@@ -35,6 +35,7 @@ class MetadataJsonWriter(MetadataWriter):
             metadata_map: The metadata to write
         """
         try:
+            # Ensure the output directory exists
             ensure_parent_directory(self.metadata_file_path)
 
             # Write metadata as JSON with pretty formatting
