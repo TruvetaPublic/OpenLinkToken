@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: MIT
 
 import json
+import logging
 from pathlib import Path
 from unittest.mock import patch
 
@@ -253,6 +254,24 @@ class TestTokenizeCommandHashOnly:
             )
 
         assert output1.read_text() == output2.read_text()
+
+    def test_hash_only_logs_deterministic_sha256_warning(self, temp_dir: Path, caplog: pytest.LogCaptureFixture):
+        """Hash-only mode should warn that output is deterministic SHA-256 and not for exchange use."""
+        with caplog.at_level(logging.WARNING, logger="openlinktoken_cli.commands.tokenize_command"):
+            exit_code = OpenLinkTokenCommand.execute(
+                [
+                    "tokenize",
+                    "-i",
+                    str(temp_dir / "input.csv"),
+                    "-o",
+                    str(temp_dir / "output.csv"),
+                    "--hash-only",
+                ]
+            )
+
+        assert exit_code == 0
+        assert "output tokens are deterministic SHA-256 hashes without HMAC" in caplog.text
+        assert "Do not use hash-only output for production or cross-organisation exchange." in caplog.text
 
     # ------------------------------------------------------------------
     # Metadata

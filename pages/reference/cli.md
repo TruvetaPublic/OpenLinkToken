@@ -27,7 +27,7 @@ For installation details, see the [CLI Quickstart](../quickstarts/cli-quickstart
 
 ## Security Note
 
-Treat generated token outputs and metadata as **sensitive**. In particular, `tokenize` output is intended for internal use and should not be shared externally (for example, in tickets, chats, or public repos).
+Treat generated token outputs and metadata as **sensitive**. In particular, `tokenize` output is intended for internal use and should not be shared externally (for example, in tickets, chats, or public repos). The `tokenize --hash-only` flag emits deterministic SHA-256 output without HMAC and is also **not** suitable for production or cross-organisation exchange.
 
 The `tokenize` subcommand is primarily used to build **internal overlap-analysis datasets** that can be joined against **encrypted tokens received from external partners** (after decryption). If you need to **exchange** tokens across organizations, use `package` and follow a controlled exchange process: [Sharing Tokenized Data](../operations/sharing-tokenized-data.md).
 
@@ -78,15 +78,16 @@ The automatic version check can also be disabled permanently by setting the envi
 
 ### `tokenize` (Hashed Tokens Only)
 
-| Argument            | Short | Required         | Description                                                                                     |
-| ------------------- | ----- | ---------------- | ----------------------------------------------------------------------------------------------- |
-| `--input`           | `-i`  | Yes              | Path to input file (CSV or Parquet)                                                             |
-| `--output`          | `-o`  | Yes              | Path to output file                                                                             |
-| `--exchange-config` |       | Normal mode only | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted. |
-| `--private-key`     |       | No\*             | Private key PEM used to decrypt the exchange config                                             |
-| `--private-key-env` |       | No\*             | Environment variable containing the private key PEM                                             |
-| `--demo-mode`       |       | No               | No hashing; outputs raw attribute signatures. Cannot be combined with `--exchange-config`.      |
-| `--hash-record-ids` |       | No               | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability)          |
+| Argument            | Short | Required         | Description                                                                                                                    |
+| ------------------- | ----- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `--input`           | `-i`  | Yes              | Path to input file (CSV or Parquet)                                                                                            |
+| `--output`          | `-o`  | Yes              | Path to output file                                                                                                            |
+| `--exchange-config` |       | Normal mode only | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted.                                |
+| `--private-key`     |       | No\*             | Private key PEM used to decrypt the exchange config                                                                            |
+| `--private-key-env` |       | No\*             | Environment variable containing the private key PEM                                                                            |
+| `--hash-only`       |       | No               | Apply SHA-256 only and emit 64-character lowercase hex output. Cannot be combined with exchange-config or private-key options. |
+| `--demo-mode`       |       | No               | No hashing; outputs raw attribute signatures. Cannot be combined with `--exchange-config`.                                     |
+| `--hash-record-ids` |       | No               | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability)                                         |
 
 ### `encrypt` (Encrypt Input Tokens)
 
@@ -270,7 +271,7 @@ Signature → SHA-256 → HMAC-SHA256 → AES-256-GCM → Base64
 
 ### `tokenize` Subcommand
 
-Generates one-way hashed tokens. Faster but tokens cannot be decrypted.
+Generates one-way hashed tokens. Faster than encrypted mode, but the output cannot be decrypted back to the original signature.
 
 ```bash
 olt tokenize \
@@ -283,6 +284,24 @@ olt tokenize \
 
 ```
 Signature → SHA-256 → HMAC-SHA256 → Base64
+```
+
+### Hash-only Mode (`tokenize --hash-only`)
+
+Generates deterministic SHA-256 output without HMAC, an exchange config, or a private key.
+
+> ⚠️ **Hash-only output must not be used for production or cross-organisation exchange.** It is deterministic and keyless by design.
+
+```bash
+olt tokenize \
+  -i input.csv -o output.csv \
+  --hash-only
+```
+
+**Token Pipeline:**
+
+```text
+Signature → SHA-256 → Lowercase hex
 ```
 
 ### Demo Mode (`tokenize --demo-mode`)
@@ -315,13 +334,13 @@ JOHN|DOE|19800115
 
 **Differences from normal `tokenize`:**
 
-| Aspect                          | Normal mode                    | Demo mode                                  |
-| ------------------------------- | ------------------------------ | ------------------------------------------ |
-| Exchange config / private key   | Required in normal mode        | Not required                               |
-| Token pipeline                  | SHA-256 → HMAC-SHA256 → Base64 | Passthrough → raw signature string         |
-| Token format                    | Base64-encoded HMAC-SHA256     | Pipe-separated normalised attribute values |
-| `HashingSecretHash` in metadata | Present                        | Absent                                     |
-| Safe to share                   | No (internal only)             | No (never suitable for exchange)           |
+| Aspect                          | Normal mode                    | Hash-only mode                   | Demo mode                                  |
+| ------------------------------- | ------------------------------ | -------------------------------- | ------------------------------------------ |
+| Exchange config / private key   | Required in normal mode        | Not required                     | Not required                               |
+| Token pipeline                  | SHA-256 → HMAC-SHA256 → Base64 | SHA-256 → lowercase hex          | Passthrough → raw signature string         |
+| Token format                    | Base64-encoded HMAC-SHA256     | 64-character lowercase hex       | Pipe-separated normalised attribute values |
+| `HashingSecretHash` in metadata | Present                        | Absent                           | Absent                                     |
+| Safe to share                   | No (internal only)             | No (never suitable for exchange) | No (never suitable for exchange)           |
 
 ## File Format Examples
 

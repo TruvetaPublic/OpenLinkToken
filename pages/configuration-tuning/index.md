@@ -124,7 +124,7 @@ ID002,T1,...
 
 - **One row per rule per record**: 5 rows for each valid record
 - **Blank tokens**: If a record is invalid, tokens may be blank (logged in metadata)
-- **Token length**: Varies by mode and payload size (encrypted `olt.V1` tokens are longer than hash-only tokens)
+- **Token length**: Varies by mode and payload size (encrypted `olt.V1` tokens are longer than normal `tokenize` or `tokenize --hash-only` outputs)
 
 ### Metadata Output
 

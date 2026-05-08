@@ -115,25 +115,28 @@ The CLI is organized into subcommands. Choose the one that matches your workflow
 | `initiate-exchange`    | Create the exchange config used by later commands       | recipient public key          |
 | `package`              | Tokenize and encrypt in one step — use for data sharing | exchange config + private key |
 | `tokenize`             | Tokenize without encryption — use for internal analysis | exchange config + private key |
+| `tokenize --hash-only` | Output deterministic SHA-256 tokens without HMAC        | none                          |
 | `tokenize --demo-mode` | Output plain attribute signatures — use for exploration | none                          |
 | `update`               | Upgrade the CLI to the latest (or a specific) release   | none                          |
 
 For most use cases, `package` is the right starting point.
+Use `tokenize --hash-only` when you need deterministic SHA-256 output without creating an exchange config first.
 Use `tokenize --demo-mode` to explore token output without managing secrets.
 
 ## Common Arguments
 
 These arguments are shared across all subcommands:
 
-| Argument            | Short | Description                                                                                                           |
-| ------------------- | ----- | --------------------------------------------------------------------------------------------------------------------- |
-| `--input`           | `-i`  | Input file path (CSV or Parquet)                                                                                      |
-| `--output`          | `-o`  | Output file path                                                                                                      |
-| `--exchange-config` |       | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted on consumer commands.  |
-| `--private-key`     |       | Private key PEM used to decrypt the exchange config and derive later transport keys                                   |
-| `--private-key-env` |       | Environment variable containing the private key PEM                                                                   |
-| `--demo-mode`       |       | Skip all hashing; output plain attribute signatures (tokenize only; cannot be combined with `--exchange-config`)      |
-| `--hash-record-ids` |       | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability; `tokenize` and `package` only) |
+| Argument            | Short | Description                                                                                                                                                 |
+| ------------------- | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--input`           | `-i`  | Input file path (CSV or Parquet)                                                                                                                            |
+| `--output`          | `-o`  | Output file path                                                                                                                                            |
+| `--exchange-config` |       | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted on consumer commands.                                        |
+| `--private-key`     |       | Private key PEM used to decrypt the exchange config and derive later transport keys                                                                         |
+| `--private-key-env` |       | Environment variable containing the private key PEM                                                                                                         |
+| `--hash-only`       |       | Apply SHA-256 only and emit deterministic 64-character lowercase hex output (tokenize only; cannot be combined with exchange-config or private-key options) |
+| `--demo-mode`       |       | Skip all hashing; output plain attribute signatures (tokenize only; cannot be combined with `--exchange-config`)                                            |
+| `--hash-record-ids` |       | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability; `tokenize` and `package` only)                                       |
 
 ## `package` Command
 
@@ -217,11 +220,11 @@ This creates:
 
 Each input record produces 5 tokens (T1–T5):
 
-| Column     | Description                                                              |
-| ---------- | ------------------------------------------------------------------------ |
-| `RecordId` | Original record identifier                                               |
-| `RuleId`   | Token rule (T1, T2, T3, T4, or T5)                                       |
-| `Token`    | Encrypted match token (olt.V1 format) or base64-encoded HMAC (hash-only) |
+| Column     | Description                                                                                                                               |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `RecordId` | Original record identifier                                                                                                                |
+| `RuleId`   | Token rule (T1, T2, T3, T4, or T5)                                                                                                        |
+| `Token`    | Encrypted match token (`olt.V1`), base64-encoded HMAC (normal `tokenize`/decrypted), or 64-character SHA-256 hex (`tokenize --hash-only`) |
 
 ### Metadata File
 

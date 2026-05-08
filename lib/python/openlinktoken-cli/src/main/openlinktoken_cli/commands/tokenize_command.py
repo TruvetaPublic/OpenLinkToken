@@ -198,9 +198,9 @@ class TokenizeCommand:
                         )
                     elif mode == TokenizeCommand._MODE_HASH_ONLY:
                         logger.warning(
-                            "Running in HASH-ONLY MODE - tokens are SHA-256 hashed without HMAC. "
-                            "Output is deterministic and keyless. "
-                            "Do not use hash-only output for production or cross-organisation exchange."
+                            "Running in HASH-ONLY MODE - output tokens are deterministic SHA-256 hashes "
+                            "without HMAC. Do not use hash-only output for production or "
+                            "cross-organisation exchange."
                         )
                     else:
                         logger.info("Running tokenize command (normal mode)")

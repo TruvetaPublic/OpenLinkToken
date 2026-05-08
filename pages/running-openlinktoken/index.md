@@ -32,9 +32,10 @@ olt <subcommand> [OPTIONS]
 | `--exchange-config` |       | ✓         | ✓          | ✓         | ✓         | Exchange config JSON path                           | Date-based default path       | `--exchange-config ./quickstart.exchange.json`          |
 | `--private-key`     |       | ✓         | ✓          | ✓         | ✓         | Private key PEM used to decrypt the exchange config | Auto-discovered when possible | `--private-key ~/.openlinktoken/quickstart.private.pem` |
 | `--private-key-env` |       | ✓         | ✓          | ✓         | ✓         | Environment variable containing the private key PEM |                               | `--private-key-env OLT_PRIVATE_KEY_PEM`                 |
+| `--hash-only`       |       |           | ✓          |           |           | Emit deterministic SHA-256 hex output without HMAC  | `false`                       | `tokenize --hash-only`                                  |
 | `--demo-mode`       |       |           | ✓          |           |           | Skip hashing and emit raw attribute signatures      | `false`                       | `tokenize --demo-mode`                                  |
 
-If a matching key already exists under `~/.openlinktoken/`, you can omit `--private-key` and `--private-key-env`.
+If a matching key already exists under `~/.openlinktoken/`, you can omit `--private-key` and `--private-key-env` for the commands that use an exchange config. `tokenize --hash-only` and `tokenize --demo-mode` do not use exchange-config or private-key inputs.
 
 ### Usage Examples
 
@@ -62,6 +63,15 @@ olt tokenize \
   -i ../../../resources/sample.csv \
   -o ../../../resources/hashed-output.csv \
   --exchange-config ../../../resources/quickstart.exchange.json
+```
+
+For deterministic SHA-256 output without HMAC or an exchange config, use:
+
+```bash
+olt tokenize \
+  -i ../../../resources/sample.csv \
+  -o ../../../resources/hash-only-output.csv \
+  --hash-only
 ```
 
 #### Token Decryption

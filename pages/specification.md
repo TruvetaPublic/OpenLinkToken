@@ -10,11 +10,11 @@ Open Link Token is a privacy-preserving token generation system for deterministi
 
 **Purpose:** Generate cryptographically secure tokens from person attributes such that:
 
-- Identical inputs always produce identical deterministic matching values (hash-only or decrypted)
+- Identical inputs always produce identical deterministic matching values (normal `tokenize`, `tokenize --hash-only`, or decrypted)
 - Tokens reveal nothing about the underlying data (one-way)
 - Matching can occur on different attribute combinations via 5 distinct token rules (T1–T5)
 
-**Applicability:** This specification applies to both Java and Python implementations. Cross-language deterministic outputs (hash-only and decrypted values) must be byte-identical for the same normalized inputs and secrets.
+**Applicability:** This specification applies to both Java and Python implementations. Cross-language deterministic outputs (tokenized, `--hash-only`, and decrypted values where supported) must be byte-identical for the same normalized inputs and secrets.
 
 ---
 
@@ -197,7 +197,7 @@ RecordId,RuleId,Token
 
 - `RecordId`: From input (or auto-generated if omitted)
 - `RuleId`: T1, T2, T3, T4, or T5
-- `Token`: Encrypted `olt.V1.<JWE>` token in encrypted mode, or base64 HMAC token in hash-only/decrypted mode (or empty string if validation failed)
+- `Token`: Encrypted `olt.V1.<JWE>` token in encrypted mode, a base64 HMAC token in normal `tokenize`/decrypted mode, or a 64-character SHA-256 hex token in `tokenize --hash-only` mode (or empty string if validation failed)
 
 **Rows per input record:** 5 (one per rule); may be fewer if errors occur
 
@@ -276,7 +276,7 @@ Parquet format includes compression and is suitable for large datasets.
 
 - **Java**: JDK 21+
 - **Python**: 3.10+
-- **Cross-language parity**: Java and Python implementations MUST produce byte-identical deterministic values (hash-only/decrypted) for the same normalized inputs
+- **Cross-language parity**: Java and Python implementations MUST produce byte-identical deterministic values (tokenized/`--hash-only`/decrypted where supported) for the same normalized inputs
 
 ### Future Considerations
 
