@@ -21,7 +21,7 @@ BLANK_TOKEN = "0" * 64
 
 
 class TestTokenizeCommandHashOnly:
-    """Tests for the --hash-only flag on the tokenize subcommand."""
+    """Tests for ``tokenize --mode hash-only``."""
 
     HASHING_SECRET = "TestHashingSecret"
 
@@ -74,7 +74,8 @@ class TestTokenizeCommandHashOnly:
                 str(temp_dir / "input.csv"),
                 "-o",
                 str(temp_dir / "output.csv"),
-                "--hash-only",
+                "--mode",
+                "hash-only",
             ]
         )
         assert exit_code == 0
@@ -92,7 +93,8 @@ class TestTokenizeCommandHashOnly:
                 "input.csv",
                 "-o",
                 "output.csv",
-                "--hash-only",
+                "--mode",
+                "hash-only",
             ]
         )
 
@@ -110,7 +112,8 @@ class TestTokenizeCommandHashOnly:
                 str(temp_dir / "input.csv"),
                 "-o",
                 str(temp_dir / "output.csv"),
-                "--hash-only",
+                "--mode",
+                "hash-only",
                 "--exchange-config",
                 str(exchange_config),
             ]
@@ -127,15 +130,16 @@ class TestTokenizeCommandHashOnly:
                 str(temp_dir / "input.csv"),
                 "-o",
                 str(temp_dir / "output.csv"),
-                "--hash-only",
+                "--mode",
+                "hash-only",
                 "--private-key",
                 str(private_key),
             ]
         )
         assert exit_code != 0
 
-    def test_hash_only_and_demo_mode_are_mutually_exclusive(self, temp_dir: Path):
-        """--hash-only and --demo-mode cannot be used together."""
+    def test_hash_only_mode_rejects_private_key_env(self, temp_dir: Path):
+        """Hash-only mode should reject --private-key-env."""
         exit_code = OpenLinkTokenCommand.execute(
             [
                 "tokenize",
@@ -143,8 +147,25 @@ class TestTokenizeCommandHashOnly:
                 str(temp_dir / "input.csv"),
                 "-o",
                 str(temp_dir / "output.csv"),
-                "--hash-only",
-                "--demo-mode",
+                "--mode",
+                "hash-only",
+                "--private-key-env",
+                "OLT_PRIVATE_KEY_PEM",
+            ]
+        )
+        assert exit_code != 0
+
+    def test_tokenize_rejects_unknown_mode_value(self, temp_dir: Path):
+        """The mode selector should reject unsupported values."""
+        exit_code = OpenLinkTokenCommand.execute(
+            [
+                "tokenize",
+                "-i",
+                str(temp_dir / "input.csv"),
+                "-o",
+                str(temp_dir / "output.csv"),
+                "--mode",
+                "bogus",
             ]
         )
         assert exit_code != 0
@@ -163,7 +184,8 @@ class TestTokenizeCommandHashOnly:
                 str(temp_dir / "input.csv"),
                 "-o",
                 str(output_csv),
-                "--hash-only",
+                "--mode",
+                "hash-only",
             ]
         )
 
@@ -189,7 +211,8 @@ class TestTokenizeCommandHashOnly:
                 str(temp_dir / "input.csv"),
                 "-o",
                 str(hash_only_output),
-                "--hash-only",
+                "--mode",
+                "hash-only",
             ]
         )
         OpenLinkTokenCommand.execute(
@@ -220,7 +243,8 @@ class TestTokenizeCommandHashOnly:
                 str(temp_dir / "input.csv"),
                 "-o",
                 str(hash_only_output),
-                "--hash-only",
+                "--mode",
+                "hash-only",
             ]
         )
         OpenLinkTokenCommand.execute(
@@ -230,7 +254,8 @@ class TestTokenizeCommandHashOnly:
                 str(temp_dir / "input.csv"),
                 "-o",
                 str(demo_output),
-                "--demo-mode",
+                "--mode",
+                "demo",
             ]
         )
 
@@ -249,7 +274,8 @@ class TestTokenizeCommandHashOnly:
                     str(temp_dir / "input.csv"),
                     "-o",
                     str(out),
-                    "--hash-only",
+                    "--mode",
+                    "hash-only",
                 ]
             )
 
@@ -265,7 +291,8 @@ class TestTokenizeCommandHashOnly:
                     str(temp_dir / "input.csv"),
                     "-o",
                     str(temp_dir / "output.csv"),
-                    "--hash-only",
+                    "--mode",
+                    "hash-only",
                 ]
             )
 
@@ -286,7 +313,8 @@ class TestTokenizeCommandHashOnly:
                 str(temp_dir / "input.csv"),
                 "-o",
                 str(temp_dir / "output.csv"),
-                "--hash-only",
+                "--mode",
+                "hash-only",
             ]
         )
 
@@ -302,7 +330,8 @@ class TestTokenizeCommandHashOnly:
                 str(temp_dir / "input.csv"),
                 "-o",
                 str(temp_dir / "output.csv"),
-                "--hash-only",
+                "--mode",
+                "hash-only",
             ]
         )
 
@@ -314,7 +343,7 @@ class TestTokenizeCommandHashOnly:
     # ------------------------------------------------------------------
 
     def test_hash_only_supports_hash_record_ids(self, temp_dir: Path):
-        """--hash-only should work together with --hash-record-ids."""
+        """``--mode hash-only`` should work together with --hash-record-ids."""
         output_csv = temp_dir / "output.csv"
         exit_code = OpenLinkTokenCommand.execute(
             [
@@ -323,7 +352,8 @@ class TestTokenizeCommandHashOnly:
                 str(temp_dir / "input.csv"),
                 "-o",
                 str(output_csv),
-                "--hash-only",
+                "--mode",
+                "hash-only",
                 "--hash-record-ids",
             ]
         )

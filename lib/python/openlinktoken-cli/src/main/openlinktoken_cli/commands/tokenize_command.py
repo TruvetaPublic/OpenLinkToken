@@ -33,21 +33,23 @@ class TokenizeCommand:
     """
     Tokenize command - generates tokens from person attributes.
 
-    Normal mode (default): applies SHA-256 then HMAC-SHA256 hashing on the token
-    signature using the hashing secret from the exchange config.
+    Default mode (``--mode default`` or omitted): applies SHA-256 then
+    HMAC-SHA256 hashing on the token signature using the hashing secret from the
+    exchange config.
 
-    Hash-only mode (``--hash-only``): applies SHA-256 only (no HMAC). No exchange
-    config or secret is required. Output tokens are 64-character hex strings.
-    This mode is deterministic and keyless — **not** suitable for production or
-    cross-organisation exchange where keyed HMAC hashing is required.
+    Hash-only mode (``--mode hash-only``): applies SHA-256 only (no HMAC). No
+    exchange config or secret is required. Output tokens are 64-character hex
+    strings. This mode is deterministic and keyless — **not** suitable for
+    production or cross-organisation exchange where keyed HMAC hashing is
+    required.
 
-    Demo mode (``--demo-mode``): skips all hashing so tokens are the raw
+    Demo mode (``--mode demo``): skips all hashing so tokens are the raw
     pipe-separated attribute signature strings. No secret is needed, making it easy
     to explore the output without managing secrets. Demo-mode output is
     **not** suitable for production or cross-organisation exchange.
     """
 
-    _MODE_NORMAL = "normal"
+    _MODE_DEFAULT = "default"
     _MODE_HASH_ONLY = "hash-only"
     _MODE_DEMO = "demo"
 
@@ -56,13 +58,14 @@ class TokenizeCommand:
         """Register the tokenize subcommand with the argument parser."""
         parser = subparsers.add_parser(
             "tokenize",
-            help="Generate tokens from person attributes (normal: HMAC-SHA256; hash-only: SHA-256; demo: plain)",
+            help="Generate tokens from person attributes (--mode default|hash-only|demo)",
             description=(
                 "Generate tokens from person attributes.\n\n"
-                "Normal mode: tokens are HMAC-SHA256 hashed using the exchange config.\n"
-                "Hash-only mode (--hash-only): tokens are SHA-256 hashed (no HMAC, no secret). "
+                "Default mode (--mode default or omitted): tokens are HMAC-SHA256 hashed "
+                "using the exchange config.\n"
+                "Hash-only mode (--mode hash-only): tokens are SHA-256 hashed (no HMAC, no secret). "
                 "Output is deterministic and NOT suitable for production or cross-organisation exchange.\n"
-                "Demo mode (--demo-mode): tokens are plain attribute signature strings; no secret needed."
+                "Demo mode (--mode demo): tokens are plain attribute signature strings; no secret needed."
             ),
             add_help=False,
         )
@@ -90,28 +93,15 @@ class TokenizeCommand:
             help="Output file path",
         )
 
-        mode_group = parser.add_mutually_exclusive_group()
-        mode_group.add_argument(
-            "--hash-only",
-            action="store_true",
-            default=False,
-            dest="hash_only",
+        parser.add_argument(
+            "--mode",
+            choices=[TokenizeCommand._MODE_DEFAULT, TokenizeCommand._MODE_HASH_ONLY, TokenizeCommand._MODE_DEMO],
+            default=TokenizeCommand._MODE_DEFAULT,
+            dest="mode",
             help=(
-                "Hash-only mode: apply SHA-256 without HMAC. No exchange config or secret is needed. "
-                "Output tokens are 64-character hex strings. "
-                "WARNING: output is deterministic and keyless — NOT suitable for production or "
-                "cross-organisation exchange where keyed HMAC hashing is required."
-            ),
-        )
-        mode_group.add_argument(
-            "--demo-mode",
-            action="store_true",
-            default=False,
-            dest="demo_mode",
-            help=(
-                "Enable demo mode: output raw pipe-separated attribute signature strings with no hashing. "
-                "--exchange-config is not allowed in this mode. "
-                "Demo output is NOT suitable for production or cross-organisation exchange."
+                "Tokenization mode: 'default' uses SHA-256 + HMAC-SHA256 with the exchange config; "
+                "'hash-only' uses deterministic SHA-256 only with no exchange config or secret; "
+                "'demo' outputs raw pipe-separated attribute signature strings."
             ),
         )
 
@@ -154,8 +144,7 @@ class TokenizeCommand:
     @staticmethod
     def execute(args):
         """Execute the tokenize command."""
-        demo_mode = getattr(args, "demo_mode", False)
-        hash_only = getattr(args, "hash_only", False)
+        mode = getattr(args, "mode", TokenizeCommand._MODE_DEFAULT)
         hash_record_ids = getattr(args, "hash_record_ids", False)
 
         input_type = FileTypeDetector.detect_input_type(args.input_path)
@@ -168,24 +157,17 @@ class TokenizeCommand:
             logger.error("Unable to auto-detect output type. Supported output formats: csv, parquet, zip")
             return 1
 
-        if demo_mode and args.exchange_config:
-            logger.error("--demo-mode cannot be combined with --exchange-config.")
+        if mode == TokenizeCommand._MODE_DEMO and args.exchange_config:
+            logger.error("--mode demo cannot be combined with --exchange-config.")
             return 1
 
-        if hash_only and args.exchange_config:
-            logger.error("--hash-only cannot be combined with --exchange-config.")
+        if mode == TokenizeCommand._MODE_HASH_ONLY and args.exchange_config:
+            logger.error("--mode hash-only cannot be combined with --exchange-config.")
             return 1
 
-        if hash_only and (args.private_key or args.private_key_env):
-            logger.error("--hash-only cannot be combined with --private-key or --private-key-env.")
+        if mode == TokenizeCommand._MODE_HASH_ONLY and (args.private_key or args.private_key_env):
+            logger.error("--mode hash-only cannot be combined with --private-key or --private-key-env.")
             return 1
-
-        if hash_only:
-            mode = TokenizeCommand._MODE_HASH_ONLY
-        elif demo_mode:
-            mode = TokenizeCommand._MODE_DEMO
-        else:
-            mode = TokenizeCommand._MODE_NORMAL
 
         reporter = CliRunReporter("tokenize")
         try:
@@ -203,7 +185,7 @@ class TokenizeCommand:
                             "cross-organisation exchange."
                         )
                     else:
-                        logger.info("Running tokenize command (normal mode)")
+                        logger.info("Running tokenize command (default mode)")
                     logger.info(f"Input: {args.input_path} ({input_type})")
                     logger.info(f"Output: {args.output_path} ({output_type})")
                     if hash_record_ids:
@@ -389,7 +371,7 @@ class TokenizeCommand:
         hash_record_ids: bool,
     ) -> list[str]:
         mode_labels = {
-            TokenizeCommand._MODE_NORMAL: "normal HMAC-SHA256",
+            TokenizeCommand._MODE_DEFAULT: "default HMAC-SHA256",
             TokenizeCommand._MODE_HASH_ONLY: "hash-only SHA-256",
             TokenizeCommand._MODE_DEMO: "demo plain signatures",
         }

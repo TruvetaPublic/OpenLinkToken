@@ -16,7 +16,7 @@ The command lines below are the exact CLI invocations that the script executes.
 2. `python -m openlinktoken_cli.main --no-update-check help`
 3. `python -m openlinktoken_cli.main --no-update-check help package`
 4. `python -m openlinktoken_cli.main --no-update-check tokenize --help`
-5. `python -m openlinktoken_cli.main --no-update-check tokenize -i <WORKSPACE>/inputs/people.csv -o <WORKSPACE>/outputs/tokenized-demo.csv --demo-mode`
+5. `python -m openlinktoken_cli.main --no-update-check tokenize -i <WORKSPACE>/inputs/people.csv -o <WORKSPACE>/outputs/tokenized-demo.csv --mode demo`
 6. `python -m openlinktoken_cli.main --no-update-check generate-key-pair --help`
 7. `python -m openlinktoken_cli.main --no-update-check generate-key-pair --name recipient --force`
 8. `python -m openlinktoken_cli.main --no-update-check generate-key-pair --name recipient-p384 --curve P-384 --force`

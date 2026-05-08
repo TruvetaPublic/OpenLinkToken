@@ -36,7 +36,7 @@ Matching is performed on deterministic tokenized values (or decrypted token payl
 2. **Validation & Normalization**: Attributes are validated and normalized (uppercase, diacritic removal, title stripping)
 3. **Token Generation**: Multiple token rules (T1–T5) combine different attributes
 4. **Transformation**: Deterministic HMAC-SHA256 hashes are produced; encrypted mode wraps them as `olt.V1` JWE match tokens
-5. **Output**: Encrypted `olt.V1` tokens (default), deterministic tokenized values, or `tokenize --hash-only` SHA-256 output, plus metadata
+5. **Output**: Encrypted `olt.V1` tokens (default), deterministic tokenized values, or `tokenize --mode hash-only` SHA-256 output, plus metadata
 
 ## Key Concepts
 
@@ -94,7 +94,7 @@ Output CSV/Parquet + Metadata
 
 ## Multi-Language Parity
 
-Open Link Token is implemented in **Java and Python**. Both produce **byte-identical deterministic values** (tokenized outputs, `--hash-only` outputs where supported, and decrypted token payloads) for the same normalized input and secrets. This enables:
+Open Link Token is implemented in **Java and Python**. Both produce **byte-identical deterministic values** (tokenized outputs, `--mode hash-only` outputs where supported, and decrypted token payloads) for the same normalized input and secrets. This enables:
 
 - Flexible deployment (choose Java or Python)
 - Cross-language processing (encrypt in one language, decrypt in another)

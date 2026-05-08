@@ -227,7 +227,7 @@ Open Link Token normalizes each field before token generation. For full rules, s
 
 ### Step 2: Token Generation
 
-Each record produces up to five tokens (T1–T5). In encrypted mode, tokens are emitted as `olt.V1` JWE strings. In normal `tokenize` mode (or after decryption), tokens are base64-encoded HMAC values used for deterministic equality checks. The separate CLI flag `tokenize --hash-only` instead emits 64-character SHA-256 hex values when you intentionally skip HMAC.
+Each record produces up to five tokens (T1–T5). In encrypted mode, tokens are emitted as `olt.V1` JWE strings. In normal `tokenize` mode (or after decryption), tokens are base64-encoded HMAC values used for deterministic equality checks. The separate CLI option `tokenize --mode hash-only` instead emits 64-character SHA-256 hex values when you intentionally skip HMAC.
 
 For detailed rule compositions, see [Token Rules](token-rules.md).
 

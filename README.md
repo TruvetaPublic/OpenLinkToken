@@ -82,7 +82,7 @@ Download the [latest release](https://github.com/TruvetaPublic/OpenLinkToken/rel
 **Available Commands:**
 
 - `olt package` - Generate and encrypt tokens in one step using the exchange config
-- `olt tokenize` - Generate internal hashed tokens using the exchange config, or use `--hash-only` for deterministic SHA-256 output without an exchange config
+- `olt tokenize` - Generate internal hashed tokens using the exchange config, or use `--mode hash-only` for deterministic SHA-256 output without an exchange config
 - `olt encrypt` - Encrypt existing hashed tokens using the exchange config
 - `olt decrypt` - Decrypt encrypted tokens using the exchange config
 - `olt initiate-exchange` - Create the exchange config consumed by later commands
@@ -99,7 +99,7 @@ See <a href="https://truvetapublic.github.io/OpenLinkToken/quickstarts/" target=
 ## Running Open Link Token
 
 - **Subcommand Interface**: Modern command-based interface:
-  - `tokenize` - Internal hashed token generation (`--hash-only` is available for deterministic SHA-256 output)
+  - `tokenize` - Internal hashed token generation (`--mode hash-only` is available for deterministic SHA-256 output)
   - `encrypt` - Encrypt existing hashed tokens
   - `decrypt` - Decrypt encrypted tokens
   - `package` - Tokenize + encrypt in one step (recommended)
@@ -110,7 +110,7 @@ See <a href="https://truvetapublic.github.io/OpenLinkToken/quickstarts/" target=
 ## Security Notes
 
 - **Crypto pipeline**: Token signature → SHA-256 → HMAC-SHA256 → AES-256 (or hash-only) — see <a href="https://truvetapublic.github.io/OpenLinkToken/security.html" target="_blank" rel="noopener noreferrer">Security</a>
-- **`tokenize --hash-only`**: Deterministic SHA-256 output with no exchange config or secret. Useful for local exploration, but **not** for production or cross-organisation exchange
+- **`tokenize --mode hash-only`**: Deterministic SHA-256 output with no exchange config or secret. Useful for local exploration, but **not** for production or cross-organisation exchange
 - **Secret management**: Handle hashing/encryption secrets securely; avoid committing secrets; prefer env/secret stores
 - **Validation**: Reject placeholders and malformed attributes before tokenization
 
