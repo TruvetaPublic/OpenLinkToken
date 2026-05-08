@@ -155,10 +155,12 @@ step_setup_apm() {
     ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null || true
   fi
 
-  if [ -d "$REPO_ROOT/.git" ]; then
+  git config --global --add safe.directory "$REPO_ROOT" 2>/dev/null || true
+
+  if git -C "$REPO_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
     echo "→ Running apm install"
     cd "$REPO_ROOT"
-    apm install || echo "⚠ Warning: apm install failed (continuing anyway)"
+    apm install --target copilot || echo "⚠ Warning: apm install failed (continuing anyway)"
 
     # Update .gitignore with apm-installed paths
     GITIGNORE="$REPO_ROOT/.gitignore"
@@ -230,6 +232,8 @@ main() {
       ;;
     post-start)
       run_core_setup
+      step_install_apm_cli
+      step_setup_apm
       ;;
     post-attach)
       run_refresh_setup

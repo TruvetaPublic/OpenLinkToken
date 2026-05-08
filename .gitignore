@@ -99,19 +99,4 @@ apm_modules/
 # APM integrated skills
 
 # Added by apm install
-.github/skills/brainstorming/
-.github/skills/dispatching-parallel-agents/
-.github/skills/executing-plans/
-.github/skills/finishing-a-development-branch/
-.github/skills/receiving-code-review/
-.github/skills/requesting-code-review/
-.github/skills/subagent-driven-development/
-.github/skills/systematic-debugging/
-.github/skills/test-driven-development/
-.github/skills/using-git-worktrees/
-.github/skills/using-superpowers/
-.github/skills/verification-before-completion/
-.github/skills/writing-plans/
-.github/skills/writing-skills/
-.github/skills/documentation-writer/
-.github/skills/gh-cli/
+.agents/
