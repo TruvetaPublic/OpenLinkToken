@@ -298,6 +298,7 @@ Key dependencies:
 Parity notes:
 
 - Outputs identical tokens to Java for the same normalized input & secrets.
+- `FirstName` and `LastName` remove diacritics and transliterate supported Latin Extended letters before ASCII-only filtering (`Ł` → `L`, `Ø` → `O`, `Æ` → `AE`).
 - Maintain consistency when adding new token or attribute logic.
 
 Contributing notes:
@@ -412,7 +413,7 @@ When adding attributes/tokens: update all applicable language implementations, r
 | Add Token       | SPI entry & class                  | new module in `tokens/definitions` |
 | Add Attribute   | SPI entry & class                  | class + loader import              |
 
-Maintain the same functional behavior and normalization between languages.
+Maintain the same functional behavior and normalization between languages. For `FirstName` and `LastName`, keep diacritic removal and supported Latin Extended transliteration ahead of ASCII-only filtering.
 
 ## Coding Standards
 
@@ -632,7 +633,7 @@ Python Troubleshooting:
 
 ### Cross-language Parity Checklist
 
-- Same normalization logic unaffected.
+- Same `FirstName`/`LastName` normalization logic, including diacritic removal and supported Latin Extended transliteration before ASCII-only filtering.
 - Matching token definitions (order & components) across Java & Python.
 - Tests confirming identical hash/encryption output for shared fixtures.
 
@@ -855,13 +856,13 @@ Before opening a PR:
 
 ## Troubleshooting
 
-| Issue                            | Hint                                                                                |
-| -------------------------------- | ----------------------------------------------------------------------------------- |
-| Java class not discovered        | Confirm fully qualified name in `META-INF/services/*` file & no trailing spaces     |
-| Python attribute not loaded      | Ensure it is imported & added in `attribute_loader.py`                              |
-| Token mismatch between languages | Verify hashing & encryption secrets are identical and normalization logic unchanged |
-| Build fails on Checkstyle        | Run `mvn -q checkstyle:check` locally & fix warnings                                |
-| Import errors or style issues    | See [Coding Standards](#coding-standards) for language-specific guidelines          |
+| Issue                            | Hint                                                                                                                                                                                                |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Java class not discovered        | Confirm fully qualified name in `META-INF/services/*` file & no trailing spaces                                                                                                                     |
+| Python attribute not loaded      | Ensure it is imported & added in `attribute_loader.py`                                                                                                                                              |
+| Token mismatch between languages | Verify hashing & encryption secrets are identical and `FirstName`/`LastName` normalization still removes diacritics and transliterates supported Latin Extended letters before ASCII-only filtering |
+| Build fails on Checkstyle        | Run `mvn -q checkstyle:check` locally & fix warnings                                                                                                                                                |
+| Import errors or style issues    | See [Coding Standards](#coding-standards) for language-specific guidelines                                                                                                                          |
 
 ---
 
