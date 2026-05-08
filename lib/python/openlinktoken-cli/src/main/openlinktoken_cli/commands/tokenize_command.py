@@ -36,21 +36,32 @@ class TokenizeCommand:
     Normal mode (default): applies SHA-256 then HMAC-SHA256 hashing on the token
     signature using the hashing secret from the exchange config.
 
+    Hash-only mode (``--hash-only``): applies SHA-256 only (no HMAC). No exchange
+    config or secret is required. Output tokens are 64-character hex strings.
+    This mode is deterministic and keyless — **not** suitable for production or
+    cross-organisation exchange where keyed HMAC hashing is required.
+
     Demo mode (``--demo-mode``): skips all hashing so tokens are the raw
     pipe-separated attribute signature strings. No secret is needed, making it easy
     to explore the output without managing secrets. Demo-mode output is
     **not** suitable for production or cross-organisation exchange.
     """
 
+    _MODE_NORMAL = "normal"
+    _MODE_HASH_ONLY = "hash-only"
+    _MODE_DEMO = "demo"
+
     @staticmethod
     def register_subcommand(subparsers):
         """Register the tokenize subcommand with the argument parser."""
         parser = subparsers.add_parser(
             "tokenize",
-            help="Generate tokens from person attributes (normal mode: HMAC-SHA256; demo mode: plain signatures)",
+            help="Generate tokens from person attributes (normal: HMAC-SHA256; hash-only: SHA-256; demo: plain)",
             description=(
                 "Generate tokens from person attributes.\n\n"
                 "Normal mode: tokens are HMAC-SHA256 hashed using the exchange config.\n"
+                "Hash-only mode (--hash-only): tokens are SHA-256 hashed (no HMAC, no secret). "
+                "Output is deterministic and NOT suitable for production or cross-organisation exchange.\n"
                 "Demo mode (--demo-mode): tokens are plain attribute signature strings; no secret needed."
             ),
             add_help=False,
@@ -79,7 +90,20 @@ class TokenizeCommand:
             help="Output file path",
         )
 
-        parser.add_argument(
+        mode_group = parser.add_mutually_exclusive_group()
+        mode_group.add_argument(
+            "--hash-only",
+            action="store_true",
+            default=False,
+            dest="hash_only",
+            help=(
+                "Hash-only mode: apply SHA-256 without HMAC. No exchange config or secret is needed. "
+                "Output tokens are 64-character hex strings. "
+                "WARNING: output is deterministic and keyless — NOT suitable for production or "
+                "cross-organisation exchange where keyed HMAC hashing is required."
+            ),
+        )
+        mode_group.add_argument(
             "--demo-mode",
             action="store_true",
             default=False,
@@ -131,6 +155,7 @@ class TokenizeCommand:
     def execute(args):
         """Execute the tokenize command."""
         demo_mode = getattr(args, "demo_mode", False)
+        hash_only = getattr(args, "hash_only", False)
         hash_record_ids = getattr(args, "hash_record_ids", False)
 
         input_type = FileTypeDetector.detect_input_type(args.input_path)
@@ -147,14 +172,35 @@ class TokenizeCommand:
             logger.error("--demo-mode cannot be combined with --exchange-config.")
             return 1
 
+        if hash_only and args.exchange_config:
+            logger.error("--hash-only cannot be combined with --exchange-config.")
+            return 1
+
+        if hash_only and (args.private_key or args.private_key_env):
+            logger.error("--hash-only cannot be combined with --private-key or --private-key-env.")
+            return 1
+
+        if hash_only:
+            mode = TokenizeCommand._MODE_HASH_ONLY
+        elif demo_mode:
+            mode = TokenizeCommand._MODE_DEMO
+        else:
+            mode = TokenizeCommand._MODE_NORMAL
+
         reporter = CliRunReporter("tokenize")
         try:
             with reporter:
                 try:
-                    if demo_mode:
+                    if mode == TokenizeCommand._MODE_DEMO:
                         logger.warning(
                             "Running in DEMO MODE - tokens are raw attribute signature strings with no hashing. "
                             "Do not use demo-mode output in production or share it externally."
+                        )
+                    elif mode == TokenizeCommand._MODE_HASH_ONLY:
+                        logger.warning(
+                            "Running in HASH-ONLY MODE - tokens are SHA-256 hashed without HMAC. "
+                            "Output is deterministic and keyless. "
+                            "Do not use hash-only output for production or cross-organisation exchange."
                         )
                     else:
                         logger.info("Running tokenize command (normal mode)")
@@ -163,13 +209,23 @@ class TokenizeCommand:
                     if hash_record_ids:
                         logger.info("Record ID hashing enabled: RecordIds will be SHA-256 hashed in output")
 
-                    if demo_mode:
+                    if mode == TokenizeCommand._MODE_DEMO:
                         reporter.update_status("Tokenizing records")
                         summary, metadata_path = TokenizeCommand._process_tokens_demo(
                             args.input_path,
                             args.output_path,
                             input_type,
                             output_type,
+                            progress_callback=reporter.make_progress_callback("Tokenizing records", "records"),
+                        )
+                    elif mode == TokenizeCommand._MODE_HASH_ONLY:
+                        reporter.update_status("Tokenizing records")
+                        summary, metadata_path = TokenizeCommand._process_tokens_hash_only(
+                            args.input_path,
+                            args.output_path,
+                            input_type,
+                            output_type,
+                            hash_record_ids,
                             progress_callback=reporter.make_progress_callback("Tokenizing records", "records"),
                         )
                     else:
@@ -200,7 +256,7 @@ class TokenizeCommand:
                     args.output_path,
                     metadata_path,
                     summary,
-                    demo_mode,
+                    mode,
                     hash_record_ids,
                 ),
             )
@@ -257,6 +313,41 @@ class TokenizeCommand:
             raise
 
     @staticmethod
+    def _process_tokens_hash_only(
+        input_path: str,
+        output_path: str,
+        input_type: str,
+        output_type: str,
+        hash_record_ids: bool = False,
+        progress_callback=None,
+    ) -> tuple[PersonAttributesProcessingSummary, str]:
+        """Process tokens in hash-only mode using SHA-256 only (no HMAC, no secret)."""
+        try:
+            with (
+                TokenizeCommand._create_reader(input_path, input_type) as reader,
+                TokenizeCommand._create_writer(output_path, output_type) as writer,
+            ):
+                metadata = Metadata()
+                metadata_map = metadata.initialize()
+                # Deliberately omit add_hashed_secret — no secret used in hash-only mode
+
+                summary = PersonAttributesProcessor.process(
+                    reader,
+                    writer,
+                    [],
+                    metadata_map,
+                    hash_record_ids=hash_record_ids,
+                    progress_callback=progress_callback,
+                )
+
+                metadata_writer = MetadataJsonWriter(output_path)
+                metadata_writer.write(metadata_map)
+                return summary, metadata_writer.metadata_file_path
+
+        except Exception:
+            raise
+
+    @staticmethod
     def _process_tokens_demo(
         input_path: str,
         output_path: str,
@@ -294,13 +385,18 @@ class TokenizeCommand:
         output_path: str,
         metadata_path: str,
         summary: PersonAttributesProcessingSummary,
-        demo_mode: bool,
+        mode: str,
         hash_record_ids: bool,
     ) -> list[str]:
+        mode_labels = {
+            TokenizeCommand._MODE_NORMAL: "normal HMAC-SHA256",
+            TokenizeCommand._MODE_HASH_ONLY: "hash-only SHA-256",
+            TokenizeCommand._MODE_DEMO: "demo plain signatures",
+        }
         lines = [
             f"Output: {output_path}",
             f"Metadata: {metadata_path}",
-            f"Mode: {'demo' if demo_mode else 'hashed'}",
+            f"Mode: {mode_labels.get(mode, mode)}",
             f"Rows processed: {summary.total_rows:,}",
             f"Rows with invalid attributes: {summary.total_rows_with_invalid_attributes:,}",
         ]
