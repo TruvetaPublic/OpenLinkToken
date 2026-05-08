@@ -156,6 +156,23 @@ class TestTokenizeCommandDemoMode:
         exit_code = OpenLinkTokenCommand.execute(args)
         assert exit_code != 0
 
+    def test_demo_mode_rejects_hash_record_ids(self, temp_dir: Path):
+        """Demo mode should reject --hash-record-ids."""
+        exit_code = OpenLinkTokenCommand.execute(
+            [
+                "tokenize",
+                "-i",
+                str(temp_dir / "input.csv"),
+                "-o",
+                str(temp_dir / "output.csv"),
+                "--mode",
+                "demo",
+                "--hash-record-ids",
+            ]
+        )
+
+        assert exit_code != 0
+
     def test_default_mode_succeeds_with_exchange_config(self, temp_dir: Path):
         """Default mode should succeed when the exchange config is provided."""
         exchange_config, private_key = self._create_exchange_config(temp_dir, "normal-mode")

@@ -128,7 +128,7 @@ Hash-only tokens are deterministic 64-character lowercase hex digests. Because n
 
 Add `--hash-record-ids` to replace each input `RecordId` with its SHA-256 hex digest in the output. This is a **one-way, irreversible operation** — the original `RecordId` is not stored or recoverable from the output. Use this when the input dataset contains raw identifiers that should not appear in any output file.
 
-The `--hash-record-ids` flag is also supported by the `package` subcommand.
+`--hash-record-ids` is supported by default `tokenize` mode and by the `package` subcommand. It is not available in `--mode hash-only` or `--mode demo`.
 
 ```bash
 olt tokenize \

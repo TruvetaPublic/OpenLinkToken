@@ -135,7 +135,7 @@ These arguments are shared across all subcommands:
 | `--private-key`     |       | Private key PEM used to decrypt the exchange config and derive later transport keys                                                                                                        |
 | `--private-key-env` |       | Environment variable containing the private key PEM                                                                                                                                        |
 | `--mode`            |       | Tokenize mode selector: `default`, `hash-only`, or `demo` (`hash-only` cannot be combined with exchange-config or private-key options; `demo` cannot be combined with `--exchange-config`) |
-| `--hash-record-ids` |       | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability; `tokenize` and `package` only)                                                                      |
+| `--hash-record-ids` |       | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability; default `tokenize` mode and `package` only)                                                         |
 
 ## `package` Command
 

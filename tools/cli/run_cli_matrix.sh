@@ -362,7 +362,7 @@ run_matrix() {
     run_step "tokenize-help" "$PAUSE_SECONDS" "${python_cmd[@]}" tokenize --help
     confirm_before_next_step "tokenize-demo" "$PAUSE_SECONDS" || return 0
     run_step "tokenize-demo" "$PAUSE_SECONDS" \
-        "${python_cmd[@]}" tokenize -i "$PERSON_CSV" -o "$TOKENIZED_DEMO_CSV" --demo-mode
+        "${python_cmd[@]}" tokenize -i "$PERSON_CSV" -o "$TOKENIZED_DEMO_CSV" --mode demo
     confirm_before_next_step "generate-key-pair-help" "$PAUSE_SECONDS" || return 0
     run_step "generate-key-pair-help" "$PAUSE_SECONDS" "${python_cmd[@]}" generate-key-pair --help
     confirm_before_next_step "generate-key-pair-recipient" "$PAUSE_SECONDS" || return 0

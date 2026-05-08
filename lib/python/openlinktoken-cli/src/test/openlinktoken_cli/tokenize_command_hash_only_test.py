@@ -342,34 +342,21 @@ class TestTokenizeCommandHashOnly:
     # --hash-record-ids compatibility
     # ------------------------------------------------------------------
 
-    def test_hash_only_supports_hash_record_ids(self, temp_dir: Path):
-        """``--mode hash-only`` should work together with --hash-record-ids."""
-        output_csv = temp_dir / "output.csv"
+    def test_hash_only_rejects_hash_record_ids(self, temp_dir: Path):
+        """``--mode hash-only`` should reject --hash-record-ids."""
         exit_code = OpenLinkTokenCommand.execute(
             [
                 "tokenize",
                 "-i",
                 str(temp_dir / "input.csv"),
                 "-o",
-                str(output_csv),
+                str(temp_dir / "output.csv"),
                 "--mode",
                 "hash-only",
                 "--hash-record-ids",
             ]
         )
-        assert exit_code == 0
-
-        lines = output_csv.read_text().splitlines()
-        headers = [h.strip() for h in lines[0].split(",")]
-        record_id_col = headers.index("RecordId")
-
-        for line in lines[1:]:
-            cols = line.split(",")
-            if len(cols) > record_id_col:
-                record_id = cols[record_id_col].strip()
-                # SHA-256 hex of the original IDs → 64-char hex
-                assert len(record_id) == 64, f"Expected hashed 64-char RecordId, got: {record_id!r}"
-                assert all(c in "0123456789abcdef" for c in record_id)
+        assert exit_code != 0
 
 
 # ---------------------------------------------------------------------------

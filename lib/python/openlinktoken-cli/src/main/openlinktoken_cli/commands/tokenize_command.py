@@ -135,7 +135,8 @@ class TokenizeCommand:
             help=(
                 "Hash input RecordId values using SHA-256 before writing to output. "
                 "The hashed value (not the original) appears in the output file. "
-                "This is a one-way operation with no traceability."
+                "This is a one-way operation with no traceability. "
+                "Supported in default tokenize mode only."
             ),
         )
 
@@ -161,8 +162,16 @@ class TokenizeCommand:
             logger.error("--mode demo cannot be combined with --exchange-config.")
             return 1
 
+        if mode == TokenizeCommand._MODE_DEMO and hash_record_ids:
+            logger.error("--mode demo cannot be combined with --hash-record-ids.")
+            return 1
+
         if mode == TokenizeCommand._MODE_HASH_ONLY and args.exchange_config:
             logger.error("--mode hash-only cannot be combined with --exchange-config.")
+            return 1
+
+        if mode == TokenizeCommand._MODE_HASH_ONLY and hash_record_ids:
+            logger.error("--mode hash-only cannot be combined with --hash-record-ids.")
             return 1
 
         if mode == TokenizeCommand._MODE_HASH_ONLY and (args.private_key or args.private_key_env):
