@@ -60,6 +60,23 @@ class FirstNameAttributeTest {
     }
 
     @Test
+    void normalize_ShouldTransliterateLatinExtendedNames() {
+        assertEquals("Lukasz", firstNameAttribute.normalize("Łukasz"));
+        assertEquals("Soren", firstNameAttribute.normalize("Søren"));
+        assertEquals("AEgir", firstNameAttribute.normalize("Ægir"));
+    }
+
+    @Test
+    void validate_ShouldAcceptLatinExtendedNames() {
+        assertTrue(firstNameAttribute.validate("Łukasz"));
+        assertTrue(firstNameAttribute.validate(firstNameAttribute.normalize("Łukasz")));
+        assertTrue(firstNameAttribute.validate("Søren"));
+        assertTrue(firstNameAttribute.validate(firstNameAttribute.normalize("Søren")));
+        assertTrue(firstNameAttribute.validate("Ægir"));
+        assertTrue(firstNameAttribute.validate(firstNameAttribute.normalize("Ægir")));
+    }
+
+    @Test
     void validate_ShouldReturnTrueForAnyNonEmptyString() {
         assertTrue(firstNameAttribute.validate("John"));
         assertTrue(firstNameAttribute.validate("Jane Doe"));

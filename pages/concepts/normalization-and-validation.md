@@ -32,7 +32,7 @@ Input → Normalize → Validate → Token Generation
 
 1. Trim leading/trailing whitespace
 2. Convert to uppercase
-3. Remove diacritics (é → E, ñ → N)
+3. Remove diacritics and transliterate supported Latin Extended letters to ASCII (é → E, Ł → L, Æ → AE)
 4. Remove titles: Dr, Mr, Mrs, Ms, Miss, Prof
 5. Remove suffixes: Jr, Sr, II, III, IV, PhD, MD
 6. Remove non-alphabetic characters (spaces, apostrophes, hyphens, periods)
@@ -43,8 +43,13 @@ Input → Normalize → Validate → Token Generation
 | -------------- | ---------- |
 | `"  John  "`   | `"JOHN"`   |
 | `"María"`      | `"MARIA"`  |
+| `"Łukasz"`     | `"LUKASZ"` |
+| `"Søren"`      | `"SOREN"`  |
+| `"Ægir"`       | `"AEGIR"`  |
+| `"Øst"`        | `"OST"`    |
 | `"Dr. Smith"`  | `"SMITH"`  |
 | `"O'Brien"`    | `"OBRIEN"` |
+| `"Œberg"`      | `"OEBERG"` |
 | `"García Jr."` | `"GARCIA"` |
 
 **Validation:**

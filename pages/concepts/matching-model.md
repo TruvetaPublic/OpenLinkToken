@@ -22,7 +22,8 @@ The matching model generates cryptographically secure tokens from personal ident
 ┌─────────────────────────────────────────────────────────────────┐
 │                    Normalization                                │
 │  - Remove titles/suffixes                                       │
-│  - Strip diacritics                                             │
+│  - Remove diacritics and transliterate supported Latin Extended │
+│    letters to ASCII                                             │
 │  - Standardize formats                                          │
 └───────────────────────┬─────────────────────────────────────────┘
                         │
@@ -220,6 +221,7 @@ Open Link Token normalizes each field before token generation. For full rules, s
 
 - **María → MARIA**: Diacritic removed, uppercased
 - **García Jr. → GARCIA**: Suffix removed, diacritic removed, uppercased
+- **Łukasz / Søren / Øst / Œberg** style inputs normalize to ASCII forms such as `LUKASZ`, `SOREN`, `OST`, and `OEBERG`
 - **tom → TOM**: Uppercased
 - **03/22/1988 → 1988-03-22**: Date reformatted to ISO 8601
 - **30301-4455 → 30301**: ZIP+4 truncated to 5 digits
@@ -293,7 +295,7 @@ When comparing hash-only (or decrypted) token values across the two systems:
 
 ### Key Takeaways
 
-1. **Normalization is critical.** Two records with superficially different inputs (accents, suffixes, date formats) can match perfectly after normalization.
+1. **Normalization is critical.** Two records with superficially different inputs (accents, supported Latin Extended letters, suffixes, date formats) can match perfectly after normalization.
 2. **Missing attributes reduce matching opportunities.** CLN-202 couldn't generate T4 because SSN was missing.
 3. **Name variations may prevent matches.** "Tom" vs "Thomas" is a common real-world issue; T5's 3-character prefix helps only if the first 3 letters are identical.
 4. **Multiple rules provide fallback.** Even if T4 can't be generated (SSN missing), other rules may still match if other attributes align.

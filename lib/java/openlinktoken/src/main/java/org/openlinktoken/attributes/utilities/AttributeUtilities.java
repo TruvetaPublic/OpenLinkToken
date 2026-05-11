@@ -2,6 +2,7 @@
 package org.openlinktoken.attributes.utilities;
 
 import java.text.Normalizer;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -12,6 +13,54 @@ import java.util.regex.Pattern;
  */
 public class AttributeUtilities {
     private static final Pattern DIACRITICS = Pattern.compile("\\p{M}");
+    private static final Map<Character, String> LATIN_EXTENDED_TRANSLITERATION_MAP = Map.ofEntries(
+            Map.entry('Æ', "AE"),
+            Map.entry('æ', "ae"),
+            Map.entry('Ð', "D"),
+            Map.entry('ð', "d"),
+            Map.entry('Ø', "O"),
+            Map.entry('ø', "o"),
+            Map.entry('Þ', "TH"),
+            Map.entry('þ', "th"),
+            Map.entry('ß', "ss"),
+            Map.entry('ẞ', "SS"),
+            Map.entry('Đ', "D"),
+            Map.entry('đ', "d"),
+            Map.entry('Ħ', "H"),
+            Map.entry('ħ', "h"),
+            Map.entry('ı', "i"),
+            Map.entry('Ĳ', "IJ"),
+            Map.entry('ĳ', "ij"),
+            Map.entry('Ŀ', "L"),
+            Map.entry('ŀ', "l"),
+            Map.entry('Ł', "L"),
+            Map.entry('ł', "l"),
+            Map.entry('ŉ', "n"),
+            Map.entry('Ŋ', "NG"),
+            Map.entry('ŋ', "ng"),
+            Map.entry('Œ', "OE"),
+            Map.entry('œ', "oe"),
+            Map.entry('Ŧ', "T"),
+            Map.entry('ŧ', "t"),
+            Map.entry('ſ', "s"),
+            Map.entry('Ƒ', "F"),
+            Map.entry('ƒ', "f"),
+            Map.entry('Ǆ', "DZ"),
+            Map.entry('ǅ', "Dz"),
+            Map.entry('ǆ', "dz"),
+            Map.entry('Ǉ', "LJ"),
+            Map.entry('ǈ', "Lj"),
+            Map.entry('ǉ', "lj"),
+            Map.entry('Ǌ', "NJ"),
+            Map.entry('ǋ', "Nj"),
+            Map.entry('ǌ', "nj"),
+            Map.entry('Ǳ', "DZ"),
+            Map.entry('ǲ', "Dz"),
+            Map.entry('ǳ', "dz"),
+            Map.entry('Ǽ', "AE"),
+            Map.entry('ǽ', "ae"),
+            Map.entry('Ǿ', "O"),
+            Map.entry('ǿ', "o"));
 
     /**
      * Pattern that matches any character that is not an alphabetic character (a-z
@@ -106,6 +155,16 @@ public class AttributeUtilities {
      * @return A new string with all diacritical marks removed
      */
     public static String normalizeDiacritics(String value) {
-        return DIACRITICS.matcher(Normalizer.normalize(value.trim(), Normalizer.Form.NFD)).replaceAll("");
+        String trimmedValue = value.trim();
+        StringBuilder transliteratedValue = new StringBuilder(trimmedValue.length());
+
+        for (int index = 0; index < trimmedValue.length(); index++) {
+            char character = trimmedValue.charAt(index);
+            transliteratedValue.append(LATIN_EXTENDED_TRANSLITERATION_MAP.getOrDefault(character,
+                    String.valueOf(character)));
+        }
+
+        return DIACRITICS.matcher(Normalizer.normalize(transliteratedValue.toString(), Normalizer.Form.NFD))
+                .replaceAll("");
     }
 }

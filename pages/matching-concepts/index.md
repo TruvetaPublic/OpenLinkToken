@@ -155,16 +155,18 @@ Decrypted tokens show the HMAC-SHA256 hash (base64 encoded) before AES encryptio
 
 All tokens use normalized attributes. See [Security](../security.md) for detailed rules.
 
+For names, normalization removes diacritics and transliterates supported Latin Extended letters to ASCII before later token-building steps.
+
 ### Quick Reference
 
-| Attribute  | Normalization                                           | Example                                               |
-| ---------- | ------------------------------------------------------- | ----------------------------------------------------- |
-| FirstName  | Uppercase, remove titles/suffixes, normalize diacritics | "José María" → "JOSE MARIA"                           |
-| LastName   | Uppercase, remove suffixes, normalize diacritics        | "O'Brien" → "OBRIEN"                                  |
-| Sex        | Standardized to "Male" or "Female"                      | "M", "m", "Male" → "MALE"                             |
-| BirthDate  | YYYY-MM-DD format                                       | "01/15/1980", "1980-01-15" → "1980-01-15"             |
-| PostalCode | Uppercase, dash removed for US; space for Canadian      | "98004", "98004-1234" → "98004", "K1A 1A1" → "K1A1A1" |
-| SSN        | 9-digit numeric                                         | "123-45-6789" → digits-only string                    |
+| Attribute  | Normalization                                                                                                 | Example                                               |
+| ---------- | ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| FirstName  | Uppercase, remove titles/suffixes, remove diacritics, transliterate supported Latin Extended letters to ASCII | "Ægir" → "AEGIR"                                      |
+| LastName   | Uppercase, remove suffixes, remove diacritics, transliterate supported Latin Extended letters to ASCII        | "Œberg" → "OEBERG"                                    |
+| Sex        | Standardized to "Male" or "Female"                                                                            | "M", "m", "Male" → "MALE"                             |
+| BirthDate  | YYYY-MM-DD format                                                                                             | "01/15/1980", "1980-01-15" → "1980-01-15"             |
+| PostalCode | Uppercase, dash removed for US; space for Canadian                                                            | "98004", "98004-1234" → "98004", "K1A 1A1" → "K1A1A1" |
+| SSN        | 9-digit numeric                                                                                               | "123-45-6789" → digits-only string                    |
 
 ## Collision Resistance
 
