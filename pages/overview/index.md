@@ -33,7 +33,7 @@ Matching is performed on deterministic hash-only values (or decrypted token payl
 ## How It Works
 
 1. **Input**: Person records with attributes (name, birthdate, SSN, postal code, sex)
-2. **Validation & Normalization**: Attributes are validated and normalized (uppercase, diacritic removal, title stripping)
+2. **Validation & Normalization**: Attributes are validated and normalized (uppercase, diacritic removal, supported Latin Extended transliteration, title stripping)
 3. **Token Generation**: Multiple token rules (T1–T5) combine different attributes
 4. **Transformation**: Deterministic HMAC-SHA256 hashes are produced; encrypted mode wraps them as `olt.V1` JWE match tokens
 5. **Output**: Encrypted `olt.V1` tokens (default) or hash-only values, plus metadata
@@ -56,7 +56,7 @@ Open Link Token uses **5 distinct token rules (T1–T5)** that define which attr
 
 Before tokens are generated, attributes are validated against practical, PII-focused rules:
 
-- **FirstName/LastName**: No placeholders, proper length, diacritics normalized
+- **FirstName/LastName**: No placeholders, proper length, diacritics removed, supported Latin Extended letters transliterated to ASCII
 - **BirthDate**: 1910–today, valid format (YYYY-MM-DD)
 - **SSN**: Valid US social security number (area, group, serial checks)
 - **PostalCode**: Valid US ZIP or Canadian postal code

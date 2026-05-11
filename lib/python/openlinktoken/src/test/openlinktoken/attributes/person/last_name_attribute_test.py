@@ -42,6 +42,24 @@ class TestLastNameAttribute:
         assert self.last_name_attribute.normalize(name3) == "Hernandez"
         assert self.last_name_attribute.normalize(name4) == "Mader"
 
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            ("Øst", "Ost"),
+            ("Đỗ", "Do"),
+            ("Œberg", "OEberg"),
+        ],
+    )
+    def test_normalize_should_transliterate_latin_extended_last_names(self, value, expected):
+        """Test normalization of last names that rely on Latin Extended transliteration."""
+        assert self.last_name_attribute.normalize(value) == expected
+
+    @pytest.mark.parametrize("value", ["Øst", "Đỗ", "Œberg"])
+    def test_validate_should_accept_latin_extended_last_names(self, value):
+        """Test validation acceptance for last names that rely on Latin Extended transliteration."""
+        assert self.last_name_attribute.validate(value) is True
+        assert self.last_name_attribute.validate(self.last_name_attribute.normalize(value)) is True
+
     def test_validate_should_return_true_for_valid_last_names_part1(self):
         """Test validation for valid last names (part 1)."""
         # Names with 3+ characters

@@ -9,8 +9,8 @@ try:
 except ImportError:
     raise ImportError("pyarrow is required for Parquet support. Install with: uv pip install pyarrow")
 
+from openlinktoken_cli.io.path_utils import ensure_parent_directory
 from openlinktoken_cli.io.person_attributes_writer import PersonAttributesWriter
-from openlinktoken_cli.util.path_utils import ensure_parent_directory
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +34,7 @@ class PersonAttributesParquetWriter(PersonAttributesWriter):
         """
         self.file_path = file_path
 
+        # Create directory if it doesn't exist
         ensure_parent_directory(file_path)
 
         self.schema: Optional[pa.Schema] = None

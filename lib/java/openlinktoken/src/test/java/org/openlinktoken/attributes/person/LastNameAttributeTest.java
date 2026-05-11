@@ -59,6 +59,23 @@ class LastNameAttributeTest {
     }
 
     @Test
+    void normalize_ShouldTransliterateLatinExtendedLastNames() {
+        assertEquals("Ost", lastNameAttribute.normalize("Øst"));
+        assertEquals("Do", lastNameAttribute.normalize("Đỗ"));
+        assertEquals("OEberg", lastNameAttribute.normalize("Œberg"));
+    }
+
+    @Test
+    void validate_ShouldAcceptLatinExtendedLastNames() {
+        assertTrue(lastNameAttribute.validate("Øst"));
+        assertTrue(lastNameAttribute.validate(lastNameAttribute.normalize("Øst")));
+        assertTrue(lastNameAttribute.validate("Đỗ"));
+        assertTrue(lastNameAttribute.validate(lastNameAttribute.normalize("Đỗ")));
+        assertTrue(lastNameAttribute.validate("Œberg"));
+        assertTrue(lastNameAttribute.validate(lastNameAttribute.normalize("Œberg")));
+    }
+
+    @Test
     void validate_ShouldReturnTrueForValidLastNames_Part1() {
         // Names with 3+ characters
         assertTrue(lastNameAttribute.validate("Doe"), "3+ character last name should be allowed");

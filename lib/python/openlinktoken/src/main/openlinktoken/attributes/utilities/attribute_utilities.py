@@ -2,7 +2,7 @@
 
 import re
 import unicodedata
-from typing import Set
+from typing import Dict, Set
 
 
 class AttributeUtilities:
@@ -25,6 +25,58 @@ class AttributeUtilities:
     # "\r\n" -> carriage return + newline
     # "   " -> multiple spaces
     WHITESPACE_PATTERN = re.compile(r"\s+")
+
+    # Characters from Latin-1 Supplement and Latin Extended blocks that do not
+    # decompose to ASCII-compatible forms with NFD alone.
+    LATIN_EXTENDED_TRANSLITERATION_MAP: Dict[str, str] = {
+        "Æ": "AE",
+        "æ": "ae",
+        "Ð": "D",
+        "ð": "d",
+        "Ø": "O",
+        "ø": "o",
+        "Þ": "TH",
+        "þ": "th",
+        "ß": "ss",
+        "ẞ": "SS",
+        "Đ": "D",
+        "đ": "d",
+        "Ħ": "H",
+        "ħ": "h",
+        "ı": "i",
+        "Ĳ": "IJ",
+        "ĳ": "ij",
+        "Ŀ": "L",
+        "ŀ": "l",
+        "Ł": "L",
+        "ł": "l",
+        "ŉ": "n",
+        "Ŋ": "NG",
+        "ŋ": "ng",
+        "Œ": "OE",
+        "œ": "oe",
+        "Ŧ": "T",
+        "ŧ": "t",
+        "ſ": "s",
+        "Ƒ": "F",
+        "ƒ": "f",
+        "Ǆ": "DZ",
+        "ǅ": "Dz",
+        "ǆ": "dz",
+        "Ǉ": "LJ",
+        "ǈ": "Lj",
+        "ǉ": "lj",
+        "Ǌ": "NJ",
+        "ǋ": "Nj",
+        "ǌ": "nj",
+        "Ǳ": "DZ",
+        "ǲ": "Dz",
+        "ǳ": "dz",
+        "Ǽ": "AE",
+        "ǽ": "ae",
+        "Ǿ": "O",
+        "ǿ": "o",
+    }
 
     # Pattern that matches generational suffixes at the end of a string.
     # Matches case-insensitive suffixes after a whitespace character.
@@ -104,10 +156,14 @@ class AttributeUtilities:
             raise AttributeError("Value cannot be None")
 
         trimmed_value = value.strip()
+        transliterated_value = "".join(
+            AttributeUtilities.LATIN_EXTENDED_TRANSLITERATION_MAP.get(character, character)
+            for character in trimmed_value
+        )
 
         # Normalize to NFD (decomposed form) and filter out combining characters
-        normalized = unicodedata.normalize("NFD", trimmed_value)
-        return "".join(c for c in normalized if unicodedata.category(c) != "Mn")
+        normalized = unicodedata.normalize("NFD", transliterated_value)
+        return "".join(character for character in normalized if not unicodedata.category(character).startswith("M"))
 
     @staticmethod
     def remove_whitespace(value: str) -> str:

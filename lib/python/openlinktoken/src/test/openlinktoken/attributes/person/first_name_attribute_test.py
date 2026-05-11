@@ -42,6 +42,24 @@ class TestFirstNameAttribute:
         assert self.first_name_attribute.normalize(name3) == "Francois"
         assert self.first_name_attribute.normalize(name4) == "Renee"
 
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            ("Łukasz", "Lukasz"),
+            ("Søren", "Soren"),
+            ("Ægir", "AEgir"),
+        ],
+    )
+    def test_normalize_should_transliterate_latin_extended_names(self, value, expected):
+        """Test normalization of first names that rely on Latin Extended transliteration."""
+        assert self.first_name_attribute.normalize(value) == expected
+
+    @pytest.mark.parametrize("value", ["Łukasz", "Søren", "Ægir"])
+    def test_validate_should_accept_latin_extended_names(self, value):
+        """Test validation acceptance for first names that rely on Latin Extended transliteration."""
+        assert self.first_name_attribute.validate(value) is True
+        assert self.first_name_attribute.validate(self.first_name_attribute.normalize(value)) is True
+
     def test_validate_should_return_true_for_any_non_empty_string(self):
         """Test validation for non-empty strings."""
         assert self.first_name_attribute.validate("John") is True
