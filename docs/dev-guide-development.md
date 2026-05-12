@@ -555,20 +555,21 @@ counter++; // Increment counter by one
 
 ## Token Processing Modes
 
-Open Link Token supports three processing modes across Java, Python, and the PySpark bridge. These modes determine how raw token signatures are transformed:
+Open Link Token supports three core processing modes across Java, Python, and the PySpark bridge. The Python CLI also exposes `tokenize --mode hash-only` for SHA-256-only output without an exchange config. These modes determine how raw token signatures are transformed:
 
-| Mode      | Secrets Required                | Transform Pipeline                                | Output Example (T1)                  | Deterministic Across Runs | Recommended Use                                                   |
-| --------- | ------------------------------- | ------------------------------------------------- | ------------------------------------ | ------------------------- | ----------------------------------------------------------------- |
-| Plain     | None (`tokenize --demo-mode`)   | Concatenate normalized attribute expressions only | `DOE\|JOHN\|1990-01-15\|MALE\|98101` | Yes (given same input)    | Debugging, rule design, docs demos                                |
-| Tokenize  | Hashing secret only             | HMAC-SHA256(signature)                            | 64 hex chars (SHA-256 digest)        | Yes                       | Internal overlap analysis against decrypted partner token outputs |
-| Encrypted | Hashing secret + encryption key | HMAC-SHA256 → AES-256-GCM (random IV per token)   | Base64 blob (length varies)          | Yes (post-decrypt hash)   | Production / privacy-preserving use and external token exchange   |
+| Mode      | Availability          | Secrets Required                   | Transform Pipeline                                        | Output Example (T1)                  | Deterministic Across Runs | Recommended Use                                                                 |
+| --------- | --------------------- | ---------------------------------- | --------------------------------------------------------- | ------------------------------------ | ------------------------- | ------------------------------------------------------------------------------- |
+| Plain     | Java, Python, PySpark | None (`tokenize --mode demo`)      | Concatenate normalized attribute expressions only         | `DOE\|JOHN\|1990-01-15\|MALE\|98101` | Yes (given same input)    | Debugging, rule design, docs demos                                              |
+| Hash-only | Python CLI only       | None (`tokenize --mode hash-only`) | SHA-256(signature)                                        | 64-character lowercase hex digest    | Yes                       | Local exploration/testing without an exchange config; never exchange externally |
+| Tokenize  | Java, Python, PySpark | Hashing secret only                | SHA-256 → HMAC-SHA256 → Base64                            | 44-character base64 HMAC             | Yes                       | Internal overlap analysis against decrypted partner token outputs               |
+| Encrypted | Java, Python, PySpark | Hashing secret + encryption key    | SHA-256 → HMAC-SHA256 → AES-256-GCM (random IV per token) | Base64 blob (length varies)          | Yes (post-decrypt hash)   | Production / privacy-preserving use and external token exchange                 |
 
 Notes:
 
 - The underlying signature (before hashing) is produced by ordered attribute expressions for each token rule (e.g., T1→T5 or custom T6+). Plain mode exposes this directly for inspection.
 - Encryption uses AES-256-GCM with a random IV; identical hashed inputs yield different encrypted outputs each run. Matching encrypted tokens across datasets therefore requires either: (a) decryption with the shared key (to reach the tokenized representation) or (b) using the `tokenize` subcommand specifically for overlap workflows. Do NOT attempt to match encrypted blobs directly.
 - Tokenizer polymorphism: Java & Python `TokenGenerator` accept an injectable tokenizer. Defaults to SHA-256; when plain mode is active a `PassthroughTokenizer` is used so downstream transformers (if any) receive the raw signature.
-- Security: Plain and tokenized modes reduce protection. Never use plain mode for sharing PHI; tokenized output may leak structural frequency information. Encrypted mode is required for external distribution; tokenized datasets should remain internal and are typically used to join against decrypted partner tokens for overlap analysis.
+- Security: Plain, hash-only, and tokenized modes reduce protection. Never use plain mode for sharing PHI. `tokenize --mode hash-only` is deterministic SHA-256 with no secret and is not suitable for production or cross-organisation exchange. Normal tokenized output may still leak structural frequency information, so encrypted mode remains the required format for external distribution.
 
 ## Token & Attribute Registration
 

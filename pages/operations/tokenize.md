@@ -4,13 +4,13 @@ layout: default
 
 # Tokenize
 
-How to generate tokens using HMAC-SHA256 without AES encryption.
+How to generate tokens without AES encryption, including default `tokenize`, `tokenize --mode hash-only`, and `tokenize --mode demo`.
 
 ---
 
 ## Overview
 
-The `tokenize` subcommand supports two modes:
+The `tokenize` subcommand supports three modes:
 
 **Normal mode** (default) — applies SHA-256 and HMAC-SHA256 to produce opaque, secret-keyed tokens:
 
@@ -18,7 +18,13 @@ The `tokenize` subcommand supports two modes:
 Token Signature → SHA-256 Hash → HMAC-SHA256(hash, secret) → Base64 Encode
 ```
 
-**Demo mode** (`--demo-mode`) — skips all hashing and outputs the raw pipe-separated attribute signature string:
+**Hash-only mode** (`--mode hash-only`) — applies SHA-256 only and emits deterministic 64-character lowercase hex strings:
+
+```text
+Token Signature → SHA-256 Hash → Lowercase Hex Encode
+```
+
+**Demo mode** (`--mode demo`) — skips all hashing and outputs the raw pipe-separated attribute signature string:
 
 ```text
 Token Signature → (passthrough) → Raw attribute signature string
@@ -42,13 +48,21 @@ The `tokenize` subcommand is primarily used to support **overlap analysis workfl
 - You need faster processing or smaller token size for **internal analytics and overlap reporting**
 - Raw data and tokens are already protected at rest within your environment
 
-**Use `tokenize --demo-mode` when:**
+**Use `tokenize --mode demo` when:**
 
 - Exploring which attributes contribute to each token rule without managing secrets
 - Writing documentation or conducting interactive demonstrations
 - Debugging attribute normalisation or token rule logic
 
-> ⚠️ Demo mode output is **not** suitable for production or cross-organisation exchange. See [Demo Mode](#demo-mode---demo-mode) below.
+> ⚠️ Demo mode output is **not** suitable for production or cross-organisation exchange. See [Demo Mode](#demo-mode---mode-demo) below.
+
+**Use `tokenize --mode hash-only` when:**
+
+- You need deterministic SHA-256 output for local experiments, tests, or demonstrations
+- You want to inspect or compare token generation behavior without creating an exchange config first
+- You explicitly do **not** want keyed HMAC output
+
+> ⚠️ Hash-only output is deterministic SHA-256 without HMAC. It is **not** suitable for production or cross-organisation exchange.
 
 **Use `package` when:**
 
@@ -87,11 +101,34 @@ docker run --rm \
   --private-key-env OLT_PRIVATE_KEY_PEM
 ```
 
+### Hash-only Mode (`--mode hash-only`)
+
+In hash-only mode the CLI skips exchange-config resolution and applies SHA-256 only. `--exchange-config`, `--private-key`, and `--private-key-env` are not allowed in this mode.
+
+```bash
+olt tokenize \
+  -i resources/sample.csv \
+  -o resources/hash-only-output.csv \
+  --mode hash-only
+```
+
+#### Hash-only Mode — Docker
+
+```bash
+docker run --rm -v $(pwd)/resources:/app/resources \
+  openlinktoken:latest tokenize \
+  -i /app/resources/sample.csv \
+  -o /app/resources/hash-only-output.csv \
+  --mode hash-only
+```
+
+Hash-only tokens are deterministic 64-character lowercase hex digests. Because no secret is used, the output is easier to reproduce locally but provides less protection than normal `tokenize` mode.
+
 ### Hashing Record IDs (`--hash-record-ids`)
 
 Add `--hash-record-ids` to replace each input `RecordId` with its SHA-256 hex digest in the output. This is a **one-way, irreversible operation** — the original `RecordId` is not stored or recoverable from the output. Use this when the input dataset contains raw identifiers that should not appear in any output file.
 
-The `--hash-record-ids` flag is also supported by the `package` subcommand.
+`--hash-record-ids` is supported by default `tokenize` mode and by the `package` subcommand. It is not available in `--mode hash-only` or `--mode demo`.
 
 ```bash
 olt tokenize \
@@ -111,7 +148,7 @@ RecordId,RuleId,Token
 
 Each `RecordId` is replaced with a 64-character lowercase SHA-256 hex digest. The original `RecordId` does not appear anywhere in the output.
 
-### Demo Mode (`--demo-mode`)
+### Demo Mode (`--mode demo`)
 
 In demo mode the full hashing pipeline is skipped. No exchange config or private key is required.
 
@@ -119,7 +156,7 @@ In demo mode the full hashing pipeline is skipped. No exchange config or private
 olt tokenize \
   -i resources/sample.csv \
   -o resources/demo-output.csv \
-  --demo-mode
+  --mode demo
 ```
 
 #### Demo Mode — Docker
@@ -129,7 +166,7 @@ docker run --rm -v $(pwd)/resources:/app/resources \
   openlinktoken:latest tokenize \
   -i /app/resources/sample.csv \
   -o /app/resources/demo-output.csv \
-  --demo-mode
+  --mode demo
 ```
 
 #### Demo Output Example
@@ -156,14 +193,23 @@ RecordId,RuleId,Token
 ID001,T1,Gn7t1Zj16E5Qy+z9iINtczP6fRDYta6C0XFrQtpjnVQSEZ5pQXAzo02Aa9LS9oNMOog6Ssw9GZE6fvJrX2sQ/cThSkB6m91L
 ```
 
-### Tokenized (Unencrypted) Tokens (~44-64 characters)
+### Tokenized (Unencrypted) Tokens (~44 characters)
 
 ```csv
 RecordId,RuleId,Token
 ID001,T1,abc123def456ghi789jkl012mno345pqr678stu901vwx234
 ```
 
-Tokenized (unencrypted) tokens are shorter because they don't include the AES initialization vector (IV) and authentication tag.
+Normal `tokenize` output is a base64-encoded HMAC value, typically about 44 characters because it omits the AES initialization vector (IV) and authentication tag.
+
+### Hash-only Tokens (64 hexadecimal characters)
+
+```csv
+RecordId,RuleId,Token
+ID001,T1,8d0f7f0d30f4b9e2e31e9d7fdc7f1c7f0d0fb6b246bd27d4f91f4fbad0b8e2c4
+```
+
+`tokenize --mode hash-only` output is always a 64-character lowercase SHA-256 hex digest.
 
 ---
 
@@ -188,7 +234,7 @@ Tokenized (unencrypted) tokens are shorter because they don't include the AES in
 
 No `EncryptionSecretHash` field is present when using `tokenize`.
 
-### `tokenize --demo-mode` Metadata
+### `tokenize --mode hash-only` Metadata
 
 ```json
 {
@@ -196,26 +242,37 @@ No `EncryptionSecretHash` field is present when using `tokenize`.
 }
 ```
 
-neither `HashingSecretHash` nor `EncryptionSecretHash` appears in demo-mode metadata — no secret is used.
+Neither `HashingSecretHash` nor `EncryptionSecretHash` appears in hash-only metadata because no secret is used.
+
+### `tokenize --mode demo` Metadata
+
+```json
+{
+  "TotalRows": 10
+}
+```
+
+Neither `HashingSecretHash` nor `EncryptionSecretHash` appears in demo-mode metadata — no secret is used.
 
 ---
 
 ## Security Trade-offs
 
-| Aspect                  | `package`                     | `tokenize`                    | `tokenize --demo-mode`         |
-| ----------------------- | ----------------------------- | ----------------------------- | ------------------------------ |
-| **Token length**        | ~80-100 chars                 | 44 chars (base64)             | Varies (plain text)            |
-| **Processing speed**    | Slower                        | Faster                        | Fastest                        |
-| **CLI inputs required** | Exchange config + private key | Exchange config + private key | None                           |
-| **Reversibility**       | Decryptable (to HMAC hash)    | Not decryptable               | Directly readable (plain text) |
-| **External sharing**    | Recommended                   | Not recommended               | Never — contains raw PII       |
-| **Defense in depth**    | Yes                           | No                            | No                             |
-| **Use case**            | Production / sharing          | Internal analysis             | Exploration / debugging only   |
+| Aspect                  | `package`                     | `tokenize`                    | `tokenize --mode hash-only`        | `tokenize --mode demo`         |
+| ----------------------- | ----------------------------- | ----------------------------- | ---------------------------------- | ------------------------------ |
+| **Token length**        | ~80-100 chars                 | ~44 chars (base64)            | 64 chars (lowercase hex)           | Varies (plain text)            |
+| **Processing speed**    | Slower                        | Faster                        | Fastest keyed-free hashed mode     | Fastest overall                |
+| **CLI inputs required** | Exchange config + private key | Exchange config + private key | None                               | None                           |
+| **Reversibility**       | Decryptable (to HMAC hash)    | Not decryptable               | Not decryptable                    | Directly readable (plain text) |
+| **External sharing**    | Recommended                   | Not recommended               | Never recommended                  | Never — contains raw PII       |
+| **Defense in depth**    | Yes                           | No                            | No                                 | No                             |
+| **Use case**            | Production / sharing          | Internal analysis             | Local deterministic SHA-256 output | Exploration / debugging only   |
 
 ### Security Notes
 
-- **Both modes are one-way**: Original attributes cannot be recovered from either token type
-- **Same hashing secret = same tokens**: Tokenized output from different runs with the same secret will match
+- **All hashed modes are one-way**: Original attributes cannot be recovered from normal `tokenize`, `tokenize --mode hash-only`, or encrypted token output
+- **Same hashing secret = same tokens**: Normal `tokenize` output from different runs with the same secret will match
+- **Hash-only is keyless**: `tokenize --mode hash-only` always produces the same SHA-256 hex output for the same normalized signature, but lacks the protection of keyed HMAC
 
 ---
 

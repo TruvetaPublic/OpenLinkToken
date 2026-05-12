@@ -18,7 +18,7 @@ BLANK_TOKEN = "0" * 64
 
 
 class TestTokenizeCommandDemoMode:
-    """Tests for the --demo-mode flag on the tokenize subcommand."""
+    """Tests for ``tokenize --mode demo``."""
 
     HASHING_SECRET = "TestHashingSecret"
 
@@ -70,7 +70,8 @@ class TestTokenizeCommandDemoMode:
             str(temp_dir / "input.csv"),
             "-o",
             str(temp_dir / "output.csv"),
-            "--demo-mode",
+            "--mode",
+            "demo",
         ]
         exit_code = OpenLinkTokenCommand.execute(args)
         assert exit_code == 0
@@ -88,7 +89,8 @@ class TestTokenizeCommandDemoMode:
                 "input.csv",
                 "-o",
                 "output.csv",
-                "--demo-mode",
+                "--mode",
+                "demo",
             ]
         )
 
@@ -109,7 +111,8 @@ class TestTokenizeCommandDemoMode:
                 "input.csv",
                 "-o",
                 "output.parquet",
-                "--demo-mode",
+                "--mode",
+                "demo",
             ]
         )
 
@@ -117,8 +120,8 @@ class TestTokenizeCommandDemoMode:
         assert (temp_dir / "output.parquet").exists()
         assert (temp_dir / "output.metadata.json").exists()
 
-    def test_normal_mode_fails_without_exchange_config(self, temp_dir: Path):
-        """Normal mode must reject execution when no exchange config can be resolved."""
+    def test_default_mode_fails_without_exchange_config(self, temp_dir: Path):
+        """Default mode must reject execution when no exchange config can be resolved."""
         original_cwd = Path.cwd()
         try:
             os.chdir(temp_dir)
@@ -128,6 +131,8 @@ class TestTokenizeCommandDemoMode:
                 str(temp_dir / "input.csv"),
                 "-o",
                 str(temp_dir / "output.csv"),
+                "--mode",
+                "default",
             ]
             exit_code = OpenLinkTokenCommand.execute(args)
         finally:
@@ -143,15 +148,33 @@ class TestTokenizeCommandDemoMode:
             str(temp_dir / "input.csv"),
             "-o",
             str(temp_dir / "output.csv"),
-            "--demo-mode",
+            "--mode",
+            "demo",
             "--exchange-config",
             str(exchange_config),
         ]
         exit_code = OpenLinkTokenCommand.execute(args)
         assert exit_code != 0
 
-    def test_normal_mode_succeeds_with_exchange_config(self, temp_dir: Path):
-        """Normal mode should succeed when the exchange config is provided."""
+    def test_demo_mode_rejects_hash_record_ids(self, temp_dir: Path):
+        """Demo mode should reject --hash-record-ids."""
+        exit_code = OpenLinkTokenCommand.execute(
+            [
+                "tokenize",
+                "-i",
+                str(temp_dir / "input.csv"),
+                "-o",
+                str(temp_dir / "output.csv"),
+                "--mode",
+                "demo",
+                "--hash-record-ids",
+            ]
+        )
+
+        assert exit_code != 0
+
+    def test_default_mode_succeeds_with_exchange_config(self, temp_dir: Path):
+        """Default mode should succeed when the exchange config is provided."""
         exchange_config, private_key = self._create_exchange_config(temp_dir, "normal-mode")
         args = [
             "tokenize",
@@ -159,6 +182,8 @@ class TestTokenizeCommandDemoMode:
             str(temp_dir / "input.csv"),
             "-o",
             str(temp_dir / "output.csv"),
+            "--mode",
+            "default",
             "--exchange-config",
             str(exchange_config),
             "--private-key",
@@ -171,8 +196,8 @@ class TestTokenizeCommandDemoMode:
     # Input validation
     # ------------------------------------------------------------------
 
-    def test_normal_mode_fails_with_missing_private_key(self, temp_dir: Path):
-        """Normal mode must reject an unreadable private key reference."""
+    def test_default_mode_fails_with_missing_private_key(self, temp_dir: Path):
+        """Default mode must reject an unreadable private key reference."""
         exchange_config, _ = self._create_exchange_config(temp_dir, "missing-private-key")
         args = [
             "tokenize",
@@ -180,6 +205,8 @@ class TestTokenizeCommandDemoMode:
             str(temp_dir / "input.csv"),
             "-o",
             str(temp_dir / "output.csv"),
+            "--mode",
+            "default",
             "--exchange-config",
             str(exchange_config),
             "--private-key",
@@ -198,7 +225,8 @@ class TestTokenizeCommandDemoMode:
             str(bad_input),
             "-o",
             str(temp_dir / "output.csv"),
-            "--demo-mode",
+            "--mode",
+            "demo",
         ]
         exit_code = OpenLinkTokenCommand.execute(args)
         assert exit_code != 0
@@ -221,7 +249,8 @@ class TestTokenizeCommandDemoMode:
                 str(temp_dir / "input.csv"),
                 "-o",
                 str(output_csv),
-                "--demo-mode",
+                "--mode",
+                "demo",
             ]
         )
 
@@ -237,8 +266,8 @@ class TestTokenizeCommandDemoMode:
                 f"Demo-mode token must not be a 44-char HMAC base64 string, got: {token}"
             )
 
-    def test_normal_mode_tokens_are_44_char_hmac_base64(self, temp_dir: Path):
-        """Normal mode tokens are HMAC-SHA256 base64, always exactly 44 characters."""
+    def test_default_mode_tokens_are_44_char_hmac_base64(self, temp_dir: Path):
+        """Default-mode tokens are HMAC-SHA256 base64, always exactly 44 characters."""
         output_csv = temp_dir / "output.csv"
         exchange_config, private_key = self._create_exchange_config(temp_dir, "normal-token-shape")
         OpenLinkTokenCommand.execute(
@@ -248,6 +277,8 @@ class TestTokenizeCommandDemoMode:
                 str(temp_dir / "input.csv"),
                 "-o",
                 str(output_csv),
+                "--mode",
+                "default",
                 "--exchange-config",
                 str(exchange_config),
                 "--private-key",
@@ -263,8 +294,8 @@ class TestTokenizeCommandDemoMode:
                 f"Normal-mode token must be a 44-char HMAC base64 string, got: {token!r}"
             )
 
-    def test_demo_and_normal_mode_produce_different_tokens(self, temp_dir: Path):
-        """Demo-mode and normal-mode outputs must differ for the same input."""
+    def test_demo_and_default_mode_produce_different_tokens(self, temp_dir: Path):
+        """Demo-mode and default-mode outputs must differ for the same input."""
         demo_output = temp_dir / "demo_output.csv"
         normal_output = temp_dir / "normal_output.csv"
         exchange_config, private_key = self._create_exchange_config(temp_dir, "demo-vs-normal")
@@ -276,7 +307,8 @@ class TestTokenizeCommandDemoMode:
                 str(temp_dir / "input.csv"),
                 "-o",
                 str(demo_output),
-                "--demo-mode",
+                "--mode",
+                "demo",
             ]
         )
         OpenLinkTokenCommand.execute(
@@ -286,6 +318,8 @@ class TestTokenizeCommandDemoMode:
                 str(temp_dir / "input.csv"),
                 "-o",
                 str(normal_output),
+                "--mode",
+                "default",
                 "--exchange-config",
                 str(exchange_config),
                 "--private-key",
@@ -308,15 +342,16 @@ class TestTokenizeCommandDemoMode:
                 str(temp_dir / "input.csv"),
                 "-o",
                 str(temp_dir / "output.csv"),
-                "--demo-mode",
+                "--mode",
+                "demo",
             ]
         )
 
         metadata = _read_metadata(temp_dir / "output.metadata.json")
         assert "HashingSecretHash" not in metadata, "Demo mode must not include HashingSecretHash in metadata"
 
-    def test_normal_mode_metadata_contains_hashing_secret_hash(self, temp_dir: Path):
-        """Normal mode must write HashingSecretHash to the metadata file."""
+    def test_default_mode_metadata_contains_hashing_secret_hash(self, temp_dir: Path):
+        """Default mode must write HashingSecretHash to the metadata file."""
         exchange_config, private_key = self._create_exchange_config(temp_dir, "metadata-normal")
         OpenLinkTokenCommand.execute(
             [
@@ -325,6 +360,8 @@ class TestTokenizeCommandDemoMode:
                 str(temp_dir / "input.csv"),
                 "-o",
                 str(temp_dir / "output.csv"),
+                "--mode",
+                "default",
                 "--exchange-config",
                 str(exchange_config),
                 "--private-key",
@@ -344,7 +381,8 @@ class TestTokenizeCommandDemoMode:
                 str(temp_dir / "input.csv"),
                 "-o",
                 str(temp_dir / "output.csv"),
-                "--demo-mode",
+                "--mode",
+                "demo",
             ]
         )
 

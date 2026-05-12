@@ -545,7 +545,8 @@ class TestOpenLinkTokenCommand:
                 "input.csv",
                 "-o",
                 "output.csv",
-                "--demo-mode",
+                "--mode",
+                "demo",
             ]
         )
 
@@ -576,7 +577,8 @@ class TestOpenLinkTokenCommand:
                         str(input_csv),
                         "-o",
                         "output.csv",
-                        "--demo-mode",
+                        "--mode",
+                        "demo",
                     ]
                 )
 
@@ -616,7 +618,8 @@ class TestOpenLinkTokenCommand:
                         str(input_csv),
                         "-o",
                         "output.csv",
-                        "--demo-mode",
+                        "--mode",
+                        "demo",
                     ]
                 )
 
