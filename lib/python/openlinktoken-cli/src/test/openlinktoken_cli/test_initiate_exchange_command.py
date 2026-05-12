@@ -1349,3 +1349,247 @@ class TestRotationIvAndCount:
         assert exit_code == 1
         assert "stdin" in caplog.text.lower()
         assert not output_path.exists()
+
+
+# ---------------------------------------------------------------------------
+# Integration tests: rotation-bin-width and rotation-embedding-bias
+# ---------------------------------------------------------------------------
+
+
+class TestBinWidthAndDimensionBias:
+    """Integration tests for --rotation-bin-width and --rotation-embedding-* flags."""
+
+    def test_payload_includes_default_bin_width_and_dimension_bias(self, tmp_path):
+        """Generated payload includes binWidth=0.05 and 1024 zero-valued bias entries by default."""
+        partner_private_pem, partner_public_pem = generate_key_pair("P-256")
+        partner_pem_path = tmp_path / "partner.public.pem"
+        partner_pem_path.write_bytes(partner_public_pem)
+        output_path = tmp_path / "bias-defaults.exchange.json"
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "bias-defaults",
+                    "--public-key",
+                    str(partner_pem_path),
+                    "--output",
+                    str(output_path),
+                ]
+            )
+
+        assert exit_code == 0
+        config = json.loads(output_path.read_text())
+        payload = json.loads(decrypt_exchange_envelope(config, partner_private_pem))
+        assert payload["binWidth"] == pytest.approx(0.05)
+        assert len(payload["dimensionBias"]) == 1024
+        assert all(v == 0.0 for v in payload["dimensionBias"])
+
+    def test_payload_accepts_explicit_bin_width(self, tmp_path):
+        """--rotation-bin-width stores the provided float in the encrypted payload."""
+        partner_private_pem, partner_public_pem = generate_key_pair("P-256")
+        partner_pem_path = tmp_path / "partner.public.pem"
+        partner_pem_path.write_bytes(partner_public_pem)
+        output_path = tmp_path / "custom-binwidth.exchange.json"
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "custom-binwidth",
+                    "--public-key",
+                    str(partner_pem_path),
+                    "--output",
+                    str(output_path),
+                    "--rotation-bin-width",
+                    "0.1",
+                ]
+            )
+
+        assert exit_code == 0
+        config = json.loads(output_path.read_text())
+        payload = json.loads(decrypt_exchange_envelope(config, partner_private_pem))
+        assert payload["binWidth"] == pytest.approx(0.1)
+
+    def test_payload_accepts_explicit_embedding_dimension(self, tmp_path):
+        """--rotation-embedding-dimension sets the length of the zero-filled dimensionBias."""
+        partner_private_pem, partner_public_pem = generate_key_pair("P-256")
+        partner_pem_path = tmp_path / "partner.public.pem"
+        partner_pem_path.write_bytes(partner_public_pem)
+        output_path = tmp_path / "custom-dim.exchange.json"
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "custom-dim",
+                    "--public-key",
+                    str(partner_pem_path),
+                    "--output",
+                    str(output_path),
+                    "--rotation-embedding-dimension",
+                    "32",
+                ]
+            )
+
+        assert exit_code == 0
+        config = json.loads(output_path.read_text())
+        payload = json.loads(decrypt_exchange_envelope(config, partner_private_pem))
+        assert len(payload["dimensionBias"]) == 32
+        assert all(v == 0.0 for v in payload["dimensionBias"])
+
+    def test_payload_accepts_embedding_bias_from_file(self, tmp_path):
+        """--rotation-embedding-bias loads a JSON float array from a file into dimensionBias."""
+        bias_file = tmp_path / "bias.json"
+        bias_file.write_text("[0.1, 0.2, 0.3]", encoding="utf-8")
+        partner_private_pem, partner_public_pem = generate_key_pair("P-256")
+        partner_pem_path = tmp_path / "partner.public.pem"
+        partner_pem_path.write_bytes(partner_public_pem)
+        output_path = tmp_path / "custom-bias-file.exchange.json"
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "custom-bias-file",
+                    "--public-key",
+                    str(partner_pem_path),
+                    "--output",
+                    str(output_path),
+                    "--rotation-embedding-bias",
+                    str(bias_file),
+                ]
+            )
+
+        assert exit_code == 0
+        config = json.loads(output_path.read_text())
+        payload = json.loads(decrypt_exchange_envelope(config, partner_private_pem))
+        assert payload["dimensionBias"] == pytest.approx([0.1, 0.2, 0.3])
+
+    def test_rejects_nonpositive_bin_width(self, tmp_path, caplog):
+        """--rotation-bin-width 0 should fail with a clear error."""
+        partner_pem = _partner_key_pem(tmp_path)
+        output_path = tmp_path / "zero-binwidth.exchange.json"
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "zero-binwidth",
+                    "--public-key",
+                    str(partner_pem),
+                    "--output",
+                    str(output_path),
+                    "--rotation-bin-width",
+                    "0",
+                ]
+            )
+
+        assert exit_code == 1
+        assert "rotation-bin-width" in caplog.text.lower()
+        assert not output_path.exists()
+
+    def test_rejects_embedding_dimension_below_2(self, tmp_path, caplog):
+        """--rotation-embedding-dimension 1 should fail with a clear error."""
+        partner_pem = _partner_key_pem(tmp_path)
+        output_path = tmp_path / "small-dim.exchange.json"
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "small-dim",
+                    "--public-key",
+                    str(partner_pem),
+                    "--output",
+                    str(output_path),
+                    "--rotation-embedding-dimension",
+                    "1",
+                ]
+            )
+
+        assert exit_code == 1
+        assert "rotation-embedding-dimension" in caplog.text.lower()
+        assert not output_path.exists()
+
+    def test_rejects_missing_embedding_bias_file(self, tmp_path, caplog):
+        """--rotation-embedding-bias pointing to a nonexistent file should fail."""
+        partner_pem = _partner_key_pem(tmp_path)
+        output_path = tmp_path / "missing-bias.exchange.json"
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "missing-bias",
+                    "--public-key",
+                    str(partner_pem),
+                    "--output",
+                    str(output_path),
+                    "--rotation-embedding-bias",
+                    str(tmp_path / "nonexistent.json"),
+                ]
+            )
+
+        assert exit_code == 1
+        assert "rotation-embedding-bias" in caplog.text.lower()
+        assert not output_path.exists()
+
+    def test_rejects_invalid_json_in_embedding_bias_file(self, tmp_path, caplog):
+        """--rotation-embedding-bias with non-JSON file content should fail."""
+        bias_file = tmp_path / "bad-bias.json"
+        bias_file.write_text("not valid json", encoding="utf-8")
+        partner_pem = _partner_key_pem(tmp_path)
+        output_path = tmp_path / "bad-json.exchange.json"
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "bad-json",
+                    "--public-key",
+                    str(partner_pem),
+                    "--output",
+                    str(output_path),
+                    "--rotation-embedding-bias",
+                    str(bias_file),
+                ]
+            )
+
+        assert exit_code == 1
+        assert "rotation-embedding-bias" in caplog.text.lower()
+        assert not output_path.exists()
+
+    def test_rejects_embedding_bias_with_fewer_than_2_values(self, tmp_path, caplog):
+        """--rotation-embedding-bias JSON array with only 1 value should fail."""
+        bias_file = tmp_path / "one-value.json"
+        bias_file.write_text("[0.5]", encoding="utf-8")
+        partner_pem = _partner_key_pem(tmp_path)
+        output_path = tmp_path / "one-value.exchange.json"
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "one-value",
+                    "--public-key",
+                    str(partner_pem),
+                    "--output",
+                    str(output_path),
+                    "--rotation-embedding-bias",
+                    str(bias_file),
+                ]
+            )
+
+        assert exit_code == 1
+        assert "rotation-embedding-bias" in caplog.text.lower()
+        assert not output_path.exists()
