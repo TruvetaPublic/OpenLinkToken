@@ -524,6 +524,8 @@ class TestOpenLinkTokenCommand:
         assert f"Detailed log: {log_files[0]}" in captured.err
         assert "Running package command (tokenize + encrypt)" not in captured.err
         assert "Running package command (tokenize + encrypt)" in log_files[0].read_text()
+        assert "ML1 ONNX inference" not in captured.err
+        assert "ML1 ONNX inference" in log_files[0].read_text()
         assert "Processed a total of 2 records" in log_files[0].read_text()
 
     def test_tokenize_command_allows_basename_output_path_in_current_directory(self, tmp_path, monkeypatch):

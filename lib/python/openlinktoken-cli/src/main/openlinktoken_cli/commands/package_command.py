@@ -185,15 +185,6 @@ class PackageCommand:
             configured_num_threads=getattr(args, "ml1_num_threads", 0),
         )
         num_threads = getattr(args, "ml1_num_threads", 0)
-        logger.info(
-            "ML1 ONNX inference: enabled=%s, modelPath=%s, tokenizerPath=%s, maxSequenceLength=%s, batchSize=%s, numThreads=%s",
-            ml1_enabled,
-            getattr(args, "ml1_model_path", ML1InferenceConfig.DEFAULT_MODEL_PATH),
-            getattr(args, "ml1_tokenizer_path", ML1InferenceConfig.DEFAULT_TOKENIZER_PATH),
-            getattr(args, "ml1_max_sequence_length", ML1InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH),
-            getattr(args, "ml1_batch_size", ML1InferenceConfig.DEFAULT_BATCH_SIZE),
-            num_threads if num_threads > 0 else "auto",
-        )
 
         try:
             with reporter:
@@ -204,6 +195,16 @@ class PackageCommand:
                     logger.info(f"Ring ID: {ring_id}")
                     if hash_record_ids:
                         logger.info("Record ID hashing enabled: RecordIds will be SHA-256 hashed in output")
+                    logger.info(
+                        "ML1 ONNX inference: enabled=%s, modelPath=%s, tokenizerPath=%s, "
+                        "maxSequenceLength=%s, batchSize=%s, numThreads=%s",
+                        ml1_enabled,
+                        getattr(args, "ml1_model_path", ML1InferenceConfig.DEFAULT_MODEL_PATH),
+                        getattr(args, "ml1_tokenizer_path", ML1InferenceConfig.DEFAULT_TOKENIZER_PATH),
+                        getattr(args, "ml1_max_sequence_length", ML1InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH),
+                        getattr(args, "ml1_batch_size", ML1InferenceConfig.DEFAULT_BATCH_SIZE),
+                        num_threads if num_threads > 0 else "auto",
+                    )
 
                     reporter.update_status("Resolving exchange config")
                     exchange = resolve_exchange_config(

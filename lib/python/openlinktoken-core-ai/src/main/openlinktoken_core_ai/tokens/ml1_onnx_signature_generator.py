@@ -13,7 +13,6 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 import numpy as np
-import onnxruntime as ort
 from tokenizers import Tokenizer
 
 from openlinktoken_core_ai.tokens.ml1_inference_config import ML1InferenceConfig
@@ -42,6 +41,8 @@ def _resolve_providers() -> List[str | tuple]:
     which lets CoreML accelerate supported ops while CPU handles the rest.
     Falls back to CPU-only if CoreML is unavailable or fails.
     """
+    import onnxruntime as ort
+
     available = ort.get_available_providers()
     is_macos_native = platform.system() == "Darwin"
     if is_macos_native and "CoreMLExecutionProvider" in available:
@@ -58,7 +59,7 @@ def _resolve_providers() -> List[str | tuple]:
 class ML1OnnxSignatureGenerator:
     """Stateful ONNX inference helper for ML1 signature generation."""
 
-    _session: Optional[ort.InferenceSession] = None
+    _session = None  # ort.InferenceSession, initialized lazily
     _tokenizer: Optional[Tokenizer] = None
     _active_model_path: Optional[str] = None
     _active_tokenizer_path: Optional[str] = None
@@ -231,6 +232,9 @@ class ML1OnnxSignatureGenerator:
     @classmethod
     def _initialize_if_needed(cls) -> None:
         """Initialize ONNX session and tokenizer if configuration changed or not yet initialized."""
+        with _suppress_ort_stderr():
+            import onnxruntime as ort
+
         model_path = ML1InferenceConfig.get_model_path()
         tokenizer_path = ML1InferenceConfig.get_tokenizer_path()
 
@@ -257,7 +261,8 @@ class ML1OnnxSignatureGenerator:
         session_options.intra_op_num_threads = num_threads
         session_options.inter_op_num_threads = num_threads
 
-        providers = _resolve_providers()
+        with _suppress_ort_stderr():
+            providers = _resolve_providers()
         try:
             with _suppress_ort_stderr():
                 cls._session = ort.InferenceSession(
@@ -317,6 +322,8 @@ class ML1OnnxSignatureGenerator:
     @classmethod
     def _reinitialize_with_cpu_only(cls) -> None:
         """Reinitialize the ONNX session using CPUExecutionProvider only."""
+        import onnxruntime as ort
+
         model_path = ML1InferenceConfig.get_model_path()
         resolved_model_path = cls._resolve_path(model_path)
         cls._close_session()
