@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+from openlinktoken_cli.io.file_extension import FileExtension
+
 
 class FileTypeDetector:
     """Detects file types based on file extensions."""
@@ -13,9 +15,9 @@ class FileTypeDetector:
     def detect_input_type(path: str) -> str:
         """Detect input file type from extension. Supports: csv, parquet."""
         suffix = Path(path).suffix.lower()
-        if suffix == ".csv":
+        if suffix == FileExtension.CSV:
             return FileTypeDetector.TYPE_CSV
-        if suffix == ".parquet":
+        if suffix == FileExtension.PARQUET:
             return FileTypeDetector.TYPE_PARQUET
         return ""
 
@@ -23,8 +25,8 @@ class FileTypeDetector:
     def detect_output_type(path: str) -> str:
         """Detect output file type from extension. Supports: csv, parquet."""
         suffix = Path(path).suffix.lower()
-        if suffix == ".csv":
+        if suffix == FileExtension.CSV:
             return FileTypeDetector.TYPE_CSV
-        if suffix == ".parquet":
+        if suffix == FileExtension.PARQUET:
             return FileTypeDetector.TYPE_PARQUET
         return ""
