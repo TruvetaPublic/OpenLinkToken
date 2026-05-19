@@ -1,33 +1,35 @@
 ---
+name: Code Simplifier
+description: Analyzes recently modified code and creates pull requests with simplifications that improve clarity, consistency, and maintainability while preserving functionality
 on:
   schedule: weekly
-  skip-if-match: is:pr is:open in:title "[code-simplifier]"
+  skip-if-match: 'is:pr is:open in:title "[code-simplifier]"'
+
 permissions:
   contents: read
   issues: read
   pull-requests: read
+
+tracker-id: code-simplifier
+
 imports:
-  - github/gh-aw/.github/workflows/shared/reporting.md@94662b1dee8ce96c876ba9f33b3ab8be32de82a4
+  - shared/mood.md
+  - shared/reporting.md
+
 safe-outputs:
   create-pull-request:
-    expires: 1d
-    labels:
-      - refactoring
-      - code-quality
-      - automation
-    reviewers:
-      - copilot
     title-prefix: "[code-simplifier] "
-description: Analyzes recently modified code and creates pull requests with simplifications that improve clarity, consistency, and maintainability while preserving functionality
-name: Code Simplifier
-source: github/gh-aw/.github/workflows/code-simplifier.md@94662b1dee8ce96c876ba9f33b3ab8be32de82a4
-strict: true
-timeout-minutes: 30
+    labels: [refactoring, code-quality, automation]
+    reviewers: [copilot]
+    expires: 1d
+
 tools:
   github:
-    toolsets:
-      - default
-tracker-id: code-simplifier
+    toolsets: [default]
+
+timeout-minutes: 30
+strict: true
+source: github/gh-aw/.github/workflows/code-simplifier.md@852cb06ad52958b402ed982b69957ffc57ca0619
 ---
 
 <!-- This prompt will be imported in the agentic workflow .github/workflows/code-simplifier.md at runtime. -->
@@ -46,7 +48,6 @@ Analyze recently modified code from the last 24 hours and apply refinements that
 - **Repository**: ${{ github.repository }}
 - **Analysis Date**: $(date +%Y-%m-%d)
 - **Workspace**: ${{ github.workspace }}
-- **Base Branch for analysis and PRs**: `develop`
 
 ## Phase 1: Identify Recently Modified Code
 
@@ -58,27 +59,21 @@ Search for merged pull requests and commits from the last 24 hours:
 # Get yesterday's date in ISO format
 YESTERDAY=$(date -d '1 day ago' '+%Y-%m-%d' 2>/dev/null || date -v-1d '+%Y-%m-%d')
 
-# Ensure local refs are up to date and anchor all analysis to develop
-git fetch origin develop
-
 # List recent commits
-git log origin/develop --since="24 hours ago" --pretty=format:"%H %s" --no-merges
+git log --since="24 hours ago" --pretty=format:"%H %s" --no-merges
 ```
 
 Use GitHub tools to:
-
-- Search for pull requests merged in the last 24 hours into `develop`: `repo:${{ github.repository }} is:pr is:merged base:develop merged:>=${YESTERDAY}`
+- Search for pull requests merged in the last 24 hours: `repo:${{ github.repository }} is:pr is:merged merged:>=${YESTERDAY}`
 - Get details of merged PRs to understand what files were changed
 - List commits from the last 24 hours to identify modified files
 
 ### 1.2 Extract Changed Files
 
 For each merged PR or recent commit:
-
 - Use `pull_request_read` with `method: get_files` to list changed files
 - Use `get_commit` to see file changes in recent commits
-- Compare and reason about simplifications against the current `origin/develop` code only
-- Focus on source code files (`.go`, `.js`, `.ts`, `.tsx`, `.cjs`, `.py`, etc.)
+- Focus on source code files (`.go`, `.js`, `.ts`, `.tsx`, `.cjs`, `.py`, `.cs`, etc.)
 - Exclude test files, lock files, and generated files
 
 ### 1.3 Determine Scope
@@ -101,11 +96,11 @@ Before simplifying, review the project's coding standards from relevant document
 - For Go projects: Check `AGENTS.md`, `DEVGUIDE.md`, or similar files
 - For JavaScript/TypeScript: Look for `CLAUDE.md`, style guides, or coding conventions
 - For Python: Check for style guides, PEP 8 adherence, or project-specific conventions
+- For .NET/C#: Check `.editorconfig`, `Directory.Build.props`, or coding conventions in docs
 
 **Key Standards to Apply:**
 
 For **JavaScript/TypeScript** projects:
-
 - Use ES modules with proper import sorting and extensions
 - Prefer `function` keyword over arrow functions for top-level functions
 - Use explicit return type annotations for top-level functions
@@ -114,7 +109,6 @@ For **JavaScript/TypeScript** projects:
 - Maintain consistent naming conventions
 
 For **Go** projects:
-
 - Use `any` instead of `interface{}`
 - Follow console formatting for CLI output
 - Use semantic type aliases for domain concepts
@@ -122,24 +116,29 @@ For **Go** projects:
 - Use table-driven tests with descriptive names
 
 For **Python** projects:
-
 - Follow PEP 8 style guide
 - Use type hints for function signatures
 - Prefer explicit over implicit code
 - Use list/dict comprehensions where they improve clarity (not complexity)
+
+For **.NET/C#** projects:
+- Follow Microsoft C# coding conventions
+- Use `var` only when the type is obvious from the right side
+- Use file-scoped namespaces (`namespace X;`) where supported
+- Prefer pattern matching over type casting
+- Use `async`/`await` consistently, avoid `.Result` or `.Wait()`
+- Use nullable reference types and annotate nullability
 
 ### 2.2 Simplification Principles
 
 Apply these refinements to the recently modified code:
 
 #### 1. Preserve Functionality
-
 - **NEVER** change what the code does - only how it does it
 - All original features, outputs, and behaviors must remain intact
 - Run tests before and after to ensure no behavioral changes
 
 #### 2. Enhance Clarity
-
 - Reduce unnecessary complexity and nesting
 - Eliminate redundant code and abstractions
 - Improve readability through clear variable and function names
@@ -149,16 +148,13 @@ Apply these refinements to the recently modified code:
 - Choose clarity over brevity - explicit code is often better than compact code
 
 #### 3. Apply Project Standards
-
 - Use project-specific conventions and patterns
 - Follow established naming conventions
 - Apply consistent formatting
 - Use appropriate language features (modern syntax where beneficial)
 
 #### 4. Maintain Balance
-
 Avoid over-simplification that could:
-
 - Reduce code clarity or maintainability
 - Create overly clever solutions that are hard to understand
 - Combine too many concerns into single functions or components
@@ -196,7 +192,6 @@ Use the **edit** tool to modify files:
 ```
 
 **Guidelines for edits:**
-
 - Make surgical, targeted changes
 - One logical improvement per edit (but batch multiple edits in a single response)
 - Preserve all original behavior
@@ -218,10 +213,12 @@ npm test
 
 # For Python projects
 pytest
+
+# For .NET projects
+dotnet test
 ```
 
 If tests fail:
-
 - Review the failures carefully
 - Revert changes that broke functionality
 - Adjust simplifications to preserve behavior
@@ -240,6 +237,9 @@ npm run lint
 
 # For Python projects
 flake8 . || pylint .
+
+# For .NET projects
+dotnet format --verify-no-changes
 ```
 
 Fix any linting issues introduced by the simplifications.
@@ -258,6 +258,9 @@ npm run build
 # For Python projects
 # (typically no build step, but check imports)
 python -m py_compile changed_files.py
+
+# For .NET projects
+dotnet build
 ```
 
 ## Phase 4: Create Pull Request
@@ -265,7 +268,6 @@ python -m py_compile changed_files.py
 ### 4.1 Determine If PR Is Needed
 
 Only create a PR if:
-
 - ✅ You made actual code simplifications
 - ✅ All tests pass
 - ✅ Linting is clean
@@ -296,12 +298,10 @@ This PR simplifies recently modified code to improve clarity, consistency, and m
 ### Improvements Made
 
 1. **Reduced Complexity**
-
    - Simplified nested conditionals in `file1.go`
    - Extracted helper function for repeated logic
 
 2. **Enhanced Clarity**
-
    - Renamed variables for better readability
    - Removed redundant comments
    - Applied consistent naming conventions
@@ -314,7 +314,6 @@ This PR simplifies recently modified code to improve clarity, consistency, and m
 ### Changes Based On
 
 Recent changes from:
-
 - #[PR_NUMBER] - [PR title]
 - Commit [SHORT_SHA] - [Commit message]
 
@@ -328,7 +327,6 @@ Recent changes from:
 ### Review Focus
 
 Please verify:
-
 - Functionality is preserved
 - Simplifications improve code quality
 - Changes align with project conventions
@@ -336,7 +334,7 @@ Please verify:
 
 ---
 
-_Automated by Code Simplifier Agent - analyzing code from the last 24 hours_
+*Automated by Code Simplifier Agent - analyzing code from the last 24 hours*
 ```
 
 ### 4.3 Use Safe Outputs
@@ -347,29 +345,23 @@ Create the pull request using the safe-outputs configuration:
 - Labeled with `refactoring`, `code-quality`, `automation`
 - Assigned to `copilot` for review
 - Set as ready for review (not draft)
-- **Target branch must always be `develop`**
-- **Never create PRs targeting `main` or any branch other than `develop`**
 
 ## Important Guidelines
 
 ### Scope Control
-
 - **Focus on recent changes**: Only refine code modified in the last 24 hours
 - **Don't over-refactor**: Avoid touching unrelated code
 - **Preserve interfaces**: Don't change public APIs or exported functions
 - **Incremental improvements**: Make targeted, surgical changes
 
 ### Quality Standards
-
 - **Test first**: Always run tests after simplifications
 - **Preserve behavior**: Functionality must remain identical
 - **Follow conventions**: Apply project-specific patterns consistently
 - **Clear over clever**: Prioritize readability and maintainability
 
 ### Exit Conditions
-
 Exit gracefully without creating a PR if:
-
 - No code was changed in the last 24 hours
 - No simplifications are beneficial
 - Tests fail after changes
@@ -377,9 +369,7 @@ Exit gracefully without creating a PR if:
 - Changes are too risky or complex
 
 ### Success Metrics
-
 A successful simplification:
-
 - ✅ Improves code clarity without changing behavior
 - ✅ Passes all tests and linting
 - ✅ Applies project-specific conventions
@@ -392,14 +382,12 @@ A successful simplification:
 Your output MUST either:
 
 1. **If no changes in last 24 hours**:
-
    ```
    ✅ No code changes detected in the last 24 hours.
    Code simplifier has nothing to process today.
    ```
 
 2. **If no simplifications beneficial**:
-
    ```
    ✅ Code analyzed from last 24 hours.
    No simplifications needed - code already meets quality standards.
