@@ -137,12 +137,14 @@ class OpenLinkTokenCommand:
         """Main entry point for the command-line application."""
         configure_default_logging()
         parser = OpenLinkTokenCommand.create_parser()
+        raw_args = list(sys.argv[1:] if args is None else args)
 
-        # Show banner for interactive runs.
-        OpenLinkTokenCommand.show_banner()
+        # Show banner only for help-oriented entry points and bare invocation.
+        if OpenLinkTokenCommand._should_show_banner(raw_args):
+            OpenLinkTokenCommand.show_banner()
 
         try:
-            parsed_args = parser.parse_args(args)
+            parsed_args = parser.parse_args(raw_args)
         except SystemExit as error:
             return error.code if isinstance(error.code, int) else 1
 
@@ -198,6 +200,11 @@ class OpenLinkTokenCommand:
             if arg in ("--help", "help"):
                 return True
         return False
+
+    @staticmethod
+    def _should_show_banner(args):
+        """Return whether the current argv should display the CLI banner."""
+        return not args or OpenLinkTokenCommand._is_help_request(args)
 
     @staticmethod
     def _should_start_version_check(parsed_args: argparse.Namespace) -> bool:
