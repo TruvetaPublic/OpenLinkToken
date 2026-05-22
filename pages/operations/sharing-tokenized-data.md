@@ -291,7 +291,7 @@ Check the generated `.metadata.json` for processing statistics:
 
 ### Step 4: Prepare Transfer Package
 
-Include in the transfer:
+Use `olt package -o output.zip` to automatically bundle the tokens, metadata, and exchange config into a single archive. Alternatively, include the files separately:
 
 | File                         | Purpose                                                          | Contains Secrets?         |
 | ---------------------------- | ---------------------------------------------------------------- | ------------------------- |

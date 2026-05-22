@@ -124,10 +124,16 @@ olt package \
 
 ### Output Files Generated
 
-Each run produces two files:
+For CSV or Parquet output, each run produces two files:
 
 1. **Tokens file**: `<output_path>` (CSV or Parquet)
 2. **Metadata file**: `<output_path>.metadata.json` (always JSON)
+
+When the output path ends in `.zip`, the `package` command bundles all three files into a single archive:
+
+1. `<stem>.csv` (or `.parquet`) — encrypted tokens
+2. `<stem>.metadata.json` — processing metadata
+3. `<exchange-config-filename>.exchange.json` — exchange config
 
 ---
 
