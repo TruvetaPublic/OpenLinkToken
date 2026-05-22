@@ -110,6 +110,48 @@ class TestOpenLinkTokenCommand:
         assert output_parquet.exists(), "Output Parquet should be created"
         assert output_parquet.stat().st_size > 0, "Output Parquet should not be empty"
 
+    def test_package_command_csv_to_zip(self, temp_dir):
+        """Test package command with ZIP output bundles tokens, metadata, and exchange config."""
+        import zipfile
+
+        input_csv = temp_dir / "input.csv"
+        output_zip = temp_dir / "output.zip"
+        exchange_config, private_key = self._create_exchange_config(temp_dir, "package-zip")
+
+        args = [
+            "package",
+            "-i",
+            str(input_csv),
+            "-o",
+            str(output_zip),
+            "--exchange-config",
+            str(exchange_config),
+            "--private-key",
+            str(private_key),
+        ]
+
+        exit_code = OpenLinkTokenCommand.execute(args)
+
+        assert exit_code == 0, "Command should execute successfully"
+        assert output_zip.exists(), "Output ZIP should be created"
+        assert output_zip.stat().st_size > 0, "Output ZIP should not be empty"
+
+        with zipfile.ZipFile(output_zip) as archive:
+            names = archive.namelist()
+
+        assert "output.csv" in names, "ZIP should contain the tokens CSV"
+        assert "output.metadata.json" in names, "ZIP should contain the metadata JSON"
+        assert "package-zip.exchange.json" in names, "ZIP should contain the exchange config JSON"
+        assert len(names) == 3, f"ZIP should contain exactly 3 files, got: {names}"
+
+        with zipfile.ZipFile(output_zip) as archive:
+            assert len(archive.read("output.csv")) > 0, "Tokens CSV inside ZIP should not be empty"
+            assert len(archive.read("output.metadata.json")) > 0, "Metadata JSON inside ZIP should not be empty"
+            assert len(archive.read("package-zip.exchange.json")) > 0, "Exchange config inside ZIP should not be empty"
+
+        # Metadata must NOT appear next to the zip — it is bundled inside
+        assert not (temp_dir / "output.metadata.json").exists(), "Metadata should not appear next to the zip"
+
     def test_tokenize_command(self, temp_dir):
         """Test tokenize command (hash-only, no encryption)."""
         input_csv = temp_dir / "input.csv"

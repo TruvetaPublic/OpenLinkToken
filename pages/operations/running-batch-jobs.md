@@ -15,6 +15,8 @@ Open Link Token processes input files (CSV or Parquet) and produces two outputs:
 1. **Tokens file** (CSV or Parquet): Contains `RecordId`, `RuleId`, `Token` columns
 2. **Metadata file** (JSON): Processing statistics, secret hashes, and validation counts
 
+When the output path ends in `.zip`, the `package` command bundles the tokens file, metadata JSON, and exchange config JSON together into a single zip archive for upload.
+
 ---
 
 ## CLI Batch Processing
@@ -54,6 +56,25 @@ olt package \
   -o ../../../resources/output.csv \
   --exchange-config ../../../resources/batch.exchange.json
 ```
+
+### ZIP Output
+
+Pass a `.zip` path to `-o` to bundle the tokens file, metadata JSON, and exchange config JSON into a single archive:
+
+```bash
+olt package \
+  -i ../../../resources/sample.csv \
+  -o ../../../resources/output.zip \
+  --exchange-config ../../../resources/batch.exchange.json
+```
+
+The resulting archive contains three files:
+
+| File                   | Description                               |
+| ---------------------- | ----------------------------------------- |
+| `output.csv`           | Encrypted tokens (same format as input)   |
+| `output.metadata.json` | Processing metadata                       |
+| `batch.exchange.json`  | Exchange config used for this package run |
 
 ---
 

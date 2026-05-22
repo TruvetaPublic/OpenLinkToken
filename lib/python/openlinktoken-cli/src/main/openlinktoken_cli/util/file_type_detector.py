@@ -10,6 +10,7 @@ class FileTypeDetector:
 
     TYPE_CSV = "csv"
     TYPE_PARQUET = "parquet"
+    TYPE_ZIP = "zip"
 
     @staticmethod
     def detect_input_type(path: str) -> str:
@@ -23,10 +24,12 @@ class FileTypeDetector:
 
     @staticmethod
     def detect_output_type(path: str) -> str:
-        """Detect output file type from extension. Supports: csv, parquet."""
+        """Detect output file type from extension. Supports: csv, parquet, zip."""
         suffix = Path(path).suffix.lower()
         if suffix == FileExtension.CSV:
             return FileTypeDetector.TYPE_CSV
         if suffix == FileExtension.PARQUET:
             return FileTypeDetector.TYPE_PARQUET
+        if suffix == FileExtension.ZIP:
+            return FileTypeDetector.TYPE_ZIP
         return ""

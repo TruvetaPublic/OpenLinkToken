@@ -67,14 +67,14 @@ The automatic version check can also be disabled permanently by setting the envi
 
 ### `package` (Default Encrypted Mode)
 
-| Argument            | Short | Required | Description                                                                                     |
-| ------------------- | ----- | -------- | ----------------------------------------------------------------------------------------------- |
-| `--input`           | `-i`  | Yes      | Path to input file (CSV or Parquet)                                                             |
-| `--output`          | `-o`  | Yes      | Path to output file                                                                             |
-| `--exchange-config` |       | No       | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted. |
-| `--private-key`     |       | No\*     | Private key PEM used to decrypt the exchange config and derive the transport encryption key     |
-| `--private-key-env` |       | No\*     | Environment variable containing the private key PEM                                             |
-| `--hash-record-ids` |       | No       | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability)          |
+| Argument            | Short | Required | Description                                                                                                                                              |
+| ------------------- | ----- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--input`           | `-i`  | Yes      | Path to input file (CSV or Parquet)                                                                                                                      |
+| `--output`          | `-o`  | Yes      | Path to output file. Supported extensions: `.csv`, `.parquet`, `.zip`. A `.zip` path bundles the tokens, metadata, and exchange config into one archive. |
+| `--exchange-config` |       | No       | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted.                                                          |
+| `--private-key`     |       | No\*     | Private key PEM used to decrypt the exchange config and derive the transport encryption key                                                              |
+| `--private-key-env` |       | No\*     | Environment variable containing the private key PEM                                                                                                      |
+| `--hash-record-ids` |       | No       | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability)                                                                   |
 
 ### `tokenize` (Hashed Tokens Only)
 
