@@ -5,6 +5,7 @@ Tests the end-to-end workflows for token generation and decryption using new sub
 """
 
 import os
+import zipfile
 from pathlib import Path
 from unittest.mock import patch
 
@@ -112,8 +113,6 @@ class TestOpenLinkTokenCommand:
 
     def test_package_command_csv_to_zip(self, temp_dir):
         """Test package command with ZIP output bundles tokens, metadata, and exchange config."""
-        import zipfile
-
         input_csv = temp_dir / "input.csv"
         output_zip = temp_dir / "output.zip"
         exchange_config, private_key = self._create_exchange_config(temp_dir, "package-zip")

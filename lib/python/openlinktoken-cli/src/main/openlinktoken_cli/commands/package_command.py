@@ -204,8 +204,13 @@ class PackageCommand:
         ring_id: str,
         hash_record_ids: bool = False,
         progress_callback=None,
-    ) -> tuple[PersonAttributesProcessingSummary, str]:
+    ) -> tuple[PersonAttributesProcessingSummary, None]:
         """Process tokens and bundle the result, metadata, and exchange config into a zip archive."""
+        if exchange_config_path is None:
+            raise ValueError(
+                "ZIP output requires an exchange config file path. "
+                "Ensure the exchange config was loaded from a file (exchange.path must not be None)."
+            )
         zip_path = Path(zip_output_path)
         output_stem = zip_path.stem
 
@@ -229,10 +234,9 @@ class PackageCommand:
             with zipfile.ZipFile(zip_output_path, mode="w", compression=zipfile.ZIP_DEFLATED) as archive:
                 archive.write(temp_token_path, arcname=temp_token_path.name)
                 archive.write(temp_metadata_path, arcname=Path(temp_metadata_path).name)
-                if exchange_config_path:
-                    archive.write(exchange_config_path, arcname=Path(exchange_config_path).name)
+                archive.write(exchange_config_path, arcname=Path(exchange_config_path).name)
 
-        return summary, zip_output_path
+        return summary, None
 
     @staticmethod
     def _process_tokens(
