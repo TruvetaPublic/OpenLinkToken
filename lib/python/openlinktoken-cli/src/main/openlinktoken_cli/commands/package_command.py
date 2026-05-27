@@ -149,18 +149,34 @@ class PackageCommand:
 
                     reporter.update_status("Packaging records")
                     if output_type == FileTypeDetector.TYPE_ZIP:
+                        if not exchange.path:
+                            raise ValueError(
+                                "ZIP output requires an exchange config file path. "
+                                "Ensure the exchange config was loaded from a file (exchange.path must not be None)."
+                            )
                         logger.info("ZIP output: tokens, metadata, and exchange config will be bundled")
-                        summary, metadata_path = PackageCommand._process_tokens_to_zip(
-                            args.input_path,
-                            args.output_path,
-                            input_type,
-                            exchange.path,
-                            exchange.hashing_secret,
-                            encryption_key,
-                            ring_id,
-                            hash_record_ids,
-                            progress_callback=reporter.make_progress_callback("Packaging records", "records"),
-                        )
+                        zip_path = Path(args.output_path)
+                        with tempfile.TemporaryDirectory() as temp_dir:
+                            temp_token_path = str(Path(temp_dir) / f"{zip_path.stem}.{input_type}")
+                            summary, temp_metadata_path = PackageCommand._process_tokens(
+                                args.input_path,
+                                temp_token_path,
+                                input_type,
+                                input_type,
+                                exchange.hashing_secret,
+                                encryption_key,
+                                ring_id,
+                                hash_record_ids,
+                                progress_callback=reporter.make_progress_callback("Packaging records", "records"),
+                            )
+                            zip_path.parent.mkdir(parents=True, exist_ok=True)
+                            with zipfile.ZipFile(
+                                args.output_path, mode="w", compression=zipfile.ZIP_DEFLATED
+                            ) as archive:
+                                archive.write(temp_token_path, arcname=Path(temp_token_path).name)
+                                archive.write(temp_metadata_path, arcname=Path(temp_metadata_path).name)
+                                archive.write(exchange.path, arcname=Path(exchange.path).name)
+                        metadata_path = None
                     else:
                         summary, metadata_path = PackageCommand._process_tokens(
                             args.input_path,
@@ -192,51 +208,6 @@ class PackageCommand:
             print(f"Error: {error}", file=sys.stderr)
             print(format_error_reference_message(report), file=sys.stderr)
             return 1
-
-    @staticmethod
-    def _process_tokens_to_zip(
-        input_path: str,
-        zip_output_path: str,
-        input_type: str,
-        exchange_config_path: str | None,
-        hashing_secret: str | bytes,
-        encryption_key: bytes,
-        ring_id: str,
-        hash_record_ids: bool = False,
-        progress_callback=None,
-    ) -> tuple[PersonAttributesProcessingSummary, None]:
-        """Process tokens and bundle the result, metadata, and exchange config into a zip archive."""
-        if exchange_config_path is None:
-            raise ValueError(
-                "ZIP output requires an exchange config file path. "
-                "Ensure the exchange config was loaded from a file (exchange.path must not be None)."
-            )
-        zip_path = Path(zip_output_path)
-        output_stem = zip_path.stem
-
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_token_path = Path(temp_dir) / f"{output_stem}.{input_type}"
-
-            summary, temp_metadata_path = PackageCommand._process_tokens(
-                input_path,
-                str(temp_token_path),
-                input_type,
-                input_type,
-                hashing_secret,
-                encryption_key,
-                ring_id,
-                hash_record_ids,
-                progress_callback=progress_callback,
-            )
-
-            zip_path.parent.mkdir(parents=True, exist_ok=True)
-
-            with zipfile.ZipFile(zip_output_path, mode="w", compression=zipfile.ZIP_DEFLATED) as archive:
-                archive.write(temp_token_path, arcname=temp_token_path.name)
-                archive.write(temp_metadata_path, arcname=Path(temp_metadata_path).name)
-                archive.write(exchange_config_path, arcname=Path(exchange_config_path).name)
-
-        return summary, None
 
     @staticmethod
     def _process_tokens(
