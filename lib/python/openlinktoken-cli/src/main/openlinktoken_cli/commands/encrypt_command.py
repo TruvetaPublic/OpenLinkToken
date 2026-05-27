@@ -2,7 +2,10 @@
 
 import logging
 import sys
+import tempfile
 import uuid
+import zipfile
+from pathlib import Path
 
 from openlinktoken.tokens.token import Token
 from openlinktoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
@@ -122,15 +125,41 @@ class EncryptCommand:
                     logger.info(f"Exchange config: {exchange.path}")
 
                     reporter.update_status("Encrypting tokens")
-                    summary = EncryptCommand._encrypt_tokens(
-                        args.input_path,
-                        args.output_path,
-                        input_type,
-                        output_type,
-                        encryption_key,
-                        ring_id,
-                        progress_callback=reporter.make_progress_callback("Encrypting tokens", "tokens"),
-                    )
+                    if output_type == FileTypeDetector.TYPE_ZIP:
+                        if not exchange.path:
+                            raise ValueError(
+                                "ZIP output requires an exchange config file path. "
+                                "Ensure the exchange config was loaded from a file (exchange.path must not be None)."
+                            )
+                        logger.info("ZIP output: encrypted tokens and exchange config will be bundled")
+                        zip_path = Path(args.output_path)
+                        with tempfile.TemporaryDirectory() as temp_dir:
+                            temp_token_path = str(Path(temp_dir) / f"{zip_path.stem}.{input_type}")
+                            summary = EncryptCommand._encrypt_tokens(
+                                args.input_path,
+                                temp_token_path,
+                                input_type,
+                                input_type,
+                                encryption_key,
+                                ring_id,
+                                progress_callback=reporter.make_progress_callback("Encrypting tokens", "tokens"),
+                            )
+                            zip_path.parent.mkdir(parents=True, exist_ok=True)
+                            with zipfile.ZipFile(
+                                args.output_path, mode="w", compression=zipfile.ZIP_DEFLATED
+                            ) as archive:
+                                archive.write(temp_token_path, arcname=Path(temp_token_path).name)
+                                archive.write(exchange.path, arcname=Path(exchange.path).name)
+                    else:
+                        summary = EncryptCommand._encrypt_tokens(
+                            args.input_path,
+                            args.output_path,
+                            input_type,
+                            output_type,
+                            encryption_key,
+                            ring_id,
+                            progress_callback=reporter.make_progress_callback("Encrypting tokens", "tokens"),
+                        )
                     logger.info("Token encryption completed successfully")
                 except Exception as error:
                     logger.error("Error during token encryption: %s", error)
