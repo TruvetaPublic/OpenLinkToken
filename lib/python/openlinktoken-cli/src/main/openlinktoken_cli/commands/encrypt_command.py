@@ -5,7 +5,6 @@ import logging
 import sys
 import tempfile
 import uuid
-import zipfile
 from pathlib import Path
 
 from openlinktoken.tokens.token import Token
@@ -21,6 +20,7 @@ from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_
 from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
 from openlinktoken_cli.util.exchange_config import derive_transport_encryption_key, resolve_exchange_config
 from openlinktoken_cli.util.file_type_detector import FileTypeDetector
+from openlinktoken_cli.util.zip_utils import bundle_into_zip
 
 logger = logging.getLogger(__name__)
 
@@ -157,7 +157,7 @@ class EncryptCommand:
                         )
 
                         if is_zip:
-                            EncryptCommand._bundle_into_zip(args.output_path, token_output_path, exchange.path)
+                            bundle_into_zip(args.output_path, token_output_path, exchange.path)
                     logger.info("Token encryption completed successfully")
                 except Exception as error:
                     logger.error("Error during token encryption: %s", error)
@@ -169,15 +169,6 @@ class EncryptCommand:
             print(f"Error: {error}", file=sys.stderr)
             print(format_error_reference_message(report), file=sys.stderr)
             return 1
-
-    @staticmethod
-    def _bundle_into_zip(zip_output_path: str, token_path: str, exchange_config_path: str) -> None:
-        """Bundle encrypted token file and exchange config into a zip archive."""
-        zip_path = Path(zip_output_path)
-        zip_path.parent.mkdir(parents=True, exist_ok=True)
-        with zipfile.ZipFile(zip_output_path, mode="w", compression=zipfile.ZIP_DEFLATED) as archive:
-            archive.write(token_path, arcname=Path(token_path).name)
-            archive.write(exchange_config_path, arcname=Path(exchange_config_path).name)
 
     @staticmethod
     def _encrypt_tokens(
