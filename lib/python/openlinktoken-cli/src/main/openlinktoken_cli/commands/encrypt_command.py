@@ -126,7 +126,9 @@ class EncryptCommand:
                     logger.info(f"Exchange config: {exchange.path}")
 
                     reporter.update_status("Encrypting tokens")
-                    if output_type == FileTypeDetector.TYPE_ZIP:
+                    is_zip = output_type == FileTypeDetector.TYPE_ZIP
+
+                    if is_zip:
                         if not exchange.path:
                             raise ValueError(
                                 "ZIP output requires an exchange config file path. "
@@ -135,7 +137,7 @@ class EncryptCommand:
                         logger.info("ZIP output: encrypted tokens and exchange config will be bundled")
 
                     with contextlib.ExitStack() as stack:
-                        if output_type == FileTypeDetector.TYPE_ZIP:
+                        if is_zip:
                             temp_dir = stack.enter_context(tempfile.TemporaryDirectory())
                             zip_path = Path(args.output_path)
                             token_output_path = str(Path(temp_dir) / f"{zip_path.stem}.{input_type}")
@@ -154,13 +156,8 @@ class EncryptCommand:
                             progress_callback=reporter.make_progress_callback("Encrypting tokens", "tokens"),
                         )
 
-                        if output_type == FileTypeDetector.TYPE_ZIP:
-                            zip_path.parent.mkdir(parents=True, exist_ok=True)
-                            with zipfile.ZipFile(
-                                args.output_path, mode="w", compression=zipfile.ZIP_DEFLATED
-                            ) as archive:
-                                archive.write(token_output_path, arcname=Path(token_output_path).name)
-                                archive.write(exchange.path, arcname=Path(exchange.path).name)
+                        if is_zip:
+                            EncryptCommand._bundle_into_zip(args.output_path, token_output_path, exchange.path)
                     logger.info("Token encryption completed successfully")
                 except Exception as error:
                     logger.error("Error during token encryption: %s", error)
@@ -172,6 +169,15 @@ class EncryptCommand:
             print(f"Error: {error}", file=sys.stderr)
             print(format_error_reference_message(report), file=sys.stderr)
             return 1
+
+    @staticmethod
+    def _bundle_into_zip(zip_output_path: str, token_path: str, exchange_config_path: str) -> None:
+        """Bundle encrypted token file and exchange config into a zip archive."""
+        zip_path = Path(zip_output_path)
+        zip_path.parent.mkdir(parents=True, exist_ok=True)
+        with zipfile.ZipFile(zip_output_path, mode="w", compression=zipfile.ZIP_DEFLATED) as archive:
+            archive.write(token_path, arcname=Path(token_path).name)
+            archive.write(exchange_config_path, arcname=Path(exchange_config_path).name)
 
     @staticmethod
     def _encrypt_tokens(

@@ -149,7 +149,9 @@ class PackageCommand:
                     logger.info(f"Exchange config: {exchange.path}")
 
                     reporter.update_status("Packaging records")
-                    if output_type == FileTypeDetector.TYPE_ZIP:
+                    is_zip = output_type == FileTypeDetector.TYPE_ZIP
+
+                    if is_zip:
                         if not exchange.path:
                             raise ValueError(
                                 "ZIP output requires an exchange config file path. "
@@ -158,7 +160,7 @@ class PackageCommand:
                         logger.info("ZIP output: tokens, metadata, and exchange config will be bundled")
 
                     with contextlib.ExitStack() as stack:
-                        if output_type == FileTypeDetector.TYPE_ZIP:
+                        if is_zip:
                             temp_dir = stack.enter_context(tempfile.TemporaryDirectory())
                             zip_path = Path(args.output_path)
                             token_output_path = str(Path(temp_dir) / f"{zip_path.stem}.{input_type}")
@@ -179,14 +181,10 @@ class PackageCommand:
                             progress_callback=reporter.make_progress_callback("Packaging records", "records"),
                         )
 
-                        if output_type == FileTypeDetector.TYPE_ZIP:
-                            zip_path.parent.mkdir(parents=True, exist_ok=True)
-                            with zipfile.ZipFile(
-                                args.output_path, mode="w", compression=zipfile.ZIP_DEFLATED
-                            ) as archive:
-                                archive.write(token_output_path, arcname=Path(token_output_path).name)
-                                archive.write(metadata_path, arcname=Path(metadata_path).name)
-                                archive.write(exchange.path, arcname=Path(exchange.path).name)
+                        if is_zip:
+                            PackageCommand._bundle_into_zip(
+                                args.output_path, token_output_path, metadata_path, exchange.path
+                            )
                             metadata_path = None
                     logger.info("Token generation and encryption completed successfully")
                 except Exception as error:
@@ -196,7 +194,7 @@ class PackageCommand:
                 "Package complete",
                 PackageCommand._build_summary_lines(
                     args.output_path,
-                    None if output_type == FileTypeDetector.TYPE_ZIP else metadata_path,
+                    None if is_zip else metadata_path,
                     summary,
                     hash_record_ids,
                 ),
@@ -207,6 +205,16 @@ class PackageCommand:
             print(f"Error: {error}", file=sys.stderr)
             print(format_error_reference_message(report), file=sys.stderr)
             return 1
+
+    @staticmethod
+    def _bundle_into_zip(zip_output_path: str, token_path: str, metadata_path: str, exchange_config_path: str) -> None:
+        """Bundle token file, metadata, and exchange config into a zip archive."""
+        zip_path = Path(zip_output_path)
+        zip_path.parent.mkdir(parents=True, exist_ok=True)
+        with zipfile.ZipFile(zip_output_path, mode="w", compression=zipfile.ZIP_DEFLATED) as archive:
+            archive.write(token_path, arcname=Path(token_path).name)
+            archive.write(metadata_path, arcname=Path(metadata_path).name)
+            archive.write(exchange_config_path, arcname=Path(exchange_config_path).name)
 
     @staticmethod
     def _process_tokens(
