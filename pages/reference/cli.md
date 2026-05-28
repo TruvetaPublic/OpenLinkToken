@@ -90,13 +90,13 @@ The automatic version check can also be disabled permanently by setting the envi
 
 ### `encrypt` (Encrypt Input Tokens)
 
-| Argument            | Short | Required | Description                                                                                     |
-| ------------------- | ----- | -------- | ----------------------------------------------------------------------------------------------- |
-| `--input`           | `-i`  | Yes      | Path to input file (CSV or Parquet)                                                             |
-| `--output`          | `-o`  | Yes      | Path to output file                                                                             |
-| `--exchange-config` |       | No       | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted. |
-| `--private-key`     |       | No\*     | Private key PEM used to decrypt the exchange config and derive the transport encryption key     |
-| `--private-key-env` |       | No\*     | Environment variable containing the private key PEM                                             |
+| Argument            | Short | Required | Description                                                                                                                                             |
+| ------------------- | ----- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--input`           | `-i`  | Yes      | Path to input file (CSV or Parquet)                                                                                                                     |
+| `--output`          | `-o`  | Yes      | Path to output file. Supported extensions: `.csv`, `.parquet`, `.zip`. A `.zip` path bundles the encrypted tokens and exchange config into one archive. |
+| `--exchange-config` |       | No       | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted.                                                         |
+| `--private-key`     |       | No\*     | Private key PEM used to decrypt the exchange config and derive the transport encryption key                                                             |
+| `--private-key-env` |       | No\*     | Environment variable containing the private key PEM                                                                                                     |
 
 ### `decrypt` (Decrypt Encrypted Tokens)
 
