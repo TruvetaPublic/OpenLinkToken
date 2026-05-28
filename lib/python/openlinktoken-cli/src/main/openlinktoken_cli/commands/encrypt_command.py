@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 
+import contextlib
 import logging
 import sys
 import tempfile
@@ -132,34 +133,34 @@ class EncryptCommand:
                                 "Ensure the exchange config was loaded from a file (exchange.path must not be None)."
                             )
                         logger.info("ZIP output: encrypted tokens and exchange config will be bundled")
-                        zip_path = Path(args.output_path)
-                        with tempfile.TemporaryDirectory() as temp_dir:
-                            temp_token_path = str(Path(temp_dir) / f"{zip_path.stem}.{input_type}")
-                            summary = EncryptCommand._encrypt_tokens(
-                                args.input_path,
-                                temp_token_path,
-                                input_type,
-                                input_type,
-                                encryption_key,
-                                ring_id,
-                                progress_callback=reporter.make_progress_callback("Encrypting tokens", "tokens"),
-                            )
-                            zip_path.parent.mkdir(parents=True, exist_ok=True)
-                            with zipfile.ZipFile(
-                                args.output_path, mode="w", compression=zipfile.ZIP_DEFLATED
-                            ) as archive:
-                                archive.write(temp_token_path, arcname=Path(temp_token_path).name)
-                                archive.write(exchange.path, arcname=Path(exchange.path).name)
-                    else:
+
+                    with contextlib.ExitStack() as stack:
+                        if output_type == FileTypeDetector.TYPE_ZIP:
+                            temp_dir = stack.enter_context(tempfile.TemporaryDirectory())
+                            zip_path = Path(args.output_path)
+                            token_output_path = str(Path(temp_dir) / f"{zip_path.stem}.{input_type}")
+                            token_output_type = input_type
+                        else:
+                            token_output_path = args.output_path
+                            token_output_type = output_type
+
                         summary = EncryptCommand._encrypt_tokens(
                             args.input_path,
-                            args.output_path,
+                            token_output_path,
                             input_type,
-                            output_type,
+                            token_output_type,
                             encryption_key,
                             ring_id,
                             progress_callback=reporter.make_progress_callback("Encrypting tokens", "tokens"),
                         )
+
+                        if output_type == FileTypeDetector.TYPE_ZIP:
+                            zip_path.parent.mkdir(parents=True, exist_ok=True)
+                            with zipfile.ZipFile(
+                                args.output_path, mode="w", compression=zipfile.ZIP_DEFLATED
+                            ) as archive:
+                                archive.write(token_output_path, arcname=Path(token_output_path).name)
+                                archive.write(exchange.path, arcname=Path(exchange.path).name)
                     logger.info("Token encryption completed successfully")
                 except Exception as error:
                     logger.error("Error during token encryption: %s", error)

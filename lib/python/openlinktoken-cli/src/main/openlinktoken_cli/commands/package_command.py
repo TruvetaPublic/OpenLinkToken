@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 
+import contextlib
 import logging
 import sys
 import tempfile
@@ -155,40 +156,38 @@ class PackageCommand:
                                 "Ensure the exchange config was loaded from a file (exchange.path must not be None)."
                             )
                         logger.info("ZIP output: tokens, metadata, and exchange config will be bundled")
-                        zip_path = Path(args.output_path)
-                        with tempfile.TemporaryDirectory() as temp_dir:
-                            temp_token_path = str(Path(temp_dir) / f"{zip_path.stem}.{input_type}")
-                            summary, temp_metadata_path = PackageCommand._process_tokens(
-                                args.input_path,
-                                temp_token_path,
-                                input_type,
-                                input_type,
-                                exchange.hashing_secret,
-                                encryption_key,
-                                ring_id,
-                                hash_record_ids,
-                                progress_callback=reporter.make_progress_callback("Packaging records", "records"),
-                            )
-                            zip_path.parent.mkdir(parents=True, exist_ok=True)
-                            with zipfile.ZipFile(
-                                args.output_path, mode="w", compression=zipfile.ZIP_DEFLATED
-                            ) as archive:
-                                archive.write(temp_token_path, arcname=Path(temp_token_path).name)
-                                archive.write(temp_metadata_path, arcname=Path(temp_metadata_path).name)
-                                archive.write(exchange.path, arcname=Path(exchange.path).name)
-                        metadata_path = None
-                    else:
+
+                    with contextlib.ExitStack() as stack:
+                        if output_type == FileTypeDetector.TYPE_ZIP:
+                            temp_dir = stack.enter_context(tempfile.TemporaryDirectory())
+                            zip_path = Path(args.output_path)
+                            token_output_path = str(Path(temp_dir) / f"{zip_path.stem}.{input_type}")
+                            token_output_type = input_type
+                        else:
+                            token_output_path = args.output_path
+                            token_output_type = output_type
+
                         summary, metadata_path = PackageCommand._process_tokens(
                             args.input_path,
-                            args.output_path,
+                            token_output_path,
                             input_type,
-                            output_type,
+                            token_output_type,
                             exchange.hashing_secret,
                             encryption_key,
                             ring_id,
                             hash_record_ids,
                             progress_callback=reporter.make_progress_callback("Packaging records", "records"),
                         )
+
+                        if output_type == FileTypeDetector.TYPE_ZIP:
+                            zip_path.parent.mkdir(parents=True, exist_ok=True)
+                            with zipfile.ZipFile(
+                                args.output_path, mode="w", compression=zipfile.ZIP_DEFLATED
+                            ) as archive:
+                                archive.write(token_output_path, arcname=Path(token_output_path).name)
+                                archive.write(metadata_path, arcname=Path(metadata_path).name)
+                                archive.write(exchange.path, arcname=Path(exchange.path).name)
+                            metadata_path = None
                     logger.info("Token generation and encryption completed successfully")
                 except Exception as error:
                     logger.error("Error during token processing: %s", error)
