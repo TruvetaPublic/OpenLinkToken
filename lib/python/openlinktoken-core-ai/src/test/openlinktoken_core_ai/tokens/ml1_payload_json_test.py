@@ -13,15 +13,16 @@ class TestML1PayloadToJson:
 
     def test_compact_separators_no_spaces(self):
         payload = {
-            "PostalCode": "98052",
-            "Birthdate": "1980-01-01",
-            "GivenName": "John",
             "Surname": "Doe",
+            "GivenName": "John",
+            "Birthdate": "1980-01-01",
             "Gender": "M",
+            "PostalCode": "98052",
         }
         result = ml1_payload_to_json(payload)
         # Must match Jackson ObjectMapper.writeValueAsString() default output exactly.
-        assert result == '{"PostalCode":"98052","Birthdate":"1980-01-01","GivenName":"John","Surname":"Doe","Gender":"M"}'
+        expected = '{"Surname":"Doe","GivenName":"John","Birthdate":"1980-01-01","Gender":"M","PostalCode":"98052"}'
+        assert result == expected
 
     def test_no_space_after_colon(self):
         result = ml1_payload_to_json({"Key": "Value"})
@@ -33,7 +34,7 @@ class TestML1PayloadToJson:
 
     def test_key_order_preserved(self):
         # Insertion order must be preserved so the tokenizer input is deterministic.
-        keys = ["PostalCode", "Birthdate", "GivenName", "Surname", "Gender"]
+        keys = ["Surname", "GivenName", "Birthdate", "Gender", "PostalCode"]
         payload = {k: str(i) for i, k in enumerate(keys)}
         result = ml1_payload_to_json(payload)
         positions = [result.index(f'"{k}"') for k in keys]

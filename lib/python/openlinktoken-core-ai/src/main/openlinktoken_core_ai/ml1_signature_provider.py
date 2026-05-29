@@ -16,9 +16,9 @@ from openlinktoken.attributes.person.sex_attribute import SexAttribute
 from openlinktoken.tokens.definitions.t1_token import T1Token
 from openlinktoken.tokens.inference_signature_provider import InferenceBatchResult
 from openlinktoken.tokens.token_generator_result import TokenGeneratorResult
-from openlinktoken_core_ai.tokens.rotation_config import RotationConfig
 from openlinktoken_core_ai.tokens.ml1_inference_config import ML1InferenceConfig
 from openlinktoken_core_ai.tokens.ml1_onnx_signature_generator import ML1OnnxSignatureGenerator, ml1_payload_to_json
+from openlinktoken_core_ai.tokens.rotation_config import RotationConfig
 from openlinktoken_core_ai.tokentransformer.rotation.rotation_embedding_transformer import RotationEmbeddingTransformer
 
 logger = logging.getLogger(__name__)
@@ -69,11 +69,11 @@ def _hash_rotation_values(rotation_values: List[str], t1_signature: str) -> List
 
 # Ordered field name mapping for ML1 payload
 _ML1_FIELDS = [
-    (PostalCodeAttribute, "PostalCode"),
-    (BirthDateAttribute, "Birthdate"),
-    (FirstNameAttribute, "GivenName"),
     (LastNameAttribute, "Surname"),
+    (FirstNameAttribute, "GivenName"),
+    (BirthDateAttribute, "Birthdate"),
     (SexAttribute, "Gender"),
+    (PostalCodeAttribute, "PostalCode"),
 ]
 
 # Pre-built attribute instances for ML1 validation and normalization — reused across all calls.
@@ -193,7 +193,7 @@ class OnnxML1SignatureProvider:
         """Build the deterministic JSON payload for ML1 inference.
 
         Returns None if any required field is missing or fails validation.
-        Each of the 5 fields (PostalCode, Birthdate, GivenName, Surname, Gender)
+        Each of the 5 fields (Surname, GivenName, Birthdate, Gender, PostalCode)
         must be present and non-empty.
         """
         payload: Dict[str, str] = {}

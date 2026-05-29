@@ -257,11 +257,11 @@ public class OnnxML1SignatureProvider implements InferenceSignatureProvider {
         }
 
         Map<String, String> payload = new LinkedHashMap<>();
-        if (!addMl1Field(PostalCodeAttribute.class, "PostalCode", personAttributes, result, payload)
-                || !addMl1Field(BirthDateAttribute.class, "Birthdate", personAttributes, result, payload)
+        if (!addMl1Field(LastNameAttribute.class, "Surname", personAttributes, result, payload)
                 || !addMl1Field(FirstNameAttribute.class, "GivenName", personAttributes, result, payload)
-                || !addMl1Field(LastNameAttribute.class, "Surname", personAttributes, result, payload)
-                || !addMl1Field(SexAttribute.class, "Gender", personAttributes, result, payload)) {
+                || !addMl1Field(BirthDateAttribute.class, "Birthdate", personAttributes, result, payload)
+                || !addMl1Field(SexAttribute.class, "Gender", personAttributes, result, payload)
+                || !addMl1Field(PostalCodeAttribute.class, "PostalCode", personAttributes, result, payload)) {
             return null;
         }
 
