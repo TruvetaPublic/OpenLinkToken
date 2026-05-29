@@ -8,7 +8,7 @@ layout: default
 
 Open Link Token is a privacy-preserving tokenization and matching library for secure person linkage using PII-derived attributes. It generates cryptographically secure matching tokens from person attributes, enabling matching across datasets without directly comparing names, birthdates, SSNs, and other sensitive identifiers.
 
-Both Java and Python implementations produce **byte-identical hash-only outputs** (and byte-identical decrypted token payloads) for the same normalized input, enabling flexible deployment and cross-language workflows.
+Both Java and Python implementations produce **byte-identical deterministic tokenized outputs** (and byte-identical decrypted token payloads) for the same normalized input, enabling flexible deployment and cross-language workflows.
 
 ## The Problem
 
@@ -28,7 +28,7 @@ Open Link Token generates secure tokens derived from those attributes:
 John Doe | 1975-03-15 | 98004 → SHA-256 HASH → HMAC-SHA256 → AES-256/JWE (olt.V1) → Token
 ```
 
-Matching is performed on deterministic hash-only values (or decrypted token payloads), not on raw PII.
+Matching is performed on deterministic tokenized values (or decrypted token payloads), not on raw PII.
 
 ## How It Works
 
@@ -36,7 +36,7 @@ Matching is performed on deterministic hash-only values (or decrypted token payl
 2. **Validation & Normalization**: Attributes are validated and normalized (uppercase, diacritic removal, supported Latin Extended transliteration, title stripping)
 3. **Token Generation**: Multiple token rules (T1–T5) combine different attributes
 4. **Transformation**: Deterministic HMAC-SHA256 hashes are produced; encrypted mode wraps them as `olt.V1` JWE match tokens
-5. **Output**: Encrypted `olt.V1` tokens (default) or hash-only values, plus metadata
+5. **Output**: Encrypted `olt.V1` tokens (default), deterministic tokenized values, or `tokenize --mode hash-only` SHA-256 output, plus metadata
 
 ## Key Concepts
 
@@ -94,7 +94,7 @@ Output CSV/Parquet + Metadata
 
 ## Multi-Language Parity
 
-Open Link Token is implemented in **Java and Python**. Both produce **byte-identical deterministic values** (hash-only outputs and decrypted token payloads) for the same normalized input and secrets. This enables:
+Open Link Token is implemented in **Java and Python**. Both produce **byte-identical deterministic values** (tokenized outputs, `--mode hash-only` outputs where supported, and decrypted token payloads) for the same normalized input and secrets. This enables:
 
 - Flexible deployment (choose Java or Python)
 - Cross-language processing (encrypt in one language, decrypt in another)
@@ -103,7 +103,7 @@ Open Link Token is implemented in **Java and Python**. Both produce **byte-ident
 ## Security Properties
 
 - **No Reversal**: Tokens cannot be decrypted back to original data without the encryption key
-- **Deterministic matching basis**: Same normalized input produces the same hash-only/decrypted value
+- **Deterministic matching basis**: Same normalized input produces the same tokenized/decrypted value
 - **Randomized encrypted representation**: Encrypted `olt.V1` tokens use random IVs, so ciphertext differs across runs
 - **Privacy-Focused**: Designed for regulated environments where PII must be protected
 - **Validation**: Rejects invalid or placeholder values before processing
