@@ -135,6 +135,11 @@ When the output path ends in `.zip`, the `package` command bundles all three fil
 2. `<stem>.metadata.json` — processing metadata
 3. `<exchange-config-filename>.exchange.json` — exchange config
 
+The `encrypt` command also supports `.zip` output, bundling two files (no metadata):
+
+1. `<stem>.csv` (or `.parquet`) — encrypted tokens
+2. `<exchange-config-filename>.exchange.json` — exchange config
+
 ---
 
 ## Processing Modes

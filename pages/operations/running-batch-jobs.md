@@ -15,7 +15,7 @@ Open Link Token processes input files (CSV or Parquet) and produces two outputs:
 1. **Tokens file** (CSV or Parquet): Contains `RecordId`, `RuleId`, `Token` columns
 2. **Metadata file** (JSON): Processing statistics, secret hashes, and validation counts
 
-When the output path ends in `.zip`, the `package` command bundles the tokens file, metadata JSON, and exchange config JSON together into a single zip archive for upload.
+When the output path ends in `.zip`, the `package` and `encrypt` commands bundle the output tokens file and exchange config JSON (plus metadata JSON for `package`) into a single zip archive for upload.
 
 ---
 
@@ -59,7 +59,9 @@ olt package \
 
 ### ZIP Output
 
-Pass a `.zip` path to `-o` to bundle the tokens file, metadata JSON, and exchange config JSON into a single archive:
+Pass a `.zip` path to `-o` to bundle the output tokens file, metadata JSON (for `package`), and exchange config into a single archive.
+
+**`package` — tokens, metadata, and exchange config:**
 
 ```bash
 olt package \
@@ -75,6 +77,22 @@ The resulting archive contains three files:
 | `output.csv`           | Encrypted tokens (same format as input)   |
 | `output.metadata.json` | Processing metadata                       |
 | `batch.exchange.json`  | Exchange config used for this package run |
+
+**`encrypt` — tokens and exchange config:**
+
+```bash
+olt encrypt \
+  -i ../../../resources/hashed.csv \
+  -o ../../../resources/output.zip \
+  --exchange-config ../../../resources/batch.exchange.json
+```
+
+The resulting archive contains two files:
+
+| File                  | Description                               |
+| --------------------- | ----------------------------------------- |
+| `output.csv`          | Encrypted tokens (same format as input)   |
+| `batch.exchange.json` | Exchange config used for this encrypt run |
 
 ---
 
