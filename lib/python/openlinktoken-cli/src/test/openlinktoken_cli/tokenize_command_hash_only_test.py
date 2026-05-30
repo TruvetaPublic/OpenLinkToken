@@ -16,6 +16,16 @@ HASH_ONLY_TOKEN_LENGTH = 64
 # HMAC-SHA256 over 32 bytes → base64 → always exactly 44 characters
 NORMAL_MODE_TOKEN_LENGTH = 44
 
+EXPECTED_METADATA_KEYS = {
+    "PythonVersion",
+    "Platform",
+    "Version",
+    "TotalRows",
+    "TotalRowsWithInvalidAttributes",
+    "InvalidAttributesByType",
+    "BlankTokensByRule",
+}
+
 # Token.BLANK sentinel written when a rule cannot produce a valid token
 BLANK_TOKEN = "0" * 64
 
@@ -304,8 +314,8 @@ class TestTokenizeCommandHashOnly:
     # Metadata
     # ------------------------------------------------------------------
 
-    def test_hash_only_metadata_omits_hashing_secret_hash(self, temp_dir: Path):
-        """Hash-only mode must not write HashingSecretHash to the metadata file."""
+    def test_hash_only_metadata_contains_only_core_fields(self, temp_dir: Path):
+        """Hash-only mode metadata should contain only the shared metadata fields and counters."""
         OpenLinkTokenCommand.execute(
             [
                 "tokenize",
@@ -319,7 +329,7 @@ class TestTokenizeCommandHashOnly:
         )
 
         metadata = _read_metadata(temp_dir / "output.metadata.json")
-        assert "HashingSecretHash" not in metadata, "Hash-only mode must not include HashingSecretHash in metadata"
+        assert set(metadata) == EXPECTED_METADATA_KEYS
 
     def test_hash_only_metadata_contains_processing_counters(self, temp_dir: Path):
         """Hash-only mode metadata must still record row and attribute statistics."""

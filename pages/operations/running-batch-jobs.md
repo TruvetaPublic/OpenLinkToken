@@ -13,7 +13,7 @@ How to run Open Link Token in batch mode across CSV or Parquet files at scale us
 Open Link Token processes input files (CSV or Parquet) and produces two outputs:
 
 1. **Tokens file** (CSV or Parquet): Contains `RecordId`, `RuleId`, `Token` columns
-2. **Metadata file** (JSON): Processing statistics, secret hashes, and validation counts
+2. **Metadata file** (JSON): Processing statistics, runtime context, and validation counts
 
 ---
 
@@ -143,9 +143,7 @@ ID001,T2,pUxPgYL9+cMxkA+8928Pil+9W+dm9kISwHYPdkZS+I2nQ/bQ/8HyL3FOVf3NYPW5NKZZO1O
   "TotalRows": 100,
   "TotalRowsWithInvalidAttributes": 3,
   "InvalidAttributesByType": { "BirthDate": 2, "PostalCode": 1 },
-  "BlankTokensByRule": { "T1": 2, "T2": 1 },
-  "HashingSecretHash": "abc123...",
-  "EncryptionSecretHash": "def456..."
+  "BlankTokensByRule": { "T1": 2, "T2": 1 }
 }
 ```
 

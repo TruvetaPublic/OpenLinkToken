@@ -147,9 +147,7 @@ Always JSON format, suffixed `.metadata.json` (e.g., `output.metadata.json`):
     "T3": 1,
     "T4": 1,
     "T5": 1
-  },
-  "HashingSecretHash": "abc123def456...",
-  "EncryptionSecretHash": "fed456abc123..."
+  }
 }
 ```
 

@@ -12,7 +12,6 @@ Open Link Token generates a metadata file alongside every token output file. Met
 
 - **Processing statistics**: Counts of total records, invalid attributes, and blank tokens
 - **System information**: Platform (Java/Python), runtime version, library version
-- **Secure hashes**: SHA-256 hashes of secrets for verification (not the secrets themselves)
 - **Audit trail**: What was processed and how (platform, version, and validation statistics)
 
 Metadata files:
@@ -56,9 +55,7 @@ Extension: .metadata.json
   "BlankTokensByRule": {
     "RuleId": integer,
     ...
-  },
-  "HashingSecretHash": "string (hex)",
-  "EncryptionSecretHash": "string (hex, optional)"
+  }
 }
 ```
 
@@ -103,21 +100,6 @@ Extension: .metadata.json
 - Blank tokens occur when a rule requires an invalid attribute
 - Example: Invalid `BirthDate` causes blank tokens for T1, T2, T3, T4 (but not T5)
 
-### Secret Hashes
-
-| Field                  | Type   | Description                                    | Example                                 |
-| ---------------------- | ------ | ---------------------------------------------- | --------------------------------------- |
-| `HashingSecretHash`    | String | SHA-256 hash of hashing secret (hex)           | `"e0b4e60b6a9f7ea3b13c0d6a6e1b8c5d..."` |
-| `EncryptionSecretHash` | String | SHA-256 hash of encryption key (hex, optional) | `"a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6..."` |
-
-**Security:**
-
-- Hashes are **not reversible** (SHA-256 is one-way)
-- Used for verification: calculate hash of your secret and compare to metadata
-- `EncryptionSecretHash` omitted in `tokenize` mode (no encryption used)
-
----
-
 ## Example Metadata
 
 ### Full Example (Encryption Mode)
@@ -142,9 +124,7 @@ Extension: .metadata.json
     "T3": 3,
     "T4": 8,
     "T5": 7
-  },
-  "HashingSecretHash": "e0b4e60b6a9f7ea3b13c0d6a6e1b8c5d4e3f2a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0",
-  "EncryptionSecretHash": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8"
+  }
 }
 ```
 
@@ -162,12 +142,9 @@ Extension: .metadata.json
   },
   "BlankTokensByRule": {
     "T2": 2
-  },
-  "HashingSecretHash": "abc123def456789abc123def456789abc123def456789abc123def456789abc123"
+  }
 }
 ```
-
-**Note:** No `EncryptionSecretHash` because `tokenize` mode doesn't use encryption.
 
 ---
 
@@ -257,86 +234,6 @@ Blank tokens occur when a rule requires an invalid attribute.
 
 ---
 
-## Hash Verification
-
-### Purpose
-
-Verify that the secrets used for token generation match expected values without exposing the secrets themselves.
-
-### Verification Process
-
-1. **Calculate hash of your secret**:
-
-   ```bash
-   python tools/hash_calculator.py --hashing-secret "HashingKey"
-   ```
-
-2. **Compare to metadata**:
-
-   ```bash
-   cat output.metadata.json | grep HashingSecretHash
-   ```
-
-3. **Match = correct secret used**
-
-### Hash Calculation
-
-The hash is computed as:
-
-```
-SHA-256(secret) → hex-encoded string (64 hex characters)
-```
-
-**Python implementation:**
-
-```python
-import hashlib
-
-def calculate_hash(secret: str) -> str:
-    return hashlib.sha256(secret.encode('utf-8')).hexdigest()
-
-hashing_hash = calculate_hash("HashingKey")
-encryption_hash = calculate_hash("Secret-Encryption-Key-Goes-Here.")
-```
-
-**Java implementation:**
-
-```java
-import java.security.MessageDigest;
-import java.nio.charset.StandardCharsets;
-
-public static String calculateHash(String secret) throws Exception {
-    MessageDigest digest = MessageDigest.getInstance("SHA-256");
-    byte[] hash = digest.digest(secret.getBytes(StandardCharsets.UTF_8));
-    return bytesToHex(hash);
-}
-
-private static String bytesToHex(byte[] bytes) {
-    StringBuilder result = new StringBuilder();
-    for (byte b : bytes) {
-        result.append(String.format("%02x", b));
-    }
-    return result.toString();
-}
-```
-
-### Using the Hash Calculator Tool
-
-The `tools/hash_calculator.py` script provides command-line hash calculation:
-
-```bash
-# Calculate both hashes
-python tools/hash_calculator.py \
-  --hashing-secret "HashingKey" \
-  --encryption-key "Secret-Encryption-Key-Goes-Here."
-
-# Output:
-# HashingSecretHash: e0b4e60b6a9f7ea3b13c0d6a6e1b8c5d...
-# EncryptionSecretHash: a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6...
-```
-
----
-
 ## Usage Notes
 
 ### Audit Trail
@@ -368,12 +265,11 @@ Consider retaining metadata longer than token files:
 
 ### Security
 
-Metadata files contain SHA-256 hashes of secrets:
+Metadata files exclude raw person data and secret material:
 
-- ✓ Safe to log, store, and share (no secrets exposed)
-- ✓ Enables verification without revealing secrets
-- ✗ Cannot reverse hashes to recover secrets
-- ✗ Attacker with metadata alone cannot generate tokens
+- ✓ Safe to log, store, and share within your normal operational controls
+- ✓ Useful for troubleshooting and audit without exposing runtime secrets
+- ✗ Metadata alone cannot generate or decrypt tokens
 
 ---
 
@@ -381,5 +277,4 @@ Metadata files contain SHA-256 hashes of secrets:
 
 - **View token rules**: [Concepts: Token Rules](../concepts/token-rules.md)
 - **Understand validation**: [Security](../security.md)
-- **Use hash calculator**: `tools/hash_calculator.py`
 - **See full examples**: [Quickstarts](../quickstarts/index.md)

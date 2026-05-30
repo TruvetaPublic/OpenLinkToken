@@ -139,9 +139,7 @@ record1,T2,pUxPgYL9+cMxkA+8928Pil+9W+dm9kISwHYPdkZS+I2nQ/bQ/8HyL3FOVf3NYPW5NKZZO
   "TotalRows": 1,
   "TotalRowsWithInvalidAttributes": 0,
   "InvalidAttributesByType": {},
-  "BlankTokensByRule": {},
-  "HashingSecretHash": "abc123...",
-  "EncryptionSecretHash": "def456..."
+  "BlankTokensByRule": {}
 }
 ```
 

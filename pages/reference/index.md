@@ -167,8 +167,7 @@ python -m openlinktoken_cli.main package \
 Every token generation run produces a `.metadata.json` file alongside the token output. This file contains:
 
 - Processing statistics (total rows, invalid records)
-- SHA-256 hashes of secrets (for verification, not the secrets themselves)
-- Timestamp and platform information
+- Runtime and platform information
 
 **Full reference:** [Metadata Format](metadata-format.md)
 

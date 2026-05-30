@@ -14,6 +14,16 @@ from openlinktoken_cli.util.ec_key_utils import generate_key_pair
 # HMAC-SHA256 over 32 bytes → base64 → always exactly 44 characters
 NORMAL_MODE_TOKEN_LENGTH = 44
 
+EXPECTED_METADATA_KEYS = {
+    "PythonVersion",
+    "Platform",
+    "Version",
+    "TotalRows",
+    "TotalRowsWithInvalidAttributes",
+    "InvalidAttributesByType",
+    "BlankTokensByRule",
+}
+
 # Token.BLANK sentinel written when a rule cannot produce a valid token
 BLANK_TOKEN = "0" * 64
 
@@ -334,8 +344,8 @@ class TestTokenizeCommandDemoMode:
     # Metadata
     # ------------------------------------------------------------------
 
-    def test_demo_mode_metadata_omits_hashing_secret_hash(self, temp_dir: Path):
-        """Demo mode must not write HashingSecretHash to the metadata file."""
+    def test_demo_mode_metadata_contains_only_core_fields(self, temp_dir: Path):
+        """Demo mode metadata should contain only the shared metadata fields and counters."""
         OpenLinkTokenCommand.execute(
             [
                 "tokenize",
@@ -349,10 +359,10 @@ class TestTokenizeCommandDemoMode:
         )
 
         metadata = _read_metadata(temp_dir / "output.metadata.json")
-        assert "HashingSecretHash" not in metadata, "Demo mode must not include HashingSecretHash in metadata"
+        assert set(metadata) == EXPECTED_METADATA_KEYS
 
-    def test_default_mode_metadata_contains_hashing_secret_hash(self, temp_dir: Path):
-        """Default mode must write HashingSecretHash to the metadata file."""
+    def test_default_mode_metadata_contains_only_core_fields(self, temp_dir: Path):
+        """Default mode metadata should contain only the shared metadata fields and counters."""
         exchange_config, private_key = self._create_exchange_config(temp_dir, "metadata-normal")
         OpenLinkTokenCommand.execute(
             [
@@ -371,7 +381,7 @@ class TestTokenizeCommandDemoMode:
         )
 
         metadata = _read_metadata(temp_dir / "output.metadata.json")
-        assert "HashingSecretHash" in metadata, "Normal mode must include HashingSecretHash in metadata"
+        assert set(metadata) == EXPECTED_METADATA_KEYS
 
     def test_demo_mode_metadata_contains_processing_counters(self, temp_dir: Path):
         """Demo mode metadata must still record row and attribute statistics."""

@@ -3,7 +3,6 @@
 - [Development Tools](#development-tools)
   - [Decryptor Tools](#decryptor-tools)
   - [Exchange Tools](#exchange-tools)
-  - [Hash Tools](#hash-tools)
   - [Mock Data Tools](#mock-data-tools)
   - [Interoperability Tools](#interoperability-tools)
   - [Multi-Language Sync Tool](#multi-language-sync-tool)
@@ -149,24 +148,6 @@ The summary view shows the exchange name, exchange ID, creation timestamp,
 curve, private key role (sender or recipient), hashing secret length and hex
 preview, rotation parameters (`rotationIv`, `rotationCount`, `binWidth`,
 `dimensionBias`), and both key fingerprints.
-
-## Hash Tools
-
-### Secret Hash Calculator
-
-Use `tools/hash/hash_calculator.py` to compute the SHA-256 secret hashes that
-Open Link Token includes in metadata output.
-
-```bash
-python tools/hash/hash_calculator.py \
-  --hashing-secret "$HASHING_SECRET" \
-  --encryption-key "$ENCRYPTION_KEY" \
-  --output-format json
-```
-
-Supported output formats are `table`, `json`, and `simple`. The companion
-`tools/hash/test_hash_calculator.py` script exercises the calculator against
-known values and command-line execution behavior.
 
 ## Mock Data Tools
 

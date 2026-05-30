@@ -558,7 +558,7 @@ counter++; // Increment counter by one
 
 - Hashing and encryption keys must only appear in test files with dummy values
 - SSN validation logic is public, but never log actual SSN values
-- Metadata files contain SHA-256 hashes of secrets (for audit), not the secrets themselves
+- Metadata files contain processing stats and runtime context, not secrets
 
 **See:** [`.github/instructions/security-and-owasp.instructions.md`](../.github/instructions/security-and-owasp.instructions.md) for comprehensive security guidelines.
 

@@ -409,8 +409,6 @@ class TokenizeCommand:
             ):
                 metadata = Metadata()
                 metadata_map = metadata.initialize()
-                # Only record the hashing-secret hash in normal mode
-                metadata.add_hashed_secret(Metadata.HASHING_SECRET_HASH, hashing_secret)
 
                 summary = PersonAttributesProcessor.process(
                     reader,

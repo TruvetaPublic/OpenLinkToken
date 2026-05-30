@@ -237,9 +237,7 @@ A `.metadata.json` file is created alongside the output:
   "TotalRows": 2,
   "TotalRowsWithInvalidAttributes": 0,
   "InvalidAttributesByType": {},
-  "BlankTokensByRule": {},
-  "HashingSecretHash": "e0b4e60b...",
-  "EncryptionSecretHash": "a1b2c3d4..."
+  "BlankTokensByRule": {}
 }
 ```
 

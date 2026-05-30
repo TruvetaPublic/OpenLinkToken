@@ -33,7 +33,7 @@ Open Link Token reads person attributes (for example: first/last name, birthdate
 After you run a quickstart:
 
 - `output.csv` contains 5 tokens (T1–T5) per input record
-- `output.metadata.json` captures processing stats and SHA-256 hashes of secrets (not the secrets)
+- `output.metadata.json` captures processing stats and runtime context
 
 ## Quickstart Pages
 

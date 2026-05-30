@@ -2,6 +2,9 @@
 
 from openlinktoken.metadata import HashCalculationException, Metadata
 
+PRIMARY_SECRET_DIGEST = "PrimarySecretDigest"
+SECONDARY_SECRET_DIGEST = "SecondarySecretDigest"
+
 
 class TestMetadata:
     def test_initialize_only(self):
@@ -11,74 +14,65 @@ class TestMetadata:
         assert Metadata.PYTHON_VERSION in result
         assert Metadata.PLATFORM in result
         assert Metadata.VERSION in result
-
-        assert Metadata.HASHING_SECRET_HASH not in result
-        assert Metadata.ENCRYPTION_SECRET_HASH not in result
+        assert len(result) == 3
 
         assert result[Metadata.PLATFORM] == Metadata.PLATFORM_PYTHON
         assert result[Metadata.VERSION] == Metadata.DEFAULT_VERSION
 
-    def test_add_hashed_secret_with_hashing_secret(self):
+    def test_add_hashed_secret_with_custom_key(self):
         metadata = Metadata()
         metadata.initialize()
 
-        hashing_secret = "test-hashing-secret"
-        result = metadata.add_hashed_secret(Metadata.HASHING_SECRET_HASH, hashing_secret)
+        result = metadata.add_hashed_secret(PRIMARY_SECRET_DIGEST, "test-hashing-secret")
 
-        assert Metadata.HASHING_SECRET_HASH in result
-        assert Metadata.ENCRYPTION_SECRET_HASH not in result
-        assert result[Metadata.HASHING_SECRET_HASH] is not None
+        assert PRIMARY_SECRET_DIGEST in result
+        assert SECONDARY_SECRET_DIGEST not in result
+        assert result[PRIMARY_SECRET_DIGEST] is not None
 
-    def test_add_hashed_secret_with_encryption_key(self):
+    def test_add_hashed_secret_with_second_custom_key(self):
         metadata = Metadata()
         metadata.initialize()
 
-        encryption_key = "test-encryption-key"
-        result = metadata.add_hashed_secret(Metadata.ENCRYPTION_SECRET_HASH, encryption_key)
+        result = metadata.add_hashed_secret(SECONDARY_SECRET_DIGEST, "test-encryption-key")
 
-        assert Metadata.HASHING_SECRET_HASH not in result
-        assert Metadata.ENCRYPTION_SECRET_HASH in result
-        assert result[Metadata.ENCRYPTION_SECRET_HASH] is not None
+        assert PRIMARY_SECRET_DIGEST not in result
+        assert SECONDARY_SECRET_DIGEST in result
+        assert result[SECONDARY_SECRET_DIGEST] is not None
 
-    def test_add_hashed_secret_with_both_secrets(self):
+    def test_add_hashed_secret_with_both_custom_keys(self):
         metadata = Metadata()
         metadata.initialize()
 
-        hashing_secret = "test-hashing-secret"
-        encryption_key = "test-encryption-key"
+        metadata.add_hashed_secret(PRIMARY_SECRET_DIGEST, "test-hashing-secret")
+        result = metadata.add_hashed_secret(SECONDARY_SECRET_DIGEST, "test-encryption-key")
 
-        metadata.add_hashed_secret(Metadata.HASHING_SECRET_HASH, hashing_secret)
-        result = metadata.add_hashed_secret(Metadata.ENCRYPTION_SECRET_HASH, encryption_key)
-
-        assert Metadata.HASHING_SECRET_HASH in result
-        assert Metadata.ENCRYPTION_SECRET_HASH in result
-        assert result[Metadata.HASHING_SECRET_HASH] is not None
-        assert result[Metadata.ENCRYPTION_SECRET_HASH] is not None
-
-        # Verify hashes are different for different inputs
-        assert result[Metadata.HASHING_SECRET_HASH] != result[Metadata.ENCRYPTION_SECRET_HASH]
+        assert PRIMARY_SECRET_DIGEST in result
+        assert SECONDARY_SECRET_DIGEST in result
+        assert result[PRIMARY_SECRET_DIGEST] is not None
+        assert result[SECONDARY_SECRET_DIGEST] is not None
+        assert result[PRIMARY_SECRET_DIGEST] != result[SECONDARY_SECRET_DIGEST]
 
     def test_add_hashed_secret_with_null_secrets(self):
         metadata = Metadata()
         metadata.initialize()
 
-        metadata.add_hashed_secret(Metadata.HASHING_SECRET_HASH, None)
-        result = metadata.add_hashed_secret(Metadata.ENCRYPTION_SECRET_HASH, None)
+        metadata.add_hashed_secret(PRIMARY_SECRET_DIGEST, None)
+        result = metadata.add_hashed_secret(SECONDARY_SECRET_DIGEST, None)
 
-        assert Metadata.HASHING_SECRET_HASH not in result
-        assert Metadata.ENCRYPTION_SECRET_HASH not in result
+        assert PRIMARY_SECRET_DIGEST not in result
+        assert SECONDARY_SECRET_DIGEST not in result
 
     def test_add_hashed_secret_with_empty_secrets(self):
         metadata = Metadata()
         metadata.initialize()
 
-        metadata.add_hashed_secret(Metadata.HASHING_SECRET_HASH, "")
-        result = metadata.add_hashed_secret(Metadata.ENCRYPTION_SECRET_HASH, "")
+        metadata.add_hashed_secret(PRIMARY_SECRET_DIGEST, "")
+        result = metadata.add_hashed_secret(SECONDARY_SECRET_DIGEST, "")
 
-        assert Metadata.HASHING_SECRET_HASH not in result
-        assert Metadata.ENCRYPTION_SECRET_HASH not in result
+        assert PRIMARY_SECRET_DIGEST not in result
+        assert SECONDARY_SECRET_DIGEST not in result
 
-    def test_add_hashed_secret_with_custom_key(self):
+    def test_add_hashed_secret_with_custom_key_value(self):
         metadata = Metadata()
         metadata.initialize()
 
@@ -96,14 +90,12 @@ class TestMetadata:
 
         assert hash_result is not None
         assert len(hash_result) > 0
-        assert len(hash_result) == 64  # SHA-256 produces 64 character hex string
+        assert len(hash_result) == 64
 
-        # Verify the hash is consistent
         hash2 = Metadata.calculate_secure_hash(input_str)
         assert hash_result == hash2
 
     def test_calculate_secure_hash_with_known_value(self):
-        # Test with a known SHA-256 value to ensure compatibility
         input_str = "hello"
         expected_hash = "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
 
@@ -132,13 +124,12 @@ class TestMetadata:
         assert hash_result is None
 
     def test_calculate_secure_hash_with_unicode_input(self):
-        input_str = "こんにちは"  # Japanese "hello"
+        input_str = "こんにちは"
         hash_result = Metadata.calculate_secure_hash(input_str)
 
         assert hash_result is not None
         assert len(hash_result) == 64
 
-        # Verify UTF-8 encoding produces consistent results
         hash2 = Metadata.calculate_secure_hash(input_str)
         assert hash_result == hash2
 
@@ -150,13 +141,9 @@ class TestMetadata:
         assert hash_result is not None
         assert len(hash_result) == 64
 
-    def test_metadata_constants(self):
-        # Verify that the new constants are properly defined
-        assert Metadata.ENCRYPTION_SECRET_HASH is not None
-        assert Metadata.HASHING_SECRET_HASH is not None
-
-        assert Metadata.ENCRYPTION_SECRET_HASH == "EncryptionSecretHash"
-        assert Metadata.HASHING_SECRET_HASH == "HashingSecretHash"
+    def test_metadata_no_longer_defines_secret_hash_constants(self):
+        assert not hasattr(Metadata, "ENCRYPTION_SECRET_HASH")
+        assert not hasattr(Metadata, "HASHING_SECRET_HASH")
 
     def test_hash_calculation_exception_creation(self):
         message = "Test message"

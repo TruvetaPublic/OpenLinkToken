@@ -34,7 +34,6 @@ EXPECTED_TOKENS = {
 }
 
 EXPECTED_SAMPLE_METADATA = {
-    "HashingSecretHash": "3fd6f3558ba532410658f8eb0d80b25db01b129b1b04c7c0e4a4a50e26921124",
     "TotalRows": 105,
     "TotalRowsWithInvalidAttributes": 12,
     "InvalidAttributesByType": {
@@ -327,14 +326,14 @@ class TestTokenCompatibility:
 
             assert python_meta["Platform"] == "Python", python_meta
             assert python_meta["Version"], python_meta
-            assert python_meta["HashingSecretHash"] == EXPECTED_SAMPLE_METADATA["HashingSecretHash"], python_meta
             assert python_meta["TotalRows"] == EXPECTED_SAMPLE_METADATA["TotalRows"], python_meta
             assert (
                 python_meta["TotalRowsWithInvalidAttributes"]
                 == EXPECTED_SAMPLE_METADATA["TotalRowsWithInvalidAttributes"]
             ), python_meta
             assert python_meta["InvalidAttributesByType"] == EXPECTED_SAMPLE_METADATA["InvalidAttributesByType"]
-            assert python_meta["BlankTokensByRule"] == EXPECTED_SAMPLE_METADATA["BlankTokensByRule"]
+            for rule_id, expected_count in EXPECTED_SAMPLE_METADATA["BlankTokensByRule"].items():
+                assert python_meta["BlankTokensByRule"][rule_id] == expected_count
 
     def test_java_library_harness_matches_python_cli_tokenize_output(self):
         """Compare Java library output with Python CLI tokenize output for the sample CSV."""
@@ -376,11 +375,20 @@ class TestTokenCompatibility:
             with open(python_metadata, "r", encoding="utf-8") as file_handle:
                 python_meta = json.load(file_handle)
 
-            expected_fields = ["Platform", "PythonVersion", "Version", "TotalRows", "HashingSecretHash"]
-            for field in expected_fields:
-                assert field in python_meta, f"Python metadata missing expected field '{field}'"
+            expected_fields = {
+                "Platform",
+                "PythonVersion",
+                "Version",
+                "TotalRows",
+                "TotalRowsWithInvalidAttributes",
+                "InvalidAttributesByType",
+                "BlankTokensByRule",
+            }
+            assert set(python_meta) == expected_fields, python_meta
 
             assert python_meta["Platform"] == "Python", f"Expected Platform 'Python', got '{python_meta['Platform']}'"
+            for rule_id, expected_count in EXPECTED_SAMPLE_METADATA["BlankTokensByRule"].items():
+                assert python_meta["BlankTokensByRule"][rule_id] == expected_count
 
             print("✅ Metadata consistency verified!")
             print("-" * 30)

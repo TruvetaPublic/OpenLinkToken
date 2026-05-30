@@ -277,9 +277,7 @@ Check the generated `.metadata.json` for processing statistics:
   "BlankTokensByRule": {
     "T1": 80,
     "T3": 80
-  },
-  "HashingSecretHash": "e0b4e60b...",
-  "EncryptionSecretHash": "a1b2c3d4..."
+  }
 }
 ```
 
@@ -287,18 +285,18 @@ Check the generated `.metadata.json` for processing statistics:
 
 - `TotalRowsWithInvalidAttributes`: High counts may indicate data quality issues
 - `BlankTokensByRule`: T1 and T3 require SSN; blanks are expected if SSN is often missing
-- `HashingSecretHash` / `EncryptionSecretHash`: Compare these hashes across both runs to confirm each side resolved the same exchange-config secrets
+- Confirm both sides are using the same exchange config and hashing secret through your secure operational process
 
 ### Step 4: Prepare Transfer Package
 
 Include in the transfer:
 
-| File                         | Purpose                                                          | Contains Secrets?         |
-| ---------------------------- | ---------------------------------------------------------------- | ------------------------- |
-| `sender-q2.exchange.json`    | Shared exchange config if the recipient does not already have it | No private key material   |
-| `tokens.csv` (or `.parquet`) | Token output                                                     | No                        |
-| `tokens.metadata.json`       | Processing stats, secret hashes                                  | Hashes only (not secrets) |
-| Data dictionary (optional)   | Column definitions, RecordId mapping                             | No                        |
+| File                         | Purpose                                                          | Contains Secrets?       |
+| ---------------------------- | ---------------------------------------------------------------- | ----------------------- |
+| `sender-q2.exchange.json`    | Shared exchange config if the recipient does not already have it | No private key material |
+| `tokens.csv` (or `.parquet`) | Token output                                                     | No                      |
+| `tokens.metadata.json`       | Processing stats and runtime context                             | No                      |
+| Data dictionary (optional)   | Column definitions, RecordId mapping                             | No                      |
 
 **Do NOT include:**
 
@@ -442,7 +440,7 @@ With only the token file, an attacker cannot identify individuals.
 
 | Issue                         | Cause                     | Solution                                                 |
 | ----------------------------- | ------------------------- | -------------------------------------------------------- |
-| Zero matches between datasets | Different secrets used    | Verify secret hashes match in metadata files             |
+| Zero matches between datasets | Different secrets used    | Verify both parties used the same exchange config inputs |
 | Partial matches only          | Normalization differences | Ensure both parties use the same Open Link Token version |
 | High invalid record counts    | Data quality issues       | Clean data before tokenization; review validation rules  |
 | Secrets exposed in logs       | Logging misconfiguration  | Configure logging to exclude sensitive parameters        |

@@ -363,13 +363,12 @@ JOHN|DOE|19800115
 
 **Differences from normal `tokenize`:**
 
-| Aspect                          | Default mode                   | Hash-only mode                   | Demo mode                                  |
-| ------------------------------- | ------------------------------ | -------------------------------- | ------------------------------------------ |
-| Exchange config / private key   | Required in normal mode        | Not required                     | Not required                               |
-| Token pipeline                  | SHA-256 → HMAC-SHA256 → Base64 | SHA-256 → lowercase hex          | Passthrough → raw signature string         |
-| Token format                    | Base64-encoded HMAC-SHA256     | 64-character lowercase hex       | Pipe-separated normalised attribute values |
-| `HashingSecretHash` in metadata | Present                        | Absent                           | Absent                                     |
-| Safe to share                   | No (internal only)             | No (never suitable for exchange) | No (never suitable for exchange)           |
+| Aspect                        | Default mode                   | Hash-only mode                   | Demo mode                                  |
+| ----------------------------- | ------------------------------ | -------------------------------- | ------------------------------------------ |
+| Exchange config / private key | Required in normal mode        | Not required                     | Not required                               |
+| Token pipeline                | SHA-256 → HMAC-SHA256 → Base64 | SHA-256 → lowercase hex          | Passthrough → raw signature string         |
+| Token format                  | Base64-encoded HMAC-SHA256     | 64-character lowercase hex       | Pipe-separated normalised attribute values |
+| Safe to share                 | No (internal only)             | No (never suitable for exchange) | No (never suitable for exchange)           |
 
 ## File Format Examples
 
@@ -444,9 +443,7 @@ Every run generates a `.metadata.json` file:
   "BlankTokensByRule": {
     "T1": 2,
     "T4": 1
-  },
-  "HashingSecretHash": "e0b4e60b...",
-  "EncryptionSecretHash": "a1b2c3d4..."
+  }
 }
 ```
 

@@ -215,44 +215,18 @@ ID001,T1,8d0f7f0d30f4b9e2e31e9d7fdc7f1c7f0d0fb6b246bd27d4f91f4fbad0b8e2c4
 
 ## Metadata Differences
 
-### Encryption Mode Metadata
+All `tokenize` variants emit the same core metadata fields:
 
 ```json
 {
-  "HashingSecretHash": "abc123...",
-  "EncryptionSecretHash": "def456..."
+  "TotalRows": 10,
+  "TotalRowsWithInvalidAttributes": 0,
+  "InvalidAttributesByType": {},
+  "BlankTokensByRule": {}
 }
 ```
 
-### `tokenize` Metadata
-
-```json
-{
-  "HashingSecretHash": "abc123..."
-}
-```
-
-No `EncryptionSecretHash` field is present when using `tokenize`.
-
-### `tokenize --mode hash-only` Metadata
-
-```json
-{
-  "TotalRows": 10
-}
-```
-
-Neither `HashingSecretHash` nor `EncryptionSecretHash` appears in hash-only metadata because no secret is used.
-
-### `tokenize --mode demo` Metadata
-
-```json
-{
-  "TotalRows": 10
-}
-```
-
-Neither `HashingSecretHash` nor `EncryptionSecretHash` appears in demo-mode metadata — no secret is used.
+The token-processing mode changes the token output, not the metadata field names.
 
 ---
 
@@ -303,12 +277,7 @@ For encrypted tokens, decrypt them to their hashed form first and then match on 
 
 **Cause:** Different exchange configs resolved different hashing secrets.
 
-**Solution:** Verify both runs produced the same secret hashes in metadata:
-
-```bash
-# Check metadata for secret hash
-cat output.metadata.json | jq '.HashingSecretHash'
-```
+**Solution:** Verify both runs used the same exchange config and hashing secret source.
 
 ### "No private key matching this exchange config was found" Error
 

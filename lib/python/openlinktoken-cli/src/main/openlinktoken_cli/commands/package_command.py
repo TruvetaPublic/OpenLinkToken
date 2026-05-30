@@ -273,8 +273,6 @@ class PackageCommand:
                 # Create metadata
                 metadata = Metadata()
                 metadata_map = metadata.initialize()
-                metadata.add_hashed_secret(Metadata.HASHING_SECRET_HASH, hashing_secret)
-                metadata.add_hashed_secret(Metadata.ENCRYPTION_SECRET_HASH, encryption_key)
 
                 # Process data with JWE wrapping support for v1 token format
                 summary = PersonAttributesProcessor.process(

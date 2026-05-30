@@ -198,28 +198,8 @@ processor = SparkPersonTokenProcessor(
 ### What NOT to Do
 
 - **Never commit secrets to source control.** Add `.env` and similar files to `.gitignore`.
-- **Never log secrets.** CLI output and metadata files contain hashes of secrets, not the secrets themselves.
+- **Never log secrets.** CLI output and metadata files should exclude secret material.
 - **Never hard-code secrets in scripts checked into git.** Use environment variables or secret-store references.
-
-### Secret Verification via Metadata
-
-Each run produces a `.metadata.json` with SHA-256 hashes of secrets:
-
-```json
-{
-  "HashingSecretHash": "e0b4e60b...",
-  "EncryptionSecretHash": "a1b2c3d4..."
-}
-```
-
-Use [tools/hash_calculator.py](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/tools/hash_calculator.py) to verify:
-
-```bash
-python tools/hash_calculator.py \
-  --hashing-secret "YourSecret" \
-  --encryption-key "YourEncryptionKey"
-# Compare output hashes to metadata file
-```
 
 ### Cross-References
 
@@ -227,7 +207,7 @@ python tools/hash_calculator.py \
 - **Environment variable usage**: [Configuration](config/configuration.md#environment-variables)
 - **Databricks / Spark secrets**: [Spark or Databricks](operations/spark-or-databricks.md)
 - **Running the CLI**: [Running Open Link Token](running-openlinktoken/index.md)
-- **Metadata format (hash fields)**: [Reference: Metadata Format](reference/metadata-format.md)
+- **Metadata format**: [Reference: Metadata Format](reference/metadata-format.md)
 
 ---
 

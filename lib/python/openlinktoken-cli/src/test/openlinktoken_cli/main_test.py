@@ -4,6 +4,7 @@ Integration tests for the main module.
 Tests the end-to-end workflows for token generation and decryption using new subcommand interface.
 """
 
+import json
 import os
 from pathlib import Path
 from unittest.mock import patch
@@ -85,6 +86,16 @@ class TestOpenLinkTokenCommand:
         # Check metadata file
         metadata_path = temp_dir / "output.metadata.json"
         assert metadata_path.exists(), "Metadata file should be created"
+        metadata = json.loads(metadata_path.read_text())
+        assert set(metadata) == {
+            "PythonVersion",
+            "Platform",
+            "Version",
+            "TotalRows",
+            "TotalRowsWithInvalidAttributes",
+            "InvalidAttributesByType",
+            "BlankTokensByRule",
+        }
 
     def test_package_command_csv_to_parquet(self, temp_dir):
         """Test package command with CSV input and Parquet output."""
