@@ -67,46 +67,46 @@ The automatic version check can also be disabled permanently by setting the envi
 
 ### `package` (Default Encrypted Mode)
 
-| Argument            | Short | Required | Description                                                                                     |
-| ------------------- | ----- | -------- | ----------------------------------------------------------------------------------------------- |
-| `--input`           | `-i`  | Yes      | Path to input file (CSV or Parquet)                                                             |
-| `--output`          | `-o`  | Yes      | Path to output file                                                                             |
-| `--exchange-config` |       | No       | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted. |
-| `--private-key`     |       | No\*     | Private key PEM used to decrypt the exchange config and derive the transport encryption key     |
-| `--private-key-env` |       | No\*     | Environment variable containing the private key PEM                                             |
-| `--hash-record-ids` |       | No       | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability)          |
+| Argument            | Short               | Required | Description                                                                                     |
+| ------------------- | ------------------- | -------- | ----------------------------------------------------------------------------------------------- |
+| `--input`           | `-i`                | Yes      | Path to input file (CSV or Parquet)                                                             |
+| `--output`          | `-o`                | Yes      | Path to output file                                                                             |
+| `-c`                | `--exchange-config` | No       | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted. |
+| `--private-key`     |                     | No\*     | Private key PEM used to decrypt the exchange config and derive the transport encryption key     |
+| `--private-key-env` |                     | No\*     | Environment variable containing the private key PEM                                             |
+| `--hash-record-ids` |                     | No       | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability)          |
 
 ### `tokenize` (Hashed Tokens Only)
 
-| Argument            | Short | Required          | Description                                                                                                                                                                                                                    |
-| ------------------- | ----- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `--input`           | `-i`  | Yes               | Path to input file (CSV or Parquet)                                                                                                                                                                                            |
-| `--output`          | `-o`  | Yes               | Path to output file                                                                                                                                                                                                            |
-| `--exchange-config` |       | Default mode only | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted.                                                                                                                                |
-| `--private-key`     |       | No\*              | Private key PEM used to decrypt the exchange config                                                                                                                                                                            |
-| `--private-key-env` |       | No\*              | Environment variable containing the private key PEM                                                                                                                                                                            |
-| `--mode`            |       | No                | Mode selector: `default`, `hash-only`, or `demo`. `hash-only` cannot be combined with exchange-config, private-key options, or `--hash-record-ids`; `demo` cannot be combined with `--exchange-config` or `--hash-record-ids`. |
-| `--hash-record-ids` |       | No                | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability; default tokenize mode only)                                                                                                             |
+| Argument            | Short               | Required          | Description                                                                                                                                                                                                                    |
+| ------------------- | ------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `--input`           | `-i`                | Yes               | Path to input file (CSV or Parquet)                                                                                                                                                                                            |
+| `--output`          | `-o`                | Yes               | Path to output file                                                                                                                                                                                                            |
+| `-c`                | `--exchange-config` | Default mode only | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted.                                                                                                                                |
+| `--private-key`     |                     | No\*              | Private key PEM used to decrypt the exchange config                                                                                                                                                                            |
+| `--private-key-env` |                     | No\*              | Environment variable containing the private key PEM                                                                                                                                                                            |
+| `--mode`            |                     | No                | Mode selector: `default`, `hash-only`, or `demo`. `hash-only` cannot be combined with exchange-config, private-key options, or `--hash-record-ids`; `demo` cannot be combined with `--exchange-config` or `--hash-record-ids`. |
+| `--hash-record-ids` |                     | No                | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability; default tokenize mode only)                                                                                                             |
 
 ### `encrypt` (Encrypt Input Tokens)
 
-| Argument            | Short | Required | Description                                                                                     |
-| ------------------- | ----- | -------- | ----------------------------------------------------------------------------------------------- |
-| `--input`           | `-i`  | Yes      | Path to input file (CSV or Parquet)                                                             |
-| `--output`          | `-o`  | Yes      | Path to output file                                                                             |
-| `--exchange-config` |       | No       | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted. |
-| `--private-key`     |       | No\*     | Private key PEM used to decrypt the exchange config and derive the transport encryption key     |
-| `--private-key-env` |       | No\*     | Environment variable containing the private key PEM                                             |
+| Argument            | Short               | Required | Description                                                                                     |
+| ------------------- | ------------------- | -------- | ----------------------------------------------------------------------------------------------- |
+| `--input`           | `-i`                | Yes      | Path to input file (CSV or Parquet)                                                             |
+| `--output`          | `-o`                | Yes      | Path to output file                                                                             |
+| `-c`                | `--exchange-config` | No       | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted. |
+| `--private-key`     |                     | No\*     | Private key PEM used to decrypt the exchange config and derive the transport encryption key     |
+| `--private-key-env` |                     | No\*     | Environment variable containing the private key PEM                                             |
 
 ### `decrypt` (Decrypt Encrypted Tokens)
 
-| Argument            | Short | Required | Description                                                                                     |
-| ------------------- | ----- | -------- | ----------------------------------------------------------------------------------------------- |
-| `--input`           | `-i`  | Yes      | Path to input file (must be encrypted)                                                          |
-| `--output`          | `-o`  | Yes      | Path to output file                                                                             |
-| `--exchange-config` |       | No       | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted. |
-| `--private-key`     |       | No\*     | Private key PEM used to decrypt the exchange config and derive the transport encryption key     |
-| `--private-key-env` |       | No\*     | Environment variable containing the private key PEM                                             |
+| Argument            | Short               | Required | Description                                                                                     |
+| ------------------- | ------------------- | -------- | ----------------------------------------------------------------------------------------------- |
+| `--input`           | `-i`                | Yes      | Path to input file (must be encrypted)                                                          |
+| `--output`          | `-o`                | Yes      | Path to output file                                                                             |
+| `-c`                | `--exchange-config` | No       | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted. |
+| `--private-key`     |                     | No\*     | Private key PEM used to decrypt the exchange config and derive the transport encryption key     |
+| `--private-key-env` |                     | No\*     | Environment variable containing the private key PEM                                             |
 
 ### `generate-key-pair` (ECDH Key Generation)
 

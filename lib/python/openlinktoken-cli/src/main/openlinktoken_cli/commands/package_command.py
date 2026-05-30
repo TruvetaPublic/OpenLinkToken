@@ -68,6 +68,7 @@ class PackageCommand:
         )
 
         parser.add_argument(
+            "-c",
             "--exchange-config",
             required=False,
             dest="exchange_config",

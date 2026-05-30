@@ -115,7 +115,7 @@ Open Link Token still relies on a hashing secret and a transport encryption key 
 
 | Material            | CLI Input                             | Purpose                                                                                  | Used by subcommands                         | Requirements                                                                       |
 | ------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------- |
-| **Exchange config** | `--exchange-config`                   | Carries the encrypted hashing secret and the metadata needed to derive the transport key | `package`, `tokenize`, `encrypt`, `decrypt` | Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted                |
+| **Exchange config** | `-c` / `--exchange-config`            | Carries the encrypted hashing secret and the metadata needed to derive the transport key | `package`, `tokenize`, `encrypt`, `decrypt` | Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted                |
 | **Private key**     | `--private-key` / `--private-key-env` | Decrypts the exchange config so the CLI can recover the hashing secret and transport key | `package`, `tokenize`, `encrypt`, `decrypt` | Optional only when a matching key can be auto-discovered under `~/.openlinktoken/` |
 
 ### Handling Secrets in Practice

@@ -127,15 +127,15 @@ Use `tokenize --mode demo` to explore token output without managing secrets.
 
 These arguments are shared across all subcommands:
 
-| Argument            | Short | Description                                                                                                                                                                                |
-| ------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `--input`           | `-i`  | Input file path (CSV or Parquet)                                                                                                                                                           |
-| `--output`          | `-o`  | Output file path                                                                                                                                                                           |
-| `--exchange-config` |       | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted on consumer commands.                                                                       |
-| `--private-key`     |       | Private key PEM used to decrypt the exchange config and derive later transport keys                                                                                                        |
-| `--private-key-env` |       | Environment variable containing the private key PEM                                                                                                                                        |
-| `--mode`            |       | Tokenize mode selector: `default`, `hash-only`, or `demo` (`hash-only` cannot be combined with exchange-config or private-key options; `demo` cannot be combined with `--exchange-config`) |
-| `--hash-record-ids` |       | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability; default `tokenize` mode and `package` only)                                                         |
+| Argument            | Short               | Description                                                                                                                                                                                |
+| ------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `--input`           | `-i`                | Input file path (CSV or Parquet)                                                                                                                                                           |
+| `--output`          | `-o`                | Output file path                                                                                                                                                                           |
+| `-c`                | `--exchange-config` | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted on consumer commands.                                                                       |
+| `--private-key`     |                     | Private key PEM used to decrypt the exchange config and derive later transport keys                                                                                                        |
+| `--private-key-env` |                     | Environment variable containing the private key PEM                                                                                                                                        |
+| `--mode`            |                     | Tokenize mode selector: `default`, `hash-only`, or `demo` (`hash-only` cannot be combined with exchange-config or private-key options; `demo` cannot be combined with `--exchange-config`) |
+| `--hash-record-ids` |                     | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability; default `tokenize` mode and `package` only)                                                         |
 
 ## `package` Command
 

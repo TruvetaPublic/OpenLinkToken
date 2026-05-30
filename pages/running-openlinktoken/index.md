@@ -27,12 +27,12 @@ olt <subcommand> [OPTIONS]
 
 #### Optional Arguments by Subcommand
 
-| Argument            | Alias | `package` | `tokenize` | `encrypt` | `decrypt` | Description                                               | Default                       | Example                                                 |
-| ------------------- | ----- | --------- | ---------- | --------- | --------- | --------------------------------------------------------- | ----------------------------- | ------------------------------------------------------- |
-| `--exchange-config` |       | ✓         | ✓          | ✓         | ✓         | Exchange config JSON path                                 | Date-based default path       | `--exchange-config ./quickstart.exchange.json`          |
-| `--private-key`     |       | ✓         | ✓          | ✓         | ✓         | Private key PEM used to decrypt the exchange config       | Auto-discovered when possible | `--private-key ~/.openlinktoken/quickstart.private.pem` |
-| `--private-key-env` |       | ✓         | ✓          | ✓         | ✓         | Environment variable containing the private key PEM       |                               | `--private-key-env OLT_PRIVATE_KEY_PEM`                 |
-| `--mode`            |       |           | ✓          |           |           | Tokenize mode selector: `default`, `hash-only`, or `demo` | `default`                     | `tokenize --mode hash-only`                             |
+| Argument            | Alias               | `package` | `tokenize` | `encrypt` | `decrypt` | Description                                               | Default                       | Example                                                 |
+| ------------------- | ------------------- | --------- | ---------- | --------- | --------- | --------------------------------------------------------- | ----------------------------- | ------------------------------------------------------- |
+| `-c`                | `--exchange-config` | ✓         | ✓          | ✓         | ✓         | Exchange config JSON path                                 | Date-based default path       | `-c ./quickstart.exchange.json`                         |
+| `--private-key`     |                     | ✓         | ✓          | ✓         | ✓         | Private key PEM used to decrypt the exchange config       | Auto-discovered when possible | `--private-key ~/.openlinktoken/quickstart.private.pem` |
+| `--private-key-env` |                     | ✓         | ✓          | ✓         | ✓         | Environment variable containing the private key PEM       |                               | `--private-key-env OLT_PRIVATE_KEY_PEM`                 |
+| `--mode`            |                     |           | ✓          |           |           | Tokenize mode selector: `default`, `hash-only`, or `demo` | `default`                     | `tokenize --mode hash-only`                             |
 
 If a matching key already exists under `~/.openlinktoken/`, you can omit `--private-key` and `--private-key-env` for the commands that use an exchange config. `tokenize --mode hash-only` and `tokenize --mode demo` do not use exchange-config or private-key inputs.
 

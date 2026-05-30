@@ -27,11 +27,11 @@ olt <subcommand> [OPTIONS]
 
 ### Required Arguments
 
-| Argument            | Alias      | Description               | Example                                   |
-| ------------------- | ---------- | ------------------------- | ----------------------------------------- |
-| `-i`                | `--input`  | Input file path           | `-i data.csv`                             |
-| `-o`                | `--output` | Output file path          | `-o tokens.csv`                           |
-| `--exchange-config` |            | Exchange config JSON path | `--exchange-config ./batch.exchange.json` |
+| Argument | Alias               | Description               | Example                    |
+| -------- | ------------------- | ------------------------- | -------------------------- |
+| `-i`     | `--input`           | Input file path           | `-i data.csv`              |
+| `-o`     | `--output`          | Output file path          | `-o tokens.csv`            |
+| `-c`     | `--exchange-config` | Exchange config JSON path | `-c ./batch.exchange.json` |
 
 ### Optional Arguments
 
