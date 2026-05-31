@@ -16,6 +16,7 @@ from openlinktoken_cli.io.csv.person_attributes_csv_writer import PersonAttribut
 from openlinktoken_cli.io.json.metadata_json_writer import MetadataJsonWriter
 from openlinktoken_cli.io.parquet.person_attributes_parquet_reader import PersonAttributesParquetReader
 from openlinktoken_cli.io.parquet.person_attributes_parquet_writer import PersonAttributesParquetWriter
+from openlinktoken_cli.io.zip.person_attributes_zip_writer import PersonAttributesZipWriter
 from openlinktoken_cli.processor.person_attributes_processor import (
     PersonAttributesProcessingSummary,
     PersonAttributesProcessor,
@@ -286,10 +287,14 @@ class PackageCommand:
                     progress_callback=progress_callback,
                 )
 
-                # Write metadata
-                metadata_writer = MetadataJsonWriter(output_path)
-                metadata_writer.write(metadata_map)
-                return summary, metadata_writer.metadata_file_path
+                # Write metadata, or bundle into ZIP if the output is a zip archive
+                if isinstance(writer, PersonAttributesZipWriter):
+                    metadata_path = writer.build_zip(metadata_map)
+                else:
+                    metadata_writer = MetadataJsonWriter(output_path)
+                    metadata_writer.write(metadata_map)
+                    metadata_path = metadata_writer.metadata_file_path
+                return summary, metadata_path
 
         except Exception:
             raise
@@ -334,5 +339,7 @@ class PackageCommand:
             return PersonAttributesCSVWriter(path)
         elif file_type_lower == FileTypeDetector.TYPE_PARQUET:
             return PersonAttributesParquetWriter(path)
+        elif file_type_lower == FileTypeDetector.TYPE_ZIP:
+            return PersonAttributesZipWriter(path)
         else:
             raise ValueError(f"Unsupported output type: {file_type}")

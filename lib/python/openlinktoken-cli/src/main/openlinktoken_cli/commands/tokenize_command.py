@@ -339,7 +339,9 @@ class TokenizeCommand:
                                 enable=True,
                                 rotation_iv=effective_iv,
                                 rotation_count=effective_rotation_count,
-                                bin_width=effective_bin_width,
+                                bin_width=effective_bin_width
+                                if effective_bin_width > 0
+                                else RotationConfig.DEFAULT_BIN_WIDTH,
                                 dimension_bias=effective_dimension_bias,
                             )
 
@@ -419,9 +421,13 @@ class TokenizeCommand:
                     progress_callback=progress_callback,
                 )
 
-                metadata_writer = MetadataJsonWriter(output_path)
-                metadata_writer.write(metadata_map)
-                return summary, metadata_writer.metadata_file_path
+                if isinstance(writer, PersonAttributesZipWriter):
+                    metadata_path = writer.build_zip(metadata_map)
+                else:
+                    metadata_writer = MetadataJsonWriter(output_path)
+                    metadata_writer.write(metadata_map)
+                    metadata_path = metadata_writer.metadata_file_path
+                return summary, metadata_path
 
         except Exception:
             raise
@@ -454,9 +460,13 @@ class TokenizeCommand:
                     progress_callback=progress_callback,
                 )
 
-                metadata_writer = MetadataJsonWriter(output_path)
-                metadata_writer.write(metadata_map)
-                return summary, metadata_writer.metadata_file_path
+                if isinstance(writer, PersonAttributesZipWriter):
+                    metadata_path = writer.build_zip(metadata_map)
+                else:
+                    metadata_writer = MetadataJsonWriter(output_path)
+                    metadata_writer.write(metadata_map)
+                    metadata_path = metadata_writer.metadata_file_path
+                return summary, metadata_path
 
         except Exception:
             raise
@@ -487,9 +497,13 @@ class TokenizeCommand:
                     progress_callback=progress_callback,
                 )
 
-                metadata_writer = MetadataJsonWriter(output_path)
-                metadata_writer.write(metadata_map)
-                return summary, metadata_writer.metadata_file_path
+                if isinstance(writer, PersonAttributesZipWriter):
+                    metadata_path = writer.build_zip(metadata_map)
+                else:
+                    metadata_writer = MetadataJsonWriter(output_path)
+                    metadata_writer.write(metadata_map)
+                    metadata_path = metadata_writer.metadata_file_path
+                return summary, metadata_path
 
         except Exception:
             raise
@@ -541,5 +555,7 @@ class TokenizeCommand:
             return PersonAttributesCSVWriter(path)
         elif file_type_lower == FileTypeDetector.TYPE_PARQUET:
             return PersonAttributesParquetWriter(path)
+        elif file_type_lower == FileTypeDetector.TYPE_ZIP:
+            return PersonAttributesZipWriter(path)
         else:
             raise ValueError(f"Unsupported output type: {file_type}")
