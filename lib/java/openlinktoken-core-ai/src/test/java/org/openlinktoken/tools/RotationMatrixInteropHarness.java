@@ -12,7 +12,7 @@ import org.openlinktoken.tokentransformer.rotation.RotationMatrixGenerator;
  * Thin harness that generates rotation matrices from an IV and serializes them
  * to a JSON file for cross-language interoperability testing.
  *
- * <p>Usage: {@code <iv> <rotation_count> <dimension> [<hash_dimension>] <output.json>}
+ * <p>Usage: {@code <iv> <rotation_count> <dimension> <output.json>}
  *
  * <p>Output format:
  * <pre>
@@ -35,33 +35,31 @@ public final class RotationMatrixInteropHarness {
     /**
      * Entry point for the interop harness.
      *
-     * @param args iv, rotation_count, dimension, optional hash_dimension, output_path
+     * @param args iv, rotation_count, dimension, output_path
      * @throws Exception if arguments are invalid or output cannot be written.
      */
     public static void main(String[] args) throws Exception {
-        if (args.length != 4 && args.length != 5) {
+        if (args.length != 4) {
             throw new IllegalArgumentException(
-                    "Expected arguments: <iv> <rotation_count> <dimension> [<hash_dimension>] <output.json>");
+                    "Expected arguments: <iv> <rotation_count> <dimension> <output.json>");
         }
 
         String iv = args[0];
         int rotationCount = Integer.parseInt(args[1]);
         int dimension = Integer.parseInt(args[2]);
-        int hashDimension = args.length == 5 ? Integer.parseInt(args[3]) : dimension;
-        Path outputPath = Path.of(args[args.length - 1]);
+        Path outputPath = Path.of(args[3]);
 
         if (outputPath.getParent() != null) {
             Files.createDirectories(outputPath.getParent());
         }
 
-        List<double[][]> matrices = RotationMatrixGenerator.generate(iv, rotationCount, dimension, hashDimension);
+        List<double[][]> matrices = RotationMatrixGenerator.generate(iv, rotationCount, dimension);
 
         StringBuilder sb = new StringBuilder();
         sb.append("{\n");
         sb.append("  \"iv\": \"").append(jsonEscape(iv)).append("\",\n");
         sb.append("  \"rotation_count\": ").append(rotationCount).append(",\n");
         sb.append("  \"dimension\": ").append(dimension).append(",\n");
-        sb.append("  \"hash_dimension\": ").append(hashDimension).append(",\n");
         sb.append("  \"matrices\": [\n");
 
         for (int r = 0; r < matrices.size(); r++) {

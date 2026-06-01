@@ -491,16 +491,19 @@ class PersonAttributesProcessor:
         ml1_signatures: List = [None] * len(pending_rows)
 
         inference_provider = TokenGenerator.get_inference_provider()
-        if inference_provider is not None and inference_provider.is_enabled():
+        inference_was_invoked = inference_provider is not None and inference_provider.is_enabled()
+        if inference_was_invoked:
             rows = [pr.row for pr in pending_rows]
             batch_result = inference_provider.generate_batch(rows)
             ml1_signatures = batch_result.signatures
 
         for i, pending_row in enumerate(pending_rows):
-            ml1_signature = ml1_signatures[i] if i < len(ml1_signatures) else None
-
-            # ML1 is already HMAC-hashed internally; bypass the tokenizer/transformer chain.
-            token_generator.store_raw_token(pending_row.token_generator_result, "ML1", ml1_signature)
+            # Only store the ML1 token when inference was actually invoked; if the provider
+            # is unavailable, ML1 produces no output rather than recording a spurious blank.
+            if inference_was_invoked:
+                ml1_signature = ml1_signatures[i] if i < len(ml1_signatures) else None
+                # ML1 is already HMAC-hashed internally; bypass the tokenizer/transformer chain.
+                token_generator.store_raw_token(pending_row.token_generator_result, "ML1", ml1_signature)
 
             logger.debug(f"Tokens: {pending_row.token_generator_result.tokens}")
 

@@ -21,16 +21,16 @@ sys.path.insert(0, str(PROJECT_ROOT / "lib/python/openlinktoken-core-ai/src/main
 
 from openlinktoken_core_ai.tokentransformer.rotation.rotation_matrix_generator import generate  # noqa: E402
 
-# Test vectors: (iv, rotation_count, dimension, hash_dimension)
+# Test vectors: (iv, rotation_count, dimension)
 TEST_VECTORS = [
-    ("test-rotation-iv-2024", 3, 4, 4),
-    ("different-iv-abc", 2, 4, 4),
-    ("unicode-iv-\u00e9\u00e0\u00fc", 1, 4, 4),
-    ("empty-like-iv-", 5, 6, 6),
-    ("single-char-iv-x", 1, 2, 2),
-    ("long-iv-" + "a" * 64, 2, 8, 8),
-    ("openlinktoken-ml1-v1", 2, 8, 3),
-    ("hash-dimension-fast-path", 3, 16, 5),
+    ("test-rotation-iv-2024", 3, 4),
+    ("different-iv-abc", 2, 4),
+    ("unicode-iv-\u00e9\u00e0\u00fc", 1, 4),
+    ("empty-like-iv-", 5, 6),
+    ("single-char-iv-x", 1, 2),
+    ("long-iv-" + "a" * 64, 2, 8),
+    ("openlinktoken-ml1-v1", 2, 8),
+    ("interop-test-large-dim", 3, 16),
 ]
 
 # Element-wise tolerance for floating-point comparison.
@@ -49,7 +49,7 @@ class JavaRotationHarness:
         self.project_root = PROJECT_ROOT
 
     def generate_matrices(
-        self, iv: str, rotation_count: int, dimension: int, hash_dimension: int, output_path: Path
+        self, iv: str, rotation_count: int, dimension: int, output_path: Path
     ) -> list[list[list[float]]]:
         """Run the Java harness and return parsed matrices.
 
@@ -91,7 +91,7 @@ class JavaRotationHarness:
             "org.codehaus.mojo:exec-maven-plugin:3.5.0:java",
             f"-Dexec.mainClass={JAVA_MAIN_CLASS}",
             "-Dexec.classpathScope=test",
-            f"-Dexec.args={iv} {rotation_count} {dimension} {hash_dimension} {output_path}",
+            f"-Dexec.args={iv} {rotation_count} {dimension} {output_path}",
         ]
         result = subprocess.run(
             exec_cmd,
@@ -112,11 +112,8 @@ class JavaRotationHarness:
         return data["matrices"]
 
 
-def _assert_matrices_match(
-    java_matrices: list, python_matrices: list, iv: str, rotation_count: int, dimension: int, hash_dimension: int
-):
+def _assert_matrices_match(java_matrices: list, python_matrices: list, iv: str, rotation_count: int, dimension: int):
     """Compare Java and Python matrix lists element-by-element within tolerance."""
-    expected_rows = hash_dimension if hash_dimension < dimension else dimension
     assert len(java_matrices) == rotation_count, (
         f"IV={iv!r}: Java returned {len(java_matrices)} matrices, expected {rotation_count}"
     )
@@ -127,10 +124,10 @@ def _assert_matrices_match(
     for r in range(rotation_count):
         java_m = java_matrices[r]
         python_m = python_matrices[r]
-        assert len(java_m) == expected_rows, f"IV={iv!r} r={r}: Java matrix has {len(java_m)} rows"
-        assert len(python_m) == expected_rows, f"IV={iv!r} r={r}: Python matrix has {len(python_m)} rows"
+        assert len(java_m) == dimension, f"IV={iv!r} r={r}: Java matrix has {len(java_m)} rows"
+        assert len(python_m) == dimension, f"IV={iv!r} r={r}: Python matrix has {len(python_m)} rows"
 
-        for row in range(expected_rows):
+        for row in range(dimension):
             assert len(java_m[row]) == dimension
             assert len(python_m[row]) == dimension
             for col in range(dimension):
@@ -157,13 +154,11 @@ class TestRotationMatrixInterop:
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_path = Path(tmp_dir)
 
-            for iv, rotation_count, dimension, hash_dimension in TEST_VECTORS:
+            for iv, rotation_count, dimension in TEST_VECTORS:
                 output_json = tmp_path / f"rotation_{rotation_count}x{dimension}.json"
 
-                java_matrices = self.java_harness.generate_matrices(
-                    iv, rotation_count, dimension, hash_dimension, output_json
-                )
-                python_matrices = generate(iv, rotation_count, dimension, hash_dimension)
+                java_matrices = self.java_harness.generate_matrices(iv, rotation_count, dimension, output_json)
+                python_matrices = generate(iv, rotation_count, dimension)
 
                 _assert_matrices_match(
                     java_matrices,
@@ -171,12 +166,8 @@ class TestRotationMatrixInterop:
                     iv,
                     rotation_count,
                     dimension,
-                    hash_dimension,
                 )
-                print(
-                    f"  ✅ IV={iv[:30]!r:32s}  count={rotation_count}  "
-                    f"dim={dimension}  hash_dim={hash_dimension}  — match"
-                )
+                print(f"  ✅ IV={iv[:30]!r:32s}  count={rotation_count}  dim={dimension}  — match")
 
         print("-" * 50)
         print("✅ All rotation matrix interop tests passed!")

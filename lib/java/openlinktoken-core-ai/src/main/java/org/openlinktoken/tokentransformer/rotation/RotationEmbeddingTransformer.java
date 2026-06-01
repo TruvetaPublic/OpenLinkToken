@@ -11,8 +11,8 @@ import java.util.stream.Collectors;
  * <p>The transformation pipeline for each configured rotation matrix is:
  * <ol>
  *   <li>Subtract per-dimension {@code bias} from the embedding (centring).</li>
- *   <li>Project the centred vector through the rotation matrix to obtain a
- *       {@code hashDimension}-dimensional float vector.</li>
+ *   <li>Rotate the centred vector, retain the leading {@code hashDimension}
+ *       values, and quantize that truncated vector.</li>
  *   <li>Quantize the projected vector into a space-separated integer string.</li>
  * </ol>
  *
@@ -127,8 +127,7 @@ public final class RotationEmbeddingTransformer implements EmbeddingTransformer 
             // rotationCount-1 entries are actual rotation matrices.
             List<double[][]> allMatrices = new ArrayList<>(rotationCount);
             allMatrices.add(new double[][]{{-1.0}});
-            allMatrices.addAll(
-                    RotationMatrixGenerator.generate(iv, rotationCount - 1, dimension, hashDimension));
+            allMatrices.addAll(RotationMatrixGenerator.generate(iv, rotationCount - 1, dimension));
             matrices = allMatrices;
         }
     }

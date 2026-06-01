@@ -90,6 +90,7 @@ demos/pprl-superhero-example/datasets/
 uv.lock
 apm.lock
 apm.lock.yaml
+test-output.xml
 
 # APM dependencies
 apm_modules/

@@ -7,7 +7,10 @@ from typing import Dict, List, Optional, Set, Type
 from openlinktoken.attributes.attribute import Attribute
 from openlinktoken.attributes.attribute_loader import AttributeLoader
 from openlinktoken.tokens.base_token_definition import BaseTokenDefinition
-from openlinktoken.tokens.inference_signature_provider import InferenceBatchResult, InferenceSignatureProvider  # noqa: F401
+from openlinktoken.tokens.inference_signature_provider import (  # noqa: F401
+    InferenceBatchResult,
+    InferenceSignatureProvider,
+)
 from openlinktoken.tokens.token import Token
 from openlinktoken.tokens.token_generation_exception import TokenGenerationException
 from openlinktoken.tokens.token_generator_result import TokenGeneratorResult
@@ -105,7 +108,7 @@ class TokenGenerator:
         if person_attributes is None:
             raise ValueError("Person attributes cannot be null.")
 
-        if definition is None:
+        if definition is None or not definition:
             return None
 
         values = []
@@ -182,6 +185,17 @@ class TokenGenerator:
         """
         signature = self._get_token_signature(token_id, person_attributes, result)
         logger.debug(f"Token signature for token id {token_id}: {signature}")
+
+        definition = self.token_definition.get_token_definition(token_id)
+        provider = _get_inference_provider()
+        token_has_active_provider = (
+            provider is not None and provider.get_token_id() == token_id and provider.is_enabled()
+        )
+
+        # Inference-only tokens (empty definition, no active provider) produce no output by design;
+        # skip tokenizing entirely rather than recording a spurious blank.
+        if not definition and not token_has_active_provider:
+            return None
 
         try:
             token = self.tokenizer.tokenize(signature)

@@ -3,7 +3,10 @@
 import re
 import threading
 
+import numpy as np
+
 from openlinktoken_core_ai.tokentransformer.rotation.rotation_embedding_transformer import RotationEmbeddingTransformer
+from openlinktoken_core_ai.tokentransformer.rotation.rotation_matrix_generator import generate
 
 _IV = "test-rotation-iv-2024"
 _DIMENSION = 4
@@ -57,6 +60,38 @@ class TestRotationEmbeddingTransformer:
         for token in tokens:
             parts = token.split(" ")
             assert len(parts) == hash_dim
+
+    def test_transformer_uses_standard_full_rotation_matrices(self):
+        """hash_dimension must not switch the CLI away from standard full rotations."""
+        transformer = self._make_transformer(hash_dimension=2)
+
+        transformer.transform(self._sample_embedding())
+        expected = generate(_IV, _ROTATION_COUNT - 1, _DIMENSION)
+
+        assert len(transformer._matrices) == _ROTATION_COUNT
+        for actual_matrix, expected_matrix in zip(transformer._matrices[1:], expected):
+            assert np.asarray(actual_matrix).shape == (_DIMENSION, _DIMENSION)
+            np.testing.assert_allclose(
+                np.asarray(actual_matrix),
+                expected_matrix,
+                rtol=0.0,
+                atol=1e-12,
+            )
+
+    def test_hash_dimension_matches_standard_full_rotation_parity_fixture(self):
+        """The Python transformer must match the standard full-rotation parity fixture."""
+        transformer = RotationEmbeddingTransformer(
+            iv="openlinktoken-ml1-v1",
+            rotation_count=2,
+            dimension=8,
+            hash_dimension=3,
+        )
+
+        tokens = transformer.transform(
+            [0.125, -0.25, 0.375, -0.5, 0.625, -0.75, 0.875, -1.0]
+        )
+
+        assert tokens == ["102 95 107", "95 126 103"]
 
     def test_matrix_caching_returns_identical_results(self):
         """Calling transform() twice on the same instance returns identical results."""

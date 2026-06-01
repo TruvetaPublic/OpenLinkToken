@@ -16,7 +16,7 @@ _SENTINEL = np.array([-1.0])
 
 
 class RotationEmbeddingTransformer:
-    """Composites matrix generation, rotation projection, and quantization into a
+    """Composites matrix generation, rotation, truncation, and quantization into a
     single float-vector → token-list transformer.
 
     Rotation matrices are generated lazily from the IV and cached for the lifetime
@@ -40,7 +40,7 @@ class RotationEmbeddingTransformer:
             iv: Initialization vector string used to derive rotation matrices.
             rotation_count: Number of rotation matrices to generate.
             dimension: Size of the input embedding vector (N).
-            hash_dimension: Number of projected dimensions to retain and quantize (k ≤ N).
+            hash_dimension: Number of leading rotated dimensions to retain and quantize (k ≤ N).
             bias: Optional float vector of length N subtracted before rotation. Defaults to zeros.
             min_val: Quantizer lower bound (default -5.0).
             max_val: Quantizer upper bound (default +5.0).
@@ -88,6 +88,5 @@ class RotationEmbeddingTransformer:
                         self._iv,
                         self._rotation_count - 1,
                         self._dimension,
-                        hash_dimension=self._hash_dimension,
                     )
                     self._matrices = [_SENTINEL] + actual
