@@ -14,6 +14,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import zipfile
 from pathlib import Path
 from typing import Any, Dict
 
@@ -385,6 +386,112 @@ class TestTokenCompatibility:
             print("✅ Metadata consistency verified!")
             print("-" * 30)
 
+    def test_package_command_zip_output(self):
+        """Verify that the package command bundles tokens, metadata, and exchange config into a zip."""
+        print("\nTesting package command zip output")
+        print("-" * 30)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            output_zip = temp_path / "output.zip"
+
+            exchange_config, private_key = self.python_cli._bootstrap_exchange_config(temp_path)
+
+            self.python_cli.run(
+                "package",
+                "-i",
+                str(self.python_cli.sample_csv),
+                "-o",
+                str(output_zip),
+                "--exchange-config",
+                str(exchange_config),
+                "--private-key",
+                str(private_key),
+                home_dir=temp_path,
+            )
+
+            assert output_zip.exists(), "Package zip output file was not created"
+            assert output_zip.stat().st_size > 0, "Package zip output file is empty"
+
+            with zipfile.ZipFile(output_zip) as archive:
+                names = archive.namelist()
+
+            assert "output.csv" in names, f"ZIP missing tokens CSV; got: {names}"
+            assert "output.metadata.json" in names, f"ZIP missing metadata JSON; got: {names}"
+            exchange_config_name = exchange_config.name
+            assert exchange_config_name in names, f"ZIP missing exchange config '{exchange_config_name}'; got: {names}"
+            assert len(names) == 3, f"ZIP should contain exactly 3 files, got: {names}"
+
+            with zipfile.ZipFile(output_zip) as archive:
+                assert len(archive.read("output.csv")) > 0, "Tokens CSV inside ZIP is empty"
+                assert len(archive.read("output.metadata.json")) > 0, "Metadata JSON inside ZIP is empty"
+                assert len(archive.read(exchange_config_name)) > 0, "Exchange config inside ZIP is empty"
+
+                meta = json.loads(archive.read("output.metadata.json"))
+                assert meta.get("TotalRows") == EXPECTED_SAMPLE_METADATA["TotalRows"], meta
+
+            print("✅ package zip output verified!")
+            print("-" * 30)
+
+    def test_encrypt_command_zip_output(self):
+        """Verify that the encrypt command bundles encrypted tokens and exchange config into a zip."""
+        print("\nTesting encrypt command zip output")
+        print("-" * 30)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            tokenized_csv = temp_path / "tokenized.csv"
+            output_zip = temp_path / "encrypted.zip"
+
+            exchange_config, private_key = self.python_cli._bootstrap_exchange_config(temp_path)
+
+            self.python_cli.run(
+                "tokenize",
+                "-i",
+                str(self.python_cli.sample_csv),
+                "-o",
+                str(tokenized_csv),
+                "--exchange-config",
+                str(exchange_config),
+                "--private-key",
+                str(private_key),
+                home_dir=temp_path,
+            )
+
+            assert tokenized_csv.exists(), "Tokenize step did not produce output"
+
+            self.python_cli.run(
+                "encrypt",
+                "-i",
+                str(tokenized_csv),
+                "-o",
+                str(output_zip),
+                "--exchange-config",
+                str(exchange_config),
+                "--private-key",
+                str(private_key),
+                home_dir=temp_path,
+            )
+
+            assert output_zip.exists(), "Encrypt zip output file was not created"
+            assert output_zip.stat().st_size > 0, "Encrypt zip output file is empty"
+
+            with zipfile.ZipFile(output_zip) as archive:
+                names = archive.namelist()
+
+            assert "encrypted.csv" in names, f"ZIP missing encrypted tokens CSV; got: {names}"
+            exchange_config_name = exchange_config.name
+            assert exchange_config_name in names, f"ZIP missing exchange config '{exchange_config_name}'; got: {names}"
+            assert "encrypted.metadata.json" not in names, f"Encrypt ZIP should not contain metadata; got: {names}"
+            assert len(names) == 2, f"ZIP should contain exactly 2 files, got: {names}"
+
+            with zipfile.ZipFile(output_zip) as archive:
+                assert len(archive.read("encrypted.csv")) > 0, "Encrypted tokens CSV inside ZIP is empty"
+                assert len(archive.read(exchange_config_name)) > 0, "Exchange config inside ZIP is empty"
+
+            print("✅ encrypt zip output verified!")
+            print("-" * 30)
+
 
 if __name__ == "__main__":
     test = TestTokenCompatibility()
@@ -395,6 +502,8 @@ if __name__ == "__main__":
         test.test_python_cli_module_entrypoint_tokenize_flow()
         test.test_java_library_harness_matches_python_cli_tokenize_output()
         test.test_metadata_consistency()
+        test.test_package_command_zip_output()
+        test.test_encrypt_command_zip_output()
         print("\n✅ ALL TESTS PASSED!")
     except Exception as error:
         print(f"\n❌ TEST FAILED: {str(error)}")
