@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: MIT */
 package org.openlinktoken.tokentransformer.rotation;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -36,7 +37,7 @@ public final class RotationEmbeddingTransformer implements EmbeddingTransformer 
      * Constructs a {@code RotationEmbeddingTransformer} with full parameter control.
      *
      * @param iv            initialization vector used to seed the rotation matrices
-     * @param rotationCount number of rotation matrices (= number of output tokens)
+     * @param rotationCount total number of tokens (= 1 sentinel + {@code rotationCount-1} actual matrices)
      * @param dimension     dimension of the rotation matrices (must equal embedding.length)
      * @param hashDimension number of projected dimensions to quantize (k ≤ dimension)
      * @param bias          per-dimension bias subtracted before projection; length must equal dimension
@@ -122,7 +123,13 @@ public final class RotationEmbeddingTransformer implements EmbeddingTransformer 
 
     private synchronized void ensureMatrices() {
         if (matrices == null) {
-            matrices = RotationMatrixGenerator.generate(iv, rotationCount, dimension, hashDimension);
+            // Index 0 is the [[-1]] sentinel (pass-through token); the remaining
+            // rotationCount-1 entries are actual rotation matrices.
+            List<double[][]> allMatrices = new ArrayList<>(rotationCount);
+            allMatrices.add(new double[][]{{-1.0}});
+            allMatrices.addAll(
+                    RotationMatrixGenerator.generate(iv, rotationCount - 1, dimension, hashDimension));
+            matrices = allMatrices;
         }
     }
 }

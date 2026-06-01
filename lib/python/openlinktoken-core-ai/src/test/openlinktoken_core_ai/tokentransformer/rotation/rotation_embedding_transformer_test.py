@@ -106,12 +106,13 @@ class TestRotationEmbeddingTransformer:
         assert results[0] == results[1]
 
     def test_different_ivs_produce_different_tokens(self):
-        """Two transformers with different IVs should produce different tokens."""
+        """Two transformers with different IVs should produce different tokens for non-sentinel entries."""
         t1 = RotationEmbeddingTransformer(
-            iv="iv-one", rotation_count=1, dimension=_DIMENSION, hash_dimension=_HASH_DIMENSION
+            iv="iv-one", rotation_count=2, dimension=_DIMENSION, hash_dimension=_HASH_DIMENSION
         )
         t2 = RotationEmbeddingTransformer(
-            iv="iv-two", rotation_count=1, dimension=_DIMENSION, hash_dimension=_HASH_DIMENSION
+            iv="iv-two", rotation_count=2, dimension=_DIMENSION, hash_dimension=_HASH_DIMENSION
         )
         embedding = self._sample_embedding()
-        assert t1.transform(embedding) != t2.transform(embedding)
+        # Token[0] is the sentinel and is IV-independent; token[1] varies by IV.
+        assert t1.transform(embedding)[1] != t2.transform(embedding)[1]

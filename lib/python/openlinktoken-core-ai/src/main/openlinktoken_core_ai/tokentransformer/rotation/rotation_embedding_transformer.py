@@ -1,11 +1,18 @@
 # SPDX-License-Identifier: MIT
 
+import logging
 from threading import Lock
 from typing import List, Optional
+
+import numpy as np
 
 from openlinktoken_core_ai.tokentransformer.rotation.embedding_rotator import rotate
 from openlinktoken_core_ai.tokentransformer.rotation.rotation_matrix_generator import generate
 from openlinktoken_core_ai.tokentransformer.rotation.rotation_quantizer import quantize
+
+logger = logging.getLogger(__name__)
+
+_SENTINEL = np.array([-1.0])
 
 
 class RotationEmbeddingTransformer:
@@ -66,13 +73,21 @@ class RotationEmbeddingTransformer:
         return [quantize(p, self._min_val, self._max_val, self._bin_width) for p in projections]
 
     def _ensure_matrices(self) -> None:
-        """Lazily generate and cache rotation matrices in a thread-safe manner."""
+        """Lazily generate and cache rotation matrices in a thread-safe manner.
+
+        The matrices list always starts with the ``[[-1]]`` sentinel at index 0,
+        followed by ``rotation_count - 1`` actual rotation matrices.  The sentinel
+        signals a pass-through projection for token[0]: the first ``hash_dimension``
+        values of the bias-centred embedding are used directly without rotation.
+        This matches the cloud backend token generation format exactly.
+        """
         if self._matrices is None:
             with self._lock:
                 if self._matrices is None:
-                    self._matrices = generate(
+                    actual = generate(
                         self._iv,
-                        self._rotation_count,
+                        self._rotation_count - 1,
                         self._dimension,
                         hash_dimension=self._hash_dimension,
                     )
+                    self._matrices = [_SENTINEL] + actual

@@ -90,3 +90,38 @@ class TestEmbeddingRotator:
         result = rotate(embedding, matrices, bias, k=2)
         assert len(result[0]) == 2
         assert result[0] == pytest.approx([7.0, 8.0], abs=1e-9)
+
+    def test_sentinel_pass_through(self):
+        """When a [[-1]] sentinel is the first matrix, it returns the first k values of x_centered."""
+        import numpy as np
+
+        sentinel = np.array([[-1.0]])
+        regular_R = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]  # 3×3 identity
+        matrices = [sentinel, regular_R]
+        embedding = [3.0, 5.0, 7.0]
+        bias = [1.0, 2.0, 3.0]
+        # x_centered = [2.0, 3.0, 4.0]; sentinel result = first k=2 of x_centered
+        result = rotate(embedding, matrices, bias, k=2)
+        assert len(result) == 2
+        assert result[0] == pytest.approx([2.0, 3.0], abs=1e-9), "Sentinel should return first k values of x_centered"
+        # Identity rotation: result[:k] = x_centered[:k]
+        assert result[1] == pytest.approx([2.0, 3.0], abs=1e-9)
+
+    def test_sentinel_as_only_matrix(self):
+        """Sentinel works when it is the only entry in matrices."""
+        import numpy as np
+
+        sentinel = np.array([[-1.0]])
+        embedding = [10.0, 20.0, 30.0]
+        bias = [0.0, 0.0, 0.0]
+        result = rotate(embedding, [sentinel], bias, k=2)
+        assert len(result) == 1
+        assert result[0] == pytest.approx([10.0, 20.0], abs=1e-9)
+
+    def test_sentinel_as_list_of_lists(self):
+        """Sentinel detection works when the matrix is a list-of-lists, not an ndarray."""
+        sentinel = [[-1.0]]
+        embedding = [5.0, 6.0]
+        bias = [1.0, 1.0]
+        result = rotate(embedding, [sentinel], bias, k=1)
+        assert result[0] == pytest.approx([4.0], abs=1e-9)

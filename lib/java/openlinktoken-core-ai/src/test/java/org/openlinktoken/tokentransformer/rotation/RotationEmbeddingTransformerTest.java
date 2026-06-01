@@ -84,6 +84,8 @@ class RotationEmbeddingTransformerTest {
 
     @Test
     void testHashDimensionProjectionMatchesPythonParityFixture() {
+        // Token[0] is the [[-1]] sentinel pass-through; token[1] is the first actual rotation.
+        // Fixture values confirmed by running the equivalent Python RotationEmbeddingTransformer.
         RotationEmbeddingTransformer transformer =
                 RotationEmbeddingTransformer.withDefaults("openlinktoken-ml1-v1", 2, 8, 3);
 
@@ -91,7 +93,7 @@ class RotationEmbeddingTransformerTest {
 
         List<String> tokens = transformer.transform(embedding);
 
-        assertEquals(List.of("98 111 102", "87 96 120"), tokens);
+        assertEquals(List.of("102 95 107", "98 111 102"), tokens);
     }
 
     @Test

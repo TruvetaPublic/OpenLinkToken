@@ -3,6 +3,7 @@ package org.openlinktoken.tokentransformer.rotation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -154,6 +155,43 @@ class EmbeddingRotatorTest {
         assertEquals(2, projected.length);
         assertEquals(5.0f, projected[0], (float) TOLERANCE);
         assertEquals(7.0f, projected[1], (float) TOLERANCE);
+    }
+
+    @Test
+    void testSentinelPassThrough() {
+        // The [[-1]] sentinel should return the first k values of x_centered directly.
+        double[][] sentinel = { { -1.0 } };
+        double[][] identity3 = { { 1.0, 0.0, 0.0 }, { 0.0, 1.0, 0.0 }, { 0.0, 0.0, 1.0 } };
+        float[] embedding = { 3.0f, 5.0f, 7.0f };
+        float[] bias = { 1.0f, 2.0f, 3.0f };
+        // x_centered = [2, 3, 4]; sentinel result = first k=2 values
+        List<float[]> result = EmbeddingRotator.rotate(embedding, List.of(sentinel, identity3), bias, 2);
+        assertEquals(2, result.size());
+        assertEquals(2.0f, result.get(0)[0], (float) TOLERANCE, "Sentinel[0] should equal x_centered[0]");
+        assertEquals(3.0f, result.get(0)[1], (float) TOLERANCE, "Sentinel[1] should equal x_centered[1]");
+        // Identity rotation: result = x_centered[:k]
+        assertEquals(2.0f, result.get(1)[0], (float) TOLERANCE);
+        assertEquals(3.0f, result.get(1)[1], (float) TOLERANCE);
+    }
+
+    @Test
+    void testSentinelAsOnlyEntry() {
+        // Sentinel works when it is the only entry in the matrices list.
+        double[][] sentinel = { { -1.0 } };
+        float[] embedding = { 10.0f, 20.0f, 30.0f };
+        float[] bias = new float[3];
+        List<float[]> result = EmbeddingRotator.rotate(embedding, List.<double[][]>of(sentinel), bias, 2);
+        assertEquals(1, result.size());
+        assertEquals(10.0f, result.get(0)[0], (float) TOLERANCE);
+        assertEquals(20.0f, result.get(0)[1], (float) TOLERANCE);
+    }
+
+    @Test
+    void testIsSentinelDetectsCorrectly() {
+        assertTrue(EmbeddingRotator.isSentinel(new double[][] { { -1.0 } }));
+        assertFalse(EmbeddingRotator.isSentinel(new double[][] { { 1.0 } }));
+        assertFalse(EmbeddingRotator.isSentinel(new double[][] { { -1.0, 0.0 } }));
+        assertFalse(EmbeddingRotator.isSentinel(new double[][] { { -1.0 }, { 0.0 } }));
     }
 
     @Test

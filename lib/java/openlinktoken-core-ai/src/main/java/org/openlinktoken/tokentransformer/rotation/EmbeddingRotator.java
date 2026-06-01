@@ -21,22 +21,29 @@ public final class EmbeddingRotator {
     /**
      * Rotate an embedding vector through each matrix in {@code matrices}.
      *
-     * <p>For each matrix {@code R} (shape N×N, though only the first {@code k}
-     * rows are used):
+     * <p>The first entry in {@code matrices} may be the {@code [[-1]]} sentinel, which
+     * signals a pass-through projection: the first {@code k} values of the bias-centred
+     * embedding are returned directly without any rotation.  This matches the cloud
+     * backend's index-0 pass-through token.  All subsequent entries must be valid N×N
+     * rotation matrices.
+     *
+     * <p>For each non-sentinel matrix {@code R} (shape N×N, though only the first
+     * {@code k} rows are used):
      * <pre>
      *   x_centered[i] = (double) embedding[i] - (double) bias[i]
      *   rotated[row]  = (float) sum_col( R[row][col] * x_centered[col] )
      * </pre>
      *
      * @param embedding the raw CLS embedding vector; length N
-     * @param matrices  list of rotation matrices, each of shape N×N;
-     *                  only the first {@code k} rows of each matrix are used
+     * @param matrices  list whose first entry may be the {@code [[-1]]} sentinel and
+     *                  whose remaining entries are N×N rotation matrices; only the first
+     *                  {@code k} rows of each rotation matrix are used
      * @param bias      per-dimension bias to subtract before projection;
      *                  must have the same length as {@code embedding}
      * @param k         number of output dimensions per projection (k ≤ N)
-     * @return list of projected float vectors, one per matrix, each of length k
+     * @return list of projected float vectors, one per entry in {@code matrices}, each of length k
      * @throws IllegalArgumentException if {@code bias.length != embedding.length}
-     *                                  or {@code k} exceeds the matrix row count
+     *                                  or {@code k} exceeds the matrix row count for a non-sentinel entry
      */
     public static List<float[]> rotate(float[] embedding, List<double[][]> matrices, float[] bias, int k) {
         if (bias.length != embedding.length) {
@@ -55,21 +62,42 @@ public final class EmbeddingRotator {
         List<float[]> results = new ArrayList<>(matrices.size());
 
         for (double[][] r : matrices) {
-            if (k > r.length) {
-                throw new IllegalArgumentException(
-                        "k (" + k + ") exceeds matrix row count (" + r.length + ")");
-            }
-            float[] rotated = new float[k];
-            for (int row = 0; row < k; row++) {
-                double sum = 0.0;
-                for (int col = 0; col < n; col++) {
-                    sum += r[row][col] * xCentered[col];
+            if (isSentinel(r)) {
+                // Sentinel [-1]: pass-through — return first k values of the centred embedding.
+                float[] passThrough = new float[k];
+                for (int i = 0; i < k; i++) {
+                    passThrough[i] = (float) xCentered[i];
                 }
-                rotated[row] = (float) sum;
+                results.add(passThrough);
+            } else {
+                if (k > r.length) {
+                    throw new IllegalArgumentException(
+                            "k (" + k + ") exceeds matrix row count (" + r.length + ")");
+                }
+                float[] rotated = new float[k];
+                for (int row = 0; row < k; row++) {
+                    double sum = 0.0;
+                    for (int col = 0; col < n; col++) {
+                        sum += r[row][col] * xCentered[col];
+                    }
+                    rotated[row] = (float) sum;
+                }
+                results.add(rotated);
             }
-            results.add(rotated);
         }
 
         return results;
+    }
+
+    /**
+     * Returns {@code true} when {@code r} is the {@code [[-1]]} sentinel matrix.
+     *
+     * <p>A sentinel is a 1×1 matrix whose single element equals {@code -1.0}.
+     *
+     * @param r matrix to test
+     * @return {@code true} if {@code r} is the sentinel
+     */
+    static boolean isSentinel(double[][] r) {
+        return r.length == 1 && r[0].length == 1 && r[0][0] == -1.0;
     }
 }

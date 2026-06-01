@@ -16,7 +16,7 @@ class RotationConfig:
     """
 
     DEFAULT_IV: ClassVar[str] = "openlinktoken-ml1-v1"
-    DEFAULT_ROTATION_COUNT: ClassVar[int] = 30
+    DEFAULT_ROTATION_COUNT: ClassVar[int] = 50
     DEFAULT_HASH_DIMENSION: ClassVar[int] = 4
     DEFAULT_BIN_WIDTH: ClassVar[float] = 0.05
     DEFAULT_MIN_VAL: ClassVar[float] = -5.0
