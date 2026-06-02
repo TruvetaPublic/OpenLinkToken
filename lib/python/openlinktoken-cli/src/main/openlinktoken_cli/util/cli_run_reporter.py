@@ -90,7 +90,7 @@ class _ProgressIndicator:
             with self._lock:
                 message = self._message
             frame = self._FRAMES[frame_index % len(self._FRAMES)]
-            print(f"\r{frame} {message}", end="", file=sys.stderr, flush=True)
+            print(f"\r\033[K{frame} {message}", end="", file=sys.stderr, flush=True)
             frame_index += 1
             time.sleep(0.1)
 
