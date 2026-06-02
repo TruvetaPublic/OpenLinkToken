@@ -1,8 +1,11 @@
 # SPDX-License-Identifier: MIT
 
+import contextlib
 import logging
 import sys
+import tempfile
 import uuid
+from pathlib import Path
 
 from openlinktoken.tokens.token import Token
 from openlinktoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
@@ -17,6 +20,7 @@ from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_
 from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
 from openlinktoken_cli.util.exchange_config import derive_transport_encryption_key, resolve_exchange_config
 from openlinktoken_cli.util.file_type_detector import FileTypeDetector
+from openlinktoken_cli.util.zip_utils import bundle_into_zip
 
 logger = logging.getLogger(__name__)
 
@@ -122,15 +126,38 @@ class EncryptCommand:
                     logger.info(f"Exchange config: {exchange.path}")
 
                     reporter.update_status("Encrypting tokens")
-                    summary = EncryptCommand._encrypt_tokens(
-                        args.input_path,
-                        args.output_path,
-                        input_type,
-                        output_type,
-                        encryption_key,
-                        ring_id,
-                        progress_callback=reporter.make_progress_callback("Encrypting tokens", "tokens"),
-                    )
+                    is_zip = output_type == FileTypeDetector.TYPE_ZIP
+
+                    if is_zip:
+                        if not exchange.path:
+                            raise ValueError(
+                                "ZIP output requires an exchange config file path. "
+                                "Ensure the exchange config was loaded from a file (exchange.path must not be None)."
+                            )
+                        logger.info("ZIP output: encrypted tokens and exchange config will be bundled")
+
+                    with contextlib.ExitStack() as stack:
+                        if is_zip:
+                            temp_dir = stack.enter_context(tempfile.TemporaryDirectory())
+                            zip_path = Path(args.output_path)
+                            token_output_path = str(Path(temp_dir) / f"{zip_path.stem}.{input_type}")
+                            token_output_type = input_type
+                        else:
+                            token_output_path = args.output_path
+                            token_output_type = output_type
+
+                        summary = EncryptCommand._encrypt_tokens(
+                            args.input_path,
+                            token_output_path,
+                            input_type,
+                            token_output_type,
+                            encryption_key,
+                            ring_id,
+                            progress_callback=reporter.make_progress_callback("Encrypting tokens", "tokens"),
+                        )
+
+                        if is_zip:
+                            bundle_into_zip(args.output_path, token_output_path, exchange.path)
                     logger.info("Token encryption completed successfully")
                 except Exception as error:
                     logger.error("Error during token encryption: %s", error)

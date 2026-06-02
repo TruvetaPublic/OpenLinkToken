@@ -5,6 +5,7 @@ Tests the end-to-end workflows for token generation and decryption using new sub
 """
 
 import os
+import zipfile
 from pathlib import Path
 from unittest.mock import patch
 
@@ -110,6 +111,46 @@ class TestOpenLinkTokenCommand:
         assert output_parquet.exists(), "Output Parquet should be created"
         assert output_parquet.stat().st_size > 0, "Output Parquet should not be empty"
 
+    def test_package_command_csv_to_zip(self, temp_dir):
+        """Test package command with ZIP output bundles tokens, metadata, and exchange config."""
+        input_csv = temp_dir / "input.csv"
+        output_zip = temp_dir / "output.zip"
+        exchange_config, private_key = self._create_exchange_config(temp_dir, "package-zip")
+
+        args = [
+            "package",
+            "-i",
+            str(input_csv),
+            "-o",
+            str(output_zip),
+            "--exchange-config",
+            str(exchange_config),
+            "--private-key",
+            str(private_key),
+        ]
+
+        exit_code = OpenLinkTokenCommand.execute(args)
+
+        assert exit_code == 0, "Command should execute successfully"
+        assert output_zip.exists(), "Output ZIP should be created"
+        assert output_zip.stat().st_size > 0, "Output ZIP should not be empty"
+
+        with zipfile.ZipFile(output_zip) as archive:
+            names = archive.namelist()
+
+        assert "output.csv" in names, "ZIP should contain the tokens CSV"
+        assert "output.metadata.json" in names, "ZIP should contain the metadata JSON"
+        assert "package-zip.exchange.json" in names, "ZIP should contain the exchange config JSON"
+        assert len(names) == 3, f"ZIP should contain exactly 3 files, got: {names}"
+
+        with zipfile.ZipFile(output_zip) as archive:
+            assert len(archive.read("output.csv")) > 0, "Tokens CSV inside ZIP should not be empty"
+            assert len(archive.read("output.metadata.json")) > 0, "Metadata JSON inside ZIP should not be empty"
+            assert len(archive.read("package-zip.exchange.json")) > 0, "Exchange config inside ZIP should not be empty"
+
+        # Metadata must NOT appear next to the zip — it is bundled inside
+        assert not (temp_dir / "output.metadata.json").exists(), "Metadata should not appear next to the zip"
+
     def test_tokenize_command(self, temp_dir):
         """Test tokenize command (hash-only, no encryption)."""
         input_csv = temp_dir / "input.csv"
@@ -133,6 +174,57 @@ class TestOpenLinkTokenCommand:
         assert exit_code == 0, "Command should execute successfully"
         assert output_csv.exists(), "Output CSV should be created"
         assert output_csv.stat().st_size > 0, "Output CSV should not be empty"
+
+    def test_encrypt_command_csv_to_zip(self, temp_dir):
+        """Test encrypt command with ZIP output bundles encrypted tokens and exchange config."""
+        input_csv = temp_dir / "input.csv"
+        hashed_csv = temp_dir / "hashed.csv"
+        output_zip = temp_dir / "output.zip"
+        exchange_config, private_key = self._create_exchange_config(temp_dir, "encrypt-zip")
+
+        # First tokenize (hash-only) to produce hashed tokens for encrypt to consume
+        OpenLinkTokenCommand.execute(
+            [
+                "tokenize",
+                "-i",
+                str(input_csv),
+                "-o",
+                str(hashed_csv),
+                "--exchange-config",
+                str(exchange_config),
+                "--private-key",
+                str(private_key),
+            ]
+        )
+
+        args = [
+            "encrypt",
+            "-i",
+            str(hashed_csv),
+            "-o",
+            str(output_zip),
+            "--exchange-config",
+            str(exchange_config),
+            "--private-key",
+            str(private_key),
+        ]
+
+        exit_code = OpenLinkTokenCommand.execute(args)
+
+        assert exit_code == 0, "Command should execute successfully"
+        assert output_zip.exists(), "Output ZIP should be created"
+        assert output_zip.stat().st_size > 0, "Output ZIP should not be empty"
+
+        with zipfile.ZipFile(output_zip) as archive:
+            names = archive.namelist()
+
+        assert "output.csv" in names, "ZIP should contain the encrypted tokens CSV"
+        assert "encrypt-zip.exchange.json" in names, "ZIP should contain the exchange config JSON"
+        assert len(names) == 2, f"ZIP should contain exactly 2 files, got: {names}"
+
+        with zipfile.ZipFile(output_zip) as archive:
+            assert len(archive.read("output.csv")) > 0, "Tokens CSV inside ZIP should not be empty"
+            assert len(archive.read("encrypt-zip.exchange.json")) > 0, "Exchange config inside ZIP should not be empty"
 
     def test_decrypt_command(self, temp_dir):
         """Test decrypt command."""

@@ -1,8 +1,11 @@
 # SPDX-License-Identifier: MIT
 
+import contextlib
 import logging
 import sys
+import tempfile
 import uuid
+from pathlib import Path
 from typing import List
 
 from openlinktoken.metadata import Metadata
@@ -22,6 +25,7 @@ from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_
 from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
 from openlinktoken_cli.util.exchange_config import derive_transport_encryption_key, resolve_exchange_config
 from openlinktoken_cli.util.file_type_detector import FileTypeDetector
+from openlinktoken_cli.util.zip_utils import bundle_into_zip
 
 logger = logging.getLogger(__name__)
 
@@ -145,24 +149,53 @@ class PackageCommand:
                     logger.info(f"Exchange config: {exchange.path}")
 
                     reporter.update_status("Packaging records")
-                    summary, metadata_path = PackageCommand._process_tokens(
-                        args.input_path,
-                        args.output_path,
-                        input_type,
-                        output_type,
-                        exchange.hashing_secret,
-                        encryption_key,
-                        ring_id,
-                        hash_record_ids,
-                        progress_callback=reporter.make_progress_callback("Packaging records", "records"),
-                    )
+                    is_zip = output_type == FileTypeDetector.TYPE_ZIP
+
+                    if is_zip:
+                        if not exchange.path:
+                            raise ValueError(
+                                "ZIP output requires an exchange config file path. "
+                                "Ensure the exchange config was loaded from a file (exchange.path must not be None)."
+                            )
+                        logger.info("ZIP output: tokens, metadata, and exchange config will be bundled")
+
+                    with contextlib.ExitStack() as stack:
+                        if is_zip:
+                            temp_dir = stack.enter_context(tempfile.TemporaryDirectory())
+                            zip_path = Path(args.output_path)
+                            token_output_path = str(Path(temp_dir) / f"{zip_path.stem}.{input_type}")
+                            token_output_type = input_type
+                        else:
+                            token_output_path = args.output_path
+                            token_output_type = output_type
+
+                        summary, metadata_path = PackageCommand._process_tokens(
+                            args.input_path,
+                            token_output_path,
+                            input_type,
+                            token_output_type,
+                            exchange.hashing_secret,
+                            encryption_key,
+                            ring_id,
+                            hash_record_ids,
+                            progress_callback=reporter.make_progress_callback("Packaging records", "records"),
+                        )
+
+                        if is_zip:
+                            bundle_into_zip(args.output_path, token_output_path, metadata_path, exchange.path)
+                            metadata_path = None
                     logger.info("Token generation and encryption completed successfully")
                 except Exception as error:
                     logger.error("Error during token processing: %s", error)
                     raise
             reporter.finish_success(
                 "Package complete",
-                PackageCommand._build_summary_lines(args.output_path, metadata_path, summary, hash_record_ids),
+                PackageCommand._build_summary_lines(
+                    args.output_path,
+                    None if is_zip else metadata_path,
+                    summary,
+                    hash_record_ids,
+                ),
             )
             return 0
         except Exception as error:
@@ -227,16 +260,21 @@ class PackageCommand:
     @staticmethod
     def _build_summary_lines(
         output_path: str,
-        metadata_path: str,
+        metadata_path: str | None,
         summary: PersonAttributesProcessingSummary,
         hash_record_ids: bool,
     ) -> list[str]:
         lines = [
             f"Output: {output_path}",
-            f"Metadata: {metadata_path}",
-            f"Rows processed: {summary.total_rows:,}",
-            f"Rows with invalid attributes: {summary.total_rows_with_invalid_attributes:,}",
         ]
+        if metadata_path:
+            lines.append(f"Metadata: {metadata_path}")
+        lines.extend(
+            [
+                f"Rows processed: {summary.total_rows:,}",
+                f"Rows with invalid attributes: {summary.total_rows_with_invalid_attributes:,}",
+            ]
+        )
         lines.extend(
             CliRunReporter.summarize_count_lines("Top invalid attributes", summary.invalid_attributes_by_type, limit=3)
         )
