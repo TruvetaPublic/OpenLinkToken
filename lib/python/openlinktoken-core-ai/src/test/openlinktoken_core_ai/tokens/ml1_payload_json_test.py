@@ -6,35 +6,41 @@ from openlinktoken_core_ai.tokens.ml1_onnx_signature_generator import ml1_payloa
 class TestML1PayloadToJson:
     """Tests for ml1_payload_to_json JSON canonicalization.
 
-    The payload string is fed directly into the ONNX tokenizer, so its format
-    must be byte-identical to what Java's Jackson ObjectMapper produces with
-    default settings: compact JSON, no spaces around separators.
+    The payload string is fed directly into the ONNX tokenizer. It must match
+    generate_embeddings.py: Python's default json.dumps separators (", " and ": "),
+    with non-ASCII characters escaped as \\uXXXX (ensure_ascii=True default).
+    Field order follows EP: PostalCode, Birthdate, GivenName, Surname, Gender.
     """
 
-    def test_compact_separators_no_spaces(self):
+    def test_default_separators_with_spaces(self):
         payload = {
-            "Surname": "Doe",
-            "GivenName": "John",
-            "Birthdate": "1980-01-01",
-            "Gender": "M",
             "PostalCode": "98052",
+            "Birthdate": "1980-01-01",
+            "GivenName": "John",
+            "Surname": "Doe",
+            "Gender": "M",
         }
         result = ml1_payload_to_json(payload)
-        # Must match Jackson ObjectMapper.writeValueAsString() default output exactly.
-        expected = '{"Surname":"Doe","GivenName":"John","Birthdate":"1980-01-01","Gender":"M","PostalCode":"98052"}'
+        expected = (
+            '{"PostalCode": "98052", "Birthdate": "1980-01-01", "GivenName": "John", "Surname": "Doe", "Gender": "M"}'
+        )
         assert result == expected
 
-    def test_no_space_after_colon(self):
+    def test_space_after_colon(self):
         result = ml1_payload_to_json({"Key": "Value"})
-        assert '": "' not in result, "Space around colon separator diverges from Java Jackson output"
+        assert '": "' in result, "Expected space after colon to match generate_embeddings.py"
 
-    def test_no_space_after_comma(self):
+    def test_space_after_comma(self):
         result = ml1_payload_to_json({"A": "1", "B": "2"})
-        assert '", "' not in result, "Space after comma separator diverges from Java Jackson output"
+        assert '", "' in result, "Expected space after comma to match generate_embeddings.py"
+
+    def test_non_ascii_escaped(self):
+        result = ml1_payload_to_json({"Surname": "Müller"})
+        assert "\\u00fc" in result, "Non-ASCII chars must be escaped as \\uXXXX"
+        assert "ü" not in result, "Raw non-ASCII must not appear in output"
 
     def test_key_order_preserved(self):
-        # Insertion order must be preserved so the tokenizer input is deterministic.
-        keys = ["Surname", "GivenName", "Birthdate", "Gender", "PostalCode"]
+        keys = ["PostalCode", "Birthdate", "GivenName", "Surname", "Gender"]
         payload = {k: str(i) for i, k in enumerate(keys)}
         result = ml1_payload_to_json(payload)
         positions = [result.index(f'"{k}"') for k in keys]

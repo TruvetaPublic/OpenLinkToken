@@ -67,13 +67,14 @@ def _hash_rotation_values(rotation_values: List[str], t1_signature: str) -> List
     return [hashlib.sha256((rv + t1_signature).encode("utf-8")).hexdigest() for rv in rotation_values]
 
 
-# Ordered field name mapping for ML1 payload
+# Ordered field name mapping for ML1 payload.
+# Order matches generate_embeddings.py: PostalCode, Birthdate, GivenName, Surname, Gender.
 _ML1_FIELDS = [
-    (LastNameAttribute, "Surname"),
-    (FirstNameAttribute, "GivenName"),
-    (BirthDateAttribute, "Birthdate"),
-    (SexAttribute, "Gender"),
     (PostalCodeAttribute, "PostalCode"),
+    (BirthDateAttribute, "Birthdate"),
+    (FirstNameAttribute, "GivenName"),
+    (LastNameAttribute, "Surname"),
+    (SexAttribute, "Gender"),
 ]
 
 # Pre-built attribute instances for ML1 validation and normalization — reused across all calls.
@@ -192,9 +193,8 @@ class OnnxML1SignatureProvider:
     ) -> Optional[str]:
         """Build the deterministic JSON payload for ML1 inference.
 
-        Returns None if any required field is missing or fails validation.
-        Each of the 5 fields (Surname, GivenName, Birthdate, Gender, PostalCode)
-        must be present and non-empty.
+        Returns None if any required field is missing, fails validation, or normalizes to empty.
+        Field order: PostalCode, Birthdate, GivenName, Surname, Gender.
         """
         payload: Dict[str, str] = {}
         for attr_cls, field_name in _ML1_FIELDS:

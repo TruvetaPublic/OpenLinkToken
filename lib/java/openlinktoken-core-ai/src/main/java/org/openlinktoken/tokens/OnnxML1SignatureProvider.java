@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: MIT */
 package org.openlinktoken.tokens;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.openlinktoken.attributes.Attribute;
 import org.openlinktoken.attributes.AttributeExpression;
 import org.openlinktoken.attributes.AttributeLoader;
@@ -35,7 +34,6 @@ import java.util.Map;
 public class OnnxML1SignatureProvider implements InferenceSignatureProvider {
 
     private static final String TOKEN_ID = "ML1";
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     /**
      * Lazily initialized, cached rotation embedding transformer.
@@ -256,12 +254,13 @@ public class OnnxML1SignatureProvider implements InferenceSignatureProvider {
             return null;
         }
 
+        // Field order matches generate_embeddings.py: PostalCode, Birthdate, GivenName, Surname, Gender
         Map<String, String> payload = new LinkedHashMap<>();
-        if (!addMl1Field(LastNameAttribute.class, "Surname", personAttributes, result, payload)
-                || !addMl1Field(FirstNameAttribute.class, "GivenName", personAttributes, result, payload)
+        if (!addMl1Field(PostalCodeAttribute.class, "PostalCode", personAttributes, result, payload)
                 || !addMl1Field(BirthDateAttribute.class, "Birthdate", personAttributes, result, payload)
-                || !addMl1Field(SexAttribute.class, "Gender", personAttributes, result, payload)
-                || !addMl1Field(PostalCodeAttribute.class, "PostalCode", personAttributes, result, payload)) {
+                || !addMl1Field(FirstNameAttribute.class, "GivenName", personAttributes, result, payload)
+                || !addMl1Field(LastNameAttribute.class, "Surname", personAttributes, result, payload)
+                || !addMl1Field(SexAttribute.class, "Gender", personAttributes, result, payload)) {
             return null;
         }
 
@@ -296,11 +295,48 @@ public class OnnxML1SignatureProvider implements InferenceSignatureProvider {
         return true;
     }
 
+    /**
+     * Serializes a string map to JSON matching Python's json.dumps() default format:
+     * space after colon and comma, non-ASCII characters escaped as unicode escapes.
+     */
     private String asJson(Map<String, String> values) {
-        try {
-            return OBJECT_MAPPER.writeValueAsString(values);
-        } catch (Exception e) {
-            throw new IllegalStateException("Failed to serialize ML1 payload to JSON", e);
+        StringBuilder sb = new StringBuilder("{");
+        boolean first = true;
+        for (Map.Entry<String, String> entry : values.entrySet()) {
+            if (!first) {
+                sb.append(", ");
+            }
+            sb.append('"');
+            appendJsonString(sb, entry.getKey());
+            sb.append("\": \"");
+            appendJsonString(sb, entry.getValue());
+            sb.append('"');
+            first = false;
+        }
+        return sb.append('}').toString();
+    }
+
+    private static void appendJsonString(StringBuilder sb, String value) {
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            if (c == '"') {
+                sb.append("\\\"");
+            } else if (c == '\\') {
+                sb.append("\\\\");
+            } else if (c == '\n') {
+                sb.append("\\n");
+            } else if (c == '\r') {
+                sb.append("\\r");
+            } else if (c == '\t') {
+                sb.append("\\t");
+            } else if (c < 0x20) {
+                sb.append(String.format("\\u%04x", (int) c));
+            } else if (c > 0x7E) {
+                // Encode non-ASCII as unicode escape to match Python json.dumps ensure_ascii=True
+                sb.append(String.format("\\u%04x", (int) c));
+            } else {
+                sb.append(c);
+            }
         }
     }
 }

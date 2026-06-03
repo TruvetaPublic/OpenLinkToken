@@ -386,10 +386,10 @@ class ML1OnnxSignatureGenerator:
 
 
 def ml1_payload_to_json(payload: Dict[str, str]) -> str:
-    """Convert an ordered payload map to compact JSON used for ML1 tokenization.
+    """Convert an ordered payload map to JSON used for ML1 tokenization.
 
-    Uses compact separators (no spaces) to match Jackson's ObjectMapper default
-    output in the Java implementation, ensuring identical tokenizer input across
-    both runtimes.
+    Uses Python's default separators (", " and ": ") to match the format
+    produced by generate_embeddings.py, ensuring identical tokenizer input.
+    Non-ASCII characters are escaped as \\uXXXX (ensure_ascii=True default).
     """
-    return json.dumps(payload, separators=(",", ":"))
+    return json.dumps(payload)
