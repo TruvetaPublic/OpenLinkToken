@@ -428,16 +428,16 @@ class TestOpenLinkTokenCommand:
         exit_code = OpenLinkTokenCommand.execute(args)
         assert exit_code != 0, "Command should fail with missing required parameter"
 
-    def test_missing_required_parameter_output(self, temp_dir):
-        """Test that missing output parameter is caught."""
+    def test_auto_output_path_tokenize_csv(self, temp_dir):
+        """Omitting --output on tokenize should auto-generate <stem>_tokenized.csv."""
         input_csv = temp_dir / "input.csv"
-        exchange_config, private_key = self._create_exchange_config(temp_dir, "missing-output")
+        exchange_config, private_key = self._create_exchange_config(temp_dir, "auto-output-tokenize")
 
         args = [
             "tokenize",
             "-i",
             str(input_csv),
-            # Missing -o/--output
+            # --output intentionally omitted
             "--exchange-config",
             str(exchange_config),
             "--private-key",
@@ -445,7 +445,138 @@ class TestOpenLinkTokenCommand:
         ]
 
         exit_code = OpenLinkTokenCommand.execute(args)
-        assert exit_code != 0, "Command should fail with missing required parameter"
+
+        assert exit_code == 0, "Command should succeed when --output is omitted"
+        auto_output = temp_dir / "input_tokenized.csv"
+        assert auto_output.exists(), f"Auto-generated output {auto_output} should exist"
+        assert auto_output.stat().st_size > 0, "Auto-generated output should not be empty"
+
+    def test_auto_output_path_tokenize_parquet(self, temp_dir):
+        """Omitting --output on tokenize with parquet input should auto-generate <stem>_tokenized.parquet."""
+        input_csv = temp_dir / "input.csv"
+        input_parquet = temp_dir / "input.parquet"
+        exchange_config, private_key = self._create_exchange_config(temp_dir, "auto-output-tokenize-parquet")
+
+        # Create parquet from CSV using tokenize
+        OpenLinkTokenCommand.execute(
+            [
+                "tokenize",
+                "-i",
+                str(input_csv),
+                "-o",
+                str(input_parquet),
+                "--exchange-config",
+                str(exchange_config),
+                "--private-key",
+                str(private_key),
+            ]
+        )
+        assert input_parquet.exists(), "Parquet input fixture should be created"
+
+        # Now re-tokenize using the parquet file without --output
+        exchange_config2, private_key2 = self._create_exchange_config(temp_dir, "auto-output-tokenize-parquet-2")
+        args = [
+            "tokenize",
+            "-i",
+            str(input_parquet),
+            # --output intentionally omitted
+            "--exchange-config",
+            str(exchange_config2),
+            "--private-key",
+            str(private_key2),
+        ]
+
+        exit_code = OpenLinkTokenCommand.execute(args)
+
+        assert exit_code == 0, "Command should succeed for parquet input without --output"
+        auto_output = temp_dir / "input_tokenized.parquet"
+        assert auto_output.exists(), f"Auto-generated parquet output {auto_output} should exist"
+
+    def test_auto_output_path_package_defaults_to_zip(self, temp_dir):
+        """Omitting --output on package should auto-generate <stem>_packaged.zip regardless of input type."""
+        input_csv = temp_dir / "input.csv"
+        exchange_config, private_key = self._create_exchange_config(temp_dir, "auto-output-package")
+
+        args = [
+            "package",
+            "-i",
+            str(input_csv),
+            # --output intentionally omitted → should default to input_packaged.zip
+            "--exchange-config",
+            str(exchange_config),
+            "--private-key",
+            str(private_key),
+        ]
+
+        exit_code = OpenLinkTokenCommand.execute(args)
+
+        assert exit_code == 0, "Package command should succeed when --output is omitted"
+        auto_output = temp_dir / "input_packaged.zip"
+        assert auto_output.exists(), f"Auto-generated zip output {auto_output} should exist"
+        assert auto_output.stat().st_size > 0, "Auto-generated zip should not be empty"
+
+    def test_auto_output_path_decrypt(self, temp_dir):
+        """Omitting --output on decrypt should auto-generate <stem>_decrypted<ext>."""
+        input_csv = temp_dir / "input.csv"
+        packaged_csv = temp_dir / "packaged.csv"
+        exchange_config, private_key = self._create_exchange_config(temp_dir, "auto-output-decrypt")
+
+        # Package first to produce encrypted tokens
+        OpenLinkTokenCommand.execute(
+            [
+                "package",
+                "-i",
+                str(input_csv),
+                "-o",
+                str(packaged_csv),
+                "--exchange-config",
+                str(exchange_config),
+                "--private-key",
+                str(private_key),
+            ]
+        )
+        assert packaged_csv.exists()
+
+        args = [
+            "decrypt",
+            "-i",
+            str(packaged_csv),
+            # --output intentionally omitted
+            "--exchange-config",
+            str(exchange_config),
+            "--private-key",
+            str(private_key),
+        ]
+
+        exit_code = OpenLinkTokenCommand.execute(args)
+
+        assert exit_code == 0, "Decrypt command should succeed when --output is omitted"
+        auto_output = temp_dir / "packaged_decrypted.csv"
+        assert auto_output.exists(), f"Auto-generated decrypted output {auto_output} should exist"
+
+    def test_explicit_output_overrides_auto_generated(self, temp_dir):
+        """Providing an explicit --output should override the auto-generated path."""
+        input_csv = temp_dir / "input.csv"
+        explicit_output = temp_dir / "my_custom_output.csv"
+        exchange_config, private_key = self._create_exchange_config(temp_dir, "explicit-output-override")
+
+        args = [
+            "tokenize",
+            "-i",
+            str(input_csv),
+            "-o",
+            str(explicit_output),
+            "--exchange-config",
+            str(exchange_config),
+            "--private-key",
+            str(private_key),
+        ]
+
+        exit_code = OpenLinkTokenCommand.execute(args)
+
+        assert exit_code == 0, "Command should succeed with explicit output"
+        assert explicit_output.exists(), "Explicit output path should be used"
+        assert not (temp_dir / "input_tokenized.csv").exists(), "Auto-generated path should NOT be created"
 
     def test_invalid_input_type(self, temp_dir):
         """Test that unsupported input file extension is caught."""

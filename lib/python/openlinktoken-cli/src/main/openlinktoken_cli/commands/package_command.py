@@ -17,6 +17,7 @@ from openlinktoken_cli.io.csv.person_attributes_csv_writer import PersonAttribut
 from openlinktoken_cli.io.json.metadata_json_writer import MetadataJsonWriter
 from openlinktoken_cli.io.parquet.person_attributes_parquet_reader import PersonAttributesParquetReader
 from openlinktoken_cli.io.parquet.person_attributes_parquet_writer import PersonAttributesParquetWriter
+from openlinktoken_cli.io.path_utils import auto_generate_output_path
 from openlinktoken_cli.processor.person_attributes_processor import (
     PersonAttributesProcessingSummary,
     PersonAttributesProcessor,
@@ -64,9 +65,10 @@ class PackageCommand:
         parser.add_argument(
             "-o",
             "--output",
-            required=True,
+            required=False,
+            default=None,
             dest="output_path",
-            help="Output file path",
+            help="Output file path. Defaults to <input_stem>_packaged.zip in the same directory.",
         )
 
         parser.add_argument(
@@ -119,6 +121,10 @@ class PackageCommand:
         if not input_type:
             logger.error("Unable to auto-detect input type. Supported input formats: csv, parquet")
             return 1
+
+        if args.output_path is None:
+            args.output_path = auto_generate_output_path(args.input_path, "_packaged", ext=".zip")
+            logger.info(f"No --output specified. Auto-generated output path: {args.output_path}")
 
         output_type = FileTypeDetector.detect_output_type(args.output_path)
         if not output_type:

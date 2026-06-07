@@ -89,6 +89,10 @@ def build_command_plan(
     recipient_public_key = home_dir / ".openlinktoken" / "recipient.public.pem"
     sender_private_key = home_dir / ".openlinktoken" / "sender-local.private.pem"
 
+    # Expected auto-generated output paths (same dir as input, with subcommand suffix)
+    people_tokenized_csv = input_dir / "people_tokenized.csv"
+    people_packaged_zip = input_dir / "people_packaged.zip"
+
     env = _build_command_env(home_dir)
     plan = [
         CommandSpec("root-help", _cli_args("--no-update-check", "--help"), pause_seconds, env=env),
@@ -167,6 +171,21 @@ def build_command_plan(
             pause_seconds,
             env=env,
         ),
+        CommandSpec(
+            "tokenize-auto-output",
+            _cli_args(
+                "--no-update-check",
+                "tokenize",
+                "--input",
+                str(person_csv),
+                "--exchange-config",
+                str(exchange_json),
+                "--private-key",
+                str(sender_private_key),
+            ),
+            pause_seconds,
+            env=env,
+        ),
         CommandSpec("encrypt-help", _cli_args("--no-update-check", "encrypt", "--help"), pause_seconds, env=env),
         CommandSpec(
             "encrypt-tokenized-output",
@@ -213,6 +232,21 @@ def build_command_plan(
                 str(person_csv),
                 "--output",
                 str(packaged_csv),
+                "--exchange-config",
+                str(exchange_json),
+                "--private-key",
+                str(sender_private_key),
+            ),
+            pause_seconds,
+            env=env,
+        ),
+        CommandSpec(
+            "package-auto-output",
+            _cli_args(
+                "--no-update-check",
+                "package",
+                "--input",
+                str(person_csv),
                 "--exchange-config",
                 str(exchange_json),
                 "--private-key",

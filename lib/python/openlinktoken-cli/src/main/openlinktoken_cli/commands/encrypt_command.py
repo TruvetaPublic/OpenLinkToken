@@ -14,6 +14,7 @@ from openlinktoken_cli.io.csv.token_csv_reader import TokenCSVReader
 from openlinktoken_cli.io.csv.token_csv_writer import TokenCSVWriter
 from openlinktoken_cli.io.parquet.token_parquet_reader import TokenParquetReader
 from openlinktoken_cli.io.parquet.token_parquet_writer import TokenParquetWriter
+from openlinktoken_cli.io.path_utils import auto_generate_output_path
 from openlinktoken_cli.processor.token_constants import TokenConstants
 from openlinktoken_cli.processor.token_transformation_processor import TokenTransformationSummary
 from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
@@ -56,9 +57,10 @@ class EncryptCommand:
         parser.add_argument(
             "-o",
             "--output",
-            required=True,
+            required=False,
+            default=None,
             dest="output_path",
-            help="Output file path for encrypted tokens",
+            help="Output file path for encrypted tokens. Defaults to <input_stem>_encrypted<input_ext> in the same directory.",
         )
 
         parser.add_argument(
@@ -99,6 +101,10 @@ class EncryptCommand:
         if not input_type:
             logger.error("Unable to auto-detect input type. Supported input formats: csv, parquet")
             return 1
+
+        if args.output_path is None:
+            args.output_path = auto_generate_output_path(args.input_path, "_encrypted")
+            logger.info(f"No --output specified. Auto-generated output path: {args.output_path}")
 
         output_type = FileTypeDetector.detect_output_type(args.output_path)
         if not output_type:

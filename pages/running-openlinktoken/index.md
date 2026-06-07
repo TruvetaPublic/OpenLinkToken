@@ -23,7 +23,12 @@ olt <subcommand> [OPTIONS]
 | Argument | Alias      | Description                      | Example         |
 | -------- | ---------- | -------------------------------- | --------------- |
 | `-i`     | `--input`  | Input file path (CSV or Parquet) | `-i data.csv`   |
-| `-o`     | `--output` | Output file path                 | `-o tokens.csv` |
+
+#### Optional Arguments (All Subcommands)
+
+| Argument | Alias      | Description                      | Default | Example         |
+| -------- | ---------- | -------------------------------- | ------- | --------------- |
+| `-o`     | `--output` | Output file path. When omitted the CLI auto-generates a name from the input stem, a subcommand suffix, and the input extension. For `package` the extension is always `.zip`. | Auto-generated (e.g. `data_tokenized.csv`) | `-o tokens.csv` |
 
 #### Optional Arguments by Subcommand
 
