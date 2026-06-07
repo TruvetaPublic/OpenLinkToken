@@ -8,9 +8,27 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 VENV_DIR="${UV_PROJECT_ENVIRONMENT:-/home/vscode/.local/share/openlinktoken/.venv}"
 WORKSPACE_VENV_DIR="$REPO_ROOT/.venv"
 STATE_DIR="${VENV_DIR}/.setup-state"
-PHASE="${1:-full}"  # Options: full, post-create, post-start, post-attach
+
+# Default phase and force flag
+PHASE="full"
+FORCE=false
+
+# Parse arguments to support --force or -f, alongside the phase argument
+for arg in "$@"; do
+  if [[ "$arg" == "--force" ]] || [[ "$arg" == "-f" ]]; then
+    FORCE=true
+  else
+    PHASE="$arg"
+  fi
+done
 
 mkdir -p "$STATE_DIR"
+
+# If force is requested, clear the setup state to allow re-running steps
+if [ "$FORCE" = true ]; then
+  echo "→ Force flag detected. Clearing setup state..."
+  rm -rf "$STATE_DIR" && mkdir -p "$STATE_DIR"
+fi
 
 # Marker functions for tracking completed steps
 mark_complete() {
