@@ -1,0 +1,24 @@
+version: "3.8"
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - openlinktoken-local:/home/vscode/.local
+      - opentoken-cache:/home/vscode/.cache
+      - openlinktoken-copilot:/home/vscode/.copilot
+      - openlinktoken-vscode-server:/home/vscode/.vscode-server
+      - openlinktoken-vscode-insiders:/home/vscode/.vscode-server-insiders
+      - openlinktoken-opencode:/home/vscode/.opencode
+      - openlinktoken-config:/home/vscode/.config
+
+volumes:
+  openlinktoken-local:
+  openlinktoken-cache:
+  openlinktoken-copilot:
+  openlinktoken-vscode-server:
+  openlinktoken-vscode-insiders:
+  openlinktoken-opencode:
+  openlinktoken-config:
