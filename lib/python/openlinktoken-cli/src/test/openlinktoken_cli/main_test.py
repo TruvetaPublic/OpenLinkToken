@@ -5,6 +5,7 @@ Tests the end-to-end workflows for token generation and decryption using new sub
 """
 
 import os
+import re
 import zipfile
 from pathlib import Path
 from unittest.mock import patch
@@ -807,6 +808,39 @@ class TestOpenLinkTokenCommand:
         assert exit_code == 0, "Version output should exit successfully"
         assert "Open Link Token" in captured.out
         assert "Privacy-Preserving Record Linkage v" not in captured.out
+
+    @pytest.mark.parametrize("cmd", ["tokenize", "encrypt", "decrypt", "package", "initiate-exchange"])
+    def test_subcommand_without_args_shows_banner(self, monkeypatch, capsys, cmd):
+        """Banner should appear when a subcommand requiring args is invoked with no args."""
+        monkeypatch.setattr("sys.stdout.isatty", lambda: True)
+
+        exit_code = OpenLinkTokenCommand.execute([cmd])
+
+        captured = capsys.readouterr()
+        assert exit_code == 0, f"'{cmd}' invoked with no args should exit 0 (help display)"
+        assert "Privacy-Preserving Record Linkage v" in captured.out, (
+            f"Banner should be shown when '{cmd}' is invoked with no args"
+        )
+
+    @pytest.mark.parametrize("cmd", ["tokenize", "encrypt", "decrypt", "package", "initiate-exchange"])
+    def test_subcommand_without_args_shows_subcommand_help(self, capsys, cmd):
+        """Subcommand help should be printed when a subcommand requiring args is invoked with no args."""
+        exit_code = OpenLinkTokenCommand.execute([cmd])
+
+        captured = capsys.readouterr()
+        assert exit_code == 0, f"'{cmd}' invoked with no args should exit 0 (help display)"
+        assert cmd in captured.out, f"Help output for '{cmd}' should mention the command name"
+
+    def test_help_output_does_not_contain_curly_brace_subcommand_list(self, capsys):
+        """The main help output must not contain the redundant {cmd1,cmd2,...} listing."""
+        exit_code = OpenLinkTokenCommand.execute([])
+
+        captured = capsys.readouterr()
+        assert exit_code == 0
+        # argparse's default metavar produces a '{cmd1,cmd2,...}' line; it should be gone
+        assert not re.search(r"\{decrypt,encrypt", captured.out), (
+            "The curly-brace subcommand list should not appear in the help output"
+        )
 
     # ===== Hash Record IDs Tests =====
 
