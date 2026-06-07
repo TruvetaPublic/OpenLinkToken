@@ -25,8 +25,20 @@ updates:
       - "dependencies"
       - "docker"
 
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 2
+    target-branch: "develop"
+    labels:
+      - "dependencies"
+      - "python"
+
+  # Keep pip-based updates for the package manifests while the repo also tracks
+  # a root uv.lock for contributor tooling and workspace automation.
   - package-ecosystem: "pip"
-    directory: "lib/python/opentoken"
+    directory: "lib/python/openlinktoken"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 2
@@ -36,7 +48,7 @@ updates:
       - "python"
 
   - package-ecosystem: "pip"
-    directory: "lib/python/opentoken-cli"
+    directory: "lib/python/openlinktoken-cli"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 2
@@ -46,7 +58,7 @@ updates:
       - "python"
 
   - package-ecosystem: "pip"
-    directory: "lib/python/opentoken-pyspark"
+    directory: "lib/python/openlinktoken-pyspark"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 2

@@ -1,0 +1,13 @@
+include README.md
+include INSTALL.md
+include requirements.txt
+include dev-requirements.txt
+include pyproject.toml
+include .flake8
+# Include repository root docs used for long_description
+include ../../../README.md
+include ../../../LICENSE
+recursive-include notebooks *.ipynb
+recursive-include examples *.py
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]

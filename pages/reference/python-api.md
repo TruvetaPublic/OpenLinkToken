@@ -9,22 +9,22 @@ Document the Python modules and functions for programmatic token generation.
 ## Core Modules
 
 ```python
-from opentoken.attributes.person.birth_date_attribute import BirthDateAttribute
-from opentoken.attributes.person.first_name_attribute import FirstNameAttribute
-from opentoken.attributes.person.last_name_attribute import LastNameAttribute
-from opentoken.attributes.person.postal_code_attribute import PostalCodeAttribute
-from opentoken.attributes.person.sex_attribute import SexAttribute
-from opentoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
-from opentoken.tokens.token_definition import TokenDefinition
-from opentoken.tokens.token_generator import TokenGenerator
-from opentoken.tokens.tokenizer.sha256_tokenizer import SHA256Tokenizer
-from opentoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
-from opentoken.tokentransformer.hash_token_transformer import HashTokenTransformer
+from openlinktoken.attributes.person.birth_date_attribute import BirthDateAttribute
+from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute
+from openlinktoken.attributes.person.last_name_attribute import LastNameAttribute
+from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttribute
+from openlinktoken.attributes.person.sex_attribute import SexAttribute
+from openlinktoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
+from openlinktoken.tokens.token_definition import TokenDefinition
+from openlinktoken.tokens.token_generator import TokenGenerator
+from openlinktoken.tokens.tokenizer.sha256_tokenizer import SHA256Tokenizer
+from openlinktoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
+from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 ```
 
 ## Person Attribute Dict
 
-OpenToken's Python library represents a person's values as a dict keyed by attribute class:
+Open Link Token's Python library represents a person's values as a dict keyed by attribute class:
 
 ```python
 person_attributes = {
@@ -105,23 +105,23 @@ encryptor = EncryptTokenTransformer(
 
 signature = "DOE|J|MALE|1980-01-15"
 encrypted_token = encryptor.transform(signature)
-# Returns: Base64-encoded encrypted token
+# Returns: Open Link Token encrypted match token string (olt.V1.<JWE compact serialization>)
 ```
 
 ## Complete Example
 
 ```python
-from opentoken.attributes.person.birth_date_attribute import BirthDateAttribute
-from opentoken.attributes.person.first_name_attribute import FirstNameAttribute
-from opentoken.attributes.person.last_name_attribute import LastNameAttribute
-from opentoken.attributes.person.postal_code_attribute import PostalCodeAttribute
-from opentoken.attributes.person.sex_attribute import SexAttribute
-from opentoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
-from opentoken.tokens.token_definition import TokenDefinition
-from opentoken.tokens.token_generator import TokenGenerator
-from opentoken.tokens.tokenizer.sha256_tokenizer import SHA256Tokenizer
-from opentoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
-from opentoken.tokentransformer.hash_token_transformer import HashTokenTransformer
+from openlinktoken.attributes.person.birth_date_attribute import BirthDateAttribute
+from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute
+from openlinktoken.attributes.person.last_name_attribute import LastNameAttribute
+from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttribute
+from openlinktoken.attributes.person.sex_attribute import SexAttribute
+from openlinktoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
+from openlinktoken.tokens.token_definition import TokenDefinition
+from openlinktoken.tokens.token_generator import TokenGenerator
+from openlinktoken.tokens.tokenizer.sha256_tokenizer import SHA256Tokenizer
+from openlinktoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
+from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 
 def generate_tokens():
     record_id = "patient_001"
@@ -160,17 +160,17 @@ For processing multiple records:
 
 ```python
 import csv
-from opentoken.attributes.person.birth_date_attribute import BirthDateAttribute
-from opentoken.attributes.person.first_name_attribute import FirstNameAttribute
-from opentoken.attributes.person.last_name_attribute import LastNameAttribute
-from opentoken.attributes.person.postal_code_attribute import PostalCodeAttribute
-from opentoken.attributes.person.sex_attribute import SexAttribute
-from opentoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
-from opentoken.tokens.token_definition import TokenDefinition
-from opentoken.tokens.token_generator import TokenGenerator
-from opentoken.tokens.tokenizer.sha256_tokenizer import SHA256Tokenizer
-from opentoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
-from opentoken.tokentransformer.hash_token_transformer import HashTokenTransformer
+from openlinktoken.attributes.person.birth_date_attribute import BirthDateAttribute
+from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute
+from openlinktoken.attributes.person.last_name_attribute import LastNameAttribute
+from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttribute
+from openlinktoken.attributes.person.sex_attribute import SexAttribute
+from openlinktoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
+from openlinktoken.tokens.token_definition import TokenDefinition
+from openlinktoken.tokens.token_generator import TokenGenerator
+from openlinktoken.tokens.tokenizer.sha256_tokenizer import SHA256Tokenizer
+from openlinktoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
+from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 
 def process_csv(input_path, output_path, hashing_secret, encryption_key):
     tokenizer = SHA256Tokenizer([
@@ -178,12 +178,12 @@ def process_csv(input_path, output_path, hashing_secret, encryption_key):
         EncryptTokenTransformer(encryption_key),
     ])
     generator = TokenGenerator(TokenDefinition(), tokenizer)
-    
+
     with open(input_path, 'r') as infile, open(output_path, 'w', newline='') as outfile:
         reader = csv.DictReader(infile)
         writer = csv.writer(outfile)
         writer.writerow(['RecordId', 'RuleId', 'Token'])
-        
+
         for row in reader:
             record_id = row.get('RecordId', '')
 
@@ -207,12 +207,12 @@ def process_csv(input_path, output_path, hashing_secret, encryption_key):
 
 ## PySpark Integration
 
-For distributed processing on Spark, use the `opentoken_pyspark` bridge:
+For distributed processing on Spark, use the `openlinktoken_pyspark` bridge:
 
 ```python
-from opentoken_pyspark import OpenTokenProcessor
+from openlinktoken_pyspark import Open Link TokenProcessor
 
-processor = OpenTokenProcessor(
+processor = Open Link TokenProcessor(
     hashing_secret="HashingSecret",
     encryption_key="EncryptionKey-32Characters-Here",
 )
@@ -227,9 +227,9 @@ df_tokens.show()
 For overlap analysis between two tokenized datasets, use:
 
 ```python
-from opentoken_pyspark import OpenTokenOverlapAnalyzer
+from openlinktoken_pyspark import Open Link TokenOverlapAnalyzer
 
-analyzer = OpenTokenOverlapAnalyzer("EncryptionKey-32Characters-Here")
+analyzer = Open Link TokenOverlapAnalyzer("EncryptionKey-32Characters-Here")
 results = analyzer.analyze_overlap(tokens_df1, tokens_df2, ["T1", "T2"])
 analyzer.print_summary(results)
 ```
@@ -238,7 +238,7 @@ See [Spark or Databricks](../operations/spark-or-databricks.md) for end-to-end P
 
 ## Cross-Language Parity
 
-OpenToken guarantees identical output between Java and Python:
+Open Link Token guarantees identical output between Java and Python:
 
 ```python
 # This Python code produces the exact same tokens as equivalent Java code
@@ -253,9 +253,10 @@ person_attributes = {
 ```
 
 Verify parity with:
+
 ```bash
 cd tools/interoperability
-python java_python_interoperability_test.py
+python multi_language_interoperability_test.py
 ```
 
 ## Error Handling
@@ -280,7 +281,7 @@ try:
     invalid = generator.get_invalid_person_attributes(person_attributes)
     if invalid:
         raise ValueError(f"Invalid attributes: {sorted(invalid)}")
-        
+
 except ValueError as e:
     print(f"Validation error: {e}")
 ```
@@ -289,11 +290,11 @@ except ValueError as e:
 
 ```bash
 # From repository
-cd lib/python/opentoken
-pip install -e .
+cd lib/python/openlinktoken
+uv pip install -e .
 
 # Development dependencies
-pip install -r dev-requirements.txt
+uv pip install -r dev-requirements.txt
 ```
 
 ## Next Steps

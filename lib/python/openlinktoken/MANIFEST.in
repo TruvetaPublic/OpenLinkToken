@@ -1,0 +1,15 @@
+# Include requirements files (must be in same directory as setup.py)
+include requirements.txt
+include dev-requirements.txt
+
+# Include root README and LICENSE (relative to this file)
+include ../../../README.md
+include ../../../LICENSE
+
+# Include all Python source files
+recursive-include src *.py
+
+# Exclude test files from distribution
+recursive-exclude src/test *
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]

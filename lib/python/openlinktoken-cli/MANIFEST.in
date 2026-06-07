@@ -1,0 +1,6 @@
+include requirements.txt
+include dev-requirements.txt
+
+# Include repository root docs used for long_description
+include ../../../README.md
+include ../../../LICENSE

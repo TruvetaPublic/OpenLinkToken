@@ -1,33 +1,55 @@
 # Interoperability Tests
 
-This directory contains tests that validate compatibility and consistency between the Java and Python implementations of OpenToken.
+This directory contains interoperability checks for the Java core library and the
+Python CLI implementation of Open Link Token.
 
-## Prerequisites
+## CLI Parity Tests
 
-- Python 3.10 or higher
-- pip (Python package installer)
+The `cli_parity_test.py` script tests that the Python CLI provides the expected
+command structure and behavior.
 
-- Java 21 SDK or higher (JAR output compatible with Java 17)
-
-## Test Categories
-
-- **Token Generation Compatibility**: Verify both implementations generate identical tokens for the same input
-- **Data Format Compatibility**: Ensure serialized data can be read cross-platform
-- **Encryption/Decryption Compatibility**: Validate encrypted tokens from both implementations can be decrypted using the same decryptor tool
-- **Metadata Consistency**: Check that metadata formats are consistent between implementations
-
-## Running Tests
-
-These tests require both Java and Python environments to be properly configured.
+**Python:**
 
 ```bash
-# Run all interoperability tests
-python -m pytest tools/interoperability/ -v
-
-# Run the java_python_interoperability_test.py file, which will run all tests
-python3 tools/interoperability/java_python_interoperability_test.py
+cd lib/python/openlinktoken
+uv pip install -r requirements.txt
+cd ../openlinktoken-cli
+uv pip install -r requirements.txt
 ```
 
-## Test Data
+### Running the Tests
 
-Shared test data and expected outputs are stored in the `test_data/` subdirectory.
+```bash
+python tools/interoperability/cli_parity_test.py
+```
+
+### What is Tested
+
+- Python CLI supports all required commands: `tokenize`, `encrypt`, `decrypt`, `package`, `help`
+- Python CLI supports `--help`, `--version`, and `-h` flags
+- Each command has help output with required parameters
+- The `help` command works for all subcommands
+- Command recognition and error handling
+
+## Token Interoperability Tests
+
+The `multi_language_interoperability_test.py` script executes two parity checks:
+
+- **Unit-level fixture parity:** verifies that the Python library reproduces the
+  same deterministic token fixture values already asserted by the Java
+  `TokenGeneratorIntegrationTest`
+- **Java harness vs Python CLI parity:** invokes a thin Java harness built on the
+  Java core library API and compares its `tokenize`-compatible CSV output against
+  the Python CLI `tokenize` command
+
+The script also verifies that the Python CLI metadata file contains the expected
+fields for tokenized output.
+
+### Running the Tests
+
+```bash
+cd <repo-root>/lib/java
+mvn -pl openlinktoken -DskipTests test-compile
+cd <repo-root>
+python tools/interoperability/multi_language_interoperability_test.py
+```

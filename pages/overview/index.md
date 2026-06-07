@@ -4,15 +4,15 @@ layout: default
 
 # Overview
 
-## What is OpenToken?
+## What is Open Link Token?
 
-OpenToken is a privacy-preserving tokenization and matching library for secure person linkage using PII-derived attributes. It generates cryptographically secure matching tokens from person attributes, enabling matching across datasets without directly comparing names, birthdates, SSNs, and other sensitive identifiers.
+Open Link Token is a privacy-preserving tokenization and matching library for secure person linkage using PII-derived attributes. It generates cryptographically secure matching tokens from person attributes, enabling matching across datasets without directly comparing names, birthdates, SSNs, and other sensitive identifiers.
 
-Both Java and Python implementations produce **byte-identical tokens** for the same normalized input, enabling flexible deployment and cross-language workflows.
+Both Java and Python implementations produce **byte-identical deterministic tokenized outputs** (and byte-identical decrypted token payloads) for the same normalized input, enabling flexible deployment and cross-language workflows.
 
 ## The Problem
 
-Organizations often need to match people across datasets—finding the same person across systems and time. Direct comparison of names and birthdates raises privacy concerns and is error-prone due to typos and data quality variations. **OpenToken solves this by generating deterministic cryptographic tokens from person data.**
+Organizations often need to match people across datasets—finding the same person across systems and time. Direct comparison of names and birthdates raises privacy concerns and is error-prone due to typos and data quality variations. **Open Link Token solves this by generating deterministic cryptographic fingerprints from person data, with optional encrypted token wrapping for secure exchange.**
 
 ## The Solution
 
@@ -22,27 +22,27 @@ Instead of storing or comparing raw person attributes:
 John Doe | 1975-03-15 | 98004 → [STORED OR COMPARED]
 ```
 
-OpenToken generates secure tokens derived from those attributes:
+Open Link Token generates secure tokens derived from those attributes:
 
 ```
-John Doe | 1975-03-15 | 98004 → SHA-256 HASH → HMAC-SHA256 → AES-256 ENCRYPT → Token
+John Doe | 1975-03-15 | 98004 → SHA-256 HASH → HMAC-SHA256 → AES-256/JWE (olt.V1) → Token
 ```
 
-Matching is done by comparing the encrypted tokens, not the original data.
+Matching is performed on deterministic tokenized values (or decrypted token payloads), not on raw PII.
 
 ## How It Works
 
 1. **Input**: Person records with attributes (name, birthdate, SSN, postal code, sex)
-2. **Validation & Normalization**: Attributes are validated and normalized (uppercase, diacritic removal, title stripping)
+2. **Validation & Normalization**: Attributes are validated and normalized (uppercase, diacritic removal, supported Latin Extended transliteration, title stripping)
 3. **Token Generation**: Multiple token rules (T1–T5) combine different attributes
-4. **Encryption**: Tokens are hashed and encrypted using HMAC-SHA256 and AES-256
-5. **Output**: Token signatures for matching and metadata
+4. **Transformation**: Deterministic HMAC-SHA256 hashes are produced; encrypted mode wraps them as `olt.V1` JWE match tokens
+5. **Output**: Encrypted `olt.V1` tokens (default), deterministic tokenized values, or `tokenize --mode hash-only` SHA-256 output, plus metadata
 
 ## Key Concepts
 
 ### Token Generation Rules
 
-OpenToken uses **5 distinct token rules (T1–T5)** that define which attributes combine to form each token. Each rule targets different matching scenarios:
+Open Link Token uses **5 distinct token rules (T1–T5)** that define which attributes combine to form each token. Each rule targets different matching scenarios:
 
 | Rule | Definition                                      | Use Case                 |
 | ---- | ----------------------------------------------- | ------------------------ |
@@ -56,7 +56,7 @@ OpenToken uses **5 distinct token rules (T1–T5)** that define which attributes
 
 Before tokens are generated, attributes are validated against practical, PII-focused rules:
 
-- **FirstName/LastName**: No placeholders, proper length, diacritics normalized
+- **FirstName/LastName**: No placeholders, proper length, diacritics removed, supported Latin Extended letters transliterated to ASCII
 - **BirthDate**: 1910–today, valid format (YYYY-MM-DD)
 - **SSN**: Valid US social security number (area, group, serial checks)
 - **PostalCode**: Valid US ZIP or Canadian postal code
@@ -72,7 +72,7 @@ The token is transformed through a secure pipeline:
 Token Signature → SHA-256 Hash → HMAC-SHA256 → AES-256 Encrypt → Base64 Encode
 ```
 
-Or in hash-only mode:
+Or using the `tokenize` subcommand (no encryption):
 
 ```
 Token Signature → SHA-256 Hash → HMAC-SHA256 → Base64 Encode
@@ -94,7 +94,7 @@ Output CSV/Parquet + Metadata
 
 ## Multi-Language Parity
 
-OpenToken is implemented in **Java and Python**. Both produce **byte-identical tokens** for the same normalized input using the same hashing and encryption keys. This enables:
+Open Link Token is implemented in **Java and Python**. Both produce **byte-identical deterministic values** (tokenized outputs, `--mode hash-only` outputs where supported, and decrypted token payloads) for the same normalized input and secrets. This enables:
 
 - Flexible deployment (choose Java or Python)
 - Cross-language processing (encrypt in one language, decrypt in another)
@@ -103,20 +103,21 @@ OpenToken is implemented in **Java and Python**. Both produce **byte-identical t
 ## Security Properties
 
 - **No Reversal**: Tokens cannot be decrypted back to original data without the encryption key
-- **Deterministic**: Same input always produces the same token (enables matching)
+- **Deterministic matching basis**: Same normalized input produces the same tokenized/decrypted value
+- **Randomized encrypted representation**: Encrypted `olt.V1` tokens use random IVs, so ciphertext differs across runs
 - **Privacy-Focused**: Designed for regulated environments where PII must be protected
 - **Validation**: Rejects invalid or placeholder values before processing
 
-## Who Uses OpenToken?
+## Who Uses Open Link Token?
 
-- **Data Engineers**: Building person matching pipelines
+- **Data Engineers**: Building record linkage pipelines
 - **Privacy/Infra Engineers**: Securing sensitive data in regulated systems
 - **Data/Platform Teams**: Linking records across datasets while preserving privacy
 - **Researchers**: Linking datasets for cohort studies without exposing raw identifiers
 
 ## Next Steps
 
-**→ [Quickstarts](../quickstarts/index.md)** – Try OpenToken in 5 minutes. Choose CLI (Docker), Python, or Java.
+**→ [Quickstarts](../quickstarts/index.md)** – Try Open Link Token in 5 minutes. Choose CLI (Docker), Python, or Java.
 
 Once you've run through a quickstart:
 

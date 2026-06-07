@@ -1,7 +1,7 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/java
 {
-  "name": "OpenToken",
+  "name": "Open Link Token",
   "build": {
     "context": "..",
     "dockerfile": "Dockerfile",
@@ -19,11 +19,13 @@
       "mavenVersion": "3.8.8",
       "installGradle": "false"
     },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20.12.0"
+    },
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
     "ghcr.io/devcontainers/features/git-lfs:1": {},
-    "ghcr.io/devcontainers/features/node:1": {},
-    "ghcr.io/devcontainers/features/github-cli:1": {},
-    "ghcr.io/devcontainers/features/copilot-cli:1": {}
+    "ghcr.io/devcontainers/features/copilot-cli:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
   },
   "customizations": {
     "vscode": {
@@ -43,20 +45,30 @@
         "GitHub.vscode-github-actions",
         "GitHub.copilot-chat",
         "ms-python.python",
-        "ms-toolsai.jupyter",
-        "mikoz.autoflake-extension"
+        "dbaeumer.vscode-eslint"
       ],
       "settings": {
-        "sonarlint.ls.javaHome": "/usr/local/sdkman/candidates/java/21.0.10-ms"
+        "sonarlint.ls.javaHome": "/usr/local/sdkman/candidates/java/21.0.10-ms",
+        "python.defaultInterpreterPath": "/home/vscode/.local/share/openlinktoken/.venv/bin/python",
+        "python.terminal.activateEnvironment": true
       }
     }
   },
   "mounts": [
-    "type=volume,source=opentoken-venv,target=/workspaces/${localWorkspaceFolderBasename}/.venv"
+    "type=volume,source=openlinktoken-local,target=/home/vscode/.local",
+    "type=volume,source=openlinktoken-cache,target=/home/vscode/.cache",
+    "type=volume,source=openlinktoken-copilot,target=/home/vscode/.copilot",
+    "type=volume,source=openlinktoken-vscode-server,target=/home/vscode/.vscode-server",
+    "type=volume,source=openlinktoken-vscode-insiders,target=/home/vscode/.vscode-server-insiders"
   ],
   "containerEnv": {
-    "PYSPARK_SUBMIT_ARGS": "--driver-memory 8g --executor-memory 8g --conf spark.driver.maxResultSize=4g --conf spark.memory.fraction=0.7 pyspark-shell"
+    "PYSPARK_SUBMIT_ARGS": "--driver-memory 8g --executor-memory 8g --conf spark.driver.maxResultSize=4g --conf spark.memory.fraction=0.7 pyspark-shell",
+    "UV_PROJECT_ENVIRONMENT": "/home/vscode/.local/share/openlinktoken/.venv"
   },
-  "postCreateCommand": "/bin/bash .devcontainer/scripts/setup_python_env.sh",
-  "postStartCommand": {}
+  "updateContentCommand": {
+    "fix-mount-permissions": "for d in /home/vscode/.copilot /home/vscode/.cache /home/vscode/.local /home/vscode/.vscode-server /home/vscode/.vscode-server-insiders; do [ -d \"$d\" ] || continue; sudo chown -R vscode:vscode \"$d\"; done"
+  },
+  "postCreateCommand": "bash -lc '${containerWorkspaceFolder}/.devcontainer/scripts/unified-setup.sh post-create'",
+  "postStartCommand": "bash -lc '${containerWorkspaceFolder}/.devcontainer/scripts/unified-setup.sh post-start'",
+  "postAttachCommand": "bash -lc '${containerWorkspaceFolder}/.devcontainer/scripts/unified-setup.sh post-attach'"
 }

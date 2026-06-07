@@ -1,6 +1,6 @@
 # Privacy-Preserving Record Linkage (PPRL) Demonstration <!-- omit in toc -->
 
-This demonstration shows how to use OpenToken for privacy-preserving record linkage between two organizations sharing patient data.
+This demonstration shows how to use Open Link Token for privacy-preserving record linkage between two organizations sharing patient data.
 
 For a step-by-step walkthrough, start with the Jupyter notebook: [PPRL_Superhero_Demo.ipynb](PPRL_Superhero_Demo.ipynb). You can also run the full demo end-to-end with `./run_end_to_end.sh`.
 
@@ -48,7 +48,7 @@ This demo focuses on two organizations that want to link their datasets without 
 
 In this demo, assume the **hospital** runs the overlap analysis step (it receives the pharmacy token file and compares tokens to find matches).
 
-> **Note (optional deployment patterns):** In real deployments, the overlap analysis can be run by either party, in a jointly operated shared environment, or (optionally) by a third-party matching service. OpenToken does not require a third party.
+> **Note (optional deployment patterns):** In real deployments, the overlap analysis can be run by either party, in a jointly operated shared environment, or (optionally) by a third-party matching service. Open Link Token does not require a third party.
 
 | Role     | What they hold                                       | What they share             | Needs hashing secret?                              | Needs encryption key?                  |
 | -------- | ---------------------------------------------------- | --------------------------- | -------------------------------------------------- | -------------------------------------- |
@@ -114,7 +114,7 @@ Hospital (overlap analysis in this demo)
 
 ### Scenario <!-- omit in toc -->
 
-**Super Hero Hospital** and **Super Hero Pharmacy** want to link their patient records to improve care coordination, but they need to protect patient privacy. They use OpenToken to:
+**Super Hero Hospital** and **Super Hero Pharmacy** want to link their patient records to improve care coordination, but they need to protect patient privacy. They use Open Link Token to:
 
 1. Generate encrypted tokens from patient identifiers (name, birthdate, SSN, etc.)
 2. Share only the encrypted tokens (not raw patient data)
@@ -124,17 +124,15 @@ Hospital (overlap analysis in this demo)
 
 - **Hospital Dataset**: 100 super hero patients with hospital-specific information
   - Columns: RecordId, FirstName, LastName, Sex, BirthDate, SocialSecurityNumber, PostalCode, Department, VisitReason
-  
 - **Pharmacy Dataset**: 120 super hero patients with pharmacy-specific information
   - Columns: RecordId, FirstName, LastName, Sex, BirthDate, SocialSecurityNumber, PostalCode, MedicationType, PrescriptionType
-  
 - **Expected Overlap**: 40 patients (40% of hospital dataset) appear in both datasets with identical person attributes
 
 ## Tokenization basics
 
-### How OpenToken Works <!-- omit in toc -->
+### How Open Link Token Works <!-- omit in toc -->
 
-OpenToken generates 5 different tokens (T1-T5) for each patient using different combinations of attributes:
+Open Link Token generates 5 different tokens (T1-T5) for each patient using different combinations of attributes:
 
 | Token ID | Token Components                                         |
 | -------- | -------------------------------------------------------- |
@@ -154,7 +152,7 @@ Each token is:
 
 ### Match policy (how you decide what counts as a match) <!-- omit in toc -->
 
-OpenToken does **not** define a single, universal “match policy.” A match policy is something the parties agree on up front: it determines **which token IDs must match** (and how many) before you treat two records as referring to the same person.
+Open Link Token does **not** define a single, universal “match policy.” A match policy is something the parties agree on up front: it determines **which token IDs must match** (and how many) before you treat two records as referring to the same person.
 
 This matters because different token combinations trade off **false positives** vs. **missed matches** depending on your data quality and your risk tolerance.
 
@@ -162,13 +160,13 @@ This matters because different token combinations trade off **false positives** 
 
 ### Custom tokens (optional) <!-- omit in toc -->
 
-T1–T5 are **standard** token definitions provided by OpenToken, but they are not the only possible approach.
+T1–T5 are **standard** token definitions provided by Open Link Token, but they are not the only possible approach.
 
 If needed, the parties can define **additional custom token rules** (new token IDs) based on different attribute combinations or matching goals. The key requirement is that **both parties must use the exact same token definitions and normalization rules**, otherwise tokens won’t be comparable.
 
 ### Important Note About Token Comparison <!-- omit in toc -->
 
-OpenToken uses **AES-256-GCM encryption with random initialization vectors (IVs)** for enhanced security. This means:
+Open Link Token uses **AES-256-GCM encryption with random initialization vectors (IVs)** for enhanced security. This means:
 
 - Each tokenization run produces different encrypted values, even for identical input data
 - To compare tokens across independently tokenized datasets, **tokens must be decrypted first**
@@ -181,9 +179,8 @@ This demonstration shows how to properly compare tokens from two organizations t
 
 ### Prerequisites <!-- omit in toc -->
 
-- Java 17 or higher
-- Maven 3.6 or higher
-- Python 3.7+ (for data generation and analysis)
+- Python 3.10+
+- [`uv`](https://docs.astral.sh/uv/) (used by the tokenization scripts to install the Python CLI if needed)
 
 ### Quick Start Guide <!-- omit in toc -->
 
@@ -208,7 +205,7 @@ chmod +x run_end_to_end.sh
 ./run_end_to_end.sh
 ```
 
-This runs dataset generation, tokenization (building Java if needed), and overlap analysis.
+This runs dataset generation, tokenization with the Python Open Link Token CLI, and overlap analysis.
 
 ### What the script does (step-by-step) <!-- omit in toc -->
 
@@ -265,7 +262,7 @@ This script performs the record linkage analysis:
 
 1. **Loads** encrypted tokens from both datasets
 2. **Decrypts** tokens to get the underlying HMAC-SHA256 hashes
-   - Decryption is necessary because OpenToken uses random IVs for encryption
+   - Decryption is necessary because Open Link Token uses random IVs for encryption
    - Each tokenization produces different encrypted values for the same data
    - Decryption reveals the deterministic hash values that can be compared
 3. **Compares** decrypted tokens to find matches
@@ -302,42 +299,42 @@ This demo creates files under `datasets/` (raw synthetic data) and `outputs/` (t
 
 1. **Raw synthetic datasets** (created by the data generation step)
 
-    - `datasets/hospital_superhero_data.csv`: The hospital’s source dataset (includes identifiers + hospital fields).
-    - `datasets/pharmacy_superhero_data.csv`: The pharmacy’s source dataset (includes identifiers + pharmacy fields).
+   - `datasets/hospital_superhero_data.csv`: The hospital’s source dataset (includes identifiers + hospital fields).
+   - `datasets/pharmacy_superhero_data.csv`: The pharmacy’s source dataset (includes identifiers + pharmacy fields).
 
 1. **Encrypted token files** (created by the tokenization step)
 
-    - `outputs/hospital_tokens.csv`
-    - `outputs/pharmacy_tokens.csv`
+   - `outputs/hospital_tokens.csv`
+   - `outputs/pharmacy_tokens.csv`
 
-    Each row is one token for one record. Each record should have 5 rows (T1–T5).
+   Each row is one token for one record. Each record should have 5 rows (T1–T5).
 
-    | Column   | Description                                    |
-    | -------- | ---------------------------------------------- |
-    | RuleId   | Token type (T1, T2, T3, T4, or T5)             |
-    | Token    | Encrypted token value (Base64-encoded text)    |
-    | RecordId | The original record ID from the source dataset |
+   | Column   | Description                                    |
+   | -------- | ---------------------------------------------- |
+   | RuleId   | Token type (T1, T2, T3, T4, or T5)             |
+   | Token    | Encrypted match token (olt.V1 format)          |
+   | RecordId | The original record ID from the source dataset |
 
 1. **Metadata JSON files** (created alongside tokenization)
 
-    - `outputs/hospital_tokens.metadata.json`
-    - `outputs/pharmacy_tokens.metadata.json`
+   - `outputs/hospital_tokens.metadata.json`
+   - `outputs/pharmacy_tokens.metadata.json`
 
-    These include counts (processed/valid/invalid), a timestamp/version, and SHA-256 hashes of the secrets used (but not the secrets themselves).
+   These include counts (processed/valid/invalid), a timestamp/version, and SHA-256 hashes of the secrets used (but not the secrets themselves).
 
 1. **Matching results** (created by the overlap analysis step)
 
-    - `outputs/matching_records.csv`: The strict match results (expects all 5 tokens to match).
-    - `outputs/matching_records_alt.csv`: An alternate match output (if you run a relaxed rule set).
+   - `outputs/matching_records.csv`: The strict match results (expects all 5 tokens to match).
+   - `outputs/matching_records_alt.csv`: An alternate match output (if you run a relaxed rule set).
 
-    `matching_records.csv` has one row per matching pair:
+   `matching_records.csv` has one row per matching pair:
 
-    | Column           | Description                                                      |
-    | ---------------- | ---------------------------------------------------------------- |
-    | HospitalRecordId | Record ID from the hospital dataset                              |
-    | PharmacyRecordId | Record ID from the pharmacy dataset                              |
-    | MatchingTokens   | Which tokens matched (for strict matching: `T1\|T2\|T3\|T4\|T5`) |
-    | TokenCount       | Number of matching tokens (for strict matching: `5`)             |
+   | Column           | Description                                                      |
+   | ---------------- | ---------------------------------------------------------------- |
+   | HospitalRecordId | Record ID from the hospital dataset                              |
+   | PharmacyRecordId | Record ID from the pharmacy dataset                              |
+   | MatchingTokens   | Which tokens matched (for strict matching: `T1\|T2\|T3\|T4\|T5`) |
+   | TokenCount       | Number of matching tokens (for strict matching: `5`)             |
 
 ### Simple checks you can do (no special tools) <!-- omit in toc -->
 
@@ -351,7 +348,7 @@ This demo creates files under `datasets/` (raw synthetic data) and `outputs/` (t
 
 ### Why Decryption is Necessary <!-- omit in toc -->
 
-OpenToken uses **AES-256-GCM encryption with random IVs** (initialization vectors) for each encryption operation. This is a security best practice that prevents pattern analysis attacks. However, it creates a challenge for multi-party record linkage:
+Open Link Token uses **AES-256-GCM encryption with random IVs** (initialization vectors) for each encryption operation. This is a security best practice that prevents pattern analysis attacks. However, it creates a challenge for multi-party record linkage:
 
 1. **Problem**: Hospital tokenizes their data → produces encrypted tokens with random IVs
 2. **Problem**: Pharmacy tokenizes their data → produces different encrypted tokens (different IVs)
@@ -408,16 +405,19 @@ For matching: We decrypt to the HMAC layer, which is deterministic and comparabl
 ### Security Best Practices <!-- omit in toc -->
 
 1. **Key Management**:
+
    - Use strong, cryptographically random keys (not the demo keys!)
    - Share keys only through secure channels (encrypted email, key management systems)
    - Rotate keys periodically (requires re-tokenization)
 
 2. **Access Control**:
+
    - Limit decryption capability to authorized matching systems only
    - Log all decryption and matching operations
    - Use separate environments for tokenization vs. matching
 
 3. **Data Governance**:
+
    - Establish data use agreements before sharing tokens
    - Define permitted uses of matching results
    - Implement audit trails for all token operations
@@ -435,7 +435,7 @@ No – the design is intentionally one-way. Even after decryption, you only see 
 
 ### Why do encrypted tokens differ between runs? <!-- omit in toc -->
 
-OpenToken uses AES-GCM encryption with a fresh random IV for each token, so encrypting the same fingerprint twice produces different ciphertexts. This prevents attackers from learning when two encrypted values are the same just by looking at the bytes. Under the hood, the deterministic HMAC fingerprint is the same for identical input, which is what the matching step compares after decryption.
+Open Link Token uses AES-GCM encryption with a fresh random IV for each token, so encrypting the same fingerprint twice produces different ciphertexts. This prevents attackers from learning when two encrypted values are the same just by looking at the bytes. Under the hood, the deterministic HMAC fingerprint is the same for identical input, which is what the matching step compares after decryption.
 
 ### Who should be allowed to decrypt? <!-- omit in toc -->
 
@@ -515,22 +515,22 @@ matches = find_matches(hospital_tokens, pharmacy_tokens, required_token_matches=
 
 ### "Invalid attribute" errors during tokenization <!-- omit in toc -->
 
-**Cause**: Some generated data doesn't meet OpenToken validation rules.
+**Cause**: Some generated data doesn't meet Open Link Token validation rules.
 
-**Solution**: This is expected. OpenToken validates data (e.g., SSN format, birthdate ranges) and skips invalid records. Check the metadata file for details.
+**Solution**: This is expected. Open Link Token validates data (e.g., SSN format, birthdate ranges) and skips invalid records. Check the metadata file for details.
 
-### Build errors <!-- omit in toc -->
+### CLI setup errors <!-- omit in toc -->
 
-**Cause**: Maven or Java not installed/configured.
+**Cause**: Python or `uv` is not installed/configured, or the `openlinktoken` CLI could not be installed.
 
 **Solution**:
 
 ```bash
-# Check Java
-java -version  # Should be 11+
+# Check Python
+python --version  # Should be 3.10+
 
-# Check Maven
-mvn -version   # Should be 3.6+
+# Check uv
+uv --version
 ```
 
 ### Real-World Applications <!-- omit in toc -->
@@ -545,10 +545,10 @@ This demonstration can be adapted for:
 
 ### Additional Resources <!-- omit in toc -->
 
-- [OpenToken Main README](../../README.md)
+- [Open Link Token Main README](../../README.md)
 - [Development Guide](../../docs/dev-guide-development.md)
 - [Metadata Format Documentation](../../docs/metadata-format.md)
 
 ### Questions? <!-- omit in toc -->
 
-For issues or questions about OpenToken, please visit the [GitHub repository](https://github.com/TruvetaPublic/OpenLinkToken).
+For issues or questions about Open Link Token, please visit the [GitHub repository](https://github.com/mattwise-42/OpenLinkToken).

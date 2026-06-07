@@ -2,7 +2,7 @@
 #
 # Run the Superhero PPRL example end-to-end:
 #  1) Generate datasets
-#  2) Tokenize with OpenToken (builds Java if needed)
+#  2) Tokenize with the Python Open Link Token CLI
 #  3) Decrypt-and-compare tokens to measure overlap
 #
 set -euo pipefail
@@ -20,7 +20,6 @@ DEMO_DIR="${SCRIPT_DIR}"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 DATASETS_DIR="${DEMO_DIR}/datasets"
 OUTPUTS_DIR="${DEMO_DIR}/outputs"
-JAVA_DIR="${PROJECT_ROOT}/lib/java/opentoken"
 VENV_ACTIVATE="${PROJECT_ROOT}/.venv/bin/activate"
 
 # Keys (keep in sync with tokenization scripts and analyze_overlap.py)
@@ -45,10 +44,16 @@ else
 fi
 
 # Ensure required Python deps for analysis
+ANALYZE_OVERLAP_COMMAND=(python "${DEMO_DIR}/scripts/analyze_overlap.py")
 if ! python -c "import cryptography" >/dev/null 2>&1; then
-  echo -e "${YELLOW}Python package 'cryptography' not found. Installing...${NC}"
-  python -m pip install --upgrade pip >/dev/null
-  python -m pip install cryptography >/dev/null
+  if ! command -v uv >/dev/null 2>&1; then
+    echo -e "${RED}Python package 'cryptography' not found and uv is unavailable.${NC}"
+    echo -e "${RED}Install uv or activate a virtual environment with cryptography before rerunning.${NC}"
+    exit 1
+  fi
+
+  echo -e "${YELLOW}Python package 'cryptography' not found. Using uv-managed dependency for overlap analysis...${NC}"
+  ANALYZE_OVERLAP_COMMAND=(uv run --isolated --with cryptography python "${DEMO_DIR}/scripts/analyze_overlap.py")
 fi
 
 # Step 1: Generate datasets
@@ -57,8 +62,8 @@ mkdir -p "${DATASETS_DIR}"
 python "${DEMO_DIR}/scripts/generate_superhero_datasets.py"
 echo ""
 
-# Step 2: Tokenize datasets (builds Java if needed)
-echo -e "${BLUE}Step 2/3: Tokenizing datasets with OpenToken...${NC}"
+# Step 2: Tokenize datasets with the Python CLI
+echo -e "${BLUE}Step 2/3: Tokenizing datasets with Open Link Token...${NC}"
 chmod +x "${DEMO_DIR}/scripts/tokenize_hospital.sh" || true
 chmod +x "${DEMO_DIR}/scripts/tokenize_pharmacy.sh" || true
 "${DEMO_DIR}/scripts/tokenize_hospital.sh"
@@ -67,7 +72,7 @@ echo ""
 
 # Step 3: Analyze overlap (decrypt + compare)
 echo -e "${BLUE}Step 3/3: Analyzing overlap (decrypting and comparing tokens)...${NC}"
-python "${DEMO_DIR}/scripts/analyze_overlap.py"
+"${ANALYZE_OVERLAP_COMMAND[@]}"
 echo ""
 
 echo "============================================================"

@@ -1,34 +1,37 @@
 ---
+name: Code Simplifier
+description: Analyzes recently modified code and creates pull requests with simplifications that improve clarity, consistency, and maintainability while preserving functionality
 on:
-  schedule: daily
-  skip-if-match: is:pr is:open in:title "[code-simplifier]"
+  schedule: weekly
+  skip-if-match: 'is:pr is:open in:title "[code-simplifier]"'
+
 permissions:
   contents: read
   issues: read
   pull-requests: read
+
+tracker-id: code-simplifier
+
 imports:
-- github/gh-aw/.github/workflows/shared/reporting.md@94662b1dee8ce96c876ba9f33b3ab8be32de82a4
+  - shared/mood.md
+  - shared/reporting.md
+
 safe-outputs:
   create-pull-request:
-    expires: 1d
-    labels:
-    - refactoring
-    - code-quality
-    - automation
-    reviewers:
-    - copilot
     title-prefix: "[code-simplifier] "
-description: Analyzes recently modified code and creates pull requests with simplifications that improve clarity, consistency, and maintainability while preserving functionality
-name: Code Simplifier
-source: github/gh-aw/.github/workflows/code-simplifier.md@94662b1dee8ce96c876ba9f33b3ab8be32de82a4
-strict: true
-timeout-minutes: 30
+    labels: [refactoring, code-quality, automation]
+    reviewers: [copilot]
+    expires: 1d
+
 tools:
   github:
-    toolsets:
-    - default
-tracker-id: code-simplifier
+    toolsets: [default]
+
+timeout-minutes: 30
+strict: true
+source: github/gh-aw/.github/workflows/code-simplifier.md@852cb06ad52958b402ed982b69957ffc57ca0619
 ---
+
 <!-- This prompt will be imported in the agentic workflow .github/workflows/code-simplifier.md at runtime. -->
 <!-- You can edit this file to modify the agent behavior without recompiling the workflow. -->
 
@@ -70,7 +73,7 @@ Use GitHub tools to:
 For each merged PR or recent commit:
 - Use `pull_request_read` with `method: get_files` to list changed files
 - Use `get_commit` to see file changes in recent commits
-- Focus on source code files (`.go`, `.js`, `.ts`, `.tsx`, `.cjs`, `.py`, etc.)
+- Focus on source code files (`.go`, `.js`, `.ts`, `.tsx`, `.cjs`, `.py`, `.cs`, etc.)
 - Exclude test files, lock files, and generated files
 
 ### 1.3 Determine Scope
@@ -93,6 +96,7 @@ Before simplifying, review the project's coding standards from relevant document
 - For Go projects: Check `AGENTS.md`, `DEVGUIDE.md`, or similar files
 - For JavaScript/TypeScript: Look for `CLAUDE.md`, style guides, or coding conventions
 - For Python: Check for style guides, PEP 8 adherence, or project-specific conventions
+- For .NET/C#: Check `.editorconfig`, `Directory.Build.props`, or coding conventions in docs
 
 **Key Standards to Apply:**
 
@@ -116,6 +120,14 @@ For **Python** projects:
 - Use type hints for function signatures
 - Prefer explicit over implicit code
 - Use list/dict comprehensions where they improve clarity (not complexity)
+
+For **.NET/C#** projects:
+- Follow Microsoft C# coding conventions
+- Use `var` only when the type is obvious from the right side
+- Use file-scoped namespaces (`namespace X;`) where supported
+- Prefer pattern matching over type casting
+- Use `async`/`await` consistently, avoid `.Result` or `.Wait()`
+- Use nullable reference types and annotate nullability
 
 ### 2.2 Simplification Principles
 
@@ -201,6 +213,9 @@ npm test
 
 # For Python projects
 pytest
+
+# For .NET projects
+dotnet test
 ```
 
 If tests fail:
@@ -222,6 +237,9 @@ npm run lint
 
 # For Python projects
 flake8 . || pylint .
+
+# For .NET projects
+dotnet format --verify-no-changes
 ```
 
 Fix any linting issues introduced by the simplifications.
@@ -240,6 +258,9 @@ npm run build
 # For Python projects
 # (typically no build step, but check imports)
 python -m py_compile changed_files.py
+
+# For .NET projects
+dotnet build
 ```
 
 ## Phase 4: Create Pull Request

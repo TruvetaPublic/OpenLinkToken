@@ -11,7 +11,7 @@ COPY .devcontainer/scripts/detect_zscaler.sh /tmp/
 # Copy host-provided certificate if it exists (will be skipped if file doesn't exist)
 COPY .devcontainer/scripts/zscaler_root.pem* /tmp/host_zscaler_cert.pem
 
-RUN apt-get update && apt-get install -y ca-certificates openssl python3 python3-pip pipx curl && \
+RUN apt-get update && apt-get install -y ca-certificates openssl python3 libpython3.11 curl && \
     # Make the script executable and run it
     chmod +x /tmp/detect_zscaler.sh && \
     /tmp/detect_zscaler.sh && \
@@ -29,4 +29,18 @@ ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 
 USER vscode
 
-RUN pip install pytest autoflake flake8 bump2version --break-system-packages
+# Pre-create VS Code server volume mount points owned by vscode so Docker initializes
+# the named volumes with vscode:vscode ownership rather than root, preventing permission
+# errors when VS Code tries to install its server on first container start.
+RUN mkdir -p /home/vscode/.vscode-server \
+             /home/vscode/.vscode-server-insiders \
+             /home/vscode/.copilot
+
+# Install UV and global Python CLI tools (each in an isolated uv-managed venv)
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
+    ~/.local/bin/uv tool install pytest && \
+    ~/.local/bin/uv tool install autoflake && \
+    ~/.local/bin/uv tool install flake8 && \
+    ~/.local/bin/uv tool install bump2version
+
+ENV PATH="/home/vscode/.local/bin:${PATH}"

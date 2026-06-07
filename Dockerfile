@@ -1,34 +1,41 @@
 ##################################################
-# Stage 1: Build the application
+# Stage 1: Install the Python CLI and its dependencies
 ##################################################
-ARG JAVA_VERSION=21
-ARG MAVEN_VERSION=3.8.8
+ARG PYTHON_VERSION=3.11
 
-FROM maven:${MAVEN_VERSION}-amazoncorretto-${JAVA_VERSION} AS build
+FROM python:${PYTHON_VERSION}-slim AS build
 
-RUN mkdir /app
+ENV PIP_NO_CACHE_DIR=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
 WORKDIR /app
 
-COPY lib/java /app
-COPY resources /resources
+COPY README.md /app/README.md
+COPY lib/python/openlinktoken /app/lib/python/openlinktoken
+COPY lib/python/openlinktoken-cli /app/lib/python/openlinktoken-cli
 
-RUN mvn clean package -DskipTests
+RUN python -m pip install --upgrade pip && \
+    python -m pip install --prefix=/install \
+    /app/lib/python/openlinktoken \
+    /app/lib/python/openlinktoken-cli
 
 ##################################################
-# Stage 2: Create the image to run the application
+# Stage 2: Create the image to run the Python CLI
 ##################################################
-FROM amazoncorretto:21-alpine AS final
+FROM python:${PYTHON_VERSION}-slim AS final
 
-RUN mkdir /app
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
-RUN addgroup --system appuser && adduser --system --no-create-home --ingroup appuser appuser
+RUN mkdir /app && \
+    addgroup --system appuser && adduser --system --no-create-home --ingroup appuser appuser
 
-ARG VERSION=1.13.2
-COPY --from=build /app/opentoken-cli/target/opentoken-cli-${VERSION}.jar /usr/local/lib/opentoken.jar
+COPY --from=build /install /usr/local
 
 WORKDIR /app
 
 RUN chown -R appuser:appuser /app
 USER appuser
 
-ENTRYPOINT ["java", "-jar", "/usr/local/lib/opentoken.jar"]
+ENTRYPOINT ["olt"]

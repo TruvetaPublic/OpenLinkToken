@@ -1,0 +1,65 @@
+[project]
+name = "openlinktoken-workspace"
+version = "0.0.0"
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = [
+  "lib/python/openlinktoken",
+  "lib/python/openlinktoken-cli",
+  "lib/python/openlinktoken-pyspark",
+]
+
+[tool.uv.sources]
+openlinktoken = { workspace = true }
+
+[dependency-groups]
+dev = [
+  "cryptography==46.0.7",
+  "jwcrypto>=1.5.6",
+  "csv2parquet",
+  "pytest>=7.0.0",
+  "pytest-cov",
+  "ruff>=0.9.0",
+  "pycryptodome>=3.18.0",
+  "jupyter>=1.0.0",
+  "notebook>=7.0.0",
+  "ipykernel>=6.25.0",
+  "prek",
+  "autoflake",
+]
+[tool.ruff]
+line-length = 120
+fix = true
+
+[tool.ruff.lint]
+select = [
+  "E",   # pycodestyle errors
+  "W",   # pycodestyle warnings
+  "F",   # pyflakes (includes unused imports F401, unused variables F841)
+  "I",   # isort
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/__init__.py" = ["F401"]  # intentional public re-exports
+"*.ipynb" = ["E402"]         # notebook cells don't require imports at top
+
+[tool.ruff.lint.isort]
+known-first-party = ["openlinktoken", "openlinktoken_cli", "openlinktoken_pyspark"]
+
+[tool.ruff.format]
+# Matches black defaults
+quote-style = "double"
+indent-style = "space"
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "lib/python/openlinktoken/src/main",
+  "lib/python/openlinktoken-cli/src/main",
+  "lib/python/openlinktoken-pyspark/src/main",
+  "lib/python/openlinktoken_ext_hello_world/src/main",
+]

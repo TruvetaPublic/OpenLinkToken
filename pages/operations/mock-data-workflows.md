@@ -4,13 +4,13 @@ layout: default
 
 # Mock Data Workflows
 
-How to generate and process mock datasets for testing OpenToken pipelines.
+How to generate and process mock datasets for testing Open Link Token pipelines.
 
 ---
 
 ## Overview
 
-OpenToken includes a mock data generator for testing and development. The tool creates realistic person records with configurable duplicate rates for overlap analysis testing.
+Open Link Token includes a mock data generator for testing and development. The tool creates realistic person records with configurable duplicate rates for overlap analysis testing.
 
 ---
 
@@ -49,6 +49,7 @@ python data_generator.py 1000 0.0 unique_records.csv
 ### Default Values
 
 If no arguments provided:
+
 - `num_lines`: 100
 - `repeat_probability`: 0.05 (5%)
 - `output_file`: `test_data.csv`
@@ -57,7 +58,7 @@ If no arguments provided:
 
 ## Output Format
 
-Generated CSV files include all required OpenToken columns:
+Generated CSV files include all required Open Link Token columns:
 
 ```csv
 RecordId,BirthDate,FirstName,LastName,PostalCode,Sex,SocialSecurityNumber
@@ -111,14 +112,12 @@ Duplicates have **different RecordIds** but **identical attributes**, so they pr
 cd tools/mockdata
 python data_generator.py 100 0.05 test_data.csv
 
-# 2. Process with OpenToken
+# 2. Process with Open Link Token
 cd ../../
-./run-opentoken.sh \
+./run-openlinktoken.sh package \
   -i tools/mockdata/test_data.csv \
   -o resources/test_output.csv \
-  -t csv \
-  -h "HashingKey" \
-  -e "Secret-Encryption-Key-Goes-Here."
+  --exchange-config ./resources/mockdata.exchange.json
 
 # 3. Check output
 cat resources/test_output.csv
@@ -136,7 +135,7 @@ python data_generator.py 1000 0.0 dataset_a.csv
 python data_generator.py 1000 0.0 dataset_b.csv
 
 # Add some common records manually or use a script
-# Then process both with OpenToken using the same secrets
+# Then process both with Open Link Token using the same exchange config
 ```
 
 For automated overlap analysis, see [Spark or Databricks](spark-or-databricks.md).
@@ -147,8 +146,8 @@ For automated overlap analysis, see [Spark or Databricks](spark-or-databricks.md
 
 Pre-generated sample files are available in [resources/](https://github.com/TruvetaPublic/OpenLinkToken/tree/main/resources):
 
-| File                                                                                                                    | Description                    |
-| ----------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| File                                                                                                                        | Description                    |
+| --------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
 | [sample.csv](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/resources/sample.csv)                                 | Small test file for quickstart |
 | [mockdata/test_data.csv](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/resources/mockdata/test_data.csv)         | 100 records with duplicates    |
 | [mockdata/test_overlap1.csv](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/resources/mockdata/test_overlap1.csv) | Dataset for overlap testing    |
@@ -161,14 +160,14 @@ Pre-generated sample files are available in [resources/](https://github.com/Truv
 The mock data generator requires:
 
 ```bash
-pip install faker
+uv pip install faker
 ```
 
 Or install from the tools requirements:
 
 ```bash
 cd tools
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 ```
 
 ---
@@ -198,17 +197,17 @@ df = pd.read_csv('large_test.csv')
 df.to_parquet('large_test.parquet')
 "
 
-# Process with OpenToken
-java -jar opentoken-cli-*.jar \
-  -i large_test.parquet -t parquet \
+# Process with Open Link Token
+olt package \
+  -i large_test.parquet \
   -o tokens.parquet \
-  -h "HashingKey" -e "EncryptionKey"
+  --exchange-config ./large-test.exchange.json
 ```
 
 ---
 
 ## Next Steps
 
-- **Run OpenToken**: [Running Batch Jobs](running-batch-jobs.md)
+- **Run Open Link Token**: [Running Batch Jobs](running-batch-jobs.md)
 - **Quickstart guide**: [Quickstarts](../quickstarts/index.md)
 - **Overlap analysis**: [Spark or Databricks](spark-or-databricks.md)

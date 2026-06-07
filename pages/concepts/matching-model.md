@@ -4,7 +4,7 @@ layout: default
 
 # Matching Model
 
-OpenToken uses a multi-rule tokenization strategy to enable privacy-preserving person matching across datasets that contain PII.
+Open Link Token uses a multi-rule tokenization strategy to enable privacy-preserving record linkage across datasets that contain PII.
 
 ---
 
@@ -22,7 +22,8 @@ The matching model generates cryptographically secure tokens from personal ident
 ┌─────────────────────────────────────────────────────────────────┐
 │                    Normalization                                │
 │  - Remove titles/suffixes                                       │
-│  - Strip diacritics                                             │
+│  - Remove diacritics and transliterate supported Latin Extended │
+│    letters to ASCII                                             │
 │  - Standardize formats                                          │
 └───────────────────────┬─────────────────────────────────────────┘
                         │
@@ -56,7 +57,7 @@ Real-world data is messy:
 
 Using **five distinct rules** allows matching at different confidence levels:
 
-OpenToken emits tokens with a `RuleId` of `T1`–`T5`. These identifiers are **rule names**, not “tiers” (they don’t imply an ordering). In practice, different rules tend to trade off precision vs. recall based on which attributes they include.
+Open Link Token emits tokens with a `RuleId` of `T1`–`T5`. These identifiers are **rule names**, not “tiers” (they don’t imply an ordering). In practice, different rules tend to trade off precision vs. recall based on which attributes they include.
 
 | RuleId | Attributes (normalized signature)      | Typical use                                             |
 | :----- | :------------------------------------- | :------------------------------------------------------ |
@@ -207,7 +208,7 @@ Consider four fictional person records from two different systems:
 
 ### Step 1: Normalization
 
-OpenToken normalizes each field before token generation. For full rules, see [Normalization and Validation](normalization-and-validation.md).
+Open Link Token normalizes each field before token generation. For full rules, see [Normalization and Validation](normalization-and-validation.md).
 
 | RecordId | FirstName | LastName | BirthDate  | Sex | PostalCode | SSN         |
 | -------- | --------- | -------- | ---------- | --- | ---------- | ----------- |
@@ -220,6 +221,7 @@ OpenToken normalizes each field before token generation. For full rules, see [No
 
 - **María → MARIA**: Diacritic removed, uppercased
 - **García Jr. → GARCIA**: Suffix removed, diacritic removed, uppercased
+- **Łukasz / Søren / Øst / Œberg** style inputs normalize to ASCII forms such as `LUKASZ`, `SOREN`, `OST`, and `OEBERG`
 - **tom → TOM**: Uppercased
 - **03/22/1988 → 1988-03-22**: Date reformatted to ISO 8601
 - **30301-4455 → 30301**: ZIP+4 truncated to 5 digits
@@ -227,7 +229,7 @@ OpenToken normalizes each field before token generation. For full rules, see [No
 
 ### Step 2: Token Generation
 
-Each record produces up to five tokens (T1–T5). Tokens are Base64-encoded hashes; the examples below are illustrative placeholders with realistic lengths (~88 characters for encrypted tokens).
+Each record produces up to five tokens (T1–T5). In encrypted mode, tokens are emitted as `olt.V1` JWE strings. In normal `tokenize` mode (or after decryption), tokens are base64-encoded HMAC values used for deterministic equality checks. The separate CLI option `tokenize --mode hash-only` instead emits 64-character SHA-256 hex values when you intentionally skip HMAC.
 
 For detailed rule compositions, see [Token Rules](token-rules.md).
 
@@ -251,7 +253,7 @@ For detailed rule compositions, see [Token Rules](token-rules.md).
 | T4   | `452387291\|F\|1988-03-22`       | `ZnBOdFdtS2haQWdWcko...` |
 | T5   | `GARCIA\|MAR\|F`                 | `RWtqVXhMY0dTcldmbVk...` |
 
-**Observation:** HOS-101 and CLN-201 produce **identical tokens** for all five rules because their normalized attributes are identical.
+**Observation:** HOS-101 and CLN-201 produce **identical token signatures** for all five rules because their normalized attributes are identical. Their normal `tokenize` values (or decrypted values) match exactly; encrypted `olt.V1` token strings can differ because encryption uses random IVs.
 
 **HOS-102 (tom O'Reilly, 1995-11-03):**
 
@@ -270,17 +272,17 @@ For detailed rule compositions, see [Token Rules](token-rules.md).
 | T1   | `OREILLY\|T\|M\|1995-11-03`        | `RHZiTmNYemFRd0VyWnR...` |
 | T2   | `OREILLY\|THOMAS\|1995-11-03\|303` | `S2p1aHlHdEZyRGVWd1h...` |
 | T3   | `OREILLY\|THOMAS\|M\|1995-11-03`   | `VXl0ckVXcUFzRGZHaEp...` |
-| T4   | — (SSN missing)                    | *Not generated*          |
+| T4   | — (SSN missing)                    | _Not generated_          |
 | T5   | `OREILLY\|THO\|M`                  | `QmFzZTY0UExhY2Vob2w...` |
 
 **Observation:** HOS-102 and CLN-202 can match on **T1** (first initial) even though the full first name differs (TOM vs THOMAS). They do **not** match on rules that require the full first name, and they cannot generate T4 because the SSN is missing.
 
 ### Step 3: Matching Decisions
 
-When comparing tokens across the two systems:
+When comparing normal `tokenize` (or decrypted) token values across the two systems:
 
-| Record Pair       | T1  | T2  | T3  | T4  | T5  | Match?                |
-| ----------------- | --- | --- | --- | --- | --- | --------------------- |
+| Record Pair        | T1  | T2  | T3  | T4  | T5  | Match?                |
+| ------------------ | --- | --- | --- | --- | --- | --------------------- |
 | HOS-101 ↔ CLN-201 | ✓   | ✓   | ✓   | ✓   | ✓   | **Yes** (all rules)   |
 | HOS-102 ↔ CLN-202 | ✓   | ✗   | ✗   | —   | ✗   | **Depends** (T1 only) |
 | HOS-101 ↔ HOS-102 | ✗   | ✗   | ✗   | ✗   | ✗   | No                    |
@@ -288,12 +290,12 @@ When comparing tokens across the two systems:
 
 **Interpretation:**
 
-- **HOS-101 and CLN-201 are the same person.** Despite surface differences ("María" vs "Maria", suffix "Jr."), normalization produces identical attributes, so all tokens match.
+- **HOS-101 and CLN-201 are the same person.** Despite surface differences ("María" vs "Maria", suffix "Jr."), normalization produces identical attributes, so all deterministic token values match.
 - **HOS-102 and CLN-202 may be the same person, but only match on T1.** Depending on your matching policy, you might require multiple-rule agreement (higher precision) or accept single-rule matches (higher recall).
 
 ### Key Takeaways
 
-1. **Normalization is critical.** Two records with superficially different inputs (accents, suffixes, date formats) can match perfectly after normalization.
+1. **Normalization is critical.** Two records with superficially different inputs (accents, supported Latin Extended letters, suffixes, date formats) can match perfectly after normalization.
 2. **Missing attributes reduce matching opportunities.** CLN-202 couldn't generate T4 because SSN was missing.
 3. **Name variations may prevent matches.** "Tom" vs "Thomas" is a common real-world issue; T5's 3-character prefix helps only if the first 3 letters are identical.
 4. **Multiple rules provide fallback.** Even if T4 can't be generated (SSN missing), other rules may still match if other attributes align.
@@ -313,7 +315,7 @@ For records from different organizations to match:
 2. **Same normalization**: Attribute processing must be identical
 3. **Same rules**: Token generation logic must match exactly
 
-OpenToken ensures this through:
+Open Link Token ensures this through:
 
 - Dual Java/Python implementations with byte-identical outputs
 - Comprehensive normalization documentation

@@ -4,7 +4,7 @@ layout: default
 
 # Reference: API Overview
 
-OpenToken provides three interfaces for generating privacy-preserving tokens: a Java library, a Python library, and a command-line interface (CLI). All three produce identical tokens for the same input, enabling cross-language and cross-platform workflows.
+Open Link Token provides three interfaces for generating privacy-preserving tokens: a Java library, a Python library, and a command-line interface (CLI). All three produce identical tokens for the same input, enabling cross-language and cross-platform workflows.
 
 ---
 
@@ -36,20 +36,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.truveta.opentoken.attributes.Attribute;
-import com.truveta.opentoken.attributes.person.BirthDateAttribute;
-import com.truveta.opentoken.attributes.person.FirstNameAttribute;
-import com.truveta.opentoken.attributes.person.LastNameAttribute;
-import com.truveta.opentoken.attributes.person.PostalCodeAttribute;
-import com.truveta.opentoken.attributes.person.SexAttribute;
-import com.truveta.opentoken.attributes.person.SocialSecurityNumberAttribute;
-import com.truveta.opentoken.tokens.TokenDefinition;
-import com.truveta.opentoken.tokens.TokenGenerator;
-import com.truveta.opentoken.tokens.TokenGeneratorResult;
-import com.truveta.opentoken.tokens.tokenizer.SHA256Tokenizer;
-import com.truveta.opentoken.tokentransformer.EncryptTokenTransformer;
-import com.truveta.opentoken.tokentransformer.HashTokenTransformer;
-import com.truveta.opentoken.tokentransformer.TokenTransformer;
+import org.openlinktoken.attributes.Attribute;
+import org.openlinktoken.attributes.person.BirthDateAttribute;
+import org.openlinktoken.attributes.person.FirstNameAttribute;
+import org.openlinktoken.attributes.person.LastNameAttribute;
+import org.openlinktoken.attributes.person.PostalCodeAttribute;
+import org.openlinktoken.attributes.person.SexAttribute;
+import org.openlinktoken.attributes.person.SocialSecurityNumberAttribute;
+import org.openlinktoken.tokens.TokenDefinition;
+import org.openlinktoken.tokens.TokenGenerator;
+import org.openlinktoken.tokens.TokenGeneratorResult;
+import org.openlinktoken.tokens.tokenizer.SHA256Tokenizer;
+import org.openlinktoken.tokentransformer.EncryptTokenTransformer;
+import org.openlinktoken.tokentransformer.HashTokenTransformer;
+import org.openlinktoken.tokentransformer.TokenTransformer;
 
 List<TokenTransformer> transformers = List.of(
   new HashTokenTransformer(hashingSecret),
@@ -91,17 +91,17 @@ The Python API mirrors the Java API for cross-language parity.
 **Quick example:**
 
 ```python
-from opentoken.attributes.person.birth_date_attribute import BirthDateAttribute
-from opentoken.attributes.person.first_name_attribute import FirstNameAttribute
-from opentoken.attributes.person.last_name_attribute import LastNameAttribute
-from opentoken.attributes.person.postal_code_attribute import PostalCodeAttribute
-from opentoken.attributes.person.sex_attribute import SexAttribute
-from opentoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
-from opentoken.tokens.token_definition import TokenDefinition
-from opentoken.tokens.token_generator import TokenGenerator
-from opentoken.tokens.tokenizer.sha256_tokenizer import SHA256Tokenizer
-from opentoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
-from opentoken.tokentransformer.hash_token_transformer import HashTokenTransformer
+from openlinktoken.attributes.person.birth_date_attribute import BirthDateAttribute
+from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute
+from openlinktoken.attributes.person.last_name_attribute import LastNameAttribute
+from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttribute
+from openlinktoken.attributes.person.sex_attribute import SexAttribute
+from openlinktoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
+from openlinktoken.tokens.token_definition import TokenDefinition
+from openlinktoken.tokens.token_generator import TokenGenerator
+from openlinktoken.tokens.tokenizer.sha256_tokenizer import SHA256Tokenizer
+from openlinktoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
+from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 
 token_definition = TokenDefinition()
 tokenizer = SHA256Tokenizer([
@@ -135,29 +135,28 @@ The CLI processes CSV or Parquet files without writing code.
 **Basic usage:**
 
 ```bash
-java -jar opentoken-cli-*.jar \
-  -i input.csv -t csv -o output.csv \
-  -h "HashingSecret" -e "EncryptionKey32Chars!!!!!!!!!!"
+olt package \
+  -i input.csv -o output.csv \
+  --exchange-config ./partner.exchange.json
 ```
 
 Or with Python:
 
 ```bash
-python -m opentoken_cli.main \
-  -i input.csv -t csv -o output.csv \
-  -h "HashingSecret" -e "EncryptionKey32Chars!!!!!!!!!!"
+python -m openlinktoken_cli.main package \
+  -i input.csv -o output.csv \
+  --exchange-config ./partner.exchange.json
 ```
 
 **Key options:**
 
-| Flag                     | Purpose                        |
-| ------------------------ | ------------------------------ |
-| `-i` / `--input`         | Input file path                |
-| `-o` / `--output`        | Output file path (defaults beside input) |
-| `-t` / `--type`          | File type (`csv` or `parquet`) |
-| `-h` / `--hashingsecret` | HMAC-SHA256 secret             |
-| `-e` / `--encryptionkey` | AES-256 key (32 chars)         |
-| `--hash-only`            | Skip encryption                |
+| Flag                                  | Purpose                                                |
+| ------------------------------------- | ------------------------------------------------------ |
+| `-i` / `--input`                      | Input file path                                        |
+| `-o` / `--output`                     | Output file path                                       |
+| `--exchange-config`                   | Exchange config JSON path                              |
+| `--private-key` / `--private-key-env` | Private key used to decrypt the exchange config        |
+| `tokenize`                            | Hash-only mode using the same exchange-config workflow |
 
 **Full reference:** [CLI Reference](cli.md)
 
@@ -177,7 +176,7 @@ Every token generation run produces a `.metadata.json` file alongside the token 
 
 ## Custom Token Registration
 
-OpenToken supports defining custom token rules beyond T1–T5. Custom rules can include additional attributes (e.g., MRN) or different attribute combinations.
+Open Link Token supports defining custom token rules beyond T1–T5. Custom rules can include additional attributes (e.g., MRN) or different attribute combinations.
 
 **Full reference:** [Token Registration](token-registration.md)
 
@@ -190,6 +189,7 @@ OpenToken supports defining custom token rules beyond T1–T5. Custom rules can 
 - [CLI Reference](cli.md) — All CLI flags, modes, and examples
 - [Metadata Format](metadata-format.md) — Metadata file schema and fields
 - [Token Registration](token-registration.md) — Adding custom token rules
+- [Extension Author Reference](extensions.md) — Building CLI extensions: ABC contract, entry points, security model, and binary compatibility
 
 ---
 

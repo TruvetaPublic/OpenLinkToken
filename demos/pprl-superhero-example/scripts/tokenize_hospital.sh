@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Tokenize the hospital dataset using OpenToken (Java CLI).
+# Tokenize the hospital dataset using Open Link Token (Python CLI).
 #
 # Output:
 #   outputs/hospital_tokens.csv
@@ -24,22 +24,16 @@ echo "Tokenizing Hospital Dataset (Superhero PPRL Demo)"
 echo "============================================================"
 echo ""
 
-# Check if OpenToken JAR exists (in opentoken-cli module)
-JAR_FILE=$(ls "${PROJECT_ROOT}/lib/java/opentoken-cli/target/opentoken-cli-"*.jar 2>/dev/null | head -1)
-if [ -z "${JAR_FILE}" ]; then
-  echo "OpenToken JAR not found. Building..."
-  (cd "${PROJECT_ROOT}/lib/java" && mvn clean install -DskipTests)
-  JAR_FILE=$(ls "${PROJECT_ROOT}/lib/java/opentoken-cli/target/opentoken-cli-"*.jar | head -1)
+# Ensure Python CLI is available
+if ! command -v olt &>/dev/null; then
+  echo "olt CLI not found. Installing Python CLI..."
+  (cd "${PROJECT_ROOT}" && uv pip install -e lib/python/openlinktoken -e lib/python/openlinktoken-cli)
 fi
-
-echo "Using JAR: ${JAR_FILE}"
-echo ""
 
 mkdir -p "${DEMO_DIR}/outputs"
 
-echo "Running OpenToken CLI (hospital)..."
-java -jar "${JAR_FILE}" \
-  -t csv \
+echo "Running Open Link Token CLI (hospital)..."
+olt package \
   -i "${DEMO_DIR}/datasets/hospital_superhero_data.csv" \
   -o "${DEMO_DIR}/outputs/hospital_tokens.csv" \
   -h "${HASHING_SECRET}" \

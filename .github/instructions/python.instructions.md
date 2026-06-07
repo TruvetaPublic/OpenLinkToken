@@ -5,6 +5,17 @@ applyTo: "**/*.py"
 
 # Python Coding Conventions
 
+## Repo-Specific Runtime Rules
+
+- Use the shared Python virtual environment at `/home/vscode/.local/share/openlinktoken/.venv`.
+- The workspace-root `.venv` is a symlink to this shared environment in the devcontainer.
+- Never create or activate a nested `.venv` under `lib/python/...`.
+- Activate the shared environment with:
+
+```bash
+source /home/vscode/.local/share/openlinktoken/.venv/bin/activate
+```
+
 ## Python Instructions
 
 - Prefer clear, descriptive docstrings for functions; use inline comments sparingly to explain non-obvious intent or constraints, not obvious behavior.
@@ -30,7 +41,7 @@ applyTo: "**/*.py"
 - Ensure lines do not exceed 120 characters (extended from PEP 8's 79 for PySpark chains).
 - Place function and class docstrings immediately after the `def` or `class` keyword.
 - Use blank lines to separate functions, classes, and code blocks where appropriate.
-- **Remove unused imports and variables**: Always clean up unused imports and variables from your code. Running `autoflake --remove-all-unused-imports --remove-unused-variables` can help automatically identify and remove these.
+- **Remove unused imports and variables**: Always clean up unused imports and variables from your code. Running `ruff check --fix` can help automatically identify and remove these.
 - Organize imports in standard order: standard library imports, third-party imports, then local application imports, with a blank line between each group.
 
 ### PySpark Import Rules (Critical)
@@ -66,16 +77,18 @@ result_df = (
 ### Running Tests
 
 ```bash
-pytest                    # Run all tests
-pytest -v                 # Verbose mode with detailed output
-pytest tests/modes/       # Run tests in specific directory
-pytest -k "test_name"     # Run tests matching pattern
+source /home/vscode/.local/share/openlinktoken/.venv/bin/activate
+
+cd lib/python/openlinktoken && pytest
+cd lib/python/openlinktoken-cli && pytest
 ```
 
 ### Installing Dependencies
 
 ```bash
-pip install -r requirements.txt -r dev-requirements.txt
+source /home/vscode/.local/share/openlinktoken/.venv/bin/activate
+cd lib/python/openlinktoken && uv pip install -r requirements.txt -r dev-requirements.txt
+cd lib/python/openlinktoken-cli && uv pip install -r requirements.txt -r dev-requirements.txt
 ```
 
 ### Test Guidelines

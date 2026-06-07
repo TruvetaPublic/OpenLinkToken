@@ -31,6 +31,7 @@ If your organization uses Zscaler for SSL inspection, you'll need to configure t
 1. **Export the Zscaler certificate from your system:**
 
    - **For macOS, Git Bash or WSL users:**
+
      ```bash
      ./.devcontainer/scripts/export_host_zscaler_cert.sh
      ```

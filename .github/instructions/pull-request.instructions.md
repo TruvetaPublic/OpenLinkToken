@@ -1,49 +1,50 @@
 ---
+description: "Open Link Token branch and pull request workflow"
 applyTo: "**"
 ---
 
-# Pull Request Guidelines
+# Pull Request and Branch Workflow
+
+## Required Defaults
+
+- All new pull requests MUST be created in **draft** mode.
+- Standard feature branch format: `dev/<github-username>/<feature-description>`
+- Standard base branch for feature, docs, test, and refactor work: `develop`
+- Do not target `main` unless handling an approved release or emergency hotfix
+
+## Branching Guidance
+
+- If you are starting new work from `main`, switch to `develop` first.
+- If you are already on the correct task branch, continue there.
+- If you are on an unrelated feature branch, stash or commit as needed, then create a new correctly named branch from `develop`.
+- Use kebab-case for the feature description portion of the branch name.
+
+### Branch Creation Example
+
+```bash
+git checkout develop
+git pull origin develop
+git checkout -b "dev/<github-username>/<feature-description>"
+git push -u origin "dev/<github-username>/<feature-description>"
+```
 
 ## Creating Pull Requests
 
-### Draft Pull Requests (Mandatory)
+- Prefer repository-integrated PR tooling when available instead of `gh pr create`.
+- Use `.github/pull_request_template.md` as the default PR body when creating or refreshing a PR description, unless a different structure is explicitly requested.
+- Assign the PR to the current GitHub user after creation.
+- Add all fitting repository labels based on the surfaces touched by the change (for example `documentation`, `copilot`, `java`, `python`, `cli`, `pyspark`, `testing`, `devops`, or `release`).
+- Always set `draft: true` when opening a PR.
+- If a PR is accidentally opened as ready for review, move it back to draft immediately.
+- Do not convert a PR out of draft automatically; wait for explicit user direction or confirmed readiness.
 
-All new pull requests MUST be created in **draft** mode. The agent should never open a non-draft ("ready for review") PR initially.
+## PR Targeting Guidance
 
-**Agent Rules:**
+- Normal work targets `develop`.
+- Release or hotfix work may target `main` when explicitly intended.
+- If a hotfix is merged to `main`, follow up with a sync PR from `main` back into `develop`.
 
-- Always use the GitHub MCP tools for PR creation (activate repository management tools when needed) and not the gh CLI.
-- Set `draft: true` when invoking pull request creation tools
-- If a PR was accidentally opened as ready, immediately update it to draft and leave a comment noting the correction
-- Do not convert out of draft automatically; wait for explicit user request or all readiness conditions met
-
-**Creating a PR with GitHub MCP:**
-
-1. Activate repository management tools: `activate_repository_management_tools`
-2. Use `mcp_github_create_pull_request` with the following parameters:
-   - `owner`: Repository owner (e.g., "TruvetaPublic")
-   - `repo`: Repository name (e.g., "OpenToken")
-   - `title`: PR title following conventional commit format
-   - `head`: Source branch (e.g., "dev/username/feature-name")
-   - `base`: Target branch (typically "develop")
-   - `body`: PR description with summary, changes, and testing checklist
-   - `draft`: **true** (mandatory)
-
-**Example:**
-
-```
-mcp_github_create_pull_request(
-  owner="TruvetaPublic",
-  repo="OpenToken",
-  title="feat: add new attribute validation",
-  head="dev/username/new-validation",
-  base="develop",
-  body="## Summary\n...",
-  draft=true
-)
-```
-
-### PR Readiness Checklist
+## PR Readiness Checklist
 
 Before converting a PR from draft to ready for review, ensure:
 
@@ -56,31 +57,14 @@ Before converting a PR from draft to ready for review, ensure:
 - [ ] No secrets or sensitive data committed
 - [ ] Jupyter notebook outputs cleared
 
-### Standard PR Structure
+## Standard PR Structure
 
 **Title Format:** `<type>: <short summary>`
 
 Types: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`
 
-**Body Template:**
+Use the repository PR body scaffold in `.github/pull_request_template.md`. It is designed to capture the minimum reviewer context for Open Link Token:
 
-```markdown
-## Summary
-
-Brief overview of changes and motivation
-
-## Changes
-
-- Detailed change 1
-- Detailed change 2
-
-## Testing
-
-- [ ] Test item 1
-- [ ] Test item 2
-
-## Files Changed
-
-- `path/to/file1` (X lines)
-- `path/to/file2` (Y lines)
-```
+- concise summary and related issue linkage
+- affected surfaces (Java, Python, CLI, docs, workflows, release flow)
+- the most important implementation details plus any intentional trade-offs or follow-up work

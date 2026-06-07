@@ -1,0 +1,171 @@
+name: Build Open Link Token CLI (PyInstaller)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to build/release (e.g., 1.12.5)"
+        required: false
+        type: string
+  push:
+    branches:
+      - main
+  release:
+    types: [created, published]
+  workflow_run:
+    workflows: ["Create Release on Merge"]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  release-info:
+    uses: ./.github/workflows/release-context.yml
+    secrets: inherit
+    with:
+      lookup-release: ${{ github.event_name != 'push' }}
+      release-tag: ${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.version && format('v{0}', github.event.inputs.version) || '' }}
+
+  build:
+    needs: release-info
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    env:
+      VERSION: ${{ needs.release-info.outputs.version }}
+      TAG: ${{ needs.release-info.outputs.tag }}
+      RELEASE_FOUND: ${{ needs.release-info.outputs['release-found'] }}
+      RELEASE_ID: ${{ needs.release-info.outputs['release-id'] }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up UV
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install build dependencies
+        run: |
+          uv pip install --system -e lib/python/openlinktoken
+          uv pip install --system -r lib/python/openlinktoken-cli/pyinstaller-requirements.txt
+          uv pip install --system -r lib/python/openlinktoken-cli/requirements.txt
+          uv pip install --system -e lib/python/openlinktoken-cli --no-deps
+
+      - name: Build CLI binary
+        shell: bash
+        run: |
+          if [[ "${{ runner.os }}" == "macOS" ]]; then
+            # Build universal binary for macOS (both x86_64 and arm64)
+            pyinstaller --clean --noconfirm --target-arch universal2 lib/python/openlinktoken-cli/openlinktoken-cli.spec
+          else
+            pyinstaller --clean --noconfirm lib/python/openlinktoken-cli/openlinktoken-cli.spec
+          fi
+
+      - name: Smoke test (macOS/Linux)
+        if: runner.os != 'Windows'
+        run: |
+          mkdir -p smoke
+          cp resources/sample.csv smoke/input.csv
+          ./dist/olt generate-key-pair --name recipient --force
+          ./dist/olt initiate-exchange --name smoke --public-key "$HOME/.openlinktoken/recipient.public.pem" --output smoke/smoke.exchange.json --hashingsecret secret
+          ./dist/olt tokenize -i smoke/input.csv -o smoke/out.csv --exchange-config smoke/smoke.exchange.json --private-key "$HOME/.openlinktoken/smoke.private.pem"
+
+      - name: Smoke test (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path smoke | Out-Null
+          Copy-Item resources\sample.csv smoke\input.csv
+          .\dist\olt.exe generate-key-pair --name recipient --force
+          .\dist\olt.exe initiate-exchange --name smoke --public-key "$HOME/.openlinktoken/recipient.public.pem" --output smoke\smoke.exchange.json --hashingsecret secret
+          .\dist\olt.exe tokenize -i smoke\input.csv -o smoke\out.csv --exchange-config smoke\smoke.exchange.json --private-key "$HOME/.openlinktoken/smoke.private.pem"
+
+      - name: Prepare release assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m openlinktoken_cli.util.release_assets \
+            --version "${VERSION}" \
+            --runner-os "${{ runner.os }}" \
+            --dist-dir dist \
+            --output-dir release-assets
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: olt-cli-${{ env.VERSION }}-${{ matrix.os }}
+          path: release-assets/*
+          if-no-files-found: error
+
+      - name: Upload release assets
+        if: env.RELEASE_FOUND == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const assetDir = 'release-assets';
+            const tag = '${{ env.TAG }}';
+            let releaseId = '${{ env.RELEASE_ID }}';
+
+            if (!releaseId) {
+              const release = await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag,
+              });
+              releaseId = release.data.id;
+            }
+
+            const files = fs.readdirSync(assetDir)
+              .map((name) => path.join(assetDir, name))
+              .filter((filePath) => fs.statSync(filePath).isFile());
+
+            if (files.length === 0) {
+              throw new Error(`No CLI release assets found in ${assetDir}`);
+            }
+
+            const release = await github.rest.repos.getRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: releaseId,
+            });
+            const existingAssets = new Map(release.data.assets.map((asset) => [asset.name, asset.id]));
+
+            for (const filePath of files) {
+              const name = path.basename(filePath);
+              const size = fs.statSync(filePath).size;
+              const existingAssetId = existingAssets.get(name);
+
+              if (existingAssetId) {
+                await github.rest.repos.deleteReleaseAsset({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  asset_id: existingAssetId,
+                });
+              }
+
+              await github.rest.repos.uploadReleaseAsset({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: releaseId,
+                name,
+                data: fs.readFileSync(filePath),
+              });
+
+              console.log(`Uploaded ${name} (${size} bytes)`);
+            }

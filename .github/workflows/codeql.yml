@@ -68,8 +68,8 @@ jobs:
           enable-python: false
 
       # Add any setup steps before running the `github/codeql-action/init` action.
-      # This includes steps like installing compilers or runtimes (`actions/setup-node`
-      # or others). This is typically only required for manual builds.
+      # This includes steps like installing compilers or runtimes.
+      # This is typically only required for manual builds.
       # - name: Setup runtime (example)
       #   uses: actions/setup-example@v1
 
@@ -114,5 +114,5 @@ jobs:
       # - name: Update dependency graph
       #   uses: advanced-security/maven-dependency-submission-action@v3
       #   with:
-      #     directory: ${{ github.workspace }}/lib/java/opentoken
+      #     directory: ${{ github.workspace }}/lib/java/openlinktoken
       #     maven-args: "-B -DskipTests"
