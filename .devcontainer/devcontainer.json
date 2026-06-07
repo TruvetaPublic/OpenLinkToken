@@ -2,8 +2,9 @@
 // README at: https://github.com/devcontainers/templates/tree/main/src/java
 {
   "name": "Open Link Token",
-  "dockerComposeFile": ["../docker-compose.yml"],
+  "dockerComposeFile": ["docker-compose.yml"],
   "service": "app",
+  "workspaceFolder": "/workspaces/OpenLinkToken",
   "features": {
     "ghcr.io/devcontainers/features/common-utils:2": {
       "configureZshAsDefaultShell": true
@@ -17,11 +18,17 @@
     "ghcr.io/devcontainers/features/node:1": {
       "version": "20.12.0"
     },
-    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+      "moby": false
+    },
     "ghcr.io/devcontainers/features/git-lfs:1": {},
     "ghcr.io/devcontainers/features/copilot-cli:1": {},
     "ghcr.io/devcontainers/features/github-cli:1": {},
-    "ghcr.io/jsburckhardt/devcontainer-features/opencode:1": {}
+    "ghcr.io/jsburckhardt/devcontainer-features/opencode:1": {},
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.11",
+      "installPipenv": "true"
+    }
   },
   "customizations": {
     "vscode": {
