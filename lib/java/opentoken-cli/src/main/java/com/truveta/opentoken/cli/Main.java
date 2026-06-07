@@ -4,6 +4,7 @@
 package com.truveta.opentoken.cli;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -64,7 +65,6 @@ public class Main {
         String encryptionKey = commandLineArguments.getEncryptionKey();
         String inputPath = commandLineArguments.getInputPath();
         String inputType = commandLineArguments.getInputType();
-        String outputPath = commandLineArguments.getOutputPath();
         String outputType = commandLineArguments.getOutputType();
         boolean decryptMode = commandLineArguments.isDecrypt();
         boolean hashOnlyMode = commandLineArguments.isHashOnly();
@@ -72,17 +72,6 @@ public class Main {
         if (outputType == null || outputType.isEmpty()) {
             outputType = inputType; // defaulting to input type if not provided
         }
-
-        logger.info("Decrypt Mode: {}", decryptMode);
-        logger.info("Hash-Only Mode: {}", hashOnlyMode);
-        if (logger.isInfoEnabled()) {
-            logger.info("Hashing Secret: {}", maskString(hashingSecret));
-            logger.info("Encryption Key: {}", maskString(encryptionKey));
-        }
-        logger.info("Input Path: {}", inputPath);
-        logger.info("Input Type: {}", inputType);
-        logger.info("Output Path: {}", outputPath);
-        logger.info("Output Type: {}", outputType);
 
         // Validate input and output types for both modes
         if (!(CommandLineArguments.TYPE_CSV.equals(inputType)
@@ -95,6 +84,19 @@ public class Main {
             logger.error("Only csv and parquet output types are supported!");
             return;
         }
+
+        String outputPath = resolveOutputPath(inputPath, commandLineArguments.getOutputPath(), outputType, decryptMode);
+
+        logger.info("Decrypt Mode: {}", decryptMode);
+        logger.info("Hash-Only Mode: {}", hashOnlyMode);
+        if (logger.isInfoEnabled()) {
+            logger.info("Hashing Secret: {}", maskString(hashingSecret));
+            logger.info("Encryption Key: {}", maskString(encryptionKey));
+        }
+        logger.info("Input Path: {}", inputPath);
+        logger.info("Input Type: {}", inputType);
+        logger.info("Output Path: {}", outputPath);
+        logger.info("Output Type: {}", outputType);
 
         // Process based on mode
         if (decryptMode) {
@@ -236,6 +238,20 @@ public class Main {
             return input;
         }
         return input.substring(0, 3) + "*".repeat(input.length() - 3);
+    }
+
+    static String resolveOutputPath(String inputPath, String outputPath, String outputType, boolean decryptMode) {
+        if (outputPath != null && !outputPath.isBlank()) {
+            return outputPath;
+        }
+
+        Path input = Path.of(inputPath);
+        String extension = CommandLineArguments.TYPE_PARQUET.equals(outputType) ? ".parquet" : ".csv";
+        String suffix = decryptMode ? "decrypted" : "tokenized";
+        String inputFileName = input.getFileName().toString();
+        int extensionIndex = inputFileName.lastIndexOf('.');
+        String baseName = extensionIndex > 0 ? inputFileName.substring(0, extensionIndex) : inputFileName;
+        return input.resolveSibling(baseName + "_" + suffix + extension).toString();
     }
 
     /**

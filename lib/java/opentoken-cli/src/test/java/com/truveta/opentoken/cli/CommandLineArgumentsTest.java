@@ -25,11 +25,11 @@ class CommandLineArgumentsTest {
         JCommander.newBuilder()
                 .addObject(args)
                 .build()
-                .parse("-i", "input.csv", "-t", "csv", "-o", "output.csv");
+                .parse("-i", "input.csv", "-t", "csv");
 
         assertEquals("input.csv", args.getInputPath());
         assertEquals("csv", args.getInputType());
-        assertEquals("output.csv", args.getOutputPath());
+        assertEquals("", args.getOutputPath());
     }
 
     @Test
@@ -88,10 +88,11 @@ class CommandLineArgumentsTest {
         JCommander.newBuilder()
                 .addObject(args)
                 .build()
-                .parse("-i", "input.csv", "-t", "csv", "-o", "output.csv");
+                .parse("-i", "input.csv", "-t", "csv");
 
         assertNull(args.getHashingSecret());
         assertNull(args.getEncryptionKey());
+        assertEquals("", args.getOutputPath());
         assertEquals("", args.getOutputType());
         assertFalse(args.isDecrypt());
         assertFalse(args.isHashOnly());
@@ -118,13 +119,14 @@ class CommandLineArgumentsTest {
     }
 
     @Test
-    void testMissingRequiredOutput() {
+    void testMissingOutputUsesDefault() {
         CommandLineArguments args = new CommandLineArguments();
-        JCommander jc = JCommander.newBuilder()
+        JCommander.newBuilder()
                 .addObject(args)
-                .build();
+                .build()
+                .parse("-i", "input.csv", "-t", "csv");
 
-        assertThrows(ParameterException.class, () -> jc.parse("-i", "input.csv", "-t", "csv"));
+        assertEquals("", args.getOutputPath());
     }
 
     @Test

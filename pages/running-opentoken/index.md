@@ -24,7 +24,6 @@ opentoken-cli [OPTIONS] -i <input> -t <type> -o <output> -h <hashing-secret> [-e
 | -------- | ----------------- | -------------------------------- | ------------------------ |
 | `-i`     | `--input`         | Input file path (CSV or Parquet) | `-i data.csv`            |
 | `-t`     | `--type`          | Input file type                  | `-t csv` or `-t parquet` |
-| `-o`     | `--output`        | Output file path                 | `-o tokens.csv`          |
 | `-h`     | `--hashingsecret` | HMAC-SHA256 hashing secret       | `-h "MyHashingKey"`      |
 
 #### Optional
@@ -32,6 +31,7 @@ opentoken-cli [OPTIONS] -i <input> -t <type> -o <output> -h <hashing-secret> [-e
 | Argument | Alias             | Description                                | Default                         | Example                |
 | -------- | ----------------- | ------------------------------------------ | ------------------------------- | ---------------------- |
 | `-e`     | `--encryptionkey` | AES-256 encryption key                     | Required (unless `--hash-only`) | `-e "MyEncryptionKey"` |
+| `-o`     | `--output`        | Output file path                           | `input_tokenized.<type>` or `input_decrypted.<type>` | `-o tokens.csv` |
 | `-ot`    | `--output-type`   | Output file type                           | Same as input type              | `-ot parquet`          |
 |          | `--hash-only`     | Hash-only mode (no encryption)             | False                           | `--hash-only`          |
 | `-d`     | `--decrypt`       | Decrypt mode (reverse previous encryption) | False                           | `-d`                   |
@@ -50,7 +50,6 @@ mvn clean install -DskipTests
 java -jar opentoken-cli/target/opentoken-cli-*.jar \
   -i ../../resources/sample.csv \
   -t csv \
-  -o ../../resources/output.csv \
   -h "HashingKey" \
   -e "Secret-Encryption-Key-Goes-Here."
 ```
@@ -64,7 +63,6 @@ pip install -r requirements.txt -e . -e ../opentoken
 python -m opentoken_cli.main \
   -i ../../../resources/sample.csv \
   -t csv \
-  -o ../../../resources/output.csv \
   -h "HashingKey" \
   -e "Secret-Encryption-Key-Goes-Here."
 ```
@@ -79,7 +77,6 @@ java -jar opentoken-cli/target/opentoken-cli-*.jar \
   --hash-only \
   -i ../../resources/sample.csv \
   -t csv \
-  -o ../../resources/hashed-output.csv \
   -h "HashingKey"
 ```
 
@@ -89,7 +86,6 @@ python -m opentoken_cli.main \
   --hash-only \
   -i ../../../resources/sample.csv \
   -t csv \
-  -o ../../../resources/hashed-output.csv \
   -h "HashingKey"
 ```
 
@@ -103,7 +99,6 @@ java -jar opentoken-cli/target/opentoken-cli-*.jar \
   -d \
   -i ../../resources/output.csv \
   -t csv \
-  -o ../../resources/decrypted.csv \
   -e "Secret-Encryption-Key-Goes-Here."
 ```
 
@@ -113,7 +108,6 @@ python -m opentoken_cli.main \
   -d \
   -i ../../../resources/output.csv \
   -t csv \
-  -o ../../../resources/decrypted.csv \
   -e "Secret-Encryption-Key-Goes-Here."
 ```
 
@@ -162,7 +156,6 @@ cd /path/to/OpenLinkToken
 
 ./run-opentoken.sh \
   -i ./resources/sample.csv \
-  -o ./resources/output.csv \
   -t csv \
   -h "HashingKey" \
   -e "Secret-Encryption-Key-Goes-Here."
@@ -174,7 +167,6 @@ cd C:\path\to\OpenLinkToken
 
 .\run-opentoken.ps1 `
   -i .\resources\sample.csv `
-  -o .\resources\output.csv `
   -FileType csv `
   -h "HashingKey" `
   -e "Secret-Encryption-Key-Goes-Here."

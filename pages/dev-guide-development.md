@@ -140,7 +140,7 @@ Arguments:
 
 - `-i, --input <path>` Input file
 - `-t, --type <csv|parquet>` Input type
-- `-o, --output <path>` Output file
+- `-o, --output <path>` Output file (optional; defaults beside input)
 - `-ot, --output-type <type>` Optional output type
 - `-h, --hashingsecret <secret>` HMAC-SHA256 secret
 - `-e, --encryptionkey <key>` AES-256 key
@@ -530,10 +530,10 @@ Minimum required arguments:
 
 ```shell
 # Java
-java -jar lib/java/opentoken-cli/target/opentoken-cli-*.jar -i input.csv -t csv -o output.csv -h HashingKey -e Secret-Encryption-Key-Goes-Here.
+java -jar lib/java/opentoken-cli/target/opentoken-cli-*.jar -i input.csv -t csv -h HashingKey -e Secret-Encryption-Key-Goes-Here.
 
 # Python
-python -m opentoken_cli.main -i input.csv -t csv -o output.csv -h HashingKey -e Secret-Encryption-Key-Goes-Here.
+python -m opentoken_cli.main -i input.csv -t csv -h HashingKey -e Secret-Encryption-Key-Goes-Here.
 ```
 
 Arguments:
@@ -542,7 +542,7 @@ Arguments:
 | --------------------- | ----------------------------------------------- |
 | `-t, --type`          | Input file type (`csv` or `parquet`)            |
 | `-i, --input`         | Input file path                                 |
-| `-o, --output`        | Output file path                                |
+| `-o, --output`        | Output file path (optional; defaults beside input) |
 | `-ot, --output-type`  | (Optional) Output file type (defaults to input) |
 | `-h, --hashingsecret` | Hashing secret for HMAC-SHA256                  |
 | `-e, --encryptionkey` | AES-256 encryption key                          |

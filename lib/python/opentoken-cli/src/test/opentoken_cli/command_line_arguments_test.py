@@ -15,15 +15,14 @@ class TestCommandLineArguments:
         """Test parsing with only required arguments."""
         args = [
             "-i", "/path/to/input.csv",
-            "-t", "csv",
-            "-o", "/path/to/output.csv"
+            "-t", "csv"
         ]
         
         result = CommandLineArguments.parse_args(args)
         
         assert result.input_path == "/path/to/input.csv"
         assert result.input_type == "csv"
-        assert result.output_path == "/path/to/output.csv"
+        assert result.output_path == ""
         assert result.hashing_secret is None
         assert result.encryption_key is None
         assert result.output_type == ""
@@ -103,16 +102,16 @@ class TestCommandLineArguments:
         assert result.hashing_secret == "TestHashingSecret"
         assert result.encryption_key is None
 
-    def test_missing_required_arg(self):
-        """Test that missing required arguments raises error."""
+    def test_output_arg_is_optional(self):
+        """Test parsing succeeds without an explicit output path."""
         args = [
             "-i", "/path/to/input.csv",
             "-t", "csv"
-            # Missing -o output path
         ]
         
-        with pytest.raises(SystemExit):
-            CommandLineArguments.parse_args(args)
+        result = CommandLineArguments.parse_args(args)
+
+        assert result.output_path == ""
 
     def test_type_constants(self):
         """Test the type constants are defined correctly."""

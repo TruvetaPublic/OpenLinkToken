@@ -39,11 +39,11 @@ Automatically builds the Docker image if needed and runs OpenToken with specifie
 
 REQUIRED OPTIONS:
     -i, --input FILE        Input file path (absolute or relative)
-    -o, --output FILE       Output file path (absolute or relative)
     -h, --hash SECRET       Hashing secret key
     -e, --encrypt KEY       Encryption key
 
 OPTIONAL:
+    -o, --output FILE       Output file path (defaults to <input>_tokenized.<type>)
     -t, --type TYPE         File type: csv or parquet (default: csv)
     -s, --skip-build        Skip Docker image build (use existing image)
     --image NAME            Docker image name (default: opentoken:latest)
@@ -52,16 +52,16 @@ OPTIONAL:
 
 EXAMPLES:
     # Basic usage with CSV files
-    $0 -i /path/to/input.csv -o /path/to/output.csv -h "MyHashKey" -e "MyEncryptionKey"
+    $0 -i /path/to/input.csv -h "MyHashKey" -e "MyEncryptionKey"
 
     # With parquet files
-    $0 -i ./data/input.parquet -t parquet -o ./data/output.parquet -h "secret" -e "key123"
+    $0 -i ./data/input.parquet -t parquet -h "secret" -e "key123"
 
     # Skip Docker build if image already exists
-    $0 -i ./input.csv -o ./output.csv -h "secret" -e "key" --skip-build
+    $0 -i ./input.csv -h "secret" -e "key" --skip-build
 
     # Verbose mode for troubleshooting
-    $0 -i ./input.csv -o ./output.csv -h "secret" -e "key" -v
+    $0 -i ./input.csv -h "secret" -e "key" -v
 
 NOTES:
     - This script must be run from the OpenToken repository root directory
@@ -131,13 +131,6 @@ if [[ -z "$INPUT_FILE" ]]; then
     exit 1
 fi
 
-if [[ -z "$OUTPUT_FILE" ]]; then
-    log_error "Output file is required (use -o or --output)"
-    echo ""
-    show_usage
-    exit 1
-fi
-
 if [[ -z "$HASHING_SECRET" ]]; then
     log_error "Hashing secret is required (use -h or --hash)"
     echo ""
@@ -167,6 +160,13 @@ OUTPUT_FILE=$(realpath -m "$OUTPUT_FILE" 2>/dev/null || echo "$OUTPUT_FILE")
 if [[ ! -f "$INPUT_FILE" ]]; then
     log_error "Input file does not exist: $INPUT_FILE"
     exit 1
+fi
+
+if [[ -z "$OUTPUT_FILE" ]]; then
+    INPUT_BASENAME=$(basename "$INPUT_FILE")
+    INPUT_STEM="${INPUT_BASENAME%.*}"
+    OUTPUT_FILE="$(dirname "$INPUT_FILE")/${INPUT_STEM}_tokenized.${FILE_TYPE}"
+    log_info "No output file provided; using derived path: $OUTPUT_FILE"
 fi
 
 # Get directory paths for volume mounting

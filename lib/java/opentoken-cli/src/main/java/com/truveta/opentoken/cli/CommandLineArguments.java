@@ -33,7 +33,7 @@ public class CommandLineArguments {
         private String inputType = "";
 
         @Getter
-        @Parameter(names = { "-o", "--output" }, description = "Output file path.", required = true)
+        @Parameter(names = { "-o", "--output" }, description = "Output file path.", required = false)
         private String outputPath = "";
 
         @Getter

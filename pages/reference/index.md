@@ -153,7 +153,7 @@ python -m opentoken_cli.main \
 | Flag                     | Purpose                        |
 | ------------------------ | ------------------------------ |
 | `-i` / `--input`         | Input file path                |
-| `-o` / `--output`        | Output file path               |
+| `-o` / `--output`        | Output file path (defaults beside input) |
 | `-t` / `--type`          | File type (`csv` or `parquet`) |
 | `-h` / `--hashingsecret` | HMAC-SHA256 secret             |
 | `-e` / `--encryptionkey` | AES-256 key (32 chars)         |

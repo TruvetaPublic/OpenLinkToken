@@ -4,6 +4,7 @@ Copyright (c) Truveta. All rights reserved.
 
 import logging
 import sys
+from pathlib import Path
 from typing import List
 
 from opentoken_cli.command_line_arguments import CommandLineArguments
@@ -40,10 +41,24 @@ def main():
     encryption_key = command_line_arguments.encryption_key
     input_path = command_line_arguments.input_path
     input_type = command_line_arguments.input_type
-    output_path = command_line_arguments.output_path
     output_type = command_line_arguments.output_type if command_line_arguments.output_type else input_type
     decrypt_mode = command_line_arguments.decrypt
     hash_only_mode = command_line_arguments.hash_only
+
+    # Validate input and output types for both modes
+    if input_type not in [CommandLineArguments.TYPE_CSV, CommandLineArguments.TYPE_PARQUET]:
+        logger.error("Only csv and parquet input types are supported!")
+        return
+    if output_type not in [CommandLineArguments.TYPE_CSV, CommandLineArguments.TYPE_PARQUET]:
+        logger.error("Only csv and parquet output types are supported!")
+        return
+
+    output_path = _resolve_output_path(
+        input_path,
+        command_line_arguments.output_path,
+        output_type,
+        decrypt_mode,
+    )
 
     logger.info(f"Decrypt Mode: {decrypt_mode}")
     logger.info(f"Hash-Only Mode: {hash_only_mode}")
@@ -53,14 +68,6 @@ def main():
     logger.info(f"Input Type: {input_type}")
     logger.info(f"Output Path: {output_path}")
     logger.info(f"Output Type: {output_type}")
-
-    # Validate input and output types for both modes
-    if input_type not in [CommandLineArguments.TYPE_CSV, CommandLineArguments.TYPE_PARQUET]:
-        logger.error("Only csv and parquet input types are supported!")
-        return
-    if output_type not in [CommandLineArguments.TYPE_CSV, CommandLineArguments.TYPE_PARQUET]:
-        logger.error("Only csv and parquet output types are supported!")
-        return
 
     # Process based on mode
     if decrypt_mode:
@@ -143,6 +150,17 @@ def _mask_string(input_str: str) -> str:
     if input_str is None or len(input_str) <= 3:
         return input_str
     return input_str[:3] + "*" * (len(input_str) - 3)
+
+
+def _resolve_output_path(input_path: str, output_path: str, output_type: str, decrypt_mode: bool) -> str:
+    """Derive the output path from the input path when one is not explicitly provided."""
+    if output_path and output_path.strip():
+        return output_path
+
+    input_file = Path(input_path)
+    extension = ".parquet" if output_type.lower() == CommandLineArguments.TYPE_PARQUET else ".csv"
+    suffix = "decrypted" if decrypt_mode else "tokenized"
+    return str(input_file.with_name(f"{input_file.stem}_{suffix}{extension}"))
 
 
 def _process_tokens(input_path: str, output_path: str, input_type: str, output_type: str,

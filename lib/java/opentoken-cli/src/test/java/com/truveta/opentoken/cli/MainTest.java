@@ -228,6 +228,58 @@ class MainTest {
     }
 
     @Test
+    void testResolveOutputPathDefaultsToTokenizedCsv() {
+        String outputPath = Main.resolveOutputPath(inputCsv.toString(), "", "csv", false);
+        assertTrue(outputPath.endsWith("input_tokenized.csv"));
+    }
+
+    @Test
+    void testResolveOutputPathUsesRequestedExtension() {
+        String outputPath = Main.resolveOutputPath(inputCsv.toString(), "", "parquet", false);
+        assertTrue(outputPath.endsWith("input_tokenized.parquet"));
+    }
+
+    @Test
+    void testTokenGenerationDefaultsOutputPath() throws IOException {
+        String[] args = {
+                "-i", inputCsv.toString(),
+                "-t", "csv",
+                "-h", HASHING_SECRET,
+                "-e", ENCRYPTION_KEY
+        };
+
+        assertDoesNotThrow(() -> Main.main(args));
+
+        Path defaultOutput = tempDir.resolve("input_tokenized.csv");
+        assertTrue(Files.exists(defaultOutput), "Derived output CSV should be created");
+        assertTrue(Files.exists(tempDir.resolve("input_tokenized.metadata.json")), "Derived metadata file should be created");
+    }
+
+    @Test
+    void testDecryptDefaultsOutputPath() throws IOException {
+        String[] encryptArgs = {
+                "-i", inputCsv.toString(),
+                "-t", "csv",
+                "-o", outputCsv.toString(),
+                "-h", HASHING_SECRET,
+                "-e", ENCRYPTION_KEY
+        };
+        Main.main(encryptArgs);
+
+        String[] decryptArgs = {
+                "-d",
+                "-i", outputCsv.toString(),
+                "-t", "csv",
+                "-e", ENCRYPTION_KEY
+        };
+
+        assertDoesNotThrow(() -> Main.main(decryptArgs));
+
+        Path defaultOutput = tempDir.resolve("output_decrypted.csv");
+        assertTrue(Files.exists(defaultOutput), "Derived decrypted CSV should be created");
+    }
+
+    @Test
     void testParquetInputToParquetOutput() throws IOException {
         // First create a parquet file from CSV
         Path tempParquet = tempDir.resolve("temp.parquet");

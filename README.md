@@ -56,16 +56,18 @@ Perfect for understanding privacy-preserving record linkage concepts before divi
 
 ```bash
 ./run-opentoken.sh \
-  -i ./resources/sample.csv -t csv -o ./resources/output.csv \
+  -i ./resources/sample.csv -t csv \
   -h "HashingKey" -e "Secret-Encryption-Key-Goes-Here."
 ```
+
+If `--output` is omitted, OpenToken writes `./resources/sample_tokenized.csv`.
 
 **Java CLI:**
 
 ```bash
 cd lib/java && mvn clean install -DskipTests
 java -jar opentoken-cli/target/opentoken-cli-*.jar \
-  -i ../../resources/sample.csv -t csv -o ../../resources/output.csv \
+  -i ../../resources/sample.csv -t csv \
   -h "HashingKey" -e "Secret-Encryption-Key-Goes-Here."
 ```
 
@@ -105,4 +107,3 @@ See <a href="https://truvetapublic.github.io/OpenLinkToken/quickstarts/" target=
 For issues or support, file an issue in this repository.
 
 <!-- Re-run CI checks -->
-

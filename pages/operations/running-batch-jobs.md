@@ -31,7 +31,6 @@ opentoken-cli [OPTIONS] -i <input> -t <type> -o <output> -h <hashing-secret> [-e
 | -------- | ----------------- | ------------------------------------ | --------------- |
 | `-i`     | `--input`         | Input file path                      | `-i data.csv`   |
 | `-t`     | `--type`          | Input file type (`csv` or `parquet`) | `-t csv`        |
-| `-o`     | `--output`        | Output file path                     | `-o tokens.csv` |
 | `-h`     | `--hashingsecret` | HMAC-SHA256 hashing secret           | `-h "MyKey"`    |
 
 ### Optional Arguments
@@ -39,6 +38,7 @@ opentoken-cli [OPTIONS] -i <input> -t <type> -o <output> -h <hashing-secret> [-e
 | Argument | Alias             | Description                    | Default                       |
 | -------- | ----------------- | ------------------------------ | ----------------------------- |
 | `-e`     | `--encryptionkey` | AES-256 encryption key         | Required unless `--hash-only` |
+| `-o`     | `--output`        | Output file path               | `input_tokenized.<type>` or `input_decrypted.<type>` |
 | `-ot`    | `--output-type`   | Output file type               | Same as input                 |
 |          | `--hash-only`     | Hash-only mode (no encryption) | False                         |
 | `-d`     | `--decrypt`       | Decrypt mode                   | False                         |
@@ -52,7 +52,6 @@ mvn clean install -DskipTests
 java -jar opentoken-cli/target/opentoken-cli-*.jar \
   -i ../../resources/sample.csv \
   -t csv \
-  -o ../../resources/output.csv \
   -h "HashingKey" \
   -e "Secret-Encryption-Key-Goes-Here."
 ```
@@ -67,7 +66,6 @@ pip install -r requirements.txt -e . -e ../opentoken
 python -m opentoken_cli.main \
   -i ../../../resources/sample.csv \
   -t csv \
-  -o ../../../resources/output.csv \
   -h "HashingKey" \
   -e "Secret-Encryption-Key-Goes-Here."
 ```
@@ -84,7 +82,6 @@ cd /path/to/OpenLinkToken
 
 ./run-opentoken.sh \
   -i ./resources/sample.csv \
-  -o ./resources/output.csv \
   -t csv \
   -h "HashingKey" \
   -e "Secret-Encryption-Key-Goes-Here."
@@ -96,7 +93,6 @@ cd C:\path\to\OpenLinkToken
 
 .\run-opentoken.ps1 `
   -i .\resources\sample.csv `
-  -o .\resources\output.csv `
   -FileType csv `
   -h "HashingKey" `
   -e "Secret-Encryption-Key-Goes-Here."

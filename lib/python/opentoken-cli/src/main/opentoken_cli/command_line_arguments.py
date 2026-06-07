@@ -73,7 +73,8 @@ class CommandLineArguments:
             "-o", "--output",
             dest="output_path",
             help="Output file path.",
-            required=True
+            required=False,
+            default=""
         )
 
         parser.add_argument(

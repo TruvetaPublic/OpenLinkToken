@@ -59,11 +59,11 @@ DESCRIPTION:
 
 REQUIRED PARAMETERS:
     -InputFile, -i <file>       Input file path (absolute or relative)
-    -OutputFile, -o <file>      Output file path (absolute or relative)
     -HashingSecret, -h <key>    Hashing secret key
     -EncryptionKey, -e <key>    Encryption key
 
 OPTIONAL PARAMETERS:
+    -OutputFile, -o <file>      Output file path (defaults to <input>_tokenized.<type>)
     -FileType, -t <type>        File type: csv or parquet (default: csv)
     -SkipBuild, -s              Skip Docker image build (use existing image)
     -DockerImage <name>         Docker image name (default: opentoken:latest)
@@ -72,16 +72,16 @@ OPTIONAL PARAMETERS:
 
 EXAMPLES:
     # Basic usage with CSV files
-    .\run-opentoken.ps1 -i C:\Data\input.csv -o C:\Data\output.csv -h "MyHashKey" -e "MyEncryptionKey"
+    .\run-opentoken.ps1 -i C:\Data\input.csv -h "MyHashKey" -e "MyEncryptionKey"
 
     # With parquet files
-    .\run-opentoken.ps1 -i .\data\input.parquet -t parquet -o .\data\output.parquet -h "secret" -e "key123"
+    .\run-opentoken.ps1 -i .\data\input.parquet -t parquet -h "secret" -e "key123"
 
     # Skip Docker build if image already exists
-    .\run-opentoken.ps1 -i .\input.csv -o .\output.csv -h "secret" -e "key" -SkipBuild
+    .\run-opentoken.ps1 -i .\input.csv -h "secret" -e "key" -SkipBuild
 
     # Verbose mode for troubleshooting
-    .\run-opentoken.ps1 -i .\input.csv -o .\output.csv -h "secret" -e "key" -Verbose
+    .\run-opentoken.ps1 -i .\input.csv -h "secret" -e "key" -Verbose
 
 NOTES:
     - This script must be run from the OpenToken repository root directory
@@ -102,13 +102,6 @@ if ($Help) {
 # Validate required parameters
 if (-not $InputFile) {
     Write-Info "Input file is required (use -InputFile or -i)"
-    Write-Host ""
-    Show-Usage
-    exit 1
-}
-
-if (-not $OutputFile) {
-    Write-Info "Output file is required (use -OutputFile or -o)"
     Write-Host ""
     Show-Usage
     exit 1
@@ -147,6 +140,13 @@ $InputFile = Resolve-Path -Path $InputFile -ErrorAction SilentlyContinue
 if (-not $InputFile) {
     Write-Info "Input file does not exist: $InputFileRaw"
     exit 1
+}
+
+if (-not $OutputFile) {
+    $InputDirectory = Split-Path -Parent $InputFile
+    $InputStem = [System.IO.Path]::GetFileNameWithoutExtension($InputFile)
+    $OutputFile = Join-Path $InputDirectory "$InputStem`_tokenized.$FileType"
+    Write-Info "No output file provided; using derived path: $OutputFile"
 }
 
 # For output file, create parent directory if it doesn't exist

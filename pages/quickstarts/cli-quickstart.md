@@ -27,7 +27,6 @@ cd /path/to/OpenLinkToken
 
 ./run-opentoken.sh \
   -i ./resources/sample.csv \
-  -o ./resources/output.csv \
   -t csv \
   -h "HashingKey" \
   -e "Secret-Encryption-Key-Goes-Here."
@@ -40,7 +39,6 @@ cd C:\path\to\OpenLinkToken
 
 .\run-opentoken.ps1 `
   -i .\resources\sample.csv `
-  -o .\resources\output.csv `
   -FileType csv `
   -h "HashingKey" `
   -e "Secret-Encryption-Key-Goes-Here."
@@ -51,13 +49,15 @@ cd C:\path\to\OpenLinkToken
 | Argument          | Short | Description                                | Required |
 | ----------------- | ----- | ------------------------------------------ | -------- |
 | `--input`         | `-i`  | Input file path (CSV or Parquet)           | Yes      |
-| `--output`        | `-o`  | Output file path                           | Yes      |
+| `--output`        | `-o`  | Output file path (`sample_tokenized.<type>` by default) | No       |
 | `--type`          | `-t`  | File type: `csv` or `parquet`              | Yes      |
 | `--hashingsecret` | `-h`  | Secret key for HMAC hashing                | Yes      |
 | `--encryptionkey` | `-e`  | 32-character key for AES encryption        | No*      |
 | `--hash-only`     |       | Skip encryption, output hashed tokens only | No       |
 
 *Required unless `--hash-only` is specified.
+
+If `--output` is omitted, the CLI writes the result beside the input using `_tokenized` for token generation or `_decrypted` for decrypt mode.
 
 ## Example: CSV Input
 

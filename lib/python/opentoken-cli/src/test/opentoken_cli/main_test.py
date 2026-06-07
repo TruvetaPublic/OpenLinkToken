@@ -13,6 +13,7 @@ from opentoken_cli.main import (
     main,
     _load_command_line_arguments,
     _mask_string,
+    _resolve_output_path,
     _create_person_attributes_reader,
     _create_person_attributes_writer,
     _create_token_reader,
@@ -42,13 +43,23 @@ class TestMainHelperFunctions:
 
     def test_load_command_line_arguments(self):
         """Test loading command line arguments."""
-        args = ["-i", "input.csv", "-t", "csv", "-o", "output.csv"]
+        args = ["-i", "input.csv", "-t", "csv"]
         result = _load_command_line_arguments(args)
         
         assert isinstance(result, CommandLineArguments)
         assert result.input_path == "input.csv"
         assert result.input_type == "csv"
-        assert result.output_path == "output.csv"
+        assert result.output_path == ""
+
+    def test_resolve_output_path_tokenized_csv_default(self):
+        """Test deriving default output path for token generation."""
+        result = _resolve_output_path("/tmp/input.csv", "", "csv", False)
+        assert result == "/tmp/input_tokenized.csv"
+
+    def test_resolve_output_path_decrypted_parquet_override(self):
+        """Test deriving default output path for decryption with parquet output."""
+        result = _resolve_output_path("/tmp/input.csv", "", "parquet", True)
+        assert result == "/tmp/input_decrypted.parquet"
 
 
 class TestReaderWriterFactories:
@@ -305,3 +316,67 @@ class TestMainIntegration:
             main()
         
         assert output_file.exists()
+
+    def test_main_token_generation_defaults_output_path(self, temp_input_csv):
+        """Test token generation derives a default output path when omitted."""
+        default_output = temp_input_csv.with_name("input_tokenized.csv")
+
+        with patch('sys.argv', [
+            'main.py',
+            '-i', str(temp_input_csv),
+            '-t', 'csv',
+            '-h', self.HASHING_SECRET,
+            '-e', self.ENCRYPTION_KEY
+        ]):
+            main()
+
+        assert default_output.exists()
+        assert default_output.stat().st_size > 0
+        assert temp_input_csv.with_name("input_tokenized.metadata.json").exists()
+
+    def test_main_token_generation_defaults_output_path_with_output_type_override(self, temp_input_csv):
+        """Test derived output path uses the requested output type extension."""
+        default_output = temp_input_csv.with_name("input_tokenized.parquet")
+
+        with patch('sys.argv', [
+            'main.py',
+            '-i', str(temp_input_csv),
+            '-t', 'csv',
+            '-ot', 'parquet',
+            '-h', self.HASHING_SECRET,
+            '-e', self.ENCRYPTION_KEY
+        ]):
+            main()
+
+        assert default_output.exists()
+
+    def test_main_decrypt_mode_defaults_output_path(self, tmp_path):
+        """Test decrypt mode derives a default output path when omitted."""
+        input_file = tmp_path / "input.csv"
+        input_file.write_text(
+            "RecordId,FirstName,LastName,BirthDate,SocialSecurityNumber\n"
+            "rec-1,John,Doe,2000-01-01,123-45-6789\n"
+        )
+        encrypted_output = tmp_path / "encrypted.csv"
+
+        with patch('sys.argv', [
+            'main.py',
+            '-i', str(input_file),
+            '-t', 'csv',
+            '-o', str(encrypted_output),
+            '-h', self.HASHING_SECRET,
+            '-e', self.ENCRYPTION_KEY
+        ]):
+            main()
+
+        with patch('sys.argv', [
+            'main.py',
+            '-i', str(encrypted_output),
+            '-t', 'csv',
+            '-d',
+            '-e', self.ENCRYPTION_KEY
+        ]):
+            main()
+
+        decrypted_output = tmp_path / "encrypted_decrypted.csv"
+        assert decrypted_output.exists()
