@@ -27,13 +27,22 @@ When the output path ends in `.zip`, the `package` and `encrypt` commands bundle
 olt <subcommand> [OPTIONS]
 ```
 
-### Required Arguments
+### Arguments
 
-| Argument            | Alias      | Description               | Example                                   |
-| ------------------- | ---------- | ------------------------- | ----------------------------------------- |
-| `-i`                | `--input`  | Input file path           | `-i data.csv`                             |
-| `-o`                | `--output` | Output file path          | `-o tokens.csv`                           |
-| `--exchange-config` |            | Exchange config JSON path | `--exchange-config ./batch.exchange.json` |
+| Argument            | Alias      | Required | Default                                    | Description                      | Example                                   |
+| ------------------- | ---------- | -------- | ------------------------------------------ | -------------------------------- | ----------------------------------------- |
+| `-i`                | `--input`  | Yes      |                                            | Input file path (CSV or Parquet) | `-i data.csv`                             |
+| `-o`                | `--output` | No       | Auto-generated below                       | Output file path                 | `-o tokens.csv`                           |
+| `--exchange-config` |            | No       | `./openlinktoken-YYYY-MM-DD.exchange.json` | Exchange config JSON path        | `--exchange-config ./batch.exchange.json` |
+
+**Output filename defaults when `-o` is omitted:**
+
+| Subcommand | Default pattern                  |
+| ---------- | -------------------------------- |
+| `package`  | `<timestamp>-<short_id>.zip`     |
+| `tokenize` | `<input_basename>_tokenized.csv` |
+| `encrypt`  | `<input_basename>_encrypted.zip` |
+| `decrypt`  | `<input_basename>_decrypted.csv` |
 
 ### Optional Arguments
 

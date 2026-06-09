@@ -166,6 +166,10 @@ class TokenizeCommand:
             logger.error("--mode demo cannot be combined with --hash-record-ids.")
             return 1
 
+        if mode == TokenizeCommand._MODE_DEMO and args.exchange_config:
+            logger.error("--mode demo cannot be combined with --exchange-config.")
+            return 1
+
         if mode == TokenizeCommand._MODE_HASH_ONLY and args.exchange_config:
             logger.error("--mode hash-only cannot be combined with --exchange-config.")
             return 1
@@ -204,7 +208,7 @@ class TokenizeCommand:
                         reporter.update_status("Tokenizing records")
                         summary, metadata_path = TokenizeCommand._process_tokens_demo(
                             args.input_path,
-                            args.output_path,
+                            output_path,
                             input_type,
                             output_type,
                             progress_callback=reporter.make_progress_callback("Tokenizing records", "records"),
@@ -213,7 +217,7 @@ class TokenizeCommand:
                         reporter.update_status("Tokenizing records")
                         summary, metadata_path = TokenizeCommand._process_tokens_hash_only(
                             args.input_path,
-                            args.output_path,
+                            output_path,
                             input_type,
                             output_type,
                             hash_record_ids,

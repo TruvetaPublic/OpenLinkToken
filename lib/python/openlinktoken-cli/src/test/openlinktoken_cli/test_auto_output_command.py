@@ -108,14 +108,17 @@ class TestAutoOutputCommands:
     def test_encrypt_auto_output_csv(self, temp_dir):
         """Test encrypt with auto-generated .csv output (suffix '_encrypted')."""
         input_csv = temp_dir / "hashed.csv"
-        input_csv.write_text("RecordId,Token\ntest-001,abc\n")
+        input_csv.write_text("RecordId,RuleId,Token\ntest-001,T1,abc\n")
         exchange_config, private_key = self._create_exchange_config(temp_dir, "encrypt-auto")
 
         args = [
             "encrypt",
             "-i",
             str(input_csv),
-            # Omitting -o
+            "--exchange-config",
+            str(exchange_config),
+            "--private-key",
+            str(private_key),
         ]
 
         exit_code = OpenLinkTokenCommand.execute(args)
@@ -124,18 +127,45 @@ class TestAutoOutputCommands:
         expected_output = temp_dir / "hashed_encrypted.csv"
         assert expected_output.exists()
 
+    def test_encrypt_explicit_output_override(self, temp_dir):
+        """Test that explicit --output override still works for encrypt."""
+        input_csv = temp_dir / "hashed.csv"
+        input_csv.write_text("RecordId,RuleId,Token\ntest-001,T1,abc\n")
+        exchange_config, private_key = self._create_exchange_config(temp_dir, "encrypt-override")
+
+        custom_output = temp_dir / "manual_encrypted.zip"
+
+        args = [
+            "encrypt",
+            "-i",
+            str(input_csv),
+            "-o",
+            str(custom_output),
+            "--exchange-config",
+            str(exchange_config),
+            "--private-key",
+            str(private_key),
+        ]
+
+        exit_code = OpenLinkTokenCommand.execute(args)
+        assert exit_code == 0
+        assert custom_output.exists()
+
     # ------------------------------------------------------------------
     def test_decrypt_auto_output_csv(self, temp_dir):
         """Test decrypt with auto-generated .csv output (suffix '_decrypted')."""
         input_csv = temp_dir / "encrypted.csv"
-        input_csv.write_text("RecordId,Token\ntest-001,abc\n")
+        input_csv.write_text("RecordId,RuleId,Token\ntest-001,T1,abc\n")
         exchange_config, private_key = self._create_exchange_config(temp_dir, "decrypt-auto")
 
         args = [
             "decrypt",
             "-i",
             str(input_csv),
-            # Omitting -o
+            "--exchange-config",
+            str(exchange_config),
+            "--private-key",
+            str(private_key),
         ]
 
         exit_code = OpenLinkTokenCommand.execute(args)
@@ -169,3 +199,50 @@ class TestAutoOutputCommands:
 
         expected_output = temp_dir / "input.zip"
         assert expected_output.exists()
+
+    def test_decrypt_explicit_output_override(self, temp_dir):
+        """Test that explicit --output override still works for decrypt."""
+        input_csv = temp_dir / "encrypted.csv"
+        input_csv.write_text("RecordId,RuleId,Token\ntest-001,T1,abc\n")
+        exchange_config, private_key = self._create_exchange_config(temp_dir, "decrypt-override")
+
+        custom_output = temp_dir / "manual_decrypted.parquet"
+
+        args = [
+            "decrypt",
+            "-i",
+            str(input_csv),
+            "-o",
+            str(custom_output),
+            "--exchange-config",
+            str(exchange_config),
+            "--private-key",
+            str(private_key),
+        ]
+
+        exit_code = OpenLinkTokenCommand.execute(args)
+        assert exit_code == 0
+        assert custom_output.exists()
+
+    def test_package_explicit_output_override(self, temp_dir):
+        """Test that explicit --output override still works for package."""
+        input_csv = temp_dir / "input.csv"
+        exchange_config, private_key = self._create_exchange_config(temp_dir, "package-override")
+
+        custom_output = temp_dir / "manual_package.zip"
+
+        args = [
+            "package",
+            "-i",
+            str(input_csv),
+            "-o",
+            str(custom_output),
+            "--exchange-config",
+            str(exchange_config),
+            "--private-key",
+            str(private_key),
+        ]
+
+        exit_code = OpenLinkTokenCommand.execute(args)
+        assert exit_code == 0
+        assert custom_output.exists()

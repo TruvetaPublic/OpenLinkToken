@@ -429,7 +429,7 @@ class TestOpenLinkTokenCommand:
         assert exit_code != 0, "Command should fail with missing required parameter"
 
     def test_missing_required_parameter_output(self, temp_dir):
-        """Test that missing output parameter is caught."""
+        """Test that missing output parameter generates auto-named file and succeeds."""
         input_csv = temp_dir / "input.csv"
         exchange_config, private_key = self._create_exchange_config(temp_dir, "missing-output")
 
@@ -437,7 +437,7 @@ class TestOpenLinkTokenCommand:
             "tokenize",
             "-i",
             str(input_csv),
-            # Missing -o/--output
+            # Missing -o/--output — should auto-generate filename
             "--exchange-config",
             str(exchange_config),
             "--private-key",
@@ -445,7 +445,7 @@ class TestOpenLinkTokenCommand:
         ]
 
         exit_code = OpenLinkTokenCommand.execute(args)
-        assert exit_code != 0, "Command should fail with missing required parameter"
+        assert exit_code == 0, "Command should succeed with auto-generated output"
 
     def test_invalid_input_type(self, temp_dir):
         """Test that unsupported input file extension is caught."""
