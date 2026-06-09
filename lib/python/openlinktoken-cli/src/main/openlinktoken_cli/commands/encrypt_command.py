@@ -56,9 +56,9 @@ class EncryptCommand:
         parser.add_argument(
             "-o",
             "--output",
-            required=True,
+            required=False,
             dest="output_path",
-            help="Output file path for encrypted tokens",
+            help="Output file path for encrypted tokens (defaults to input filename with '_encrypted' suffix)",
         )
 
         parser.add_argument(
@@ -100,12 +100,13 @@ class EncryptCommand:
             logger.error("Unable to auto-detect input type. Supported input formats: csv, parquet")
             return 1
 
-        output_type = FileTypeDetector.detect_output_type(args.output_path)
-        if not output_type:
-            logger.error("Unable to auto-detect output type. Supported output formats: csv, parquet, zip")
-            return 1
+        # Resolve output path if not provided
+        output_path = args.output_path if args.output_path else get_auto_output_path(args.input_path, "encrypt")
 
-        ring_id = args.ring_id if args.ring_id and args.ring_id.strip() else str(uuid.uuid4())
+        output_type = FileTypeDetector.detect_output_type(output_path)
+        if not output_type:
+            logger.error("Unable to auto-detect output type from provided/generated path.")
+            return 1
         reporter = CliRunReporter("encrypt")
 
         try:
@@ -113,7 +114,7 @@ class EncryptCommand:
                 try:
                     logger.info("Running encrypt command")
                     logger.info(f"Input: {args.input_path} ({input_type})")
-                    logger.info(f"Output: {args.output_path} ({output_type})")
+                    logger.info(f"Output: {output_path} ({output_type})")
                     logger.info(f"Ring ID: {ring_id}")
 
                     reporter.update_status("Resolving exchange config")
@@ -139,11 +140,11 @@ class EncryptCommand:
                     with contextlib.ExitStack() as stack:
                         if is_zip:
                             temp_dir = stack.enter_context(tempfile.TemporaryDirectory())
-                            zip_path = Path(args.output_path)
+                            zip_path = Path(output_path)
                             token_output_path = str(Path(temp_dir) / f"{zip_path.stem}.{input_type}")
                             token_output_type = input_type
                         else:
-                            token_output_path = args.output_path
+                            token_output_path = output_path
                             token_output_type = output_type
 
                         summary = EncryptCommand._encrypt_tokens(
@@ -157,12 +158,12 @@ class EncryptCommand:
                         )
 
                         if is_zip:
-                            bundle_into_zip(args.output_path, token_output_path, exchange.path)
+                            bundle_into_zip(output_path, token_output_path, exchange.path)
                     logger.info("Token encryption completed successfully")
                 except Exception as error:
                     logger.error("Error during token encryption: %s", error)
                     raise
-            reporter.finish_success("Encrypt complete", EncryptCommand._build_summary_lines(args.output_path, summary))
+            reporter.finish_success("Encrypt complete", EncryptCommand._build_summary_lines(output_path, summary))
             return 0
         except Exception as error:
             report = archive_cli_error(error, command_name="encrypt", existing_report=reporter.log_report)

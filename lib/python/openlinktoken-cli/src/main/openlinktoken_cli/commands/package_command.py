@@ -64,9 +64,9 @@ class PackageCommand:
         parser.add_argument(
             "-o",
             "--output",
-            required=True,
+            required=False,
             dest="output_path",
-            help="Output file path",
+            help="Output file path (defaults to input filename with '_packaged' and .zip suffix)",
         )
 
         parser.add_argument(
@@ -120,12 +120,14 @@ class PackageCommand:
             logger.error("Unable to auto-detect input type. Supported input formats: csv, parquet")
             return 1
 
-        output_type = FileTypeDetector.detect_output_type(args.output_path)
-        if not output_type:
-            logger.error("Unable to auto-detect output type. Supported output formats: csv, parquet, zip")
-            return 1
+        # Resolve output path if not provided
+        output_path = args.output_path if args.output_path else get_auto_output_path(args.input_path, "package")
+        # ... (rest of the file)
 
-        ring_id = args.ring_id if args.ring_id and args.ring_id.strip() else str(uuid.uuid4())
+        output_type = FileTypeDetector.detect_output_type(output_path)
+        if not output_type:
+            logger.error("Unable to auto-detect output type from provided/generated path.")
+            return 1
         hash_record_ids = getattr(args, "hash_record_ids", False)
         reporter = CliRunReporter("package")
 
@@ -134,7 +136,7 @@ class PackageCommand:
                 try:
                     logger.info("Running package command (tokenize + encrypt)")
                     logger.info(f"Input: {args.input_path} ({input_type})")
-                    logger.info(f"Output: {args.output_path} ({output_type})")
+                    logger.info(f"Output: {output_path} ({output_type})")
                     logger.info(f"Ring ID: {ring_id}")
                     if hash_record_ids:
                         logger.info("Record ID hashing enabled: RecordIds will be SHA-256 hashed in output")
@@ -162,11 +164,11 @@ class PackageCommand:
                     with contextlib.ExitStack() as stack:
                         if is_zip:
                             temp_dir = stack.enter_context(tempfile.TemporaryDirectory())
-                            zip_path = Path(args.output_path)
+                            zip_path = Path(output_path)
                             token_output_path = str(Path(temp_dir) / f"{zip_path.stem}.{input_type}")
                             token_output_type = input_type
                         else:
-                            token_output_path = args.output_path
+                            token_output_path = output_path
                             token_output_type = output_type
 
                         summary, metadata_path = PackageCommand._process_tokens(
@@ -182,7 +184,7 @@ class PackageCommand:
                         )
 
                         if is_zip:
-                            bundle_into_zip(args.output_path, token_output_path, metadata_path, exchange.path)
+                            bundle_into_zip(output_path, token_output_path, metadata_path, exchange.path)
                             metadata_path = None
                     logger.info("Token generation and encryption completed successfully")
                 except Exception as error:
@@ -191,7 +193,7 @@ class PackageCommand:
             reporter.finish_success(
                 "Package complete",
                 PackageCommand._build_summary_lines(
-                    args.output_path,
+                    output_path,
                     None if is_zip else metadata_path,
                     summary,
                     hash_record_ids,
