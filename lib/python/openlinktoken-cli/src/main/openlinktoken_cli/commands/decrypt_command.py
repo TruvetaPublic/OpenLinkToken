@@ -49,9 +49,9 @@ class DecryptCommand:
         parser.add_argument(
             "-o",
             "--output",
-            required=True,
+            required=False,
             dest="output_path",
-            help="Output file path for decrypted tokens",
+            help="Output file path for decrypted tokens (defaults to input filename with '_decrypted' suffix)",
         )
 
         parser.add_argument(
@@ -86,19 +86,20 @@ class DecryptCommand:
             logger.error("Unable to auto-detect input type. Supported input formats: csv, parquet")
             return 1
 
-        output_type = FileTypeDetector.detect_output_type(args.output_path)
-        if not output_type:
-            logger.error("Unable to auto-detect output type. Supported output formats: csv, parquet, zip")
-            return 1
+        # Resolve output path if not provided
+        output_path = args.output_path if args.output_path else get_auto_output_path(args.input_path, "decrypt")
 
-        reporter = CliRunReporter("decrypt")
+        output_type = FileTypeDetector.detect_output_type(output_path)
+        if not output_type:
+            logger.error("Unable to auto-detect output type from provided/generated path.")
+            return 1
 
         try:
             with reporter:
                 try:
                     logger.info("Running decrypt command")
                     logger.info(f"Input: {args.input_path} ({input_type})")
-                    logger.info(f"Output: {args.output_path} ({output_type})")
+                    logger.info(f"Output: {output_path} ({output_type})")
 
                     reporter.update_status("Resolving exchange config")
                     exchange = resolve_exchange_config(
@@ -112,7 +113,7 @@ class DecryptCommand:
                     reporter.update_status("Decrypting tokens")
                     summary = DecryptCommand._decrypt_tokens(
                         args.input_path,
-                        args.output_path,
+                        output_path,
                         input_type,
                         output_type,
                         encryption_key,
@@ -122,7 +123,7 @@ class DecryptCommand:
                 except Exception as error:
                     logger.error("Error during token decryption: %s", error)
                     raise
-            reporter.finish_success("Decrypt complete", DecryptCommand._build_summary_lines(args.output_path, summary))
+            reporter.finish_success("Decrypt complete", DecryptCommand._build_summary_lines(output_path, summary))
             return 0
         except Exception as error:
             report = archive_cli_error(error, command_name="decrypt", existing_report=reporter.log_report)
