@@ -29,6 +29,7 @@ from openlinktoken_cli.util.path_utils import get_auto_output_path
 
 logger = logging.getLogger(__name__)
 
+
 class TokenizeCommand:
     """
     Tokenize command - generates tokens from person attributes.
@@ -160,8 +161,6 @@ class TokenizeCommand:
         if not output_type:
             logger.error("Unable to auto-detect output type from provided/generated path.")
             return 1
-            logger.error("--mode demo cannot be combined with --exchange-config.")
-            return 1
 
         if mode == TokenizeCommand._MODE_DEMO and hash_record_ids:
             logger.error("--mode demo cannot be combined with --hash-record-ids.")
@@ -229,24 +228,24 @@ class TokenizeCommand:
                         )
                         logger.info(f"Exchange config: {exchange.path}")
                         reporter.update_status("Tokenizing records")
-                                                        summary, metadata_path = TokenizeCommand._process_tokens(
-                                                            args.input_path,
-                                                            output_path,
-                                                            input_type,
-                                                            output_type,
-                                                            exchange.hashing_secret,
-                                                            hash_record_ids,
-                                                            progress_callback=reporter.make_progress_callback("Tokenizing records", "records"),
-                                                        )
+                        summary, metadata_path = TokenizeCommand._process_tokens(
+                            args.input_path,
+                            output_path,
+                            input_type,
+                            output_type,
+                            exchange.hashing_secret,
+                            hash_record_ids,
+                            progress_callback=reporter.make_progress_callback("Tokenizing records", "records"),
+                        )
                     logger.info("Token generation completed successfully")
                 except Exception as error:
                     logger.error("Error during token generation: %s", error)
                     raise
             reporter.finish_success(
                 "Tokenize complete",
-                    TokenizeCommand._build_summary_lines(
-                        output_path,
-                        metadata_path,
+                TokenizeCommand._build_summary_lines(
+                    output_path,
+                    metadata_path,
                     summary,
                     mode,
                     hash_record_ids,

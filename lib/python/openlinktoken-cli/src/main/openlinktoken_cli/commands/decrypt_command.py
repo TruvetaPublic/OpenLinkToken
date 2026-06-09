@@ -14,6 +14,7 @@ from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_
 from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
 from openlinktoken_cli.util.exchange_config import derive_transport_encryption_key, resolve_exchange_config
 from openlinktoken_cli.util.file_type_detector import FileTypeDetector
+from openlinktoken_cli.util.path_utils import get_auto_output_path
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +95,7 @@ class DecryptCommand:
             logger.error("Unable to auto-detect output type from provided/generated path.")
             return 1
 
+        reporter = CliRunReporter("decrypt")
         try:
             with reporter:
                 try:

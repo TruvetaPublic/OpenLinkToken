@@ -100,3 +100,5 @@ apm_modules/
 
 # Added by apm install
 .agents/
+
+node_modules/
