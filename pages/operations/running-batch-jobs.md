@@ -83,7 +83,7 @@ The resulting archive contains three files:
 
 | File                   | Description                               |
 | ---------------------- | ----------------------------------------- |
-| `output.csv`           | Encrypted tokens (same format as input)   |
+| `output.parquet`        | Encrypted tokens (always Parquet)      |
 | `output.metadata.json` | Processing metadata                       |
 | `batch.exchange.json`  | Exchange config used for this package run |
 
