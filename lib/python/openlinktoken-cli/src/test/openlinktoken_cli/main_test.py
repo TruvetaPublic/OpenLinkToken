@@ -5,6 +5,7 @@ Tests the end-to-end workflows for token generation and decryption using new sub
 """
 
 import os
+import sys
 import re
 import zipfile
 from pathlib import Path
