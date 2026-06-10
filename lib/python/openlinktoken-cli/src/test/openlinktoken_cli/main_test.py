@@ -139,13 +139,13 @@ class TestOpenLinkTokenCommand:
         with zipfile.ZipFile(output_zip) as archive:
             names = archive.namelist()
 
-        assert "output.csv" in names, "ZIP should contain the tokens CSV"
+        assert "output.parquet" in names, "ZIP should contain the tokens Parquet file"
         assert "output.metadata.json" in names, "ZIP should contain the metadata JSON"
         assert "package-zip.exchange.json" in names, "ZIP should contain the exchange config JSON"
         assert len(names) == 3, f"ZIP should contain exactly 3 files, got: {names}"
 
         with zipfile.ZipFile(output_zip) as archive:
-            assert len(archive.read("output.csv")) > 0, "Tokens CSV inside ZIP should not be empty"
+            assert len(archive.read("output.parquet")) > 0, "Tokens Parquet inside ZIP should not be empty"
             assert len(archive.read("output.metadata.json")) > 0, "Metadata JSON inside ZIP should not be empty"
             assert len(archive.read("package-zip.exchange.json")) > 0, "Exchange config inside ZIP should not be empty"
 

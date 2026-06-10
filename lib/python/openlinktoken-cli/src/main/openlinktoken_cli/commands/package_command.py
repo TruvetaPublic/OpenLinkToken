@@ -166,8 +166,10 @@ class PackageCommand:
                         if is_zip:
                             temp_dir = stack.enter_context(tempfile.TemporaryDirectory())
                             zip_path = Path(output_path)
-                            token_output_path = str(Path(temp_dir) / f"{zip_path.stem}.{input_type}")
-                            token_output_type = input_type
+                            token_output_path = str(
+                                Path(temp_dir) / f"{zip_path.stem}.{FileTypeDetector.TYPE_PARQUET}",
+                            )
+                            token_output_type = FileTypeDetector.TYPE_PARQUET
                         else:
                             token_output_path = output_path
                             token_output_type = output_type
