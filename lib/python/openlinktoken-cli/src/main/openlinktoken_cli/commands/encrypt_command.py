@@ -4,7 +4,6 @@ import contextlib
 import logging
 import sys
 import tempfile
-import uuid
 from pathlib import Path
 
 from openlinktoken.tokens.token import Token
@@ -21,6 +20,7 @@ from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
 from openlinktoken_cli.util.exchange_config import derive_transport_encryption_key, resolve_exchange_config
 from openlinktoken_cli.util.file_type_detector import FileTypeDetector
 from openlinktoken_cli.util.path_utils import get_auto_output_path
+from openlinktoken_cli.util.ring_id_utils import resolve_ring_id
 from openlinktoken_cli.util.zip_utils import bundle_into_zip
 
 logger = logging.getLogger(__name__)
@@ -108,6 +108,7 @@ class EncryptCommand:
         if not output_type:
             logger.error("Unable to auto-detect output type from provided/generated path.")
             return 1
+        ring_id = resolve_ring_id(args.ring_id)
         reporter = CliRunReporter("encrypt")
 
         try:
@@ -116,7 +117,7 @@ class EncryptCommand:
                     logger.info("Running encrypt command")
                     logger.info(f"Input: {args.input_path} ({input_type})")
                     logger.info(f"Output: {output_path} ({output_type})")
-                    logger.info(f"Ring ID: {args.ring_id}")
+                    logger.info(f"Ring ID: {ring_id}")
 
                     reporter.update_status("Resolving exchange config")
                     exchange = resolve_exchange_config(
@@ -154,7 +155,7 @@ class EncryptCommand:
                             input_type,
                             token_output_type,
                             encryption_key,
-                            args.ring_id,
+                            ring_id,
                             progress_callback=reporter.make_progress_callback("Encrypting tokens", "tokens"),
                         )
 

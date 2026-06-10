@@ -4,7 +4,6 @@ import contextlib
 import logging
 import sys
 import tempfile
-import uuid
 from pathlib import Path
 from typing import List
 
@@ -26,6 +25,7 @@ from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
 from openlinktoken_cli.util.exchange_config import derive_transport_encryption_key, resolve_exchange_config
 from openlinktoken_cli.util.file_type_detector import FileTypeDetector
 from openlinktoken_cli.util.path_utils import get_auto_output_path
+from openlinktoken_cli.util.ring_id_utils import resolve_ring_id
 from openlinktoken_cli.util.zip_utils import bundle_into_zip
 
 logger = logging.getLogger(__name__)
@@ -128,6 +128,7 @@ class PackageCommand:
         if not output_type:
             logger.error("Unable to auto-detect output type from provided/generated path.")
             return 1
+        ring_id = resolve_ring_id(args.ring_id)
         hash_record_ids = getattr(args, "hash_record_ids", False)
         reporter = CliRunReporter("package")
 
@@ -137,7 +138,7 @@ class PackageCommand:
                     logger.info("Running package command (tokenize + encrypt)")
                     logger.info(f"Input: {args.input_path} ({input_type})")
                     logger.info(f"Output: {output_path} ({output_type})")
-                    logger.info(f"Ring ID: {args.ring_id}")
+                    logger.info(f"Ring ID: {ring_id}")
                     if hash_record_ids:
                         logger.info("Record ID hashing enabled: RecordIds will be SHA-256 hashed in output")
 
@@ -178,7 +179,7 @@ class PackageCommand:
                             token_output_type,
                             exchange.hashing_secret,
                             encryption_key,
-                            args.ring_id,
+                            ring_id,
                             hash_record_ids,
                             progress_callback=reporter.make_progress_callback("Packaging records", "records"),
                         )
