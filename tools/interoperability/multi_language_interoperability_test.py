@@ -416,14 +416,14 @@ class TestTokenCompatibility:
             with zipfile.ZipFile(output_zip) as archive:
                 names = archive.namelist()
 
-            assert "output.csv" in names, f"ZIP missing tokens CSV; got: {names}"
+            assert "output.parquet" in names, f"ZIP missing tokens Parquet; got: {names}"
             assert "output.metadata.json" in names, f"ZIP missing metadata JSON; got: {names}"
             exchange_config_name = exchange_config.name
             assert exchange_config_name in names, f"ZIP missing exchange config '{exchange_config_name}'; got: {names}"
             assert len(names) == 3, f"ZIP should contain exactly 3 files, got: {names}"
 
             with zipfile.ZipFile(output_zip) as archive:
-                assert len(archive.read("output.csv")) > 0, "Tokens CSV inside ZIP is empty"
+                assert len(archive.read("output.parquet")) > 0, "Tokens Parquet inside ZIP is empty"
                 assert len(archive.read("output.metadata.json")) > 0, "Metadata JSON inside ZIP is empty"
                 assert len(archive.read(exchange_config_name)) > 0, "Exchange config inside ZIP is empty"
 
