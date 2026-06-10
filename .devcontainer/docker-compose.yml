@@ -12,6 +12,7 @@ services:
       - openlinktoken-vscode-insiders:/home/vscode/.vscode-server-insiders
       - openlinktoken-opencode:/home/vscode/.opencode
       - openlinktoken-config:/home/vscode/.config
+      - openlinktoken-openhands:/home/vscode/.openhands
     user: vscode:vscode
     # Keeps the container running so devcontainer tooling can attach
     command: sleep infinity
@@ -24,3 +25,4 @@ volumes:
   openlinktoken-vscode-insiders:
   openlinktoken-opencode:
   openlinktoken-config:
+  openlinktoken-openhands:

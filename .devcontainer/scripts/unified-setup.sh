@@ -174,23 +174,6 @@ step_install_rtk() {
   mark_complete "rtk-installed"
 }
 
-step_install_bun() {
-  skip_if_complete "bun-installed" "bun installation" && return 0
-
-  echo "→ Installing bun"
-  curl -fsSL https://bun.sh/install | bash
-  export PATH="$HOME/.local/share/bun/bin:$PATH"
-  mark_complete "bun-installed"
-}
-
-step_install_opencode_auto_resume() {
-  skip_if_complete "opencode-auto-resume-installed" "opencode-auto-resume installation" && return 0
-
-  echo "→ Installing opencode-auto-resume"
-  npm install -g opencode-auto-resume
-  mark_complete "opencode-auto-resume-installed"
-}
-
 step_install_apm_cli() {
   echo "→ Installing apm CLI"
   uv pip install apm-cli
@@ -264,8 +247,6 @@ run_full_setup() {
   step_install_apm_cli
   step_setup_apm
   step_install_rtk
-  step_install_bun
-  step_install_opencode_auto_resume
 }
 
 run_refresh_setup() {

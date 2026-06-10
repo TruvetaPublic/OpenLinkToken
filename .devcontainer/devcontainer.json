@@ -63,7 +63,7 @@
     "UV_PROJECT_ENVIRONMENT": "/home/vscode/.local/share/openlinktoken/.venv"
   },
   "updateContentCommand": {
-    "fix-mount-permissions": "for d in /home/vscode/.copilot /home/vscode/.cache /home/vscode/.local /home/vscode/.vscode-server /home/vscode/.vscode-server-insiders; do [ -d \"$d\" ] || continue; sudo chown -R vscode:vscode \"$d\"; done"
+    "fix-mount-permissions": "for d in /home/vscode/.copilot /home/vscode/.cache /home/vscode/.local /home/vscode/.vscode-server /home/vscode/.vscode-server-insiders /home/vscode/.opencode /home/vscode/.config /home/vscode/.openhands; do [ -d \"$d\" ] || continue; sudo chown -R vscode:vscode \"$d\"; done"
   },
   "postCreateCommand": "bash -lc '${containerWorkspaceFolder}/.devcontainer/scripts/unified-setup.sh post-create'",
   "postStartCommand": "bash -lc '${containerWorkspaceFolder}/.devcontainer/scripts/unified-setup.sh post-start'",
