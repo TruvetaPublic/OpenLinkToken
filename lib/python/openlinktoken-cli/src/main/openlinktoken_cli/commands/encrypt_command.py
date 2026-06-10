@@ -4,7 +4,6 @@ import contextlib
 import logging
 import sys
 import tempfile
-import uuid
 from pathlib import Path
 
 from openlinktoken.tokens.token import Token
@@ -20,6 +19,8 @@ from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_
 from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
 from openlinktoken_cli.util.exchange_config import derive_transport_encryption_key, resolve_exchange_config
 from openlinktoken_cli.util.file_type_detector import FileTypeDetector
+from openlinktoken_cli.util.path_utils import get_auto_output_path
+from openlinktoken_cli.util.ring_id_utils import resolve_ring_id
 from openlinktoken_cli.util.zip_utils import bundle_into_zip
 
 logger = logging.getLogger(__name__)
@@ -56,9 +57,9 @@ class EncryptCommand:
         parser.add_argument(
             "-o",
             "--output",
-            required=True,
+            required=False,
             dest="output_path",
-            help="Output file path for encrypted tokens",
+            help="Output file path for encrypted tokens (defaults to input filename with '_encrypted' suffix)",
         )
 
         parser.add_argument(
@@ -100,12 +101,14 @@ class EncryptCommand:
             logger.error("Unable to auto-detect input type. Supported input formats: csv, parquet")
             return 1
 
-        output_type = FileTypeDetector.detect_output_type(args.output_path)
-        if not output_type:
-            logger.error("Unable to auto-detect output type. Supported output formats: csv, parquet, zip")
-            return 1
+        # Resolve output path if not provided
+        output_path = args.output_path if args.output_path else get_auto_output_path(args.input_path, "encrypt")
 
-        ring_id = args.ring_id if args.ring_id and args.ring_id.strip() else str(uuid.uuid4())
+        output_type = FileTypeDetector.detect_output_type(output_path)
+        if not output_type:
+            logger.error("Unable to auto-detect output type from provided/generated path.")
+            return 1
+        ring_id = resolve_ring_id(args.ring_id)
         reporter = CliRunReporter("encrypt")
 
         try:
@@ -113,7 +116,7 @@ class EncryptCommand:
                 try:
                     logger.info("Running encrypt command")
                     logger.info(f"Input: {args.input_path} ({input_type})")
-                    logger.info(f"Output: {args.output_path} ({output_type})")
+                    logger.info(f"Output: {output_path} ({output_type})")
                     logger.info(f"Ring ID: {ring_id}")
 
                     reporter.update_status("Resolving exchange config")
@@ -139,11 +142,11 @@ class EncryptCommand:
                     with contextlib.ExitStack() as stack:
                         if is_zip:
                             temp_dir = stack.enter_context(tempfile.TemporaryDirectory())
-                            zip_path = Path(args.output_path)
+                            zip_path = Path(output_path)
                             token_output_path = str(Path(temp_dir) / f"{zip_path.stem}.{input_type}")
                             token_output_type = input_type
                         else:
-                            token_output_path = args.output_path
+                            token_output_path = output_path
                             token_output_type = output_type
 
                         summary = EncryptCommand._encrypt_tokens(
@@ -157,12 +160,12 @@ class EncryptCommand:
                         )
 
                         if is_zip:
-                            bundle_into_zip(args.output_path, token_output_path, exchange.path)
+                            bundle_into_zip(output_path, token_output_path, exchange.path)
                     logger.info("Token encryption completed successfully")
                 except Exception as error:
                     logger.error("Error during token encryption: %s", error)
                     raise
-            reporter.finish_success("Encrypt complete", EncryptCommand._build_summary_lines(args.output_path, summary))
+            reporter.finish_success("Encrypt complete", EncryptCommand._build_summary_lines(output_path, summary))
             return 0
         except Exception as error:
             report = archive_cli_error(error, command_name="encrypt", existing_report=reporter.log_report)

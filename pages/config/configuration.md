@@ -131,13 +131,13 @@ For CSV or Parquet output, each run produces two files:
 
 When the output path ends in `.zip`, the `package` command bundles all three files into a single archive:
 
-1. `<stem>.csv` (or `.parquet`) — encrypted tokens
+1. `<stem>.parquet` — encrypted tokens (always Parquet)
 2. `<stem>.metadata.json` — processing metadata
 3. `<exchange-config-filename>.exchange.json` — exchange config
 
 The `encrypt` command also supports `.zip` output, bundling two files (no metadata):
 
-1. `<stem>.csv` (or `.parquet`) — encrypted tokens
+1. `<stem>.csv` (or `.parquet`) — encrypted tokens (same format as input)
 2. `<exchange-config-filename>.exchange.json` — exchange config
 
 ---

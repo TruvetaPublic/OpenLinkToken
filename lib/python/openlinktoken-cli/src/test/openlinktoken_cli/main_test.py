@@ -5,6 +5,7 @@ Tests the end-to-end workflows for token generation and decryption using new sub
 """
 
 import os
+import re
 import zipfile
 from pathlib import Path
 from unittest.mock import patch
@@ -138,13 +139,13 @@ class TestOpenLinkTokenCommand:
         with zipfile.ZipFile(output_zip) as archive:
             names = archive.namelist()
 
-        assert "output.csv" in names, "ZIP should contain the tokens CSV"
+        assert "output.parquet" in names, "ZIP should contain the tokens Parquet file"
         assert "output.metadata.json" in names, "ZIP should contain the metadata JSON"
         assert "package-zip.exchange.json" in names, "ZIP should contain the exchange config JSON"
         assert len(names) == 3, f"ZIP should contain exactly 3 files, got: {names}"
 
         with zipfile.ZipFile(output_zip) as archive:
-            assert len(archive.read("output.csv")) > 0, "Tokens CSV inside ZIP should not be empty"
+            assert len(archive.read("output.parquet")) > 0, "Tokens Parquet inside ZIP should not be empty"
             assert len(archive.read("output.metadata.json")) > 0, "Metadata JSON inside ZIP should not be empty"
             assert len(archive.read("package-zip.exchange.json")) > 0, "Exchange config inside ZIP should not be empty"
 
@@ -429,7 +430,7 @@ class TestOpenLinkTokenCommand:
         assert exit_code != 0, "Command should fail with missing required parameter"
 
     def test_missing_required_parameter_output(self, temp_dir):
-        """Test that missing output parameter is caught."""
+        """Test that missing output parameter generates auto-named file and succeeds."""
         input_csv = temp_dir / "input.csv"
         exchange_config, private_key = self._create_exchange_config(temp_dir, "missing-output")
 
@@ -437,7 +438,7 @@ class TestOpenLinkTokenCommand:
             "tokenize",
             "-i",
             str(input_csv),
-            # Missing -o/--output
+            # Missing -o/--output — should auto-generate filename
             "--exchange-config",
             str(exchange_config),
             "--private-key",
@@ -445,7 +446,7 @@ class TestOpenLinkTokenCommand:
         ]
 
         exit_code = OpenLinkTokenCommand.execute(args)
-        assert exit_code != 0, "Command should fail with missing required parameter"
+        assert exit_code == 0, "Command should succeed with auto-generated output"
 
     def test_invalid_input_type(self, temp_dir):
         """Test that unsupported input file extension is caught."""
@@ -807,6 +808,39 @@ class TestOpenLinkTokenCommand:
         assert exit_code == 0, "Version output should exit successfully"
         assert "Open Link Token" in captured.out
         assert "Privacy-Preserving Record Linkage v" not in captured.out
+
+    @pytest.mark.parametrize("cmd", ["tokenize", "encrypt", "decrypt", "package", "initiate-exchange"])
+    def test_subcommand_without_args_shows_banner(self, monkeypatch, capsys, cmd):
+        """Banner should appear when a subcommand requiring args is invoked with no args."""
+        monkeypatch.setattr("sys.stdout.isatty", lambda: True)
+
+        exit_code = OpenLinkTokenCommand.execute([cmd])
+
+        captured = capsys.readouterr()
+        assert exit_code == 0, f"'{cmd}' invoked with no args should exit 0 (help display)"
+        assert "Privacy-Preserving Record Linkage v" in captured.out, (
+            f"Banner should be shown when '{cmd}' is invoked with no args"
+        )
+
+    @pytest.mark.parametrize("cmd", ["tokenize", "encrypt", "decrypt", "package", "initiate-exchange"])
+    def test_subcommand_without_args_shows_subcommand_help(self, capsys, cmd):
+        """Subcommand help should be printed when a subcommand requiring args is invoked with no args."""
+        exit_code = OpenLinkTokenCommand.execute([cmd])
+
+        captured = capsys.readouterr()
+        assert exit_code == 0, f"'{cmd}' invoked with no args should exit 0 (help display)"
+        assert cmd in captured.out, f"Help output for '{cmd}' should mention the command name"
+
+    def test_help_output_does_not_contain_curly_brace_subcommand_list(self, capsys):
+        """The main help output must not contain the redundant {cmd1,cmd2,...} listing."""
+        exit_code = OpenLinkTokenCommand.execute([])
+
+        captured = capsys.readouterr()
+        assert exit_code == 0
+        # argparse's default metavar produces a '{cmd1,cmd2,...}' line; it should be gone
+        assert not re.search(r"\{decrypt,encrypt", captured.out), (
+            "The curly-brace subcommand list should not appear in the help output"
+        )
 
     # ===== Hash Record IDs Tests =====
 

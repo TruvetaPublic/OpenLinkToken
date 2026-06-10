@@ -153,7 +153,7 @@ python -m openlinktoken_cli.main package \
 | Flag                                  | Purpose                                                |
 | ------------------------------------- | ------------------------------------------------------ |
 | `-i` / `--input`                      | Input file path                                        |
-| `-o` / `--output`                     | Output file path                                       |
+| `-o` / `--output`                     | Output file path (optional — auto-generated default)   |
 | `--exchange-config`                   | Exchange config JSON path                              |
 | `--private-key` / `--private-key-env` | Private key used to decrypt the exchange config        |
 | `tokenize`                            | Hash-only mode using the same exchange-config workflow |
