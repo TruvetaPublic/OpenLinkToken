@@ -8,9 +8,27 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 VENV_DIR="${UV_PROJECT_ENVIRONMENT:-/home/vscode/.local/share/openlinktoken/.venv}"
 WORKSPACE_VENV_DIR="$REPO_ROOT/.venv"
 STATE_DIR="${VENV_DIR}/.setup-state"
-PHASE="${1:-full}"  # Options: full, post-create, post-start, post-attach
+
+# Default phase and force flag
+PHASE="full"
+FORCE=false
+
+# Parse arguments to support --force or -f, alongside the phase argument
+for arg in "$@"; do
+  if [[ "$arg" == "--force" ]] || [[ "$arg" == "-f" ]]; then
+    FORCE=true
+  else
+    PHASE="$arg"
+  fi
+done
 
 mkdir -p "$STATE_DIR"
+
+# If force is requested, clear the setup state to allow re-running steps
+if [ "$FORCE" = true ]; then
+  echo "→ Force flag detected. Clearing setup state..."
+  rm -rf "$STATE_DIR" && mkdir -p "$STATE_DIR"
+fi
 
 # Marker functions for tracking completed steps
 mark_complete() {
@@ -140,6 +158,22 @@ step_install_prek() {
 # APM setup
 # ============================================================================
 
+step_install_rtk() {
+  skip_if_complete "rtk-installed" "rtk installation" && return 0
+
+  if command -v rtk >/dev/null 2>&1; then
+    echo "⊘ Skipping rtk installation (already installed)"
+    mark_complete "rtk-installed"
+    return 0
+  fi
+
+  echo "→ Installing rtk (Rust Token Killer) for token optimization"
+  curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
+  export PATH="$HOME/.local/bin:$PATH"
+
+  mark_complete "rtk-installed"
+}
+
 step_install_apm_cli() {
   echo "→ Installing apm CLI"
   uv pip install apm-cli
@@ -212,6 +246,7 @@ run_full_setup() {
   step_install_prek
   step_install_apm_cli
   step_setup_apm
+  step_install_rtk
 }
 
 run_refresh_setup() {

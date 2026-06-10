@@ -2,19 +2,15 @@
 // README at: https://github.com/devcontainers/templates/tree/main/src/java
 {
   "name": "Open Link Token",
-  "build": {
-    "context": "..",
-    "dockerfile": "Dockerfile",
-    "args": {
-      "JAVA_VERSION": "21"
-    }
-  },
+  "dockerComposeFile": ["docker-compose.yml"],
+  "service": "app",
+  "workspaceFolder": "/workspaces/OpenLinkToken",
   "features": {
     "ghcr.io/devcontainers/features/common-utils:2": {
       "configureZshAsDefaultShell": true
     },
     "ghcr.io/devcontainers/features/java:1": {
-      "version": "21.0.10",
+      "version": "21.0.11",
       "installMaven": "true",
       "mavenVersion": "3.8.8",
       "installGradle": "false"
@@ -22,10 +18,17 @@
     "ghcr.io/devcontainers/features/node:1": {
       "version": "20.12.0"
     },
-    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+      "moby": false
+    },
     "ghcr.io/devcontainers/features/git-lfs:1": {},
     "ghcr.io/devcontainers/features/copilot-cli:1": {},
-    "ghcr.io/devcontainers/features/github-cli:1": {}
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/jsburckhardt/devcontainer-features/opencode:1": {},
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.11",
+      "installPipenv": "true"
+    }
   },
   "customizations": {
     "vscode": {
@@ -54,19 +57,13 @@
       }
     }
   },
-  "mounts": [
-    "type=volume,source=openlinktoken-local,target=/home/vscode/.local",
-    "type=volume,source=openlinktoken-cache,target=/home/vscode/.cache",
-    "type=volume,source=openlinktoken-copilot,target=/home/vscode/.copilot",
-    "type=volume,source=openlinktoken-vscode-server,target=/home/vscode/.vscode-server",
-    "type=volume,source=openlinktoken-vscode-insiders,target=/home/vscode/.vscode-server-insiders"
-  ],
   "containerEnv": {
+    "GH_TOKEN": "${localEnv:GH_TOKEN}",
     "PYSPARK_SUBMIT_ARGS": "--driver-memory 8g --executor-memory 8g --conf spark.driver.maxResultSize=4g --conf spark.memory.fraction=0.7 pyspark-shell",
     "UV_PROJECT_ENVIRONMENT": "/home/vscode/.local/share/openlinktoken/.venv"
   },
   "updateContentCommand": {
-    "fix-mount-permissions": "for d in /home/vscode/.copilot /home/vscode/.cache /home/vscode/.local /home/vscode/.vscode-server /home/vscode/.vscode-server-insiders; do [ -d \"$d\" ] || continue; sudo chown -R vscode:vscode \"$d\"; done"
+    "fix-mount-permissions": "for d in /home/vscode/.copilot /home/vscode/.cache /home/vscode/.local /home/vscode/.vscode-server /home/vscode/.vscode-server-insiders /home/vscode/.opencode /home/vscode/.config /home/vscode/.openhands; do [ -d \"$d\" ] || continue; sudo chown -R vscode:vscode \"$d\"; done"
   },
   "postCreateCommand": "bash -lc '${containerWorkspaceFolder}/.devcontainer/scripts/unified-setup.sh post-create'",
   "postStartCommand": "bash -lc '${containerWorkspaceFolder}/.devcontainer/scripts/unified-setup.sh post-start'",
