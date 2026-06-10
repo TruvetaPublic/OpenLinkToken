@@ -139,13 +139,13 @@ class TestOpenLinkTokenCommand:
         with zipfile.ZipFile(output_zip) as archive:
             names = archive.namelist()
 
-        assert "output.csv" in names, "ZIP should contain the tokens CSV"
+        assert "output.parquet" in names, "ZIP should contain the tokens Parquet file"
         assert "output.metadata.json" in names, "ZIP should contain the metadata JSON"
         assert "package-zip.exchange.json" in names, "ZIP should contain the exchange config JSON"
         assert len(names) == 3, f"ZIP should contain exactly 3 files, got: {names}"
 
         with zipfile.ZipFile(output_zip) as archive:
-            assert len(archive.read("output.csv")) > 0, "Tokens CSV inside ZIP should not be empty"
+            assert len(archive.read("output.parquet")) > 0, "Tokens Parquet inside ZIP should not be empty"
             assert len(archive.read("output.metadata.json")) > 0, "Metadata JSON inside ZIP should not be empty"
             assert len(archive.read("package-zip.exchange.json")) > 0, "Exchange config inside ZIP should not be empty"
 
@@ -430,7 +430,7 @@ class TestOpenLinkTokenCommand:
         assert exit_code != 0, "Command should fail with missing required parameter"
 
     def test_missing_required_parameter_output(self, temp_dir):
-        """Test that missing output parameter is caught."""
+        """Test that missing output parameter generates auto-named file and succeeds."""
         input_csv = temp_dir / "input.csv"
         exchange_config, private_key = self._create_exchange_config(temp_dir, "missing-output")
 
@@ -438,7 +438,7 @@ class TestOpenLinkTokenCommand:
             "tokenize",
             "-i",
             str(input_csv),
-            # Missing -o/--output
+            # Missing -o/--output — should auto-generate filename
             "--exchange-config",
             str(exchange_config),
             "--private-key",
@@ -446,7 +446,7 @@ class TestOpenLinkTokenCommand:
         ]
 
         exit_code = OpenLinkTokenCommand.execute(args)
-        assert exit_code != 0, "Command should fail with missing required parameter"
+        assert exit_code == 0, "Command should succeed with auto-generated output"
 
     def test_invalid_input_type(self, temp_dir):
         """Test that unsupported input file extension is caught."""

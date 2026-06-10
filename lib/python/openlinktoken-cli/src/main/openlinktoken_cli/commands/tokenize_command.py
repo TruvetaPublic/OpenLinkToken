@@ -25,6 +25,7 @@ from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_
 from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
 from openlinktoken_cli.util.exchange_config import resolve_exchange_config
 from openlinktoken_cli.util.file_type_detector import FileTypeDetector
+from openlinktoken_cli.util.path_utils import get_auto_output_path
 
 logger = logging.getLogger(__name__)
 
@@ -88,9 +89,9 @@ class TokenizeCommand:
         parser.add_argument(
             "-o",
             "--output",
-            required=True,
+            required=False,
             dest="output_path",
-            help="Output file path",
+            help="Output file path (defaults to input filename with '_tokenized' suffix)",
         )
 
         parser.add_argument(
@@ -153,17 +154,20 @@ class TokenizeCommand:
             logger.error("Unable to auto-detect input type. Supported input formats: csv, parquet")
             return 1
 
-        output_type = FileTypeDetector.detect_output_type(args.output_path)
-        if not output_type:
-            logger.error("Unable to auto-detect output type. Supported output formats: csv, parquet, zip")
-            return 1
+        # Resolve output path if not provided
+        output_path = args.output_path if args.output_path else get_auto_output_path(args.input_path, "tokenize")
 
-        if mode == TokenizeCommand._MODE_DEMO and args.exchange_config:
-            logger.error("--mode demo cannot be combined with --exchange-config.")
+        output_type = FileTypeDetector.detect_output_type(output_path)
+        if not output_type:
+            logger.error("Unable to auto-detect output type from provided/generated path.")
             return 1
 
         if mode == TokenizeCommand._MODE_DEMO and hash_record_ids:
             logger.error("--mode demo cannot be combined with --hash-record-ids.")
+            return 1
+
+        if mode == TokenizeCommand._MODE_DEMO and args.exchange_config:
+            logger.error("--mode demo cannot be combined with --exchange-config.")
             return 1
 
         if mode == TokenizeCommand._MODE_HASH_ONLY and args.exchange_config:
@@ -196,7 +200,7 @@ class TokenizeCommand:
                     else:
                         logger.info("Running tokenize command (default mode)")
                     logger.info(f"Input: {args.input_path} ({input_type})")
-                    logger.info(f"Output: {args.output_path} ({output_type})")
+                    logger.info(f"Output: {output_path} ({output_type})")
                     if hash_record_ids:
                         logger.info("Record ID hashing enabled: RecordIds will be SHA-256 hashed in output")
 
@@ -204,7 +208,7 @@ class TokenizeCommand:
                         reporter.update_status("Tokenizing records")
                         summary, metadata_path = TokenizeCommand._process_tokens_demo(
                             args.input_path,
-                            args.output_path,
+                            output_path,
                             input_type,
                             output_type,
                             progress_callback=reporter.make_progress_callback("Tokenizing records", "records"),
@@ -213,7 +217,7 @@ class TokenizeCommand:
                         reporter.update_status("Tokenizing records")
                         summary, metadata_path = TokenizeCommand._process_tokens_hash_only(
                             args.input_path,
-                            args.output_path,
+                            output_path,
                             input_type,
                             output_type,
                             hash_record_ids,
@@ -230,7 +234,7 @@ class TokenizeCommand:
                         reporter.update_status("Tokenizing records")
                         summary, metadata_path = TokenizeCommand._process_tokens(
                             args.input_path,
-                            args.output_path,
+                            output_path,
                             input_type,
                             output_type,
                             exchange.hashing_secret,
@@ -244,7 +248,7 @@ class TokenizeCommand:
             reporter.finish_success(
                 "Tokenize complete",
                 TokenizeCommand._build_summary_lines(
-                    args.output_path,
+                    output_path,
                     metadata_path,
                     summary,
                     mode,

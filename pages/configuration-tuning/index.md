@@ -102,7 +102,7 @@ Open Link Token generates two output files: tokens and metadata.
 
 ### Tokens Output
 
-CSV or Parquet file (same format as input, unless `-ot` specifies otherwise):
+CSV or Parquet file (same format as input; when packaged via the `package` command with ZIP output, always parquet by default):
 
 ```csv
 RecordId,RuleId,Token
