@@ -18,12 +18,12 @@ olt <subcommand> [OPTIONS]
 
 ### Arguments
 
-#### Required Arguments (All Subcommands)
+#### All Subcommands
 
-| Argument | Alias      | Description                      | Example         |
-| -------- | ---------- | -------------------------------- | --------------- |
-| `-i`     | `--input`  | Input file path (CSV or Parquet) | `-i data.csv`   |
-| `-o`     | `--output` | Output file path                 | `-o tokens.csv` |
+| Argument | Alias      | Required | Default                       | Description                      | Example         |
+| -------- | ---------- | -------- | ----------------------------- | -------------------------------- | --------------- |
+| `-i`     | `--input`  | Yes      |                               | Input file path (CSV or Parquet) | `-i data.csv`   |
+| `-o`     | `--output` | No       | Auto-generated per subcommand | Output file path                 | `-o tokens.csv` |
 
 #### Optional Arguments by Subcommand
 

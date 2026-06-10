@@ -86,6 +86,7 @@ class OpenLinkTokenCommand:
             title="commands",
             description="Available commands",
             dest="command",
+            metavar="<command>",
             help="Use 'openlinktoken <command> --help' for command-specific help",
         )
 
@@ -139,9 +140,22 @@ class OpenLinkTokenCommand:
         parser = OpenLinkTokenCommand.create_parser()
         raw_args = list(sys.argv[1:] if args is None else args)
 
-        # Show banner only for help-oriented entry points and bare invocation.
+        # Show banner for help-oriented entry points, bare invocation, and bare subcommand.
         if OpenLinkTokenCommand._should_show_banner(raw_args):
             OpenLinkTokenCommand.show_banner()
+
+        # If only a subcommand name is given with no additional args, and that subcommand
+        # requires arguments to run, display its help page instead of an error.
+        if len(raw_args) == 1 and not raw_args[0].startswith("-"):
+            subparser_map = OpenLinkTokenCommand._get_subcommand_map(parser)
+            if raw_args[0] in subparser_map and OpenLinkTokenCommand._subcommand_needs_args(
+                subparser_map[raw_args[0]]
+            ):
+                try:
+                    parser.parse_args([raw_args[0], "--help"])
+                except SystemExit as error:
+                    return error.code if isinstance(error.code, int) else 0
+                return 0
 
         try:
             parsed_args = parser.parse_args(raw_args)
@@ -204,7 +218,48 @@ class OpenLinkTokenCommand:
     @staticmethod
     def _should_show_banner(args):
         """Return whether the current argv should display the CLI banner."""
-        return not args or OpenLinkTokenCommand._is_help_request(args)
+        if not args or OpenLinkTokenCommand._is_help_request(args):
+            return True
+        # Show banner when only a subcommand name is given with no additional args
+        if len(args) == 1 and not args[0].startswith("-"):
+            return True
+        return False
+
+    @staticmethod
+    def _get_subcommand_map(parser):
+        """Return the subcommand name-to-parser mapping from the main parser.
+
+        Relies on argparse internals (_subparsers, _group_actions, _name_parser_map)
+        that have no stable public API equivalent. The same approach is already used
+        in create_parser() for alphabetical sorting.  If a future argparse version
+        removes these attributes the method returns an empty dict and bare-subcommand
+        help display is simply skipped rather than raising an error.
+        """
+        try:
+            if parser._subparsers:
+                for action in parser._subparsers._group_actions:
+                    if hasattr(action, "_name_parser_map"):
+                        return action._name_parser_map
+        except AttributeError:
+            pass
+        return {}
+
+    @staticmethod
+    def _subcommand_needs_args(subparser):
+        """Return True if the subcommand requires at least one argument to run.
+
+        Inspects argparse internals (_actions, _mutually_exclusive_groups) because
+        there is no stable public API for querying required-argument status.  Both
+        attributes have been present since Python 3.2 and are unlikely to change.
+        """
+        # Individual required flags/positionals
+        if any(action.required for action in subparser._actions):
+            return True
+        # Required mutually-exclusive groups (e.g. initiate-exchange --public-key)
+        return any(
+            group.required
+            for group in getattr(subparser, "_mutually_exclusive_groups", [])
+        )
 
     @staticmethod
     def _should_start_version_check(parsed_args: argparse.Namespace) -> bool:

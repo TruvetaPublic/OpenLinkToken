@@ -707,13 +707,13 @@ python -m openlinktoken_cli.main package -i input.csv -o output.csv --exchange-c
 
 Arguments:
 
-| Flag                    | Description                                     |
-| ----------------------- | ----------------------------------------------- |
-| `-i, --input`           | Input file path                                 |
-| `-o, --output`          | Output file path                                |
-| `-c, --exchange-config` | Exchange config JSON path                       |
-| `--private-key`         | Private key PEM used to decrypt the config      |
-| `--private-key-env`     | Environment variable containing the private key |
+| Flag                    | Description                                               |
+| ----------------------- | --------------------------------------------------------- |
+| `-i, --input`           | Input file path                                           |
+| `-o, --output`          | Output file path (optional — auto-generated when omitted) |
+| `-c, --exchange-config` | Exchange config JSON path                                 |
+| `--private-key`         | Private key PEM used to decrypt the config                |
+| `--private-key-env`     | Environment variable containing the private key           |
 
 ### Key Pair Generation
 

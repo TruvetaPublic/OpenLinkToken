@@ -291,12 +291,12 @@ Check the generated `.metadata.json` for processing statistics:
 
 Use `olt package -o output.zip` to automatically bundle the tokens, metadata, and exchange config into a single archive. Alternatively, include the files separately:
 
-| File                         | Purpose                                                          | Contains Secrets?       |
-| ---------------------------- | ---------------------------------------------------------------- | ----------------------- |
-| `sender-q2.exchange.json`    | Shared exchange config if the recipient does not already have it | No private key material |
-| `tokens.csv` (or `.parquet`) | Token output                                                     | No                      |
-| `tokens.metadata.json`       | Processing stats and runtime context                             | No                      |
-| Data dictionary (optional)   | Column definitions, RecordId mapping                             | No                      |
+| File                       | Purpose                                                          | Contains Secrets?         |
+| -------------------------- | ---------------------------------------------------------------- | ------------------------- |
+| `sender-q2.exchange.json`  | Shared exchange config if the recipient does not already have it | No private key material   |
+| `tokens.parquet`           | Token output (package defaults to Parquet)                       | No                        |
+| `tokens.metadata.json`     | Processing stats, secret hashes                                  | Hashes only (not secrets) |
+| Data dictionary (optional) | Column definitions, RecordId mapping                             | No                        |
 
 **Do NOT include:**
 
@@ -390,9 +390,9 @@ See [Decrypting Tokens](decrypting-tokens.md) for details.
 
 Encrypted mode (`package` with an exchange config) adds AES-256-GCM encryption on top of HMAC-SHA256:
 
-| Mode      | External Sharing    | Defense in Depth | Reversible                               |
-| --------- | ------------------- | ---------------- | ---------------------------------------- |
-| Encrypted | ✓ Recommended       | Yes              | To HMAC hash (with matching private key) |
+| Mode      | External Sharing   | Defense in Depth | Reversible                               |
+| --------- | ------------------ | ---------------- | ---------------------------------------- |
+| Encrypted | ✓ Recommended      | Yes              | To HMAC hash (with matching private key) |
 | Tokenize  | ⚠ Use with caution | No               | Not reversible                           |
 
 Encrypted tokens provide an additional security layer if token files are intercepted.
