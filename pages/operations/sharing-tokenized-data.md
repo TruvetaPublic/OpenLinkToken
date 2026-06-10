@@ -296,7 +296,7 @@ Use `olt package -o output.zip` to automatically bundle the tokens, metadata, an
 | File                         | Purpose                                                          | Contains Secrets?         |
 | ---------------------------- | ---------------------------------------------------------------- | ------------------------- |
 | `sender-q2.exchange.json`    | Shared exchange config if the recipient does not already have it | No private key material   |
-| `tokens.csv` (or `.parquet`) | Token output                                                     | No                        |
+| `tokens.parquet`              | Token output (package defaults to Parquet)                       | No                        |
 | `tokens.metadata.json`       | Processing stats, secret hashes                                  | Hashes only (not secrets) |
 | Data dictionary (optional)   | Column definitions, RecordId mapping                             | No                        |
 
