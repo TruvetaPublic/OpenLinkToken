@@ -25,7 +25,7 @@ def generate_auto_output_path(input_path: str, subcommand: str, extension_overri
         # Example in issue: "demo.csv" + subcommand "tokenized" => "demo_tokenized.csv"
         # Let's use a logic that respects context.
         if subcommand == "package":
-            return str(path.with_suffix(".zip"))
+            return str(path.with_name(f"{path.stem}_packaged.zip"))
 
         extension = path.suffix if path.suffix else ""
         if not extension and subcommand in ["tokenize", "encrypt", "decrypt"]:
@@ -44,7 +44,7 @@ def get_auto_output_path(input_path: str, subcommand: str) -> str:
     """Helper that simplifies the logic specifically for our CLI needs."""
     # For package, we want .zip
     if subcommand == "package":
-        return str(Path(input_path).with_suffix(".zip"))
+        return str(Path(input_path).with_name(f"{Path(input_path).stem}_packaged.zip"))
 
     # Mapping of subcommands to their preferred suffixes for better readability
     suffix_map = {"tokenize": "tokenized", "encrypt": "encrypted", "decrypt": "decrypted"}

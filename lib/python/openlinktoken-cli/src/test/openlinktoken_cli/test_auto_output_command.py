@@ -197,7 +197,7 @@ class TestAutoOutputCommands:
         exit_code = OpenLinkTokenCommand.execute(args)
         assert exit_code == 0
 
-        expected_output = temp_dir / "input.zip"
+        expected_output = temp_dir / "input_packaged.zip"
         assert expected_output.exists()
 
     def test_decrypt_explicit_output_override(self, temp_dir):

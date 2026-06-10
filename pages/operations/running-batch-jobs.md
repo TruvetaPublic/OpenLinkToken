@@ -39,7 +39,7 @@ olt <subcommand> [OPTIONS]
 
 | Subcommand | Default pattern                  |
 | ---------- | -------------------------------- |
-| `package`  | `<timestamp>-<short_id>.zip`     |
+| `package`  | `<input_basename>_packaged.zip`     |
 | `tokenize` | `<input_basename>_tokenized.csv` |
 | `encrypt`  | `<input_basename>_encrypted.zip` |
 | `decrypt`  | `<input_basename>_decrypted.csv` |
