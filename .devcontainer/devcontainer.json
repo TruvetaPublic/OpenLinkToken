@@ -14,7 +14,7 @@
       "configureZshAsDefaultShell": true
     },
     "ghcr.io/devcontainers/features/java:1": {
-      "version": "21.0.10",
+      "version": "21.0.11",
       "installMaven": "true",
       "mavenVersion": "3.8.8",
       "installGradle": "false"
@@ -48,7 +48,7 @@
         "dbaeumer.vscode-eslint"
       ],
       "settings": {
-        "sonarlint.ls.javaHome": "/usr/local/sdkman/candidates/java/21.0.10-ms",
+        "sonarlint.ls.javaHome": "/usr/local/sdkman/candidates/java/21.0.11-ms",
         "python.defaultInterpreterPath": "/home/vscode/.local/share/openlinktoken/.venv/bin/python",
         "python.terminal.activateEnvironment": true
       }
@@ -62,6 +62,7 @@
     "type=volume,source=openlinktoken-vscode-insiders,target=/home/vscode/.vscode-server-insiders"
   ],
   "containerEnv": {
+    "GH_TOKEN": "${localEnv:GH_TOKEN}",
     "PYSPARK_SUBMIT_ARGS": "--driver-memory 8g --executor-memory 8g --conf spark.driver.maxResultSize=4g --conf spark.memory.fraction=0.7 pyspark-shell",
     "UV_PROJECT_ENVIRONMENT": "/home/vscode/.local/share/openlinktoken/.venv"
   },
