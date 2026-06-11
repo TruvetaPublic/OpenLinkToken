@@ -12,7 +12,7 @@ dynamic = [
 ]
 
 [build-system]
-requires = ["setuptools>=40.8.0", "wheel"]
+requires = ["setuptools>=40.8.0", "wheel", "pkg_resources"]
 build-backend = "setuptools.build_meta"
 
 [tool.uv]
