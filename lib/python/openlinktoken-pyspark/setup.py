@@ -62,7 +62,7 @@ setup(
         "spark34": [
             "pyspark==3.4.4",
             "pyarrow==15.0.0",
-            "pandas==2.1.5",
+            "pandas==2.1.4",
         ],
         # Development dependencies
         "dev": [
