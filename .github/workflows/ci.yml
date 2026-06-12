@@ -247,6 +247,13 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
         spark-version: ["3.4", "3.5", "4.0", "4.1"]
+        exclude:
+          # Python 3.14 only compatible with pyarrow 17+ (spark40/41);
+          # skip 3.14 on older Spark where pyarrow wheel availability is uncertain
+          - python-version: "3.14"
+            spark-version: "3.4"
+          - python-version: "3.14"
+            spark-version: "3.5"
     steps:
       - uses: actions/checkout@v4
 
