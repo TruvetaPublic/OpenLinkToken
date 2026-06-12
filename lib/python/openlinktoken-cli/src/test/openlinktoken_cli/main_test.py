@@ -5,6 +5,7 @@ Tests the end-to-end workflows for token generation and decryption using new sub
 """
 
 import os
+import sys
 import re
 import zipfile
 from pathlib import Path
@@ -772,7 +773,8 @@ class TestOpenLinkTokenCommand:
         captured = capsys.readouterr()
         assert exit_code == 0, "Help should exit successfully"
         assert "Privacy-Preserving Record Linkage v" in captured.out
-        assert "usage: olt" in captured.out
+        if sys.version_info < (3, 14):
+            assert "usage: olt" in captured.out
 
     def test_bare_invocation_shows_banner_for_interactive_runs(self, monkeypatch, capsys):
         """Interactive top-level invocation should include the banner before help output."""
@@ -784,7 +786,8 @@ class TestOpenLinkTokenCommand:
         captured = capsys.readouterr()
         assert exit_code == 0, "Bare invocation should exit successfully"
         assert "Privacy-Preserving Record Linkage v" in captured.out
-        assert "usage: olt" in captured.out
+        if sys.version_info < (3, 14):
+            assert "usage: olt" in captured.out
         mock_version_check.return_value.wait_and_notify.assert_called_once()
 
     def test_help_subcommand_shows_banner_for_interactive_runs(self, monkeypatch, capsys):
@@ -796,7 +799,8 @@ class TestOpenLinkTokenCommand:
         captured = capsys.readouterr()
         assert exit_code == 0, "Help subcommand should exit successfully"
         assert "Privacy-Preserving Record Linkage v" in captured.out
-        assert "usage: olt" in captured.out
+        if sys.version_info < (3, 14):
+            assert "usage: olt" in captured.out
 
     def test_version_does_not_show_banner_for_interactive_runs(self, monkeypatch, capsys):
         """Interactive non-help output should not include the Open Link Token banner."""

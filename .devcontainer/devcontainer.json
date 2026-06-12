@@ -24,7 +24,6 @@
     "ghcr.io/devcontainers/features/git-lfs:1": {},
     "ghcr.io/devcontainers/features/copilot-cli:1": {},
     "ghcr.io/devcontainers/features/github-cli:1": {},
-    "ghcr.io/jsburckhardt/devcontainer-features/opencode:1": {},
     "ghcr.io/devcontainers/features/python:1": {
       "version": "3.11",
       "installPipenv": "true"
@@ -51,7 +50,7 @@
         "dbaeumer.vscode-eslint"
       ],
       "settings": {
-        "sonarlint.ls.javaHome": "/usr/local/sdkman/candidates/java/21.0.10-ms",
+        "sonarlint.ls.javaHome": "/usr/local/sdkman/candidates/java/21.0.11-ms",
         "python.defaultInterpreterPath": "/home/vscode/.local/share/openlinktoken/.venv/bin/python",
         "python.terminal.activateEnvironment": true
       }

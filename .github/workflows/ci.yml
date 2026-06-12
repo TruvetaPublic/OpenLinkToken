@@ -87,7 +87,7 @@ jobs:
       packages: write
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v4
 
@@ -100,7 +100,7 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          uv pip install --system -r lib/python/openlinktoken/requirements.txt pytest pytest-cov ruff -e lib/python/openlinktoken/
+          uv pip install --break-system-packages --system -r lib/python/openlinktoken/requirements.txt pytest pytest-cov ruff -e lib/python/openlinktoken/
 
       - name: Lint with ruff
         run: |
@@ -156,7 +156,7 @@ jobs:
       packages: write
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v4
 
@@ -169,7 +169,7 @@ jobs:
 
       - name: Install Python CLI dependencies
         run: |
-          uv pip install --system -r lib/python/openlinktoken/requirements.txt -e lib/python/openlinktoken/ -r lib/python/openlinktoken-cli/requirements.txt pytest pytest-cov ruff -e lib/python/openlinktoken-cli/
+          uv pip install --break-system-packages --system -r lib/python/openlinktoken/requirements.txt -e lib/python/openlinktoken/ -r lib/python/openlinktoken-cli/requirements.txt pytest pytest-cov ruff -e lib/python/openlinktoken-cli/
 
       - name: Lint CLI with ruff
         run: |
@@ -245,8 +245,20 @@ jobs:
       packages: write
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
         spark-version: ["3.4", "3.5", "4.0", "4.1"]
+        exclude:
+           # Python 3.13/3.14 have no compatible wheels for pyarrow <22 or pandas <2.2.
+            # Spark 3.4 needs pyarrow 15.0.0 + pandas 2.1.4 (Python ≤3.12 only)
+            # Spark 3.5 needs pyarrow 19.0.0 + pandas 2.2.3 (Python ≤3.12 only)
+           - python-version: "3.13"
+              spark-version: "3.4"
+           - python-version: "3.13"
+              spark-version: "3.5"
+           - python-version: "3.14"
+              spark-version: "3.4"
+           - python-version: "3.14"
+              spark-version: "3.5"
     steps:
       - uses: actions/checkout@v4
 
@@ -261,25 +273,25 @@ jobs:
 
       - name: Install Open Link Token core library
         run: |
-          uv pip install --system -r lib/python/openlinktoken/requirements.txt -e lib/python/openlinktoken/
+          uv pip install --break-system-packages --system -r lib/python/openlinktoken/requirements.txt -e lib/python/openlinktoken/
 
       - name: Install PySpark bridge dependencies (Spark ${{ matrix.spark-version }})
         run: |
-          uv pip install --system pytest pytest-cov ruff
+          uv pip install --break-system-packages --system pytest pytest-cov ruff
           if [ "${{ matrix.spark-version }}" = "4.0" ]; then
-            uv pip install --system -e "lib/python/openlinktoken-pyspark[spark40]"
+            uv pip install --break-system-packages --system -e "lib/python/openlinktoken-pyspark[spark40]"
           elif [ "${{ matrix.spark-version }}" = "4.1" ]; then
-            uv pip install --system -e "lib/python/openlinktoken-pyspark[spark41]"
+            uv pip install --break-system-packages --system -e "lib/python/openlinktoken-pyspark[spark41]"
           elif [ "${{ matrix.spark-version }}" = "3.4" ]; then
-            uv pip install --system -e "lib/python/openlinktoken-pyspark[spark34]"
+            uv pip install --break-system-packages --system -e "lib/python/openlinktoken-pyspark[spark34]"
           elif [ "${{ matrix.spark-version }}" = "3.5" ]; then
-            uv pip install --system -e "lib/python/openlinktoken-pyspark[spark35]"
+            uv pip install --break-system-packages --system -e "lib/python/openlinktoken-pyspark[spark35]"
           else
             echo "Unsupported Spark version for PySpark bridge: '${{ matrix.spark-version }}'."
             echo "Please update .github/workflows/ci.yml to handle this Spark version."
             exit 1
           fi
-          uv pip install --system -r lib/python/openlinktoken-pyspark/dev-requirements.txt
+          uv pip install --break-system-packages --system -r lib/python/openlinktoken-pyspark/dev-requirements.txt
 
       - name: Lint with ruff
         run: |
@@ -522,13 +534,13 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          uv pip install --system -e lib/python/openlinktoken -e lib/python/openlinktoken-cli -e "lib/python/openlinktoken-pyspark[spark40]"
+          uv pip install --break-system-packages --system -e lib/python/openlinktoken -e lib/python/openlinktoken-cli -e "lib/python/openlinktoken-pyspark[spark40]"
 
       - name: Install interoperability tool dependencies
         run: |
           cd tools
           if [ -f requirements.txt ]; then
-            uv pip install --system -r requirements.txt
+            uv pip install --break-system-packages --system -r requirements.txt
           fi
 
       - name: Run interoperability tests

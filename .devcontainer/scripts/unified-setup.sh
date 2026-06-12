@@ -125,7 +125,7 @@ step_install_packages() {
   uv sync --all-packages --dev
 
   echo "→ Installing default PySpark bridge runtime (Spark 4.0)"
-  uv pip install -e "lib/python/openlinktoken-pyspark[spark40]"
+  uv pip install --break-system-packages -e "lib/python/openlinktoken-pyspark[spark40]"
 }
 
 step_activate_shell_init() {
@@ -176,7 +176,7 @@ step_install_rtk() {
 
 step_install_apm_cli() {
   echo "→ Installing apm CLI"
-  uv pip install apm-cli
+  uv pip install --break-system-packages apm-cli
 }
 
 step_setup_apm() {

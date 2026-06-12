@@ -2,4 +2,4 @@
 cryptography==46.0.7
 
 # JOSE/JWE for match token format
-jwcrypto>=1.5.6
+jwcrypto==1.5.7

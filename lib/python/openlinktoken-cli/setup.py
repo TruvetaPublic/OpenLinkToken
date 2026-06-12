@@ -13,7 +13,7 @@ try:
     with open(readme_path, encoding="utf-8") as f:
         long_description = f.read()
 except FileNotFoundError:
-    # Fallback to a short description if README is unavailable
+      # Fallback to a short description if README is unavailable
     long_description = "Open Link Token CLI - Command line interface for record linkage."
 
 # Read requirements from requirements.txt
@@ -31,16 +31,16 @@ setup(
     project_urls={
         "Source": "https://github.com/TruvetaPublic/OpenLinkToken",
         "Documentation": "https://github.com/TruvetaPublic/OpenLinkToken/blob/main/README.md",
-    },
+     },
     package_dir={"": "src/main"},
     packages=find_packages(where="src/main"),
     python_requires=">=3.10",
     install_requires=requirements,
     extras_require={
-        "dev": [
-            "pytest",
-            "pytest-cov",
-        ],
-        "test": ["pytest"],
-    },
+         "dev": [
+             "pytest==9.0.3",
+             "pytest-cov==7.1.0",
+         ],
+         "test": ["pytest==9.0.3"],
+     },
 )
