@@ -13,4 +13,4 @@ cryptography==46.0.7
 jwcrypto==1.5.7
 
 # Semantic version comparison (used by version checker and update command)
-packaging==21.0
+packaging==26.1
