@@ -1,5 +1,5 @@
 ARG JAVA_VERSION=21
-FROM mcr.microsoft.com/devcontainers/java:1-${JAVA_VERSION}-bookworm
+FROM mcr.microsoft.com/devcontainers/java:3-${JAVA_VERSION}-trixie
 
 # Fix Yarn repository GPG key issue - remove the Yarn repo to prevent feature installation failures
 # The Yarn InRelease file is signed with key 62D54FD4003F6525 which is no longer in their pubkey.gpg
@@ -11,7 +11,7 @@ COPY .devcontainer/scripts/detect_zscaler.sh /tmp/
 # Copy host-provided certificate if it exists (will be skipped if file doesn't exist)
 COPY .devcontainer/scripts/zscaler_root.pem* /tmp/host_zscaler_cert.pem
 
-RUN apt-get update && apt-get install -y ca-certificates openssl python3 libpython3.11 curl && \
+RUN apt-get update && apt-get install -y ca-certificates openssl curl git-lfs && \
     # Make the script executable and run it
     chmod +x /tmp/detect_zscaler.sh && \
     /tmp/detect_zscaler.sh && \
