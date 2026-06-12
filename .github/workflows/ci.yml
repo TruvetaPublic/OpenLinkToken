@@ -248,17 +248,17 @@ jobs:
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
         spark-version: ["3.4", "3.5", "4.0", "4.1"]
         exclude:
-           # Python 3.13/3.14 have no compatible wheels for pyarrow <22 or pandas <2.2.
-            # Spark 3.4 needs pyarrow 15.0.0 + pandas 2.1.4 (Python ≤3.12 only)
-            # Spark 3.5 needs pyarrow 19.0.0 + pandas 2.2.3 (Python ≤3.12 only)
-           - python-version: "3.13"
-              spark-version: "3.4"
-           - python-version: "3.13"
-              spark-version: "3.5"
-           - python-version: "3.14"
-              spark-version: "3.4"
-           - python-version: "3.14"
-              spark-version: "3.5"
+          # PySpark 3.4.x and 3.5.x do not support Python 3.13+ (pyspark itself has no 3.13/3.14 wheels).
+          # Spark 3.4 uses pyarrow 24.0.0 + pandas 2.2.3 (Python ≤3.12 only due to pyspark constraint)
+          # Spark 3.5 uses pyarrow 24.0.0 + pandas 2.2.3 (Python ≤3.12 only due to pyspark constraint)
+          - python-version: "3.13"
+            spark-version: "3.4"
+          - python-version: "3.13"
+            spark-version: "3.5"
+          - python-version: "3.14"
+            spark-version: "3.4"
+          - python-version: "3.14"
+            spark-version: "3.5"
     steps:
       - uses: actions/checkout@v4
 
