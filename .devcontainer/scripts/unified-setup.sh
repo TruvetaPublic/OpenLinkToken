@@ -195,24 +195,6 @@ step_setup_apm() {
     echo "→ Running apm install"
     cd "$REPO_ROOT"
     apm install --target copilot || echo "⚠ Warning: apm install failed (continuing anyway)"
-
-    # Update .gitignore with apm-installed paths
-    GITIGNORE="$REPO_ROOT/.gitignore"
-    if [ -f "$GITIGNORE" ]; then
-      echo "→ Updating .gitignore with apm-installed paths"
-      ADDED=0
-      while IFS= read -r entry; do
-        if ! grep -qxF "$entry" "$GITIGNORE"; then
-          if [ "$ADDED" -eq 0 ]; then
-            echo "" >> "$GITIGNORE"
-            echo "# Added by apm install" >> "$GITIGNORE"
-            ADDED=1
-          fi
-          echo "$entry" >> "$GITIGNORE"
-          echo "  Added to .gitignore: $entry"
-        fi
-      done < <(git -C "$REPO_ROOT" ls-files --others --directory --exclude-standard .github/skills/ .github/prompts/ 2>/dev/null || true)
-    fi
   fi
 }
 
