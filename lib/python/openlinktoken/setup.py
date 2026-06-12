@@ -13,7 +13,7 @@ try:
     with open(readme_path, encoding="utf-8") as f:
         long_description = f.read()
 except FileNotFoundError:
-    # Fallback to a short description if README is unavailable
+     # Fallback to a short description if README is unavailable
     long_description = "Open Link Token Python implementation for record linkage."
 
 # Read requirements from requirements.txt
@@ -38,9 +38,9 @@ setup(
     install_requires=requirements,
     extras_require={
         "dev": [
-            "cryptography",
-            "pycryptodome",
+            "cryptography==46.0.7",
+            "pycryptodome==3.23.0",
         ],
-        "test": ["pytest"],
+        "test": ["pytest==9.0.3"],
     },
 )
