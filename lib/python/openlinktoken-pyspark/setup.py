@@ -13,14 +13,14 @@ try:
     with open(readme_path, encoding="utf-8") as f:
         long_description = f.read()
 except FileNotFoundError:
-       # Fallback to a short description if README is unavailable
+    # Fallback to a short description if README is unavailable
     long_description = "Open Link Token PySpark bridge for distributed token generation."
 
 # Core dependencies (version-agnostic, no PySpark)
 core_requirements = [
-     "openlinktoken==2.0.0-alpha",
-     "pycryptodome==3.23.0",
-     "jwcrypto==1.5.7",
+    "openlinktoken==2.0.0-alpha",
+    "pycryptodome==3.23.0",
+    "jwcrypto==1.5.7",
 ]
 
 setup(
@@ -32,48 +32,46 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/TruvetaPublic/OpenLinkToken",
     project_urls={
-         "Source": "https://github.com/TruvetaPublic/OpenLinkToken",
-         "Documentation": "https://github.com/TruvetaPublic/OpenLinkToken/blob/main/README.md",
-     },
+        "Source": "https://github.com/TruvetaPublic/OpenLinkToken",
+        "Documentation": "https://github.com/TruvetaPublic/OpenLinkToken/blob/main/README.md",
+    },
     package_dir={"": "src/main"},
     packages=find_packages(where="src/main"),
     python_requires=">=3.10",
     install_requires=core_requirements,
     extras_require={
-         # Spark 4.1.x - Latest for Java 21
-         # Note: PySpark 4.1+ requires pandas 2.0+
-         "spark41": [
-             "pyspark>=4.1.0,<4.2",
-             "pyarrow==24.0.0",
-             "pandas==3.0.3",
-         ],
-         # Spark 4.0.x - Recommended for Java 21
-         # Note: PySpark 4.0+ requires pandas 2.0+
-         "spark40": [
-             "pyspark>=4.0.1,<4.1",
-             "pyarrow==24.0.0",
-             "pandas==3.0.3",
-         ],
-         # Spark 3.5.x - For Java 8-17 (NOT compatible with Java 21)
-         "spark35": [
-             "pyspark>=3.5.0,<3.6",
-             "pyarrow>=15.0.0,<25",
-             "pandas>=1.5,<3",
-         ],
-         # Spark 3.4.x - Legacy support
-         "spark34": [
-             "pyspark>=3.4.0,<3.5",
-             "pyarrow>=10.0.0,<20",
-             "pandas>=1.5,<3",
-         ],
-         # Development dependencies
-         "dev": [
-             "pytest==9.0.3",
-             "pytest-cov==7.1.0",
-             "flake8==7.3.0",
-             "jupyter==1.1.1",
-             "notebook==7.5.7",
-             "ipykernel==7.3.0",
-         ],
-     },
+        # Spark 4.1.x - Latest for Java 21
+        "spark41": [
+            "pyspark==4.1.0",
+            "pyarrow==24.0.0",
+            "pandas==3.0.3",
+        ],
+        # Spark 4.0.x - Recommended for Java 21
+        "spark40": [
+            "pyspark==4.0.1",
+            "pyarrow==24.0.0",
+            "pandas==3.0.3",
+        ],
+        # Spark 3.5.x - For Java 8-17 (NOT compatible with Java 21)
+        "spark35": [
+            "pyspark==3.5.5",
+            "pyarrow==19.0.0",
+            "pandas==2.2.3",
+        ],
+        # Spark 3.4.x - Legacy support
+        "spark34": [
+            "pyspark==3.4.4",
+            "pyarrow==15.0.0",
+            "pandas==2.1.5",
+        ],
+        # Development dependencies
+        "dev": [
+            "pytest==9.0.3",
+            "pytest-cov==7.1.0",
+            "flake8==7.3.0",
+            "jupyter==1.1.1",
+            "notebook==7.5.7",
+            "ipykernel==7.3.0",
+        ],
+    },
 )
