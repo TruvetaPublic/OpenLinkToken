@@ -2,7 +2,7 @@
 openlinktoken==2.0.0-alpha
 
 # Data processing for I/O formats
-pandas==3.0.3
+pandas==2.2.3
 pyarrow==24.0.0
 csv2parquet==0.0.9
 

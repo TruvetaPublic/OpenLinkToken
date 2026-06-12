@@ -44,13 +44,13 @@ setup(
         "spark41": [
             "pyspark==4.1.0",
             "pyarrow==24.0.0",
-            "pandas==3.0.3",
+            "pandas==2.2.3",
         ],
         # Spark 4.0.x - Recommended for Java 21
         "spark40": [
             "pyspark==4.0.1",
             "pyarrow==24.0.0",
-            "pandas==3.0.3",
+            "pandas==2.2.3",
         ],
         # Spark 3.5.x - For Java 8-17 (NOT compatible with Java 21)
         "spark35": [
