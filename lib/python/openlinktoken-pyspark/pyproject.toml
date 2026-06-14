@@ -41,6 +41,14 @@ conflicts = [
     { extra = "spark40" },
     { extra = "spark41" },
   ],
+  [
+    { package = "openlinktoken-cli" },
+    { extra = "spark34" },
+  ],
+  [
+    { package = "openlinktoken-cli" },
+    { extra = "spark35" },
+  ],
 ]
 
 [tool.pytest.ini_options]
