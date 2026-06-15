@@ -11,6 +11,7 @@ from opentoken.attributes.general.record_id_attribute import RecordIdAttribute
 from opentoken_cli.io.person_attributes_reader import PersonAttributesReader
 from opentoken_cli.io.person_attributes_writer import PersonAttributesWriter
 from opentoken_cli.processor.token_constants import TokenConstants
+from opentoken.tokens.base_token_definition import BaseTokenDefinition
 from opentoken.tokens.token_definition import TokenDefinition
 from opentoken.tokens.token_generator import TokenGenerator
 from opentoken.tokens.token_generator_result import TokenGeneratorResult
@@ -41,7 +42,8 @@ class PersonAttributesProcessor:
     def process(reader: PersonAttributesReader,
                 writer: PersonAttributesWriter,
                 token_transformer_list: List[TokenTransformer],
-                metadata_map: Dict[str, Any] = None) -> None:
+                metadata_map: Dict[str, Any] = None,
+                token_definition: BaseTokenDefinition = None) -> None:
         """
         Read person attributes from the input data source, generate tokens, and
         write the result back to the output data source. The tokens can be optionally
@@ -52,9 +54,10 @@ class PersonAttributesProcessor:
             writer: The writer initialized with the output data source.
             token_transformer_list: A list of token transformers.
             metadata_map: Optional metadata map to update with processing statistics.
+            token_definition: Optional custom token definition. Defaults to the standard TokenDefinition.
         """
-        # TokenGenerator code
-        token_definition = TokenDefinition()
+        if token_definition is None:
+            token_definition = TokenDefinition()
         token_generator = TokenGenerator.from_transformers(token_definition, token_transformer_list)
 
         row_counter = 0

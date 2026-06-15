@@ -7,6 +7,7 @@ import sys
 from typing import List
 
 from opentoken_cli.command_line_arguments import CommandLineArguments
+from opentoken_cli.io.csv.configured_person_attributes_csv_reader import ConfiguredPersonAttributesCSVReader
 from opentoken_cli.io.csv.person_attributes_csv_reader import PersonAttributesCSVReader
 from opentoken_cli.io.csv.person_attributes_csv_writer import PersonAttributesCSVWriter
 from opentoken_cli.io.csv.token_csv_reader import TokenCSVReader
@@ -23,6 +24,9 @@ from opentoken.tokentransformer.decrypt_token_transformer import DecryptTokenTra
 from opentoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
 from opentoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 from opentoken.tokentransformer.token_transformer import TokenTransformer
+from opentoken.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
+from opentoken.tokens.config.dynamic_token_definition import DynamicTokenDefinition
+from opentoken.tokens.config.tokenization_config_loader import TokenizationConfigLoader
 
 
 # Set up logging
@@ -44,9 +48,11 @@ def main():
     output_type = command_line_arguments.output_type if command_line_arguments.output_type else input_type
     decrypt_mode = command_line_arguments.decrypt
     hash_only_mode = command_line_arguments.hash_only
+    config_path = command_line_arguments.config_path
 
     logger.info(f"Decrypt Mode: {decrypt_mode}")
     logger.info(f"Hash-Only Mode: {hash_only_mode}")
+    logger.info(f"Config Path: {config_path}")
     logger.info(f"Hashing Secret: {_mask_string(hashing_secret)}")
     logger.info(f"Encryption Key: {_mask_string(encryption_key)}")
     logger.info(f"Input Path: {input_path}")
@@ -83,13 +89,16 @@ def main():
             logger.error("Encryption key must be specified (or use --hash-only to skip encryption)")
             return
 
-        _process_tokens(input_path, output_path, input_type, output_type, hashing_secret, encryption_key, hash_only_mode)
+        _process_tokens(input_path, output_path, input_type, output_type, hashing_secret, encryption_key, hash_only_mode, config_path)
 
 
-def _create_person_attributes_reader(input_path: str, input_type: str):
-    """Create a PersonAttributesReader based on input type."""
+def _create_person_attributes_reader(input_path: str, input_type: str,
+                                      config=None, factory=None):
+    """Create a PersonAttributesReader based on input type and optional config."""
     input_type_lower = input_type.lower()
     if input_type_lower == CommandLineArguments.TYPE_CSV:
+        if config is not None and factory is not None:
+            return ConfiguredPersonAttributesCSVReader(input_path, config, factory)
         return PersonAttributesCSVReader(input_path)
     elif input_type_lower == CommandLineArguments.TYPE_PARQUET:
         return PersonAttributesParquetReader(input_path)
@@ -146,7 +155,8 @@ def _mask_string(input_str: str) -> str:
 
 
 def _process_tokens(input_path: str, output_path: str, input_type: str, output_type: str,
-                    hashing_secret: str, encryption_key: str, hash_only_mode: bool):
+                    hashing_secret: str, encryption_key: str, hash_only_mode: bool,
+                    config_path: str = None):
     """
     Process tokens from person attributes and write to output file.
     
@@ -158,6 +168,7 @@ def _process_tokens(input_path: str, output_path: str, input_type: str, output_t
         hashing_secret: Secret for hashing tokens.
         encryption_key: Key for encrypting tokens (not used in hash-only mode).
         hash_only_mode: If True, skip encryption step.
+        config_path: Optional path to a YAML tokenization configuration file.
     """
     token_transformer_list: List[TokenTransformer] = []
     try:
@@ -172,7 +183,16 @@ def _process_tokens(input_path: str, output_path: str, input_type: str, output_t
         return
 
     try:
-        with _create_person_attributes_reader(input_path, input_type) as reader, \
+        # Load config once if provided, then reuse for both reader and token definition
+        config = None
+        factory = None
+        token_definition = None
+        if config_path:
+            config = TokenizationConfigLoader.load(config_path)
+            factory = DynamicAttributeFactory(config)
+            token_definition = DynamicTokenDefinition(config, factory)
+
+        with _create_person_attributes_reader(input_path, input_type, config, factory) as reader, \
              _create_person_attributes_writer(output_path, output_type) as writer:
 
             # Create initial metadata with system information
@@ -187,7 +207,7 @@ def _process_tokens(input_path: str, output_path: str, input_type: str, output_t
                 metadata.add_hashed_secret(Metadata.ENCRYPTION_SECRET_HASH, encryption_key)
 
             # Process data and get updated metadata
-            PersonAttributesProcessor.process(reader, writer, token_transformer_list, metadata_map)
+            PersonAttributesProcessor.process(reader, writer, token_transformer_list, metadata_map, token_definition)
 
             # Write the metadata to file
             metadata_writer = MetadataJsonWriter(output_path)

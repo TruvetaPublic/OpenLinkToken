@@ -17,6 +17,7 @@ from opentoken_cli.processor.person_attributes_processor import PersonAttributes
 from opentoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 from opentoken.tokentransformer.token_transformer import TokenTransformer
 from opentoken.metadata import Metadata
+from opentoken.tokens.base_token_definition import BaseTokenDefinition
 
 
 class TestPersonAttributesProcessor:
@@ -225,3 +226,31 @@ class TestPersonAttributesProcessor:
 
         # And new entries are added
         assert "TotalRows" in metadata_map, "Metadata should contain totalRows key"
+
+    def test_process_uses_custom_token_definition_when_provided(self):
+        """Uses the caller-provided token definition instead of the default TokenDefinition."""
+        token_transformer_list = [Mock(spec=HashTokenTransformer)]
+        custom_definition = Mock(spec=BaseTokenDefinition)
+        custom_definition.get_token_identifiers.return_value = set()
+
+        data = {
+            RecordIdAttribute: "TestRecordId",
+            FirstNameAttribute: "John",
+            LastNameAttribute: "Spencer"
+        }
+
+        reader = Mock(spec=PersonAttributesReader)
+        writer = Mock(spec=PersonAttributesWriter)
+        reader.__iter__ = Mock(return_value=iter([data]))
+
+        metadata_map = Metadata().initialize()
+
+        PersonAttributesProcessor.process(
+            reader,
+            writer,
+            token_transformer_list,
+            metadata_map,
+            token_definition=custom_definition,
+        )
+
+        assert custom_definition.get_token_identifiers.called

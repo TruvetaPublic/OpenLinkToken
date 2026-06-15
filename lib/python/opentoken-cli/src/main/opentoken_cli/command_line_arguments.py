@@ -22,6 +22,7 @@ class CommandLineArguments:
         self.output_type: str = ""
         self.decrypt: bool = False
         self.hash_only: bool = False
+        self.config_path: Optional[str] = None
 
     @classmethod
     def parse_args(cls, args: Optional[list] = None) -> 'CommandLineArguments':
@@ -102,6 +103,14 @@ class CommandLineArguments:
             default=False
         )
 
+        parser.add_argument(
+            "-c", "--config",
+            dest="config_path",
+            help="Path to a YAML tokenization configuration file for custom column mappings and token rules.",
+            required=False,
+            default=None
+        )
+
         parsed_args = parser.parse_args(args)
 
         # Create instance and populate with parsed values
@@ -114,6 +123,7 @@ class CommandLineArguments:
         instance.output_type = parsed_args.output_type
         instance.decrypt = parsed_args.decrypt
         instance.hash_only = parsed_args.hash_only
+        instance.config_path = parsed_args.config_path
 
         return instance
 
