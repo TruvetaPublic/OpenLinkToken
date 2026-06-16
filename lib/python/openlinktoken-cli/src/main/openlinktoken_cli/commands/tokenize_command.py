@@ -58,94 +58,104 @@ class TokenizeCommand:
     def register_subcommand(subparsers):
         """Register the tokenize subcommand with the argument parser."""
         parser = subparsers.add_parser(
-            "tokenize",
+             "tokenize",
             help="Generate tokens from person attributes (--mode default|hash-only|demo)",
             description=(
-                "Generate tokens from person attributes.\n\n"
-                "Default mode (--mode default or omitted): tokens are HMAC-SHA256 hashed "
-                "using the exchange config.\n"
-                "Hash-only mode (--mode hash-only): tokens are SHA-256 hashed (no HMAC, no secret). "
-                "Output is deterministic and NOT suitable for production or cross-organisation exchange.\n"
-                "Demo mode (--mode demo): tokens are plain attribute signature strings; no secret needed."
-            ),
+                 "Generate tokens from person attributes.\n\n"
+                 "Default mode (--mode default or omitted): tokens are HMAC-SHA256 hashed "
+                 "using the exchange config.\n"
+                 "Hash-only mode (--mode hash-only): tokens are SHA-256 hashed (no HMAC, no secret). "
+                 "Output is deterministic and NOT suitable for production or cross-organisation exchange.\n"
+                 "Demo mode (--mode demo): tokens are plain attribute signature strings; no secret needed."
+             ),
             add_help=False,
-        )
+         )
 
-        # Manually add --help (without -h short form)
+         # Manually add --help (without -h short form)
         parser.add_argument(
-            "--help",
+             "--help",
             action="help",
             help="Show this help message and exit",
-        )
+         )
 
         parser.add_argument(
-            "-i",
-            "--input",
+             "-i",
+             "--input",
             required=True,
             dest="input_path",
             help="Input file path",
-        )
+         )
 
         parser.add_argument(
-            "-o",
-            "--output",
+             "-o",
+             "--output",
             required=False,
             dest="output_path",
             help="Output file path (defaults to input filename with '_tokenized' suffix)",
-        )
+         )
 
         parser.add_argument(
-            "--mode",
+             "--mode",
             choices=[TokenizeCommand._MODE_DEFAULT, TokenizeCommand._MODE_HASH_ONLY, TokenizeCommand._MODE_DEMO],
             default=TokenizeCommand._MODE_DEFAULT,
             dest="mode",
             help=(
-                "Tokenization mode: 'default' uses SHA-256 + HMAC-SHA256 with the exchange config; "
-                "'hash-only' uses deterministic SHA-256 only with no exchange config or secret; "
-                "'demo' outputs raw pipe-separated attribute signature strings."
-            ),
-        )
+                 "Tokenization mode: 'default' uses SHA-256 + HMAC-SHA256 with the exchange config; "
+                 "'hash-only' uses deterministic SHA-256 only with no exchange config or secret; "
+                 "'demo' outputs raw pipe-separated attribute signature strings."
+             ),
+         )
 
         parser.add_argument(
-            "--exchange-config",
+             "--exchange-config",
             required=False,
             dest="exchange_config",
             metavar="PATH",
             help="Path to the exchange config JSON (default: ./openlinktoken-YYYY-MM-DD.exchange.json)",
-        )
+         )
 
         private_key_group = parser.add_mutually_exclusive_group(required=False)
         private_key_group.add_argument(
-            "--private-key",
+             "--private-key",
             dest="private_key",
             metavar="PATH",
             help="Path to the private key PEM used to decrypt the exchange config",
-        )
+         )
         private_key_group.add_argument(
-            "--private-key-env",
+             "--private-key-env",
             dest="private_key_env",
             metavar="ENV_VAR",
             help="Read the private key PEM from the named environment variable",
-        )
+         )
 
         parser.add_argument(
-            "--hash-record-ids",
+             "--hash-record-ids",
             action="store_true",
             default=False,
             dest="hash_record_ids",
             help=(
-                "Hash input RecordId values using SHA-256 before writing to output. "
-                "The hashed value (not the original) appears in the output file. "
-                "This is a one-way operation with no traceability. "
-                "Supported in default tokenize mode only."
-            ),
-        )
+                 "Hash input RecordId values using SHA-256 before writing to output. "
+                 "The hashed value (not the original) appears in the output file. "
+                 "This is a one-way operation with no traceability. "
+                 "Supported in default tokenize mode only."
+             ),
+         )
+
+        # --no-progress / -q: suppress interactive progress indicator
+        parser.add_argument(
+             "--no-progress",
+             "-q",
+            action="store_true",
+            default=False,
+            dest="no_progress",
+            help="Suppress interactive progress indicator (e.g. for non-interactive / CI environments)",
+         )
 
         parser.set_defaults(func=TokenizeCommand.execute)
 
     @staticmethod
     def execute(args):
-        """Execute the tokenize command."""
+         """Execute the tokenize command."""
         mode = getattr(args, "mode", TokenizeCommand._MODE_DEFAULT)
         hash_record_ids = getattr(args, "hash_record_ids", False)
 
@@ -154,7 +164,7 @@ class TokenizeCommand:
             logger.error("Unable to auto-detect input type. Supported input formats: csv, parquet")
             return 1
 
-        # Resolve output path if not provided
+         # Resolve output path if not provided
         output_path = args.output_path if args.output_path else get_auto_output_path(args.input_path, "tokenize")
 
         output_type = FileTypeDetector.detect_output_type(output_path)
@@ -182,27 +192,36 @@ class TokenizeCommand:
             logger.error("--mode hash-only cannot be combined with --private-key or --private-key-env.")
             return 1
 
-        reporter = CliRunReporter("tokenize")
+        reporter = CliRunReporter("tokenize", no_progress=args.no_progress)
         try:
             with reporter:
                 try:
                     if mode == TokenizeCommand._MODE_DEMO:
                         logger.warning(
-                            "Running in DEMO MODE - tokens are raw attribute signature strings with no hashing. "
-                            "Do not use demo-mode output in production or share it externally."
-                        )
+                             "Running in DEMO MODE - tokens are raw attribute signature strings with no hashing. "
+                             "Do not use demo-mode output in production or share it externally."
+                         )
                     elif mode == TokenizeCommand._MODE_HASH_ONLY:
                         logger.warning(
-                            "Running in HASH-ONLY MODE - output tokens are deterministic SHA-256 hashes "
-                            "without HMAC. Do not use hash-only output for production or "
-                            "cross-organisation exchange."
-                        )
+                             "Running in HASH-ONLY MODE - output tokens are deterministic SHA-256 hashes "
+                             "without HMAC. Do not use hash-only output for production or "
+                             "cross-organisation exchange."
+                         )
                     else:
                         logger.info("Running tokenize command (default mode)")
                     logger.info(f"Input: {args.input_path} ({input_type})")
                     logger.info(f"Output: {output_path} ({output_type})")
                     if hash_record_ids:
                         logger.info("Record ID hashing enabled: RecordIds will be SHA-256 hashed in output")
+
+                     # Determine total rows up front for Parquet readers
+                    total_rows: int | None = None
+                    if input_type == FileTypeDetector.TYPE_PARQUET:
+                        try:
+                            import pyarrow.parquet as pq
+                            total_rows = len(pq.ParquetFile(args.input_path))
+                        except Exception:
+                            total_rows = None
 
                     if mode == TokenizeCommand._MODE_DEMO:
                         reporter.update_status("Tokenizing records")
@@ -212,7 +231,8 @@ class TokenizeCommand:
                             input_type,
                             output_type,
                             progress_callback=reporter.make_progress_callback("Tokenizing records", "records"),
-                        )
+                            total_rows=total_rows,
+                         )
                     elif mode == TokenizeCommand._MODE_HASH_ONLY:
                         reporter.update_status("Tokenizing records")
                         summary, metadata_path = TokenizeCommand._process_tokens_hash_only(
@@ -222,14 +242,15 @@ class TokenizeCommand:
                             output_type,
                             hash_record_ids,
                             progress_callback=reporter.make_progress_callback("Tokenizing records", "records"),
-                        )
+                            total_rows=total_rows,
+                         )
                     else:
                         reporter.update_status("Resolving exchange config")
                         exchange = resolve_exchange_config(
                             args.exchange_config,
                             private_key_path=args.private_key,
                             private_key_env=args.private_key_env,
-                        )
+                         )
                         logger.info(f"Exchange config: {exchange.path}")
                         reporter.update_status("Tokenizing records")
                         summary, metadata_path = TokenizeCommand._process_tokens(
@@ -240,21 +261,25 @@ class TokenizeCommand:
                             exchange.hashing_secret,
                             hash_record_ids,
                             progress_callback=reporter.make_progress_callback("Tokenizing records", "records"),
-                        )
+                            total_rows=total_rows,
+                         )
                     logger.info("Token generation completed successfully")
                 except Exception as error:
                     logger.error("Error during token generation: %s", error)
                     raise
-            reporter.finish_success(
-                "Tokenize complete",
+            reporter.set_total_rows(total_rows)
+             # Final progress flush
+            if total_rows is not None:
+             reporter.finish_success(
+                 "Tokenize complete",
                 TokenizeCommand._build_summary_lines(
                     output_path,
                     metadata_path,
                     summary,
                     mode,
                     hash_record_ids,
-                ),
-            )
+                 ),
+             )
             return 0
         except Exception as error:
             report = archive_cli_error(error, command_name="tokenize", existing_report=reporter.log_report)
@@ -271,12 +296,13 @@ class TokenizeCommand:
         hashing_secret: str | bytes,
         hash_record_ids: bool = False,
         progress_callback=None,
-    ) -> tuple[PersonAttributesProcessingSummary, str]:
-        """Process tokens in normal mode using SHA-256 + HMAC-SHA256."""
+        total_rows: int | None = None,
+     ) -> tuple[PersonAttributesProcessingSummary, str]:
+         """Process tokens in normal mode using SHA-256 + HMAC-SHA256."""
         token_transformer_list: List[TokenTransformer] = []
 
         try:
-            # Add only hash transformer (no encryption in tokenize mode)
+             # Add only hash transformer (no encryption in tokenize mode)
             token_transformer_list.append(HashTokenTransformer(hashing_secret))
         except Exception as e:
             raise RuntimeError("Failed to initialize transformer") from e
@@ -285,10 +311,10 @@ class TokenizeCommand:
             with (
                 TokenizeCommand._create_reader(input_path, input_type) as reader,
                 TokenizeCommand._create_writer(output_path, output_type) as writer,
-            ):
+             ):
                 metadata = Metadata()
                 metadata_map = metadata.initialize()
-                # Only record the hashing-secret hash in normal mode
+                 # Only record the hashing-secret hash in normal mode
                 metadata.add_hashed_secret(Metadata.HASHING_SECRET_HASH, hashing_secret)
 
                 summary = PersonAttributesProcessor.process(
@@ -298,7 +324,7 @@ class TokenizeCommand:
                     metadata_map,
                     hash_record_ids=hash_record_ids,
                     progress_callback=progress_callback,
-                )
+                 )
 
                 metadata_writer = MetadataJsonWriter(output_path)
                 metadata_writer.write(metadata_map)
@@ -315,25 +341,26 @@ class TokenizeCommand:
         output_type: str,
         hash_record_ids: bool = False,
         progress_callback=None,
-    ) -> tuple[PersonAttributesProcessingSummary, str]:
-        """Process tokens in hash-only mode using SHA-256 only (no HMAC, no secret)."""
+        total_rows: int | None = None,
+     ) -> tuple[PersonAttributesProcessingSummary, str]:
+         """Process tokens in hash-only mode using SHA-256 only (no HMAC, no secret)."""
         try:
             with (
                 TokenizeCommand._create_reader(input_path, input_type) as reader,
                 TokenizeCommand._create_writer(output_path, output_type) as writer,
-            ):
+             ):
                 metadata = Metadata()
                 metadata_map = metadata.initialize()
-                # Deliberately omit add_hashed_secret — no secret used in hash-only mode
+                 # Deliberately omit add_hashed_secret — no secret used in hash-only mode
 
                 summary = PersonAttributesProcessor.process(
                     reader,
                     writer,
-                    [],
+                     [],
                     metadata_map,
                     hash_record_ids=hash_record_ids,
                     progress_callback=progress_callback,
-                )
+                 )
 
                 metadata_writer = MetadataJsonWriter(output_path)
                 metadata_writer.write(metadata_map)
@@ -349,16 +376,17 @@ class TokenizeCommand:
         input_type: str,
         output_type: str,
         progress_callback=None,
-    ) -> tuple[PersonAttributesProcessingSummary, str]:
-        """Process tokens in demo mode using PassthroughTokenizer (no hashing)."""
+        total_rows: int | None = None,
+     ) -> tuple[PersonAttributesProcessingSummary, str]:
+         """Process tokens in demo mode using PassthroughTokenizer (no hashing)."""
         try:
             with (
                 TokenizeCommand._create_reader(input_path, input_type) as reader,
                 TokenizeCommand._create_writer(output_path, output_type) as writer,
-            ):
+             ):
                 metadata = Metadata()
                 metadata_map = metadata.initialize()
-                # Deliberately omit add_hashed_secret — no secret used in demo mode
+                 # Deliberately omit add_hashed_secret — no secret used in demo mode
 
                 summary = PersonAttributesProcessor.process_with_tokenizer(
                     reader,
@@ -366,7 +394,7 @@ class TokenizeCommand:
                     PassthroughTokenizer([]),
                     metadata_map,
                     progress_callback=progress_callback,
-                )
+                 )
 
                 metadata_writer = MetadataJsonWriter(output_path)
                 metadata_writer.write(metadata_map)
@@ -382,22 +410,22 @@ class TokenizeCommand:
         summary: PersonAttributesProcessingSummary,
         mode: str,
         hash_record_ids: bool,
-    ) -> list[str]:
+     ) -> list[str]:
         mode_labels = {
             TokenizeCommand._MODE_DEFAULT: "default HMAC-SHA256",
             TokenizeCommand._MODE_HASH_ONLY: "hash-only SHA-256",
             TokenizeCommand._MODE_DEMO: "demo plain signatures",
-        }
+         }
         lines = [
             f"Output: {output_path}",
             f"Metadata: {metadata_path}",
             f"Mode: {mode_labels.get(mode, mode)}",
             f"Rows processed: {summary.total_rows:,}",
             f"Rows with invalid attributes: {summary.total_rows_with_invalid_attributes:,}",
-        ]
+         ]
         lines.extend(
             CliRunReporter.summarize_count_lines("Top invalid attributes", summary.invalid_attributes_by_type, limit=3)
-        )
+         )
         lines.extend(CliRunReporter.summarize_count_lines("Blank tokens by rule", summary.blank_tokens_by_rule))
         if hash_record_ids:
             lines.append("Record ID hashing: enabled")
@@ -405,7 +433,7 @@ class TokenizeCommand:
 
     @staticmethod
     def _create_reader(path: str, file_type: str):
-        """Create a PersonAttributesReader based on file type."""
+         """Create a PersonAttributesReader based on file type."""
         file_type_lower = file_type.lower()
         if file_type_lower == FileTypeDetector.TYPE_CSV:
             return PersonAttributesCSVReader(path)
@@ -416,7 +444,7 @@ class TokenizeCommand:
 
     @staticmethod
     def _create_writer(path: str, file_type: str):
-        """Create a PersonAttributesWriter based on file type."""
+         """Create a PersonAttributesWriter based on file type."""
         file_type_lower = file_type.lower()
         if file_type_lower == FileTypeDetector.TYPE_CSV:
             return PersonAttributesCSVWriter(path)

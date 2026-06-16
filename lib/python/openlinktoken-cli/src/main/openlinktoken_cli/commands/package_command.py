@@ -111,6 +111,16 @@ class PackageCommand:
             ),
         )
 
+         # --no-progress / -q: suppress interactive progress indicator
+        parser.add_argument(
+              "--no-progress",
+              "-q",
+            action="store_true",
+            default=False,
+            dest="no_progress",
+            help="Suppress interactive progress indicator (e.g. for non-interactive / CI environments)",
+            )
+
         parser.set_defaults(func=PackageCommand.execute)
 
     @staticmethod
@@ -130,7 +140,7 @@ class PackageCommand:
             return 1
         ring_id = resolve_ring_id(args.ring_id)
         hash_record_ids = getattr(args, "hash_record_ids", False)
-        reporter = CliRunReporter("package")
+        reporter = CliRunReporter("package", no_progress=args.no_progress)
 
         try:
             with reporter:
@@ -152,6 +162,19 @@ class PackageCommand:
                     logger.info(f"Exchange config: {exchange.path}")
 
                     reporter.update_status("Packaging records")
+                    # Determine total rows for Parquet readers to enable %/ETA
+                    total_rows: int | None = None
+                    if input_type == FileTypeDetector.TYPE_PARQUET:
+                        try:
+                            import pyarrow.parquet as pq
+                            total_rows = len(pq.ParquetFile(args.input_path))
+                        except Exception:
+                            total_rows = None
+
+                    # Wire total_rows to reporter if known
+                    if total_rows is not None:
+                        reporter.set_total_rows(total_rows)
+
                     is_zip = output_type == FileTypeDetector.TYPE_ZIP
 
                     if is_zip:

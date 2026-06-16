@@ -33,75 +33,85 @@ class EncryptCommand:
     def register_subcommand(subparsers):
         """Register the encrypt subcommand with the argument parser."""
         parser = subparsers.add_parser(
-            "encrypt",
+              "encrypt",
             help="Encrypt hashed tokens using the exchange config",
             description="Encrypt hashed tokens using the exchange config",
             add_help=False,
-        )
+         )
 
-        # Manually add --help (without -h short form)
+          # Manually add --help (without -h short form)
         parser.add_argument(
-            "--help",
+               "--help",
             action="help",
             help="Show this help message and exit",
-        )
+         )
 
         parser.add_argument(
-            "-i",
-            "--input",
+              "-i",
+              "--input",
             required=True,
             dest="input_path",
             help="Input file path with hashed tokens",
-        )
+         )
 
         parser.add_argument(
-            "-o",
-            "--output",
+              "-o",
+              "--output",
             required=False,
             dest="output_path",
             help="Output file path for encrypted tokens (defaults to input filename with '_encrypted' suffix)",
-        )
+         )
 
         parser.add_argument(
-            "--exchange-config",
+              "--exchange-config",
             required=False,
             dest="exchange_config",
             metavar="PATH",
             help="Path to the exchange config JSON (default: ./openlinktoken-YYYY-MM-DD.exchange.json)",
-        )
+         )
 
         private_key_group = parser.add_mutually_exclusive_group(required=False)
         private_key_group.add_argument(
-            "--private-key",
+              "--private-key",
             dest="private_key",
             metavar="PATH",
             help="Path to the private key PEM used to decrypt the exchange config and derive the transport key",
-        )
+         )
         private_key_group.add_argument(
-            "--private-key-env",
+              "--private-key-env",
             dest="private_key_env",
             metavar="ENV_VAR",
             help="Read the private key PEM from the named environment variable",
-        )
+         )
 
         parser.add_argument(
-            "--ring-id",
+              "--ring-id",
             dest="ring_id",
             default=None,
             help="Ring identifier for key management. Defaults to a random UUID if not provided",
-        )
+         )
+
+          # --no-progress / -q: suppress interactive progress indicator
+        parser.add_argument(
+              "--no-progress",
+              "-q",
+            action="store_true",
+            default=False,
+            dest="no_progress",
+            help="Suppress interactive progress indicator (e.g. for non-interactive / CI environments)",
+         )
 
         parser.set_defaults(func=EncryptCommand.execute)
 
-    @staticmethod
+     @staticmethod
     def execute(args):
-        """Execute the encrypt command."""
+         """Execute the encrypt command."""
         input_type = FileTypeDetector.detect_input_type(args.input_path)
         if not input_type:
             logger.error("Unable to auto-detect input type. Supported input formats: csv, parquet")
             return 1
 
-        # Resolve output path if not provided
+          # Resolve output path if not provided
         output_path = args.output_path if args.output_path else get_auto_output_path(args.input_path, "encrypt")
 
         output_type = FileTypeDetector.detect_output_type(output_path)
@@ -109,7 +119,7 @@ class EncryptCommand:
             logger.error("Unable to auto-detect output type from provided/generated path.")
             return 1
         ring_id = resolve_ring_id(args.ring_id)
-        reporter = CliRunReporter("encrypt")
+        reporter = CliRunReporter("encrypt", no_progress=args.no_progress)
 
         try:
             with reporter:
@@ -124,7 +134,7 @@ class EncryptCommand:
                         args.exchange_config,
                         private_key_path=args.private_key,
                         private_key_env=args.private_key_env,
-                    )
+                       )
                     encryption_key = derive_transport_encryption_key(exchange)
                     logger.info(f"Exchange config: {exchange.path}")
 
@@ -134,10 +144,19 @@ class EncryptCommand:
                     if is_zip:
                         if not exchange.path:
                             raise ValueError(
-                                "ZIP output requires an exchange config file path. "
-                                "Ensure the exchange config was loaded from a file (exchange.path must not be None)."
-                            )
+                                  "ZIP output requires an exchange config file path. "
+                                  "Ensure the exchange config was loaded from a file (exchange.path must not be None)."
+                               )
                         logger.info("ZIP output: encrypted tokens and exchange config will be bundled")
+
+                       # Determine total rows for Parquet readers to enable %/ETA
+                    total_rows: int | None = None
+                    if input_type == FileTypeDetector.TYPE_PARQUET:
+                        try:
+                            import pyarrow.parquet as pq
+                            total_rows = len(pq.ParquetFile(input_path))
+                        except Exception:
+                            total_rows = None
 
                     with contextlib.ExitStack() as stack:
                         if is_zip:
@@ -149,6 +168,10 @@ class EncryptCommand:
                             token_output_path = output_path
                             token_output_type = output_type
 
+                          # Wire total_rows to reporter if known
+                        if total_rows is not None:
+                            reporter.set_total_rows(total_rows)
+
                         summary = EncryptCommand._encrypt_tokens(
                             args.input_path,
                             token_output_path,
@@ -157,7 +180,7 @@ class EncryptCommand:
                             encryption_key,
                             ring_id,
                             progress_callback=reporter.make_progress_callback("Encrypting tokens", "tokens"),
-                        )
+                         )
 
                         if is_zip:
                             bundle_into_zip(output_path, token_output_path, exchange.path)
@@ -173,7 +196,7 @@ class EncryptCommand:
             print(format_error_reference_message(report), file=sys.stderr)
             return 1
 
-    @staticmethod
+     @staticmethod
     def _encrypt_tokens(
         input_path: str,
         output_path: str,
@@ -182,8 +205,8 @@ class EncryptCommand:
         encryption_key: bytes,
         ring_id: str,
         progress_callback=None,
-    ) -> TokenTransformationSummary:
-        """Encrypt tokens from input file."""
+     ) -> TokenTransformationSummary:
+          """Encrypt tokens from input file."""
         try:
             encryptor = EncryptTokenTransformer(encryption_key)
             jwe_formatters: dict[str, JweMatchTokenFormatter] = {}
@@ -195,7 +218,7 @@ class EncryptCommand:
             with (
                 EncryptCommand._create_token_reader(input_path, input_type) as reader,
                 EncryptCommand._create_token_writer(output_path, output_type) as writer,
-            ):
+              ):
                 for row in reader:
                     row_counter += 1
 
@@ -209,14 +232,14 @@ class EncryptCommand:
                                 encryption_key,
                                 ring_id,
                                 jwe_formatters,
-                            )
+                               )
                             row[TokenConstants.TOKEN] = wrapped_token
                             encrypted_counter += 1
                         except Exception as e:
                             logger.error(
-                                f"Failed to encrypt token for RecordId {row.get(TokenConstants.RECORD_ID)}, "
-                                f"RuleId {row.get(TokenConstants.RULE_ID)}: {e}"
-                            )
+                                  f"Failed to encrypt token for RecordId {row.get(TokenConstants.RECORD_ID)}, "
+                                   f"RuleId {row.get(TokenConstants.RULE_ID)}: {e}"
+                               )
                             error_counter += 1
 
                     writer.write_token(row)
@@ -227,38 +250,41 @@ class EncryptCommand:
                         if progress_callback is not None:
                             progress_callback(row_counter)
 
-            logger.info(f"Processed a total of {row_counter:,} tokens")
-            logger.info(f"Successfully encrypted {encrypted_counter:,} tokens")
-            if error_counter > 0:
-                logger.warning(f"Failed to encrypt {error_counter:,} tokens")
-            if progress_callback is not None and row_counter != last_reported_count:
-                progress_callback(row_counter)
-            return TokenTransformationSummary(
-                total_tokens=row_counter,
-                transformed_tokens=encrypted_counter,
-                failed_tokens=error_counter,
-            )
+                  # Final flush
+                if progress_callback is not None and row_counter > 0:
+                    progress_callback(row_counter)
+
+                logger.info(f"Processed a total of {row_counter:,} tokens")
+                logger.info(f"Successfully encrypted {encrypted_counter:,} tokens")
+                if error_counter > 0:
+                    logger.warning(f"Failed to encrypt {error_counter:,} tokens")
+
+                return TokenTransformationSummary(
+                    total_tokens=row_counter,
+                    transformed_tokens=encrypted_counter,
+                    failed_tokens=error_counter,
+                  )
 
         except Exception:
             raise
 
-    @staticmethod
+     @staticmethod
     def _build_summary_lines(output_path: str, summary: TokenTransformationSummary) -> list[str]:
         return [
-            f"Output: {output_path}",
+             f"Output: {output_path}",
             f"Tokens processed: {summary.total_tokens:,}",
             f"Successfully encrypted: {summary.transformed_tokens:,}",
-            f"Failed to encrypt: {summary.failed_tokens:,}",
-        ]
+             f"Failed to encrypt: {summary.failed_tokens:,}",
+          ]
 
-    @staticmethod
+     @staticmethod
     def _wrap_as_v1_token(
         encrypted_token: str,
         row: dict,
         encryption_key: bytes,
         ring_id: str,
         jwe_formatters: dict[str, JweMatchTokenFormatter],
-    ) -> str:
+     ) -> str:
         rule_id = row.get(TokenConstants.RULE_ID)
         if not rule_id:
             return encrypted_token
@@ -270,9 +296,9 @@ class EncryptCommand:
 
         return formatter.transform(encrypted_token)
 
-    @staticmethod
+     @staticmethod
     def _create_token_reader(path: str, file_type: str):
-        """Create a TokenReader based on file type."""
+          """Create a TokenReader based on file type."""
         file_type_lower = file_type.lower()
         if file_type_lower == FileTypeDetector.TYPE_CSV:
             return TokenCSVReader(path)
@@ -281,9 +307,9 @@ class EncryptCommand:
         else:
             raise ValueError(f"Unsupported input type: {file_type}")
 
-    @staticmethod
+     @staticmethod
     def _create_token_writer(path: str, file_type: str):
-        """Create a TokenWriter based on file type."""
+          """Create a TokenWriter based on file type."""
         file_type_lower = file_type.lower()
         if file_type_lower == FileTypeDetector.TYPE_CSV:
             return TokenCSVWriter(path)
