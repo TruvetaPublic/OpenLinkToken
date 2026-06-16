@@ -44,25 +44,29 @@ setup(
         "spark41": [
             "pyspark==4.1.0",
             "pyarrow==24.0.0",
-            "pandas==2.2.3",
+            "pandas==2.2.3; python_version < '3.11'",
+            "pandas==3.0.3; python_version >= '3.11'",
         ],
         # Spark 4.0.x - Recommended for Java 21
         "spark40": [
             "pyspark==4.0.1",
             "pyarrow==24.0.0",
-            "pandas==2.2.3",
+            "pandas==2.2.3; python_version < '3.11'",
+            "pandas==3.0.3; python_version >= '3.11'",
         ],
         # Spark 3.5.x - For Java 8-17 (NOT compatible with Java 21)
         "spark35": [
             "pyspark==3.5.5",
             "pyarrow==19.0.0",
-            "pandas==2.2.3",
+            "pandas==2.2.3; python_version < '3.11'",
+            "pandas==3.0.3; python_version >= '3.11'",
         ],
         # Spark 3.4.x - Legacy support
         "spark34": [
             "pyspark==3.4.4",
             "pyarrow==15.0.0",
-            "pandas==2.1.4",
+            "pandas==2.1.4; python_version < '3.11'",
+            "pandas==3.0.3; python_version >= '3.11'",
         ],
         # Development dependencies
         "dev": [
