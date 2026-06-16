@@ -17,12 +17,14 @@ class PersonAttributesCSVReader(PersonAttributesReader):
     Implements the PersonAttributesReader interface.
     """
 
-    def __init__(self, file_path: str):
+    def __init__(self, file_path: str, attribute_map: Dict[str, Type[Attribute]] | None = None):
         """
         Initialize the class with the input file in CSV format.
 
         Args:
             file_path: The input file path.
+            attribute_map: Optional explicit mapping from CSV column name to attribute class.
+                When omitted, the mapping is discovered via attribute aliases.
 
         Raises:
             IOError: If an I/O error occurs.
@@ -32,16 +34,10 @@ class PersonAttributesCSVReader(PersonAttributesReader):
             self.file_handle = open(file_path, "r", encoding="utf-8")
             self.csv_reader = csv.DictReader(self.file_handle)
             self.iterator = iter(self.csv_reader)
-            self.attribute_map: Dict[str, Attribute] = {}
-
-            # Load attributes and build the mapping
-            attributes: Set[Attribute] = AttributeLoader.load()
-            for header_name in self.csv_reader.fieldnames or []:
-                for attribute in attributes:
-                    for alias in attribute.get_aliases():
-                        if header_name.lower() == alias.lower():
-                            self.attribute_map[header_name] = attribute
-                            break
+            if attribute_map is not None:
+                self.attribute_map = dict(attribute_map)
+            else:
+                self.attribute_map = self._build_attribute_map_from_aliases()
 
         except IOError as e:
             logger.error(f"Error in reading CSV file: {e}")
@@ -62,9 +58,9 @@ class PersonAttributesCSVReader(PersonAttributesReader):
 
         person_attributes: Dict[Type[Attribute], str] = {}
         for key, value in record.items():
-            attribute = self.attribute_map.get(key)
-            if attribute is not None:
-                person_attributes[type(attribute)] = value
+            attribute_class = self.attribute_map.get(key)
+            if attribute_class is not None:
+                person_attributes[attribute_class] = value
             # else ignore attribute as it's not supported
 
         return person_attributes
@@ -73,3 +69,15 @@ class PersonAttributesCSVReader(PersonAttributesReader):
         """Close the CSV reader and file handle."""
         if self.file_handle:
             self.file_handle.close()
+
+    def _build_attribute_map_from_aliases(self) -> Dict[str, Type[Attribute]]:
+        """Build column-to-attribute mapping using AttributeLoader aliases."""
+        alias_map: Dict[str, Type[Attribute]] = {}
+        attributes: Set[Attribute] = AttributeLoader.load()
+        for header_name in self.csv_reader.fieldnames or []:
+            for attribute in attributes:
+                for alias in attribute.get_aliases():
+                    if header_name.lower() == alias.lower():
+                        alias_map[header_name] = type(attribute)
+                        break
+        return alias_map

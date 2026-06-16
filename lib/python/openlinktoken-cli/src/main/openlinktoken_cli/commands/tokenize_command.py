@@ -12,7 +12,6 @@ from openlinktoken.tokens.config.tokenization_config_loader import TokenizationC
 from openlinktoken.tokens.tokenizer.passthrough_tokenizer import PassthroughTokenizer
 from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 from openlinktoken.tokentransformer.token_transformer import TokenTransformer
-from openlinktoken_cli.io.csv.configured_person_attributes_csv_reader import ConfiguredPersonAttributesCSVReader
 from openlinktoken_cli.io.csv.person_attributes_csv_reader import PersonAttributesCSVReader
 from openlinktoken_cli.io.csv.person_attributes_csv_writer import PersonAttributesCSVWriter
 from openlinktoken_cli.io.json.metadata_json_writer import MetadataJsonWriter
@@ -125,7 +124,7 @@ class TokenizeCommand:
             dest="tokenization_config",
             metavar="PATH",
             help=(
-                "Path to a YAML tokenization config that defines CSV field mappings and token rules. "
+                "Path to a YAML tokenization config that defines input field mappings and token rules. "
                 "Supported for CSV input only."
             ),
         )
@@ -447,7 +446,8 @@ class TokenizeCommand:
         file_type_lower = file_type.lower()
         if file_type_lower == FileTypeDetector.TYPE_CSV:
             if config and factory:
-                return ConfiguredPersonAttributesCSVReader(path, config, factory)
+                attribute_map = TokenizeCommand._build_configured_csv_attribute_map(config, factory)
+                return PersonAttributesCSVReader(path, attribute_map=attribute_map)
             return PersonAttributesCSVReader(path)
         elif file_type_lower == FileTypeDetector.TYPE_PARQUET:
             return PersonAttributesParquetReader(path)
@@ -465,6 +465,20 @@ class TokenizeCommand:
         factory = DynamicAttributeFactory(config)
         token_definition = DynamicTokenDefinition(config, factory)
         return config, factory, token_definition
+
+    @staticmethod
+    def _build_configured_csv_attribute_map(
+        config: TokenizationConfig,
+        factory: DynamicAttributeFactory,
+    ) -> dict:
+        """Build explicit column-to-dynamic-attribute mapping for config-driven CSV reads."""
+        attribute_map = {}
+        for csv_column in config.attributes:
+            try:
+                attribute_map[csv_column] = factory.get_class_for_csv_column(csv_column)
+            except KeyError:
+                logger.warning("CSV column '%s' is in config but has no dynamic class registered.", csv_column)
+        return attribute_map
 
     @staticmethod
     def _create_writer(path: str, file_type: str):

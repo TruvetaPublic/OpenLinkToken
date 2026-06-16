@@ -9,11 +9,11 @@ import pytest
 
 from openlinktoken.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
 from openlinktoken.tokens.config.tokenization_config import AttributeMappingEntry, TokenizationConfig
-from openlinktoken_cli.io.csv.configured_person_attributes_csv_reader import ConfiguredPersonAttributesCSVReader
+from openlinktoken_cli.io.csv.person_attributes_csv_reader import PersonAttributesCSVReader
 
 
-class TestConfiguredPersonAttributesCSVReader:
-    """Test cases for ConfiguredPersonAttributesCSVReader."""
+class TestConfiguredAttributeMappingInPersonAttributesCSVReader:
+    """Test config-driven column mapping through the unified CSV reader."""
 
     def setup_method(self):
         """Set up test fixtures before each test method."""
@@ -44,7 +44,12 @@ class TestConfiguredPersonAttributesCSVReader:
         given_name_class = self.factory.get_class_for_csv_column("given_nm")
         family_name_class = self.factory.get_class_for_csv_column("family_nm")
 
-        with ConfiguredPersonAttributesCSVReader(self.temp_file_path, self.config, self.factory) as reader:
+        attribute_map = {
+            "given_nm": given_name_class,
+            "family_nm": family_name_class,
+        }
+
+        with PersonAttributesCSVReader(self.temp_file_path, attribute_map=attribute_map) as reader:
             record = next(reader)
 
         assert record[given_name_class] == "Maria"
@@ -59,7 +64,12 @@ class TestConfiguredPersonAttributesCSVReader:
 
         family_name_class = self.factory.get_class_for_csv_column("family_nm")
 
-        with ConfiguredPersonAttributesCSVReader(self.temp_file_path, self.config, self.factory) as reader:
+        attribute_map = {
+            "given_nm": self.factory.get_class_for_csv_column("given_nm"),
+            "family_nm": family_name_class,
+        }
+
+        with PersonAttributesCSVReader(self.temp_file_path, attribute_map=attribute_map) as reader:
             record = next(reader)
 
         assert family_name_class not in record
@@ -67,4 +77,4 @@ class TestConfiguredPersonAttributesCSVReader:
     def test_constructor_throws_io_exception(self):
         """Raises IOError for a missing CSV file path."""
         with pytest.raises(IOError):
-            ConfiguredPersonAttributesCSVReader("non_existent_file.csv", self.config, self.factory)
+            PersonAttributesCSVReader("non_existent_file.csv")
