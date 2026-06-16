@@ -10,6 +10,13 @@ from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttr
 from openlinktoken.attributes.person.sex_attribute import SexAttribute
 from openlinktoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
 from openlinktoken.metadata import Metadata
+from openlinktoken.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
+from openlinktoken.tokens.config.dynamic_token_definition import DynamicTokenDefinition
+from openlinktoken.tokens.config.tokenization_config import (
+    AttributeMappingEntry,
+    TokenRuleEntry,
+    TokenizationConfig,
+)
 from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 from openlinktoken.tokentransformer.token_transformer import TokenTransformer
 from openlinktoken_cli.io.person_attributes_reader import PersonAttributesReader
@@ -195,3 +202,44 @@ class TestPersonAttributesProcessor:
 
         # And new entries are added
         assert "TotalRows" in metadata_map, "Metadata should contain totalRows key"
+
+    def test_process_with_custom_token_definition(self):
+        """Processes records using a runtime-defined token definition from config."""
+        config = TokenizationConfig(
+            attributes={
+                "given_nm": AttributeMappingEntry(field="GivenName", type="GivenName"),
+                "family_nm": AttributeMappingEntry(field="FamilyName", type="LastName"),
+            },
+            token_rules={
+                "T1": [
+                    TokenRuleEntry(field="FamilyName", expression="T|U"),
+                    TokenRuleEntry(field="GivenName", expression="T|S(0,1)|U"),
+                ]
+            },
+        )
+        factory = DynamicAttributeFactory(config)
+        token_definition = DynamicTokenDefinition(config, factory)
+
+        given_name_class = factory.get_class_for_field("GivenName")
+        family_name_class = factory.get_class_for_field("FamilyName")
+        row = {
+            RecordIdAttribute: "TestRecordId",
+            given_name_class: "John",
+            family_name_class: "Spencer",
+        }
+
+        reader = Mock(spec=PersonAttributesReader)
+        writer = Mock(spec=PersonAttributesWriter)
+        reader.__iter__ = Mock(return_value=iter([row]))
+        metadata_map = Metadata().initialize()
+
+        summary = PersonAttributesProcessor.process(
+            reader,
+            writer,
+            [],
+            metadata_map,
+            token_definition=token_definition,
+        )
+
+        assert summary.total_rows == 1
+        assert writer.write_attributes.call_count == 1

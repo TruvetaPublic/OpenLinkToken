@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Set, Type
 
 from openlinktoken.attributes.attribute import Attribute
 from openlinktoken.attributes.general.record_id_attribute import RecordIdAttribute
+from openlinktoken.tokens.base_token_definition import BaseTokenDefinition
 from openlinktoken.tokens.token_definition import TokenDefinition
 from openlinktoken.tokens.token_generator import TokenGenerator
 from openlinktoken.tokens.token_generator_result import TokenGeneratorResult
@@ -58,6 +59,7 @@ class PersonAttributesProcessor:
         encryption_key: str = None,
         ring_id: str = None,
         hash_record_ids: bool = False,
+        token_definition: BaseTokenDefinition = None,
         progress_callback=None,
     ) -> PersonAttributesProcessingSummary:
         """
@@ -76,8 +78,7 @@ class PersonAttributesProcessor:
             hash_record_ids: When True, each record ID is SHA-256 hashed before writing
                              to the output. This is a one-way operation with no traceability.
         """
-        # TokenGenerator code
-        token_definition = TokenDefinition()
+        token_definition = token_definition or TokenDefinition()
         return PersonAttributesProcessor._process_with_tokenizer(
             reader,
             writer,
@@ -96,6 +97,7 @@ class PersonAttributesProcessor:
         writer: PersonAttributesWriter,
         tokenizer: Tokenizer,
         metadata_map: Dict[str, Any] = None,
+        token_definition: BaseTokenDefinition = None,
         progress_callback=None,
     ) -> PersonAttributesProcessingSummary:
         """
@@ -111,7 +113,7 @@ class PersonAttributesProcessor:
             tokenizer: The tokenizer to use (e.g. SHA256Tokenizer or PassthroughTokenizer).
             metadata_map: Optional metadata map to update with processing statistics.
         """
-        token_definition = TokenDefinition()
+        token_definition = token_definition or TokenDefinition()
         return PersonAttributesProcessor._process_with_tokenizer(
             reader,
             writer,
@@ -126,7 +128,7 @@ class PersonAttributesProcessor:
         reader: PersonAttributesReader,
         writer: PersonAttributesWriter,
         tokenizer: Tokenizer,
-        token_definition: TokenDefinition,
+        token_definition: BaseTokenDefinition,
         metadata_map: Dict[str, Any] = None,
         encryption_key: str = None,
         ring_id: str = None,
