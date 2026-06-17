@@ -1,7 +1,11 @@
 # CLI Matrix Harness Commands
 
 `tools/cli/run_cli_matrix.sh` runs the Open Link Token CLI from the current worktree
-with a temporary workspace. The script exports:
+with a temporary workspace. Long-running commands (`encrypt`, `decrypt`, `tokenize`, `package`) display
+an interactive progress indicator; suppress it with `--no-progress` / `-q` or by setting
+`NO_PROGRESS` or `OPENLINK_NO_PROGRESS` environment variables.
+
+The script exports:
 
 - `HOME=<WORKSPACE>/home`
 - `PYTHONPATH=<WORKTREE>/lib/python/openlinktoken-cli/src/main:<WORKTREE>/lib/python/openlinktoken/src/main`

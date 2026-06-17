@@ -705,6 +705,7 @@ Arguments:
 | `--exchange-config` | Exchange config JSON path                                 |
 | `--private-key`     | Private key PEM used to decrypt the config                |
 | `--private-key-env` | Environment variable containing the private key           |
+| `--no-progress, -q` | Suppress interactive progress indicator (for CI / non-interactive) |
 
 ### Key Pair Generation
 
