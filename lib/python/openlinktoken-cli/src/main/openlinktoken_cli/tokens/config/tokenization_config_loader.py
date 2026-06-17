@@ -4,7 +4,7 @@ from typing import Any, Dict
 
 import yaml
 
-from openlinktoken.tokens.config.tokenization_config import (
+from openlinktoken_cli.tokens.config.tokenization_config import (
     AttributeMappingEntry,
     TokenizationConfig,
     TokenRuleEntry,

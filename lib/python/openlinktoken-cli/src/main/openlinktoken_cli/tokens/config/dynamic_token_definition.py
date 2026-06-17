@@ -4,8 +4,8 @@ from typing import Dict, List, Set
 
 from openlinktoken.attributes.attribute_expression import AttributeExpression
 from openlinktoken.tokens.base_token_definition import BaseTokenDefinition
-from openlinktoken.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
-from openlinktoken.tokens.config.tokenization_config import TokenizationConfig
+from openlinktoken_cli.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
+from openlinktoken_cli.tokens.config.tokenization_config import TokenizationConfig
 
 
 class DynamicTokenDefinition(BaseTokenDefinition):

@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: MIT
 
-from openlinktoken.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
-from openlinktoken.tokens.config.dynamic_token_definition import DynamicTokenDefinition
-from openlinktoken.tokens.config.tokenization_config import (
+from openlinktoken_cli.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
+from openlinktoken_cli.tokens.config.dynamic_token_definition import DynamicTokenDefinition
+from openlinktoken_cli.tokens.config.tokenization_config import (
     AttributeMappingEntry,
     TokenizationConfig,
     TokenRuleEntry,

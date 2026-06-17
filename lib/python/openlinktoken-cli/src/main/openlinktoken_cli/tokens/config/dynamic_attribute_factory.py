@@ -4,7 +4,7 @@ from typing import Dict, Set, Type
 
 from openlinktoken.attributes.attribute import Attribute
 from openlinktoken.attributes.attribute_loader import AttributeLoader
-from openlinktoken.tokens.config.tokenization_config import AttributeMappingEntry, TokenizationConfig
+from openlinktoken_cli.tokens.config.tokenization_config import AttributeMappingEntry, TokenizationConfig
 
 
 class DynamicAttributeFactory:

@@ -5,10 +5,10 @@ import sys
 from typing import List
 
 from openlinktoken.metadata import Metadata
-from openlinktoken.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
-from openlinktoken.tokens.config.dynamic_token_definition import DynamicTokenDefinition
-from openlinktoken.tokens.config.tokenization_config import TokenizationConfig
-from openlinktoken.tokens.config.tokenization_config_loader import TokenizationConfigLoader
+from openlinktoken_cli.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
+from openlinktoken_cli.tokens.config.dynamic_token_definition import DynamicTokenDefinition
+from openlinktoken_cli.tokens.config.tokenization_config import TokenizationConfig
+from openlinktoken_cli.tokens.config.tokenization_config_loader import TokenizationConfigLoader
 from openlinktoken.tokens.tokenizer.passthrough_tokenizer import PassthroughTokenizer
 from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 from openlinktoken.tokentransformer.token_transformer import TokenTransformer

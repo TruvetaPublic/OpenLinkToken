@@ -10,9 +10,9 @@ from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttr
 from openlinktoken.attributes.person.sex_attribute import SexAttribute
 from openlinktoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
 from openlinktoken.metadata import Metadata
-from openlinktoken.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
-from openlinktoken.tokens.config.dynamic_token_definition import DynamicTokenDefinition
-from openlinktoken.tokens.config.tokenization_config import (
+from openlinktoken_cli.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
+from openlinktoken_cli.tokens.config.dynamic_token_definition import DynamicTokenDefinition
+from openlinktoken_cli.tokens.config.tokenization_config import (
     AttributeMappingEntry,
     TokenRuleEntry,
     TokenizationConfig,

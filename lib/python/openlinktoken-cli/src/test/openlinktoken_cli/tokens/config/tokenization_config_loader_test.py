@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from openlinktoken.tokens.config.tokenization_config_loader import TokenizationConfigLoader
+from openlinktoken_cli.tokens.config.tokenization_config_loader import TokenizationConfigLoader
 
 
 class TestTokenizationConfigLoader:

@@ -3,8 +3,8 @@
 import pytest
 
 from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttribute
-from openlinktoken.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
-from openlinktoken.tokens.config.tokenization_config import AttributeMappingEntry, TokenizationConfig
+from openlinktoken_cli.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
+from openlinktoken_cli.tokens.config.tokenization_config import AttributeMappingEntry, TokenizationConfig
 
 
 class TestDynamicAttributeFactory:
