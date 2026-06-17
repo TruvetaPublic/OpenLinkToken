@@ -155,7 +155,7 @@ class TokenizeCommand:
 
     @staticmethod
     def execute(args):
-         """Execute the tokenize command."""
+        """Execute the tokenize command."""
         mode = getattr(args, "mode", TokenizeCommand._MODE_DEFAULT)
         hash_record_ids = getattr(args, "hash_record_ids", False)
 
@@ -298,7 +298,7 @@ class TokenizeCommand:
         progress_callback=None,
         total_rows: int | None = None,
      ) -> tuple[PersonAttributesProcessingSummary, str]:
-         """Process tokens in normal mode using SHA-256 + HMAC-SHA256."""
+        """Process tokens in normal mode using SHA-256 + HMAC-SHA256."""
         token_transformer_list: List[TokenTransformer] = []
 
         try:
@@ -343,7 +343,7 @@ class TokenizeCommand:
         progress_callback=None,
         total_rows: int | None = None,
      ) -> tuple[PersonAttributesProcessingSummary, str]:
-         """Process tokens in hash-only mode using SHA-256 only (no HMAC, no secret)."""
+        """Process tokens in hash-only mode using SHA-256 only (no HMAC, no secret)."""
         try:
             with (
                 TokenizeCommand._create_reader(input_path, input_type) as reader,
@@ -378,7 +378,7 @@ class TokenizeCommand:
         progress_callback=None,
         total_rows: int | None = None,
      ) -> tuple[PersonAttributesProcessingSummary, str]:
-         """Process tokens in demo mode using PassthroughTokenizer (no hashing)."""
+        """Process tokens in demo mode using PassthroughTokenizer (no hashing)."""
         try:
             with (
                 TokenizeCommand._create_reader(input_path, input_type) as reader,
@@ -433,7 +433,7 @@ class TokenizeCommand:
 
     @staticmethod
     def _create_reader(path: str, file_type: str):
-         """Create a PersonAttributesReader based on file type."""
+        """Create a PersonAttributesReader based on file type."""
         file_type_lower = file_type.lower()
         if file_type_lower == FileTypeDetector.TYPE_CSV:
             return PersonAttributesCSVReader(path)
@@ -444,7 +444,7 @@ class TokenizeCommand:
 
     @staticmethod
     def _create_writer(path: str, file_type: str):
-         """Create a PersonAttributesWriter based on file type."""
+        """Create a PersonAttributesWriter based on file type."""
         file_type_lower = file_type.lower()
         if file_type_lower == FileTypeDetector.TYPE_CSV:
             return PersonAttributesCSVWriter(path)

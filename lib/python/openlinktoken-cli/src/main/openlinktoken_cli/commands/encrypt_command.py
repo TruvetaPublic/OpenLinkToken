@@ -103,9 +103,9 @@ class EncryptCommand:
 
         parser.set_defaults(func=EncryptCommand.execute)
 
-     @staticmethod
+    @staticmethod
     def execute(args):
-         """Execute the encrypt command."""
+        """Execute the encrypt command."""
         input_type = FileTypeDetector.detect_input_type(args.input_path)
         if not input_type:
             logger.error("Unable to auto-detect input type. Supported input formats: csv, parquet")
@@ -196,7 +196,7 @@ class EncryptCommand:
             print(format_error_reference_message(report), file=sys.stderr)
             return 1
 
-     @staticmethod
+    @staticmethod
     def _encrypt_tokens(
         input_path: str,
         output_path: str,
@@ -206,7 +206,7 @@ class EncryptCommand:
         ring_id: str,
         progress_callback=None,
      ) -> TokenTransformationSummary:
-          """Encrypt tokens from input file."""
+        """Encrypt tokens from input file."""
         try:
             encryptor = EncryptTokenTransformer(encryption_key)
             jwe_formatters: dict[str, JweMatchTokenFormatter] = {}
@@ -268,7 +268,7 @@ class EncryptCommand:
         except Exception:
             raise
 
-     @staticmethod
+    @staticmethod
     def _build_summary_lines(output_path: str, summary: TokenTransformationSummary) -> list[str]:
         return [
              f"Output: {output_path}",
@@ -277,7 +277,7 @@ class EncryptCommand:
              f"Failed to encrypt: {summary.failed_tokens:,}",
           ]
 
-     @staticmethod
+    @staticmethod
     def _wrap_as_v1_token(
         encrypted_token: str,
         row: dict,
@@ -296,9 +296,9 @@ class EncryptCommand:
 
         return formatter.transform(encrypted_token)
 
-     @staticmethod
+    @staticmethod
     def _create_token_reader(path: str, file_type: str):
-          """Create a TokenReader based on file type."""
+        """Create a TokenReader based on file type."""
         file_type_lower = file_type.lower()
         if file_type_lower == FileTypeDetector.TYPE_CSV:
             return TokenCSVReader(path)
@@ -307,9 +307,9 @@ class EncryptCommand:
         else:
             raise ValueError(f"Unsupported input type: {file_type}")
 
-     @staticmethod
+    @staticmethod
     def _create_token_writer(path: str, file_type: str):
-          """Create a TokenWriter based on file type."""
+        """Create a TokenWriter based on file type."""
         file_type_lower = file_type.lower()
         if file_type_lower == FileTypeDetector.TYPE_CSV:
             return TokenCSVWriter(path)
