@@ -267,19 +267,19 @@ class TokenizeCommand:
                 except Exception as error:
                     logger.error("Error during token generation: %s", error)
                     raise
-            reporter.set_total_rows(total_rows)
-             # Final progress flush
-            if total_rows is not None:
-             reporter.finish_success(
-                 "Tokenize complete",
+                if total_rows is not None:
+                    reporter.set_total_rows(total_rows)
+               # Final progress flush
+            reporter.finish_success(
+                   "Tokenize complete",
                 TokenizeCommand._build_summary_lines(
                     output_path,
                     metadata_path,
                     summary,
                     mode,
                     hash_record_ids,
-                 ),
-             )
+                   ),
+               )
             return 0
         except Exception as error:
             report = archive_cli_error(error, command_name="tokenize", existing_report=reporter.log_report)

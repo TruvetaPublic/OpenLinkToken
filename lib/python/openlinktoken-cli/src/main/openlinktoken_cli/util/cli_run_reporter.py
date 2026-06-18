@@ -170,7 +170,7 @@ class _ProgressIndicator:
 class CliRunReporter:
     """Manage per-run logging, TTY progress, and end-of-run summaries."""
 
-    def __init__(self, command_name: str):
+    def __init__(self, command_name: str, no_progress: bool = False):
         self.command_name = command_name
         self.log_report = create_cli_log_report(command_name)
         self._console_handler: logging.Handler | None = None
@@ -178,6 +178,7 @@ class CliRunReporter:
         self._file_handler: logging.Handler | None = None
         self._interactive = bool(getattr(sys.stderr, "isatty", None) and sys.stderr.isatty())
         self._interactive = self._interactive and not os.getenv("NO_COLOR")
+        self._interactive = self._interactive and not no_progress
         self._progress_indicator = _ProgressIndicator()
 
     def __enter__(self) -> "CliRunReporter":
@@ -197,6 +198,9 @@ class CliRunReporter:
         if processed_count is not None and unit_label:
             message = f"{stage} ({processed_count:,} {unit_label})"
         self._progress_indicator.update(stage, processed_count or 0)
+
+    def set_total_rows(self, total: int) -> None:
+        self._progress_indicator.set_total_rows(total)
 
     def make_progress_callback(self, stage: str, unit_label: str) -> Callable[[int], None]:
         def _callback(processed_count: int) -> None:
