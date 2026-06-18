@@ -214,7 +214,7 @@ class TokenizeCommand:
                     if hash_record_ids:
                         logger.info("Record ID hashing enabled: RecordIds will be SHA-256 hashed in output")
 
-                     # Determine total rows up front for Parquet readers
+                        # Count total rows for progress reporting.
                     total_rows: int | None = None
                     if input_type == FileTypeDetector.TYPE_PARQUET:
                         try:
@@ -222,6 +222,22 @@ class TokenizeCommand:
                             total_rows = len(pq.ParquetFile(args.input_path))
                         except Exception:
                             total_rows = None
+
+
+                    # CSV: pre-scan file to count data rows
+                    if total_rows is None and input_type == FileTypeDetector.TYPE_CSV:
+                        try:
+                            import subprocess
+                            wc = subprocess.run(
+                                  ["wc", "-l", args.input_path],
+                                 capture_output=True, text=True, check=True)
+                            total_rows = max(0, int(wc.stdout.split()[0]) - 1)
+                        except Exception:
+                            total_rows = None
+
+                    # Configure progress indicator BEFORE processing
+                    if total_rows is not None and total_rows > 0:
+                        reporter.set_total_rows(total_rows)
 
                     if mode == TokenizeCommand._MODE_DEMO:
                         reporter.update_status("Tokenizing records")
@@ -267,8 +283,6 @@ class TokenizeCommand:
                 except Exception as error:
                     logger.error("Error during token generation: %s", error)
                     raise
-                if total_rows is not None:
-                    reporter.set_total_rows(total_rows)
                # Final progress flush
             reporter.finish_success(
                    "Tokenize complete",
