@@ -16,6 +16,7 @@ Our approach to record linkage relies on building a set of matching tokens (or t
   - [Key Matching Ideas](#key-matching-ideas)
   - [Running Open Link Token](#running-open-link-token)
   - [Security Notes](#security-notes)
+  - [Custom Tokenization Configuration (`tokenize --config`)](#custom-tokenization-configuration-tokenize---config)
   - [Contributing \& Community](#contributing--community)
   - [Documentation](#documentation)
 
@@ -99,7 +100,7 @@ See <a href="https://truvetapublic.github.io/OpenLinkToken/quickstarts/" target=
 ## Running Open Link Token
 
 - **Subcommand Interface**: Modern command-based interface:
-  - `tokenize` - Internal hashed token generation (`--mode hash-only` is available for deterministic SHA-256 output)
+  - `tokenize` - Internal hashed token generation (`--mode hash-only` is available for deterministic SHA-256 output; `--config` is available for custom field mapping and token rules)
   - `encrypt` - Encrypt existing hashed tokens
   - `decrypt` - Decrypt encrypted tokens
   - `package` - Tokenize + encrypt in one step (recommended)
@@ -113,6 +114,19 @@ See <a href="https://truvetapublic.github.io/OpenLinkToken/quickstarts/" target=
 - **`tokenize --mode hash-only`**: Deterministic SHA-256 output with no exchange config or secret. Useful for local exploration, but **not** for production or cross-organisation exchange
 - **Secret management**: Handle hashing/encryption secrets securely; avoid committing secrets; prefer env/secret stores
 - **Validation**: Reject placeholders and malformed attributes before tokenization
+
+## Custom Tokenization Configuration (`tokenize --config`)
+
+Use `--config` when your input file does not use the standard Open Link Token column aliases or when you need custom token rules.
+
+```bash
+olt tokenize \
+  -i unusual-input.csv -o output.csv \
+  --exchange-config ./partner.exchange.json \
+  --config ./tokenization-config.yaml
+```
+
+For the full config-file specification (required keys, field definitions, and validation rules), see <a href="https://truvetapublic.github.io/OpenLinkToken/reference/cli.html#custom-tokenization-configuration-tokenize-config" target="_blank" rel="noopener noreferrer">CLI Reference: Custom Tokenization Configuration</a>.
 
 ## Contributing & Community
 
