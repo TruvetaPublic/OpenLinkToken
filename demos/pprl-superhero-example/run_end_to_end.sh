@@ -2,8 +2,9 @@
 #
 # Run the Superhero PPRL example end-to-end:
 #  1) Generate datasets
-#  2) Tokenize with the Python Open Link Token CLI
-#  3) Decrypt-and-compare tokens to measure overlap
+#  2) Set up demo exchange config (hashing secret + ECDH key pair)
+#  3) Tokenize with the Python Open Link Token CLI
+#  4) Decrypt-and-compare tokens to measure overlap
 #
 set -euo pipefail
 
@@ -22,9 +23,14 @@ DATASETS_DIR="${DEMO_DIR}/datasets"
 OUTPUTS_DIR="${DEMO_DIR}/outputs"
 VENV_ACTIVATE="${PROJECT_ROOT}/.venv/bin/activate"
 
-# Keys (keep in sync with tokenization scripts and analyze_overlap.py)
+# Demo hashing secret (keep in sync with tokenize_hospital.sh and tokenize_pharmacy.sh)
 HASHING_SECRET="SuperHeroHashingKey2024"
-ENCRYPTION_KEY="SuperHero-Encryption-Key-32chars" # Must be exactly 32 characters
+
+# Exchange config paths for this demo
+DEMO_KEY_NAME="superhero-demo"
+DEMO_EXCHANGE_CONFIG="${DEMO_DIR}/superhero-demo.exchange.json"
+DEMO_PRIVATE_KEY="${HOME}/.openlinktoken/${DEMO_KEY_NAME}.private.pem"
+DEMO_PUBLIC_KEY="${HOME}/.openlinktoken/${DEMO_KEY_NAME}.public.pem"
 
 echo "============================================================"
 echo "Superhero PPRL - End-to-End Demo Runner"
@@ -57,21 +63,37 @@ if ! python -c "import cryptography" >/dev/null 2>&1; then
 fi
 
 # Step 1: Generate datasets
-echo -e "${BLUE}Step 1/3: Generating datasets...${NC}"
+echo -e "${BLUE}Step 1/4: Generating datasets...${NC}"
 mkdir -p "${DATASETS_DIR}"
 python "${DEMO_DIR}/scripts/generate_superhero_datasets.py"
 echo ""
 
-# Step 2: Tokenize datasets with the Python CLI
-echo -e "${BLUE}Step 2/3: Tokenizing datasets with Open Link Token...${NC}"
+# Step 2: Set up demo exchange config
+echo -e "${BLUE}Step 2/4: Setting up demo exchange config...${NC}"
+olt generate-key-pair -n "${DEMO_KEY_NAME}" --force
+DEMO_HASHING_SECRET="${HASHING_SECRET}" olt initiate-exchange \
+  --public-key "${DEMO_PUBLIC_KEY}" \
+  --sender-private-key "${DEMO_PRIVATE_KEY}" \
+  --hashingsecret-env DEMO_HASHING_SECRET \
+  -n "${DEMO_KEY_NAME}" \
+  -o "${DEMO_EXCHANGE_CONFIG}" \
+  --force
+echo ""
+
+# Export paths for tokenize scripts and analyze_overlap.py
+export OLT_DEMO_EXCHANGE_CONFIG="${DEMO_EXCHANGE_CONFIG}"
+export OLT_DEMO_PRIVATE_KEY="${DEMO_PRIVATE_KEY}"
+
+# Step 3: Tokenize datasets with the Python CLI
+echo -e "${BLUE}Step 3/4: Tokenizing datasets with Open Link Token...${NC}"
 chmod +x "${DEMO_DIR}/scripts/tokenize_hospital.sh" || true
 chmod +x "${DEMO_DIR}/scripts/tokenize_pharmacy.sh" || true
 "${DEMO_DIR}/scripts/tokenize_hospital.sh"
 "${DEMO_DIR}/scripts/tokenize_pharmacy.sh"
 echo ""
 
-# Step 3: Analyze overlap (decrypt + compare)
-echo -e "${BLUE}Step 3/3: Analyzing overlap (decrypting and comparing tokens)...${NC}"
+# Step 4: Analyze overlap (decrypt + compare)
+echo -e "${BLUE}Step 4/4: Analyzing overlap (decrypting and comparing tokens)...${NC}"
 "${ANALYZE_OVERLAP_COMMAND[@]}"
 echo ""
 

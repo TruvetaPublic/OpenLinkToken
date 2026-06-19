@@ -10,12 +10,18 @@ hash values, which are deterministic and comparable.
 import base64
 import csv
 import json
+import os
 from collections import defaultdict
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 V1_TOKEN_PREFIX = "olt.V1."
 SUPPORTED_V1_TOKEN_PREFIXES = (V1_TOKEN_PREFIX,)
+
+
+def _to_key_bytes(encryption_key):
+    """Return encryption key as raw bytes, accepting both str and bytes."""
+    return encryption_key if isinstance(encryption_key, bytes) else encryption_key.encode("utf-8")
 
 
 def _base64url_decode(value):
@@ -30,7 +36,7 @@ def decrypt_legacy_token(encrypted_token, encryption_key):
     iv = message_bytes[:12]
     ciphertext_and_tag = message_bytes[12:]
 
-    aesgcm = AESGCM(encryption_key.encode("utf-8"))
+    aesgcm = AESGCM(_to_key_bytes(encryption_key))
     decrypted_bytes = aesgcm.decrypt(iv, ciphertext_and_tag, None)
     return decrypted_bytes.decode("utf-8")
 
@@ -54,7 +60,7 @@ def decrypt_v1_token(v1_token, encryption_key):
     ciphertext = _base64url_decode(ciphertext_b64)
     tag = _base64url_decode(tag_b64)
 
-    aesgcm = AESGCM(encryption_key.encode("utf-8"))
+    aesgcm = AESGCM(_to_key_bytes(encryption_key))
     plaintext = aesgcm.decrypt(iv, ciphertext + tag, aad)
     payload = json.loads(plaintext.decode("utf-8"))
 
@@ -77,7 +83,7 @@ def decrypt_token(encrypted_token, encryption_key):
 
     Args:
         encrypted_token: Base64-encoded encrypted token with prepended IV
-        encryption_key: 32-character encryption key
+        encryption_key: Encryption key as str or bytes (32 bytes for AES-256)
 
     Returns:
         Decrypted token (HMAC-SHA256 hash in Base64)
@@ -96,7 +102,7 @@ def load_tokens(csv_file, encryption_key):
 
     Args:
         csv_file: Path to CSV file with encrypted tokens
-        encryption_key: 32-character encryption key used for tokenization
+        encryption_key: Encryption key as str or bytes (32 bytes for AES-256)
 
     Returns:
         Dictionary mapping RecordId -> RuleId -> decrypted_token
@@ -110,7 +116,6 @@ def load_tokens(csv_file, encryption_key):
             rule_id = row["RuleId"]
             encrypted_token = row["Token"]
 
-            # Decrypt the token to get the underlying hash
             decrypted_token = decrypt_token(encrypted_token, encryption_key)
             tokens_by_record[record_id][rule_id] = decrypted_token
 
@@ -257,23 +262,44 @@ def print_metadata_summary(hospital_metadata, pharmacy_metadata):
     print("=" * 70)
 
     if hospital_metadata:
+        total = hospital_metadata.get("TotalRows", "N/A")
+        invalid = hospital_metadata.get("TotalRowsWithInvalidAttributes", 0)
+        valid = (total - invalid) if isinstance(total, int) else "N/A"
         print("Hospital Dataset:")
-        print(f"  Total records processed: {hospital_metadata.get('totalRecords', 'N/A')}")
-        print(f"  Valid records: {hospital_metadata.get('validRecords', 'N/A')}")
-        print(f"  Invalid records: {hospital_metadata.get('invalidRecords', 'N/A')}")
-        print(f"  Library version: {hospital_metadata.get('libraryVersion', 'N/A')}")
+        print(f"  Total records processed: {total}")
+        print(f"  Valid records: {valid}")
+        print(f"  Invalid records: {invalid}")
+        print(f"  Library version: {hospital_metadata.get('Version', 'N/A')}")
         print()
 
     if pharmacy_metadata:
+        total = pharmacy_metadata.get("TotalRows", "N/A")
+        invalid = pharmacy_metadata.get("TotalRowsWithInvalidAttributes", 0)
+        valid = (total - invalid) if isinstance(total, int) else "N/A"
         print("Pharmacy Dataset:")
-        print(f"  Total records processed: {pharmacy_metadata.get('totalRecords', 'N/A')}")
-        print(f"  Valid records: {pharmacy_metadata.get('validRecords', 'N/A')}")
-        print(f"  Invalid records: {pharmacy_metadata.get('invalidRecords', 'N/A')}")
-        print(f"  Library version: {pharmacy_metadata.get('libraryVersion', 'N/A')}")
+        print(f"  Total records processed: {total}")
+        print(f"  Valid records: {valid}")
+        print(f"  Invalid records: {invalid}")
+        print(f"  Library version: {pharmacy_metadata.get('Version', 'N/A')}")
         print()
 
     print("=" * 70)
     print()
+
+
+def _resolve_encryption_key(exchange_config_path, private_key_path):
+    """
+    Derive the transport encryption key from an exchange config and private key.
+
+    Falls back to raising an error with instructions if neither is provided.
+    """
+    from openlinktoken.exchange_config import derive_transport_encryption_key, resolve_exchange_config_inputs
+
+    exchange = resolve_exchange_config_inputs(
+        exchange_config_path=exchange_config_path,
+        private_key_path=private_key_path,
+    )
+    return derive_transport_encryption_key(exchange)
 
 
 def main():
@@ -284,14 +310,33 @@ def main():
     print("=" * 70)
     print()
 
-    # Configuration - must match the keys used during tokenization
-    encryption_key = "SuperHero-Encryption-Key-32chars"
-
-    # Determine base directory (handle both script dir and demo root execution)
+    # Resolve exchange config and private key from env vars (set by run_end_to_end.sh
+    # or tokenize scripts) or fall back to the default demo paths
     from pathlib import Path
 
     script_dir = Path(__file__).parent
     demo_dir = script_dir.parent
+
+    exchange_config_path = os.environ.get(
+        "OLT_DEMO_EXCHANGE_CONFIG",
+        str(demo_dir / "superhero-demo.exchange.json"),
+    )
+    private_key_path = os.environ.get(
+        "OLT_DEMO_PRIVATE_KEY",
+        str(Path.home() / ".openlinktoken" / "superhero-demo.private.pem"),
+    )
+
+    if not Path(exchange_config_path).exists() or not Path(private_key_path).exists():
+        raise FileNotFoundError(
+            "Exchange config or private key not found. "
+            "Run run_end_to_end.sh or the individual tokenize scripts first to set them up. "
+            f"Exchange config: {exchange_config_path}, Private key: {private_key_path}"
+        )
+
+    print("Resolving transport encryption key from exchange config...")
+    encryption_key = _resolve_encryption_key(exchange_config_path, private_key_path)
+    print()
+
     outputs_dir = demo_dir / "outputs"
 
     # File paths
