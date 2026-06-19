@@ -36,8 +36,8 @@ Each downloadable ZIP is also published with a matching `.sha256` sidecar for ma
 
 ```bash
 # Extract the zip file
-unzip openlinktoken-cli-2.0.0-alpha-macos-universal.zip
-cd openlinktoken-cli-2.0.0-alpha-macos-universal
+unzip openlinktoken-cli-2.0.0-macos-universal.zip
+cd openlinktoken-cli-2.0.0-macos-universal
 
 # Make executable (if needed)
 chmod +x openlinktoken
@@ -55,8 +55,8 @@ chmod +x openlinktoken
 
 ```powershell
 # Extract the zip file
-Expand-Archive openlinktoken-cli-2.0.0-alpha-windows-x64.zip
-cd openlinktoken-cli-2.0.0-alpha-windows-x64
+Expand-Archive openlinktoken-cli-2.0.0-windows-x64.zip
+cd openlinktoken-cli-2.0.0-windows-x64
 
 # Run the CLI
 .\olt.exe generate-key-pair --name recipient --force
