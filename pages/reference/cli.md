@@ -85,7 +85,7 @@ The automatic version check can also be disabled permanently by setting the envi
 | `--exchange-config` |       | Default mode only | `./openlinktoken-YYYY-MM-DD.exchange.json` | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted.                                                                                                                                |
 | `--private-key`     |       | No\*              |                                            | Private key PEM used to decrypt the exchange config                                                                                                                                                                            |
 | `--private-key-env` |       | No\*              |                                            | Environment variable containing the private key PEM                                                                                                                                                                            |
-| `--config`          |       | No                |                                            | YAML config file for custom input field mapping and token-rule definitions. Useful when source columns do not match built-in aliases. Currently supported for CSV input.                                                       |
+| `--config`          |       | No                |                                            | YAML config file for custom input field mapping and token-rule definitions. See [Tokenization Configuration Reference](tokenization-config.md). Supported for CSV and Parquet input.                                           |
 | `--mode`            |       | No                | `default`                                  | Mode selector: `default`, `hash-only`, or `demo`. `hash-only` cannot be combined with exchange-config, private-key options, or `--hash-record-ids`; `demo` cannot be combined with `--exchange-config` or `--hash-record-ids`. |
 | `--hash-record-ids` |       | No                |                                            | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability; default tokenize mode only)                                                                                                             |
 
@@ -288,94 +288,14 @@ Signature → SHA-256 → HMAC-SHA256 → Base64
 
 ## Custom Tokenization Configuration (`tokenize --config`)
 
-Use `--config` to decouple tokenization from built-in column aliases. This is useful when incoming files use unusual field names.
+Use `--config` to decouple tokenization from built-in column aliases.
 
-```bash
-olt tokenize \
-  -i unusual-input.csv -o output.csv \
-  --exchange-config ./partner.exchange.json \
-  --config ./tokenization-config.yaml
-```
+For complete details, see [Tokenization Configuration Reference](tokenization-config.md), including:
 
-### Example Input CSV (Unusual Fields)
-
-```csv
-member_id,given_nm,surname_txt,dob_iso,gender_code,zip_5,national_id
-A-1001,Ana,Lopez,1988-03-12,F,98052,123-45-6789
-A-1002,Marcus,Nguyen,1979-11-05,M,10001,234-56-7890
-```
-
-### Example Configuration File
-
-```yaml
-attributes:
-  given_nm:
-    field: GivenName
-    type: GivenName
-  surname_txt:
-    field: FamilyName
-    type: LastName
-  dob_iso:
-    field: DateOfBirth
-    type: BirthDate
-  gender_code:
-    field: SexAtBirth
-    type: Sex
-  zip_5:
-    field: HomeZip
-    type: PostalCode
-  national_id:
-    field: NationalId
-    type: SocialSecurityNumber
-
-token_rules:
-  T1:
-    - field: FamilyName
-      expression: T|U
-    - field: GivenName
-      expression: T|S(0,1)|U
-    - field: DateOfBirth
-      expression: T|Y
-    - field: SexAtBirth
-      expression: T|S(0,1)|U
-  T5:
-    - field: NationalId
-      expression: T|U
-```
-
-### Configuration File Specification
-
-Top-level keys:
-
-| Key           | Required | Type    | Description                                                                  |
-| ------------- | -------- | ------- | ---------------------------------------------------------------------------- |
-| `attributes`  | Yes      | Mapping | Maps input column names to logical field IDs and attribute types.            |
-| `token_rules` | Yes      | Mapping | Defines each token rule as an ordered list of `{field, expression}` entries. |
-
-`attributes` entry schema:
-
-| Field           | Required | Type    | Description                                                                                                                           |
-| --------------- | -------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `<column_name>` | Yes      | Mapping | Input column name from the CSV header (for example `given_nm`).                                                                       |
-| `field`         | Yes      | String  | Logical field identifier used by token rules (for example `GivenName`).                                                               |
-| `type`          | Yes      | String  | Open Link Token attribute type/alias (for example `GivenName`, `LastName`, `BirthDate`, `Sex`, `PostalCode`, `SocialSecurityNumber`). |
-
-`token_rules` entry schema:
-
-| Field        | Required | Type   | Description                                                      |
-| ------------ | -------- | ------ | ---------------------------------------------------------------- |
-| `<rule_id>`  | Yes      | List   | Token rule identifier (`T1`, `T2`, `T3`, `T4`, `T5`, or custom). |
-| `field`      | Yes      | String | Must match one of the `attributes.*.field` values.               |
-| `expression` | Yes      | String | Attribute-expression pipeline used by token generation.          |
-
-Validation rules enforced by the CLI:
-
-- `attributes` must be present and non-empty.
-- `token_rules` must be present and non-empty.
-- Every token-rule entry must contain non-empty `field` and `expression`.
-- Every token-rule `field` must reference a declared `attributes.*.field` value.
-- Every declared `type` must resolve to a known Open Link Token attribute class/alias.
-- Token-rule entry order is preserved and used as-is during token construction.
+- unusual-field input examples
+- full YAML configuration examples
+- configuration-file specification
+- CLI validation rules and constraints
 
 ### Hash-only Mode (`tokenize --mode hash-only`)
 

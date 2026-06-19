@@ -115,18 +115,11 @@ See <a href="https://truvetapublic.github.io/OpenLinkToken/quickstarts/" target=
 - **Secret management**: Handle hashing/encryption secrets securely; avoid committing secrets; prefer env/secret stores
 - **Validation**: Reject placeholders and malformed attributes before tokenization
 
-## Custom Tokenization Configuration (`tokenize --config`)
+## Custom Tokenization Configuration
 
-Use `--config` when your input file does not use the standard Open Link Token column aliases or when you need custom token rules.
+For `tokenize --config` usage, example input/config files, and the full configuration-file specification, see:
 
-```bash
-olt tokenize \
-  -i unusual-input.csv -o output.csv \
-  --exchange-config ./partner.exchange.json \
-  --config ./tokenization-config.yaml
-```
-
-For the full config-file specification (required keys, field definitions, and validation rules), see <a href="https://truvetapublic.github.io/OpenLinkToken/reference/cli.html#custom-tokenization-configuration-tokenize-config" target="_blank" rel="noopener noreferrer">CLI Reference: Custom Tokenization Configuration</a>.
+- <a href="https://truvetapublic.github.io/OpenLinkToken/reference/tokenization-config.html" target="_blank" rel="noopener noreferrer">Tokenization Configuration Reference</a>
 
 ## Contributing & Community
 
