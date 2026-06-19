@@ -1,5 +1,5 @@
 # Core openlinktoken dependency
-openlinktoken==2.0.0-alpha
+openlinktoken==2.0.0
 
 # Data processing for I/O formats
 # pandas 3.x drops Python 3.10 support, so keep a Python-version split.
