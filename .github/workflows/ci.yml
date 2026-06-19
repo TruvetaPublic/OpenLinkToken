@@ -250,7 +250,7 @@ jobs:
         exclude:
           # PySpark 3.4.x and 3.5.x do not support Python 3.13+ (pyspark itself has no 3.13/3.14 wheels).
           # Spark 3.4 uses pyarrow<23 + pandas<2.2 (runtime enforced by pyspark 3.4.x)
-          # Spark 3.5 uses pyarrow<20 + pandas 2.2.3 (runtime enforced by pyspark 3.5.x)
+          # Spark 3.5 uses pyarrow<20. Python 3.10 resolves pandas 2.2.3; Python 3.11+ resolves pandas 3.0.3.
           - python-version: "3.13"
             spark-version: "3.4"
           - python-version: "3.13"

@@ -2,12 +2,15 @@
 openlinktoken==2.0.0-alpha
 
 # Data processing for I/O formats
-pandas==2.2.3
+# pandas 3.x drops Python 3.10 support, so keep a Python-version split.
+pandas==2.2.3; python_version < "3.11"
+pandas==3.0.3; python_version >= "3.11"
 pyarrow==24.0.0
 csv2parquet==0.0.9
 
-# Cryptography - mandate secure version to address CVE-2023-0286
-cryptography==46.0.7
+# Cryptography - mandate secure version to address CVE-2026-44432
+cryptography==48.0.1
+urllib3==2.7.0
 
 # JOSE/JWE for match token format
 jwcrypto==1.5.7

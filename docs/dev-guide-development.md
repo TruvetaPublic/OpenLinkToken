@@ -17,7 +17,7 @@ This guide centralizes contributor-facing information. It covers local setup, la
 
 ## Contents
 
-- [Open Link Token Development Guide](#openlinktoken-development-guide)
+- [Open Link Token Development Guide](#open-link-token-development-guide)
   - [At a Glance](#at-a-glance)
   - [Contents](#contents)
   - [Prerequisites](#prerequisites)
@@ -25,6 +25,7 @@ This guide centralizes contributor-facing information. It covers local setup, la
   - [Language Development (Java, Python \& PySpark)](#language-development-java-python--pyspark)
     - [Java](#java)
     - [Python](#python)
+      - [Build a Self-Contained CLI Locally](#build-a-self-contained-cli-locally)
     - [PySpark Bridge](#pyspark-bridge)
     - [Multi-Language Sync Tool](#multi-language-sync-tool)
     - [Cross-language Tips](#cross-language-tips)
@@ -45,6 +46,14 @@ This guide centralizes contributor-facing information. It covers local setup, la
     - [Full Multi-language Build](#full-multi-language-build)
     - [Docker Image](#docker-image)
   - [Running the Tool (CLI)](#running-the-tool-cli)
+    - [Key Pair Generation](#key-pair-generation)
+  - [Local Extension Development](#local-extension-development)
+    - [Setup](#setup)
+    - [Manual testing: editable install (fast path)](#manual-testing-editable-install-fast-path)
+    - [Manual testing: wheel install (full pipeline)](#manual-testing-wheel-install-full-pipeline)
+    - [Run the extension tests](#run-the-extension-tests)
+    - [Developing your own extension](#developing-your-own-extension)
+    - [Extension tests in `openlinktoken-cli`](#extension-tests-in-openlinktoken-cli)
   - [Development Container](#development-container)
   - [Version Bumping Policy](#version-bumping-policy)
   - [Contributing Checklist](#contributing-checklist)

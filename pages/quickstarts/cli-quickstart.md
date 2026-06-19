@@ -95,7 +95,7 @@ cd /path/to/OpenLinkToken
 ### Windows PowerShell
 
 ```powershell
-cd C:\path\to\Open Link Token
+cd C:\path\to\OpenLinkToken
 
 .\run-openlinktoken.ps1 package `
   -i .\resources\sample.csv `

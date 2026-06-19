@@ -24,7 +24,7 @@ This guide outlines how to contribute code, documentation, and bug reports to Op
 2. **Clone your fork**:
    ```bash
    git clone https://github.com/YOUR-USERNAME/OpenLinkToken.git
-   cd Open Link Token
+   cd OpenLinkToken
    ```
 3. **Set up the Python environment** (at repo root):
    ```bash
