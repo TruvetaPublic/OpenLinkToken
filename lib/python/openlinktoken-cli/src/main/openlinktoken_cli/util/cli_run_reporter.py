@@ -110,15 +110,27 @@ class _ProgressIndicator:
             return f"{done / total * 100:.1f}%"
         return "N/A"
 
+    def _format_throughput(self, rate: float) -> str:
+        """Format throughput as human-readable rows per second with K/M for large values."""
+        rows = rate
+        if rows >= 1_000_000:
+            return f"{rows / 1_000_000:.1f} M rows/s"
+        elif rows >= 1_000:
+            return f"{rows / 1_000:.1f} K rows/s"
+        elif rows >= 100:
+            return f"{rows:.0f} rows/s"
+        else:
+            return f"{rows:.1f} rows/s"
+
     def _render(self) -> None:
-        """Render the spinner and progress info on stderr at ~8 FPS."""
+        """Render the spinner and progress info on stderr at ~1 Hz."""
         try:
             while self._running.is_set():
                 with self._frame_lock:
                     frame = self._FRAMES[self._frame_index % len(self._FRAMES)]
                     self._frame_index += 1
 
-                time.sleep(0.125)  # ~8 FPS
+                time.sleep(1.0)    # ~1 Hz: one update per second
 
                 if not self._running.is_set():
                     break
@@ -132,39 +144,34 @@ class _ProgressIndicator:
                 now = time.perf_counter()
                 elapsed = now - start_time
 
-                pct_str = self._format_percentage(done, total)
-
-                parts = [frame, stage, pct_str]
+                  # Build the display line: spinner + stage with colon, then metrics
+                parts = [frame, stage]
 
                 if total > 0 and elapsed > 0 and done > 0:
+                    pct_str = self._format_percentage(done, total)
+                    parts.append(f"{pct_str} done")
+
                     rate = done / elapsed
                     if rate > 0 and elapsed < 24 * 3600:
                         remaining = total - done
                         if remaining > 0:
                             eta_seconds = remaining / rate
                             eta_str = self._format_elapsed(eta_seconds)
-                        else:
-                            eta_str = self._format_elapsed(0)
-                        throughput = f"{rate:.0f} rows/s"
-                        parts.append(eta_str)
-                        parts.append(throughput)
-                    else:
-                        elapsed_str = self._format_elapsed(elapsed)
-                        parts.append(elapsed_str)
+                            parts.append(eta_str + " left")
+                        parts.append(self._format_throughput(rate))
+                    elapsed_str = self._format_elapsed(elapsed)
+                    parts.append(elapsed_str + " elapsed")
                 else:
                     elapsed_str = self._format_elapsed(elapsed)
-                    parts.append(elapsed_str)
+                    parts.append(elapsed_str + " elapsed")
 
-                line = " ".join(parts)
+                line = " ".join(parts[:2]) + ": " + ", ".join(parts[2:])
                 sys.stderr.write("\r" + line + "\r")
                 sys.stderr.flush()
 
         except KeyboardInterrupt:
             pass
 
-    def finish(self) -> None:
-        """No-op cleanup method."""
-        pass
 
 
 class CliRunReporter:

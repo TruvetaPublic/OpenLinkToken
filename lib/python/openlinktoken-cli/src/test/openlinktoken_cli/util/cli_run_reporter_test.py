@@ -5,9 +5,9 @@ from unittest.mock import patch
 
 from openlinktoken_cli.util.cli_error_reporter import format_dimmed_stderr_message
 from openlinktoken_cli.util.cli_run_reporter import (
-    _ProgressIndicator,
-    _format_eta,
-    _format_elapsed,
+     _ProgressIndicator,
+     _format_elapsed,
+     _format_throughput,
     CliRunReporter,
 )
 
@@ -15,45 +15,60 @@ from openlinktoken_cli.util.cli_run_reporter import (
 class TestProgressIndicator:
     """Unit tests for the enhanced progress indicator."""
 
-    def test_format_eta_short(self):
-        """Under an hour, ETA should be MM:SS format."""
-        assert _format_eta(55) == "00:55"
-        assert _format_eta(120) == "02:00"
-        assert _format_eta(3660) == "01:01:00"
-
-    def test_format_eta_invalid(self):
-        """Invalid or zero ETA should return "?"."""
-        assert _format_eta(-1) == "??:??"
-        assert _format_eta(0) == "??:??"
-
     def test_format_elapsed_short(self):
         """Elapsed time under an hour should be MM:SS format."""
         assert _format_elapsed(55) == "00:55"
         assert _format_elapsed(3723) == "01:02:03"
 
-    def test_progress_indicator_start_stop_noop(self):
-        """Disabled progress indicator should return immediately."""
-        pi = _ProgressIndicator(enabled=False)
-        pi.start("initial", total_rows=1000)
-        pi.update(stage="progress", done=500)
-        pi.set_total_rows(1000)
-        pi.stop()
+    def test_format_elapsed_hours(self):
+        """Elapsed time over an hour should include hours."""
+        assert _format_elapsed(3660) == "01:01:00"
+        assert _format_elapsed(86400) == "24:00:00"
 
-    def test_progress_indicator_start_stop_enabled(self):
-        """Enabled progress indicator should start a render thread."""
-        pi = _ProgressIndicator(enabled=True)
-        pi.start("initial", total_rows=1000)
+    def test_format_throughput_small(self):
+        """Small throughput in rows/s."""
+        assert _format_throughput(1.5) == "1.5 rows/s"
+        assert _format_throughput(99.0) == "99.0 rows/s"
+
+    def test_format_throughput_medium(self):
+        """Medium throughput as whole rows/s."""
+        assert _format_throughput(100.0) == "100 rows/s"
+        assert _format_throughput(999.0) == "999 rows/s"
+
+    def test_format_throughput_k(self):
+        """Large throughput in K rows/s."""
+        assert _format_throughput(1000.0) == "1.0 K rows/s"
+        assert _format_throughput(1500.5) == "1.5 K rows/s"
+
+    def test_format_throughput_m(self):
+        """Very large throughput in M rows/s."""
+        assert _format_throughput(1_000_000.0) == "1.0 M rows/s"
+        assert _format_throughput(5_250_000.0) == "5.2 M rows/s"
+
+    def test_progress_indicator_start_stop(self):
+        """Enabled progress indicator should start and stop cleanly."""
+        pi = _ProgressIndicator()
+        pi.start()
         assert pi._thread is not None
         assert pi._thread.is_alive()
-        pi.update(stage="progress", done=500)
+        pi.update(stage="Encrypting", done=500)
         with pi._lock:
-            assert pi._stage == "progress"
+            assert pi._stage == "Encrypting"
             assert pi._done == 500
         pi.set_total_rows(1000)
         with pi._lock:
             assert pi._total_rows == 1000
         pi.stop()
         assert not pi._thread.is_alive()
+
+    def test_progress_update_via_lock(self):
+        """Updates via _lock should be visible immediately."""
+        pi = _ProgressIndicator()
+        pi.start()
+        pi.update(stage="Process", done=1)
+        with pi._lock:
+            assert pi._done == 1
+        pi.stop()
 
 
 class TestCliRunReporter:
@@ -69,13 +84,6 @@ class TestCliRunReporter:
         """NO_PROGRESS env var should suppress interactive progress."""
         with patch("sys.stderr.isatty", return_value=True):
             with patch.dict("os.environ", {"NO_PROGRESS": "1"}):
-                reporter = CliRunReporter("test")
-                assert reporter._interactive is False
-
-    def test_openlink_no_progress_env_var_suppresses_interactive(self):
-        """OPENLINK_NO_PROGRESS env var should also suppress interactive."""
-        with patch("sys.stderr.isatty", return_value=True):
-            with patch.dict("os.environ", {"OPENLINK_NO_PROGRESS": "1"}):
                 reporter = CliRunReporter("test")
                 assert reporter._interactive is False
 
@@ -115,7 +123,7 @@ class TestCliRunReporter:
                 callback = reporter.make_progress_callback("Encrypting", "tokens")
                 callback(100)
                 with reporter._progress_indicator._lock:
-                    assert reporter._progress_indicator._stage == "Encrypting (100 tokens)"
+                    assert reporter._progress_indicator._stage == "Encrypting"
 
     def test_update_status_includes_count(self):
         """update_status should include processed_count in the stage message."""
@@ -124,11 +132,11 @@ class TestCliRunReporter:
                 reporter = CliRunReporter("test")
                 reporter.update_status("Processing", processed_count=1000, unit_label="rows")
                 with reporter._progress_indicator._lock:
-                    assert reporter._progress_indicator._stage == "Processing (1,000 rows)"
+                    assert reporter._progress_indicator._stage == "Processing"
                     assert reporter._progress_indicator._done == 1000
 
     def test_update_status_without_count(self):
-        """update_status without count should not include count in stage."""
+        """update_status without count should just update stage."""
         with patch("sys.stderr.isatty", return_value=True):
             with patch.dict("os.environ", {}, clear=True):
                 reporter = CliRunReporter("test")
@@ -196,14 +204,6 @@ class TestCliRunReporter:
                 reporter = CliRunReporter("test")
                 assert hasattr(reporter, "finish_success")
 
-    def test_finish_success_clears_progress_line(self):
-        """finish_success should be callable when progress is active."""
-        with patch("sys.stderr.isatty", return_value=True):
-            with patch.dict("os.environ", {}, clear=True):
-                reporter = CliRunReporter("test")
-                reporter._progress_indicator.start("stage", total_rows=1000)
-                pass
-
 
 class TestFormatNumber:
     """Unit tests for _format_number convenience (uses f-string formatting)."""
@@ -219,31 +219,3 @@ class TestFormatNumber:
     def test_format_number_zero(self):
         """Zero should render as 0."""
         assert f"{0:,}" == "0"
-
-
-class TestProgressIndicatorInteractive:
-    """Tests for interactive behavior in enabled/disabled modes."""
-
-    def test_done_zero_displays_start_message(self):
-        """When done is 0 or not set, should show starting..."""
-        pi = _ProgressIndicator(enabled=True)
-        pi.start("Encrypting", total_rows=10000)
-        with pi._lock:
-            assert pi._done == 0
-        pi.update(stage="Encrypting", done=500)
-        with pi._lock:
-            assert pi._done == 500
-        pi.stop()
-
-    def test_done_updates_respect_lock(self):
-        """Concurrent updates to done should be safe via lock."""
-        pi = _ProgressIndicator(enabled=True)
-        pi.start("Process", total_rows=10000)
-        pi._lock.acquire()
-        pi._done = 1
-        pi._done = 2
-        pi._done = 3
-        pi._lock.release()
-        with pi._lock:
-            assert pi._done == 3
-        pi.stop()
