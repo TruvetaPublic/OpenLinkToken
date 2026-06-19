@@ -140,26 +140,37 @@ def load_metadata_any(json_files):
     return None
 
 
-def find_matches(hospital_tokens, pharmacy_tokens, required_token_matches=5):
+def find_matches(hospital_tokens, pharmacy_tokens, required_token_matches=5, matching_rules=None):
     """
     Find matching records between hospital and pharmacy datasets.
 
-    A match is defined as having all 5 tokens (T1-T5) identical between two records.
+    A match requires all tokens in ``matching_rules`` to be identical between
+    two records.
+
+    Args:
+        hospital_tokens: Tokens dict for the hospital dataset.
+        pharmacy_tokens: Tokens dict for the pharmacy dataset.
+        required_token_matches: Minimum number of tokens that must match (only
+            used when ``matching_rules`` is None).
+        matching_rules: Optional list of specific token IDs that must ALL match
+            (e.g. ``["T1", "T2", "T3", "T5"]``).  When provided,
+            ``required_token_matches`` is ignored.
 
     Returns:
         matches: List of tuples (hospital_record_id, pharmacy_record_id, matching_tokens)
     """
     matches = []
-    token_ids = ["T1", "T2", "T3", "T4", "T5"]
+    token_ids = matching_rules if matching_rules else ["T1", "T2", "T3", "T4", "T5"]
+    required = len(token_ids) if matching_rules else required_token_matches
 
-    print(f"Searching for matches (requiring {required_token_matches} matching tokens)...")
+    print(f"Searching for matches (requiring {required} matching tokens: {', '.join(token_ids)})...")
     print()
 
     for hospital_id, hospital_token_set in hospital_tokens.items():
         for pharmacy_id, pharmacy_token_set in pharmacy_tokens.items():
             matching_tokens = _matching_token_ids(token_ids, hospital_token_set, pharmacy_token_set)
 
-            if len(matching_tokens) >= required_token_matches:
+            if len(matching_tokens) >= required:
                 matches.append((hospital_id, pharmacy_id, matching_tokens))
 
     return matches
@@ -229,6 +240,7 @@ def save_matches_to_csv(matches, output_file):
     """Save matching results to CSV file."""
     with open(output_file, "w", newline="") as f:
         writer = csv.writer(f)
+
         writer.writerow(["HospitalRecordId", "PharmacyRecordId", "MatchingTokens", "TokenCount"])
 
         for hospital_id, pharmacy_id, matching_tokens in matches:
@@ -293,6 +305,7 @@ def main():
         str(outputs_dir / "pharmacy_tokens.metadata.json"),
         str(outputs_dir / "pharmacy_tokens.csv.metadata.json"),
     ]
+
     matches_output_file = str(outputs_dir / "matching_records.csv")
 
     # Load and decrypt tokens

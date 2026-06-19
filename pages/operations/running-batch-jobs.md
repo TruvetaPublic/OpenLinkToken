@@ -39,7 +39,7 @@ olt <subcommand> [OPTIONS]
 
 | Subcommand | Default pattern                  |
 | ---------- | -------------------------------- |
-| `package`  | `<input_basename>_packaged.zip`     |
+| `package`  | `<input_basename>_packaged.zip`  |
 | `tokenize` | `<input_basename>_tokenized.csv` |
 | `encrypt`  | `<input_basename>_encrypted.zip` |
 | `decrypt`  | `<input_basename>_decrypted.csv` |
@@ -83,7 +83,7 @@ The resulting archive contains three files:
 
 | File                   | Description                               |
 | ---------------------- | ----------------------------------------- |
-| `output.parquet`        | Encrypted tokens (always Parquet)      |
+| `output.parquet`       | Encrypted tokens (always Parquet)         |
 | `output.metadata.json` | Processing metadata                       |
 | `batch.exchange.json`  | Exchange config used for this package run |
 
@@ -123,7 +123,7 @@ cd /path/to/OpenLinkToken
 **PowerShell (Windows):**
 
 ```powershell
-cd C:\path\to\Open Link Token
+cd C:\path\to\OpenLinkToken
 
 .\run-openlinktoken.ps1 package `
   -i .\resources\sample.csv `
