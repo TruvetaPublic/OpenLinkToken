@@ -3,6 +3,11 @@
 
 import os
 
+try:
+    import tomllib
+except ImportError:  # pragma: no cover
+    import tomli as tomllib
+
 from setuptools import find_packages, setup
 
 # Read the contents of the project README file.
@@ -16,9 +21,11 @@ except FileNotFoundError:
      # Fallback to a short description if README is unavailable
     long_description = "Open Link Token Python implementation for record linkage."
 
-# Read requirements from requirements.txt
-with open(os.path.join(this_directory, "requirements.txt"), encoding="utf-8") as f:
-    requirements = [line.strip() for line in f if line.strip() and not line.startswith("#")]
+with open(os.path.join(this_directory, "pyproject.toml"), "rb") as f:
+    project_config = tomllib.load(f).get("project", {})
+
+requirements = project_config.get("dependencies", [])
+optional_dependencies = project_config.get("optional-dependencies", {})
 
 setup(
     name="openlinktoken",
@@ -36,11 +43,5 @@ setup(
     packages=find_packages(where="src/main"),
     python_requires=">=3.10",
     install_requires=requirements,
-    extras_require={
-        "dev": [
-            "cryptography==46.0.7",
-            "pycryptodome==3.23.0",
-        ],
-        "test": ["pytest==9.0.3"],
-    },
+    extras_require=optional_dependencies,
 )

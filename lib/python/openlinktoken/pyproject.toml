@@ -2,15 +2,23 @@
 name = "openlinktoken"
 version = "2.0.0-alpha"
 requires-python = ">=3.10"
+dependencies = [
+  "cryptography==46.0.7",
+  "jwcrypto==1.5.7",
+  "PyYAML==6.0.3",
+]
+optional-dependencies = { dev = ["cryptography==46.0.7", "pycryptodome==3.23.0"], test = ["pytest==9.0.3"] }
 dynamic = [
   "authors",
-  "dependencies",
   "description",
-  "optional-dependencies",
   "readme",
   "urls",
 ]
 
 [build-system]
-requires = ["setuptools==75.3.0", "wheel"]
+requires = [
+  "setuptools==75.3.0",
+  "wheel",
+  "tomli>=2.0.1; python_version < '3.11'",
+]
 build-backend = "setuptools.build_meta"

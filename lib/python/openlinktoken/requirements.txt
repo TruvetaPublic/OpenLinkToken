@@ -3,6 +3,3 @@ cryptography==46.0.7
 
 # JOSE/JWE for match token format
 jwcrypto==1.5.7
-
-# YAML parsing for custom tokenization config support
-PyYAML==6.0.3

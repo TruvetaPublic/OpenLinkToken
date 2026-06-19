@@ -125,7 +125,7 @@ class TokenizeCommand:
             metavar="PATH",
             help=(
                 "Path to a YAML tokenization config that defines input field mappings and token rules. "
-                "Supported for CSV input only."
+                "Supported for CSV and Parquet input."
             ),
         )
 
@@ -176,10 +176,6 @@ class TokenizeCommand:
         output_type = FileTypeDetector.detect_output_type(output_path)
         if not output_type:
             logger.error("Unable to auto-detect output type from provided/generated path.")
-            return 1
-
-        if tokenization_config_path and input_type.lower() != FileTypeDetector.TYPE_CSV:
-            logger.error("--config currently supports CSV input only.")
             return 1
 
         if mode == TokenizeCommand._MODE_DEMO and hash_record_ids:
@@ -446,10 +442,13 @@ class TokenizeCommand:
         file_type_lower = file_type.lower()
         if file_type_lower == FileTypeDetector.TYPE_CSV:
             if config and factory:
-                attribute_map = TokenizeCommand._build_configured_csv_attribute_map(config, factory)
+                attribute_map = TokenizeCommand._build_configured_input_attribute_map(config, factory)
                 return PersonAttributesCSVReader(path, attribute_map=attribute_map)
             return PersonAttributesCSVReader(path)
         elif file_type_lower == FileTypeDetector.TYPE_PARQUET:
+            if config and factory:
+                attribute_map = TokenizeCommand._build_configured_input_attribute_map(config, factory)
+                return PersonAttributesParquetReader(path, attribute_map=attribute_map)
             return PersonAttributesParquetReader(path)
         else:
             raise ValueError(f"Unsupported input type: {file_type}")
@@ -467,11 +466,11 @@ class TokenizeCommand:
         return config, factory, token_definition
 
     @staticmethod
-    def _build_configured_csv_attribute_map(
+    def _build_configured_input_attribute_map(
         config: TokenizationConfig,
         factory: DynamicAttributeFactory,
     ) -> dict:
-        """Build explicit column-to-dynamic-attribute mapping for config-driven CSV reads."""
+        """Build explicit column-to-dynamic-attribute mapping for config-driven reads."""
         attribute_map = {}
         for csv_column in config.attributes:
             try:

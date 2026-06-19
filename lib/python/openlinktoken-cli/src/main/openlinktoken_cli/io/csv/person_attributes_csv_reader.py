@@ -35,7 +35,7 @@ class PersonAttributesCSVReader(PersonAttributesReader):
             self.csv_reader = csv.DictReader(self.file_handle)
             self.iterator = iter(self.csv_reader)
             if attribute_map is not None:
-                self.attribute_map = dict(attribute_map)
+                self.attribute_map = attribute_map.copy()
             else:
                 self.attribute_map = self._build_attribute_map_from_aliases()
 
