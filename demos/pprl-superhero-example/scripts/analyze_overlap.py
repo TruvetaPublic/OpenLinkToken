@@ -7,11 +7,14 @@ tokens must be decrypted before comparison to get the underlying HMAC-SHA256
 hash values, which are deterministic and comparable.
 """
 
+import argparse
 import base64
 import csv
 import json
 import os
 from collections import defaultdict
+from pathlib import Path
+from typing import Sequence
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
@@ -302,8 +305,43 @@ def _resolve_encryption_key(exchange_config_path, private_key_path):
     return derive_transport_encryption_key(exchange)
 
 
-def main():
+def _build_parser() -> argparse.ArgumentParser:
+    """Build the command-line parser for overlap analysis."""
+    parser = argparse.ArgumentParser(
+        description="Decrypt Open Link Token demo outputs and find matching record pairs.",
+    )
+    parser.add_argument(
+        "--matching-rules",
+        nargs="+",
+        metavar="RULE_ID",
+        help="Optional token rule IDs that must all match, e.g. --matching-rules T1 T2 T3 T5",
+    )
+    parser.add_argument(
+        "--output",
+        metavar="PATH",
+        help=(
+            "Optional output CSV path. Relative filenames are written under outputs/. "
+            "Defaults to outputs/matching_records.csv."
+        ),
+    )
+    return parser
+
+
+def _resolve_output_path(output_argument: str | None, outputs_dir: Path) -> Path:
+    """Resolve the CSV output path, defaulting relative names into outputs/."""
+    if not output_argument:
+        return outputs_dir / "matching_records.csv"
+
+    output_path = Path(output_argument)
+    if output_path.is_absolute():
+        return output_path
+    return outputs_dir / output_path.name if output_path.parent == Path(".") else output_path
+
+
+def main(argv: Sequence[str] | None = None):
     """Main function to analyze overlap between datasets."""
+    args = _build_parser().parse_args(argv)
+
     print()
     print("=" * 70)
     print("PPRL Overlap Analysis - Superhero Hospital & Pharmacy")
@@ -312,8 +350,6 @@ def main():
 
     # Resolve exchange config and private key from env vars (set by run_end_to_end.sh
     # or tokenize scripts) or fall back to the default demo paths
-    from pathlib import Path
-
     script_dir = Path(__file__).parent
     demo_dir = script_dir.parent
 
@@ -351,7 +387,7 @@ def main():
         str(outputs_dir / "pharmacy_tokens.csv.metadata.json"),
     ]
 
-    matches_output_file = str(outputs_dir / "matching_records.csv")
+    matches_output_file = _resolve_output_path(args.output, outputs_dir)
 
     # Load and decrypt tokens
     print("Loading and decrypting tokens...")
@@ -366,8 +402,13 @@ def main():
     analyze_token_distribution(hospital_tokens, "Hospital")
     analyze_token_distribution(pharmacy_tokens, "Pharmacy")
 
-    # Find matches (all 5 tokens must match)
-    matches = find_matches(hospital_tokens, pharmacy_tokens, required_token_matches=5)
+    # Find matches (default strict matching requires all 5 standard tokens)
+    matches = find_matches(
+        hospital_tokens,
+        pharmacy_tokens,
+        required_token_matches=5,
+        matching_rules=args.matching_rules,
+    )
 
     # Print match summary
     print_match_summary(matches)

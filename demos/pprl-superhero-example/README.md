@@ -102,7 +102,7 @@ Hospital (overlap analysis in this demo)
 
 - **Exact-match linkage**: This demo treats records as a match only when the required token set matches exactly.
 - **Clean, synthetic data**: The datasets are synthetic and intentionally constructed to have a known overlap.
-- **Shared secrets assumption**: The demo assumes both organizations use the same hashing secret and encryption key.
+- **Shared exchange-config assumption**: The demo assumes both organizations use the same hashing secret and the same derived transport key by participating in the same exchange-config setup.
 - **No typo tolerance**: If identifiers differ (typos, nicknames, missing fields), tokens may not match.
 - **Not SMPC**: This is not secure multi-party computation; decryption and matching happen inside a trusted environment.
 
@@ -181,6 +181,7 @@ This demonstration shows how to properly compare tokens from two organizations t
 
 - Python 3.10+
 - [`uv`](https://docs.astral.sh/uv/) (used by the tokenization scripts to install the Python CLI if needed)
+- `pandas`, `pyspark`, `openlinktoken-pyspark`, and a Jupyter-compatible environment if you want to run the notebook walkthrough
 
 ### Quick Start Guide <!-- omit in toc -->
 
@@ -191,7 +192,7 @@ For a step-by-step walkthrough, start with the Jupyter notebook:
 - Open [PPRL_Superhero_Demo.ipynb](PPRL_Superhero_Demo.ipynb)
 - Run the cells from top to bottom
 
-The notebook walks through dataset generation, tokenization, and overlap analysis (including an example of relaxing the match policy).
+The notebook is the **PySpark bridge walkthrough**: it builds a demo exchange config in Python, tokenizes both datasets with the bridge APIs, runs strict overlap analysis with the bridge, and then demonstrates a relaxed match policy.
 
 ### End-to-end script (one command) <!-- omit in toc -->
 
@@ -248,9 +249,9 @@ These scripts simulate two separate tokenization processes:
 
 **Critical Requirements**:
 
-- Both organizations must use the **same hashing and encryption keys**
-- Keys must be shared securely between organizations before tokenization
-- In production, use strong keys and secure key exchange protocols
+- Both organizations must use the **same exchange-config setup** so they share the same hashing secret and derived transport key
+- The demo scripts create a shared demo exchange config automatically if it does not exist
+- In production, use strong keys and a real key-exchange / key-management workflow
 
 #### Step 3: Measure Overlap <!-- omit in toc -->
 
@@ -269,7 +270,13 @@ This script performs the record linkage analysis:
 4. **Reports** matching statistics
 5. **Saves** results to `outputs/matching_records.csv`
 
-**Note**: The analysis script requires the encryption key to decrypt tokens. This key must match the one used during tokenization.
+**Note**: The analysis script resolves the transport key from the same exchange config and private key used during tokenization. By default it uses the files created by the tokenization scripts.
+
+To try a relaxed policy manually, run:
+
+```bash
+python scripts/analyze_overlap.py --matching-rules T1 T2 T3 T5 --output matching_records_alt.csv
+```
 
 ## Outputs
 
@@ -320,7 +327,7 @@ This demo creates files under `datasets/` (raw synthetic data) and `outputs/` (t
    - `outputs/hospital_tokens.metadata.json`
    - `outputs/pharmacy_tokens.metadata.json`
 
-   These include counts (processed/valid/invalid), a timestamp/version, and SHA-256 hashes of the secrets used (but not the secrets themselves).
+   These include counts, version information, and SHA-256 hashes of the secrets used (but not the secrets themselves).
 
 1. **Matching results** (created by the overlap analysis step)
 
@@ -484,25 +491,24 @@ overlap_percentage = 0.30  # 30% overlap
 
 ### Using Different Secrets <!-- omit in toc -->
 
-Edit both tokenization scripts (and keep them identical across parties):
+Edit the demo hashing secret in these files (and keep them identical across parties):
 
 - `scripts/tokenize_hospital.sh`
 - `scripts/tokenize_pharmacy.sh`
+- `run_end_to_end.sh`
 
 ```bash
 HASHING_SECRET="YourCustomHashingKey"
-ENCRYPTION_KEY="YourCustomEncryptionKey-32"
 ```
 
-**Important**: Both datasets must use the same secrets for tokens to be comparable!
+The transport encryption key is derived from the exchange config created during the demo setup step, so both parties must participate in the same exchange-config workflow for tokens to stay comparable.
 
 ### Adjusting Match Criteria <!-- omit in toc -->
 
-Edit `analyze_overlap.py` to require fewer matching tokens:
+Use the CLI to require a different token set:
 
-```python
-# Find matches with at least 4 out of 5 tokens matching
-matches = find_matches(hospital_tokens, pharmacy_tokens, required_token_matches=4)
+```bash
+python scripts/analyze_overlap.py --matching-rules T1 T2 T3 T5 --output matching_records_alt.csv
 ```
 
 ### Troubleshooting <!-- omit in toc -->
@@ -511,7 +517,7 @@ matches = find_matches(hospital_tokens, pharmacy_tokens, required_token_matches=
 
 **Cause**: Datasets were tokenized with different secrets.
 
-**Solution**: Ensure both tokenizations use identical hashing and encryption keys.
+**Solution**: Ensure both tokenizations use the same hashing secret and the same exchange-config / private-key setup so they derive the same transport key.
 
 ### "Invalid attribute" errors during tokenization <!-- omit in toc -->
 
