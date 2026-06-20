@@ -44,6 +44,14 @@ class TokenCSVReader(TokenReader):
             logger.error(f"Error in reading CSV file: {e}")
             raise
 
+    def row_count(self) -> int:
+        try:
+            self.file_handle.seek(0)
+            next(self.file_handle)
+            return sum(1 for _ in self.file_handle)
+        except Exception:
+            return 0
+
     def __iter__(self) -> Iterator[Dict[str, str]]:
         """
         Iterate over rows in the CSV file.
