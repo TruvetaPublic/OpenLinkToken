@@ -34,9 +34,9 @@ class PersonAttributesParquetReader(PersonAttributesReader):
         try:
             self.file_path = file_path
             self.parquet_file = pq.ParquetFile(file_path)
+            self.total_rows = self.parquet_file.metadata.num_rows
             self.table = self.parquet_file.read()
             self.current_row = 0
-            self.total_rows = len(self.table)
             self.closed = False
             self.has_next_called = False
             self.has_next_result = False

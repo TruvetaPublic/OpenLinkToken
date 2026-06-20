@@ -153,44 +153,44 @@ class _ProgressIndicator:
                 elapsed = now - start_time
 
                 # Build the display line: spinner + stage with colon, then labeled metrics
-                parts = [frame, stage]
-                meta = {}
+                pct_str = ""
+                remaining_str = ""
+                speed_str = ""
 
                 if total > 0 and elapsed > 0 and done > 0:
                     pct_str = self._format_percentage(done, total)
-                    meta['percentage'] = pct_str  # pct_str already has "%" suffix
 
                     rate = done / elapsed
                     if rate > 0 and elapsed < 24 * 3600:
                         remaining = total - done
                         if remaining > 0:
                             eta_seconds = remaining / rate
-                            meta['remaining'] = self._format_elapsed(eta_seconds)
-                        meta['speed'] = f"at {self._format_throughput(rate)}"
+                            remaining_str = self._format_elapsed(eta_seconds)
+                        speed_str = self._format_throughput(rate)
 
-                    meta['elapsed'] = self._format_elapsed(elapsed)
-                else:
-                    meta['elapsed'] = self._format_elapsed(elapsed)
+                elapsed_str = self._format_elapsed(elapsed)
 
-                # Assemble line with clear labels
-                if len(meta) > 1:
-                    label_parts = []
-                    if 'percentage' in meta:
-                        label_parts.append(f"{meta['percentage']} complete")
-                    if 'remaining' in meta:
-                        label_parts.append(f"{meta['remaining']} remaining")
-                    if 'speed' in meta:
-                        label_parts.append(f"{meta['speed']}")
-                    if 'elapsed' in meta:
-                        label_parts.append(f"elapsed {meta['elapsed']}")
-                    line = " ".join(parts[:2]) + ": " + " | ".join(label_parts)
-                else:
-                    line = frame + " " + stage + ": " + meta.get('elapsed', '--')
-                sys.stderr.write("\r" + line + "\r")
+                # Assemble line with clear labels in fixed order:
+                #   1) {pct}% complete
+                #   2) {time} left
+                #   3) {speed} rows/s
+                #   4) elapsed {time}
+                label_parts = []
+                if pct_str:
+                    label_parts.append(f"{pct_str}% complete")
+                if remaining_str:
+                    label_parts.append(f"{remaining_str} left")
+                if speed_str:
+                    label_parts.append(f"{speed_str}")
+                label_parts.append(f"elapsed {elapsed_str}")
+
+                line = f" {frame} {stage}: " + "  |  ".join(label_parts)
+                sys.stderr.write("\r" + line.ljust(72) + "\n\r")
                 sys.stderr.flush()
 
         except KeyboardInterrupt:
             pass
+
 
 
 
@@ -213,12 +213,14 @@ class CliRunReporter:
     def __enter__(self) -> "CliRunReporter":
         self._attach_file_logging()
         self._mute_console_logging()
-        self._progress_indicator.start()
+        if self._interactive:
+            self._progress_indicator.start()
         logging.getLogger(__name__).info("Starting %s command", self.command_name)
         return self
 
     def __exit__(self, exc_type, exc, exc_tb) -> None:
-        self._progress_indicator.stop()
+        if self._interactive:
+            self._progress_indicator.stop()
         self._restore_console_logging()
         self._detach_file_logging()
 
