@@ -1,19 +1,26 @@
 # SPDX-License-Identifier: MIT
 
-from pathlib import Path
+import os
+import re
 from unittest.mock import patch
 
-from openlinktoken_cli.util.cli_error_reporter import format_dimmed_stderr_message
 from openlinktoken_cli.util.cli_run_reporter import (
-     _ProgressIndicator,
-     _format_elapsed,
-     _format_throughput,
     CliRunReporter,
+    StatsProvider,
+    _format_elapsed,
+    _format_throughput,
+    _format_throughput_parts,
+    _ProgressIndicator,
 )
 
 
 class TestProgressIndicator:
     """Unit tests for the enhanced progress indicator."""
+
+    @staticmethod
+    def _rendered_lines(rendered: str) -> list[str]:
+        normalized = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", rendered).replace("\r", "")
+        return normalized.splitlines()
 
     def test_format_elapsed_short(self):
         """Elapsed time under an hour should be MM:SS format."""
@@ -70,6 +77,165 @@ class TestProgressIndicator:
             assert pi._done == 1
         pi.stop()
 
+    def test_render_writes_multiline_progress_block(self):
+        """Rendered progress should show each metric on its own line with aligned columns."""
+        pi = _ProgressIndicator()
+        pi._start_time = 0.0
+        pi.set_total_rows(200)
+        pi.update(stage="Working", done=100)
+        pi._running.set()
+
+        writes: list[str] = []
+
+        def _write(text: str) -> int:
+            writes.append(text)
+            pi._running.clear()
+            return len(text)
+
+        with (
+            patch("shutil.get_terminal_size", return_value=os.terminal_size((160, 24))),
+            patch("sys.stderr.write", side_effect=_write),
+            patch("sys.stderr.flush"),
+            patch("time.sleep", return_value=None),
+            patch("time.perf_counter", return_value=10.0),
+        ):
+            pi._render()
+
+        assert writes
+        rendered_lines = self._rendered_lines("".join(writes))
+        assert rendered_lines == [
+            " \u280b Working",
+            "  processed:    100 rows",
+            "  total:        200 rows",
+            "  complete:    50.0 %",
+            "  throughput:  10.0 rows/s",
+            "  elapsed:    00:10",
+            "  remaining:  00:10",
+        ]
+
+    def test_render_without_total_shows_placeholders(self):
+        """When the total is unknown, the live block should keep stable placeholder lines."""
+        pi = _ProgressIndicator()
+        pi._start_time = 0.0
+        pi.update(stage="Working", done=25)
+        pi._running.set()
+
+        writes: list[str] = []
+
+        def _write(text: str) -> int:
+            writes.append(text)
+            pi._running.clear()
+            return len(text)
+
+        with (
+            patch("sys.stderr.write", side_effect=_write),
+            patch("sys.stderr.flush"),
+            patch("time.sleep", return_value=None),
+            patch("time.perf_counter", return_value=5.0),
+        ):
+            pi._render()
+
+        assert writes
+        rendered_lines = self._rendered_lines("".join(writes))
+        assert rendered_lines == [
+            " \u280b Working",
+            "  processed:     25 rows",
+            "  total:         --",
+            "  complete:      --",
+            "  throughput:   5.0 rows/s",
+            "  elapsed:    00:05",
+            "  remaining:     --",
+        ]
+
+    def test_render_keeps_progress_to_terminal_width(self):
+        """The live progress block should keep every line within terminal width."""
+        pi = _ProgressIndicator()
+        pi._start_time = 0.0
+        pi.set_total_rows(200)
+        pi.update(stage="Working", done=100)
+        pi._running.set()
+
+        writes: list[str] = []
+
+        def _write(text: str) -> int:
+            writes.append(text)
+            pi._running.clear()
+            return len(text)
+
+        with (
+            patch("shutil.get_terminal_size", return_value=os.terminal_size((80, 24))),
+            patch("sys.stderr.write", side_effect=_write),
+            patch("sys.stderr.flush"),
+            patch("time.sleep", return_value=None),
+            patch("time.perf_counter", return_value=10.0),
+        ):
+            pi._render()
+
+        assert writes
+        rendered_lines = self._rendered_lines("".join(writes))
+        assert len(rendered_lines) == 7
+        assert rendered_lines[1] == "  processed:    100 rows"
+        assert rendered_lines[2] == "  total:        200 rows"
+        assert all(len(line.rstrip()) <= 80 for line in rendered_lines)
+
+    def test_render_with_stats_provider(self):
+        """Extension stats providers should appear below a divider in the progress block."""
+        pi = _ProgressIndicator()
+        pi._start_time = 0.0
+        pi.set_total_rows(1000)
+        pi.update(stage="Processing", done=500)
+        pi._running.set()
+
+        class TestProvider:
+            def get_metrics(self) -> list[tuple[str, str, str]]:
+                return [("matched", "1,042", "rows"), ("errors", "3", "")]
+
+        pi._stats_providers.append(TestProvider())
+
+        writes: list[str] = []
+
+        def _write(text: str) -> int:
+            writes.append(text)
+            pi._running.clear()
+            return len(text)
+
+        with (
+            patch("shutil.get_terminal_size", return_value=os.terminal_size((160, 24))),
+            patch("sys.stderr.write", side_effect=_write),
+            patch("sys.stderr.flush"),
+            patch("time.sleep", return_value=None),
+            patch("time.perf_counter", return_value=10.0),
+        ):
+            pi._render()
+
+        assert writes
+        rendered_lines = self._rendered_lines("".join(writes))
+        # 1 header + 6 core metrics + 1 divider + 2 extension metrics = 10 lines
+        assert len(rendered_lines) == 10
+        # Extension metrics appear after divider
+        divider_idx = next(i for i, line in enumerate(rendered_lines) if "─" in line)
+        assert "matched:" in rendered_lines[divider_idx + 1]
+        assert "1,042" in rendered_lines[divider_idx + 1]
+        assert "rows" in rendered_lines[divider_idx + 1]
+        assert "errors:" in rendered_lines[divider_idx + 2]
+        assert "3" in rendered_lines[divider_idx + 2]
+
+    def test_stats_provider_protocol(self):
+        """Objects implementing get_metrics() should satisfy StatsProvider protocol."""
+
+        class ValidProvider:
+            def get_metrics(self) -> list[tuple[str, str, str]]:
+                return [("test", "42", "items")]
+
+        assert isinstance(ValidProvider(), StatsProvider)
+
+    def test_format_throughput_parts(self):
+        """_format_throughput_parts should split number and unit."""
+        assert _format_throughput_parts(1.5) == ("1.5", "rows/s")
+        assert _format_throughput_parts(100.0) == ("100", "rows/s")
+        assert _format_throughput_parts(1500.0) == ("1.5 K", "rows/s")
+        assert _format_throughput_parts(2_500_000.0) == ("2.5 M", "rows/s")
+
 
 class TestCliRunReporter:
     """Unit tests for CLI run progress reporter."""
@@ -84,6 +250,13 @@ class TestCliRunReporter:
         """NO_PROGRESS env var should suppress interactive progress."""
         with patch("sys.stderr.isatty", return_value=True):
             with patch.dict("os.environ", {"NO_PROGRESS": "1"}):
+                reporter = CliRunReporter("test")
+                assert reporter._interactive is False
+
+    def test_openlink_no_progress_env_var_suppresses_interactive(self):
+        """OPENLINK_NO_PROGRESS should suppress interactive progress."""
+        with patch("sys.stderr.isatty", return_value=True):
+            with patch.dict("os.environ", {"OPENLINK_NO_PROGRESS": "1"}):
                 reporter = CliRunReporter("test")
                 assert reporter._interactive is False
 
@@ -203,6 +376,20 @@ class TestCliRunReporter:
             with patch.dict("os.environ", {}, clear=True):
                 reporter = CliRunReporter("test")
                 assert hasattr(reporter, "finish_success")
+
+    def test_add_stats_provider(self):
+        """add_stats_provider should register a provider on the progress indicator."""
+        with patch("sys.stderr.isatty", return_value=True):
+            with patch.dict("os.environ", {}, clear=True):
+                reporter = CliRunReporter("test")
+
+                class MockProvider:
+                    def get_metrics(self) -> list[tuple[str, str, str]]:
+                        return [("custom", "99", "items")]
+
+                provider = MockProvider()
+                reporter.add_stats_provider(provider)
+                assert provider in reporter._progress_indicator._stats_providers
 
 
 class TestFormatNumber:

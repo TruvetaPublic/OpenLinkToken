@@ -47,7 +47,6 @@ class PersonAttributesCSVReader(PersonAttributesReader):
             logger.error(f"Error in reading CSV file: {e}")
             raise
 
-    @property
     def row_count(self) -> int:
         """Return the total number of rows in the CSV file.
 
@@ -55,15 +54,16 @@ class PersonAttributesCSVReader(PersonAttributesReader):
         seeks back to the beginning and rebuilds the iterator so downstream
         iteration (for / __next__) works correctly.
         """
-        if hasattr(self, '_cached_row_count'):
+        if hasattr(self, "_cached_row_count"):
             return self._cached_row_count
+
         count = 0
         self.file_handle.seek(0)
-        header = next(iter(self.file_handle))
+        next(self.file_handle, None)
         for _ in self.file_handle:
             count += 1
+
         self._cached_row_count = count
-        # Restore state so downstream iteration produces rows
         self.file_handle.seek(0)
         self.csv_reader = csv.DictReader(self.file_handle)
         self.iterator = iter(self.csv_reader)

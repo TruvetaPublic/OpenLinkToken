@@ -117,7 +117,6 @@ class PersonAttributesParquetReader(PersonAttributesReader):
 
         return attributes
 
-    @property
     def row_count(self) -> int:
         """Return the total number of rows in the Parquet file."""
         return self.total_rows
