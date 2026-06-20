@@ -2,7 +2,7 @@
 
 import logging
 import sys
-from typing import List
+from typing import List, Optional
 
 from openlinktoken.metadata import Metadata
 from openlinktoken_cli.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
@@ -435,20 +435,22 @@ class TokenizeCommand:
     def _create_reader(
         path: str,
         file_type: str,
-        config: TokenizationConfig = None,
-        factory: DynamicAttributeFactory = None,
+        config: Optional[TokenizationConfig] = None,
+        factory: Optional[DynamicAttributeFactory] = None,
     ):
         """Create a PersonAttributesReader based on file type."""
+        attribute_map = None
+        if config is not None and factory is not None:
+            attribute_map = TokenizeCommand._build_configured_input_attribute_map(config, factory)
+
         file_type_lower = file_type.lower()
         if file_type_lower == FileTypeDetector.TYPE_CSV:
-            if config and factory:
-                attribute_map = TokenizeCommand._build_configured_input_attribute_map(config, factory)
-                return PersonAttributesCSVReader(path, attribute_map=attribute_map)
+            if attribute_map is not None:
+                return PersonAttributesCSVReader(path, attribute_map)
             return PersonAttributesCSVReader(path)
         elif file_type_lower == FileTypeDetector.TYPE_PARQUET:
-            if config and factory:
-                attribute_map = TokenizeCommand._build_configured_input_attribute_map(config, factory)
-                return PersonAttributesParquetReader(path, attribute_map=attribute_map)
+            if attribute_map is not None:
+                return PersonAttributesParquetReader(path, attribute_map)
             return PersonAttributesParquetReader(path)
         else:
             raise ValueError(f"Unsupported input type: {file_type}")
