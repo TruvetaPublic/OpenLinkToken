@@ -7,7 +7,7 @@ dependencies = [
   "jwcrypto==1.5.7",
   "PyYAML==6.0.3",
 ]
-optional-dependencies = { dev = ["cryptography==48.0.1", "pycryptodome==3.23.0"], test = ["pytest==9.0.3"] }
+optional-dependencies = { dev = ["pycryptodome==3.23.0"], test = ["pytest==9.0.3"] }
 dynamic = [
   "authors",
   "description",
@@ -19,6 +19,6 @@ dynamic = [
 requires = [
   "setuptools==75.3.0",
   "wheel",
-  "tomli>=2.0.1; python_version < '3.11'",
+  "tomli==2.0.1; python_version < '3.11'",
 ]
 build-backend = "setuptools.build_meta"
