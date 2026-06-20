@@ -158,7 +158,7 @@ class _ProgressIndicator:
 
                 if total > 0 and elapsed > 0 and done > 0:
                     pct_str = self._format_percentage(done, total)
-                    meta['percentage'] = f"{pct_str}%"
+                    meta['percentage'] = pct_str  # pct_str already has "%" suffix
 
                     rate = done / elapsed
                     if rate > 0 and elapsed < 24 * 3600:
@@ -166,8 +166,8 @@ class _ProgressIndicator:
                         if remaining > 0:
                             eta_seconds = remaining / rate
                             meta['remaining'] = self._format_elapsed(eta_seconds)
-                        meta['speed'] = self._format_throughput(rate)
-                    
+                        meta['speed'] = f"at {self._format_throughput(rate)}"
+
                     meta['elapsed'] = self._format_elapsed(elapsed)
                 else:
                     meta['elapsed'] = self._format_elapsed(elapsed)

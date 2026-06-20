@@ -162,14 +162,15 @@ class PackageCommand:
                     logger.info(f"Exchange config: {exchange.path}")
 
                     reporter.update_status("Packaging records")
-                    # Determine total rows for Parquet readers to enable %/ETA
+                    # Determine total rows via reader to enable %/ETA
                     total_rows: int | None = None
-                    if input_type == FileTypeDetector.TYPE_PARQUET:
-                        try:
-                            import pyarrow.parquet as pq
-                            total_rows = len(pq.ParquetFile(args.input_path))
-                        except Exception:
-                            total_rows = None
+                    try:
+                        reader = PackageCommand._create_reader(
+                            args.input_path, input_type)
+                        total_rows = reader.row_count()
+                        reader.close()
+                    except Exception:
+                        total_rows = None
 
                     # Wire total_rows to reporter if known
                     if total_rows is not None:

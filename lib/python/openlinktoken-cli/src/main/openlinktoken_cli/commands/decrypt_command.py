@@ -121,14 +121,14 @@ class DecryptCommand:
                     logger.info(f"Exchange config: {exchange.path}")
 
                     reporter.update_status("Decrypting tokens")
-                    # Determine total rows for parquet to enable %/ETA
+                    # Determine total rows to enable %/ETA
                     total_rows: int | None = None
-                    if input_type == FileTypeDetector.TYPE_PARQUET:
-                        try:
-                            import pyarrow.parquet as pq
-                            total_rows = len(pq.ParquetFile(args.input_path))
-                        except Exception:
-                            pass
+                    try:
+                        reader = DecryptCommand._create_token_reader(args.input_path, input_type)
+                        total_rows = reader.row_count()
+                        reader.close()
+                    except Exception:
+                        total_rows = None
                     if total_rows is not None:
                         reporter.set_total_rows(total_rows)
                     summary = DecryptCommand._decrypt_tokens(

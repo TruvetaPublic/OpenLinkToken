@@ -149,14 +149,14 @@ class EncryptCommand:
                                )
                         logger.info("ZIP output: encrypted tokens and exchange config will be bundled")
 
-                       # Determine total rows for Parquet readers to enable %/ETA
+                       # Determine total rows to enable %/ETA
                     total_rows: int | None = None
-                    if input_type == FileTypeDetector.TYPE_PARQUET:
-                        try:
-                            import pyarrow.parquet as pq
-                            total_rows = len(pq.ParquetFile(input_path))
-                        except Exception:
-                            total_rows = None
+                    try:
+                        reader = EncryptCommand._create_token_reader(input_path, input_type)
+                        total_rows = reader.row_count()
+                        reader.close()
+                    except Exception:
+                        total_rows = None
 
                     with contextlib.ExitStack() as stack:
                         if is_zip:

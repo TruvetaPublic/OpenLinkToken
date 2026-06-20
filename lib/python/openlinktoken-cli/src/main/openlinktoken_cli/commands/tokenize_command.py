@@ -214,42 +214,19 @@ class TokenizeCommand:
                     if hash_record_ids:
                         logger.info("Record ID hashing enabled: RecordIds will be SHA-256 hashed in output")
 
-                        # Count total rows for progress reporting.
+                         # Count total rows via reader to enable %/ETA
                     total_rows: int | None = None
-                    if input_type == FileTypeDetector.TYPE_PARQUET:
-                        try:
-                            import pyarrow.parquet as pq
-                            total_rows = len(pq.ParquetFile(args.input_path))
-                        except Exception:
-                            total_rows = None
+                    try:
+                        reader = TokenizeCommand._create_reader(
+                            args.input_path, input_type)
+                        total_rows = reader.row_count()
+                        reader.close()
+                    except Exception:
+                        total_rows = None
 
-
-                    # CSV: pre-scan file to count data rows
-                    if total_rows is None and input_type == FileTypeDetector.TYPE_CSV:
-                        try:
-                            import subprocess
-                            wc = subprocess.run(
-                                  ["wc", "-l", args.input_path],
-                                 capture_output=True, text=True, check=True)
-                            total_rows = max(0, int(wc.stdout.split()[0]) - 1)
-                        except Exception:
-                            total_rows = None
-
-                    # Configure progress indicator BEFORE processing
                     if total_rows is not None and total_rows > 0:
                         reporter.set_total_rows(total_rows)
 
-                    if mode == TokenizeCommand._MODE_DEMO:
-                        reporter.update_status("Tokenizing records")
-                        summary, metadata_path = TokenizeCommand._process_tokens_demo(
-                            args.input_path,
-                            output_path,
-                            input_type,
-                            output_type,
-                            progress_callback=reporter.make_progress_callback("Tokenizing records", "records"),
-                            total_rows=total_rows,
-                         )
-                    elif mode == TokenizeCommand._MODE_HASH_ONLY:
                         reporter.update_status("Tokenizing records")
                         summary, metadata_path = TokenizeCommand._process_tokens_hash_only(
                             args.input_path,
