@@ -60,6 +60,7 @@ setup(
             "pyarrow==19.0.0",
             "pandas==2.2.3; python_version < '3.11'",
             "pandas==3.0.3; python_version >= '3.11'",
+            "setuptools==82.0.1; python_version >= '3.12'",
         ],
         # Spark 3.4.x - Legacy support
         "spark34": [
@@ -67,6 +68,7 @@ setup(
             "pyarrow==15.0.0",
             "pandas==2.1.4; python_version < '3.11'",
             "pandas==3.0.3; python_version >= '3.11'",
+            "setuptools==82.0.1; python_version >= '3.12'",
         ],
         # Development dependencies
         "dev": [
