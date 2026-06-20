@@ -113,3 +113,39 @@ class TestTokenCSVReader:
             assert TokenConstants.RECORD_ID in data
 
         assert count == 2
+
+    def test_row_count_returns_total_rows(self):
+        """row_count() should return the number of data rows (excluding header)."""
+        with open(self.temp_file_path, "w", encoding="utf-8") as f:
+            f.write("RuleId,Token,RecordId\n")
+            f.write("T1,token1,rec-001\n")
+            f.write("T2,token2,rec-002\n")
+            f.write("T3,token3,rec-003\n")
+
+        self.reader = TokenCSVReader(self.temp_file_path)
+        assert self.reader.row_count() == 3
+
+    def test_row_count_preserves_iteration(self):
+        """row_count() must not corrupt the reader; full iteration must still work after."""
+        with open(self.temp_file_path, "w", encoding="utf-8") as f:
+            f.write("RuleId,Token,RecordId\n")
+            f.write("T1,token1,rec-001\n")
+            f.write("T2,token2,rec-002\n")
+
+        self.reader = TokenCSVReader(self.temp_file_path)
+        self.reader.row_count()
+
+        rows = list(self.reader)
+        assert len(rows) == 2
+        assert rows[0][TokenConstants.RULE_ID] == "T1"
+        assert rows[1][TokenConstants.RULE_ID] == "T2"
+
+    def test_row_count_cached(self):
+        """row_count() returns a cached result on subsequent calls without re-scanning."""
+        with open(self.temp_file_path, "w", encoding="utf-8") as f:
+            f.write("RuleId,Token,RecordId\n")
+            f.write("T1,token1,rec-001\n")
+
+        self.reader = TokenCSVReader(self.temp_file_path)
+        assert self.reader.row_count() == 1
+        assert self.reader.row_count() == 1

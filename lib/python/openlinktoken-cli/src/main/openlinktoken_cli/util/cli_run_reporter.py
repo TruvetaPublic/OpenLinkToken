@@ -122,14 +122,9 @@ class _ProgressIndicator:
     _RENDER_INTERVAL_SECONDS = 1.0
     _ANSI_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
 
-    _DIM = "\x1b[2m"
-    _BOLD = "\x1b[1m"
-    _CYAN = "\x1b[36m"
-    _RESET = "\x1b[0m"
-
     _BOLD_METRIC_LABELS = frozenset({"processed", "total", "complete"})
 
-    def __init__(self):
+    def __init__(self, use_color: bool = True):
         self._total_rows = 0
         self._done = 0
         self._stage = ""
@@ -140,8 +135,18 @@ class _ProgressIndicator:
         self._running = threading.Event()
         self._last_render_line_count = 0
         self._stats_providers: list[StatsProvider] = []
+        if use_color:
+            self._DIM = "\x1b[2m"
+            self._BOLD = "\x1b[1m"
+            self._CYAN = "\x1b[36m"
+            self._RESET = "\x1b[0m"
+        else:
+            self._DIM = ""
+            self._BOLD = ""
+            self._CYAN = ""
+            self._RESET = ""
 
-    def start(self, progress_frames: int = 4) -> None:
+    def start(self) -> None:
         """Start the background render thread."""
         self._start_time = time.perf_counter()
         self._last_render_line_count = 0
@@ -370,9 +375,9 @@ class CliRunReporter:
         self._interactive = bool(getattr(sys.stderr, "isatty", None) and sys.stderr.isatty())
         self._interactive = self._interactive and not os.getenv("NO_PROGRESS")
         self._interactive = self._interactive and not os.getenv("OPENLINK_NO_PROGRESS")
-        self._interactive = self._interactive and not os.getenv("NO_COLOR")
         self._interactive = self._interactive and not no_progress
-        self._progress_indicator = _ProgressIndicator()
+        use_color = not os.getenv("NO_COLOR")
+        self._progress_indicator = _ProgressIndicator(use_color=use_color)
         self._total_rows = 0
 
     def __enter__(self) -> "CliRunReporter":

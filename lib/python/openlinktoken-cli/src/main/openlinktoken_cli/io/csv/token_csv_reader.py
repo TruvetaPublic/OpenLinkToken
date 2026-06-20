@@ -45,10 +45,26 @@ class TokenCSVReader(TokenReader):
             raise
 
     def row_count(self) -> int:
+        """Return the total number of rows in the CSV file.
+
+        Counts rows by scanning the file, then resets the reader so subsequent
+        iteration works correctly.
+        """
+        if hasattr(self, "_cached_row_count"):
+            return self._cached_row_count
+
         try:
+            count = 0
             self.file_handle.seek(0)
-            next(self.file_handle)
-            return sum(1 for _ in self.file_handle)
+            next(self.file_handle, None)
+            for _ in self.file_handle:
+                count += 1
+
+            self._cached_row_count = count
+            self.file_handle.seek(0)
+            self.csv_reader = csv.DictReader(self.file_handle)
+            self.iterator = iter(self.csv_reader)
+            return count
         except Exception:
             return 0
 

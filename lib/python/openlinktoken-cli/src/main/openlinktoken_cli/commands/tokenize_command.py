@@ -234,7 +234,6 @@ class TokenizeCommand:
                             input_type,
                             output_type,
                             progress_callback=reporter.make_progress_callback("Tokenizing records", "records"),
-                            total_rows=total_rows,
                         )
                     elif mode == TokenizeCommand._MODE_HASH_ONLY:
                         reporter.update_status("Tokenizing records")
@@ -245,7 +244,6 @@ class TokenizeCommand:
                             output_type,
                             hash_record_ids,
                             progress_callback=reporter.make_progress_callback("Tokenizing records", "records"),
-                            total_rows=total_rows,
                         )
                     else:
                         reporter.update_status("Resolving exchange config")
@@ -264,7 +262,6 @@ class TokenizeCommand:
                             exchange.hashing_secret,
                             hash_record_ids,
                             progress_callback=reporter.make_progress_callback("Tokenizing records", "records"),
-                            total_rows=total_rows,
                         )
                     logger.info("Token generation completed successfully")
                 except Exception as error:
@@ -297,7 +294,6 @@ class TokenizeCommand:
         hashing_secret: str | bytes,
         hash_record_ids: bool = False,
         progress_callback=None,
-        total_rows: int | None = None,
     ) -> tuple[PersonAttributesProcessingSummary, str]:
         """Process tokens in normal mode using SHA-256 + HMAC-SHA256."""
         token_transformer_list: List[TokenTransformer] = []
@@ -342,7 +338,6 @@ class TokenizeCommand:
         output_type: str,
         hash_record_ids: bool = False,
         progress_callback=None,
-        total_rows: int | None = None,
     ) -> tuple[PersonAttributesProcessingSummary, str]:
         """Process tokens in hash-only mode using SHA-256 only (no HMAC, no secret)."""
         try:
@@ -377,7 +372,6 @@ class TokenizeCommand:
         input_type: str,
         output_type: str,
         progress_callback=None,
-        total_rows: int | None = None,
     ) -> tuple[PersonAttributesProcessingSummary, str]:
         """Process tokens in demo mode using PassthroughTokenizer (no hashing)."""
         try:

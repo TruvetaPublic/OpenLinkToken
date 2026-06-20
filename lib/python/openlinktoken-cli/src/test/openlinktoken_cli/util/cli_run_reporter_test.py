@@ -267,6 +267,24 @@ class TestCliRunReporter:
                 reporter = CliRunReporter("test")
                 assert reporter._interactive is True
 
+    def test_no_color_env_keeps_interactive_but_strips_colors(self):
+        """NO_COLOR should strip ANSI styling but keep the progress display active."""
+        with patch("sys.stderr.isatty", return_value=True):
+            with patch.dict("os.environ", {"NO_COLOR": "1"}, clear=True):
+                reporter = CliRunReporter("test")
+                assert reporter._interactive is True
+                assert reporter._progress_indicator._DIM == ""
+                assert reporter._progress_indicator._BOLD == ""
+                assert reporter._progress_indicator._CYAN == ""
+
+    def test_no_color_absent_enables_styling(self):
+        """Without NO_COLOR, ANSI styling should be active."""
+        with patch("sys.stderr.isatty", return_value=True):
+            with patch.dict("os.environ", {}, clear=True):
+                reporter = CliRunReporter("test")
+                assert reporter._progress_indicator._DIM != ""
+                assert reporter._progress_indicator._BOLD != ""
+
     def test_set_total_rows_propagates(self):
         """reporter.set_total_rows() should propagate to the progress indicator."""
         with patch("sys.stderr.isatty", return_value=True):

@@ -244,7 +244,6 @@ class EncryptCommand:
                     writer.write_token(row)
                     if row_counter % 10000 == 0:
                         logger.info(f'Processed "{row_counter:,}" tokens')
-                        logger.info(f'Processed "{row_counter:,}" tokens')
                         if progress_callback is not None:
                             progress_callback(row_counter)
 
