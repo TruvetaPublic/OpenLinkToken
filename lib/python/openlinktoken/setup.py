@@ -43,15 +43,5 @@ setup(
     packages=find_packages(where="src/main"),
     python_requires=">=3.10",
     install_requires=requirements,
-<<<<<<< HEAD
     extras_require=optional_dependencies,
-=======
-    extras_require={
-        "dev": [
-            "cryptography==48.0.1",
-            "pycryptodome==3.23.0",
-        ],
-        "test": ["pytest==9.0.3"],
-    },
->>>>>>> develop
 )
