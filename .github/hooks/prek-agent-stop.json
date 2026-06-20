@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "hooks": {
+    "agentStop": [
+      {
+        "type": "command",
+        "command": "bash .github/hooks/scripts/run-prek-on-modified-files.sh",
+        "cwd": ".",
+        "timeout": 300
+      }
+    ]
+  }
+}
