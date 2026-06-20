@@ -47,6 +47,16 @@ class PersonAttributesCSVReader(PersonAttributesReader):
             logger.error(f"Error in reading CSV file: {e}")
             raise
 
+    @property
+    def row_count(self) -> int:
+        """Return the total number of rows in the CSV file."""
+        count = 0
+        self.file_handle.seek(0)
+        header = next(iter(self.file_handle))
+        for _ in self.file_handle:
+            count += 1
+        return count
+
     def __iter__(self):
         """Return the iterator object."""
         return self

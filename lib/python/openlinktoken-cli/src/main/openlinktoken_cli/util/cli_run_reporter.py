@@ -51,6 +51,31 @@ class CountSummary:
     count: int
 
 
+
+def _format_elapsed(seconds: float) -> str:
+    """Format seconds as HH:MM:SS or NN:MM:SS."""
+    seconds = int(seconds)
+    hours = seconds // 3600
+    mins = (seconds % 3600) // 60
+    secs = seconds % 60
+    if hours > 0 or seconds >= 3600:
+        return f"{hours:02d}:{mins:02d}:{secs:02d}"
+    return f"{mins:02d}:{secs:02d}"
+
+
+def _format_throughput(rate: float) -> str:
+    """Format throughput as human-readable rows per second with K/M for large values."""
+    rows = rate
+    if rows >= 1_000_000:
+        return f"{rows / 1_000_000:.1f} M rows/s"
+    elif rows >= 1_000:
+        return f"{rows / 1_000:.1f} K rows/s"
+    elif rows >= 100:
+        return f"{rows:.0f} rows/s"
+    else:
+        return f"{rows:.1f} rows/s"
+
+
 class _ProgressIndicator:
     """Internal progress indicator with spinner, percentage, ETA, and throughput."""
 
@@ -92,17 +117,8 @@ class _ProgressIndicator:
             self._done = done
 
     def _format_elapsed(self, seconds: float) -> str:
-        """Format seconds as HH:MM:SS or NN:MM:SS."""
-        seconds = int(seconds)
-        if seconds >= 24 * 3600:
-            hours = seconds // 3600
-        else:
-            hours = 0
-        mins = (seconds % 3600) // 60
-        secs = seconds % 60
-        if hours > 0 or seconds >= 3600:
-            return f"{hours:02d}:{mins:02d}:{secs:02d}"
-        return f"{mins:02d}:{secs:02d}"
+        """Delegate to module-level _format_elapsed."""
+        return _format_elapsed(seconds)
 
     def _format_percentage(self, done: int, total: int) -> str:
         """Format done/total as a percentage string."""
@@ -111,16 +127,8 @@ class _ProgressIndicator:
         return "N/A"
 
     def _format_throughput(self, rate: float) -> str:
-        """Format throughput as human-readable rows per second with K/M for large values."""
-        rows = rate
-        if rows >= 1_000_000:
-            return f"{rows / 1_000_000:.1f} M rows/s"
-        elif rows >= 1_000:
-            return f"{rows / 1_000:.1f} K rows/s"
-        elif rows >= 100:
-            return f"{rows:.0f} rows/s"
-        else:
-            return f"{rows:.1f} rows/s"
+        """Delegate to module-level _format_throughput."""
+        return _format_throughput(rate)
 
     def _render(self) -> None:
         """Render the spinner and progress info on stderr at ~1 Hz."""
@@ -144,28 +152,40 @@ class _ProgressIndicator:
                 now = time.perf_counter()
                 elapsed = now - start_time
 
-                  # Build the display line: spinner + stage with colon, then metrics
+                # Build the display line: spinner + stage with colon, then labeled metrics
                 parts = [frame, stage]
+                meta = {}
 
                 if total > 0 and elapsed > 0 and done > 0:
                     pct_str = self._format_percentage(done, total)
-                    parts.append(f"{pct_str} done")
+                    meta['percentage'] = f"{pct_str}%"
 
                     rate = done / elapsed
                     if rate > 0 and elapsed < 24 * 3600:
                         remaining = total - done
                         if remaining > 0:
                             eta_seconds = remaining / rate
-                            eta_str = self._format_elapsed(eta_seconds)
-                            parts.append(eta_str + " left")
-                        parts.append(self._format_throughput(rate))
-                    elapsed_str = self._format_elapsed(elapsed)
-                    parts.append(elapsed_str + " elapsed")
+                            meta['remaining'] = self._format_elapsed(eta_seconds)
+                        meta['speed'] = self._format_throughput(rate)
+                    
+                    meta['elapsed'] = self._format_elapsed(elapsed)
                 else:
-                    elapsed_str = self._format_elapsed(elapsed)
-                    parts.append(elapsed_str + " elapsed")
+                    meta['elapsed'] = self._format_elapsed(elapsed)
 
-                line = " ".join(parts[:2]) + ": " + ", ".join(parts[2:])
+                # Assemble line with clear labels
+                if len(meta) > 1:
+                    label_parts = []
+                    if 'percentage' in meta:
+                        label_parts.append(f"{meta['percentage']} complete")
+                    if 'remaining' in meta:
+                        label_parts.append(f"{meta['remaining']} remaining")
+                    if 'speed' in meta:
+                        label_parts.append(f"{meta['speed']}")
+                    if 'elapsed' in meta:
+                        label_parts.append(f"elapsed {meta['elapsed']}")
+                    line = " ".join(parts[:2]) + ": " + " | ".join(label_parts)
+                else:
+                    line = frame + " " + stage + ": " + meta.get('elapsed', '--')
                 sys.stderr.write("\r" + line + "\r")
                 sys.stderr.flush()
 
@@ -184,9 +204,11 @@ class CliRunReporter:
         self._console_handler_level: int | None = None
         self._file_handler: logging.Handler | None = None
         self._interactive = bool(getattr(sys.stderr, "isatty", None) and sys.stderr.isatty())
+        self._interactive = self._interactive and not os.getenv("NO_PROGRESS")
         self._interactive = self._interactive and not os.getenv("NO_COLOR")
         self._interactive = self._interactive and not no_progress
         self._progress_indicator = _ProgressIndicator()
+        self._total_rows = 0
 
     def __enter__(self) -> "CliRunReporter":
         self._attach_file_logging()
@@ -208,6 +230,7 @@ class CliRunReporter:
 
     def set_total_rows(self, total: int) -> None:
         self._progress_indicator.set_total_rows(total)
+        self._total_rows = total
 
     def make_progress_callback(self, stage: str, unit_label: str) -> Callable[[int], None]:
         def _callback(processed_count: int) -> None:
@@ -234,7 +257,7 @@ class CliRunReporter:
             item = summary_items[0]
             return [f"{label}: {item.name}={item.count:,}"]
 
-        return [f"{label}:", *[f"    {item.name}: {item.count:,}" for item in summary_items]]
+        return [f"{label}:", *[f"   {item.name}: {item.count:,}" for item in summary_items]]
 
     def _attach_file_logging(self) -> None:
         self.log_report.log_path.parent.mkdir(parents=True, exist_ok=True)
