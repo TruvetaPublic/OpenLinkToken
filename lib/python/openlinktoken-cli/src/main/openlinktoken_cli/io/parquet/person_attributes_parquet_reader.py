@@ -43,7 +43,10 @@ class PersonAttributesParquetReader(PersonAttributesReader):
             self.has_next_called = False
             self.has_next_result = False
             if attribute_map is not None:
-                self.attribute_map = {column_name.lower(): attribute_class for column_name, attribute_class in attribute_map.items()}
+                self.attribute_map = {
+                    column_name.lower(): attribute_class
+                    for column_name, attribute_class in attribute_map.items()
+                }
             else:
                 self.attribute_map = self._build_attribute_map_from_aliases()
 
