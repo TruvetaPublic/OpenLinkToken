@@ -11,6 +11,10 @@ from openlinktoken.metadata import Metadata
 from openlinktoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
 from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 from openlinktoken.tokentransformer.token_transformer import TokenTransformer
+from openlinktoken_cli.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
+from openlinktoken_cli.tokens.config.dynamic_token_definition import DynamicTokenDefinition
+from openlinktoken_cli.tokens.config.tokenization_config import TokenizationConfig
+from openlinktoken_cli.tokens.config.tokenization_config_loader import TokenizationConfigLoader
 from openlinktoken_cli.io.csv.person_attributes_csv_reader import PersonAttributesCSVReader
 from openlinktoken_cli.io.csv.person_attributes_csv_writer import PersonAttributesCSVWriter
 from openlinktoken_cli.io.json.metadata_json_writer import MetadataJsonWriter
@@ -78,6 +82,17 @@ class PackageCommand:
             help="Path to the exchange config JSON (default: ./openlinktoken-YYYY-MM-DD.exchange.json)",
         )
 
+        parser.add_argument(
+            "--config",
+            required=False,
+            dest="tokenization_config",
+            metavar="PATH",
+            help=(
+                "Path to a YAML tokenization config that defines input field mappings and token rules. "
+                "Supported for CSV and Parquet input."
+            ),
+        )
+
         private_key_group = parser.add_mutually_exclusive_group(required=False)
         private_key_group.add_argument(
             "--private-key",
@@ -130,6 +145,7 @@ class PackageCommand:
             return 1
         ring_id = resolve_ring_id(args.ring_id)
         hash_record_ids = getattr(args, "hash_record_ids", False)
+        tokenization_config_path = getattr(args, "tokenization_config", None)
         reporter = CliRunReporter("package")
 
         try:
@@ -183,6 +199,7 @@ class PackageCommand:
                             encryption_key,
                             ring_id,
                             hash_record_ids,
+                            tokenization_config_path,
                             progress_callback=reporter.make_progress_callback("Packaging records", "records"),
                         )
 
@@ -219,6 +236,7 @@ class PackageCommand:
         encryption_key: bytes,
         ring_id: str,
         hash_record_ids: bool = False,
+        tokenization_config_path: str = None,
         progress_callback=None,
     ) -> tuple[PersonAttributesProcessingSummary, str]:
         """Process tokens from person attributes."""
@@ -232,8 +250,9 @@ class PackageCommand:
             raise RuntimeError("Failed to initialize transformers") from e
 
         try:
+            config, factory, token_definition = PackageCommand._load_tokenization_config(tokenization_config_path)
             with (
-                PackageCommand._create_reader(input_path, input_type) as reader,
+                PackageCommand._create_reader(input_path, input_type, config, factory) as reader,
                 PackageCommand._create_writer(output_path, output_type) as writer,
             ):
                 # Create metadata
@@ -251,6 +270,7 @@ class PackageCommand:
                     encryption_key,
                     ring_id,
                     hash_record_ids,
+                    token_definition=token_definition,
                     progress_callback=progress_callback,
                 )
 
@@ -289,15 +309,54 @@ class PackageCommand:
         return lines
 
     @staticmethod
-    def _create_reader(path: str, file_type: str):
+    def _create_reader(
+        path: str,
+        file_type: str,
+        config: TokenizationConfig = None,
+        factory: DynamicAttributeFactory = None,
+    ):
         """Create a PersonAttributesReader based on file type."""
+        attribute_map = None
+        if config and factory:
+            attribute_map = PackageCommand._build_configured_input_attribute_map(config, factory)
+
         file_type_lower = file_type.lower()
         if file_type_lower == FileTypeDetector.TYPE_CSV:
+            if attribute_map is not None:
+                return PersonAttributesCSVReader(path, attribute_map=attribute_map)
             return PersonAttributesCSVReader(path)
         elif file_type_lower == FileTypeDetector.TYPE_PARQUET:
+            if attribute_map is not None:
+                return PersonAttributesParquetReader(path, attribute_map=attribute_map)
             return PersonAttributesParquetReader(path)
         else:
             raise ValueError(f"Unsupported input type: {file_type}")
+
+    @staticmethod
+    def _load_tokenization_config(
+        tokenization_config_path: str = None,
+    ) -> tuple[TokenizationConfig | None, DynamicAttributeFactory | None, DynamicTokenDefinition | None]:
+        if not tokenization_config_path:
+            return None, None, None
+
+        config = TokenizationConfigLoader.load(tokenization_config_path)
+        factory = DynamicAttributeFactory(config)
+        token_definition = DynamicTokenDefinition(config, factory)
+        return config, factory, token_definition
+
+    @staticmethod
+    def _build_configured_input_attribute_map(
+        config: TokenizationConfig,
+        factory: DynamicAttributeFactory,
+    ) -> dict:
+        """Build explicit column-to-dynamic-attribute mapping for config-driven reads."""
+        attribute_map = {}
+        for csv_column in config.attributes:
+            try:
+                attribute_map[csv_column] = factory.get_class_for_csv_column(csv_column)
+            except KeyError:
+                logger.warning("CSV column '%s' is in config but has no dynamic class registered.", csv_column)
+        return attribute_map
 
     @staticmethod
     def _create_writer(path: str, file_type: str):
