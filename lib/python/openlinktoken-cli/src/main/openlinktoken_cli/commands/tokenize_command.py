@@ -445,13 +445,18 @@ class TokenizeCommand:
 
         file_type_lower = file_type.lower()
         if file_type_lower == FileTypeDetector.TYPE_CSV:
+            reader = PersonAttributesCSVReader(path)
             if attribute_map is not None:
-                return PersonAttributesCSVReader(path, attribute_map)
-            return PersonAttributesCSVReader(path)
+                reader.attribute_map = attribute_map.copy()
+            return reader
         elif file_type_lower == FileTypeDetector.TYPE_PARQUET:
+            reader = PersonAttributesParquetReader(path)
             if attribute_map is not None:
-                return PersonAttributesParquetReader(path, attribute_map)
-            return PersonAttributesParquetReader(path)
+                reader.attribute_map = {
+                    column_name.lower(): attribute_class
+                    for column_name, attribute_class in attribute_map.items()
+                }
+            return reader
         else:
             raise ValueError(f"Unsupported input type: {file_type}")
 
