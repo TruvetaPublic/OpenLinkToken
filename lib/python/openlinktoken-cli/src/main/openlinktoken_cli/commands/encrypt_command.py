@@ -91,6 +91,16 @@ class EncryptCommand:
             help="Ring identifier for key management. Defaults to a random UUID if not provided",
         )
 
+        # --no-progress / -q: suppress interactive progress indicator
+        parser.add_argument(
+            "--no-progress",
+            "-q",
+            action="store_true",
+            default=False,
+            dest="no_progress",
+            help="Suppress interactive progress indicator (e.g. for non-interactive / CI environments)",
+        )
+
         parser.set_defaults(func=EncryptCommand.execute)
 
     @staticmethod
@@ -109,7 +119,7 @@ class EncryptCommand:
             logger.error("Unable to auto-detect output type from provided/generated path.")
             return 1
         ring_id = resolve_ring_id(args.ring_id)
-        reporter = CliRunReporter("encrypt")
+        reporter = CliRunReporter("encrypt", no_progress=args.no_progress)
 
         try:
             with reporter:
@@ -139,6 +149,15 @@ class EncryptCommand:
                             )
                         logger.info("ZIP output: encrypted tokens and exchange config will be bundled")
 
+                    # Determine total rows to enable %/ETA
+                    total_rows: int | None = None
+                    try:
+                        reader = EncryptCommand._create_token_reader(args.input_path, input_type)
+                        total_rows = reader.row_count()
+                        reader.close()
+                    except Exception:
+                        total_rows = None
+
                     with contextlib.ExitStack() as stack:
                         if is_zip:
                             temp_dir = stack.enter_context(tempfile.TemporaryDirectory())
@@ -148,6 +167,10 @@ class EncryptCommand:
                         else:
                             token_output_path = output_path
                             token_output_type = output_type
+
+                        # Wire total_rows to reporter if known
+                        if total_rows is not None:
+                            reporter.set_total_rows(total_rows)
 
                         summary = EncryptCommand._encrypt_tokens(
                             args.input_path,
@@ -190,7 +213,6 @@ class EncryptCommand:
             row_counter = 0
             encrypted_counter = 0
             error_counter = 0
-            last_reported_count = 0
 
             with (
                 EncryptCommand._create_token_reader(input_path, input_type) as reader,
@@ -220,24 +242,25 @@ class EncryptCommand:
                             error_counter += 1
 
                     writer.write_token(row)
-
                     if row_counter % 10000 == 0:
                         logger.info(f'Processed "{row_counter:,}" tokens')
-                        last_reported_count = row_counter
                         if progress_callback is not None:
                             progress_callback(row_counter)
 
-            logger.info(f"Processed a total of {row_counter:,} tokens")
-            logger.info(f"Successfully encrypted {encrypted_counter:,} tokens")
-            if error_counter > 0:
-                logger.warning(f"Failed to encrypt {error_counter:,} tokens")
-            if progress_callback is not None and row_counter != last_reported_count:
-                progress_callback(row_counter)
-            return TokenTransformationSummary(
-                total_tokens=row_counter,
-                transformed_tokens=encrypted_counter,
-                failed_tokens=error_counter,
-            )
+                # Final flush
+                if progress_callback is not None and row_counter > 0:
+                    progress_callback(row_counter)
+
+                logger.info(f"Processed a total of {row_counter:,} tokens")
+                logger.info(f"Successfully encrypted {encrypted_counter:,} tokens")
+                if error_counter > 0:
+                    logger.warning(f"Failed to encrypt {error_counter:,} tokens")
+
+                return TokenTransformationSummary(
+                    total_tokens=row_counter,
+                    transformed_tokens=encrypted_counter,
+                    failed_tokens=error_counter,
+                )
 
         except Exception:
             raise
