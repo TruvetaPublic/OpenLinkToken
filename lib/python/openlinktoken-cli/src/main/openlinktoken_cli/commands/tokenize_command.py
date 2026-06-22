@@ -438,7 +438,21 @@ class TokenizeCommand:
         config: Optional[TokenizationConfig] = None,
         factory: Optional[DynamicAttributeFactory] = None,
     ):
-        """Create a PersonAttributesReader based on file type."""
+        """
+        Create a PersonAttributesReader based on file type with optional config-driven attribute mapping.
+
+        Args:
+            path: Input file path.
+            file_type: File type ('csv' or 'parquet').
+            config: Optional tokenization config with attribute mappings.
+            factory: Optional dynamic attribute factory for config-driven reads.
+
+        Returns:
+            Configured PersonAttributesReader instance.
+
+        Raises:
+            ValueError: If file_type is not supported.
+        """
         attribute_map = None
         if config is not None and factory is not None:
             attribute_map = TokenizeCommand._build_configured_input_attribute_map(config, factory)
@@ -464,6 +478,15 @@ class TokenizeCommand:
     def _load_tokenization_config(
         tokenization_config_path: str = None,
     ) -> tuple[TokenizationConfig | None, DynamicAttributeFactory | None, DynamicTokenDefinition | None]:
+        """
+        Load tokenization config and create factories for config-driven token generation.
+
+        Args:
+            tokenization_config_path: Path to YAML tokenization config file. If None or omitted, returns (None, None, None).
+
+        Returns:
+            Tuple of (TokenizationConfig, DynamicAttributeFactory, DynamicTokenDefinition) or (None, None, None) if config not provided.
+        """
         if not tokenization_config_path:
             return None, None, None
 
@@ -477,7 +500,19 @@ class TokenizeCommand:
         config: TokenizationConfig,
         factory: DynamicAttributeFactory,
     ) -> dict:
-        """Build explicit column-to-dynamic-attribute mapping for config-driven reads."""
+        """
+        Build input column-to-attribute class mapping from tokenization config.
+
+        Maps each input column name defined in config to its corresponding attribute class.
+        Logs warnings for columns with no registered dynamic class.
+
+        Args:
+            config: Tokenization config containing attribute definitions.
+            factory: Dynamic attribute factory for class resolution.
+
+        Returns:
+            Dictionary mapping input column names to attribute classes.
+        """
         attribute_map = {}
         for csv_column in config.attributes:
             try:
