@@ -6,6 +6,9 @@ from typing import List, Optional
 
 from openlinktoken.metadata import Metadata
 from openlinktoken_cli.commands.tokenization_config_helper import TokenizationConfigHelper
+from openlinktoken_cli.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
+from openlinktoken_cli.tokens.config.dynamic_token_definition import DynamicTokenDefinition
+from openlinktoken_cli.tokens.config.tokenization_config import TokenizationConfig
 from openlinktoken.tokens.tokenizer.passthrough_tokenizer import PassthroughTokenizer
 from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 from openlinktoken.tokentransformer.token_transformer import TokenTransformer
@@ -305,7 +308,7 @@ class TokenizeCommand:
         output_type: str,
         hashing_secret: str | bytes,
         hash_record_ids: bool = False,
-        tokenization_config_path: str = None,
+        tokenization_config_path: Optional[str] = None,
         progress_callback=None,
     ) -> tuple[PersonAttributesProcessingSummary, str]:
         """Process tokens in normal mode using SHA-256 + HMAC-SHA256."""
@@ -352,7 +355,7 @@ class TokenizeCommand:
         input_type: str,
         output_type: str,
         hash_record_ids: bool = False,
-        tokenization_config_path: str = None,
+        tokenization_config_path: Optional[str] = None,
         progress_callback=None,
     ) -> tuple[PersonAttributesProcessingSummary, str]:
         """Process tokens in hash-only mode using SHA-256 only (no HMAC, no secret)."""
@@ -389,7 +392,7 @@ class TokenizeCommand:
         output_path: str,
         input_type: str,
         output_type: str,
-        tokenization_config_path: str = None,
+        tokenization_config_path: Optional[str] = None,
         progress_callback=None,
     ) -> tuple[PersonAttributesProcessingSummary, str]:
         """Process tokens in demo mode using PassthroughTokenizer (no hashing)."""
@@ -459,7 +462,7 @@ class TokenizeCommand:
 
     @staticmethod
     def _load_tokenization_config(
-        tokenization_config_path: str = None,
+        tokenization_config_path: Optional[str] = None,
     ) -> tuple[TokenizationConfig | None, DynamicAttributeFactory | None, DynamicTokenDefinition | None]:
         """Load tokenization config via helper."""
         return TokenizationConfigHelper.load_tokenization_config(tokenization_config_path)

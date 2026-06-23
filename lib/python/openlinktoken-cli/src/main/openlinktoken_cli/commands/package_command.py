@@ -5,7 +5,7 @@ import logging
 import sys
 import tempfile
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from openlinktoken.metadata import Metadata
 from openlinktoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
@@ -255,7 +255,7 @@ class PackageCommand:
         encryption_key: bytes,
         ring_id: str,
         hash_record_ids: bool = False,
-        tokenization_config_path: str = None,
+        tokenization_config_path: Optional[str] = None,
         progress_callback=None,
     ) -> tuple[PersonAttributesProcessingSummary, str]:
         """Process tokens from person attributes."""
