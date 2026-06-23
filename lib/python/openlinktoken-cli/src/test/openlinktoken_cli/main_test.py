@@ -5,8 +5,8 @@ Tests the end-to-end workflows for token generation and decryption using new sub
 """
 
 import os
-import sys
 import re
+import sys
 import zipfile
 from pathlib import Path
 from unittest.mock import patch
@@ -227,6 +227,46 @@ class TestOpenLinkTokenCommand:
         with zipfile.ZipFile(output_zip) as archive:
             assert len(archive.read("output.csv")) > 0, "Tokens CSV inside ZIP should not be empty"
             assert len(archive.read("encrypt-zip.exchange.json")) > 0, "Exchange config inside ZIP should not be empty"
+
+    def test_encrypt_command_sets_total_rows_for_progress(self, temp_dir):
+        """Encrypt should precompute total rows so the progress reporter can show percentages and ETA."""
+        input_csv = temp_dir / "input.csv"
+        hashed_csv = temp_dir / "hashed.csv"
+        output_csv = temp_dir / "encrypted.csv"
+        exchange_config, private_key = self._create_exchange_config(temp_dir, "encrypt-progress")
+
+        tokenize_exit_code = OpenLinkTokenCommand.execute(
+            [
+                "tokenize",
+                "-i",
+                str(input_csv),
+                "-o",
+                str(hashed_csv),
+                "--exchange-config",
+                str(exchange_config),
+                "--private-key",
+                str(private_key),
+            ]
+        )
+        assert tokenize_exit_code == 0
+
+        with patch("openlinktoken_cli.commands.encrypt_command.CliRunReporter.set_total_rows") as set_total_rows:
+            encrypt_exit_code = OpenLinkTokenCommand.execute(
+                [
+                    "encrypt",
+                    "-i",
+                    str(hashed_csv),
+                    "-o",
+                    str(output_csv),
+                    "--exchange-config",
+                    str(exchange_config),
+                    "--private-key",
+                    str(private_key),
+                ]
+            )
+
+        assert encrypt_exit_code == 0
+        set_total_rows.assert_called_once_with(10)
 
     def test_decrypt_command(self, temp_dir):
         """Test decrypt command."""

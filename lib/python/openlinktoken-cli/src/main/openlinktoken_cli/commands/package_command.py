@@ -126,6 +126,16 @@ class PackageCommand:
             ),
         )
 
+         # --no-progress / -q: suppress interactive progress indicator
+        parser.add_argument(
+              "--no-progress",
+              "-q",
+            action="store_true",
+            default=False,
+            dest="no_progress",
+            help="Suppress interactive progress indicator (e.g. for non-interactive / CI environments)",
+            )
+
         parser.set_defaults(func=PackageCommand.execute)
 
     @staticmethod
@@ -146,7 +156,7 @@ class PackageCommand:
         ring_id = resolve_ring_id(args.ring_id)
         hash_record_ids = getattr(args, "hash_record_ids", False)
         tokenization_config_path = getattr(args, "tokenization_config", None)
-        reporter = CliRunReporter("package")
+        reporter = CliRunReporter("package", no_progress=args.no_progress)
 
         try:
             with reporter:
@@ -168,6 +178,20 @@ class PackageCommand:
                     logger.info(f"Exchange config: {exchange.path}")
 
                     reporter.update_status("Packaging records")
+                    # Determine total rows via reader to enable %/ETA
+                    total_rows: int | None = None
+                    try:
+                        reader = PackageCommand._create_reader(
+                            args.input_path, input_type)
+                        total_rows = reader.row_count()
+                        reader.close()
+                    except Exception:
+                        total_rows = None
+
+                    # Wire total_rows to reporter if known
+                    if total_rows is not None:
+                        reporter.set_total_rows(total_rows)
+
                     is_zip = output_type == FileTypeDetector.TYPE_ZIP
 
                     if is_zip:
