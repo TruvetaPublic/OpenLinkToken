@@ -5,19 +5,12 @@ import sys
 from typing import List, Optional
 
 from openlinktoken.metadata import Metadata
-from openlinktoken_cli.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
-from openlinktoken_cli.tokens.config.dynamic_token_definition import DynamicTokenDefinition
-from openlinktoken_cli.tokens.config.tokenization_config import TokenizationConfig
-from openlinktoken_cli.tokens.config.tokenization_config_loader import TokenizationConfigLoader
+from openlinktoken_cli.commands.tokenization_config_helper import TokenizationConfigHelper
 from openlinktoken.tokens.tokenizer.passthrough_tokenizer import PassthroughTokenizer
 from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 from openlinktoken.tokentransformer.token_transformer import TokenTransformer
-from openlinktoken_cli.io.csv.person_attributes_csv_reader import PersonAttributesCSVReader
 from openlinktoken_cli.io.csv.person_attributes_csv_writer import PersonAttributesCSVWriter
 from openlinktoken_cli.io.json.metadata_json_writer import MetadataJsonWriter
-from openlinktoken_cli.io.parquet.person_attributes_parquet_reader import (
-    PersonAttributesParquetReader,
-)
 from openlinktoken_cli.io.parquet.person_attributes_parquet_writer import (
     PersonAttributesParquetWriter,
 )
@@ -233,7 +226,7 @@ class TokenizeCommand:
                         # Count total rows via reader to enable %/ETA
                     total_rows: int | None = None
                     try:
-                        reader = TokenizeCommand._create_reader(args.input_path, input_type)
+                        reader = TokenizationConfigHelper.create_reader(args.input_path, input_type)
                         total_rows = reader.row_count()
                         reader.close()
                     except Exception:
@@ -364,9 +357,9 @@ class TokenizeCommand:
     ) -> tuple[PersonAttributesProcessingSummary, str]:
         """Process tokens in hash-only mode using SHA-256 only (no HMAC, no secret)."""
         try:
-            config, factory, token_definition = TokenizeCommand._load_tokenization_config(tokenization_config_path)
+            config, factory, token_definition = TokenizationConfigHelper.load_tokenization_config(tokenization_config_path)
             with (
-                TokenizeCommand._create_reader(input_path, input_type, config, factory) as reader,
+                TokenizationConfigHelper.create_reader(input_path, input_type, config, factory) as reader,
                 TokenizeCommand._create_writer(output_path, output_type) as writer,
             ):
                 metadata = Metadata()
@@ -401,9 +394,9 @@ class TokenizeCommand:
     ) -> tuple[PersonAttributesProcessingSummary, str]:
         """Process tokens in demo mode using PassthroughTokenizer (no hashing)."""
         try:
-            config, factory, token_definition = TokenizeCommand._load_tokenization_config(tokenization_config_path)
+            config, factory, token_definition = TokenizationConfigHelper.load_tokenization_config(tokenization_config_path)
             with (
-                TokenizeCommand._create_reader(input_path, input_type, config, factory) as reader,
+                TokenizationConfigHelper.create_reader(input_path, input_type, config, factory) as reader,
                 TokenizeCommand._create_writer(output_path, output_type) as writer,
             ):
                 metadata = Metadata()
@@ -461,90 +454,23 @@ class TokenizeCommand:
         config: Optional[TokenizationConfig] = None,
         factory: Optional[DynamicAttributeFactory] = None,
     ):
-        """
-        Create a PersonAttributesReader based on file type with optional config-driven attribute mapping.
-
-        Args:
-            path: Input file path.
-            file_type: File type ('csv' or 'parquet').
-            config: Optional tokenization config with attribute mappings.
-            factory: Optional dynamic attribute factory for config-driven reads.
-
-        Returns:
-            Configured PersonAttributesReader instance.
-
-        Raises:
-            ValueError: If file_type is not supported.
-        """
-        attribute_map = None
-        if config is not None and factory is not None:
-            attribute_map = TokenizeCommand._build_configured_input_attribute_map(config, factory)
-
-        file_type_lower = file_type.lower()
-        if file_type_lower == FileTypeDetector.TYPE_CSV:
-            reader = PersonAttributesCSVReader(path)
-            if attribute_map is not None:
-                reader.attribute_map = attribute_map.copy()
-            return reader
-        elif file_type_lower == FileTypeDetector.TYPE_PARQUET:
-            reader = PersonAttributesParquetReader(path)
-            if attribute_map is not None:
-                reader.attribute_map = {
-                    column_name.lower(): attribute_class
-                    for column_name, attribute_class in attribute_map.items()
-                }
-            return reader
-        else:
-            raise ValueError(f"Unsupported input type: {file_type}")
+        """Create a PersonAttributesReader based on file type."""
+        return TokenizationConfigHelper.create_reader(path, file_type, config, factory)
 
     @staticmethod
     def _load_tokenization_config(
         tokenization_config_path: str = None,
     ) -> tuple[TokenizationConfig | None, DynamicAttributeFactory | None, DynamicTokenDefinition | None]:
-        """
-        Load tokenization config and create factories for config-driven token generation.
-
-        Args:
-            tokenization_config_path: Path to YAML tokenization config file. 
-            If None or omitted, returns (None, None, None).
-
-        Returns:
-            Tuple of (TokenizationConfig, DynamicAttributeFactory, DynamicTokenDefinition)
-            or (None, None, None) if config not provided.
-        """
-        if not tokenization_config_path:
-            return None, None, None
-
-        config = TokenizationConfigLoader.load(tokenization_config_path)
-        factory = DynamicAttributeFactory(config)
-        token_definition = DynamicTokenDefinition(config, factory)
-        return config, factory, token_definition
+        """Load tokenization config via helper."""
+        return TokenizationConfigHelper.load_tokenization_config(tokenization_config_path)
 
     @staticmethod
     def _build_configured_input_attribute_map(
         config: TokenizationConfig,
         factory: DynamicAttributeFactory,
     ) -> dict:
-        """
-        Build input column-to-attribute class mapping from tokenization config.
-
-        Maps each input column name defined in config to its corresponding attribute class.
-        Logs warnings for columns with no registered dynamic class.
-
-        Args:
-            config: Tokenization config containing attribute definitions.
-            factory: Dynamic attribute factory for class resolution.
-
-        Returns:
-            Dictionary mapping input column names to attribute classes.
-        """
-        attribute_map = {}
-        for csv_column in config.attributes:
-            try:
-                attribute_map[csv_column] = factory.get_class_for_csv_column(csv_column)
-            except KeyError:
-                logger.warning("CSV column '%s' is in config but has no dynamic class registered.", csv_column)
-        return attribute_map
+        """Build attribute map via helper."""
+        return TokenizationConfigHelper.build_configured_input_attribute_map(config, factory)
 
     @staticmethod
     def _create_writer(path: str, file_type: str):
