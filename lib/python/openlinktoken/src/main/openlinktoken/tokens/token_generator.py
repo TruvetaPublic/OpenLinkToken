@@ -52,6 +52,31 @@ class TokenGenerator:
 
         self.tokenizer = tokenizer
 
+    def _resolve_attribute_instance(self, attribute_class: Type[Attribute]) -> Optional[Attribute]:
+        """
+        Resolve an Attribute instance for a requested class.
+
+        Supports dynamically generated subclasses by falling back to the
+        nearest loaded base attribute class and caching that resolution.
+
+        Args:
+            attribute_class: The attribute class requested by the token definition.
+
+        Returns:
+            The resolved Attribute instance, or None if no compatible base class exists.
+        """
+        attribute = self.attribute_instance_map.get(attribute_class)
+        if attribute is not None:
+            return attribute
+
+        for base_class, base_attribute in self.attribute_instance_map.items():
+            if issubclass(attribute_class, base_class):
+                # Cache dynamic-subclass resolution so we only pay this lookup once.
+                self.attribute_instance_map[attribute_class] = base_attribute
+                return base_attribute
+
+        return None
+
     def _get_token_signature(
         self, token_id: str, person_attributes: Dict[Type[Attribute], str], result: TokenGeneratorResult
     ) -> Optional[str]:
@@ -82,7 +107,7 @@ class TokenGenerator:
             if attribute_class not in person_attributes:
                 return None
 
-            attribute = self.attribute_instance_map.get(attribute_class)
+            attribute = self._resolve_attribute_instance(attribute_class)
             if attribute is None:
                 return None
 

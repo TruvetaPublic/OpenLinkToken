@@ -325,6 +325,7 @@ class PersonAttributesProcessor:
             logger.info(f"Invalid Attributes for row {row_counter:,}: {token_generator_result.invalid_attributes}")
 
             for invalid_attribute in token_generator_result.invalid_attributes:
+                invalid_attribute_count.setdefault(invalid_attribute, 0)
                 invalid_attribute_count[invalid_attribute] += 1
 
     @staticmethod

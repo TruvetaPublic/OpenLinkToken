@@ -9,6 +9,7 @@ from openlinktoken.attributes.person.last_name_attribute import LastNameAttribut
 from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttribute
 from openlinktoken.attributes.person.sex_attribute import SexAttribute
 from openlinktoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
+from openlinktoken.tokens.token_definition import TokenDefinition
 from openlinktoken.metadata import Metadata
 from openlinktoken_cli.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
 from openlinktoken_cli.tokens.config.dynamic_token_definition import DynamicTokenDefinition
@@ -243,3 +244,34 @@ class TestPersonAttributesProcessor:
 
         assert summary.total_rows == 1
         assert writer.write_attributes.call_count == 1
+        assert summary.blank_tokens_by_rule["T1"] == 0
+
+    def test_process_tracks_unknown_invalid_attribute_name_without_crashing(self):
+        """Handles invalid attribute names that were not pre-initialized in metadata maps."""
+        token_transformer_list = [Mock(spec=HashTokenTransformer)]
+        # Invalid birth date should surface as Date/BirthDate depending on attribute implementation.
+        data = {
+            RecordIdAttribute: "TestRecordId",
+            FirstNameAttribute: "John",
+            LastNameAttribute: "Spencer",
+            SocialSecurityNumberAttribute: "234-56-7890",
+            BirthDateAttribute: "",
+            SexAttribute: "Male",
+            PostalCodeAttribute: "98052",
+        }
+
+        reader = Mock(spec=PersonAttributesReader)
+        writer = Mock(spec=PersonAttributesWriter)
+        reader.__iter__ = Mock(return_value=iter([data]))
+        metadata_map = Metadata().initialize()
+
+        summary = PersonAttributesProcessor.process(
+            reader,
+            writer,
+            token_transformer_list,
+            metadata_map,
+            token_definition=TokenDefinition(),
+        )
+
+        assert summary.total_rows == 1
+        assert summary.total_rows_with_invalid_attributes == 1
