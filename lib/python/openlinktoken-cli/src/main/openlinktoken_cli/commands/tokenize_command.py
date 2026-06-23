@@ -360,7 +360,9 @@ class TokenizeCommand:
     ) -> tuple[PersonAttributesProcessingSummary, str]:
         """Process tokens in hash-only mode using SHA-256 only (no HMAC, no secret)."""
         try:
-            config, factory, token_definition = TokenizationConfigHelper.load_tokenization_config(tokenization_config_path)
+            config, factory, token_definition = TokenizationConfigHelper.load_tokenization_config(
+                tokenization_config_path
+            )
             with (
                 TokenizationConfigHelper.create_reader(input_path, input_type, config, factory) as reader,
                 TokenizeCommand._create_writer(output_path, output_type) as writer,
@@ -397,7 +399,9 @@ class TokenizeCommand:
     ) -> tuple[PersonAttributesProcessingSummary, str]:
         """Process tokens in demo mode using PassthroughTokenizer (no hashing)."""
         try:
-            config, factory, token_definition = TokenizationConfigHelper.load_tokenization_config(tokenization_config_path)
+            config, factory, token_definition = TokenizationConfigHelper.load_tokenization_config(
+                tokenization_config_path
+            )
             with (
                 TokenizationConfigHelper.create_reader(input_path, input_type, config, factory) as reader,
                 TokenizeCommand._create_writer(output_path, output_type) as writer,

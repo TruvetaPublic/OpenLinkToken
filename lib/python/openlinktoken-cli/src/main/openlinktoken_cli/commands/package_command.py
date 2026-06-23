@@ -269,7 +269,9 @@ class PackageCommand:
             raise RuntimeError("Failed to initialize transformers") from e
 
         try:
-            config, factory, token_definition = TokenizationConfigHelper.load_tokenization_config(tokenization_config_path)
+            config, factory, token_definition = TokenizationConfigHelper.load_tokenization_config(
+                tokenization_config_path
+            )
             with (
                 TokenizationConfigHelper.create_reader(input_path, input_type, config, factory) as reader,
                 PackageCommand._create_writer(output_path, output_type) as writer,
