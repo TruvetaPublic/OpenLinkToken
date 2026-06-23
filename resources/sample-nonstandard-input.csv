@@ -1,4 +1,4 @@
-patient_identifier,dob_raw,given_nm_raw,surname_raw,zipcode_home,gender_text,ssn_raw
-rec-001-A,1988-12-04, Anna ,Nguyen,98101,Female,111-22-3333
-rec-002-B,1975-07-19,Marcus,O'Neil,10013,Male,444-55-6666
-rec-003-C,1992-03-30,Zoe,Delacruz,60601,Female,777-88-9999
+encounter_id,birth_year,age_at_encounter,encounter_date,encounter_type,patient_gender,ssn
+ENC-2024-0015,1969,54.2,2024-01-15,Clinical Visit,M,123456789
+ENC-2024-0031,1978,45.8,2024-03-22,Lab Work,F,987654321
+ENC-2024-0047,1992,31.5,2024-05-10,Surgical Procedure,M,456789123

@@ -1,55 +1,55 @@
 attributes:
-  patient_identifier:
+  encounter_id:
     field: RecordId
     type: RecordId
-  dob_raw:
-    field: BirthDate
-    type: BirthDate
-  given_nm_raw:
-    field: FirstName
-    type: FirstName
-  surname_raw:
-    field: LastName
+  birth_year:
+    field: BirthYear
     type: LastName
-  zipcode_home:
-    field: PostalCode
+  age_at_encounter:
+    field: AgeAtEncounter
     type: PostalCode
-  gender_text:
-    field: Sex
+  encounter_date:
+    field: EncounterDate
+    type: BirthDate
+  encounter_type:
+    field: EncounterType
+    type: FirstName
+  patient_gender:
+    field: Gender
     type: Sex
-  ssn_raw:
-    field: SocialSecurityNumber
+  ssn:
+    field: PatientSSN
     type: SocialSecurityNumber
 
 token_rules:
   T_ALL_BASE:
     - field: RecordId
       expression: "T|U"
-    - field: LastName
+    - field: BirthYear
       expression: "T|U"
-    - field: FirstName
+    - field: EncounterType
       expression: "T|U"
-    - field: BirthDate
+    - field: EncounterDate
       expression: "T|D"
-    - field: Sex
+    - field: Gender
       expression: "T|S(0,1)|U"
-    - field: PostalCode
+    - field: AgeAtEncounter
       expression: "T|S(0,5)|U"
-    - field: SocialSecurityNumber
+    - field: PatientSSN
       expression: "T|M(\\d+)"
-  T_INITIALS_PLUS_ZIP:
-    - field: LastName
+  T_INITIALS_PLUS_AGE:
+    - field: BirthYear
       expression: "T|S(0,2)|U"
-    - field: FirstName
+    - field: EncounterType
       expression: "T|S(0,2)|U"
-    - field: BirthDate
+    - field: EncounterDate
       expression: "T|Y"
-    - field: PostalCode
+    - field: AgeAtEncounter
       expression: "T|S(0,4)|U"
   T_IDENTITY_LIGHT:
     - field: RecordId
       expression: "T|S(0,8)|U"
-    - field: BirthDate
+    - field: EncounterDate
       expression: "T|Y"
-    - field: Sex
+    - field: Gender
       expression: "T|U"
