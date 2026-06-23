@@ -1,0 +1,58 @@
+[project]
+name = "openlinktoken-pyspark"
+version = "2.0.0"
+requires-python = ">=3.10"
+dynamic = [
+  "authors",
+  "dependencies",
+  "description",
+  "optional-dependencies",
+  "readme",
+  "urls",
+]
+
+[build-system]
+requires = ["setuptools==75.3.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.uv]
+conflicts = [
+  [
+    { extra = "spark34" },
+    { extra = "spark35" },
+  ],
+  [
+    { extra = "spark34" },
+    { extra = "spark40" },
+  ],
+  [
+    { extra = "spark34" },
+    { extra = "spark41" },
+  ],
+  [
+    { extra = "spark35" },
+    { extra = "spark40" },
+  ],
+  [
+    { extra = "spark35" },
+    { extra = "spark41" },
+  ],
+  [
+    { extra = "spark40" },
+    { extra = "spark41" },
+  ],
+  [
+    { package = "openlinktoken-cli" },
+    { extra = "spark34" },
+  ],
+  [
+    { package = "openlinktoken-cli" },
+    { extra = "spark35" },
+  ],
+]
+
+[tool.pytest.ini_options]
+testpaths = ["src/test"]
+python_files = ["*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]

@@ -1,6 +1,0 @@
-# Development dependencies
-pytest
-pytest-cov
-
-# For editable install of opentoken core
--e ../opentoken

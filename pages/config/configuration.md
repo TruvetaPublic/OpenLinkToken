@@ -4,21 +4,21 @@ layout: default
 
 # Configuration
 
-Configuration options for OpenToken inputs, outputs, secrets, and runtime behavior.
+Configuration options for Open Link Token inputs, outputs, secrets, and runtime behavior.
 
 ---
 
 ## CLI Arguments
 
-OpenToken can be run from Java or Python CLIs, or via the helper shell/PowerShell scripts.
+Open Link Token can be run from the Python CLI or via the helper shell/PowerShell scripts.
 
 At a high level you must always specify:
 
 - the input path and type (CSV or Parquet)
 - an output path for tokens
-- a hashing secret (required)
-- either an encryption key (for encrypted mode) or `--hash-only` (for hash-only mode)
-- optionally `--decrypt` when reading previously encrypted tokens
+- an exchange config for consumer commands (`package`, `tokenize`, `encrypt`, `decrypt`)
+- either a matching private key, a private-key environment variable, or a locally discoverable key under `~/.openlinktoken/`
+- optionally the `decrypt` subcommand when reading previously encrypted tokens
 
 For the complete, authoritative list of flags, short options, and defaults, see the [CLI Reference](../reference/cli.md).
 
@@ -26,31 +26,27 @@ For the complete, authoritative list of flags, short options, and defaults, see 
 
 ## Environment Variables
 
-Secrets can be passed via environment variables for security:
+Consumer commands usually auto-discover the matching private key from `~/.openlinktoken/` when you provide the exchange config:
 
 ```bash
-export OPENTOKEN_HASHING_SECRET="MyHashingKey"
-export OPENTOKEN_ENCRYPTION_KEY="MyEncryptionKey32CharactersLong"
-
-java -jar opentoken-cli-*.jar \
-  -i data.csv -t csv -o tokens.csv \
-  -h "$OPENTOKEN_HASHING_SECRET" \
-  -e "$OPENTOKEN_ENCRYPTION_KEY"
+olt package \
+  -i data.csv -o tokens.csv \
+  --exchange-config ./openlinktoken-2026-05-01.exchange.json
 ```
 
 ### Docker Environment
 
+If the runtime cannot auto-discover the matching key, override it explicitly with `--private-key-env`:
+
 ```bash
 docker run --rm \
-  -e OPENTOKEN_HASHING_SECRET="MyHashingKey" \
-  -e OPENTOKEN_ENCRYPTION_KEY="MyEncryptionKey32CharactersLong" \
+  -e OLT_PRIVATE_KEY_PEM="$(cat ~/.openlinktoken/openlinktoken-2026-05-01.private.pem)" \
   -v $(pwd)/resources:/app/resources \
-  opentoken:latest \
+  openlinktoken:latest package \
   -i /app/resources/sample.csv \
-  -t csv \
   -o /app/resources/output.csv \
-  -h "$OPENTOKEN_HASHING_SECRET" \
-  -e "$OPENTOKEN_ENCRYPTION_KEY"
+  --exchange-config /app/resources/openlinktoken-2026-05-01.exchange.json \
+  --private-key-env OLT_PRIVATE_KEY_PEM
 ```
 
 ---
@@ -100,11 +96,13 @@ Input columns are **case-insensitive** and support common aliases:
 ### Postal Code Formats
 
 **US ZIP Codes:**
+
 - `98004` (5 digits)
 - `98004-1234` (9 digits, dash removed)
 - `980` (ZIP-3, auto-padded to `98000`)
 
 **Canadian Postal Codes:**
+
 - `K1A 1A1` (with space)
 - `K1A1A1` (without space, auto-formatted)
 
@@ -118,28 +116,39 @@ Use `-ot` to specify a different output format:
 
 ```bash
 # Input CSV, output Parquet
-java -jar opentoken-cli-*.jar \
-  -i data.csv -t csv \
-  -o tokens.parquet -ot parquet \
-  -h "HashingKey" -e "EncryptionKey"
+olt package \
+  -i data.csv \
+  -o tokens.parquet \
+  --exchange-config ./openlinktoken-2026-05-01.exchange.json
 ```
 
 ### Output Files Generated
 
-Each run produces two files:
+For CSV or Parquet output, each run produces two files:
 
 1. **Tokens file**: `<output_path>` (CSV or Parquet)
 2. **Metadata file**: `<output_path>.metadata.json` (always JSON)
+
+When the output path ends in `.zip`, the `package` command bundles all three files into a single archive:
+
+1. `<stem>.parquet` — encrypted tokens (always Parquet)
+2. `<stem>.metadata.json` — processing metadata
+3. `<exchange-config-filename>.exchange.json` — exchange config
+
+The `encrypt` command also supports `.zip` output, bundling two files (no metadata):
+
+1. `<stem>.csv` (or `.parquet`) — encrypted tokens (same format as input)
+2. `<exchange-config-filename>.exchange.json` — exchange config
 
 ---
 
 ## Processing Modes
 
-OpenToken supports three processing modes that control how token signatures are transformed:
+Open Link Token supports three processing modes that control how token signatures are transformed:
 
-- **Encryption (default)** – produces encrypted tokens suitable for external exchange; requires both a hashing secret and an encryption key.
-- **Hash-only** – produces one-way hashed tokens for internal matching and overlap analysis; requires only the hashing secret.
-- **Decrypt** – takes previously encrypted tokens and decrypts them back to their hashed form (equivalent to hash-only output).
+- **Encryption (default)** – produces encrypted tokens suitable for external exchange; resolves the hashing secret and transport key from an exchange config plus a matching private key.
+- **Tokenize** – produces one-way hashed tokens for internal matching and overlap analysis; resolves the hashing secret from the same exchange-config workflow.
+- **Decrypt** – takes previously encrypted tokens and decrypts them back to their hashed form (equivalent to `tokenize` output) using the exchange config and a matching private key.
 
 For the exact CLI flags that enable each mode, see the [CLI Reference](../reference/cli.md).
 
@@ -166,39 +175,30 @@ For the exact CLI flags that enable each mode, see the [CLI Reference](../refere
 ### Local Development
 
 ```bash
-# Java
-cd lib/java
-mvn clean install -DskipTests
-java -jar opentoken-cli/target/opentoken-cli-*.jar \
-  -i ../../resources/sample.csv -t csv -o ../../resources/output.csv \
-  -h "HashingKey" -e "EncryptionKey32Characters!!!!!"
-
 # Python
-source /workspaces/OpenLinkToken/.venv/bin/activate
-python -m opentoken_cli.main \
-  -i ../../../resources/sample.csv -t csv -o ../../../resources/output.csv \
-  -h "HashingKey" -e "EncryptionKey32Characters!!!!!"
+source ../../.venv/bin/activate
+python -m openlinktoken_cli.main package \
+  -i ../../resources/sample.csv -o ../../resources/output.csv \
+  --exchange-config ../../resources/openlinktoken-2026-05-01.exchange.json
 ```
 
 ### Docker Container
 
 ```bash
-./run-opentoken.sh \
+./run-openlinktoken.sh package \
   -i ./resources/sample.csv \
   -o ./resources/output.csv \
-  -t csv \
-  -h "HashingKey" \
-  -e "EncryptionKey32Characters!!!!!"
+  --exchange-config ./resources/openlinktoken-2026-05-01.exchange.json
 ```
 
 ### Spark/Databricks Cluster
 
 ```python
-from opentoken_pyspark import OpenTokenProcessor
+from openlinktoken_pyspark import Open Link TokenProcessor
 
-processor = OpenTokenProcessor(
-    hashing_secret=dbutils.secrets.get("opentoken", "hashing_secret"),
-    encryption_key=dbutils.secrets.get("opentoken", "encryption_key")
+processor = Open Link TokenProcessor(
+    hashing_secret=dbutils.secrets.get("openlinktoken", "hashing_secret"),
+    encryption_key=dbutils.secrets.get("openlinktoken", "encryption_key")
 )
 ```
 

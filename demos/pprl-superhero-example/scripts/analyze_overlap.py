@@ -2,40 +2,99 @@
 Analyze overlap between tokenized hospital and pharmacy datasets.
 
 This script performs privacy-preserving record linkage by comparing tokens
-from both datasets. Since OpenToken uses random IVs for AES-GCM encryption,
+from both datasets. Since Open Link Token uses random IVs for AES-GCM encryption,
 tokens must be decrypted before comparison to get the underlying HMAC-SHA256
 hash values, which are deterministic and comparable.
 """
+
+import argparse
+import base64
 import csv
 import json
+import os
 from collections import defaultdict
-import base64
+from pathlib import Path
+from typing import Sequence
+
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
+V1_TOKEN_PREFIX = "olt.V1."
+SUPPORTED_V1_TOKEN_PREFIXES = (V1_TOKEN_PREFIX,)
+
+
+def _to_key_bytes(encryption_key):
+    """Return encryption key as raw bytes, accepting both str and bytes."""
+    return encryption_key if isinstance(encryption_key, bytes) else encryption_key.encode("utf-8")
+
+
+def _base64url_decode(value):
+    """Decode base64url text with optional missing padding."""
+    padding = "=" * (-len(value) % 4)
+    return base64.urlsafe_b64decode(value + padding)
+
+
+def decrypt_legacy_token(encrypted_token, encryption_key):
+    """Decrypt legacy base64 token format (IV || ciphertext || tag)."""
+    message_bytes = base64.b64decode(encrypted_token)
+    iv = message_bytes[:12]
+    ciphertext_and_tag = message_bytes[12:]
+
+    aesgcm = AESGCM(_to_key_bytes(encryption_key))
+    decrypted_bytes = aesgcm.decrypt(iv, ciphertext_and_tag, None)
+    return decrypted_bytes.decode("utf-8")
+
+
+def decrypt_v1_token(v1_token, encryption_key):
+    """Decrypt olt.V1 JWE token and return deterministic comparable token value."""
+    for prefix in SUPPORTED_V1_TOKEN_PREFIXES:
+        if v1_token.startswith(prefix):
+            jwe_compact = v1_token[len(prefix) :]
+            break
+    else:
+        raise ValueError("Token does not use a supported V1 format")
+
+    parts = jwe_compact.split(".")
+    if len(parts) != 5:
+        raise ValueError("Invalid JWE compact serialization")
+
+    protected_b64, _encrypted_key_b64, iv_b64, ciphertext_b64, tag_b64 = parts
+    aad = protected_b64.encode("ascii")
+    iv = _base64url_decode(iv_b64)
+    ciphertext = _base64url_decode(ciphertext_b64)
+    tag = _base64url_decode(tag_b64)
+
+    aesgcm = AESGCM(_to_key_bytes(encryption_key))
+    plaintext = aesgcm.decrypt(iv, ciphertext + tag, aad)
+    payload = json.loads(plaintext.decode("utf-8"))
+
+    ppid_value = payload.get("ppid", [])
+    if isinstance(ppid_value, list):
+        ppid_value = ppid_value[0] if ppid_value else ""
+
+    if not ppid_value:
+        return ""
+
+    try:
+        return decrypt_legacy_token(ppid_value, encryption_key)
+    except Exception:
+        return ppid_value
 
 
 def decrypt_token(encrypted_token, encryption_key):
     """
-    Decrypt an OpenToken encrypted token to get the underlying hash.
-    
+    Decrypt an Open Link Token encrypted token to get the underlying hash.
+
     Args:
         encrypted_token: Base64-encoded encrypted token with prepended IV
-        encryption_key: 32-character encryption key
-    
+        encryption_key: Encryption key as str or bytes (32 bytes for AES-256)
+
     Returns:
         Decrypted token (HMAC-SHA256 hash in Base64)
     """
     try:
-        # Decode the base64-encoded message
-        message_bytes = base64.b64decode(encrypted_token)
-        
-        # Extract IV (first 12 bytes) and ciphertext+tag (remaining bytes)
-        iv = message_bytes[:12]
-        ciphertext_and_tag = message_bytes[12:]
-        
-        # Create AESGCM cipher and decrypt
-        aesgcm = AESGCM(encryption_key.encode('utf-8'))
-        decrypted_bytes = aesgcm.decrypt(iv, ciphertext_and_tag, None)
-        return decrypted_bytes.decode('utf-8')
+        if any(encrypted_token.startswith(prefix) for prefix in SUPPORTED_V1_TOKEN_PREFIXES):
+            return decrypt_v1_token(encrypted_token, encryption_key)
+        return decrypt_legacy_token(encrypted_token, encryption_key)
     except Exception as e:
         raise ValueError(f"Decryption failed for token: {e}")
 
@@ -43,34 +102,33 @@ def decrypt_token(encrypted_token, encryption_key):
 def load_tokens(csv_file, encryption_key):
     """
     Load tokens from CSV file, decrypt them, and organize by RecordId and RuleId.
-    
+
     Args:
         csv_file: Path to CSV file with encrypted tokens
-        encryption_key: 32-character encryption key used for tokenization
-    
+        encryption_key: Encryption key as str or bytes (32 bytes for AES-256)
+
     Returns:
         Dictionary mapping RecordId -> RuleId -> decrypted_token
     """
     tokens_by_record = defaultdict(dict)
-    
-    with open(csv_file, 'r') as f:
+
+    with open(csv_file, "r") as f:
         reader = csv.DictReader(f)
         for row in reader:
-            record_id = row['RecordId']
-            rule_id = row['RuleId']
-            encrypted_token = row['Token']
-            
-            # Decrypt the token to get the underlying hash
+            record_id = row["RecordId"]
+            rule_id = row["RuleId"]
+            encrypted_token = row["Token"]
+
             decrypted_token = decrypt_token(encrypted_token, encryption_key)
             tokens_by_record[record_id][rule_id] = decrypted_token
-    
+
     return tokens_by_record
 
 
 def load_metadata(json_file):
     """Load metadata from JSON file."""
     try:
-        with open(json_file, 'r') as f:
+        with open(json_file, "r") as f:
             return json.load(f)
     except FileNotFoundError:
         return None
@@ -110,19 +168,19 @@ def find_matches(hospital_tokens, pharmacy_tokens, required_token_matches=5, mat
         matches: List of tuples (hospital_record_id, pharmacy_record_id, matching_tokens)
     """
     matches = []
-    token_ids = matching_rules if matching_rules else ['T1', 'T2', 'T3', 'T4', 'T5']
+    token_ids = matching_rules if matching_rules else ["T1", "T2", "T3", "T4", "T5"]
     required = len(token_ids) if matching_rules else required_token_matches
 
     print(f"Searching for matches (requiring {required} matching tokens: {', '.join(token_ids)})...")
     print()
-    
+
     for hospital_id, hospital_token_set in hospital_tokens.items():
         for pharmacy_id, pharmacy_token_set in pharmacy_tokens.items():
             matching_tokens = _matching_token_ids(token_ids, hospital_token_set, pharmacy_token_set)
 
             if len(matching_tokens) >= required:
                 matches.append((hospital_id, pharmacy_id, matching_tokens))
-    
+
     return matches
 
 
@@ -141,10 +199,10 @@ def analyze_token_distribution(tokens, dataset_name):
     """Analyze the distribution of tokens in a dataset."""
     total_records = len(tokens)
     tokens_per_record = defaultdict(int)
-    
+
     for record_id, token_set in tokens.items():
         tokens_per_record[len(token_set)] += 1
-    
+
     print(f"{dataset_name} Token Distribution:")
     print(f"  Total records: {total_records}")
     for token_count, record_count in sorted(tokens_per_record.items()):
@@ -159,46 +217,42 @@ def print_match_summary(matches):
     print("=" * 70)
     print(f"Total matching record pairs: {len(matches)}")
     print()
-    
+
     if matches:
         # Group by number of matching tokens
         matches_by_count = defaultdict(list)
         for match in matches:
             count = len(match[2])
             matches_by_count[count].append(match)
-        
+
         for count in sorted(matches_by_count.keys(), reverse=True):
             match_list = matches_by_count[count]
             print(f"Matches with {count} tokens: {len(match_list)}")
-        
+
         print()
         print("Sample matches (first 5):")
         print("-" * 70)
         for i, (hospital_id, pharmacy_id, matching_tokens) in enumerate(matches[:5]):
-            print(f"Match #{i+1}:")
+            print(f"Match #{i + 1}:")
             print(f"  Hospital RecordId: {hospital_id}")
             print(f"  Pharmacy RecordId: {pharmacy_id}")
             print(f"  Matching Tokens: {', '.join(matching_tokens)}")
             print()
     else:
         print("No matches found!")
-    
+
     print("=" * 70)
 
 
 def save_matches_to_csv(matches, output_file):
     """Save matching results to CSV file."""
-    with open(output_file, 'w', newline='') as f:
+    with open(output_file, "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(['Hospital_RecordId', 'Pharmacy_RecordId', 'MatchingTokens', 'TokenCount'])
+
+        writer.writerow(["HospitalRecordId", "PharmacyRecordId", "MatchingTokens", "TokenCount"])
 
         for hospital_id, pharmacy_id, matching_tokens in matches:
-            writer.writerow([
-                hospital_id,
-                pharmacy_id,
-                '|'.join(matching_tokens),
-                len(matching_tokens),
-            ])
+            writer.writerow([hospital_id, pharmacy_id, "|".join(matching_tokens), len(matching_tokens)])
 
     print(f"Match results saved to: {output_file}")
 
@@ -209,115 +263,181 @@ def print_metadata_summary(hospital_metadata, pharmacy_metadata):
     print("=" * 70)
     print("TOKENIZATION METADATA")
     print("=" * 70)
-    
+
     if hospital_metadata:
+        total = hospital_metadata.get("TotalRows", "N/A")
+        invalid = hospital_metadata.get("TotalRowsWithInvalidAttributes", 0)
+        valid = (total - invalid) if isinstance(total, int) else "N/A"
         print("Hospital Dataset:")
-        print(f"  Total records processed: {hospital_metadata.get('totalRecords', 'N/A')}")
-        print(f"  Valid records: {hospital_metadata.get('validRecords', 'N/A')}")
-        print(f"  Invalid records: {hospital_metadata.get('invalidRecords', 'N/A')}")
-        print(f"  Library version: {hospital_metadata.get('libraryVersion', 'N/A')}")
+        print(f"  Total records processed: {total}")
+        print(f"  Valid records: {valid}")
+        print(f"  Invalid records: {invalid}")
+        print(f"  Library version: {hospital_metadata.get('Version', 'N/A')}")
         print()
-    
+
     if pharmacy_metadata:
+        total = pharmacy_metadata.get("TotalRows", "N/A")
+        invalid = pharmacy_metadata.get("TotalRowsWithInvalidAttributes", 0)
+        valid = (total - invalid) if isinstance(total, int) else "N/A"
         print("Pharmacy Dataset:")
-        print(f"  Total records processed: {pharmacy_metadata.get('totalRecords', 'N/A')}")
-        print(f"  Valid records: {pharmacy_metadata.get('validRecords', 'N/A')}")
-        print(f"  Invalid records: {pharmacy_metadata.get('invalidRecords', 'N/A')}")
-        print(f"  Library version: {pharmacy_metadata.get('libraryVersion', 'N/A')}")
+        print(f"  Total records processed: {total}")
+        print(f"  Valid records: {valid}")
+        print(f"  Invalid records: {invalid}")
+        print(f"  Library version: {pharmacy_metadata.get('Version', 'N/A')}")
         print()
-    
+
     print("=" * 70)
     print()
 
 
-def main():
-    """Main function to analyze overlap between datasets."""
-    import argparse
+def _resolve_encryption_key(exchange_config_path, private_key_path):
+    """
+    Derive the transport encryption key from an exchange config and private key.
 
-    parser = argparse.ArgumentParser(description="Analyze overlap between tokenized datasets.")
+    Falls back to raising an error with instructions if neither is provided.
+    """
+    from openlinktoken.exchange_config import derive_transport_encryption_key, resolve_exchange_config_inputs
+
+    exchange = resolve_exchange_config_inputs(
+        exchange_config_path=exchange_config_path,
+        private_key_path=private_key_path,
+    )
+    return derive_transport_encryption_key(exchange)
+
+
+def _build_parser() -> argparse.ArgumentParser:
+    """Build the command-line parser for overlap analysis."""
+    parser = argparse.ArgumentParser(
+        description="Decrypt Open Link Token demo outputs and find matching record pairs.",
+    )
     parser.add_argument(
         "--matching-rules",
         nargs="+",
-        metavar="TOKEN_ID",
-        default=None,
-        help="Token IDs that must ALL match (e.g. T1 T2 T3 T5). Defaults to T1-T5.",
+        metavar="RULE_ID",
+        help="Optional token rule IDs that must all match, e.g. --matching-rules T1 T2 T3 T5",
     )
     parser.add_argument(
         "--output",
-        default=None,
-        help="Output CSV filename (relative to outputs dir). Defaults to matching_records.csv.",
+        metavar="PATH",
+        help=(
+            "Optional output CSV path. Relative filenames are written under outputs/. "
+            "Defaults to outputs/matching_records.csv."
+        ),
     )
-    args = parser.parse_args()
+    return parser
+
+
+def _resolve_output_path(output_argument: str | None, outputs_dir: Path) -> Path:
+    """Resolve the CSV output path, defaulting relative names into outputs/."""
+    if not output_argument:
+        return outputs_dir / "matching_records.csv"
+
+    output_path = Path(output_argument)
+    if output_path.is_absolute():
+        return output_path
+    return outputs_dir / output_path.name if output_path.parent == Path(".") else output_path
+
+
+def main(argv: Sequence[str] | None = None):
+    """Main function to analyze overlap between datasets."""
+    args = _build_parser().parse_args(argv)
 
     print()
     print("=" * 70)
     print("PPRL Overlap Analysis - Superhero Hospital & Pharmacy")
     print("=" * 70)
     print()
-    
-    # Configuration - must match the keys used during tokenization
-    encryption_key = "SuperHero-Encryption-Key-32chars"
-    
-    # Determine base directory (handle both script dir and demo root execution)
-    from pathlib import Path
+
+    # Resolve exchange config and private key from env vars (set by run_end_to_end.sh
+    # or tokenize scripts) or fall back to the default demo paths
     script_dir = Path(__file__).parent
     demo_dir = script_dir.parent
-    outputs_dir = demo_dir / 'outputs'
-    
+
+    exchange_config_path = os.environ.get(
+        "OLT_DEMO_EXCHANGE_CONFIG",
+        str(demo_dir / "superhero-demo.exchange.json"),
+    )
+    private_key_path = os.environ.get(
+        "OLT_DEMO_PRIVATE_KEY",
+        str(Path.home() / ".openlinktoken" / "superhero-demo.private.pem"),
+    )
+
+    if not Path(exchange_config_path).exists() or not Path(private_key_path).exists():
+        raise FileNotFoundError(
+            "Exchange config or private key not found. "
+            "Run run_end_to_end.sh or the individual tokenize scripts first to set them up. "
+            f"Exchange config: {exchange_config_path}, Private key: {private_key_path}"
+        )
+
+    print("Resolving transport encryption key from exchange config...")
+    encryption_key = _resolve_encryption_key(exchange_config_path, private_key_path)
+    print()
+
+    outputs_dir = demo_dir / "outputs"
+
     # File paths
-    hospital_tokens_file = str(outputs_dir / 'hospital_tokens.csv')
-    pharmacy_tokens_file = str(outputs_dir / 'pharmacy_tokens.csv')
+    hospital_tokens_file = str(outputs_dir / "hospital_tokens.csv")
+    pharmacy_tokens_file = str(outputs_dir / "pharmacy_tokens.csv")
     hospital_metadata_files = [
-        str(outputs_dir / 'hospital_tokens.metadata.json'),
-        str(outputs_dir / 'hospital_tokens.csv.metadata.json'),
+        str(outputs_dir / "hospital_tokens.metadata.json"),
+        str(outputs_dir / "hospital_tokens.csv.metadata.json"),
     ]
     pharmacy_metadata_files = [
-        str(outputs_dir / 'pharmacy_tokens.metadata.json'),
-        str(outputs_dir / 'pharmacy_tokens.csv.metadata.json'),
+        str(outputs_dir / "pharmacy_tokens.metadata.json"),
+        str(outputs_dir / "pharmacy_tokens.csv.metadata.json"),
     ]
-    output_filename = args.output if args.output else 'matching_records.csv'
-    matches_output_file = str(outputs_dir / output_filename)
-    
+
+    matches_output_file = _resolve_output_path(args.output, outputs_dir)
+
     # Load and decrypt tokens
     print("Loading and decrypting tokens...")
-    print("(Decryption is needed because OpenToken uses random IVs for encryption)")
+    print("(Decryption is needed because Open Link Token uses random IVs for encryption)")
     hospital_tokens = load_tokens(hospital_tokens_file, encryption_key)
     pharmacy_tokens = load_tokens(pharmacy_tokens_file, encryption_key)
     print(f"Loaded {len(hospital_tokens)} hospital records")
     print(f"Loaded {len(pharmacy_tokens)} pharmacy records")
     print()
-    
+
     # Analyze token distribution
     analyze_token_distribution(hospital_tokens, "Hospital")
     analyze_token_distribution(pharmacy_tokens, "Pharmacy")
-    
-    # Find matches
-    matches = find_matches(hospital_tokens, pharmacy_tokens, matching_rules=args.matching_rules)
-    
+
+    # Find matches (default strict matching requires all 5 standard tokens)
+    matches = find_matches(
+        hospital_tokens,
+        pharmacy_tokens,
+        required_token_matches=5,
+        matching_rules=args.matching_rules,
+    )
+
     # Print match summary
     print_match_summary(matches)
-    
+
     # Save matches to CSV
     if matches:
         save_matches_to_csv(matches, matches_output_file)
         print()
-    
+
     # Load and print metadata
     hospital_metadata = load_metadata_any(hospital_metadata_files)
     pharmacy_metadata = load_metadata_any(pharmacy_metadata_files)
     print_metadata_summary(hospital_metadata, pharmacy_metadata)
-    
+
     # Calculate overlap percentage
     if matches:
         hospital_match_rate = (len(matches) / len(hospital_tokens)) * 100
         pharmacy_match_rate = (len(matches) / len(pharmacy_tokens)) * 100
-        
+
         print("OVERLAP STATISTICS")
         print("=" * 70)
-        print(f"Hospital records with matches: {len(matches)} out of {len(hospital_tokens)} ({hospital_match_rate:.1f}%)")
-        print(f"Pharmacy records with matches: {len(matches)} out of {len(pharmacy_tokens)} ({pharmacy_match_rate:.1f}%)")
+        print(
+            f"Hospital records with matches: {len(matches)} out of {len(hospital_tokens)} ({hospital_match_rate:.1f}%)"
+        )
+        print(
+            f"Pharmacy records with matches: {len(matches)} out of {len(pharmacy_tokens)} ({pharmacy_match_rate:.1f}%)"
+        )
         print("=" * 70)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

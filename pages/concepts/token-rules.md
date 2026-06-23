@@ -4,7 +4,7 @@ layout: default
 
 # Token Rules
 
-OpenToken generates five distinct token types (T1-T5). Each rule defines a **token signature** (a deterministic, normalized string) which is then transformed into the output token via hashing (and optionally encryption).
+Open Link Token generates five distinct token types (T1-T5). Each rule defines a **token signature** (a deterministic, normalized string) which is then transformed into the output token via hashing (and optionally encryption).
 
 ---
 
@@ -59,6 +59,7 @@ Token Signature: "OREILLY|T|M|1995-11-03"
 ```
 
 ---
+
 ## T2: Last Name + First Name + Birth Date + ZIP-3
 
 **Purpose:** Adds geography; useful when postal code is available
@@ -226,17 +227,17 @@ Notes:
 
 ## Custom Token Rules
 
-OpenToken supports defining custom token rules:
+Open Link Token supports defining custom token rules:
 
 ### Java
 
 ```java
 import java.util.ArrayList;
 
-import com.truveta.opentoken.attributes.AttributeExpression;
-import com.truveta.opentoken.attributes.person.BirthDateAttribute;
-import com.truveta.opentoken.attributes.person.LastNameAttribute;
-import com.truveta.opentoken.tokens.Token;
+import org.openlinktoken.attributes.AttributeExpression;
+import org.openlinktoken.attributes.person.BirthDateAttribute;
+import org.openlinktoken.attributes.person.LastNameAttribute;
+import org.openlinktoken.tokens.Token;
 
 public class CustomToken implements Token {
   private static final long serialVersionUID = 1L;
@@ -267,10 +268,10 @@ public class CustomToken implements Token {
 ```python
 from typing import List
 
-from opentoken.attributes.attribute_expression import AttributeExpression
-from opentoken.attributes.person.birth_date_attribute import BirthDateAttribute
-from opentoken.attributes.person.last_name_attribute import LastNameAttribute
-from opentoken.tokens.token import Token
+from openlinktoken.attributes.attribute_expression import AttributeExpression
+from openlinktoken.attributes.person.birth_date_attribute import BirthDateAttribute
+from openlinktoken.attributes.person.last_name_attribute import LastNameAttribute
+from openlinktoken.tokens.token import Token
 
 class CustomToken(Token):
   ID = "T6"

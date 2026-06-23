@@ -4,11 +4,11 @@ layout: default
 
 # Matching Concepts
 
-Understand how OpenToken tokens work for person matching and the strategies behind the 5 token rules.
+Understand how Open Link Token tokens work for record linkage and the strategies behind the 5 token rules.
 
 ## Token Generation Rules
 
-OpenToken generates **5 distinct tokens (T1–T5)** per person, each combining different attributes to target different matching scenarios.
+Open Link Token generates **5 distinct tokens (T1–T5)** per person, each combining different attributes to target different matching scenarios.
 
 ### Rule Definitions
 
@@ -25,6 +25,7 @@ OpenToken generates **5 distinct tokens (T1–T5)** per person, each combining d
 ### Example
 
 Given a person:
+
 ```
 FirstName: John
 LastName: Doe
@@ -68,12 +69,14 @@ Using **5 rules increases match confidence** by capturing different attribute co
 Suppose you have two datasets and want to find matching persons:
 
 ### Dataset A
+
 ```
 RecordId: A1, Name: John Doe, BirthDate: 2000-01-01, ...
 RecordId: A2, Name: Jane Smith, BirthDate: 1985-06-15, ...
 ```
 
 ### Dataset B
+
 ```
 RecordId: B1, Name: Jon Doe, BirthDate: 2000-01-01, ...     # Same person as A1 (typo in name)
 RecordId: B2, Name: Jane Smith, BirthDate: 1985-06-15, ...   # Same person as A2
@@ -102,10 +105,12 @@ Token(A2, T1) != Token(B3, T1)  ✗ No match for all rules
 ### Matching Strategy
 
 A **match is confirmed** when:
+
 - Tokens match across **multiple rules** (not just one)
 - The matching rules provide **high discriminative power** (not just sex + birthdate, which is common)
 
 This approach handles:
+
 - **Typos and name variations**: T3 and T5 allow first name differences
 - **Data completeness**: T4 works even if SSN is unavailable (use T1–T3 instead)
 - **High confidence**: Matching on multiple rules reduces false positives
@@ -134,14 +139,14 @@ Tokens are encrypted to prevent re-identification, but can be decrypted to debug
 
 ```bash
 # Generate encrypted tokens (default mode)
-java -jar opentoken-cli-*.jar \
-  -i data.csv -t csv -o output.csv \
-  -h "HashingKey" -e "EncryptionKey"
+olt package \
+  -i data.csv -o output.csv \
+  --exchange-config ./matching.exchange.json
 
 # Decrypt previously encrypted tokens
-java -jar opentoken-cli-*.jar -d \
-  -i output.csv -t csv -o decrypted.csv \
-  -e "EncryptionKey"
+olt decrypt \
+  -i output.csv -o decrypted.csv \
+  --exchange-config ./matching.exchange.json
 ```
 
 Decrypted tokens show the HMAC-SHA256 hash (base64 encoded) before AES encryption—useful for debugging attribute normalization issues.
@@ -150,16 +155,18 @@ Decrypted tokens show the HMAC-SHA256 hash (base64 encoded) before AES encryptio
 
 All tokens use normalized attributes. See [Security](../security.md) for detailed rules.
 
+For names, normalization removes diacritics and transliterates supported Latin Extended letters to ASCII before later token-building steps.
+
 ### Quick Reference
 
-| Attribute  | Normalization                                           | Example                                               |
-| ---------- | ------------------------------------------------------- | ----------------------------------------------------- |
-| FirstName  | Uppercase, remove titles/suffixes, normalize diacritics | "José María" → "JOSE MARIA"                           |
-| LastName   | Uppercase, remove suffixes, normalize diacritics        | "O'Brien" → "OBRIEN"                                  |
-| Sex        | Standardized to "Male" or "Female"                      | "M", "m", "Male" → "MALE"                             |
-| BirthDate  | YYYY-MM-DD format                                       | "01/15/1980", "1980-01-15" → "1980-01-15"             |
-| PostalCode | Uppercase, dash removed for US; space for Canadian      | "98004", "98004-1234" → "98004", "K1A 1A1" → "K1A1A1" |
-| SSN        | 9-digit numeric                                         | "123-45-6789" → digits-only string                    |
+| Attribute  | Normalization                                                                                                 | Example                                               |
+| ---------- | ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| FirstName  | Uppercase, remove titles/suffixes, remove diacritics, transliterate supported Latin Extended letters to ASCII | "Ægir" → "AEGIR"                                      |
+| LastName   | Uppercase, remove suffixes, remove diacritics, transliterate supported Latin Extended letters to ASCII        | "Œberg" → "OEBERG"                                    |
+| Sex        | Standardized to "Male" or "Female"                                                                            | "M", "m", "Male" → "MALE"                             |
+| BirthDate  | YYYY-MM-DD format                                                                                             | "01/15/1980", "1980-01-15" → "1980-01-15"             |
+| PostalCode | Uppercase, dash removed for US; space for Canadian                                                            | "98004", "98004-1234" → "98004", "K1A 1A1" → "K1A1A1" |
+| SSN        | 9-digit numeric                                                                                               | "123-45-6789" → digits-only string                    |
 
 ## Collision Resistance
 
@@ -169,11 +176,11 @@ The token generation pipeline ensures **high collision resistance**:
 2. **HMAC-SHA256**: Adds secret key; prevents pre-computed tables
 3. **AES-256**: Adds another layer of encryption; prevents token re-identification
 
-Even with SHA-256's theoretical weaknesses, OpenToken's combination is secure for regulated PII use cases.
+Even with SHA-256's theoretical weaknesses, Open Link Token's combination is secure for regulated PII use cases.
 
 ## Next Steps
 
 - **Understand validation rules**: [Security](../security.md)
-- **Decrypt and debug tokens**: [Running OpenToken](../running-opentoken/index.md)
+- **Decrypt and debug tokens**: [Running Open Link Token](../running-openlinktoken/index.md)
 - **View full token specification**: [Specification](../specification.md)
 - **Integrate with your system**: [Configuration](../config/configuration.md)

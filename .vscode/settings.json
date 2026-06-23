@@ -1,11 +1,7 @@
 {
   "java.configuration.updateBuildConfiguration": "automatic",
   "java.compile.nullAnalysis.mode": "automatic",
-  "java.templates.fileHeader": [
-    "/**",
-    " * Copyright (c) Truveta. All rights reserved.",
-    " */"
-  ],
+  "java.templates.fileHeader": ["/* SPDX-License-Identifier: MIT */"],
   "java.format.comments.enabled": false,
   "terminal.integrated.scrollback": 10000,
   "editor.formatOnPaste": true,
@@ -17,18 +13,23 @@
   },
   "files.trimFinalNewlines": true,
   "files.eol": "\n",
+  "files.exclude": {
+    ".worktrees/**": true
+  },
+  "files.watcherExclude": {
+    ".worktrees/**": true
+  },
   "chat.tools.autoApprove": true,
   "chat.mcp.access": "all",
   "python.testing.pytestEnabled": true,
   "python.testing.unittestEnabled": false,
   "python.testing.pytestArgs": [
-    "lib/python/opentoken/src/test",
-    "lib/python/opentoken-cli/src/test",
-    "lib/python/opentoken-pyspark/src/test"
+    "lib/python/openlinktoken/src/test",
+    "lib/python/openlinktoken-cli/src/test",
+    "lib/python/openlinktoken-pyspark/src/test"
   ],
   "python.testing.autoTestDiscoverOnSaveEnabled": true,
   "python.testing.pytestPath": "pytest",
-  "python.defaultInterpreterPath": "",
   "testing.showInlineOutput": true,
   "python.analysis.typeCheckingMode": "basic",
   "[markdown]": {

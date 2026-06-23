@@ -8,7 +8,7 @@ Input formats, output modes, and customization options.
 
 ## Input File Format
 
-OpenToken processes CSV and Parquet files. Both formats support the same attribute columns with flexible naming.
+Open Link Token processes CSV and Parquet files. Both formats support the same attribute columns with flexible naming.
 
 ### Column Names & Aliases
 
@@ -36,6 +36,7 @@ ID003,Robert,Johnson,1990-03-10,Male,10001,456-78-9123
 ```
 
 **Requirements:**
+
 - Header row is required
 - Columns can be in any order
 - All required attributes must be present (RecordId is optional)
@@ -43,21 +44,25 @@ ID003,Robert,Johnson,1990-03-10,Male,10001,456-78-9123
 - UTF-8 encoding recommended
 
 **Date Formats Accepted:**
+
 - `YYYY-MM-DD` (recommended)
 - `MM/DD/YYYY`
 - `MM-DD-YYYY`
 - `DD.MM.YYYY`
 
 **Sex Values Accepted:**
+
 - `Male`, `M`
 - `Female`, `F`
-(Case-insensitive)
+  (Case-insensitive)
 
 **SSN Formats Accepted:**
+
 - `123-45-6789` (preferred input format)
 - Digits-only values (normalized automatically; dashes removed internally)
 
 **Postal Code Formats:**
+
 - **US ZIP:** `98004` (5 digits), `98004-1234` (9 digits), `980` (ZIP-3, auto-padded to 98000)
 - **Canadian:** `K1A 1A1` (postal code with space), `K1A1A1` (without space, auto-formatted)
 
@@ -68,7 +73,7 @@ Parquet files follow the same column naming conventions and requirements as CSV:
 ```python
 import pyarrow.parquet as pq
 
-# Read with OpenToken
+# Read with Open Link Token
 df = pq.read_table("data.parquet").to_pandas()
 
 # Must have required columns
@@ -93,11 +98,11 @@ Records with invalid attributes are still output (with blank tokens for that rul
 
 ## Output File Format
 
-OpenToken generates two output files: tokens and metadata.
+Open Link Token generates two output files: tokens and metadata.
 
 ### Tokens Output
 
-CSV or Parquet file (same format as input, unless `-ot` specifies otherwise):
+CSV or Parquet file (same format as input; when packaged via the `package` command with ZIP output, always parquet by default):
 
 ```csv
 RecordId,RuleId,Token
@@ -110,14 +115,16 @@ ID002,T1,...
 ```
 
 **Columns:**
+
 - `RecordId`: From input (or auto-generated UUID)
 - `RuleId`: Token rule identifier (T1–T5)
-- `Token`: Base64-encoded encrypted token (or hashed token if `--hash-only`)
+- `Token`: Encrypted `olt.V1.<JWE compact serialization>` token (or base64 HMAC token when generated via `olt tokenize`)
 
 **Notes:**
+
 - **One row per rule per record**: 5 rows for each valid record
 - **Blank tokens**: If a record is invalid, tokens may be blank (logged in metadata)
-- **Token length**: Varies (typically 80–100 characters base64 encoded)
+- **Token length**: Varies by mode and payload size (encrypted `olt.V1` tokens are longer than normal `tokenize` or `tokenize --mode hash-only` outputs)
 
 ### Metadata Output
 
@@ -125,9 +132,9 @@ Always JSON format, suffixed `.metadata.json` (e.g., `output.metadata.json`):
 
 ```json
 {
-  "JavaVersion": "21.0.0",
-  "OpenTokenVersion": "1.0.0",
-  "Platform": "Java",
+  "PythonVersion": "3.11.0",
+  "Version": "1.0.0",
+  "Platform": "Python",
   "TotalRows": 3,
   "TotalRowsWithInvalidAttributes": 1,
   "InvalidAttributesByType": {
@@ -154,59 +161,63 @@ See [Reference: Metadata Format](../reference/metadata-format.md) for detailed f
 
 ### Encryption Mode (Default)
 
-Generates encrypted tokens using HMAC-SHA256 + AES-256.
+Generates encrypted `olt.V1` match tokens using HMAC-SHA256 + JWE/AES-256-GCM.
 
 ```bash
-java -jar opentoken-cli-*.jar \
-  -i data.csv -t csv -o tokens.csv \
-  -h "HashingKey" -e "EncryptionKey"
+olt package \
+  -i data.csv -o tokens.csv \
+  --exchange-config ./tuning.exchange.json
 ```
 
 **Process:**
+
 ```
-Token Signature → SHA-256 Hash → HMAC-SHA256(hash, key) → AES-256 Encrypt → Base64 Encode
+Token Signature → SHA-256 Hash → HMAC-SHA256(hash, key) → JWE (AES-256-GCM) → Prefix `olt.V1.`
 ```
 
-**Requires:** Hashing secret (`-h`) and encryption key (`-e`)
+**Requires:** Exchange config plus a matching private key that the CLI can auto-discover (or an explicit override)
+
+Encrypted `olt.V1` tokens include randomized IVs, so ciphertext values are not deterministic across runs.
 
 ### Hash-Only Mode
 
 Generates hashed tokens without encryption. Useful for token matching scenarios where encryption overhead is unnecessary.
 
 ```bash
-java -jar opentoken-cli-*.jar \
-  --hash-only \
-  -i data.csv -t csv -o tokens.csv \
-  -h "HashingKey"
+olt tokenize \
+  -i data.csv -o tokens.csv \
+  --exchange-config ./tuning.exchange.json
 ```
 
 **Process:**
+
 ```
 Token Signature → SHA-256 Hash → HMAC-SHA256(hash, key) → Base64 Encode
 ```
 
-**Requires:** Hashing secret only (`-h`)
+**Requires:** Exchange config plus a matching private key that the CLI can auto-discover (or an explicit override)
 
 **Benefits:**
+
 - Faster processing
 - Smaller output (shorter tokens)
 - Suitable for internal matching where raw data is already protected
-- Java/Python cross-language compatibility guaranteed
+- Cross-language compatibility guaranteed
 
 ### Decryption Mode
 
 Reverse previous encryption to inspect or verify token generation.
 
 ```bash
-java -jar opentoken-cli-*.jar \
-  -d \
-  -i encrypted-tokens.csv -t csv -o decrypted-tokens.csv \
-  -e "EncryptionKey"
+olt decrypt \
+  -i encrypted-tokens.csv -o decrypted-tokens.csv \
+  --exchange-config ./tuning.exchange.json
 ```
 
-**Output:** HMAC-SHA256 hashed tokens (base64 encoded) **before** AES encryption—equivalent to `--hash-only` output.
+**Output:** HMAC-SHA256 hashed tokens (base64 encoded) **before** AES encryption—equivalent to `tokenize` output.
 
 **Use cases:**
+
 - Debugging attribute normalization issues
 - Verifying token consistency across datasets
 - Re-encrypting with different keys
@@ -216,6 +227,7 @@ java -jar opentoken-cli-*.jar \
 ## Custom Token Rules
 
 To define custom token rules beyond T1–T5, see:
+
 - [Reference: Token Registration](../reference/token-registration.md)
 - [Spark or Databricks](../operations/spark-or-databricks.md) (notebook example)
 
@@ -223,18 +235,20 @@ To define custom token rules beyond T1–T5, see:
 
 ## Cross-Language Compatibility
 
-OpenToken Java and Python implementations produce **identical tokens** for the same input and secrets.
+Open Link Token produces **identical tokens** for the same input and secrets across integrations.
 
 **Verified for:**
+
 - Attribute normalization
 - Token generation rules
 - Hashing (HMAC-SHA256)
 - Encryption (AES-256)
 
 **Test interoperability:**
+
 ```bash
 cd tools/interoperability
-python java_python_interoperability_test.py
+python multi_language_interoperability_test.py
 ```
 
 ---
@@ -244,4 +258,4 @@ python java_python_interoperability_test.py
 - **Understand validation rules**: [Security](../security.md)
 - **View metadata format**: [Reference: Metadata Format](../reference/metadata-format.md)
 - **Define custom tokens**: [Reference](../reference/index.md)
-- **Debug tokens**: [Running OpenToken](../running-opentoken/index.md)
+- **Debug tokens**: [Running Open Link Token](../running-openlinktoken/index.md)

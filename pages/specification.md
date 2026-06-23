@@ -2,18 +2,19 @@
 layout: default
 ---
 
-# OpenToken Specification
+# Open Link Token Specification
 
 ## Overview
 
-OpenToken is a privacy-preserving token generation system for deterministic person matching across datasets. This specification defines the scope, inputs, processing steps, and outputs of the token generation pipeline.
+Open Link Token is a privacy-preserving token generation system for deterministic record linkage across datasets. This specification defines the scope, inputs, processing steps, and outputs of the token generation pipeline.
 
 **Purpose:** Generate cryptographically secure tokens from person attributes such that:
-- Identical inputs always produce identical tokens (deterministic)
+
+- Identical inputs always produce identical deterministic matching values (normal `tokenize`, `tokenize --mode hash-only`, or decrypted)
 - Tokens reveal nothing about the underlying data (one-way)
 - Matching can occur on different attribute combinations via 5 distinct token rules (T1–T5)
 
-**Applicability:** This specification applies to both Java and Python implementations. Cross-language output must be byte-identical for the same normalized inputs and secrets.
+**Applicability:** This specification applies to both Java and Python implementations. Cross-language deterministic outputs (tokenized, `--mode hash-only`, and decrypted values where supported) must be byte-identical for the same normalized inputs and secrets.
 
 ---
 
@@ -43,19 +44,22 @@ OpenToken is a privacy-preserving token generation system for deterministic pers
 ### File Formats
 
 **Supported input formats:**
+
 - CSV (comma-separated values, with header row)
 - Parquet (columnar binary format)
 
 ### Size and Processing Model
 
-OpenToken is designed for **streaming-style** processing: it reads records, normalizes/validates, emits up to 5 tokens, and writes output without needing to hold the full dataset in memory.
+Open Link Token is designed for **streaming-style** processing: it reads records, normalizes/validates, emits up to 5 tokens, and writes output without needing to hold the full dataset in memory.
 
 **Practical constraints:**
-- There is **no fixed maximum file size** imposed by OpenToken itself; limits are driven by your machine/cluster resources (CPU, memory, disk) and the underlying CSV/Parquet libraries.
+
+- There is **no fixed maximum file size** imposed by Open Link Token itself; limits are driven by your machine/cluster resources (CPU, memory, disk) and the underlying CSV/Parquet libraries.
 - Output size is roughly **5× the number of input rows** (one row per rule per record) plus metadata.
 - For Parquet, performance and memory usage depend on row group sizing and the reader implementation.
 
 **Recommendations:**
+
 - Prefer **Parquet** for large jobs (faster parsing, smaller I/O, better parallelism).
 - Ensure disk space for outputs (tokens + `.metadata.json`).
 - For very large datasets, use the **PySpark** integration to scale horizontally.
@@ -64,14 +68,14 @@ OpenToken is designed for **streaming-style** processing: it reads records, norm
 
 All of the following must be provided per record:
 
-| Attribute      | Type   | Constraints                                  | Examples                                      | Normalization                                  |
-| -------------- | ------ | -------------------------------------------- | --------------------------------------------- | ---------------------------------------------- |
-| **FirstName**  | String | Non-empty after normalization                | "John", "José", "JoAnn"                       | Remove titles, suffixes, diacritics; uppercase |
-| **LastName**   | String | Non-empty after normalization                | "Smith", "O'Brien", "García"                  | Remove suffixes, diacritics; uppercase         |
-| **BirthDate**  | Date   | 1910-01-01 to today                          | "1980-01-15", "01/15/1980", "15.01.1980"      | ISO 8601 YYYY-MM-DD                            |
-| **Sex**        | String | "Male" or "Female" (case-insensitive)        | "M", "F", "male", "FEMALE"                    | Uppercase; normalize M→MALE, F→FEMALE          |
-| **PostalCode** | String | Valid US ZIP or Canadian postal code         | "98004", "K1A 1A1", "98004-1234"              | Remove dashes; pad ZIP to 5 digits             |
-| **SSN**        | String | 9 numeric digits (US Social Security Number) | "123-45-6789" (digits-only inputs normalized) | Remove dashes                                  |
+| Attribute      | Type   | Constraints                                  | Examples                                      | Normalization                                                                                                    |
+| -------------- | ------ | -------------------------------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| **FirstName**  | String | Non-empty after normalization                | "John", "José", "JoAnn"                       | Remove titles/suffixes; remove diacritics and transliterate supported Latin Extended letters to ASCII; uppercase |
+| **LastName**   | String | Non-empty after normalization                | "Smith", "O'Brien", "García"                  | Remove suffixes; remove diacritics and transliterate supported Latin Extended letters to ASCII; uppercase        |
+| **BirthDate**  | Date   | 1910-01-01 to today                          | "1980-01-15", "01/15/1980", "15.01.1980"      | ISO 8601 YYYY-MM-DD                                                                                              |
+| **Sex**        | String | "Male" or "Female" (case-insensitive)        | "M", "F", "male", "FEMALE"                    | Uppercase; normalize M→MALE, F→FEMALE                                                                            |
+| **PostalCode** | String | Valid US ZIP or Canadian postal code         | "98004", "K1A 1A1", "98004-1234"              | Remove dashes; pad ZIP to 5 digits                                                                               |
+| **SSN**        | String | 9 numeric digits (US Social Security Number) | "123-45-6789" (digits-only inputs normalized) | Remove dashes                                                                                                    |
 
 ### Optional Attributes
 
@@ -81,7 +85,7 @@ All of the following must be provided per record:
 
 Attributes are validated **after normalization**. See [Concepts: Normalization and Validation](concepts/normalization-and-validation.md) for detailed rules:
 
-- **FirstName/LastName**: At least one alphabetic character after diacritic removal
+- **FirstName/LastName**: At least one alphabetic character after diacritic removal and supported Latin Extended transliteration
 - **BirthDate**: Valid date within allowed range
 - **Sex**: Exactly "MALE" or "FEMALE" after normalization
 - **PostalCode**: Valid US ZIP-5 or Canadian postal code format
@@ -103,7 +107,7 @@ If any attribute fails validation, the record is marked invalid in metadata, and
 
 Each attribute is normalized according to its type:
 
-- **Names** (FirstName, LastName): Remove titles/suffixes, diacritics, extra whitespace; uppercase
+- **Names** (FirstName, LastName): Remove titles/suffixes, remove diacritics and transliterate supported Latin Extended letters to ASCII, then uppercase
 - **BirthDate**: Parse input format (multiple formats supported) → ISO 8601 YYYY-MM-DD
 - **Sex**: Parse variants (M/male/Male → MALE; F/female/Female → FEMALE)
 - **PostalCode**: Remove dashes, zero-pad ZIP codes to 5 digits, uppercase Canadian postal codes
@@ -145,8 +149,10 @@ Each token rule signature is transformed through the cryptographic pipeline.
 **Default mode (encrypted):**
 
 ```
-Signature → SHA-256 → HMAC-SHA256 → AES-256-GCM → Base64
+Signature → SHA-256 → HMAC-SHA256 → JWE (AES-256-GCM) → Prefix `olt.V1.`
 ```
+
+Encrypted `olt.V1` token strings are intentionally non-deterministic due to randomized IVs.
 
 **Hash-only mode (optional):**
 
@@ -155,6 +161,7 @@ Signature → SHA-256 → HMAC-SHA256 → Base64
 ```
 
 **Parameters required:**
+
 - `hashing_secret`: String (8+ characters recommended) used for HMAC
 - `encryption_key`: String exactly 32 characters long (or byte array 32 bytes) used for AES-256 encryption
 
@@ -162,7 +169,7 @@ Signature → SHA-256 → HMAC-SHA256 → Base64
 
 ### 6. Metadata Generation
 
-During processing, OpenToken tracks:
+During processing, Open Link Token tracks:
 
 - **Counts**: Total rows, invalid attributes per type, blank tokens per rule
 - **System Info**: Platform (Java/Python), language version, library version
@@ -181,18 +188,21 @@ Metadata is written to `.metadata.json` alongside output files.
 ### Token Output (CSV)
 
 **Schema:**
+
 ```
 RecordId,RuleId,Token
 ```
 
 **Columns:**
+
 - `RecordId`: From input (or auto-generated if omitted)
 - `RuleId`: T1, T2, T3, T4, or T5
-- `Token`: Base64-encoded token (or empty string if validation failed)
+- `Token`: Encrypted `olt.V1.<JWE>` token in encrypted mode, a base64 HMAC token in default `tokenize`/decrypted mode, or a 64-character SHA-256 hex token in `tokenize --mode hash-only` mode (or empty string if validation failed)
 
 **Rows per input record:** 5 (one per rule); may be fewer if errors occur
 
 **Example:**
+
 ```csv
 RecordId,RuleId,Token
 ID001,T1,aB7c9Dz1e4...
@@ -219,17 +229,19 @@ Parquet format includes compression and is suitable for large datasets.
 **Filename:** `<output_basename>.metadata.json`
 
 **Contents:**
+
 - Processing statistics (record counts, invalid attributes, blank tokens)
 - System information (platform, versions, timestamps)
 - Secret hashes (SHA-256 of hashing secret and encryption key)
 - File paths (input, output, metadata)
 
 **Example:**
+
 ```json
 {
   "Platform": "Java",
   "JavaVersion": "21.0.0",
-  "OpenTokenVersion": "1.7.0",
+  "Version": "1.7.0",
   "TotalRows": 100,
   "TotalRowsWithInvalidAttributes": 3,
   "InvalidAttributesByType": {
@@ -253,7 +265,7 @@ Parquet format includes compression and is suitable for large datasets.
 
 ### Current Version
 
-**OpenToken Specification v1.0** (as of 2024)
+**Open Link Token Specification v1.0** (as of 2024)
 
 - 5 token rules (T1–T5) finalized
 - Attribute set: FirstName, LastName, BirthDate, Sex, PostalCode, SSN
@@ -264,7 +276,7 @@ Parquet format includes compression and is suitable for large datasets.
 
 - **Java**: JDK 21+
 - **Python**: 3.10+
-- **Cross-language parity**: Java and Python implementations MUST produce byte-identical tokens for the same normalized inputs
+- **Cross-language parity**: Java and Python implementations MUST produce byte-identical deterministic values (tokenized/`--mode hash-only`/decrypted where supported) for the same normalized inputs
 
 ### Future Considerations
 
@@ -279,6 +291,7 @@ This section is **non-normative** (informational) and describes likely evolution
 ### Breaking Changes
 
 Any changes to:
+
 - Normalization rules
 - Token rule definitions
 - Cryptographic algorithms
@@ -297,7 +310,7 @@ For deeper information, see:
 - **Cryptography & Security**: [Security](security.md)
 - **Metadata Fields**: [Reference: Metadata Format](reference/metadata-format.md)
 - **Configuration**: [Configuration](config/configuration.md)
-- **CLI Usage**: [Running OpenToken](running-opentoken/index.md)
+- **CLI Usage**: [Running Open Link Token](running-openlinktoken/index.md)
 - **Operations**: [Running Batch Jobs](operations/running-batch-jobs.md)
 
 ---

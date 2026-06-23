@@ -1,0 +1,19 @@
+[project]
+name = "openlinktoken-ext-hello-world"
+version = "1.0.0"
+requires-python = ">=3.10"
+description = "Open Link Token hello-world reference extension"
+dependencies = []
+
+[project.entry-points."openlinktoken.extensions"]
+hello-world = "openlinktoken_ext_hello_world.extension:HelloWorldExtension"
+
+[build-system]
+requires = ["setuptools==75.3.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src/main"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src/main", "../../openlinktoken-cli/src/main"]

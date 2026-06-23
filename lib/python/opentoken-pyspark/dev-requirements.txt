@@ -1,3 +1,0 @@
-# Use consolidated dev requirements from parent directory
-# Install with: pip install -r ../dev-requirements.txt
--r ../dev-requirements.txt

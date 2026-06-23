@@ -1,20 +1,20 @@
-# OpenToken
+# Open Link Token
 
-Privacy-preserving tokenization and matching library for secure PII-based person linkage. OpenToken generates deterministic, cryptographically secure tokens from person attributes (name, birthdate, SSN, etc.) so datasets can be matched without exposing raw identifiers.
+Privacy-preserving tokenization and matching library for secure PII-based person linkage. Open Link Token generates deterministic, cryptographically secure tokens from person attributes (name, birthdate, SSN, etc.) so datasets can be matched without exposing raw identifiers.
 
 ## Introduction
 
-Our approach to person matching relies on building a set of matching tokens (or token signatures) per person which are derived from deterministic person data but preserve privacy by using cryptographically secure hashing algorithms.
+Our approach to record linkage relies on building a set of matching tokens (or token signatures) per person which are derived from deterministic person data but preserve privacy by using cryptographically secure hashing algorithms.
 
-- [OpenToken](#opentoken)
+- [Open Link Token](#open-link-token)
   - [Introduction](#introduction)
   - [Highlights](#highlights)
   - [Demo](#demo)
   - [Overview](#overview)
-  - [Why OpenToken](#why-opentoken)
+  - [Why Open Link Token](#why-open-link-token)
   - [Quickstart](#quickstart)
   - [Key Matching Ideas](#key-matching-ideas)
-  - [Running OpenToken](#running-opentoken)
+  - [Running Open Link Token](#running-open-link-token)
   - [Security Notes](#security-notes)
   - [Contributing \& Community](#contributing--community)
   - [Documentation](#documentation)
@@ -23,11 +23,11 @@ Our approach to person matching relies on building a set of matching tokens (or 
 
 - Multi-language Support
 - Cryptographically Secure encryption that prevents re-identification
-- Enables straightforward person-matching by comparing 5 deterministic and unique tokens, providing a high degree of confidence in matches
+- Enables straightforward person-matching by comparing 5 deterministic and unique hash values (after decryption), providing a high degree of confidence in matches
 
 ## Demo
 
-New to OpenToken? Start with the **[PPRL Superhero Demo](demos/pprl-superhero-example/)** — a beginner-friendly, end-to-end walkthrough showing how two parties (hospital and pharmacy) can privately find matching records without exposing raw identifiers.
+New to Open Link Token? Start with the **[PPRL Superhero Demo](demos/pprl-superhero-example/)** — a beginner-friendly, end-to-end walkthrough showing how two parties (hospital and pharmacy) can privately find matching records without exposing raw identifiers.
 
 The demo includes:
 
@@ -40,11 +40,11 @@ Perfect for understanding privacy-preserving record linkage concepts before divi
 
 ## Overview
 
-- **Multi-language parity**: Java and Python implementations produce identical token outputs
-- **Deterministic tokens**: Same input always produces the same cryptographically secure token
-- **Privacy-preserving**: Tokens cannot be reversed to recover original person data
+- **Multi-language parity**: Java and Python implementations produce byte-identical hash outputs (decrypted values)
+- **Deterministic matching values**: Same input always produces the same cryptographically secure hash for matching
+- **Privacy-preserving**: Encrypted tokens cannot be reversed to recover original person data
 
-## Why OpenToken
+## Why Open Link Token
 
 - Practical validation and normalization for common PII-derived attributes (names, birthdates, SSN, postal codes, sex)
 - Secure pipeline: SHA-256 → HMAC-SHA256 → AES-256 (or hash-only mode)
@@ -52,22 +52,41 @@ Perfect for understanding privacy-preserving record linkage concepts before divi
 
 ## Quickstart
 
-**Docker/CLI workflow:**
+**Self-contained executable (easiest):**
+
+Download the [latest release](https://github.com/TruvetaPublic/OpenLinkToken/releases) for your platform and run:
 
 ```bash
-./run-opentoken.sh \
-  -i ./resources/sample.csv -t csv -o ./resources/output.csv \
-  -h "HashingKey" -e "Secret-Encryption-Key-Goes-Here."
+# Linux/macOS
+./olt generate-key-pair --name recipient --force
+./olt initiate-exchange --name quickstart --public-key "$HOME/.openlinktoken/recipient.public.pem" --output ./resources/quickstart.exchange.json
+./olt package -i ./resources/sample.csv -o ./resources/output.csv \
+  --exchange-config ./resources/quickstart.exchange.json --private-key "$HOME/.openlinktoken/quickstart.private.pem"
+
+# Windows
+.\olt.exe generate-key-pair --name recipient --force
+.\olt.exe initiate-exchange --name quickstart --public-key "$HOME/.openlinktoken/recipient.public.pem" --output .\resources\quickstart.exchange.json
+.\olt.exe package -i .\resources\sample.csv -o .\resources\output.csv `
+  --exchange-config .\resources\quickstart.exchange.json --private-key "$HOME/.openlinktoken/quickstart.private.pem"
 ```
 
-**Java CLI:**
+**Subcommand Interface:**
 
 ```bash
-cd lib/java && mvn clean install -DskipTests
-java -jar opentoken-cli/target/opentoken-cli-*.jar \
-  -i ../../resources/sample.csv -t csv -o ../../resources/output.csv \
-  -h "HashingKey" -e "Secret-Encryption-Key-Goes-Here."
+./run-openlinktoken.sh package \
+  -i ./resources/sample.csv -o ./resources/output.csv \
+  --exchange-config ./resources/quickstart.exchange.json \
+  --private-key "$HOME/.openlinktoken/quickstart.private.pem"
 ```
+
+**Available Commands:**
+
+- `olt package` - Generate and encrypt tokens in one step using the exchange config
+- `olt tokenize` - Generate internal hashed tokens using the exchange config, or use `--mode hash-only` for deterministic SHA-256 output without an exchange config
+- `olt encrypt` - Encrypt existing hashed tokens using the exchange config
+- `olt decrypt` - Decrypt encrypted tokens using the exchange config
+- `olt initiate-exchange` - Create the exchange config consumed by later commands
+- `olt help [command]` - Show help for a specific command
 
 See <a href="https://truvetapublic.github.io/OpenLinkToken/quickstarts/" target="_blank" rel="noopener noreferrer">Quickstarts</a> for Python CLI and detailed setup instructions.
 
@@ -77,15 +96,21 @@ See <a href="https://truvetapublic.github.io/OpenLinkToken/quickstarts/" target=
 - **Normalization**: Names, dates, postal codes normalized before tokenization — see <a href="https://truvetapublic.github.io/OpenLinkToken/concepts/normalization-and-validation.html" target="_blank" rel="noopener noreferrer">Normalization and Validation</a>
 - **Metadata**: Processing statistics and audit trail — see <a href="https://truvetapublic.github.io/OpenLinkToken/reference/metadata-format.html" target="_blank" rel="noopener noreferrer">Metadata Format</a>
 
-## Running OpenToken
+## Running Open Link Token
 
-- **CLI modes**: Encrypt (default), hash-only (`--hash-only`), decrypt (`-d`) — see <a href="https://truvetapublic.github.io/OpenLinkToken/running-opentoken/" target="_blank" rel="noopener noreferrer">Running OpenToken</a>
+- **Subcommand Interface**: Modern command-based interface:
+  - `tokenize` - Internal hashed token generation (`--mode hash-only` is available for deterministic SHA-256 output)
+  - `encrypt` - Encrypt existing hashed tokens
+  - `decrypt` - Decrypt encrypted tokens
+  - `package` - Tokenize + encrypt in one step (recommended)
+  - See <a href="https://truvetapublic.github.io/OpenLinkToken/running-openlinktoken/" target="_blank" rel="noopener noreferrer">Running Open Link Token</a>
 - **Docker**: Convenience scripts for containerized runs — see <a href="https://truvetapublic.github.io/OpenLinkToken/quickstarts/" target="_blank" rel="noopener noreferrer">Quickstarts</a>
 - **PySpark**: Distributed processing for large datasets — see <a href="https://truvetapublic.github.io/OpenLinkToken/operations/spark-or-databricks.html" target="_blank" rel="noopener noreferrer">Spark or Databricks</a>
 
 ## Security Notes
 
 - **Crypto pipeline**: Token signature → SHA-256 → HMAC-SHA256 → AES-256 (or hash-only) — see <a href="https://truvetapublic.github.io/OpenLinkToken/security.html" target="_blank" rel="noopener noreferrer">Security</a>
+- **`tokenize --mode hash-only`**: Deterministic SHA-256 output with no exchange config or secret. Useful for local exploration, but **not** for production or cross-organisation exchange
 - **Secret management**: Handle hashing/encryption secrets securely; avoid committing secrets; prefer env/secret stores
 - **Validation**: Reject placeholders and malformed attributes before tokenization
 
@@ -105,4 +130,3 @@ See <a href="https://truvetapublic.github.io/OpenLinkToken/quickstarts/" target=
 For issues or support, file an issue in this repository.
 
 <!-- Re-run CI checks -->
-

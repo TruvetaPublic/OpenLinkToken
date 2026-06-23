@@ -4,13 +4,14 @@ layout: default
 
 # Security
 
-Cryptographic building blocks, key management expectations, and security considerations for privacy-preserving person matching.
+Cryptographic building blocks, key management expectations, and security considerations for privacy-preserving record linkage.
 
 ## Overview
 
-OpenToken generates cryptographically secure tokens for privacy-preserving person matching across datasets. The system uses deterministic hashing and optional encryption to prevent re-identification while enabling matching on identical person attributes.
+Open Link Token generates cryptographically secure tokens for privacy-preserving record linkage across datasets. The system uses deterministic hashing and optional encryption to prevent re-identification while enabling matching on identical person attributes.
 
 **Key security properties:**
+
 - Tokens are one-way (cannot reverse to original data without secrets)
 - Same input produces same token (deterministic matching)
 - Metadata tracks processing statistics without exposing person data
@@ -21,9 +22,10 @@ OpenToken generates cryptographically secure tokens for privacy-preserving perso
 
 ### Token Transformation Pipeline
 
-OpenToken transforms person attributes through multiple layers:
+Open Link Token transforms person attributes through multiple layers:
 
 **Encryption mode (default):**
+
 ```
 Token Signature (normalized attributes)
   ↓
@@ -36,7 +38,8 @@ AES-256-GCM Encrypt (symmetric encryption with encryption key)
 Base64 Encode (storable format)
 ```
 
-**Hash-only mode (alternative):**
+**`tokenize` subcommand (alternative):**
+
 ```
 Token Signature
   ↓
@@ -55,6 +58,7 @@ Base64 Encode
 - **Purpose**: Convert variable-length token signatures to fixed-size digests
 
 **Properties:**
+
 - One-way function (cannot reverse hash to input)
 - Avalanche effect (small input change produces completely different hash)
 - Deterministic (same input always produces same hash)
@@ -67,11 +71,13 @@ Base64 Encode
 - **Purpose**: Prevent rainbow table attacks and verify secret usage
 
 **Security benefits:**
+
 - Requires secret key to generate matching hashes
 - Prevents pre-computation of token values
 - Different secret produces completely different output for same input
 
 **Formula:**
+
 ```
 HMAC-SHA256(message, key) = SHA256((key ⊕ opad) || SHA256((key ⊕ ipad) || message))
 ```
@@ -84,12 +90,14 @@ HMAC-SHA256(message, key) = SHA256((key ⊕ opad) || SHA256((key ⊕ ipad) || me
 - **Purpose**: Encrypt tokens to prevent re-identification
 
 **Technical details:**
+
 - **Initialization Vector (IV)**: 12 bytes, randomly generated per token
 - **Authentication tag**: 128-bit (16-byte) GCM tag for integrity
 - **Padding**: NoPadding (GCM mode handles message length)
 - **Algorithm**: `AES/GCM/NoPadding`
 
 **Security properties:**
+
 - Authenticated encryption (detects tampering)
 - Unique IV per token prevents pattern analysis
 - Computationally infeasible to brute-force (2^256 possible keys)
@@ -99,49 +107,49 @@ HMAC-SHA256(message, key) = SHA256((key ⊕ opad) || SHA256((key ⊕ ipad) || me
 
 ## Key Management & Secrets
 
-This section consolidates practical guidance for managing the cryptographic secrets OpenToken requires.
+This section consolidates practical guidance for managing the cryptographic material Open Link Token requires.
 
 ### Types of Secrets
 
-OpenToken expects **two secrets** (one required, one optional depending on mode):
+Open Link Token still relies on a hashing secret and a transport encryption key internally, but the consumer commands no longer take those values directly on the command line. Instead, they resolve them from an exchange config plus a matching private key:
 
-| Secret             | CLI Flag                 | Purpose                                   | Requirements                                                |
-| ------------------ | ------------------------ | ----------------------------------------- | ----------------------------------------------------------- |
-| **Hashing Secret** | `-h` / `--hashingsecret` | HMAC-SHA256 key for deterministic hashing | Required in all modes; 8+ characters recommended, 16+ ideal |
-| **Encryption Key** | `-e` / `--encryptionkey` | AES-256-GCM symmetric key                 | Required for encryption mode; **exactly 32 characters**     |
-
-**Hash-only mode** (`--hash-only`) skips AES encryption; only the hashing secret is needed.
+| Material            | CLI Input                             | Purpose                                                                                  | Used by subcommands                         | Requirements                                                                       |
+| ------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------- |
+| **Exchange config** | `--exchange-config`                   | Carries the encrypted hashing secret and the metadata needed to derive the transport key | `package`, `tokenize`, `encrypt`, `decrypt` | Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted                |
+| **Private key**     | `--private-key` / `--private-key-env` | Decrypts the exchange config so the CLI can recover the hashing secret and transport key | `package`, `tokenize`, `encrypt`, `decrypt` | Optional only when a matching key can be auto-discovered under `~/.openlinktoken/` |
 
 ### Handling Secrets in Practice
 
 #### Development / Local Testing
 
-Use clearly marked placeholder values:
+Use clearly marked local file names:
 
 ```bash
-# Placeholder secrets for local testing only
-java -jar opentoken-cli-*.jar \
-  -i sample.csv -t csv -o output.csv \
-  -h "HashingKey" \
-  -e "Secret-Encryption-Key-Goes-Here."
+olt generate-key-pair --name local-test --force
+olt initiate-exchange \
+  --name local-test \
+  --public-key ~/.openlinktoken/local-test.public.pem \
+  --output ./local-test.exchange.json
+
+olt package \
+  -i sample.csv -o output.csv \
+  --exchange-config ./local-test.exchange.json
 ```
 
-Store these in a local `.env` file (not committed):
+Store reusable paths in a local `.env` file (not committed):
 
 ```bash
 # .env (add to .gitignore)
-OPENTOKEN_HASHING_SECRET=HashingKey
-OPENTOKEN_ENCRYPTION_KEY=Secret-Encryption-Key-Goes-Here.
+OLT_EXCHANGE_CONFIG=./local-test.exchange.json
 ```
 
 Load and use:
 
 ```bash
 source .env
-java -jar opentoken-cli-*.jar \
-  -i sample.csv -t csv -o output.csv \
-  -h "$OPENTOKEN_HASHING_SECRET" \
-  -e "$OPENTOKEN_ENCRYPTION_KEY"
+olt package \
+  -i sample.csv -o output.csv \
+  --exchange-config "$OLT_EXCHANGE_CONFIG"
 ```
 
 #### Production
@@ -156,38 +164,36 @@ Store secrets in a managed secret store and inject via environment variables at 
 | On-prem    | HashiCorp Vault    | `vault kv get` or agent auto-auth                           |
 | Databricks | Databricks Secrets | `dbutils.secrets.get("scope", "key")`                       |
 
-**Example (AWS Secrets Manager):**
+**Example (AWS Secrets Manager override):**
 
 ```bash
-export OPENTOKEN_HASHING_SECRET=$(aws secretsmanager get-secret-value \
-  --secret-id opentoken-hash-key --query SecretString --output text)
-export OPENTOKEN_ENCRYPTION_KEY=$(aws secretsmanager get-secret-value \
-  --secret-id opentoken-enc-key --query SecretString --output text)
+export OLT_PRIVATE_KEY_PEM=$(aws secretsmanager get-secret-value \
+  --secret-id openlinktoken-private-key --query SecretString --output text)
 
-java -jar opentoken-cli-*.jar \
-  -i data.csv -t csv -o tokens.csv \
-  -h "$OPENTOKEN_HASHING_SECRET" \
-  -e "$OPENTOKEN_ENCRYPTION_KEY"
+olt package \
+  -i data.csv -o tokens.csv \
+  --exchange-config ./sender-q2.exchange.json \
+  --private-key-env OLT_PRIVATE_KEY_PEM
 ```
 
 **Example (Databricks):**
 
 ```python
-from opentoken_pyspark import SparkPersonTokenProcessor
+from openlinktoken_pyspark import SparkPersonTokenProcessor
 
 processor = SparkPersonTokenProcessor(
     spark=spark,
-    hashing_secret=dbutils.secrets.get("opentoken", "hashing_secret"),
-    encryption_key=dbutils.secrets.get("opentoken", "encryption_key")
+    hashing_secret=dbutils.secrets.get("openlinktoken", "hashing_secret"),
+    encryption_key=dbutils.secrets.get("openlinktoken", "encryption_key")
 )
 ```
 
 ### Secret Rotation
 
 1. **Generate new secrets** – use a cryptographically secure generator.
-2. **Re-run token generation** – tokens are deterministic; same input + same secrets = same tokens. New secrets = new tokens.
+2. **Re-run token generation** – tokens are deterministic; same input plus the same resolved exchange-config secrets produces the same tokens. New exchange material produces new tokens.
 3. **Version secrets in your store** – keep old versions for auditability.
-4. **Coordinate downstream** – any system that decrypts tokens needs the matching encryption key.
+4. **Coordinate downstream** – any system that decrypts tokens needs a matching private key for the updated exchange config.
 
 ### What NOT to Do
 
@@ -217,52 +223,58 @@ python tools/hash_calculator.py \
 
 ### Cross-References
 
-- **CLI flags for secrets**: [CLI Reference](reference/cli.md)
+- **CLI flags for exchange configs and private keys**: [CLI Reference](reference/cli.md)
 - **Environment variable usage**: [Configuration](config/configuration.md#environment-variables)
 - **Databricks / Spark secrets**: [Spark or Databricks](operations/spark-or-databricks.md)
-- **Running the CLI**: [Running OpenToken](running-opentoken/index.md)
+- **Running the CLI**: [Running Open Link Token](running-openlinktoken/index.md)
 - **Metadata format (hash fields)**: [Reference: Metadata Format](reference/metadata-format.md)
 
 ---
 
 ## Security Considerations and Limitations
 
-### What OpenToken Protects Against
+### What Open Link Token Protects Against
 
 **✓ Re-identification without secrets:**
+
 - Encrypted tokens cannot be reversed without encryption key
 - Hashed tokens cannot be reversed (one-way HMAC-SHA256)
 - Attacker with tokens alone cannot recover person data
 
 **✓ Rainbow table attacks:**
+
 - HMAC-SHA256 with secret prevents pre-computed lookup tables
 - Different secret produces different tokens for same input
 
 **✓ Data quality issues:**
 Metadata captures processing statistics; data quality guidance lives in the concepts documentation.
 
-### What OpenToken Does NOT Protect Against
+### What Open Link Token Does NOT Protect Against
 
 **✗ Compromise of secrets:**
+
 - If attacker obtains hashing secret + encryption key, they can regenerate tokens from known person data
 - Token security depends entirely on secret protection
 
 **✗ Side-channel attacks:**
+
 - Timing attacks, memory access patterns not specifically mitigated
 - Use secure execution environments for sensitive workloads
 
 **✗ Statistical analysis with auxiliary data:**
+
 - If attacker has auxiliary demographic data and token frequency distributions, statistical attacks may be possible
 - Consider differential privacy techniques for high-risk scenarios
 
 **✗ Token distribution analysis:**
+
 - Tokens are deterministic (same person always produces same token)
 - Frequency analysis may reveal population patterns
 - Mitigate by limiting token distribution and enforcing access controls
 
 ### User Responsibilities
 
-OpenToken provides cryptographic primitives but **users are responsible for:**
+Open Link Token provides cryptographic primitives but **users are responsible for:**
 
 - **Secret management**: Storing, rotating, and protecting hashing secrets and encryption keys
 - **Access control**: Limiting who can generate, access, or decrypt tokens
@@ -274,12 +286,14 @@ OpenToken provides cryptographic primitives but **users are responsible for:**
 ### Threat Model Assumptions
 
 **Assumptions:**
+
 - Secrets are stored securely and not accessible to unauthorized parties
 - Execution environment is trusted (no malware or unauthorized access)
 - Token outputs are protected with access controls
 - Users validate data quality before token generation
 
 **Out of scope:**
+
 - Protection against compromised execution environments
 - Protection after decryption (decrypted tokens are plaintext hashes)
 - Protection against authorized users misusing tokens
@@ -297,5 +311,5 @@ See [Concepts: Normalization and Validation](concepts/normalization-and-validati
 - **View detailed crypto pipeline**: [Specification](specification.md)
 - **Understand metadata security**: [Reference: Metadata Format](reference/metadata-format.md)
 - **Review validation rules**: [Concepts: Normalization and Validation](concepts/normalization-and-validation.md)
-- **Configure OpenToken**: [Configuration](config/configuration.md)
+- **Configure Open Link Token**: [Configuration](config/configuration.md)
 - **Share tokens across organizations**: [Sharing Tokenized Data](operations/sharing-tokenized-data.md)

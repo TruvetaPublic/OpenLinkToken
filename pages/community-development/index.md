@@ -30,24 +30,25 @@ mvn clean install
 
 ```bash
 # From repo root
-python -m venv .venv
+uv venv .venv
 source .venv/bin/activate
 
 # Core library
-cd lib/python/opentoken
-pip install -r requirements.txt -e .
+cd lib/python/openlinktoken
+uv pip install -r requirements.txt -e .
 
 # CLI
-cd ../opentoken-cli
-pip install -r requirements.txt -e .
+cd ../openlinktoken-cli
+uv pip install -r requirements.txt -e .
 ```
 
 ### PySpark Bridge
 
 ```bash
-source /workspaces/OpenLinkToken/.venv/bin/activate
-cd lib/python/opentoken-pyspark
-pip install -r requirements.txt -e .
+# From repo root
+source .venv/bin/activate
+cd lib/python/openlinktoken-pyspark
+uv pip install -r requirements.txt -e .
 ```
 
 ## Branch Workflow (Gitflow)
@@ -68,13 +69,13 @@ dev/* (feature work) → develop → release/x.y.z → main → develop (auto-sy
 ## Tests & Quality Gates
 
 - Java: `mvn clean install` (includes unit tests, integration tests, Checkstyle, JaCoCo).
-- Python: `pytest` (run from `lib/python/opentoken` and `lib/python/opentoken-cli`).
-- Interoperability: `python tools/interoperability/java_python_interoperability_test.py`.
+- Python: `pytest` (run from `lib/python/openlinktoken` and `lib/python/openlinktoken-cli`).
+- Interoperability: `python tools/interoperability/multi_language_interoperability_test.py`.
 - Sync check: [tools/sync-check.sh](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/tools/sync-check.sh) to ensure Java/Python parity.
 
 ## Dev Container
 
-A VS Code dev container is provided with Java, Maven, Python, and Docker CLI pre-installed. See [Developer Guide](../dev-guide-development.md) for details.
+A VS Code dev container is provided with Java, Maven, Python, and Docker CLI pre-installed. See the canonical [Developer Guide on GitHub](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/docs/dev-guide-development.md) for full setup and build details.
 
 ## Issues & Discussions
 
@@ -83,4 +84,4 @@ A VS Code dev container is provided with Java, Maven, Python, and Docker CLI pre
 
 ## License
 
-OpenToken is released under the MIT License. See the [LICENSE file on GitHub](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/LICENSE) for details.
+Open Link Token is released under the MIT License. See the [LICENSE file on GitHub](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/LICENSE) for details.

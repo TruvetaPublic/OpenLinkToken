@@ -4,16 +4,18 @@ layout: default
 
 # Running Batch Jobs
 
-How to run OpenToken in batch mode across CSV or Parquet files at scale using CLI or Docker.
+How to run Open Link Token in batch mode across CSV or Parquet files at scale using CLI or Docker.
 
 ---
 
 ## Overview
 
-OpenToken processes input files (CSV or Parquet) and produces two outputs:
+Open Link Token processes input files (CSV or Parquet) and produces two outputs:
 
 1. **Tokens file** (CSV or Parquet): Contains `RecordId`, `RuleId`, `Token` columns
 2. **Metadata file** (JSON): Processing statistics, secret hashes, and validation counts
+
+When the output path ends in `.zip`, the `package` and `encrypt` commands bundle the output tokens file and exchange config JSON (plus metadata JSON for `package`) into a single zip archive for upload.
 
 ---
 
@@ -22,55 +24,84 @@ OpenToken processes input files (CSV or Parquet) and produces two outputs:
 ### Basic Syntax
 
 ```bash
-opentoken-cli [OPTIONS] -i <input> -t <type> -o <output> -h <hashing-secret> [-e <encryption-key>]
+olt <subcommand> [OPTIONS]
 ```
 
-### Required Arguments
+### Arguments
 
-| Argument | Alias             | Description                          | Example         |
-| -------- | ----------------- | ------------------------------------ | --------------- |
-| `-i`     | `--input`         | Input file path                      | `-i data.csv`   |
-| `-t`     | `--type`          | Input file type (`csv` or `parquet`) | `-t csv`        |
-| `-o`     | `--output`        | Output file path                     | `-o tokens.csv` |
-| `-h`     | `--hashingsecret` | HMAC-SHA256 hashing secret           | `-h "MyKey"`    |
+| Argument            | Alias      | Required | Default                                    | Description                      | Example                                   |
+| ------------------- | ---------- | -------- | ------------------------------------------ | -------------------------------- | ----------------------------------------- |
+| `-i`                | `--input`  | Yes      |                                            | Input file path (CSV or Parquet) | `-i data.csv`                             |
+| `-o`                | `--output` | No       | Auto-generated below                       | Output file path                 | `-o tokens.csv`                           |
+| `--exchange-config` |            | No       | `./openlinktoken-YYYY-MM-DD.exchange.json` | Exchange config JSON path        | `--exchange-config ./batch.exchange.json` |
+
+**Output filename defaults when `-o` is omitted:**
+
+| Subcommand | Default pattern                  |
+| ---------- | -------------------------------- |
+| `package`  | `<input_basename>_packaged.zip`  |
+| `tokenize` | `<input_basename>_tokenized.csv` |
+| `encrypt`  | `<input_basename>_encrypted.zip` |
+| `decrypt`  | `<input_basename>_decrypted.csv` |
 
 ### Optional Arguments
 
-| Argument | Alias             | Description                    | Default                       |
-| -------- | ----------------- | ------------------------------ | ----------------------------- |
-| `-e`     | `--encryptionkey` | AES-256 encryption key         | Required unless `--hash-only` |
-| `-ot`    | `--output-type`   | Output file type               | Same as input                 |
-|          | `--hash-only`     | Hash-only mode (no encryption) | False                         |
-| `-d`     | `--decrypt`       | Decrypt mode                   | False                         |
+| Argument            | Alias | Description                                         | Default                       |
+| ------------------- | ----- | --------------------------------------------------- | ----------------------------- |
+| `--private-key`     |       | Private key PEM used to decrypt the exchange config | Auto-discovered when possible |
+| `--private-key-env` |       | Environment variable containing the private key PEM |                               |
+| `tokenize`          |       | Tokenize without encryption                         | Subcommand                    |
+| `decrypt`           |       | Decrypt mode                                        | Subcommand                    |
 
-### Java CLI Example
-
-```bash
-cd lib/java
-mvn clean install -DskipTests
-
-java -jar opentoken-cli/target/opentoken-cli-*.jar \
-  -i ../../resources/sample.csv \
-  -t csv \
-  -o ../../resources/output.csv \
-  -h "HashingKey" \
-  -e "Secret-Encryption-Key-Goes-Here."
-```
-
-### Python CLI Example
+### CLI Example
 
 ```bash
-cd lib/python/opentoken-cli
+cd lib/python/openlinktoken-cli
 source ../../.venv/bin/activate
-pip install -r requirements.txt -e . -e ../opentoken
+uv pip install -r requirements.txt -e . -e ../openlinktoken
 
-python -m opentoken_cli.main \
+olt package \
   -i ../../../resources/sample.csv \
-  -t csv \
   -o ../../../resources/output.csv \
-  -h "HashingKey" \
-  -e "Secret-Encryption-Key-Goes-Here."
+  --exchange-config ../../../resources/batch.exchange.json
 ```
+
+### ZIP Output
+
+Pass a `.zip` path to `-o` to bundle the output tokens file, metadata JSON (for `package`), and exchange config into a single archive.
+
+**`package` — tokens, metadata, and exchange config:**
+
+```bash
+olt package \
+  -i ../../../resources/sample.csv \
+  -o ../../../resources/output.zip \
+  --exchange-config ../../../resources/batch.exchange.json
+```
+
+The resulting archive contains three files:
+
+| File                   | Description                               |
+| ---------------------- | ----------------------------------------- |
+| `output.parquet`       | Encrypted tokens (always Parquet)         |
+| `output.metadata.json` | Processing metadata                       |
+| `batch.exchange.json`  | Exchange config used for this package run |
+
+**`encrypt` — tokens and exchange config:**
+
+```bash
+olt encrypt \
+  -i ../../../resources/hashed.csv \
+  -o ../../../resources/output.zip \
+  --exchange-config ../../../resources/batch.exchange.json
+```
+
+The resulting archive contains two files:
+
+| File                  | Description                               |
+| --------------------- | ----------------------------------------- |
+| `output.csv`          | Encrypted tokens (same format as input)   |
+| `batch.exchange.json` | Exchange config used for this encrypt run |
 
 ---
 
@@ -79,34 +110,31 @@ python -m opentoken_cli.main \
 ### Convenience Scripts (Recommended)
 
 **Bash (Linux/Mac):**
+
 ```bash
 cd /path/to/OpenLinkToken
 
-./run-opentoken.sh \
+./run-openlinktoken.sh package \
   -i ./resources/sample.csv \
   -o ./resources/output.csv \
-  -t csv \
-  -h "HashingKey" \
-  -e "Secret-Encryption-Key-Goes-Here."
+  --exchange-config ./resources/batch.exchange.json
 ```
 
 **PowerShell (Windows):**
+
 ```powershell
 cd C:\path\to\OpenLinkToken
 
-.\run-opentoken.ps1 `
+.\run-openlinktoken.ps1 package `
   -i .\resources\sample.csv `
   -o .\resources\output.csv `
-  -FileType csv `
-  -h "HashingKey" `
-  -e "Secret-Encryption-Key-Goes-Here."
+  --exchange-config .\resources\batch.exchange.json
 ```
 
 ### Script Options
 
 | Option       | Bash | PowerShell   | Description          |
 | ------------ | ---- | ------------ | -------------------- |
-| File type    | `-t` | `-FileType`  | `csv` or `parquet`   |
 | Skip rebuild | `-s` | `-SkipBuild` | Reuse existing image |
 | Verbose      | `-v` | `-Verbose`   | Show detailed output |
 
@@ -114,16 +142,14 @@ cd C:\path\to\OpenLinkToken
 
 ```bash
 # Build the image
-docker build -t opentoken:latest .
+docker build -t openlinktoken:latest .
 
 # Run with sample data
 docker run --rm -v $(pwd)/resources:/app/resources \
-  opentoken:latest \
+  openlinktoken:latest package \
   -i /app/resources/sample.csv \
-  -t csv \
   -o /app/resources/output.csv \
-  -h "HashingKey" \
-  -e "Secret-Encryption-Key-Goes-Here."
+  --exchange-config /app/resources/batch.exchange.json
 
 # View output
 cat resources/output.csv
@@ -161,7 +187,7 @@ ID001,T2,pUxPgYL9+cMxkA+8928Pil+9W+dm9kISwHYPdkZS+I2nQ/bQ/8HyL3FOVf3NYPW5NKZZO1O
 {
   "Platform": "Java",
   "JavaVersion": "21.0.0",
-  "OpenTokenVersion": "1.0.0",
+  "Version": "1.0.0",
   "TotalRows": 100,
   "TotalRowsWithInvalidAttributes": 3,
   "InvalidAttributesByType": { "BirthDate": 2, "PostalCode": 1 },
@@ -177,21 +203,23 @@ See [Reference: Metadata Format](../reference/metadata-format.md) for complete f
 
 ## Common Patterns
 
-### Environment Variables for Secrets
+### Environment Variables for Private Keys
+
+Use this override when the CLI cannot auto-discover a matching key from `~/.openlinktoken/`.
 
 ```bash
-export OPENTOKEN_HASHING_SECRET="MyHashingKey"
-export OPENTOKEN_ENCRYPTION_KEY="MyEncryptionKey32CharactersLong"
+export OLT_PRIVATE_KEY_PEM="$(cat ~/.openlinktoken/batch.private.pem)"
 
-java -jar opentoken-cli-*.jar \
-  -i data.csv -t csv -o tokens.csv \
-  -h "$OPENTOKEN_HASHING_SECRET" \
-  -e "$OPENTOKEN_ENCRYPTION_KEY"
+olt package \
+  -i data.csv -o tokens.csv \
+  --exchange-config ./batch.exchange.json \
+  --private-key-env OLT_PRIVATE_KEY_PEM
 ```
 
 ### Logging and Monitoring
 
 Check the metadata file after each run for:
+
 - `TotalRowsWithInvalidAttributes`: Records that failed validation
 - `InvalidAttributesByType`: Breakdown by attribute type
 - `BlankTokensByRule`: Rules that produced blank tokens
@@ -200,17 +228,17 @@ Check the metadata file after each run for:
 
 ## Troubleshooting
 
-| Problem                       | Solution                                                                |
-| ----------------------------- | ----------------------------------------------------------------------- |
-| "Encryption key not provided" | Add `-e "YourKey"` or use `--hash-only`                                 |
-| "Invalid BirthDate"           | Use YYYY-MM-DD format; date must be 1910-01-01 to today                 |
-| "Column not found"            | Check column names match [accepted aliases](../config/configuration.md) |
-| Docker build fails            | Ensure Docker is running; use absolute paths                            |
+| Problem                                                  | Solution                                                                                          |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| "No private key matching this exchange config was found" | Pass `--private-key` / `--private-key-env`, or install the matching key under `~/.openlinktoken/` |
+| "Invalid BirthDate"                                      | Use YYYY-MM-DD format; date must be 1910-01-01 to today                                           |
+| "Column not found"                                       | Check column names match [accepted aliases](../config/configuration.md)                           |
+| Docker build fails                                       | Ensure Docker is running; use absolute paths                                                      |
 
 ---
 
 ## Next Steps
 
 - **Distributed processing**: [Spark or Databricks](spark-or-databricks.md)
-- **Hash-only mode**: [Hash-Only Mode](hash-only-mode.md)
+- **Tokenize**: [Tokenize](tokenize.md)
 - **Decrypt tokens**: [Decrypting Tokens](decrypting-tokens.md)

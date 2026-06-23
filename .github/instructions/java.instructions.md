@@ -13,7 +13,7 @@ applyTo: "**/*.java"
 
 ## Best practices
 
-- **Imports**: Always use direct imports instead of fully qualified class names in code. NEVER use fully qualified class names in Java code - always add import statements and use short class names.
+- **Imports**: Never use fully qualified class names in Java code. Add imports and use short class names.
 - **Lombok**: This codebase uses Lombok extensively. Use:
   - `@Builder` for immutable object construction (preferred over Java Records for complex objects)
   - `@NonNull` for required fields with null-checking
@@ -41,15 +41,15 @@ applyTo: "**/*.java"
 - After adding or modifying code, verify the project continues to build successfully.
 - Run the full build with tests:
   ```bash
-  mvn clean verify
+  cd lib/java && mvn clean install
   ```
-- For faster builds without integration tests:
+- For a faster verification pass while iterating:
   ```bash
-  mvn clean package
+  cd lib/java && mvn test
   ```
-- Run tests only:
+- Run Checkstyle explicitly when needed:
   ```bash
-  mvn test
+  cd lib/java/openlinktoken && mvn checkstyle:check
   ```
 - Ensure all tests pass as part of the build.
 - **Code Review Checklist**: Before finalizing any Java code changes, verify:
@@ -80,13 +80,3 @@ These patterns are phrased for humans; they map cleanly to checks in Sonar, Spot
 - Magic numbers — Replace numeric literals with named constants that explain intent (e.g., MAX_RETRIES).
 
 If you run a static analyzer like Sonar or SonarLint — direct Sonar connections are preferred and should override this ruleset. Sonar rule keys are useful for automation and suppression, but they are not required in day-to-day developer guidance.
-
-## Build and Verification
-
-- After adding or modifying code, verify the project continues to build successfully.
-- If the project uses Maven, run `mvn clean install`.
-- Ensure all tests pass as part of the build.
-- **Code Review Checklist**: Before finalizing any Java code changes, verify:
-  - All classes use direct imports at the top of the file instead of fully qualified class names in the code
-  - Remove any unused imports
-  - Organize imports in logical groups (Java standard library, third-party libraries, project classes)

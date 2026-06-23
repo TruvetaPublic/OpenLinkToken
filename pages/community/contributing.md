@@ -4,7 +4,7 @@ layout: default
 
 # Contributing
 
-This guide outlines how to contribute code, documentation, and bug reports to OpenToken.
+This guide outlines how to contribute code, documentation, and bug reports to Open Link Token.
 
 ---
 
@@ -28,11 +28,11 @@ This guide outlines how to contribute code, documentation, and bug reports to Op
    ```
 3. **Set up the Python environment** (at repo root):
    ```bash
-   python -m venv .venv
+   uv venv .venv
    source .venv/bin/activate  # Linux/Mac
    # or .venv\Scripts\activate on Windows
-   pip install -r lib/python/opentoken/requirements.txt
-   pip install -r lib/python/opentoken/dev-requirements.txt
+   uv pip install -r lib/python/openlinktoken/requirements.txt
+   uv pip install -r lib/python/openlinktoken/dev-requirements.txt
    ```
 4. **Build Java components**:
    ```bash
@@ -43,16 +43,16 @@ This guide outlines how to contribute code, documentation, and bug reports to Op
 
 ## Branching Strategy
 
-OpenToken uses a Gitflow-based branching strategy:
+Open Link Token uses a Gitflow-based branching strategy:
 
 ### Branch Types
 
-| Branch | Purpose | Merges To |
-|--------|---------|-----------|
-| `main` | Production-ready releases | — |
-| `develop` | Integration branch | `release/*` |
-| `dev/<username>/<feature>` | Feature development | `develop` |
-| `release/x.y.z` | Release preparation | `main` |
+| Branch                     | Purpose                   | Merges To   |
+| -------------------------- | ------------------------- | ----------- |
+| `main`                     | Production-ready releases | —           |
+| `develop`                  | Integration branch        | `release/*` |
+| `dev/<username>/<feature>` | Feature development       | `develop`   |
+| `release/x.y.z`            | Release preparation       | `main`      |
 
 ### Creating a Feature Branch
 
@@ -80,24 +80,27 @@ git checkout -b dev/your-username/feature-name
 ### Before Submitting
 
 1. **Run all tests**:
+
    ```bash
    # Java
    cd lib/java && mvn clean test
 
    # Python
-   cd lib/python/opentoken && pytest
-   cd ../opentoken-cli && pytest
+   cd lib/python/openlinktoken && pytest
+   cd ../openlinktoken-cli && pytest
    ```
 
 2. **Check code style**:
+
    ```bash
    # Java (Checkstyle)
    cd lib/java && mvn checkstyle:check
    ```
 
 3. **Verify cross-language parity** (if applicable):
+
    ```bash
-   python tools/java_language_syncer.py
+   python3 tools/multi_language_syncer.py
    ```
 
 4. **Update documentation** if your changes affect user-facing behavior
@@ -124,18 +127,18 @@ git checkout -b dev/your-username/feature-name
 
 ### Java
 
-- **Style**: Follow Checkstyle configuration in `lib/java/opentoken/checkstyle.xml`
+- **Style**: Follow Checkstyle configuration in `lib/java/openlinktoken/checkstyle.xml`
 - **JavaDoc**: Required for all public classes and methods
 - **Testing**: JUnit 5, aim for ≥80% code coverage
 - **Imports**: Use short class names with imports (never fully qualified names in code)
 
 ```java
 // ✓ Correct
-import com.truveta.opentoken.tokens.tokenizer.SHA256Tokenizer;
+import org.openlinktoken.tokens.tokenizer.SHA256Tokenizer;
 SHA256Tokenizer tokenizer = new SHA256Tokenizer(transformers);
 
 // ✗ Wrong - never use fully qualified names
-com.truveta.opentoken.tokens.tokenizer.SHA256Tokenizer tokenizer = ...
+org.openlinktoken.tokens.tokenizer.SHA256Tokenizer tokenizer = ...
 ```
 
 ### Python
@@ -163,8 +166,8 @@ cd lib/java && mvn verify
 # Report: target/site/jacoco/index.html
 
 # Python with coverage report
-cd lib/python/opentoken
-pytest --cov=opentoken --cov-report=html
+cd lib/python/openlinktoken
+pytest --cov=openlinktoken --cov-report=html
 # Report: htmlcov/index.html
 ```
 
@@ -176,21 +179,22 @@ When adding a new attribute (e.g., `MiddleNameAttribute`):
 
 ### Java
 
-1. Create class extending `BaseAttribute` in `lib/java/opentoken/src/main/java/com/truveta/opentoken/attributes/`
-2. Add to `META-INF/services/com.truveta.opentoken.attributes.Attribute` (alphabetical order)
+1. Create class extending `BaseAttribute` in `lib/java/openlinktoken/src/main/java/org/openlinktoken/attributes/`
+2. Add to `META-INF/services/org.openlinktoken.attributes.Attribute` (alphabetical order)
 3. Add tests in `src/test/java/`
 
 ### Python
 
-1. Create class in `lib/python/opentoken/src/main/opentoken/attributes/`
+1. Create class in `lib/python/openlinktoken/src/main/openlinktoken/attributes/`
 2. Add to `AttributeLoader.load()` set in `attribute_loader.py`
 3. Add tests in `src/test/`
 
 ### Cross-Language Sync
 
 After adding to both languages:
+
 ```bash
-python tools/java_language_syncer.py
+python3 tools/multi_language_syncer.py
 ```
 
 ---
@@ -200,16 +204,18 @@ python tools/java_language_syncer.py
 ### Bug Reports
 
 Include:
+
 - **Title**: Clear, concise description
-- **Environment**: OS, Java/Python version, OpenToken version
+- **Environment**: OS, Java/Python version, Open Link Token version
 - **Steps to reproduce**: Minimal example
 - **Expected behavior**: What should happen
 - **Actual behavior**: What actually happens
-- **Error messages**: Full stack traces if applicable
+- **Archived CLI logs**: If the CLI prints `Stack trace: <path>`, attach that archived log or include the path in the issue
 
 ### Feature Requests
 
 Include:
+
 - **Problem statement**: What problem does this solve?
 - **Proposed solution**: How should it work?
 - **Alternatives considered**: Other approaches you have thought about
@@ -229,14 +235,14 @@ Include:
 
 ### Types
 
-| Type | Description |
-|------|-------------|
-| `feat` | New feature |
-| `fix` | Bug fix |
-| `docs` | Documentation only |
-| `test` | Adding or updating tests |
+| Type       | Description                                             |
+| ---------- | ------------------------------------------------------- |
+| `feat`     | New feature                                             |
+| `fix`      | Bug fix                                                 |
+| `docs`     | Documentation only                                      |
+| `test`     | Adding or updating tests                                |
 | `refactor` | Code change that neither fixes a bug nor adds a feature |
-| `chore` | Build process, dependencies, tooling |
+| `chore`    | Build process, dependencies, tooling                    |
 
 ---
 
@@ -246,4 +252,4 @@ Include:
 - Check existing issues for similar questions
 - Review the [Code of Conduct](code-of-conduct.md)
 
-Thank you for contributing to OpenToken!
+Thank you for contributing to Open Link Token!

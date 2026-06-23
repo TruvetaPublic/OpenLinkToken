@@ -1,0 +1,15 @@
+{
+  "ignore_patterns": [
+    "**/package-info.java",
+    "**/target/**",
+    "**/*.class",
+    "**/.*",
+    "**/properties/**",
+    "**/*.properties",
+    "**/resources/**",
+    "**/__pycache__/**",
+    "**/*.pyc",
+    "**/__init__.py",
+    "**/util/Init.java"
+  ]
+}
