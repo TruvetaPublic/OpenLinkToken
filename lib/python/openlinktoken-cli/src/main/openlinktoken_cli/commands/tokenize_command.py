@@ -482,10 +482,12 @@ class TokenizeCommand:
         Load tokenization config and create factories for config-driven token generation.
 
         Args:
-            tokenization_config_path: Path to YAML tokenization config file. If None or omitted, returns (None, None, None).
+            tokenization_config_path: Path to YAML tokenization config file. 
+            If None or omitted, returns (None, None, None).
 
         Returns:
-            Tuple of (TokenizationConfig, DynamicAttributeFactory, DynamicTokenDefinition) or (None, None, None) if config not provided.
+            Tuple of (TokenizationConfig, DynamicAttributeFactory, DynamicTokenDefinition)
+            or (None, None, None) if config not provided.
         """
         if not tokenization_config_path:
             return None, None, None
