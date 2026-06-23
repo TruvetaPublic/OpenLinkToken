@@ -23,10 +23,8 @@ attributes:
 
 token_rules:
   T_ALL_BASE:
-    - field: RecordId
-      expression: "T|U"
     - field: BirthYear
-      expression: "T|U"
+      expression: "T"
     - field: EncounterType
       expression: "T|U"
     - field: EncounterDate
@@ -34,22 +32,22 @@ token_rules:
     - field: Gender
       expression: "T|S(0,1)|U"
     - field: AgeAtEncounter
-      expression: "T|S(0,5)|U"
+      expression: "T"
     - field: PatientSSN
       expression: "T|M(\\d+)"
   T_INITIALS_PLUS_AGE:
     - field: BirthYear
-      expression: "T|S(0,2)|U"
+      expression: "T"
     - field: EncounterType
       expression: "T|S(0,2)|U"
     - field: EncounterDate
-      expression: "T|Y"
+      expression: "T|D"
     - field: AgeAtEncounter
-      expression: "T|S(0,4)|U"
+      expression: "T"
   T_IDENTITY_LIGHT:
-    - field: RecordId
-      expression: "T|S(0,8)|U"
+    - field: EncounterType
+      expression: "T|S(0,2)|U"
     - field: EncounterDate
-      expression: "T|Y"
+      expression: "T|D"
     - field: Gender
       expression: "T|U"
