@@ -40,9 +40,9 @@ setup(
     install_requires=requirements,
     extras_require={
         "dev": [
-            "cryptography",
-            "pycryptodome",
+            "cryptography==48.0.1",
+            "pycryptodome==3.23.0",
         ],
-        "test": ["pytest"],
+        "test": ["pytest==9.0.3"],
     },
 )

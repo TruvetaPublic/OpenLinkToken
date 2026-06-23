@@ -19,7 +19,7 @@ dependencies:
     - obra/superpowers/skills/writing-plans
     - obra/superpowers/skills/writing-skills
     - github/awesome-copilot/skills/documentation-writer
-    - github/awesome-copilot/skills/gh-cli
+    - github/awesome-copilot/skills/gh-cli#7f59e018008c52c385e7c4799430692cfe1118c2
     - github/awesome-copilot/skills/remember
   mcp: []
 scripts: {}

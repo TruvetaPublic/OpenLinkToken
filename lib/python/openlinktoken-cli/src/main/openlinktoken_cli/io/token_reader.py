@@ -17,6 +17,11 @@ class TokenReader(ABC, Iterator[Dict[str, str]]):
         pass
 
     @abstractmethod
+    def row_count(self) -> int:
+        """Return the total number of rows in the file."""
+        pass
+
+    @abstractmethod
     def __next__(self) -> Dict[str, str]:
         """
         Retrieve the next token row from an input source.

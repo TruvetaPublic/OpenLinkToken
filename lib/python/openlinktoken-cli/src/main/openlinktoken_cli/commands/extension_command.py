@@ -16,6 +16,7 @@ from urllib.parse import urlparse
 from urllib.request import urlopen
 
 from packaging.requirements import InvalidRequirement, Requirement
+from packaging.markers import UndefinedEnvironmentName
 
 from openlinktoken_cli.extension.extension_registry import ExtensionRegistry
 
@@ -622,9 +623,12 @@ class ExtensionCommand:
                     req = Requirement(raw_dep)
                 except InvalidRequirement:
                     continue
-                if req.marker is not None and not req.marker.evaluate():
-                    continue  # marker evaluates to False in this environment; skip
-                # Normalise dashes/underscores/dots per PEP 503 (collapse runs of [-_.] to a single -).
+                if req.marker is not None:
+                    try:
+                        if not req.marker.evaluate():
+                            continue     # marker evaluates to False in this environment; skip
+                    except UndefinedEnvironmentName:
+                        continue     # marker references a variable missing from this environment (e.g. "extra")
                 dep_name_norm = re.sub(r"[-_.]+", "-", req.name).lower()
                 if dep_name_norm not in _BUNDLED_DEPS:
                     external.append(req.name)

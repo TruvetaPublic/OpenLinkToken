@@ -48,6 +48,9 @@ class TokenParquetReader(TokenReader):
             logger.error(f"Error in reading Parquet file: {e}")
             raise IOError(f"Failed to read Parquet file: {file_path}") from e
 
+    def row_count(self) -> int:
+        return self.total_rows
+
     def __iter__(self) -> Iterator[Dict[str, str]]:
         """
         Iterate over rows in the Parquet file.

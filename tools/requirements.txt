@@ -1,2 +1,2 @@
-faker
-pycryptodome
+faker==40.23.0
+pycryptodome==3.23.0

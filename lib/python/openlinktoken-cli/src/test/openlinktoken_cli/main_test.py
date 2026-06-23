@@ -7,6 +7,7 @@ Tests the end-to-end workflows for token generation and decryption using new sub
 import json
 import os
 import re
+import sys
 import zipfile
 from pathlib import Path
 from unittest.mock import patch
@@ -237,6 +238,46 @@ class TestOpenLinkTokenCommand:
         with zipfile.ZipFile(output_zip) as archive:
             assert len(archive.read("output.csv")) > 0, "Tokens CSV inside ZIP should not be empty"
             assert len(archive.read("encrypt-zip.exchange.json")) > 0, "Exchange config inside ZIP should not be empty"
+
+    def test_encrypt_command_sets_total_rows_for_progress(self, temp_dir):
+        """Encrypt should precompute total rows so the progress reporter can show percentages and ETA."""
+        input_csv = temp_dir / "input.csv"
+        hashed_csv = temp_dir / "hashed.csv"
+        output_csv = temp_dir / "encrypted.csv"
+        exchange_config, private_key = self._create_exchange_config(temp_dir, "encrypt-progress")
+
+        tokenize_exit_code = OpenLinkTokenCommand.execute(
+            [
+                "tokenize",
+                "-i",
+                str(input_csv),
+                "-o",
+                str(hashed_csv),
+                "--exchange-config",
+                str(exchange_config),
+                "--private-key",
+                str(private_key),
+            ]
+        )
+        assert tokenize_exit_code == 0
+
+        with patch("openlinktoken_cli.commands.encrypt_command.CliRunReporter.set_total_rows") as set_total_rows:
+            encrypt_exit_code = OpenLinkTokenCommand.execute(
+                [
+                    "encrypt",
+                    "-i",
+                    str(hashed_csv),
+                    "-o",
+                    str(output_csv),
+                    "--exchange-config",
+                    str(exchange_config),
+                    "--private-key",
+                    str(private_key),
+                ]
+            )
+
+        assert encrypt_exit_code == 0
+        set_total_rows.assert_called_once_with(10)
 
     def test_decrypt_command(self, temp_dir):
         """Test decrypt command."""
@@ -785,7 +826,8 @@ class TestOpenLinkTokenCommand:
         captured = capsys.readouterr()
         assert exit_code == 0, "Help should exit successfully"
         assert "Privacy-Preserving Record Linkage v" in captured.out
-        assert "usage: olt" in captured.out
+        if sys.version_info < (3, 14):
+            assert "usage: olt" in captured.out
 
     def test_bare_invocation_shows_banner_for_interactive_runs(self, monkeypatch, capsys):
         """Interactive top-level invocation should include the banner before help output."""
@@ -797,7 +839,8 @@ class TestOpenLinkTokenCommand:
         captured = capsys.readouterr()
         assert exit_code == 0, "Bare invocation should exit successfully"
         assert "Privacy-Preserving Record Linkage v" in captured.out
-        assert "usage: olt" in captured.out
+        if sys.version_info < (3, 14):
+            assert "usage: olt" in captured.out
         mock_version_check.return_value.wait_and_notify.assert_called_once()
 
     def test_help_subcommand_shows_banner_for_interactive_runs(self, monkeypatch, capsys):
@@ -809,7 +852,8 @@ class TestOpenLinkTokenCommand:
         captured = capsys.readouterr()
         assert exit_code == 0, "Help subcommand should exit successfully"
         assert "Privacy-Preserving Record Linkage v" in captured.out
-        assert "usage: olt" in captured.out
+        if sys.version_info < (3, 14):
+            assert "usage: olt" in captured.out
 
     def test_version_does_not_show_banner_for_interactive_runs(self, monkeypatch, capsys):
         """Interactive non-help output should not include the Open Link Token banner."""

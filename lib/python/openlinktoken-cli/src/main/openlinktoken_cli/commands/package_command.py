@@ -160,6 +160,15 @@ class PackageCommand:
             default=0,
             help="ORT intra/inter-op thread count for ML1 inference (0 = auto-detect, default: 0)",
         )
+        # --no-progress / -q: suppress interactive progress indicator
+        parser.add_argument(
+              "--no-progress",
+              "-q",
+            action="store_true",
+            default=False,
+            dest="no_progress",
+            help="Suppress interactive progress indicator (e.g. for non-interactive / CI environments)",
+            )
 
         parser.set_defaults(func=PackageCommand.execute)
 
@@ -180,7 +189,7 @@ class PackageCommand:
             return 1
         ring_id = resolve_ring_id(args.ring_id)
         hash_record_ids = getattr(args, "hash_record_ids", False)
-        reporter = CliRunReporter("package")
+        reporter = CliRunReporter("package", no_progress=args.no_progress)
 
         ml1_enabled = not getattr(args, "disable_ml1", False)
         ML1InferenceConfig.configure(
@@ -225,6 +234,20 @@ class PackageCommand:
                     logger.info(f"Exchange config: {exchange.path}")
 
                     reporter.update_status("Packaging records")
+                    # Determine total rows via reader to enable %/ETA
+                    total_rows: int | None = None
+                    try:
+                        reader = PackageCommand._create_reader(
+                            args.input_path, input_type)
+                        total_rows = reader.row_count()
+                        reader.close()
+                    except Exception:
+                        total_rows = None
+
+                    # Wire total_rows to reporter if known
+                    if total_rows is not None:
+                        reporter.set_total_rows(total_rows)
+
                     is_zip = output_type == FileTypeDetector.TYPE_ZIP
 
                     if is_zip:

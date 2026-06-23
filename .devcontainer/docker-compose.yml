@@ -1,0 +1,28 @@
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - ..:/workspaces/OpenLinkToken
+      - openlinktoken-local:/home/vscode/.local
+      - openlinktoken-cache:/home/vscode/.cache
+      - openlinktoken-copilot:/home/vscode/.copilot
+      - openlinktoken-vscode-server:/home/vscode/.vscode-server
+      - openlinktoken-vscode-insiders:/home/vscode/.vscode-server-insiders
+      - openlinktoken-opencode:/home/vscode/.opencode
+      - openlinktoken-config:/home/vscode/.config
+      - openlinktoken-openhands:/home/vscode/.openhands
+    user: vscode:vscode
+    # Keeps the container running so devcontainer tooling can attach
+    command: sleep infinity
+
+volumes:
+  openlinktoken-local:
+  openlinktoken-cache:
+  openlinktoken-copilot:
+  openlinktoken-vscode-server:
+  openlinktoken-vscode-insiders:
+  openlinktoken-opencode:
+  openlinktoken-config:
+  openlinktoken-openhands:

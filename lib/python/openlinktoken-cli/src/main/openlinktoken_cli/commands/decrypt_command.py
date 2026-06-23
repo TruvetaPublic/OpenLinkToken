@@ -78,6 +78,14 @@ class DecryptCommand:
             help="Read the private key PEM from the named environment variable",
         )
 
+        parser.add_argument(
+            "-q",
+            "--no-progress",
+            action="store_true",
+            default=False,
+            help="Suppress interactive progress indicator (e.g. for non-interactive / CI environments)",
+            )
+
         parser.set_defaults(func=DecryptCommand.execute)
 
     @staticmethod
@@ -96,7 +104,7 @@ class DecryptCommand:
             logger.error("Unable to auto-detect output type from provided/generated path.")
             return 1
 
-        reporter = CliRunReporter("decrypt")
+        reporter = CliRunReporter("decrypt", no_progress=args.no_progress)
         try:
             with reporter:
                 try:
@@ -114,6 +122,16 @@ class DecryptCommand:
                     logger.info(f"Exchange config: {exchange.path}")
 
                     reporter.update_status("Decrypting tokens")
+                    # Determine total rows to enable %/ETA
+                    total_rows: int | None = None
+                    try:
+                        reader = DecryptCommand._create_token_reader(args.input_path, input_type)
+                        total_rows = reader.row_count()
+                        reader.close()
+                    except Exception:
+                        total_rows = None
+                    if total_rows is not None:
+                        reporter.set_total_rows(total_rows)
                     summary = DecryptCommand._decrypt_tokens(
                         args.input_path,
                         output_path,

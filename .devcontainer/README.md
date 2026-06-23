@@ -46,6 +46,32 @@ If your organization uses Zscaler for SSL inspection, you'll need to configure t
 
 For more details, see [Zscaler Certificate Management](./scripts/README.md).
 
+## Development Tools
+
+The dev container includes several tools to optimize your development workflow:
+
+### rtk - Rust Token Killer
+
+For environments where you use GitHub Copilot or other LLM-driven tools, `rtk` is available to help reduce token usage by optimizing code before sending it to the model.
+
+**What it does:**
+
+- Minifies and strips comments from code
+- Normalizes whitespace
+- Helps keep LLM interactions efficient by reducing token count
+
+**How to use:**
+
+```bash
+# Process a file with rtk
+rtk <file.py> result_minified.py
+
+# Get help
+rtk --help
+```
+
+This tool is automatically installed during the container setup process and is available on your PATH.
+
 ### Keeping it relevant
 
 If you end up needing additional tools, extensions or settings, please add them to the `.devcontainer/devcontainer.json` file. This will ensure that everyone has the same environment with everything needed.

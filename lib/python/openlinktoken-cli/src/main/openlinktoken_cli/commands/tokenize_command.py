@@ -199,6 +199,15 @@ class TokenizeCommand:
             metavar="STRING",
             help="Initialization vector for rotation-based ML1-R* token generation.",
         )
+        # --no-progress / -q: suppress interactive progress indicator
+        parser.add_argument(
+            "--no-progress",
+            "-q",
+            action="store_true",
+            default=False,
+            dest="no_progress",
+            help="Suppress interactive progress indicator (e.g. for non-interactive / CI environments)",
+        )
 
         parser.set_defaults(func=TokenizeCommand.execute)
 
@@ -259,7 +268,7 @@ class TokenizeCommand:
             logger.error("--mode hash-only cannot be combined with --private-key or --private-key-env.")
             return 1
 
-        reporter = CliRunReporter("tokenize")
+        reporter = CliRunReporter("tokenize", no_progress=args.no_progress)
         try:
             with reporter:
                 try:
@@ -290,6 +299,18 @@ class TokenizeCommand:
                         getattr(args, "inferencing_batch_size", ML1InferenceConfig.DEFAULT_BATCH_SIZE),
                         num_threads if num_threads > 0 else "auto",
                     )
+
+                        # Count total rows via reader to enable %/ETA
+                    total_rows: int | None = None
+                    try:
+                        reader = TokenizeCommand._create_reader(args.input_path, input_type)
+                        total_rows = reader.row_count()
+                        reader.close()
+                    except Exception:
+                        total_rows = None
+
+                    if total_rows is not None:
+                        reporter.set_total_rows(total_rows)
 
                     if mode == TokenizeCommand._MODE_DEMO:
                         if rotation_iv is not None:
@@ -376,6 +397,7 @@ class TokenizeCommand:
                 except Exception as error:
                     logger.error("Error during token generation: %s", error)
                     raise
+            # Final progress flush
             reporter.finish_success(
                 "Tokenize complete",
                 TokenizeCommand._build_summary_lines(

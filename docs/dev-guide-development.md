@@ -46,6 +46,7 @@ This guide centralizes contributor-facing information. It covers local setup, la
     - [Full Multi-language Build](#full-multi-language-build)
     - [Docker Image](#docker-image)
   - [Running the Tool (CLI)](#running-the-tool-cli)
+      - [Progress display environment variables](#progress-display-environment-variables)
     - [Key Pair Generation](#key-pair-generation)
   - [Local Extension Development](#local-extension-development)
     - [Setup](#setup)
@@ -53,6 +54,7 @@ This guide centralizes contributor-facing information. It covers local setup, la
     - [Manual testing: wheel install (full pipeline)](#manual-testing-wheel-install-full-pipeline)
     - [Run the extension tests](#run-the-extension-tests)
     - [Developing your own extension](#developing-your-own-extension)
+      - [Reporting custom progress metrics](#reporting-custom-progress-metrics)
     - [Extension tests in `openlinktoken-cli`](#extension-tests-in-openlinktoken-cli)
   - [Development Container](#development-container)
   - [Version Bumping Policy](#version-bumping-policy)
@@ -707,13 +709,27 @@ python -m openlinktoken_cli.main package -i input.csv -o output.csv --exchange-c
 
 Arguments:
 
-| Flag                    | Description                                               |
-| ----------------------- | --------------------------------------------------------- |
-| `-i, --input`           | Input file path                                           |
-| `-o, --output`          | Output file path (optional — auto-generated when omitted) |
-| `-c, --exchange-config` | Exchange config JSON path                                 |
-| `--private-key`         | Private key PEM used to decrypt the config                |
-| `--private-key-env`     | Environment variable containing the private key           |
+| Flag                    | Description                                                        |
+| ----------------------- | ------------------------------------------------------------------ |
+| `-i, --input`           | Input file path                                                    |
+| `-o, --output`          | Output file path (optional — auto-generated when omitted)          |
+| `-c, --exchange-config` | Exchange config JSON path                                          |
+| `--private-key`         | Private key PEM used to decrypt the config                         |
+| `--private-key-env`     | Environment variable containing the private key                    |
+| `--no-progress, -q`     | Suppress interactive progress indicator (for CI / non-interactive) |
+
+The `--no-progress` / `-q` flag is available on all four processing commands: `package`, `tokenize`, `encrypt`, and `decrypt`.
+
+#### Progress display environment variables
+
+Two environment variables suppress the interactive progress display without requiring a CLI flag — useful in CI pipelines and shell scripts:
+
+| Variable               | Effect                                                 |
+| ---------------------- | ------------------------------------------------------ |
+| `OPENLINK_NO_PROGRESS` | Suppresses the progress indicator (OLT-specific)       |
+| `NO_PROGRESS`          | Suppresses the progress indicator (generic convention) |
+
+Setting `NO_COLOR=1` (the cross-tool standard) retains the progress display but strips all ANSI colour codes from it, producing plain-text output suitable for log capture.
 
 ### Key Pair Generation
 
@@ -813,6 +829,32 @@ cd lib/python/openlinktoken_ext_hello_world && pytest src/test
 4. Install in editable mode (`uv pip install -e .`) — the CLI picks it up on next invocation.
 5. Package with `python -m build` and distribute as a `.whl`.
 6. End users install via `olt extension install <url-or-file://path>`.
+
+#### Reporting custom progress metrics
+
+Extensions that process large datasets can contribute custom metrics to the CLI progress display. Implement the `StatsProvider` protocol and register it with the reporter:
+
+```python
+from openlinktoken_cli.extension import StatsProvider
+
+class MyExtensionStats:
+    """Thread-safe custom metrics for the progress display."""
+
+    def __init__(self):
+        self._matched = 0
+
+    def increment_matched(self) -> None:
+        self._matched += 1
+
+    def get_metrics(self) -> list[tuple[str, str, str]]:
+        return [("matched", f"{self._matched:,}", "rows")]
+
+# In your command handler (receives reporter as CliRunReporter):
+stats = MyExtensionStats()
+reporter.add_stats_provider(stats)
+```
+
+The reporter calls `get_metrics()` on each render tick (~1 Hz). Metrics appear below a divider in the same multiline progress block, aligned to the same columns as the built-in metrics. Return `(label, number_string, unit_string)` triples — use an empty string for unit when not applicable.
 
 See `lib/python/openlinktoken_ext_hello_world/README.md` for the full lifecycle walkthrough and `pages/quickstarts/extension-quickstart.md` for a step-by-step guide.
 

@@ -126,3 +126,15 @@ class TestPersonAttributesParquetReader:
         invalid_file_path = "non_existent_file.parquet"
         with pytest.raises(IOError):
             PersonAttributesParquetReader(invalid_file_path)
+
+    def test_row_count_returns_total_rows(self):
+        """Row counting should return the Parquet row total without breaking iteration."""
+        with PersonAttributesParquetWriter(self.temp_file_path) as writer:
+            writer.write_attributes({"RecordId": "1", "SocialSecurityNumber": "123-45-6789", "FirstName": "John"})
+            writer.write_attributes({"RecordId": "2", "SocialSecurityNumber": "987-65-4321", "FirstName": "Jane"})
+
+        with PersonAttributesParquetReader(self.temp_file_path) as reader:
+            assert reader.row_count() == 2
+
+            first_record = next(reader)
+            assert first_record[RecordIdAttribute] == "1"

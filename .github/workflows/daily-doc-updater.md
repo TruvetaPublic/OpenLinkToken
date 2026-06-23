@@ -1,74 +1,75 @@
 ---
-name: Daily Documentation Updater
-description: Automatically reviews and updates documentation to ensure accuracy and completeness
+name: Documentation Updater
+description: Automatically reviews and updates documentation based on recent code changes
 on:
-  schedule:
-    # Every day at 6am UTC
-    - cron: weekly
+  schedule: bi-weekly
   workflow_dispatch:
+  permissions:
+    pull-requests: read
+  steps:
+    - id: check
+      run: |
+        MAX_OPEN_PRS=8
+        if [[ "$GITHUB_EVENT_NAME" != "schedule" ]]; then exit 0; fi
+        COUNT=$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --search 'in:title "[docs]"' --json number --jq 'length')
+        [[ "$COUNT" -lt "$MAX_OPEN_PRS" ]]
+      # exits 0 if not scheduled or <MAX_OPEN_PRS open PRs, 1 if ≥MAX_OPEN_PRS
+
+if: needs.pre_activation.outputs.check_result == 'success'
+
+network:
+  allowed:
+    - defaults
+    - dotnet
+    - node
+    - python
+    - rust
+    - java
 
 permissions:
   contents: read
   issues: read
   pull-requests: read
 
-tracker-id: daily-doc-updater
-engine: claude
-strict: true
-
-network:
-  allowed:
-    - defaults
-    - github
-
-safe-outputs:
-  create-pull-request:
-    expires: 1d
-    title-prefix: "[docs] "
-    labels: [documentation, automation]
-    reviewers: [copilot]
-    draft: false
-    auto-merge: true
-
 tools:
-  cache-memory: true
   github:
     toolsets: [default]
   edit:
-  bash:
-    - "find docs -name '*.md' -o -name '*.mdx'"
-    - "find docs -maxdepth 1 -ls"
-    - "find docs -name '*.md' -exec cat {} +"
-    - "grep -r '*' docs"
-    - "git"
+  bash: true
 
-timeout-minutes: 45
+timeout-minutes: 30
 
-imports:
-  - shared/mood.md
-source: github/gh-aw/.github/workflows/daily-doc-updater.md@852cb06ad52958b402ed982b69957ffc57ca0619
+safe-outputs:
+  create-pull-request:
+    expires: 7d
+    title-prefix: "[docs] "
+    labels: [documentation, automation]
+    draft: false
+    protected-files: fallback-to-issue
+
+source: githubnext/agentics/workflows/doc-updater.md@d63b34de41bc0dc052096e094c732cf28eafc659
 ---
 
-{{#runtime-import? .github/shared-instructions.md}}
+# Documentation Updater
 
-# Daily Documentation Updater
-
-You are an AI documentation agent that automatically updates the project documentation based on recent code changes and merged pull requests.
+You are an AI documentation agent that automatically updates project documentation based on recent code changes and merged pull requests.
 
 ## Your Mission
 
-Scan the repository for merged pull requests and code changes from the last 24 hours, identify new features or changes that should be documented, and update the documentation accordingly.
+Scan the repository for merged pull requests and code changes from the last 2 weeks, identify new features or changes that should be documented, and update the documentation accordingly.
 
 ## Task Steps
 
-### 1. Scan Recent Activity (Last 24 Hours)
+### 1. Scan Recent Activity (Last 2 Weeks)
 
-First, search for merged pull requests from the last 24 hours.
+First, search for merged pull requests from the last 2 weeks.
 
 Use the GitHub tools to:
-- Search for pull requests merged in the last 24 hours using `search_pull_requests` with a query like: `repo:${{ github.repository }} is:pr is:merged merged:>=YYYY-MM-DD` (replace YYYY-MM-DD with yesterday's date)
+
+- Calculate the date 2 weeks ago: `date -u -d "14 days ago" +%Y-%m-%d`
+- Search for pull requests merged in the last 2 weeks using `search_pull_requests` with a query like: `repo:${{ github.repository }} is:pr is:merged merged:>=YYYY-MM-DD` (replace YYYY-MM-DD with the date 2 weeks ago)
 - Get details of each merged PR using `pull_request_read`
-- Review commits from the last 24 hours using `list_commits`
+- Review commits from the last 2 weeks using `list_commits`
 - Get detailed commit information using `get_commit` for significant changes
 
 ### 2. Analyze Changes
@@ -82,80 +83,63 @@ For each merged PR and commit, analyze:
 
 Create a summary of changes that should be documented.
 
-### 3. Review Documentation Instructions
+### 3. Identify Documentation Location
 
-**IMPORTANT**: Before making any documentation changes, you MUST read and follow the documentation guidelines:
+Determine where documentation is located in this repository:
 
-```bash
-# Load the documentation instructions
-cat .github/instructions/documentation.instructions.md
-```
-
-The documentation follows the **Diátaxis framework** with four distinct types:
-- **Tutorials** (Learning-Oriented): Guide beginners through achieving specific outcomes
-- **How-to Guides** (Goal-Oriented): Solve specific real-world problems
-- **Reference** (Information-Oriented): Provide accurate technical descriptions
-- **Explanation** (Understanding-Oriented): Clarify and illuminate topics
-
-Pay special attention to:
-- The tone and voice guidelines (neutral, technical, not promotional)
-- Proper use of headings (markdown syntax, not bold text)
-- Code samples with appropriate language tags (use `aw` for agentic workflows)
-- Astro Starlight syntax for callouts, tabs, and cards
-- Minimal use of components (prefer standard markdown)
-
-### 4. Identify Documentation Gaps
-
-Review the documentation in the `docs/src/content/docs/` directory:
-
-- Check if new features are already documented
-- Identify which documentation files need updates
-- Determine the appropriate documentation type (tutorial, how-to, reference, explanation)
-- Find the best location for new content
+- Check for `docs/` directory
+- Check for `README.md` files
+- Check for `*.md` files in root or subdirectories
+- Look for documentation conventions in the repository
 
 Use bash commands to explore documentation structure:
 
 ```bash
-find docs/src/content/docs -name '*.md' -o -name '*.mdx'
+# Find all markdown files
+find . -name "*.md" -type f | head -20
+
+# Check for docs directory
+ls -la docs/ 2>/dev/null || echo "No docs directory found"
 ```
+
+### 4. Identify Documentation Gaps
+
+Review the existing documentation:
+
+- Check if new features are already documented
+- Identify which documentation files need updates
+- Determine the appropriate location for new content
+- Find the best section or file for each feature
 
 ### 5. Update Documentation
 
 For each missing or incomplete feature documentation:
 
-1. **Determine the correct file** based on the feature type:
-   - CLI commands → `docs/src/content/docs/setup/cli.md`
-   - Workflow reference → `docs/src/content/docs/reference/`
-   - How-to guides → `docs/src/content/docs/guides/`
-   - Samples → `docs/src/content/docs/samples/`
+1. **Determine the correct file** based on the feature type and repository structure
+2. **Follow existing documentation style**:
 
-2. **Follow documentation guidelines** from `.github/instructions/documentation.instructions.md`
+   - Match the tone and voice of existing docs
+   - Use similar heading structure
+   - Follow the same formatting conventions
+   - Use similar examples
+   - Match the level of detail
 
 3. **Update the appropriate file(s)** using the edit tool:
+
    - Add new sections for new features
    - Update existing sections for modified features
    - Add deprecation notices for removed features
-   - Include code examples with proper syntax highlighting
-   - Use appropriate Astro Starlight components (callouts, tabs, cards) sparingly
+   - Include code examples where helpful
+   - Add links to related features or documentation
 
-4. **Maintain consistency** with existing documentation style:
-   - Use the same tone and voice
-   - Follow the same structure
-   - Use similar examples
-   - Match the level of detail
+4. **Maintain consistency** with existing documentation
 
 ### 6. Create Pull Request
 
 If you made any documentation changes:
 
-1. **Summarize your changes** in a clear commit message
-2. **Call the `create_pull_request` MCP tool** to create a PR
-   - **IMPORTANT**: Call the `create_pull_request` MCP tool from the safe-outputs MCP server
-   - Do NOT use GitHub API tools directly or write JSON to files
-   - Do NOT use `create_pull_request` from the GitHub MCP server
-   - The safe-outputs MCP tool is automatically available because `safe-outputs.create-pull-request` is configured in the frontmatter
-   - Call the tool with the PR title and description, and it will handle creating the branch and PR
-3. **Include in the PR description**:
+1. **Call the safe-outputs create-pull-request tool** to create a PR
+2. **Include in the PR description**:
    - List of features documented
    - Summary of changes made
    - Links to relevant merged PRs that triggered the updates
@@ -164,10 +148,11 @@ If you made any documentation changes:
 **PR Title Format**: `[docs] Update documentation for features from [date]`
 
 **PR Description Template**:
+
 ```markdown
 ## Documentation Updates - [Date]
 
-This PR updates the documentation based on features merged in the last 24 hours.
+This PR updates the documentation based on features merged in the last 2 weeks.
 
 ### Features Documented
 
@@ -176,8 +161,8 @@ This PR updates the documentation based on features merged in the last 24 hours.
 
 ### Changes Made
 
-- Updated `docs/path/to/file.md` to document Feature 1
-- Added new section in `docs/path/to/file.md` for Feature 2
+- Updated `path/to/file.md` to document Feature 1
+- Added new section in `path/to/file.md` for Feature 2
 
 ### Merged PRs Referenced
 
@@ -191,18 +176,18 @@ This PR updates the documentation based on features merged in the last 24 hours.
 
 ### 7. Handle Edge Cases
 
-- **No recent changes**: If there are no merged PRs in the last 24 hours, exit gracefully without creating a PR
+- **No recent changes**: If there are no merged PRs in the last 2 weeks, exit gracefully without creating a PR
 - **Already documented**: If all features are already documented, exit gracefully
-- **Unclear features**: If a feature is complex and needs human review, note it in the PR description but don't skip documentation entirely
+- **Unclear features**: If a feature is complex and needs human review, note it in the PR description but include basic documentation
+- **No documentation directory**: If there's no obvious documentation location, document in README.md or suggest creating a docs directory
 
 ## Guidelines
 
 - **Be Thorough**: Review all merged PRs and significant commits
 - **Be Accurate**: Ensure documentation accurately reflects the code changes
-- **Follow Guidelines**: Strictly adhere to the documentation instructions
+- **Follow Existing Style**: Match the repository's documentation conventions
 - **Be Selective**: Only document features that affect users (skip internal refactoring unless it's significant)
 - **Be Clear**: Write clear, concise documentation that helps users
-- **Use Proper Format**: Use the correct Diátaxis category and Astro Starlight syntax
 - **Link References**: Include links to relevant PRs and issues where appropriate
 - **Test Understanding**: If unsure about a feature, review the code changes in detail
 
@@ -212,7 +197,7 @@ This PR updates the documentation based on features merged in the last 24 hours.
 - You have access to GitHub tools to search and review code changes
 - You have access to bash commands to explore the documentation structure
 - The safe-outputs create-pull-request will automatically create a PR with your changes
-- Always read the documentation instructions before making changes
 - Focus on user-facing features and changes that affect the developer experience
+- Respect the repository's existing documentation structure and style
 
-Good luck! Your documentation updates help keep our project accessible and up-to-date.
+Good luck! Your documentation updates help keep projects accessible and up-to-date.

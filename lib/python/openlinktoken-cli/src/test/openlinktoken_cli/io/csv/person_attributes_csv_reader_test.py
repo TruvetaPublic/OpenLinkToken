@@ -108,3 +108,19 @@ class TestPersonAttributesCSVReader:
         invalid_file_path = "non_existent_file.csv"
         with pytest.raises(IOError):
             PersonAttributesCSVReader(invalid_file_path)
+
+    def test_row_count_preserves_iteration(self):
+        """Counting rows should not prevent subsequent iteration."""
+        with open(self.temp_file_path, "w", encoding="utf-8") as f:
+            f.write("RecordId,SocialSecurityNumber,FirstName,LastName\n")
+            f.write("1,123-45-6789,John,Doe\n")
+            f.write("2,987-65-4321,Jane,Smith\n")
+
+        with PersonAttributesCSVReader(self.temp_file_path) as reader:
+            assert reader.row_count() == 2
+
+            first_record = next(reader)
+            second_record = next(reader)
+
+            assert first_record[RecordIdAttribute] == "1"
+            assert second_record[RecordIdAttribute] == "2"

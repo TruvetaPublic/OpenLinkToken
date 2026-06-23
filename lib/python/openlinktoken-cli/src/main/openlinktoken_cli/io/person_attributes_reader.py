@@ -12,6 +12,11 @@ class PersonAttributesReader(ABC, Iterator[Dict[Type[Attribute], str]]):
     """
 
     @abstractmethod
+    def row_count(self) -> int:
+        """Return the total number of rows in the file."""
+        pass
+
+    @abstractmethod
     def __next__(self) -> Dict[Type[Attribute], str]:
         """
         Retrieve the next set of person attributes from an input source.
