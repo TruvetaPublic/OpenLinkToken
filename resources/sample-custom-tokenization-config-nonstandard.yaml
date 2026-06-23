@@ -1,0 +1,55 @@
+attributes:
+  patient_identifier:
+    field: RecordId
+    type: RecordId
+  dob_raw:
+    field: BirthDate
+    type: BirthDate
+  given_nm_raw:
+    field: FirstName
+    type: FirstName
+  surname_raw:
+    field: LastName
+    type: LastName
+  zipcode_home:
+    field: PostalCode
+    type: PostalCode
+  gender_text:
+    field: Sex
+    type: Sex
+  ssn_raw:
+    field: SocialSecurityNumber
+    type: SocialSecurityNumber
+
+token_rules:
+  T_ALL_BASE:
+    - field: RecordId
+      expression: "T|U"
+    - field: LastName
+      expression: "T|U"
+    - field: FirstName
+      expression: "T|U"
+    - field: BirthDate
+      expression: "T|D"
+    - field: Sex
+      expression: "T|S(0,1)|U"
+    - field: PostalCode
+      expression: "T|S(0,5)|U"
+    - field: SocialSecurityNumber
+      expression: "T|M(\\d+)"
+  T_INITIALS_PLUS_ZIP:
+    - field: LastName
+      expression: "T|S(0,2)|U"
+    - field: FirstName
+      expression: "T|S(0,2)|U"
+    - field: BirthDate
+      expression: "T|Y"
+    - field: PostalCode
+      expression: "T|S(0,4)|U"
+  T_IDENTITY_LIGHT:
+    - field: RecordId
+      expression: "T|S(0,8)|U"
+    - field: BirthDate
+      expression: "T|Y"
+    - field: Sex
+      expression: "T|U"

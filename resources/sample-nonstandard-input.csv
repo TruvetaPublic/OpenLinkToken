@@ -1,0 +1,4 @@
+patient_identifier,dob_raw,given_nm_raw,surname_raw,zipcode_home,gender_text,ssn_raw
+rec-001-A,1988-12-04, Anna ,Nguyen,98101,Female,111-22-3333
+rec-002-B,1975-07-19,Marcus,O'Neil,10013,Male,444-55-6666
+rec-003-C,1992-03-30,Zoe,Delacruz,60601,Female,777-88-9999
