@@ -55,11 +55,10 @@ class TestIsNewer:
         assert not VersionChecker._is_newer("1.9.0", "2.0.0")
 
     def test_prerelease_vs_release(self):
-        # 2.0.0 is older than 2.0.0
-        assert VersionChecker._is_newer("2.0.0", "2.0.0")
+        assert VersionChecker._is_newer("1.6.8", "1.6.8-alpha")
 
     def test_alpha_not_newer_than_same_alpha(self):
-        assert not VersionChecker._is_newer("2.0.0", "2.0.0")
+        assert not VersionChecker._is_newer("1.4.5-alpha", "1.4.5-alpha")
 
 
 # ---------------------------------------------------------------------------
