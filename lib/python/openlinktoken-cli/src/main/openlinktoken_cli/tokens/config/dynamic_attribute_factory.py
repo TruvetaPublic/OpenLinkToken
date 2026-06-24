@@ -46,7 +46,10 @@ class DynamicAttributeFactory:
     @staticmethod
     def _build_type_name_index() -> Dict[str, Type[Attribute]]:
         index: Dict[str, Type[Attribute]] = {}
-        attributes = sorted(AttributeLoader.load(), key=lambda attribute: (type(attribute).__name__, attribute.get_name()))
+        attributes = sorted(
+            AttributeLoader.load(),
+            key=lambda attribute: (type(attribute).__name__, attribute.get_name()),
+        )
         for attribute in attributes:
             attribute_class = type(attribute)
             DynamicAttributeFactory._register_index_mapping(index, attribute.get_name(), attribute_class)
