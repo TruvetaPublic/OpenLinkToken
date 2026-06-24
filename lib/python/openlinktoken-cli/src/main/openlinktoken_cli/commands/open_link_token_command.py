@@ -165,14 +165,16 @@ class OpenLinkTokenCommand:
 
         version_checker = None
         if should_start_version_check:
-            # Start the asynchronous version check before executing the command
-            version_checker = start_version_check(OpenLinkTokenCommand.VERSION, no_update_check=no_update_check)
+            try:
+                version_checker = start_version_check(OpenLinkTokenCommand.VERSION, no_update_check=no_update_check)
+            except Exception:
+                # Version check startup must never prevent command execution.
+                logger.debug("Failed to start version check", exc_info=True)
 
         # If no subcommand specified, show help
         if not parsed_args.command:
             parser.print_help()
-            if version_checker is not None:
-                version_checker.wait_and_notify()
+            OpenLinkTokenCommand._safe_wait_and_notify(version_checker)
             return 0
 
         # Execute the command
@@ -184,9 +186,8 @@ class OpenLinkTokenCommand:
             logger.debug("Command execution failed", exc_info=error)
             exit_code = 1
 
-        # Wait for the version check and surface any update notice after command output
-        if version_checker is not None:
-            version_checker.wait_and_notify()
+        # Surface any update notice after command output; never let this affect the exit code.
+        OpenLinkTokenCommand._safe_wait_and_notify(version_checker)
         return exit_code
 
     @staticmethod
@@ -255,6 +256,18 @@ class OpenLinkTokenCommand:
             return True
         # Required mutually-exclusive groups (e.g. initiate-exchange --public-key)
         return any(group.required for group in getattr(subparser, "_mutually_exclusive_groups", []))
+
+    @staticmethod
+    def _safe_wait_and_notify(version_checker) -> None:
+        """Call wait_and_notify, swallowing all exceptions so notice display
+        can never affect the exit code or mask command output."""
+        if version_checker is None:
+            return
+        try:
+            sys.stdout.flush()
+            version_checker.wait_and_notify()
+        except Exception:
+            logger.debug("Version notice display failed", exc_info=True)
 
     @staticmethod
     def _should_start_version_check(parsed_args: argparse.Namespace) -> bool:

@@ -213,7 +213,10 @@ class VersionChecker:
             f"   Release notes: https://github.com/TruvetaPublic/OpenLinkToken/releases/tag/{tag}",
             f"   Run 'olt update' to upgrade, or set {_ENV_DISABLE}=1 to silence this message.",
         ]
-        print("\n".join(lines), file=sys.stderr)
+        try:
+            print("\n".join(lines), file=sys.stderr)
+        except Exception:
+            pass
 
     @staticmethod
     def _stderr_is_interactive() -> bool:
