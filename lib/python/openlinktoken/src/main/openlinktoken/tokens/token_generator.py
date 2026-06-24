@@ -69,11 +69,27 @@ class TokenGenerator:
         if attribute is not None:
             return attribute
 
+        # Prefer the nearest base class in the MRO to avoid non-deterministic
+        # fallback to a more generic attribute (e.g., DateAttribute instead of
+        # BirthDateAttribute) based on dictionary iteration order.
+        mro = attribute_class.__mro__
+        best_match: Optional[tuple[int, Attribute]] = None
         for base_class, base_attribute in self.attribute_instance_map.items():
-            if issubclass(attribute_class, base_class):
-                # Cache dynamic-subclass resolution so we only pay this lookup once.
-                self.attribute_instance_map[attribute_class] = base_attribute
-                return base_attribute
+            if not issubclass(attribute_class, base_class):
+                continue
+
+            try:
+                distance = mro.index(base_class)
+            except ValueError:
+                continue
+
+            if best_match is None or distance < best_match[0]:
+                best_match = (distance, base_attribute)
+
+        if best_match is not None:
+            # Cache dynamic-subclass resolution so we only pay this lookup once.
+            self.attribute_instance_map[attribute_class] = best_match[1]
+            return best_match[1]
 
         return None
 

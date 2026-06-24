@@ -3,6 +3,7 @@
 import pytest
 
 from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttribute
+from openlinktoken.attributes.attribute_loader import AttributeLoader
 from openlinktoken_cli.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
 from openlinktoken_cli.tokens.config.tokenization_config import AttributeMappingEntry, TokenizationConfig
 
@@ -49,4 +50,31 @@ class TestDynamicAttributeFactory:
         )
 
         with pytest.raises(ValueError, match="Unknown attribute type"):
+            DynamicAttributeFactory(config)
+
+    def test_conflicting_aliases_raise_value_error(self, monkeypatch):
+        class FirstAttribute:
+            def get_name(self):
+                return "TypeOne"
+
+            def get_aliases(self):
+                return ["SharedAlias"]
+
+        class SecondAttribute:
+            def get_name(self):
+                return "TypeTwo"
+
+            def get_aliases(self):
+                return ["SharedAlias"]
+
+        monkeypatch.setattr(AttributeLoader, "load", lambda: [FirstAttribute(), SecondAttribute()])
+
+        config = TokenizationConfig(
+            attributes={
+                "source": AttributeMappingEntry(field="SomeField", type="SharedAlias"),
+            },
+            token_rules={},
+        )
+
+        with pytest.raises(ValueError, match="Conflicting attribute type mapping for 'SharedAlias'"):
             DynamicAttributeFactory(config)

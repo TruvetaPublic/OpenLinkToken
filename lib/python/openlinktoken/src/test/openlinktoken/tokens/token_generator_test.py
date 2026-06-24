@@ -5,6 +5,8 @@ from unittest.mock import Mock, patch
 import pytest
 
 from openlinktoken.attributes.attribute_expression import AttributeExpression
+from openlinktoken.attributes.general.date_attribute import DateAttribute
+from openlinktoken.attributes.person.birth_date_attribute import BirthDateAttribute
 from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute
 from openlinktoken.attributes.person.last_name_attribute import LastNameAttribute
 from openlinktoken.tokens.base_token_definition import BaseTokenDefinition
@@ -253,6 +255,30 @@ class TestTokenGenerator:
         assert len(signatures) == 1
         assert "token1" in signatures
         assert "token2" not in signatures
+
+    def test_dynamic_birthdate_prefers_birthdate_attribute_over_date_attribute(self):
+        """Ensure dynamic BirthDate fields use BirthDate validation, not generic Date."""
+        dynamic_birthdate_class = type("DynamicBirthDateAttribute", (BirthDateAttribute,), {})
+        result = TokenGeneratorResult()
+
+        token_definition = Mock(spec=BaseTokenDefinition)
+        token_definition.get_token_definition.return_value = [
+            AttributeExpression(dynamic_birthdate_class, "T|D")
+        ]
+
+        with patch("openlinktoken.tokens.token_generator.AttributeLoader") as mock_loader:
+            # Date comes first to simulate the previous order-dependent bug.
+            mock_loader.load.return_value = [DateAttribute(), BirthDateAttribute()]
+            token_generator = TokenGenerator(token_definition, self.tokenizer)
+
+        signature = token_generator._get_token_signature(
+            "token1",
+            {dynamic_birthdate_class: "2050-09-22"},
+            result,
+        )
+
+        assert signature is None
+        assert result.invalid_attributes == {"BirthDate"}
 
     def test_get_invalid_person_attributes(self):
         """Test getting invalid person attributes from person attributes map."""

@@ -46,9 +46,25 @@ class DynamicAttributeFactory:
     @staticmethod
     def _build_type_name_index() -> Dict[str, Type[Attribute]]:
         index: Dict[str, Type[Attribute]] = {}
-        for attribute in AttributeLoader.load():
+        attributes = sorted(AttributeLoader.load(), key=lambda attribute: (type(attribute).__name__, attribute.get_name()))
+        for attribute in attributes:
             attribute_class = type(attribute)
-            index[attribute.get_name()] = attribute_class
+            DynamicAttributeFactory._register_index_mapping(index, attribute.get_name(), attribute_class)
             for alias in attribute.get_aliases():
-                index[alias] = attribute_class
+                DynamicAttributeFactory._register_index_mapping(index, alias, attribute_class)
         return index
+
+    @staticmethod
+    def _register_index_mapping(
+        index: Dict[str, Type[Attribute]],
+        type_name: str,
+        attribute_class: Type[Attribute],
+    ) -> None:
+        existing = index.get(type_name)
+        if existing is not None and existing is not attribute_class:
+            raise ValueError(
+                f"Conflicting attribute type mapping for '{type_name}': "
+                f"'{existing.__name__}' and '{attribute_class.__name__}'."
+            )
+
+        index[type_name] = attribute_class
