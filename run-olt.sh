@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# run-openlinktoken.sh
+# run-olt.sh
 # Convenience script to run Open Link Token via Docker.
 # Automatically builds the Docker image when needed, mounts all required file
 # paths into the container, and forwards every option to the olt CLI.

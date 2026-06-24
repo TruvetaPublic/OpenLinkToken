@@ -1,9 +1,9 @@
-# run-openlinktoken.ps1
+# run-olt.ps1
 # Convenience script to run Open Link Token via Docker.
 # Automatically builds the Docker image when needed, mounts all required file
 # paths into the container, and forwards every option to the olt CLI.
 #
-# Usage: .\run-openlinktoken.ps1 <subcommand> [options]
+# Usage: .\run-olt.ps1 <subcommand> [options]
 # Run with -Help for full usage information.
 
 [CmdletBinding()]
@@ -35,7 +35,7 @@ function Show-Usage {
     Write-Host @"
 
 USAGE:
-    .\run-openlinktoken.ps1 <Subcommand> [OltOptions] [-DockerImage name] [-SkipBuild] [-Verbose]
+    .\run-olt.ps1 <Subcommand> [OltOptions] [-DockerImage name] [-SkipBuild] [-Verbose]
 
 DESCRIPTION:
     Docker convenience wrapper for Open Link Token. Builds the Docker image when
@@ -85,28 +85,28 @@ NOTES:
 
 EXAMPLES:
     # Generate a key pair
-    .\run-openlinktoken.ps1 generate-key-pair --name recipient
+    .\run-olt.ps1 generate-key-pair --name recipient
 
     # Create an exchange config from the recipient's public key
-    .\run-openlinktoken.ps1 initiate-exchange --public-key "`$HOME\.openlinktoken\recipient.public.pem"
+    .\run-olt.ps1 initiate-exchange --public-key "`$HOME\.openlinktoken\recipient.public.pem"
 
     # Tokenize and encrypt
-    .\run-openlinktoken.ps1 package ``
+    .\run-olt.ps1 package ``
         -i .\data\input.csv -o .\data\output.zip ``
         --exchange-config .\openlinktoken.exchange.json ``
         --private-key "`$HOME\.openlinktoken\mykey.private.pem"
 
     # Hash-only tokenize (no exchange config needed)
-    .\run-openlinktoken.ps1 tokenize --mode hash-only -i .\data\input.csv -o .\data\hashed.csv
+    .\run-olt.ps1 tokenize --mode hash-only -i .\data\input.csv -o .\data\hashed.csv
 
     # Decrypt
-    .\run-openlinktoken.ps1 decrypt ``
+    .\run-olt.ps1 decrypt ``
         -i .\data\output.zip -o .\data\decrypted.csv ``
         --exchange-config .\openlinktoken.exchange.json ``
         --private-key "`$HOME\.openlinktoken\mykey.private.pem"
 
     # Use an existing image (skip rebuild)
-    .\run-openlinktoken.ps1 package --skip-build ``
+    .\run-olt.ps1 package --skip-build ``
         -i .\input.csv -o .\output.zip --exchange-config .\openlinktoken.exchange.json
 
 "@

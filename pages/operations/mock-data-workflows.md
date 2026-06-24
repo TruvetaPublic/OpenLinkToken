@@ -114,7 +114,7 @@ python data_generator.py 100 0.05 test_data.csv
 
 # 2. Process with Open Link Token
 cd ../../
-./run-openlinktoken.sh package \
+./run-olt.sh package \
   -i tools/mockdata/test_data.csv \
   -o resources/test_output.csv \
   --exchange-config ./resources/mockdata.exchange.json

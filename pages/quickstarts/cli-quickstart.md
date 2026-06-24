@@ -84,7 +84,7 @@ The fastest way to get started. No Python installation required.
 ```bash
 cd /path/to/OpenLinkToken
 
-./run-openlinktoken.sh package \
+./run-olt.sh package \
   -i ./resources/sample.csv \
   -o ./resources/output.csv \
   --exchange-config ./resources/quickstart.exchange.json
@@ -95,7 +95,7 @@ cd /path/to/OpenLinkToken
 ```powershell
 cd C:\path\to\OpenLinkToken
 
-.\run-openlinktoken.ps1 package `
+.\run-olt.ps1 package `
   -i .\resources\sample.csv `
   -o .\resources\output.csv `
   --exchange-config .\resources\quickstart.exchange.json

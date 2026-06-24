@@ -184,7 +184,7 @@ python -m openlinktoken_cli.main package \
 ### Docker Container
 
 ```bash
-./run-openlinktoken.sh package \
+./run-olt.sh package \
   -i ./resources/sample.csv \
   -o ./resources/output.csv \
   --exchange-config ./resources/openlinktoken-2026-05-01.exchange.json
