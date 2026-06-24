@@ -54,7 +54,28 @@ Perfect for understanding privacy-preserving record linkage concepts before divi
 
 **Self-contained executable (easiest):**
 
-Download the [latest release](https://github.com/TruvetaPublic/OpenLinkToken/releases) for your platform and run:
+Download the binary for your platform from the [latest release](https://github.com/TruvetaPublic/OpenLinkToken/releases):
+
+| Platform                      | Asset                           |
+| ----------------------------- | ------------------------------- |
+| Linux                         | `olt-vX.Y.Z-linux-x86_64`       |
+| macOS (Intel + Apple Silicon) | `olt-vX.Y.Z-macos-universal`    |
+| Windows                       | `olt-vX.Y.Z-windows-x86_64.exe` |
+
+Each asset has a matching `.sha256` file you can use to verify the download.
+
+```bash
+# Linux
+chmod +x olt-v*-linux-x86_64
+mv olt-v*-linux-x86_64 olt
+
+# macOS — make executable, clear Gatekeeper quarantine, and rename
+chmod +x olt-v*-macos-universal
+xattr -d com.apple.quarantine olt-v*-macos-universal
+mv olt-v*-macos-universal olt
+```
+
+Then run:
 
 ```bash
 # Linux/macOS
