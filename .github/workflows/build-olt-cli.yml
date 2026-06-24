@@ -91,7 +91,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python -m openlinktoken_cli.util.release_assets \
+          uv run python -m openlinktoken_cli.util.release_assets \
             --version "${VERSION}" \
             --runner-os "${{ runner.os }}" \
             --dist-dir dist \
