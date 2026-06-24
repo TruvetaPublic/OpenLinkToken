@@ -4,11 +4,21 @@ version = "2.0.0"
 requires-python = ">=3.10"
 dynamic = [
   "authors",
-  "dependencies",
   "description",
   "optional-dependencies",
   "readme",
   "urls",
+]
+dependencies = [
+  "openlinktoken==2.0.0",
+  "pandas==2.2.3; python_version < '3.11'",
+  "pandas==3.0.3; python_version >= '3.11'",
+  "pyarrow==24.0.0",
+  "csv2parquet==0.0.9",
+  "cryptography==48.0.1",
+  "urllib3==2.7.0",
+  "jwcrypto==1.5.7",
+  "packaging==26.1",
 ]
 
 [project.scripts]

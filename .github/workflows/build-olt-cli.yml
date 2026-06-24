@@ -59,20 +59,14 @@ jobs:
 
       - name: Install build dependencies
         run: |
-          uv pip install --system -e lib/python/openlinktoken
-          uv pip install --system -r lib/python/openlinktoken-cli/pyinstaller-requirements.txt
-          uv pip install --system -r lib/python/openlinktoken-cli/requirements.txt
-          uv pip install --system -e lib/python/openlinktoken-cli --no-deps
+          uv sync --all-packages
 
       - name: Build CLI binary
         shell: bash
+        env:
+          OLT_TARGET_ARCH: ${{ runner.os == 'macOS' && 'universal2' || '' }}
         run: |
-          if [[ "${{ runner.os }}" == "macOS" ]]; then
-            # Build universal binary for macOS (both x86_64 and arm64)
-            pyinstaller --clean --noconfirm --target-arch universal2 lib/python/openlinktoken-cli/openlinktoken-cli.spec
-          else
-            pyinstaller --clean --noconfirm lib/python/openlinktoken-cli/openlinktoken-cli.spec
-          fi
+          pyinstaller --clean --noconfirm lib/python/openlinktoken-cli/openlinktoken-cli.spec
 
       - name: Smoke test (macOS/Linux)
         if: runner.os != 'Windows'
