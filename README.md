@@ -58,16 +58,18 @@ Download the [latest release](https://github.com/TruvetaPublic/OpenLinkToken/rel
 
 ```bash
 # Linux/macOS
-./olt generate-key-pair --name recipient --force
-./olt initiate-exchange --name quickstart --public-key "$HOME/.openlinktoken/recipient.public.pem" --output ./resources/quickstart.exchange.json
-./olt package -i ./resources/sample.csv -o ./resources/output.csv \
-  --exchange-config ./resources/quickstart.exchange.json --private-key "$HOME/.openlinktoken/quickstart.private.pem"
+# Simulate receiving the recipient's public key (in practice, your partner provides this)
+./olt generate-key-pair --name recipient
+# Create the exchange config using the recipient's public key
+./olt initiate-exchange --public-key "$HOME/.openlinktoken/recipient.public.pem"
+./olt package -i ./resources/sample.csv
 
 # Windows
-.\olt.exe generate-key-pair --name recipient --force
-.\olt.exe initiate-exchange --name quickstart --public-key "$HOME/.openlinktoken/recipient.public.pem" --output .\resources\quickstart.exchange.json
-.\olt.exe package -i .\resources\sample.csv -o .\resources\output.csv `
-  --exchange-config .\resources\quickstart.exchange.json --private-key "$HOME/.openlinktoken/quickstart.private.pem"
+# Simulate receiving the recipient's public key (in practice, your partner provides this)
+.\olt.exe generate-key-pair --name recipient
+# Create the exchange config using the recipient's public key
+.\olt.exe initiate-exchange --public-key "$HOME/.openlinktoken/recipient.public.pem"
+.\olt.exe package -i .\resources\sample.csv
 ```
 
 **Subcommand Interface:**

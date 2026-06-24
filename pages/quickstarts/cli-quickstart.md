@@ -42,13 +42,12 @@ cd openlinktoken-cli-2.0.0-macos-universal
 # Make executable (if needed)
 chmod +x openlinktoken
 
-# Run the CLI
-./olt generate-key-pair --name recipient --force
-./olt initiate-exchange --name quickstart --public-key "$HOME/.openlinktoken/recipient.public.pem" --output /path/to/quickstart.exchange.json
-./olt package \
-  -i /path/to/sample.csv \
-  -o /path/to/output.csv \
-  --exchange-config /path/to/quickstart.exchange.json
+# Simulate receiving the recipient's public key (in practice, your partner provides this)
+./olt generate-key-pair --name recipient
+# Create the exchange config using the recipient's public key
+./olt initiate-exchange --public-key "$HOME/.openlinktoken/recipient.public.pem"
+# Tokenize and encrypt your data
+./olt package -i /path/to/sample.csv
 ```
 
 **Windows PowerShell:**
@@ -58,13 +57,12 @@ chmod +x openlinktoken
 Expand-Archive openlinktoken-cli-2.0.0-windows-x64.zip
 cd openlinktoken-cli-2.0.0-windows-x64
 
-# Run the CLI
-.\olt.exe generate-key-pair --name recipient --force
-.\olt.exe initiate-exchange --name quickstart --public-key "$HOME/.openlinktoken/recipient.public.pem" --output C:\path\to\quickstart.exchange.json
-.\olt.exe package `
-  -i C:\path\to\sample.csv `
-  -o C:\path\to\output.csv `
-  --exchange-config C:\path\to\quickstart.exchange.json
+# Simulate receiving the recipient's public key (in practice, your partner provides this)
+.\olt.exe generate-key-pair --name recipient
+# Create the exchange config using the recipient's public key
+.\olt.exe initiate-exchange --public-key "$HOME/.openlinktoken/recipient.public.pem"
+# Tokenize and encrypt your data
+.\olt.exe package -i C:\path\to\sample.csv
 ```
 
 ### Verifying the Executable
@@ -141,6 +139,8 @@ These arguments are shared across all subcommands:
 
 Tokenizes and encrypts records in one step. This produces tokens that can be safely shared with external partners.
 
+By default, `package` writes a self-contained `<input>_packaged.zip` bundle containing the tokens (Parquet), metadata, and exchange config — ready to hand off to your partner. Pass `-o tokens.csv` to write a plain CSV instead.
+
 ### Example: CSV Input
 
 **Input file (`sample.csv`):**
@@ -154,12 +154,12 @@ patient_002,Jane,Smith,1975-03-22,Female,90210,987-65-4321
 **Command:**
 
 ```bash
-olt generate-key-pair --name recipient --force
-olt initiate-exchange --name quickstart --public-key ~/.openlinktoken/recipient.public.pem --output ./quickstart.exchange.json
-olt package \
-  -i sample.csv \
-  -o tokens.csv \
-  --exchange-config ./quickstart.exchange.json
+# Simulate receiving the recipient's public key (in practice, your partner provides this)
+olt generate-key-pair --name recipient
+# Create the exchange config using the recipient's public key
+olt initiate-exchange --public-key ~/.openlinktoken/recipient.public.pem
+# Tokenize and encrypt your data — write CSV so you can inspect it directly
+olt package -i sample.csv -o tokens.csv
 ```
 
 **Output (`tokens.csv`):**
@@ -177,10 +177,7 @@ patient_002,T1,...
 ### Example: Parquet Input
 
 ```bash
-olt package \
-  -i input.parquet \
-  -o tokens.parquet \
-  --exchange-config ./quickstart.exchange.json
+olt package -i input.parquet -o tokens.parquet
 ```
 
 ## Other Subcommands

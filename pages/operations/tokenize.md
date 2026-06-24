@@ -80,11 +80,10 @@ The `tokenize` subcommand is primarily used to support **overlap analysis workfl
 Use the `tokenize` subcommand with an exchange config. The CLI resolves the hashing secret from the exchange config and auto-discovers the matching private key by default.
 
 ```bash
-olt tokenize \
-  -i resources/sample.csv \
-  -o resources/hashed-output.csv \
-  --exchange-config ./tokenize.exchange.json
+olt tokenize -i resources/sample.csv -o hashed-output.csv
 ```
+
+If the exchange config is not in the current directory under its default name (`./openlinktoken-YYYY-MM-DD.exchange.json`), pass it explicitly with `--exchange-config`.
 
 #### Normal Mode — Docker Override Example
 
@@ -106,10 +105,7 @@ docker run --rm \
 In hash-only mode the CLI skips exchange-config resolution and applies SHA-256 only. `--exchange-config`, `--private-key`, and `--private-key-env` are not allowed in this mode.
 
 ```bash
-olt tokenize \
-  -i resources/sample.csv \
-  -o resources/hash-only-output.csv \
-  --mode hash-only
+olt tokenize -i resources/sample.csv -o hash-only-output.csv --mode hash-only
 ```
 
 #### Hash-only Mode — Docker
@@ -131,11 +127,7 @@ Add `--hash-record-ids` to replace each input `RecordId` with its SHA-256 hex di
 `--hash-record-ids` is supported by default `tokenize` mode and by the `package` subcommand. It is not available in `--mode hash-only` or `--mode demo`.
 
 ```bash
-olt tokenize \
-  -i resources/sample.csv \
-  -o resources/hashed-output.csv \
-  --exchange-config ./tokenize.exchange.json \
-  --hash-record-ids
+olt tokenize -i resources/sample.csv -o hashed-output.csv --hash-record-ids
 ```
 
 **Output (`hashed-output.csv`) with `--hash-record-ids`:**
@@ -153,10 +145,7 @@ Each `RecordId` is replaced with a 64-character lowercase SHA-256 hex digest. Th
 In demo mode the full hashing pipeline is skipped. No exchange config or private key is required.
 
 ```bash
-olt tokenize \
-  -i resources/sample.csv \
-  -o resources/demo-output.csv \
-  --mode demo
+olt tokenize -i resources/sample.csv -o demo-output.csv --mode demo
 ```
 
 #### Demo Mode — Docker
@@ -303,24 +292,30 @@ For encrypted tokens, decrypt them to their hashed form first and then match on 
 
 **Cause:** Different exchange configs resolved different hashing secrets.
 
-**Solution:** Verify both runs produced the same secret hashes in metadata:
+**Solution:** Compare the `HashingSecretHash` in each run's metadata — identical hashes mean both runs used the same secret:
 
 ```bash
-# Check metadata for secret hash
-cat output.metadata.json | jq '.HashingSecretHash'
+# From each run's directory
+jq '.HashingSecretHash' output.metadata.json
 ```
+
+If the hashes differ, both sides must use the same exchange config (or one that resolves to the same hashing secret).
 
 ### "No private key matching this exchange config was found" Error
 
-**Cause:** The CLI found the exchange config but could not auto-discover a matching private key.
+**Cause:** The CLI found the exchange config but could not auto-discover a matching private key under `~/.openlinktoken/`.
 
-**Solution:** Provide the correct key explicitly:
+**Solution:** Provide the matching key explicitly:
 
 ```bash
-olt tokenize \
-  -i data.csv \
-  -o out.csv \
-  --exchange-config ./tokenize.exchange.json
+olt tokenize -i data.csv -o out.csv --private-key ~/.openlinktoken/my-recipient.private.pem
+```
+
+Or pass it via an environment variable for non-interactive workflows:
+
+```bash
+export OLT_PRIVATE_KEY_PEM="$(cat ~/.openlinktoken/my-recipient.private.pem)"
+olt tokenize -i data.csv -o out.csv --private-key-env OLT_PRIVATE_KEY_PEM
 ```
 
 ---

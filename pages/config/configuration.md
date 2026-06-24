@@ -110,17 +110,16 @@ Input columns are **case-insensitive** and support common aliases:
 
 ## Output Configuration
 
-### Output Type Override
+### Output Format
 
-Use `-ot` to specify a different output format:
+The output format is auto-detected from the file extension of `-o` (or from the input extension when `-o` is omitted):
 
 ```bash
 # Input CSV, output Parquet
-olt package \
-  -i data.csv \
-  -o tokens.parquet \
-  --exchange-config ./openlinktoken-2026-05-01.exchange.json
+olt package -i data.csv -o tokens.parquet
 ```
+
+Supported extensions: `.csv`, `.parquet`. The `package` and `encrypt` subcommands additionally accept `.zip` for self-contained bundles (see [Output Files Generated](#output-files-generated)).
 
 ### Output Files Generated
 
@@ -165,8 +164,8 @@ For the exact CLI flags that enable each mode, see the [CLI Reference](../refere
 ### Encryption Key
 
 - **Purpose**: AES-256-GCM symmetric encryption key
-- **Required length**: Exactly 32 characters (32 bytes)
-- **Error if wrong length**: "Key must be 32 characters long"
+- **Required length**: Exactly 32 bytes (a 32-character ASCII string also satisfies this)
+- **Error if wrong length**: `Key must be 32 bytes long`
 
 ---
 
@@ -194,9 +193,9 @@ python -m openlinktoken_cli.main package \
 ### Spark/Databricks Cluster
 
 ```python
-from openlinktoken_pyspark import Open Link TokenProcessor
+from openlinktoken_pyspark import OpenLinkTokenProcessor
 
-processor = Open Link TokenProcessor(
+processor = OpenLinkTokenProcessor(
     hashing_secret=dbutils.secrets.get("openlinktoken", "hashing_secret"),
     encryption_key=dbutils.secrets.get("openlinktoken", "encryption_key")
 )

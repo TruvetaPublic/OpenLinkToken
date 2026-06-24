@@ -45,10 +45,10 @@ Metadata includes **SHA-256 hashes of secrets**:
 - Audit trail for compliance
 - Detect configuration errors (mismatched secrets)
 
-Use `tools/hash_calculator.py` to verify:
+Use `tools/hash/hash_calculator.py` to verify:
 
 ```bash
-python tools/hash_calculator.py \
+python tools/hash/hash_calculator.py \
   --hashing-secret "YourSecret" \
   --encryption-key "YourKey"
 ```
@@ -76,4 +76,4 @@ For full field descriptions, JSON schema, examples, and hash verification detail
 
 - **View metadata structure**: [Reference: Metadata Format](../reference/metadata-format.md)
 - **Understand validation rules**: [Normalization & Validation](normalization-and-validation.md)
-- **Use hash calculator**: [tools/hash_calculator.py](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/tools/hash_calculator.py)
+- **Use hash calculator**: [tools/hash/hash_calculator.py](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/tools/hash/hash_calculator.py)

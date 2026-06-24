@@ -23,16 +23,15 @@ Decryption is useful for:
 
 ## CLI Decrypt Mode
 
-Use the `decrypt` subcommand with the same exchange config used for token generation. The CLI auto-discovers the matching private key by default.
+Use the `decrypt` subcommand with the same exchange config used for token generation. The CLI auto-discovers both the exchange config (from the current directory) and the matching private key (from `~/.openlinktoken/`).
 
 ### Open Link Token CLI (Python)
 
 ```bash
-olt decrypt \
-  -i ../../resources/output.csv \
-  -o ../../resources/decrypted.csv \
-  --exchange-config ../../resources/decrypt.exchange.json
+olt decrypt -i ./resources/output.csv -o ./resources/decrypted.csv
 ```
+
+If the exchange config or private key cannot be auto-discovered, pass them explicitly with `--exchange-config` and `--private-key`.
 
 ### Docker
 
@@ -80,8 +79,8 @@ uv pip install pycryptodome
 
 python decryptor.py \
   -e "Secret-Encryption-Key-Goes-Here." \
-  -i ../../resources/output.csv \
-  -o ../../resources/decrypted.csv
+  -i ./resources/output.csv \
+  -o ./resources/decrypted.csv
 ```
 
 ### Requirements
@@ -94,25 +93,23 @@ python decryptor.py \
 
 ## Cross-Language Decryption
 
-Tokens can be encrypted by one Open Link Token implementation and decrypted by another—all implementations use AES-256-GCM with identical parameters:
+Tokens encrypted by one Open Link Token implementation can be decrypted by another — all implementations use AES-256-GCM with identical parameters. A round trip with the same exchange config:
 
 ```bash
-# Encrypt with Open Link Token CLI
-olt package \
-  -i data.csv -o tokens.csv \
-  --exchange-config ./interop.exchange.json
+# Encrypt with one implementation (CLI shown; the Java or Python API would behave identically)
+olt package -i data.csv -o tokens.csv
 
-# Decrypt with Open Link Token CLI
-olt decrypt \
-  -i tokens.csv -o decrypted.csv \
-  --exchange-config ./interop.exchange.json
+# Decrypt anywhere that holds the matching private key
+olt decrypt -i tokens.csv -o decrypted.csv
 ```
+
+For an end-to-end Java↔Python verification, run `tools/interoperability/multi_language_interoperability_test.py`.
 
 **Requirements for cross-language compatibility:**
 
-- Same exchange config (or an equivalent config that resolves to the same hashing secret and transport key)
-- Matching private key for one of the exchange recipients
-- Same token file format
+- Same exchange config (or one that resolves to the same hashing secret and transport key)
+- A private key matching one of the exchange recipients
+- Same token file format on both sides
 - Both implementations use the same JWE/AES-256-GCM token format
 
 ---
