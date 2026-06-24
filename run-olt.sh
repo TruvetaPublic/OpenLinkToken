@@ -179,12 +179,19 @@ _lookup_container_dir() {
     done
 }
 
+# Portable substitute for `realpath -m`: make a path absolute without requiring
+# the path to exist and without GNU coreutils (macOS ships BSD realpath).
+_abs_path() {
+    local p="$1"
+    if [[ "$p" = /* ]]; then echo "$p"; else echo "$(pwd)/$p"; fi
+}
+
 # Always mount ~/.openlinktoken so key files are accessible and persist.
-OLT_HOME_ABS="$(realpath "$HOME/.openlinktoken" 2>/dev/null || echo "$HOME/.openlinktoken")"
+OLT_HOME_ABS="$(_abs_path "$HOME/.openlinktoken")"
 mkdir -p "$OLT_HOME_ABS"
 DIR_HOSTS+=("$OLT_HOME_ABS")
-DIR_CONTAINERS+=("/root/.openlinktoken")
-MOUNT_ARGS+=(-v "$OLT_HOME_ABS:/root/.openlinktoken")
+DIR_CONTAINERS+=("/app/.openlinktoken")
+MOUNT_ARGS+=(-v "$OLT_HOME_ABS:/app/.openlinktoken")
 
 _register_dir() {
     local host_dir="$1"
@@ -200,7 +207,7 @@ _register_dir() {
 _remap_path() {
     local path="$1"
     local abs
-    abs="$(realpath -m "$path" 2>/dev/null || echo "$(pwd)/$path")"
+    abs="$(_abs_path "$path")"
     local dir file
     dir="$(dirname "$abs")"
     file="$(basename "$abs")"
@@ -215,7 +222,7 @@ while [[ $idx -lt ${#PASSTHROUGH_ARGS[@]} ]]; do
     arg="${PASSTHROUGH_ARGS[$idx]}"
     if _is_file_flag "$arg"; then
         path="${PASSTHROUGH_ARGS[$((idx+1))]}"
-        abs="$(realpath -m "$path" 2>/dev/null || echo "$(pwd)/$path")"
+        abs="$(_abs_path "$path")"
         mkdir -p "$(dirname "$abs")"
         _register_dir "$(dirname "$abs")"
         idx=$((idx+2))
@@ -281,7 +288,7 @@ fi
 
 log_info "Running Open Link Token ($SUBCOMMAND)..."
 
-DOCKER_RUN_OPTS=(--rm)
+DOCKER_RUN_OPTS=(--rm -e HOME=/app)
 [[ $NEEDS_STDIN == true ]] && DOCKER_RUN_OPTS+=(-i)
 DOCKER_RUN_OPTS+=("${MOUNT_ARGS[@]}" "${ENV_PASS_ARGS[@]}")
 
