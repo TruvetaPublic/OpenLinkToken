@@ -214,6 +214,8 @@ jobs:
           olt package -i ../../../resources/sample.csv -o target/output.csv --exchange-config target/smoke.exchange.json --private-key "$HOME/.openlinktoken/smoke.private.pem"
           # Test custom tokenization config with standard data
           olt package -i ../../../resources/sample.csv -o target/output-with-config.csv --exchange-config target/smoke.exchange.json --config ../../../resources/sample-custom-tokenization-config.yaml --private-key "$HOME/.openlinktoken/smoke.private.pem"
+          # Test custom tokenization config with nonstandard data
+          olt package -i ../../../resources/sample-nonstandard-input.csv -o target/output-nonstandard-with-config.csv --exchange-config target/smoke.exchange.json --config ../../../resources/sample-custom-tokenization-config-nonstandard.yaml --private-key "$HOME/.openlinktoken/smoke.private.pem"
 
       - name: Validate CLI output files
         run: |
