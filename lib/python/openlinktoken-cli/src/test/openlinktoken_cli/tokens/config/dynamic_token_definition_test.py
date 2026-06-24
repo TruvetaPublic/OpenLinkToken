@@ -14,12 +14,12 @@ class TestDynamicTokenDefinition:
         config = TokenizationConfig(
             attributes={
                 "family_nm": AttributeMappingEntry(field="FamilyName", type="LastName"),
-                "given_nm": AttributeMappingEntry(field="GivenName", type="GivenName"),
+                "given_nm": AttributeMappingEntry(field="FirstName", type="GivenName"),
             },
             token_rules={
                 "T1": [
                     TokenRuleEntry(field="FamilyName", expression="T|U"),
-                    TokenRuleEntry(field="GivenName", expression="T|S(0,1)|U"),
+                    TokenRuleEntry(field="FirstName", expression="T|S(0,1)|U"),
                 ]
             },
         )
@@ -34,5 +34,5 @@ class TestDynamicTokenDefinition:
         assert len(t1_definition) == 2
         assert t1_definition[0].attribute_class is factory.get_class_for_field("FamilyName")
         assert t1_definition[0].expressions == "T|U"
-        assert t1_definition[1].attribute_class is factory.get_class_for_field("GivenName")
+        assert t1_definition[1].attribute_class is factory.get_class_for_field("FirstName")
         assert t1_definition[1].expressions == "T|S(0,1)|U"

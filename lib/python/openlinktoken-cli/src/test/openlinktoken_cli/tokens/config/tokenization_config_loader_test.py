@@ -14,7 +14,7 @@ class TestTokenizationConfigLoader:
             """
 attributes:
   given_nm:
-    field: GivenName
+    field: FirstName
     type: GivenName
   family_nm:
     field: FamilyName
@@ -24,7 +24,7 @@ token_rules:
   T1:
     - field: FamilyName
       expression: "T|U"
-    - field: GivenName
+    - field: FirstName
       expression: "T|S(0,1)|U"
 """.strip(),
             encoding="utf-8",
@@ -32,7 +32,7 @@ token_rules:
 
         config = TokenizationConfigLoader.load(str(config_path))
 
-        assert config.attributes["given_nm"].field == "GivenName"
+        assert config.attributes["given_nm"].field == "FirstName"
         assert config.attributes["given_nm"].type == "GivenName"
         assert "T1" in config.token_rules
         assert config.token_rules["T1"][0].field == "FamilyName"
@@ -48,7 +48,7 @@ attributes:
 
 token_rules:
   T1:
-    - field: GivenName
+    - field: FirstName
       expression: "T|U"
 """.strip(),
             encoding="utf-8",
@@ -63,7 +63,7 @@ token_rules:
             """
 attributes:
   given_nm:
-    field: GivenName
+    field: FirstName
     type: GivenName
 
 token_rules:

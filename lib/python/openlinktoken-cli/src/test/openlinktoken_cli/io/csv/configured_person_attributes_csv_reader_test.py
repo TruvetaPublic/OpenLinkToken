@@ -23,7 +23,7 @@ class TestConfiguredAttributeMappingInPersonAttributesCSVReader:
 
         self.config = TokenizationConfig(
             attributes={
-                "given_nm": AttributeMappingEntry(field="GivenName", type="GivenName"),
+                "given_nm": AttributeMappingEntry(field="FirstName", type="GivenName"),
                 "family_nm": AttributeMappingEntry(field="FamilyName", type="LastName"),
             },
             token_rules={},

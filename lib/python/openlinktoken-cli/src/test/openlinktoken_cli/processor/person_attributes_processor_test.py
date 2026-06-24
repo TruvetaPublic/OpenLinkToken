@@ -208,20 +208,20 @@ class TestPersonAttributesProcessor:
         """Processes records using a runtime-defined token definition from config."""
         config = TokenizationConfig(
             attributes={
-                "given_nm": AttributeMappingEntry(field="GivenName", type="GivenName"),
+                "given_nm": AttributeMappingEntry(field="FirstName", type="GivenName"),
                 "family_nm": AttributeMappingEntry(field="FamilyName", type="LastName"),
             },
             token_rules={
                 "T1": [
                     TokenRuleEntry(field="FamilyName", expression="T|U"),
-                    TokenRuleEntry(field="GivenName", expression="T|S(0,1)|U"),
+                    TokenRuleEntry(field="FirstName", expression="T|S(0,1)|U"),
                 ]
             },
         )
         factory = DynamicAttributeFactory(config)
         token_definition = DynamicTokenDefinition(config, factory)
 
-        given_name_class = factory.get_class_for_field("GivenName")
+        given_name_class = factory.get_class_for_field("FirstName")
         family_name_class = factory.get_class_for_field("FamilyName")
         row = {
             RecordIdAttribute: "TestRecordId",

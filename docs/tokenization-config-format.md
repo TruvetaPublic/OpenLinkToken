@@ -28,7 +28,7 @@ A-1002,Marcus,Nguyen,1979-11-05,M,10001,234-56-7890
 ```yaml
 attributes:
   given_nm:
-    field: GivenName
+    field: FirstName
     type: GivenName
   surname_txt:
     field: FamilyName
@@ -50,7 +50,7 @@ token_rules:
   T1:
     - field: FamilyName
       expression: T|U
-    - field: GivenName
+    - field: FirstName
       expression: T|S(0,1)|U
     - field: DateOfBirth
       expression: T|Y
@@ -75,8 +75,8 @@ Top-level keys:
 | Field           | Required | Type    | Description                                                                                                                           |
 | --------------- | -------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | `<column_name>` | Yes      | Mapping | Input column name from the CSV or Parquet schema (for example `given_nm`).                                                            |
-| `field`         | Yes      | String  | Logical field identifier used by token rules (for example `GivenName`).                                                               |
-| `type`          | Yes      | String  | Open Link Token attribute type/alias (for example `GivenName`, `LastName`, `BirthDate`, `Sex`, `PostalCode`, `SocialSecurityNumber`). |
+| `field`         | Yes      | String  | Logical field identifier used by token rules (for example `FirstName`).                                                               |
+| `type`          | Yes      | String  | Open Link Token attribute type/alias (for example `FirstName`, `LastName`, `BirthDate`, `Sex`, `PostalCode`, `SocialSecurityNumber`). |
 
 `token_rules` entry schema:
 
