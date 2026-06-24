@@ -87,7 +87,7 @@ class OpenLinkTokenCommand:
             description="Available commands",
             dest="command",
             metavar="<command>",
-            help="Use 'openlinktoken <command> --help' for command-specific help",
+            help="Use 'olt <command> --help' for command-specific help",
         )
 
         # Import command modules here to avoid circular imports
@@ -148,9 +148,7 @@ class OpenLinkTokenCommand:
         # requires arguments to run, display its help page instead of an error.
         if len(raw_args) == 1 and not raw_args[0].startswith("-"):
             subparser_map = OpenLinkTokenCommand._get_subcommand_map(parser)
-            if raw_args[0] in subparser_map and OpenLinkTokenCommand._subcommand_needs_args(
-                subparser_map[raw_args[0]]
-            ):
+            if raw_args[0] in subparser_map and OpenLinkTokenCommand._subcommand_needs_args(subparser_map[raw_args[0]]):
                 try:
                     parser.parse_args([raw_args[0], "--help"])
                 except SystemExit as error:
@@ -256,10 +254,7 @@ class OpenLinkTokenCommand:
         if any(action.required for action in subparser._actions):
             return True
         # Required mutually-exclusive groups (e.g. initiate-exchange --public-key)
-        return any(
-            group.required
-            for group in getattr(subparser, "_mutually_exclusive_groups", [])
-        )
+        return any(group.required for group in getattr(subparser, "_mutually_exclusive_groups", []))
 
     @staticmethod
     def _should_start_version_check(parsed_args: argparse.Namespace) -> bool:
