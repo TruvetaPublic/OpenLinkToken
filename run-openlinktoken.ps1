@@ -1,314 +1,284 @@
 # run-openlinktoken.ps1
-# Convenience script to build and run Open Link Token via Docker
-# Automatically handles Docker image building and container execution
+# Convenience script to run Open Link Token via Docker.
+# Automatically builds the Docker image when needed, mounts all required file
+# paths into the container, and forwards every option to the olt CLI.
+#
+# Usage: .\run-openlinktoken.ps1 <subcommand> [options]
+# Run with -Help for full usage information.
 
 [CmdletBinding()]
 param(
-    [Parameter(Position=0, Mandatory=$false, HelpMessage="Subcommand: package, tokenize, encrypt, or decrypt (default: package)")]
-    [ValidateSet("package", "tokenize", "encrypt", "decrypt")]
-    [string]$Subcommand = "package",
-
-    [Parameter(Mandatory=$false, HelpMessage="Input file path (absolute or relative)")]
-    [Alias("i")]
-    [string]$InputFile,
-
-    [Parameter(Mandatory=$false, HelpMessage="Output file path (absolute or relative)")]
-    [Alias("o")]
-    [string]$OutputFile,
-
-    [Parameter(Mandatory=$false, HelpMessage="Hashing secret key")]
-    [Alias("h")]
-    [string]$HashingSecret,
-
-    [Parameter(Mandatory=$false, HelpMessage="Encryption key")]
-    [Alias("e")]
-    [string]$EncryptionKey,
+    [Parameter(Position=0, Mandatory=$true,
+        HelpMessage="Subcommand: package, tokenize, encrypt, decrypt, initiate-exchange, or generate-key-pair")]
+    [ValidateSet("package", "tokenize", "encrypt", "decrypt", "initiate-exchange", "generate-key-pair")]
+    [string]$Subcommand,
 
     [Parameter(Mandatory=$false, HelpMessage="Docker image name (default: openlinktoken:latest)")]
     [string]$DockerImage = "openlinktoken:latest",
 
     [Parameter(Mandatory=$false, HelpMessage="Skip Docker image build (use existing image)")]
-    [Alias("s")]
     [switch]$SkipBuild,
 
     [Parameter(Mandatory=$false, HelpMessage="Show help message")]
-    [switch]$Help
+    [switch]$Help,
+
+    # All remaining arguments are forwarded to olt inside the container.
+    [Parameter(ValueFromRemainingArguments=$true)]
+    [string[]]$OltArgs
 )
 
-# Function to write script output in a consistent format
-function Write-Info {
-    param([string]$Message)
-    Write-Host "[INFO] $Message"
-}
+function Write-OltInfo    { param([string]$Msg) Write-Host "[INFO] $Msg" }
+function Write-OltSuccess { param([string]$Msg) Write-Host "[OK]   $Msg" }
+function Write-OltError   { param([string]$Msg) Write-Host "[ERR]  $Msg" -ForegroundColor Red }
 
-# Function to show usage
 function Show-Usage {
-    $usage = @"
+    Write-Host @"
 
 USAGE:
-    run-openlinktoken.ps1 [SUBCOMMAND] [OPTIONS]
+    .\run-openlinktoken.ps1 <Subcommand> [OltOptions] [-DockerImage name] [-SkipBuild] [-Verbose]
 
 DESCRIPTION:
-    Convenience wrapper for building and running Open Link Token via Docker.
-    Automatically builds the Docker image if needed and runs Open Link Token with specified parameters.
+    Docker convenience wrapper for Open Link Token. Builds the Docker image when
+    needed, mounts file paths into the container, and forwards all options to olt.
 
 SUBCOMMANDS:
-    package     Tokenize and encrypt in one step (default). Requires -h and -e.
-    tokenize    Hash-only mode, no encryption. Requires -h only.
-    encrypt     Encrypt previously tokenized output. Requires -e only.
-    decrypt     Decrypt encrypted tokens. Requires -e only.
+    package             Tokenize and encrypt in one step
+    tokenize            Generate hashed tokens (--mode hash-only for SHA-256 only)
+    encrypt             Encrypt previously tokenized output
+    decrypt             Decrypt encrypted tokens
+    initiate-exchange   Create an exchange config from a partner's public key
+    generate-key-pair   Generate an ECDH key pair (written to ~/.openlinktoken/)
 
-REQUIRED PARAMETERS:
-    -InputFile, -i <file>       Input file path (absolute or relative)
-    -OutputFile, -o <file>      Output file path (absolute or relative)
+OLT OPTIONS (forwarded to the container -- see olt help <subcommand> for full details):
+    -i / --input PATH               Input file (package, tokenize, encrypt, decrypt)
+    -o / --output PATH              Output file
+    --exchange-config PATH          Exchange config JSON
+    --private-key PATH              Private key PEM file
+    --private-key-env VAR           Read private key from this environment variable
+    --public-key PATH               Partner public key PEM (initiate-exchange)
+    --public-key-env VAR            Read partner public key from this environment variable
+    --public-key-stdin              Read partner public key from stdin
+    --sender-private-key PATH       Sender private key PEM (initiate-exchange)
+    --sender-private-key-env VAR    Read sender private key from this environment variable
+    --hashingsecret SECRET          Hashing secret (initiate-exchange)
+    --hashingsecret-env VAR         Read hashing secret from this environment variable
+    --hashingsecret-stdin           Read hashing secret from stdin
+    --mode MODE                     Tokenize mode: olt|hash-only|demo
+    --ring-id ID                    Ring identifier (package, encrypt)
+    --hash-record-ids               Hash record IDs before writing output
+    -n / --name NAME                Key/config base name (generate-key-pair, initiate-exchange)
+    -c / --curve CURVE              EC curve: P-256, P-384, P-521 (default: P-256)
+    --force                         Overwrite existing key or config files
+    -q / --no-progress              Suppress progress indicator
 
-SUBCOMMAND-SPECIFIC PARAMETERS:
-    -HashingSecret, -h <key>    Hashing secret key          (package, tokenize)
-    -EncryptionKey, -e <key>    32-character encryption key (package, encrypt, decrypt)
-
-OPTIONAL PARAMETERS:
-    -SkipBuild, -s              Skip Docker image build (use existing image)
-    -DockerImage <name>         Docker image name (default: openlinktoken:latest)
-    -Verbose, -v                Enable verbose output
-    -Help                       Show this help message
-
-EXAMPLES:
-    # Tokenize and encrypt (default package subcommand)
-    .\run-openlinktoken.ps1 -i .\input.csv -o .\output.csv -h "MyHashKey" -e "MyEncryptionKey"
-
-    # Explicit package subcommand
-    .\run-openlinktoken.ps1 -Subcommand package -i .\input.csv -o .\output.csv -h "HashKey" -e "EncryptionKey"
-
-    # Hash-only mode (no encryption)
-    .\run-openlinktoken.ps1 -Subcommand tokenize -i .\input.csv -o .\hashed.csv -h "HashKey"
-
-    # Decrypt previously encrypted tokens
-    .\run-openlinktoken.ps1 -Subcommand decrypt -i .\tokens.csv -o .\decrypted.csv -e "EncryptionKey"
-
-    # Encrypt previously tokenized (hashed) output
-    .\run-openlinktoken.ps1 -Subcommand encrypt -i .\hashed.csv -o .\encrypted.csv -e "EncryptionKey"
-
-    # Skip Docker build if image already exists
-    .\run-openlinktoken.ps1 -i .\input.csv -o .\output.csv -h "secret" -e "key" -SkipBuild
-
-    # Verbose mode for troubleshooting
-    .\run-openlinktoken.ps1 -Subcommand tokenize -i .\input.csv -o .\output.csv -h "secret" -Verbose
+SCRIPT OPTIONS:
+    -DockerImage <name>     Docker image name (default: openlinktoken:latest)
+    -SkipBuild              Skip Docker image build
+    -Verbose                Verbose output
+    -Help                   Show this message
 
 NOTES:
-    - This script must be run from the Open Link Token repository root directory
-    - Input and output files are automatically mounted into the Docker container
-    - The script will build the Docker image on first run (may take a few minutes)
-    - Use -SkipBuild to skip rebuilding the image on subsequent runs
+    - Run from the Open Link Token repository root directory
+    - ~/.openlinktoken/ is always mounted so key files persist across runs
+    - File paths are automatically resolved and mounted into the container
+    - Environment variables named by --*-env flags are forwarded to the container
+
+EXAMPLES:
+    # Generate a key pair
+    .\run-openlinktoken.ps1 generate-key-pair --name recipient
+
+    # Create an exchange config from the recipient's public key
+    .\run-openlinktoken.ps1 initiate-exchange --public-key "`$HOME\.openlinktoken\recipient.public.pem"
+
+    # Tokenize and encrypt
+    .\run-openlinktoken.ps1 package ``
+        -i .\data\input.csv -o .\data\output.zip ``
+        --exchange-config .\openlinktoken.exchange.json ``
+        --private-key "`$HOME\.openlinktoken\mykey.private.pem"
+
+    # Hash-only tokenize (no exchange config needed)
+    .\run-openlinktoken.ps1 tokenize --mode hash-only -i .\data\input.csv -o .\data\hashed.csv
+
+    # Decrypt
+    .\run-openlinktoken.ps1 decrypt ``
+        -i .\data\output.zip -o .\data\decrypted.csv ``
+        --exchange-config .\openlinktoken.exchange.json ``
+        --private-key "`$HOME\.openlinktoken\mykey.private.pem"
+
+    # Use an existing image (skip rebuild)
+    .\run-openlinktoken.ps1 package --skip-build ``
+        -i .\input.csv -o .\output.zip --exchange-config .\openlinktoken.exchange.json
 
 "@
-    Write-Host $usage
 }
 
-# Show help if requested
-if ($Help) {
-    Show-Usage
-    exit 0
-}
+if ($Help) { Show-Usage; exit 0 }
 
-# Validate required parameters
-if (-not $InputFile) {
-    Write-Info "Input file is required (use -InputFile or -i)"
-    Write-Host ""
-    Show-Usage
-    exit 1
-}
+# ─── Docker check ─────────────────────────────────────────────────────────────
 
-if (-not $OutputFile) {
-    Write-Info "Output file is required (use -OutputFile or -o)"
-    Write-Host ""
-    Show-Usage
-    exit 1
-}
-
-# Validate subcommand-specific required options
-switch ($Subcommand) {
-    "package" {
-        if (-not $HashingSecret) {
-            Write-Info "Hashing secret is required for 'package' (use -HashingSecret or -h)"
-            Write-Host ""
-            Show-Usage
-            exit 1
-        }
-        if (-not $EncryptionKey) {
-            Write-Info "Encryption key is required for 'package' (use -EncryptionKey or -e)"
-            Write-Host ""
-            Show-Usage
-            exit 1
-        }
-    }
-    "tokenize" {
-        if (-not $HashingSecret) {
-            Write-Info "Hashing secret is required for 'tokenize' (use -HashingSecret or -h)"
-            Write-Host ""
-            Show-Usage
-            exit 1
-        }
-    }
-    { $_ -in @("encrypt", "decrypt") } {
-        if (-not $EncryptionKey) {
-            Write-Info "Encryption key is required for '$Subcommand' (use -EncryptionKey or -e)"
-            Write-Host ""
-            Show-Usage
-            exit 1
-        }
-    }
-}
-
-# Check if Docker is installed
 try {
-    $dockerVersion = docker --version 2>$null
-    if (-not $dockerVersion) {
-        throw "Docker not found"
+    $null = docker --version 2>&1
+    if ($LASTEXITCODE -ne 0) { throw }
+} catch {
+    Write-OltError "Docker is not installed or not in PATH."
+    Write-OltError "Install Docker: https://docs.docker.com/get-docker/"
+    exit 1
+}
+
+# ─── Volume mount planning ────────────────────────────────────────────────────
+# Flags whose next argument is a host file path that must be mounted.
+$FileFlagSet = [System.Collections.Generic.HashSet[string]]@(
+    "-i", "--input", "-o", "--output",
+    "--exchange-config", "--private-key", "--public-key", "--sender-private-key"
+)
+
+# Flags whose next argument is an environment variable name — forward the var.
+$EnvVarFlagSet = [System.Collections.Generic.HashSet[string]]@(
+    "--private-key-env", "--hashingsecret-env", "--public-key-env", "--sender-private-key-env"
+)
+
+# Flags that indicate stdin will be used.
+$StdinFlagSet = [System.Collections.Generic.HashSet[string]]@(
+    "--hashingsecret-stdin", "--public-key-stdin"
+)
+
+$DirMap      = @{}   # host_dir -> container mount point
+$MountArgs   = [System.Collections.Generic.List[string]]::new()
+$EnvPassArgs = [System.Collections.Generic.List[string]]::new()
+$MountIndex  = 0
+$NeedsStdin  = $false
+
+# Always mount ~/.openlinktoken so key files persist.
+$OltHome = [System.IO.Path]::GetFullPath((Join-Path $HOME ".openlinktoken"))
+if (-not (Test-Path $OltHome)) { New-Item -ItemType Directory -Path $OltHome -Force | Out-Null }
+$DirMap[$OltHome] = "/root/.openlinktoken"
+$MountArgs.AddRange([string[]]@("-v", "${OltHome}:/root/.openlinktoken"))
+
+function Get-ContainerDir {
+    param([string]$HostDir)
+    if (-not $DirMap.ContainsKey($HostDir)) {
+        $ContainerDir = "/data/$MountIndex"
+        $DirMap[$HostDir] = $ContainerDir
+        $MountArgs.AddRange([string[]]@("-v", "${HostDir}:${ContainerDir}"))
+        $script:MountIndex++
+    }
+    return $DirMap[$HostDir]
+}
+
+function Resolve-ToAbsolute {
+    param([string]$Path)
+    if ([System.IO.Path]::IsPathRooted($Path)) {
+        return [System.IO.Path]::GetFullPath($Path)
+    }
+    return [System.IO.Path]::GetFullPath((Join-Path (Get-Location) $Path))
+}
+
+function Get-RemappedPath {
+    param([string]$HostPath)
+    $Abs  = Resolve-ToAbsolute $HostPath
+    $Dir  = Split-Path -Parent $Abs
+    $File = Split-Path -Leaf  $Abs
+    if (-not (Test-Path $Dir)) { New-Item -ItemType Directory -Path $Dir -Force | Out-Null }
+    $ContainerDir = Get-ContainerDir $Dir
+    return "$ContainerDir/$File"
+}
+
+# ─── First pass: register dirs, collect env var forwarding ───────────────────
+
+$Args = if ($OltArgs) { $OltArgs } else { @() }
+$i = 0
+while ($i -lt $Args.Count) {
+    $arg = $Args[$i]
+    if ($FileFlagSet.Contains($arg)) {
+        $path = $Args[$i + 1]
+        $abs  = Resolve-ToAbsolute $path
+        $dir  = Split-Path -Parent $abs
+        if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+        $null = Get-ContainerDir $dir
+        $i += 2
+    } elseif ($EnvVarFlagSet.Contains($arg)) {
+        $VarName  = $Args[$i + 1]
+        $VarValue = [System.Environment]::GetEnvironmentVariable($VarName)
+        if ($null -ne $VarValue) {
+            $EnvPassArgs.AddRange([string[]]@("-e", "${VarName}=${VarValue}"))
+        }
+        $i += 2
+    } elseif ($StdinFlagSet.Contains($arg)) {
+        $NeedsStdin = $true
+        $i++
+    } else {
+        $i++
     }
 }
-catch {
-    Write-Info "Docker is not installed or not in PATH"
-    Write-Info "Please install Docker: https://docs.docker.com/get-docker/"
-    exit 1
+
+# ─── Second pass: rewrite file path values to container-internal paths ────────
+
+$RemappedArgs = [System.Collections.Generic.List[string]]::new()
+$i = 0
+while ($i -lt $Args.Count) {
+    $arg = $Args[$i]
+    if ($FileFlagSet.Contains($arg)) {
+        $path      = $Args[$i + 1]
+        $remapped  = Get-RemappedPath $path
+        $RemappedArgs.AddRange([string[]]@($arg, $remapped))
+        $i += 2
+    } else {
+        $RemappedArgs.Add($arg)
+        $i++
+    }
 }
 
-# Convert to absolute paths
-$InputFileRaw = $InputFile
-$InputFile = Resolve-Path -Path $InputFile -ErrorAction SilentlyContinue
-if (-not $InputFile) {
-    Write-Info "Input file does not exist: $InputFileRaw"
-    exit 1
-}
+# ─── Docker build ─────────────────────────────────────────────────────────────
 
-# For output file, create parent directory if it doesn't exist
-$OutputFileParent = Split-Path -Parent $OutputFile
-if ($OutputFileParent -and -not (Test-Path $OutputFileParent)) {
-    New-Item -ItemType Directory -Path $OutputFileParent -Force | Out-Null
-}
-
-# Convert output path to absolute (may not exist yet)
-if ([System.IO.Path]::IsPathRooted($OutputFile)) {
-    $OutputFile = $OutputFile
-} else {
-    $OutputFile = Join-Path (Get-Location) $OutputFile
-}
-$OutputFile = [System.IO.Path]::GetFullPath($OutputFile)
-
-# Verify input file exists
-if (-not (Test-Path $InputFile)) {
-    Write-Info "Input file does not exist: $InputFile"
-    exit 1
-}
-
-# Get directory paths for volume mounting
-$InputDir = Split-Path -Parent $InputFile
-$InputFilename = Split-Path -Leaf $InputFile
-$OutputDir = Split-Path -Parent $OutputFile
-$OutputFilename = Split-Path -Leaf $OutputFile
-
-# Create output directory if it doesn't exist
-if (-not (Test-Path $OutputDir)) {
-    New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
-}
-
-if ($VerboseOutput) {
-    Write-Info "Subcommand: $Subcommand"
-    Write-Info "Input file: $InputFile"
-    Write-Info "Output file: $OutputFile"
-    Write-Info "Docker image: $DockerImage"
-}
-
-# Build Docker image if needed
 if (-not $SkipBuild) {
-    # Check if image already exists
     docker image inspect $DockerImage > $null 2>&1
     if ($LASTEXITCODE -eq 0) {
-        Write-Info "Docker image '$DockerImage' already exists locally"
-        if ($VerboseOutput) {
-            Write-Info "Use -SkipBuild to suppress this check"
+        if ($VerbosePreference -ne 'SilentlyContinue') {
+            Write-OltInfo "Using existing image '$DockerImage'"
         }
     } else {
-        Write-Info "Building Docker image: $DockerImage"
-        Write-Info "This may take a few minutes on first run..."
-
-        if ($VerboseOutput) {
+        Write-OltInfo "Building Docker image '$DockerImage' (first run may take a few minutes)..."
+        if ($VerbosePreference -ne 'SilentlyContinue') {
             docker build -t $DockerImage .
         } else {
             docker build -t $DockerImage . 2>&1 | Out-Null
         }
-
-        if ($LASTEXITCODE -eq 0) {
-            Write-Info "Docker image built successfully"
-        } else {
-            Write-Info "Failed to build Docker image"
-            exit 1
-        }
+        if ($LASTEXITCODE -ne 0) { Write-OltError "Docker build failed"; exit 1 }
+        Write-OltSuccess "Docker image built"
     }
 } else {
-    Write-Info "Skipping Docker build (using existing image)"
-
-    # Check if image exists
+    Write-OltInfo "Skipping Docker build"
     docker image inspect $DockerImage > $null 2>&1
     if ($LASTEXITCODE -ne 0) {
-        Write-Info "Docker image '$DockerImage' not found"
-        Write-Info "Run without -SkipBuild to build the image first"
+        Write-OltError "Image '$DockerImage' not found. Run without -SkipBuild first."
         exit 1
     }
 }
 
-# Run Open Link Token via Docker
-Write-Info "Running Open Link Token ($Subcommand)..."
+# ─── Run ──────────────────────────────────────────────────────────────────────
 
-# Build subcommand-specific CLI argument list
-$CliArgs = @()
-switch ($Subcommand) {
-    "package"  { $CliArgs += "-h", $HashingSecret, "-e", $EncryptionKey }
-    "tokenize" { $CliArgs += "-h", $HashingSecret }
-    { $_ -in @("encrypt", "decrypt") } { $CliArgs += "-e", $EncryptionKey }
+if ($VerbosePreference -ne 'SilentlyContinue') {
+    Write-OltInfo "Subcommand: $Subcommand"
+    Write-OltInfo "Mounts:     $($MountArgs -join ' ')"
+    Write-OltInfo "Env:        $($EnvPassArgs -join ' ')"
+    Write-OltInfo "Args:       $($RemappedArgs -join ' ')"
 }
 
-# Convert Windows paths to Docker-compatible format (with forward slashes)
-$InputDirDocker = $InputDir -replace '\\', '/'
-$OutputDirDocker = $OutputDir -replace '\\', '/'
+Write-OltInfo "Running Open Link Token ($Subcommand)..."
 
-# Handle drive letter for Windows (C:\ becomes /c/)
-$InputDirDocker = $InputDirDocker -replace '^([A-Z]):', '/$1'
-$OutputDirDocker = $OutputDirDocker -replace '^([A-Z]):', '/$1'
+$DockerRunOpts = [System.Collections.Generic.List[string]]@("run", "--rm")
+if ($NeedsStdin) { $DockerRunOpts.Add("-i") }
+$DockerRunOpts.AddRange($MountArgs)
+$DockerRunOpts.AddRange($EnvPassArgs)
+$DockerRunOpts.Add($DockerImage)
+$DockerRunOpts.Add($Subcommand)
+$DockerRunOpts.AddRange($RemappedArgs)
 
-# If input and output are in the same directory, mount once
-if ($InputDir -eq $OutputDir) {
-    if ($VerboseOutput) {
-        Write-Info "Mounting directory: $InputDir"
-    }
-
-    docker run --rm `
-        -v "${InputDir}:/data" `
-        $DockerImage `
-        $Subcommand `
-        -i "/data/$InputFilename" `
-        -o "/data/$OutputFilename" `
-        @CliArgs
-} else {
-    # Mount input and output directories separately
-    if ($VerboseOutput) {
-        Write-Info "Mounting input directory: $InputDir"
-        Write-Info "Mounting output directory: $OutputDir"
-    }
-
-    docker run --rm `
-        -v "${InputDir}:/data/input" `
-        -v "${OutputDir}:/data/output" `
-        $DockerImage `
-        $Subcommand `
-        -i "/data/input/$InputFilename" `
-        -o "/data/output/$OutputFilename" `
-        @CliArgs
-}
+& docker @DockerRunOpts
 
 if ($LASTEXITCODE -eq 0) {
-    Write-Info "Open Link Token completed successfully!"
-    Write-Info "Output file: $OutputFile"
+    Write-OltSuccess "Completed successfully"
 } else {
-    Write-Info "Open Link Token execution failed"
-    exit 1
+    Write-OltError "Open Link Token exited with code $LASTEXITCODE"
+    exit $LASTEXITCODE
 }

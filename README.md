@@ -72,13 +72,24 @@ Download the [latest release](https://github.com/TruvetaPublic/OpenLinkToken/rel
 .\olt.exe package -i .\resources\sample.csv
 ```
 
-**Subcommand Interface:**
+**Docker convenience scripts (Linux/macOS and Windows):**
 
 ```bash
+# Linux/macOS
+./run-openlinktoken.sh generate-key-pair --name recipient
+./run-openlinktoken.sh initiate-exchange --public-key "$HOME/.openlinktoken/recipient.public.pem"
 ./run-openlinktoken.sh package \
-  -i ./resources/sample.csv -o ./resources/output.csv \
-  --exchange-config ./resources/quickstart.exchange.json \
-  --private-key "$HOME/.openlinktoken/quickstart.private.pem"
+  -i ./resources/sample.csv -o ./resources/output.zip \
+  --exchange-config ./resources/openlinktoken.exchange.json \
+  --private-key "$HOME/.openlinktoken/recipient.private.pem"
+
+# Windows
+.\run-openlinktoken.ps1 generate-key-pair --name recipient
+.\run-openlinktoken.ps1 initiate-exchange --public-key "$HOME\.openlinktoken\recipient.public.pem"
+.\run-openlinktoken.ps1 package `
+  -i .\resources\sample.csv -o .\resources\output.zip `
+  --exchange-config .\resources\openlinktoken.exchange.json `
+  --private-key "$HOME\.openlinktoken\recipient.private.pem"
 ```
 
 **Available Commands:**
@@ -100,13 +111,15 @@ See <a href="https://truvetapublic.github.io/OpenLinkToken/quickstarts/" target=
 
 ## Running Open Link Token
 
-- **Subcommand Interface**: Modern command-based interface:
+- **CLI subcommands** (`olt` binary or Docker convenience scripts):
   - `tokenize` - Internal hashed token generation (`--mode hash-only` is available for deterministic SHA-256 output)
   - `encrypt` - Encrypt existing hashed tokens
   - `decrypt` - Decrypt encrypted tokens
   - `package` - Tokenize + encrypt in one step (recommended)
+  - `initiate-exchange` - Create an exchange config from a partner's public key
+  - `generate-key-pair` - Generate an ECDH key pair
   - See <a href="https://truvetapublic.github.io/OpenLinkToken/running-openlinktoken/" target="_blank" rel="noopener noreferrer">Running Open Link Token</a>
-- **Docker**: Convenience scripts for containerized runs — see <a href="https://truvetapublic.github.io/OpenLinkToken/quickstarts/" target="_blank" rel="noopener noreferrer">Quickstarts</a>
+- **Docker convenience scripts**: `run-openlinktoken.sh` (Linux/macOS) and `run-openlinktoken.ps1` (Windows) wrap Docker automatically — see <a href="https://truvetapublic.github.io/OpenLinkToken/quickstarts/" target="_blank" rel="noopener noreferrer">Quickstarts</a>
 - **PySpark**: Distributed processing for large datasets — see <a href="https://truvetapublic.github.io/OpenLinkToken/operations/spark-or-databricks.html" target="_blank" rel="noopener noreferrer">Spark or Databricks</a>
 
 ## Security Notes

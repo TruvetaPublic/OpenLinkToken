@@ -1,314 +1,285 @@
 #!/bin/bash
 
 # run-openlinktoken.sh
-# Convenience script to build and run Open Link Token via Docker
-# Automatically handles Docker image building and container execution
+# Convenience script to run Open Link Token via Docker.
+# Automatically builds the Docker image when needed, mounts all required file
+# paths into the container, and forwards every option to the olt CLI.
 
-set -e  # Exit on error
+set -e
 
-# Default values
-SUBCOMMAND="package"
-INPUT_FILE=""
-OUTPUT_FILE=""
-HASHING_SECRET=""
-ENCRYPTION_KEY=""
 DOCKER_IMAGE="openlinktoken:latest"
 SKIP_BUILD=false
 VERBOSE=false
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-# Function to print colored output
-log_info() { echo -e "${BLUE}ℹ${NC} $1"; }
+RED='\033[0;31m'; GREEN='\033[0;32m'; BLUE='\033[0;34m'; NC='\033[0m'
+log_info()    { echo -e "${BLUE}ℹ${NC} $1"; }
 log_success() { echo -e "${GREEN}✓${NC} $1"; }
-log_warning() { echo -e "${YELLOW}⚠${NC} $1"; }
-log_error() { echo -e "${RED}✗${NC} $1" >&2; }
+log_error()   { echo -e "${RED}✗${NC} $1" >&2; }
 
-# Function to show usage
 show_usage() {
     cat << EOF
-Usage: $0 [SUBCOMMAND] [OPTIONS]
+Usage: $0 SUBCOMMAND [OPTIONS]
 
-Convenience wrapper for building and running Open Link Token via Docker.
-Automatically builds the Docker image if needed and runs Open Link Token with specified parameters.
+Docker convenience wrapper for Open Link Token. Builds the Docker image when
+needed, mounts file paths into the container, and forwards all options to olt.
 
 SUBCOMMANDS:
-    package     Tokenize and encrypt in one step (default). Requires -h and -e.
-    tokenize    Hash-only mode, no encryption. Requires -h only.
-    encrypt     Encrypt previously tokenized output. Requires -e only.
-    decrypt     Decrypt encrypted tokens. Requires -e only.
+    package             Tokenize and encrypt in one step
+    tokenize            Generate hashed tokens (--mode hash-only for SHA-256 only)
+    encrypt             Encrypt previously tokenized output
+    decrypt             Decrypt encrypted tokens
+    initiate-exchange   Create an exchange config from a partner's public key
+    generate-key-pair   Generate an ECDH key pair (written to ~/.openlinktoken/)
 
-REQUIRED OPTIONS:
-    -i, --input FILE        Input file path (absolute or relative)
-    -o, --output FILE       Output file path (absolute or relative)
+OPTIONS (forwarded to the container — see olt help <subcommand> for full details):
+    -i, --input PATH                Input file (package, tokenize, encrypt, decrypt)
+    -o, --output PATH               Output file
+    --exchange-config PATH          Exchange config JSON (package, tokenize, encrypt, decrypt)
+    --private-key PATH              Private key PEM file
+    --private-key-env VAR           Read private key from this environment variable
+    --public-key PATH               Partner public key PEM (initiate-exchange)
+    --public-key-env VAR            Read partner public key from this environment variable
+    --public-key-stdin              Read partner public key from stdin
+    --sender-private-key PATH       Sender private key PEM (initiate-exchange)
+    --sender-private-key-env VAR    Read sender private key from this environment variable
+    --hashingsecret SECRET          Hashing secret (initiate-exchange)
+    --hashingsecret-env VAR         Read hashing secret from this environment variable
+    --hashingsecret-stdin           Read hashing secret from stdin
+    --mode MODE                     Tokenize mode: olt|hash-only|demo
+    --ring-id ID                    Ring identifier (package, encrypt)
+    --hash-record-ids               Hash record IDs before writing output
+    -n, --name NAME                 Key/config base name (generate-key-pair, initiate-exchange)
+    -c, --curve CURVE               EC curve: P-256, P-384, P-521 (default: P-256)
+    --force                         Overwrite existing key or config files
+    -q, --no-progress               Suppress progress indicator
 
-SUBCOMMAND-SPECIFIC OPTIONS:
-    -h, --hash SECRET       Hashing secret key        (package, tokenize)
-    -e, --encrypt KEY       Encryption key            (package, encrypt, decrypt)
-
-OPTIONAL:
-    -s, --skip-build        Skip Docker image build (use existing image)
-    --image NAME            Docker image name (default: openlinktoken:latest)
-    -v, --verbose           Enable verbose output
-    --help                  Show this help message
-
-EXAMPLES:
-    # Tokenize and encrypt (default package subcommand)
-    $0 -i /path/to/input.csv -o /path/to/output.csv -h "MyHashKey" -e "MyEncryptionKey"
-
-    # Explicit package subcommand
-    $0 package -i input.csv -o output.csv -h "HashKey" -e "EncryptionKey"
-
-    # Hash-only mode (no encryption)
-    $0 tokenize -i input.csv -o hashed.csv -h "HashKey"
-
-    # Decrypt previously encrypted tokens
-    $0 decrypt -i tokens.csv -o decrypted.csv -e "EncryptionKey"
-
-    # Encrypt previously tokenized (hashed) output
-    $0 encrypt -i hashed.csv -o encrypted.csv -e "EncryptionKey"
-
-    # Skip Docker build if image already exists
-    $0 -i ./input.csv -o ./output.csv -h "secret" -e "key" --skip-build
-
-    # Verbose mode for troubleshooting
-    $0 tokenize -i ./input.csv -o ./output.csv -h "secret" -v
+SCRIPT OPTIONS:
+    --image NAME        Docker image name (default: openlinktoken:latest)
+    --skip-build        Skip Docker image build (use existing image)
+    -v, --verbose       Verbose output
+    --help              Show this message
 
 NOTES:
-    - This script must be run from the Open Link Token repository root directory
-    - Input and output files are automatically mounted into the Docker container
-    - The script will build the Docker image on first run (may take a few minutes)
-    - Use --skip-build to skip rebuilding the image on subsequent runs
+    - Run from the Open Link Token repository root directory
+    - ~/.openlinktoken/ is always mounted so key files persist across runs
+    - File paths are automatically resolved and mounted into the container
+    - Environment variables named by --*-env flags are forwarded to the container
+
+EXAMPLES:
+    # Generate a key pair
+    $0 generate-key-pair --name recipient
+
+    # Create an exchange config from the recipient's public key
+    $0 initiate-exchange --public-key "\$HOME/.openlinktoken/recipient.public.pem"
+
+    # Tokenize and encrypt
+    $0 package -i ./data/input.csv -o ./data/output.zip \\
+        --exchange-config ./openlinktoken.exchange.json \\
+        --private-key "\$HOME/.openlinktoken/mykey.private.pem"
+
+    # Hash-only tokenize (no exchange config needed)
+    $0 tokenize --mode hash-only -i ./data/input.csv -o ./data/hashed.csv
+
+    # Decrypt
+    $0 decrypt -i ./data/output.zip -o ./data/decrypted.csv \\
+        --exchange-config ./openlinktoken.exchange.json \\
+        --private-key "\$HOME/.openlinktoken/mykey.private.pem"
+
+    # Use an existing image (skip rebuild)
+    $0 package --skip-build -i ./input.csv -o ./output.zip \\
+        --exchange-config ./openlinktoken.exchange.json
 
 EOF
 }
 
-# Parse command line arguments
-# Check if the first argument is a subcommand
-if [[ $# -gt 0 ]] && [[ "$1" =~ ^(package|tokenize|encrypt|decrypt)$ ]]; then
-    SUBCOMMAND="$1"
-    shift
+# ─── Subcommand ───────────────────────────────────────────────────────────────
+
+VALID_SUBCOMMANDS=(package tokenize encrypt decrypt initiate-exchange generate-key-pair)
+SUBCOMMAND=""
+
+if [[ $# -gt 0 ]]; then
+    for sc in "${VALID_SUBCOMMANDS[@]}"; do
+        if [[ "$1" == "$sc" ]]; then
+            SUBCOMMAND="$1"
+            shift
+            break
+        fi
+    done
 fi
 
+if [[ -z "$SUBCOMMAND" ]]; then
+    if [[ "${1:-}" == "--help" ]]; then show_usage; exit 0; fi
+    log_error "A subcommand is required."
+    echo ""
+    show_usage
+    exit 1
+fi
+
+# ─── Separate script options from passthrough args ────────────────────────────
+
+PASSTHROUGH_ARGS=()
 while [[ $# -gt 0 ]]; do
     case $1 in
-        -i|--input)
-            INPUT_FILE="$2"
-            shift 2
-            ;;
-        -o|--output)
-            OUTPUT_FILE="$2"
-            shift 2
-            ;;
-        -h|--hash)
-            HASHING_SECRET="$2"
-            shift 2
-            ;;
-        -e|--encrypt)
-            ENCRYPTION_KEY="$2"
-            shift 2
-            ;;
-        -s|--skip-build)
-            SKIP_BUILD=true
-            shift
-            ;;
-        --image)
-            DOCKER_IMAGE="$2"
-            shift 2
-            ;;
-        -v|--verbose)
-            VERBOSE=true
-            shift
-            ;;
-        --help)
-            show_usage
-            exit 0
-            ;;
-        *)
-            log_error "Unknown option: $1"
-            log_error "Use --help for usage information"
-            exit 1
-            ;;
+        --skip-build)   SKIP_BUILD=true; shift ;;
+        --image)        DOCKER_IMAGE="$2"; shift 2 ;;
+        -v|--verbose)   VERBOSE=true; shift ;;
+        --help)         show_usage; exit 0 ;;
+        *)              PASSTHROUGH_ARGS+=("$1"); shift ;;
     esac
 done
 
-# Validate required parameters
-if [[ -z "$INPUT_FILE" ]]; then
-    log_error "Input file is required (use -i or --input)"
-    echo ""
-    show_usage
-    exit 1
-fi
+# ─── Check Docker ─────────────────────────────────────────────────────────────
 
-if [[ -z "$OUTPUT_FILE" ]]; then
-    log_error "Output file is required (use -o or --output)"
-    echo ""
-    show_usage
-    exit 1
-fi
-
-# Validate subcommand-specific required options
-case "$SUBCOMMAND" in
-    package)
-        if [[ -z "$HASHING_SECRET" ]]; then
-            log_error "Hashing secret is required for 'package' (use -h or --hash)"
-            echo ""
-            show_usage
-            exit 1
-        fi
-        if [[ -z "$ENCRYPTION_KEY" ]]; then
-            log_error "Encryption key is required for 'package' (use -e or --encrypt)"
-            echo ""
-            show_usage
-            exit 1
-        fi
-        ;;
-    tokenize)
-        if [[ -z "$HASHING_SECRET" ]]; then
-            log_error "Hashing secret is required for 'tokenize' (use -h or --hash)"
-            echo ""
-            show_usage
-            exit 1
-        fi
-        ;;
-    encrypt|decrypt)
-        if [[ -z "$ENCRYPTION_KEY" ]]; then
-            log_error "Encryption key is required for '$SUBCOMMAND' (use -e or --encrypt)"
-            echo ""
-            show_usage
-            exit 1
-        fi
-        ;;
-esac
-
-# Check if Docker is installed
 if ! command -v docker &> /dev/null; then
-    log_error "Docker is not installed or not in PATH"
-    log_error "Please install Docker: https://docs.docker.com/get-docker/"
+    log_error "Docker is not installed or not in PATH."
+    log_error "Install Docker: https://docs.docker.com/get-docker/"
     exit 1
 fi
 
-# Convert to absolute paths
-INPUT_FILE=$(realpath "$INPUT_FILE" 2>/dev/null || echo "$INPUT_FILE")
-OUTPUT_FILE=$(realpath -m "$OUTPUT_FILE" 2>/dev/null || echo "$OUTPUT_FILE")
+# ─── Volume mount planning ────────────────────────────────────────────────────
+# Flags whose next argument is a host file path that must be mounted.
+FILE_FLAGS=(-i --input -o --output --exchange-config --private-key --public-key --sender-private-key)
 
-# Verify input file exists
-if [[ ! -f "$INPUT_FILE" ]]; then
-    log_error "Input file does not exist: $INPUT_FILE"
-    exit 1
+# Flags whose next argument is an environment variable name — forward the var.
+ENV_VAR_FLAGS=(--private-key-env --hashingsecret-env --public-key-env --sender-private-key-env)
+
+# Flags that indicate stdin will be used — pass -i to docker run.
+STDIN_FLAGS=(--hashingsecret-stdin --public-key-stdin)
+
+declare -A DIR_MAP   # host_dir -> container mount point
+MOUNT_ARGS=()
+ENV_PASS_ARGS=()
+MOUNT_COUNTER=0
+NEEDS_STDIN=false
+
+_is_file_flag() {
+    local arg="$1"
+    for f in "${FILE_FLAGS[@]}"; do [[ "$arg" == "$f" ]] && return 0; done
+    return 1
+}
+
+_is_env_flag() {
+    local arg="$1"
+    for f in "${ENV_VAR_FLAGS[@]}"; do [[ "$arg" == "$f" ]] && return 0; done
+    return 1
+}
+
+_is_stdin_flag() {
+    local arg="$1"
+    for f in "${STDIN_FLAGS[@]}"; do [[ "$arg" == "$f" ]] && return 0; done
+    return 1
+}
+
+# Always mount ~/.openlinktoken so key files are accessible and persist.
+OLT_HOME_ABS="$(realpath "$HOME/.openlinktoken" 2>/dev/null || echo "$HOME/.openlinktoken")"
+mkdir -p "$OLT_HOME_ABS"
+DIR_MAP["$OLT_HOME_ABS"]="/root/.openlinktoken"
+MOUNT_ARGS+=(-v "$OLT_HOME_ABS:/root/.openlinktoken")
+
+_register_dir() {
+    local host_dir="$1"
+    if [[ -z "${DIR_MAP[$host_dir]+_}" ]]; then
+        local container_dir="/data/$MOUNT_COUNTER"
+        DIR_MAP["$host_dir"]="$container_dir"
+        MOUNT_ARGS+=(-v "${host_dir}:${container_dir}")
+        MOUNT_COUNTER=$((MOUNT_COUNTER + 1))
+    fi
+}
+
+_remap_path() {
+    local path="$1"
+    local abs
+    abs="$(realpath -m "$path" 2>/dev/null || echo "$(pwd)/$path")"
+    local dir file
+    dir="$(dirname "$abs")"
+    file="$(basename "$abs")"
+    mkdir -p "$dir"
+    _register_dir "$dir"
+    echo "${DIR_MAP[$dir]}/$file"
+}
+
+# First pass: register all directories and collect env vars.
+idx=0
+while [[ $idx -lt ${#PASSTHROUGH_ARGS[@]} ]]; do
+    arg="${PASSTHROUGH_ARGS[$idx]}"
+    if _is_file_flag "$arg"; then
+        path="${PASSTHROUGH_ARGS[$((idx+1))]}"
+        abs="$(realpath -m "$path" 2>/dev/null || echo "$(pwd)/$path")"
+        mkdir -p "$(dirname "$abs")"
+        _register_dir "$(dirname "$abs")"
+        idx=$((idx+2))
+    elif _is_env_flag "$arg"; then
+        varname="${PASSTHROUGH_ARGS[$((idx+1))]}"
+        if [[ -n "${!varname+_}" ]]; then
+            ENV_PASS_ARGS+=(-e "$varname=${!varname}")
+        fi
+        idx=$((idx+2))
+    elif _is_stdin_flag "$arg"; then
+        NEEDS_STDIN=true
+        idx=$((idx+1))
+    else
+        idx=$((idx+1))
+    fi
+done
+
+# Second pass: rewrite file path values to container-internal paths.
+REMAPPED_ARGS=()
+idx=0
+while [[ $idx -lt ${#PASSTHROUGH_ARGS[@]} ]]; do
+    arg="${PASSTHROUGH_ARGS[$idx]}"
+    if _is_file_flag "$arg"; then
+        path="${PASSTHROUGH_ARGS[$((idx+1))]}"
+        REMAPPED_ARGS+=("$arg" "$(_remap_path "$path")")
+        idx=$((idx+2))
+    else
+        REMAPPED_ARGS+=("$arg")
+        idx=$((idx+1))
+    fi
+done
+
+# ─── Docker build ─────────────────────────────────────────────────────────────
+
+if [[ $SKIP_BUILD == false ]]; then
+    if docker image inspect "$DOCKER_IMAGE" > /dev/null 2>&1; then
+        [[ $VERBOSE == true ]] && log_info "Using existing image '$DOCKER_IMAGE'"
+    else
+        log_info "Building Docker image '$DOCKER_IMAGE' (first run may take a few minutes)..."
+        if [[ $VERBOSE == true ]]; then
+            docker build -t "$DOCKER_IMAGE" . || { log_error "Docker build failed"; exit 1; }
+        else
+            docker build -t "$DOCKER_IMAGE" . > /dev/null 2>&1 || { log_error "Docker build failed"; exit 1; }
+        fi
+        log_success "Docker image built"
+    fi
+else
+    log_info "Skipping Docker build"
+    docker image inspect "$DOCKER_IMAGE" > /dev/null 2>&1 || {
+        log_error "Image '$DOCKER_IMAGE' not found. Run without --skip-build first."
+        exit 1
+    }
 fi
 
-# Get directory paths for volume mounting
-INPUT_DIR=$(dirname "$INPUT_FILE")
-INPUT_FILENAME=$(basename "$INPUT_FILE")
-OUTPUT_DIR=$(dirname "$OUTPUT_FILE")
-OUTPUT_FILENAME=$(basename "$OUTPUT_FILE")
-
-# Create output directory if it doesn't exist
-mkdir -p "$OUTPUT_DIR"
+# ─── Run ──────────────────────────────────────────────────────────────────────
 
 if [[ $VERBOSE == true ]]; then
     log_info "Subcommand: $SUBCOMMAND"
-    log_info "Input file: $INPUT_FILE"
-    log_info "Output file: $OUTPUT_FILE"
-    log_info "File type: $FILE_TYPE"
-    log_info "Docker image: $DOCKER_IMAGE"
+    log_info "Mounts:     ${MOUNT_ARGS[*]}"
+    log_info "Env:        ${ENV_PASS_ARGS[*]}"
+    log_info "Args:       ${REMAPPED_ARGS[*]}"
 fi
 
-# Build Docker image if needed
-if [[ $SKIP_BUILD == false ]]; then
-    # Check if image already exists
-    if docker image inspect "$DOCKER_IMAGE" > /dev/null 2>&1; then
-        log_success "Docker image '$DOCKER_IMAGE' already exists locally"
-        if [[ $VERBOSE == true ]]; then
-            log_info "Use --skip-build to suppress this check"
-        fi
-    else
-        log_info "Building Docker image: $DOCKER_IMAGE"
-        log_info "This may take a few minutes on first run..."
-
-        if [[ $VERBOSE == true ]]; then
-            docker build -t "$DOCKER_IMAGE" .
-            BUILD_STATUS=$?
-        else
-            docker build -t "$DOCKER_IMAGE" . > /dev/null 2>&1
-            BUILD_STATUS=$?
-        fi
-
-        if [[ $BUILD_STATUS -eq 0 ]]; then
-            log_success "Docker image built successfully"
-        else
-            log_error "Failed to build Docker image"
-            exit 1
-        fi
-    fi
-else
-    log_info "Skipping Docker build (using existing image)"
-
-    # Check if image exists
-    if ! docker image inspect "$DOCKER_IMAGE" > /dev/null 2>&1; then
-        log_error "Docker image '$DOCKER_IMAGE' not found"
-        log_error "Run without --skip-build to build the image first"
-        exit 1
-    fi
-fi
-
-# Build the subcommand-specific CLI argument list
-CLI_ARGS=()
-case "$SUBCOMMAND" in
-    package)
-        CLI_ARGS+=(-h "$HASHING_SECRET" -e "$ENCRYPTION_KEY")
-        ;;
-    tokenize)
-        CLI_ARGS+=(-h "$HASHING_SECRET")
-        ;;
-    encrypt|decrypt)
-        CLI_ARGS+=(-e "$ENCRYPTION_KEY")
-        ;;
-esac
-
-# Run Open Link Token via Docker
 log_info "Running Open Link Token ($SUBCOMMAND)..."
 
-# If input and output are in the same directory, mount once
-if [[ "$INPUT_DIR" == "$OUTPUT_DIR" ]]; then
-    if [[ $VERBOSE == true ]]; then
-        log_info "Mounting directory: $INPUT_DIR"
-    fi
+DOCKER_RUN_OPTS=(--rm)
+[[ $NEEDS_STDIN == true ]] && DOCKER_RUN_OPTS+=(-i)
+DOCKER_RUN_OPTS+=("${MOUNT_ARGS[@]}" "${ENV_PASS_ARGS[@]}")
 
-    docker run --rm \
-        -v "$INPUT_DIR:/data" \
-        "$DOCKER_IMAGE" \
-        "$SUBCOMMAND" \
-        -i "/data/$INPUT_FILENAME" \
-        -o "/data/$OUTPUT_FILENAME" \
-        "${CLI_ARGS[@]}"
+docker run "${DOCKER_RUN_OPTS[@]}" "$DOCKER_IMAGE" "$SUBCOMMAND" "${REMAPPED_ARGS[@]}"
+EXIT_CODE=$?
+
+if [[ $EXIT_CODE -eq 0 ]]; then
+    log_success "Completed successfully"
 else
-    # Mount input and output directories separately
-    if [[ $VERBOSE == true ]]; then
-        log_info "Mounting input directory: $INPUT_DIR"
-        log_info "Mounting output directory: $OUTPUT_DIR"
-    fi
-
-    docker run --rm \
-        -v "$INPUT_DIR:/data/input" \
-        -v "$OUTPUT_DIR:/data/output" \
-        "$DOCKER_IMAGE" \
-        "$SUBCOMMAND" \
-        -i "/data/input/$INPUT_FILENAME" \
-        -o "/data/output/$OUTPUT_FILENAME" \
-        "${CLI_ARGS[@]}"
-fi
-
-if [[ $? -eq 0 ]]; then
-    log_success "Open Link Token completed successfully!"
-    log_success "Output file: $OUTPUT_FILE"
-else
-    log_error "Open Link Token execution failed"
-    exit 1
+    log_error "Open Link Token exited with code $EXIT_CODE"
+    exit $EXIT_CODE
 fi
