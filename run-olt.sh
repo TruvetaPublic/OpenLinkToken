@@ -146,7 +146,9 @@ ENV_VAR_FLAGS=(--private-key-env --hashingsecret-env --public-key-env --sender-p
 # Flags that indicate stdin will be used — pass -i to docker run.
 STDIN_FLAGS=(--hashingsecret-stdin --public-key-stdin)
 
-declare -A DIR_MAP   # host_dir -> container mount point
+# Parallel arrays replace associative arrays for bash 3 compatibility (macOS).
+DIR_HOSTS=()
+DIR_CONTAINERS=()
 MOUNT_ARGS=()
 ENV_PASS_ARGS=()
 MOUNT_COUNTER=0
@@ -170,17 +172,26 @@ _is_stdin_flag() {
     return 1
 }
 
+_lookup_container_dir() {
+    local host_dir="$1" i
+    for i in "${!DIR_HOSTS[@]}"; do
+        [[ "${DIR_HOSTS[$i]}" == "$host_dir" ]] && echo "${DIR_CONTAINERS[$i]}" && return
+    done
+}
+
 # Always mount ~/.openlinktoken so key files are accessible and persist.
 OLT_HOME_ABS="$(realpath "$HOME/.openlinktoken" 2>/dev/null || echo "$HOME/.openlinktoken")"
 mkdir -p "$OLT_HOME_ABS"
-DIR_MAP["$OLT_HOME_ABS"]="/root/.openlinktoken"
+DIR_HOSTS+=("$OLT_HOME_ABS")
+DIR_CONTAINERS+=("/root/.openlinktoken")
 MOUNT_ARGS+=(-v "$OLT_HOME_ABS:/root/.openlinktoken")
 
 _register_dir() {
     local host_dir="$1"
-    if [[ -z "${DIR_MAP[$host_dir]+_}" ]]; then
+    if [[ -z "$(_lookup_container_dir "$host_dir")" ]]; then
         local container_dir="/data/$MOUNT_COUNTER"
-        DIR_MAP["$host_dir"]="$container_dir"
+        DIR_HOSTS+=("$host_dir")
+        DIR_CONTAINERS+=("$container_dir")
         MOUNT_ARGS+=(-v "${host_dir}:${container_dir}")
         MOUNT_COUNTER=$((MOUNT_COUNTER + 1))
     fi
@@ -195,7 +206,7 @@ _remap_path() {
     file="$(basename "$abs")"
     mkdir -p "$dir"
     _register_dir "$dir"
-    echo "${DIR_MAP[$dir]}/$file"
+    echo "$(_lookup_container_dir "$dir")/$file"
 }
 
 # First pass: register all directories and collect env vars.
