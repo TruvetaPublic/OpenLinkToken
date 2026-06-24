@@ -151,8 +151,8 @@ $NeedsStdin  = $false
 # Always mount ~/.openlinktoken so key files persist.
 $OltHome = [System.IO.Path]::GetFullPath((Join-Path $HOME ".openlinktoken"))
 if (-not (Test-Path $OltHome)) { New-Item -ItemType Directory -Path $OltHome -Force | Out-Null }
-$DirMap[$OltHome] = "/root/.openlinktoken"
-$MountArgs.AddRange([string[]]@("-v", "${OltHome}:/root/.openlinktoken"))
+$DirMap[$OltHome] = "/app/.openlinktoken"
+$MountArgs.AddRange([string[]]@("-v", "${OltHome}:/app/.openlinktoken"))
 
 function Get-ContainerDir {
     param([string]$HostDir)
@@ -266,7 +266,7 @@ if ($VerbosePreference -ne 'SilentlyContinue') {
 
 Write-OltInfo "Running Open Link Token ($Subcommand)..."
 
-$DockerRunOpts = [System.Collections.Generic.List[string]]@("run", "--rm")
+$DockerRunOpts = [System.Collections.Generic.List[string]]@("run", "--rm", "-e", "HOME=/app")
 if ($NeedsStdin) { $DockerRunOpts.Add("-i") }
 $DockerRunOpts.AddRange($MountArgs)
 $DockerRunOpts.AddRange($EnvPassArgs)
