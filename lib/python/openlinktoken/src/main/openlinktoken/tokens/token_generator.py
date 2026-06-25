@@ -194,8 +194,6 @@ class TokenGenerator:
         response = set()
 
         for attribute_class, value in person_attributes.items():
-            if not isinstance(attribute_class, type) or not issubclass(attribute_class, Attribute):
-                continue
             attribute = self.attribute_instance_map.get(attribute_class)
             if attribute and not attribute.validate(value):
                 response.add(attribute.get_name())
