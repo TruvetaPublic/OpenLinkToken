@@ -34,7 +34,7 @@ A-1002,Marcus,Nguyen,1979-11-05,M,10001,234-56-7890
 ```yaml
 attributes:
   given_nm:
-    field: GivenName
+    field: FirstName
     type: GivenName
   surname_txt:
     field: FamilyName
@@ -56,15 +56,12 @@ token_rules:
   T1:
     - field: FamilyName
       expression: T|U
-    - field: GivenName
+    - field: FirstName
       expression: T|S(0,1)|U
     - field: DateOfBirth
-      expression: T|Y
+      expression: T|D
     - field: SexAtBirth
       expression: T|S(0,1)|U
-  T5:
-    - field: NationalId
-      expression: T|U
 ```
 
 ## File Specification

@@ -53,12 +53,9 @@ token_rules:
     - field: FirstName
       expression: T|S(0,1)|U
     - field: DateOfBirth
-      expression: T|Y
+      expression: T|D
     - field: SexAtBirth
       expression: T|S(0,1)|U
-  T5:
-    - field: NationalId
-      expression: T|U
 ```
 
 ## File Specification
