@@ -16,6 +16,7 @@ class TokenizationConfigLoader:
 
     @staticmethod
     def load(file_path: str) -> TokenizationConfig:
+        """Read YAML from disk and return a validated TokenizationConfig."""
         with open(file_path, "r", encoding="utf-8") as file:
             raw = yaml.safe_load(file)
 
@@ -26,6 +27,7 @@ class TokenizationConfigLoader:
 
     @staticmethod
     def _parse(raw: Dict[str, Any], file_path: str) -> TokenizationConfig:
+        """Validate top-level sections, then parse attributes and token rules."""
         if "attributes" not in raw or not raw["attributes"]:
             raise ValueError(f"Configuration '{file_path}' must define a non-empty 'attributes' section.")
 
@@ -38,6 +40,7 @@ class TokenizationConfigLoader:
 
     @staticmethod
     def _parse_attributes(raw_attributes: Any, file_path: str) -> Dict[str, AttributeMappingEntry]:
+        """Parse attribute mappings keyed by source column name."""
         if not isinstance(raw_attributes, dict):
             raise ValueError(f"Configuration '{file_path}': 'attributes' must be a mapping.")
 
@@ -65,9 +68,11 @@ class TokenizationConfigLoader:
         attributes: Dict[str, AttributeMappingEntry],
         file_path: str,
     ) -> Dict[str, list]:
+        """Parse token rules and ensure each referenced field exists in attributes."""
         if not isinstance(raw_token_rules, dict):
             raise ValueError(f"Configuration '{file_path}': 'token_rules' must be a mapping.")
 
+        # Token rules reference logical field ids, not CSV column names.
         valid_field_ids = {entry.field for entry in attributes.values()}
         token_rules = {}
         for token_id, entries in raw_token_rules.items():
@@ -92,6 +97,7 @@ class TokenizationConfigLoader:
                 field_id = entry["field"]
                 if field_id not in valid_field_ids:
                     raise ValueError(
+                        # Include valid ids in the error so configuration issues are actionable.
                         f"Configuration '{file_path}': token rule '{token_id}' references unknown field "
                         f"'{field_id}'. Valid field ids are: {sorted(valid_field_ids)}."
                     )
