@@ -78,7 +78,7 @@ token_rules:
             created_reader = TokenizationConfigHelper.create_reader("input.csv", "csv", config, factory)
 
         assert created_reader is reader
-        assert reader.attribute_map == {"given_nm": "FirstName"}
+        mock_reader_cls.assert_called_once_with("input.csv", attribute_map={"given_nm": "FirstName"})
 
     def test_create_reader_parquet_applies_attribute_map(self):
         config = TokenizationConfig(
@@ -100,7 +100,7 @@ token_rules:
             created_reader = TokenizationConfigHelper.create_reader("input.parquet", "parquet", config, factory)
 
         assert created_reader is reader
-        assert reader.attribute_map == {"given_nm": "FirstName"}
+        mock_reader_cls.assert_called_once_with("input.parquet", attribute_map={"given_nm": "FirstName"})
 
     def test_create_reader_raises_for_unsupported_type(self):
         with pytest.raises(ValueError, match="Unsupported input type"):

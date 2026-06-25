@@ -58,14 +58,8 @@ class TokenizationConfigHelper:
 
         file_type_lower = file_type.lower()
         if file_type_lower == FileTypeDetector.TYPE_CSV:
-            reader = PersonAttributesCSVReader(path)
-            if attribute_map is not None:
-                reader.attribute_map = attribute_map.copy()
-            return reader
+            return PersonAttributesCSVReader(path, attribute_map=attribute_map)
         if file_type_lower == FileTypeDetector.TYPE_PARQUET:
-            reader = PersonAttributesParquetReader(path)
-            if attribute_map is not None:
-                reader.attribute_map = attribute_map.copy()
-            return reader
+            return PersonAttributesParquetReader(path, attribute_map=attribute_map)
 
         raise ValueError(f"Unsupported input type: {file_type}")
