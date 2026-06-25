@@ -19,17 +19,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+
 import org.openlinktoken.attributes.Attribute;
 import org.openlinktoken.attributes.AttributeExpression;
-import org.openlinktoken.attributes.person.BirthDateAttribute;
 import org.openlinktoken.attributes.person.FirstNameAttribute;
 import org.openlinktoken.attributes.person.LastNameAttribute;
 import org.openlinktoken.tokens.tokenizer.Tokenizer;
 
 class TokenGeneratorTest {
-    private static class DynamicBirthDateAttribute extends BirthDateAttribute {
-    }
-
     @Mock
     private Tokenizer tokenizer;
 
@@ -233,23 +230,5 @@ class TokenGeneratorTest {
         assertThrows(TokenGenerationException.class, () -> {
             tokenGenerator.getToken("token1", personAttributes, new TokenGeneratorResult());
         });
-    }
-
-    @Test
-    void testGetTokenSignature_dynamicBirthDatePrefersBirthDateValidation() {
-        AttributeExpression attrExpr = new AttributeExpression(DynamicBirthDateAttribute.class, "T|D");
-        ArrayList<AttributeExpression> attributeExpressions = new ArrayList<>();
-        attributeExpressions.add(attrExpr);
-
-        when(tokenDefinition.getTokenDefinition("token1")).thenReturn(attributeExpressions);
-
-        Map<Class<? extends Attribute>, String> personAttributes = new HashMap<>();
-        personAttributes.put(DynamicBirthDateAttribute.class, "2050-09-22");
-
-        TokenGeneratorResult result = new TokenGeneratorResult();
-        String signature = tokenGenerator.getTokenSignature("token1", personAttributes, result);
-
-        assertNull(signature);
-        assertTrue(result.getInvalidAttributes().contains("BirthDate"));
     }
 }

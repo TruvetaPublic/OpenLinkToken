@@ -52,49 +52,8 @@ class TokenGenerator:
 
         self.tokenizer = tokenizer
 
-    def _resolve_attribute_instance(self, attribute_class: Type[Attribute]) -> Optional[Attribute]:
-        """
-        Resolve an Attribute instance for a requested class.
-
-        Supports dynamically generated subclasses by falling back to the
-        nearest loaded base attribute class and caching that resolution.
-
-        Args:
-            attribute_class: The attribute class requested by the token definition.
-
-        Returns:
-            The resolved Attribute instance, or None if no compatible base class exists.
-        """
-        attribute = self.attribute_instance_map.get(attribute_class)
-        if attribute is not None:
-            return attribute
-
-        # Prefer the nearest base class in the MRO to avoid non-deterministic
-        # fallback to a more generic attribute (e.g., DateAttribute instead of
-        # BirthDateAttribute) based on dictionary iteration order.
-        mro = attribute_class.__mro__
-        best_match: Optional[tuple[int, Attribute]] = None
-        for base_class, base_attribute in self.attribute_instance_map.items():
-            if not issubclass(attribute_class, base_class):
-                continue
-
-            try:
-                distance = mro.index(base_class)
-            except ValueError:
-                continue
-
-            if best_match is None or distance < best_match[0]:
-                best_match = (distance, base_attribute)
-
-        if best_match is not None:
-            # Cache dynamic-subclass resolution so we only pay this lookup once.
-            self.attribute_instance_map[attribute_class] = best_match[1]
-            return best_match[1]
-
-        return None
-
     def _get_token_signature(
-        self, token_id: str, person_attributes: Dict[Type[Attribute], str], result: TokenGeneratorResult
+        self, token_id: str, person_attributes: Dict[object, str], result: TokenGeneratorResult
     ) -> Optional[str]:
         """
         Get the token signature for a given token identifier.
@@ -119,15 +78,17 @@ class TokenGenerator:
 
         for attribute_expression in definition:
             attribute_class = attribute_expression.attribute_class
+            field_id = getattr(attribute_expression, "field_id", None)
+            lookup_key = field_id if field_id is not None else attribute_class
 
-            if attribute_class not in person_attributes:
+            if lookup_key not in person_attributes:
                 return None
 
-            attribute = self._resolve_attribute_instance(attribute_class)
+            attribute = self.attribute_instance_map.get(attribute_class)
             if attribute is None:
                 return None
 
-            attribute_value = person_attributes[attribute_class]
+            attribute_value = person_attributes[lookup_key]
 
             if not attribute.validate(attribute_value):
                 result.invalid_attributes.add(attribute.get_name())
@@ -146,7 +107,7 @@ class TokenGenerator:
         filtered_values = [v for v in values if v is not None and v.strip() != ""]
         return "|".join(filtered_values)
 
-    def get_all_token_signatures(self, person_attributes: Dict[Type[Attribute], str]) -> Dict[str, str]:
+    def get_all_token_signatures(self, person_attributes: Dict[object, str]) -> Dict[str, str]:
         """
         Get the token signatures for all token/rule identifiers.
 
@@ -171,7 +132,7 @@ class TokenGenerator:
         return signatures
 
     def _get_token(
-        self, token_id: str, person_attributes: Dict[Type[Attribute], str], result: TokenGeneratorResult
+        self, token_id: str, person_attributes: Dict[object, str], result: TokenGeneratorResult
     ) -> Optional[str]:
         """
         Get token for a given token identifier.
@@ -200,7 +161,7 @@ class TokenGenerator:
             logger.error(f"Error generating token for token id: {token_id}", exc_info=e)
             raise TokenGenerationException("Error generating token", e)
 
-    def get_all_tokens(self, person_attributes: Dict[Type[Attribute], str]) -> TokenGeneratorResult:
+    def get_all_tokens(self, person_attributes: Dict[object, str]) -> TokenGeneratorResult:
         """
         Get the tokens for all token/rule identifiers.
 
@@ -222,7 +183,7 @@ class TokenGenerator:
 
         return result
 
-    def get_invalid_person_attributes(self, person_attributes: Dict[Type[Attribute], str]) -> Set[str]:
+    def get_invalid_person_attributes(self, person_attributes: Dict[object, str]) -> Set[str]:
         """
         Get invalid person attribute names.
 
@@ -235,6 +196,8 @@ class TokenGenerator:
         response = set()
 
         for attribute_class, value in person_attributes.items():
+            if not isinstance(attribute_class, type) or not issubclass(attribute_class, Attribute):
+                continue
             attribute = self.attribute_instance_map.get(attribute_class)
             if attribute and not attribute.validate(value):
                 response.add(attribute.get_name())

@@ -21,14 +21,15 @@ class PersonAttributesParquetReader(PersonAttributesReader):
     Implements the PersonAttributesReader interface.
     """
 
-    def __init__(self, file_path: str, attribute_map: Dict[str, Type[Attribute]] | None = None):
+    def __init__(self, file_path: str, attribute_map: Dict[str, object] | None = None):
         """
         Initialize the class with the input file in Parquet format.
 
         Args:
             file_path: The input file path.
-            attribute_map: Optional explicit mapping from input column name to attribute class.
-                When omitted, mapping is discovered via built-in attribute aliases.
+            attribute_map: Optional explicit mapping from input column name to output key
+                (attribute class or logical field id). When omitted, mapping is discovered
+                via built-in attribute aliases.
 
         Raises:
             IOError: If an I/O error occurs.
@@ -77,7 +78,7 @@ class PersonAttributesParquetReader(PersonAttributesReader):
 
         return self.has_next_result
 
-    def __next__(self) -> Dict[Type[Attribute], str]:
+    def __next__(self) -> Dict[object, str]:
         """
         Get the next record from the Parquet file.
 
@@ -109,12 +110,12 @@ class PersonAttributesParquetReader(PersonAttributesReader):
         self.current_row += 1
 
         # Map to attribute classes
-        attributes: Dict[Type[Attribute], str] = {}
+        attributes: Dict[object, str] = {}
         for field_name, field_value in row_dict.items():
-            attribute_class = self.attribute_map.get(field_name.lower())
-            if attribute_class is not None:
+            mapped_key = self.attribute_map.get(field_name.lower())
+            if mapped_key is not None:
                 field_value_str = str(field_value) if field_value is not None else None
-                attributes[attribute_class] = field_value_str
+                attributes[mapped_key] = field_value_str
 
         return attributes
 

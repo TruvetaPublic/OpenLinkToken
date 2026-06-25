@@ -11,18 +11,19 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.openlinktoken.attributes.Attribute;
-import org.openlinktoken.attributes.AttributeExpression;
-import org.openlinktoken.attributes.AttributeLoader;
-import org.openlinktoken.tokens.tokenizer.PassthroughTokenizer;
-import org.openlinktoken.tokens.tokenizer.SHA256Tokenizer;
-import org.openlinktoken.tokens.tokenizer.Tokenizer;
-import org.openlinktoken.tokentransformer.TokenTransformer;
+import lombok.Getter;
+import lombok.Setter;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import lombok.Getter;
-import lombok.Setter;
+import org.openlinktoken.attributes.Attribute;
+import org.openlinktoken.attributes.AttributeExpression;
+import org.openlinktoken.attributes.AttributeLoader;
+import org.openlinktoken.tokens.tokenizer.SHA256Tokenizer;
+import org.openlinktoken.tokens.tokenizer.Tokenizer;
+import org.openlinktoken.tokens.tokenizer.PassthroughTokenizer;
+import org.openlinktoken.tokentransformer.TokenTransformer;
 
 /**
  * Generates both the token signature and the token itself.
@@ -65,47 +66,6 @@ public class TokenGenerator implements Serializable {
         this.tokenizer = tokenizer;
     }
 
-    private Attribute resolveAttributeInstance(Class<? extends Attribute> attributeClass) {
-        Attribute attribute = attributeInstanceMap.get(attributeClass);
-        if (attribute != null) {
-            return attribute;
-        }
-
-        int bestDistance = Integer.MAX_VALUE;
-        Attribute bestMatch = null;
-
-        for (Map.Entry<Class<? extends Attribute>, Attribute> entry : attributeInstanceMap.entrySet()) {
-            Class<? extends Attribute> baseClass = entry.getKey();
-            if (!baseClass.isAssignableFrom(attributeClass)) {
-                continue;
-            }
-
-            int distance = inheritanceDistance(attributeClass, baseClass);
-            if (distance >= 0 && distance < bestDistance) {
-                bestDistance = distance;
-                bestMatch = entry.getValue();
-            }
-        }
-
-        if (bestMatch != null) {
-            attributeInstanceMap.put(attributeClass, bestMatch);
-        }
-        return bestMatch;
-    }
-
-    private static int inheritanceDistance(Class<?> derivedClass, Class<?> baseClass) {
-        int distance = 0;
-        Class<?> current = derivedClass;
-        while (current != null) {
-            if (current.equals(baseClass)) {
-                return distance;
-            }
-            current = current.getSuperclass();
-            distance++;
-        }
-        return -1;
-    }
-
     /*
      * Get the token signature for a given token identifier. Populates the
      * invalidAttributes list in the result object with the attributes that are
@@ -135,10 +95,7 @@ public class TokenGenerator implements Serializable {
                 return null;
             }
 
-            var attribute = resolveAttributeInstance(attributeExpression.getAttributeClass());
-            if (attribute == null) {
-                return null;
-            }
+            var attribute = attributeInstanceMap.get(attributeExpression.getAttributeClass());
             String attributeValue = personAttributes.get(attributeExpression.getAttributeClass());
             if (!attribute.validate(attributeValue)) {
                 result.getInvalidAttributes().add(attribute.getName());
@@ -251,9 +208,8 @@ public class TokenGenerator implements Serializable {
         var response = new HashSet<String>();
 
         for (Map.Entry<Class<? extends Attribute>, String> entry : personAttributes.entrySet()) {
-            Attribute attribute = resolveAttributeInstance(entry.getKey());
-            if (attribute != null && !attribute.validate(entry.getValue())) {
-                response.add(attribute.getName());
+            if (!attributeInstanceMap.get(entry.getKey()).validate(entry.getValue())) {
+                response.add(attributeInstanceMap.get(entry.getKey()).getName());
             }
         }
 

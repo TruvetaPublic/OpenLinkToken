@@ -248,7 +248,7 @@ class PersonAttributesProcessor:
     @staticmethod
     def _write_tokens(
         writer: PersonAttributesWriter,
-        row: Dict[Type[Attribute], str],
+        row: Dict[object, str],
         row_counter: int,
         token_generator_result: TokenGeneratorResult,
         encryption_key: str = None,
@@ -274,7 +274,7 @@ class PersonAttributesProcessor:
         token_ids = sorted(token_generator_result.tokens.keys())
 
         # Generate a UUID for RecordId if it's not present in the input data
-        record_id = row.get(RecordIdAttribute)
+        record_id = row.get(RecordIdAttribute) or row.get("RecordId")
         if record_id is None or record_id == "":
             record_id = str(uuid.uuid4())
 

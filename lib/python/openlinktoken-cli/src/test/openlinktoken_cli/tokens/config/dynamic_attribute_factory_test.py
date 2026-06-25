@@ -9,7 +9,7 @@ from openlinktoken_cli.tokens.config.tokenization_config import AttributeMapping
 
 
 class TestDynamicAttributeFactory:
-    def test_creates_unique_dynamic_classes_for_same_base_type(self):
+    def test_maps_same_base_type_to_same_builtin_class(self):
         config = TokenizationConfig(
             attributes={
                 "patient_zip": AttributeMappingEntry(field="PatientZip", type="PostalCode"),
@@ -22,9 +22,11 @@ class TestDynamicAttributeFactory:
         patient_class = factory.get_class_for_field("PatientZip")
         hospital_class = factory.get_class_for_field("HospitalZip")
 
-        assert patient_class is not hospital_class
+        assert patient_class is hospital_class
         assert issubclass(patient_class, PostalCodeAttribute)
         assert issubclass(hospital_class, PostalCodeAttribute)
+        assert factory.get_field_for_csv_column("patient_zip") == "PatientZip"
+        assert factory.get_field_for_csv_column("hospital_zip") == "HospitalZip"
         assert factory.get_class_for_csv_column("patient_zip") is patient_class
         assert factory.get_class_for_csv_column("hospital_zip") is hospital_class
 

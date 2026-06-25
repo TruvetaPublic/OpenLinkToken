@@ -8,25 +8,29 @@ from openlinktoken_cli.tokens.config.tokenization_config import AttributeMapping
 
 
 class DynamicAttributeFactory:
-    """Creates and caches unique attribute subclasses for each logical field in the config."""
+    """Resolves config field ids to built-in attribute classes and column mappings."""
 
     def __init__(self, config: TokenizationConfig):
         self._field_id_to_class: Dict[str, Type[Attribute]] = {}
-        self._csv_column_to_class: Dict[str, Type[Attribute]] = {}
+        self._csv_column_to_field_id: Dict[str, str] = {}
 
         type_name_to_base_class = self._build_type_name_index()
-        self._create_dynamic_classes(config.attributes, type_name_to_base_class)
+        self._register_field_mappings(config.attributes, type_name_to_base_class)
 
     def get_class_for_field(self, field_id: str) -> Type[Attribute]:
         return self._field_id_to_class[field_id]
 
     def get_class_for_csv_column(self, csv_column: str) -> Type[Attribute]:
-        return self._csv_column_to_class[csv_column]
+        field_id = self._csv_column_to_field_id[csv_column]
+        return self._field_id_to_class[field_id]
+
+    def get_field_for_csv_column(self, csv_column: str) -> str:
+        return self._csv_column_to_field_id[csv_column]
 
     def get_all_classes(self) -> Set[Type[Attribute]]:
         return set(self._field_id_to_class.values())
 
-    def _create_dynamic_classes(
+    def _register_field_mappings(
         self,
         attributes: Dict[str, AttributeMappingEntry],
         type_name_to_base_class: Dict[str, Type[Attribute]],
@@ -39,9 +43,8 @@ class DynamicAttributeFactory:
                     f"Recognized types are: {sorted(type_name_to_base_class.keys())}."
                 )
 
-            dynamic_class = type(f"{entry.field}Attribute", (base_class,), {})
-            self._field_id_to_class[entry.field] = dynamic_class
-            self._csv_column_to_class[csv_column] = dynamic_class
+            self._field_id_to_class[entry.field] = base_class
+            self._csv_column_to_field_id[csv_column] = entry.field
 
     @staticmethod
     def _build_type_name_index() -> Dict[str, Type[Attribute]]:
