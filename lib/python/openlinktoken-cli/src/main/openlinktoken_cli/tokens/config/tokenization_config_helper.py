@@ -21,7 +21,16 @@ class TokenizationConfigHelper:
     def load_tokenization_config(
         tokenization_config_path: Optional[str] = None,
     ) -> tuple[TokenizationConfig | None, DynamicAttributeFactory | None, DynamicTokenDefinition | None]:
-        """Load optional tokenization config and build derived factory/definition objects."""
+        """Load tokenization config and create factories for config-driven token generation.
+
+        Args:
+            tokenization_config_path: Path to YAML tokenization config file.
+                If None or omitted, returns (None, None, None).
+
+        Returns:
+            Tuple of (TokenizationConfig, DynamicAttributeFactory, DynamicTokenDefinition)
+                or (None, None, None) if config not provided.
+        """
         if not tokenization_config_path:
             return None, None, None
 
@@ -35,7 +44,15 @@ class TokenizationConfigHelper:
         config: TokenizationConfig,
         factory: DynamicAttributeFactory,
     ) -> dict:
-        """Build input-column-to-attribute-class mapping from tokenization config."""
+        """Build input-column-to-attribute-class mapping from tokenization config.
+
+        Args:
+            config: Parsed tokenization config containing the attribute column mappings.
+            factory: Factory used to resolve each config column to its built-in attribute class.
+
+        Returns:
+            A dict mapping each input CSV column name to its corresponding attribute class.
+        """
         attribute_map = {}
         for csv_column in config.attributes:
             try:
@@ -51,7 +68,21 @@ class TokenizationConfigHelper:
         config: Optional[TokenizationConfig] = None,
         factory: Optional[DynamicAttributeFactory] = None,
     ):
-        """Create and optionally configure a reader for CSV or Parquet inputs."""
+        """Create and optionally configure a reader for CSV or Parquet inputs.
+
+        Args:
+            path: Path to the input file.
+            file_type: Format of the input file; must be 'csv' or 'parquet' (case-insensitive).
+            config: Optional tokenization config used to build the attribute map.
+            factory: Optional factory required when config is provided.
+
+        Returns:
+            A PersonAttributesCSVReader or PersonAttributesParquetReader initialised with
+            the resolved attribute map when a config is supplied, or with no map otherwise.
+
+        Raises:
+            ValueError: If file_type is not 'csv' or 'parquet'.
+        """
         attribute_map = None
         if config is not None and factory is not None:
             attribute_map = TokenizationConfigHelper.build_configured_input_attribute_map(config, factory)
