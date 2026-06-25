@@ -5,7 +5,7 @@ import sys
 from typing import List, Optional
 
 from openlinktoken.metadata import Metadata
-from openlinktoken_cli.commands.tokenization_config_helper import TokenizationConfigHelper
+from openlinktoken_cli.tokens.config.tokenization_config_helper import TokenizationConfigHelper
 from openlinktoken_cli.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
 from openlinktoken_cli.tokens.config.dynamic_token_definition import DynamicTokenDefinition
 from openlinktoken_cli.tokens.config.tokenization_config import TokenizationConfig
