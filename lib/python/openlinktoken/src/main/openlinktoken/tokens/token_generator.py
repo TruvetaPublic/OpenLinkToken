@@ -79,7 +79,7 @@ class TokenGenerator:
         for attribute_expression in definition:
             attribute_class = attribute_expression.attribute_class
             field_id = getattr(attribute_expression, "field_id", None)
-            lookup_key = field_id if field_id is not None else attribute_class
+            lookup_key = field_id if field_id is not None and field_id in person_attributes else attribute_class
 
             if lookup_key not in person_attributes:
                 return None

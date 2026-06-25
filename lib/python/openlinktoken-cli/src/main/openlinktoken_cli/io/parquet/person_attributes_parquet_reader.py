@@ -43,17 +43,25 @@ class PersonAttributesParquetReader(PersonAttributesReader):
             self.closed = False
             self.has_next_called = False
             self.has_next_result = False
+            self._attribute_map: Dict[str, object] = {}
             if attribute_map is not None:
-                self.attribute_map = {
-                    column_name.lower(): attribute_class
-                    for column_name, attribute_class in attribute_map.items()
-                }
+                self.attribute_map = attribute_map
             else:
                 self.attribute_map = self._build_attribute_map_from_aliases()
 
         except Exception as e:
             logger.error(f"Error in reading Parquet file: {e}")
             raise IOError(f"Failed to read Parquet file: {file_path}") from e
+
+    @property
+    def attribute_map(self) -> Dict[str, object]:
+        """Return the normalized input-column mapping for this reader."""
+        return self._attribute_map
+
+    @attribute_map.setter
+    def attribute_map(self, value: Dict[str, object]) -> None:
+        """Store column mappings using lowercase keys for case-insensitive lookups."""
+        self._attribute_map = {column_name.lower(): mapped_key for column_name, mapped_key in value.items()}
 
     def __iter__(self):
         """Return the iterator object."""

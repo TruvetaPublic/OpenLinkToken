@@ -103,10 +103,7 @@ class TokenizationConfigHelper:
         elif file_type_lower == FileTypeDetector.TYPE_PARQUET:
             reader = PersonAttributesParquetReader(path)
             if attribute_map is not None:
-                reader.attribute_map = {
-                    column_name.lower(): attribute_class
-                    for column_name, attribute_class in attribute_map.items()
-                }
+                reader.attribute_map = attribute_map.copy()
             return reader
         else:
             raise ValueError(f"Unsupported input type: {file_type}")

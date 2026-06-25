@@ -3,6 +3,8 @@
 
 import os
 
+# Python 3.11+ includes tomllib; keep tomli fallback for Python 3.10 support
+# when loading project metadata from pyproject.toml.
 try:
     import tomllib
 except ImportError:  # pragma: no cover
