@@ -16,7 +16,14 @@ class TokenizationConfigLoader:
 
     @staticmethod
     def load(file_path: str) -> TokenizationConfig:
-        """Read YAML from disk and return a validated TokenizationConfig."""
+        """Read YAML from disk and return a validated tokenization config.
+
+        Args:
+            file_path: Path to the YAML configuration file.
+
+        Returns:
+            Parsed and validated TokenizationConfig instance.
+        """
         with open(file_path, "r", encoding="utf-8") as file:
             raw = yaml.safe_load(file)
 
@@ -27,7 +34,15 @@ class TokenizationConfigLoader:
 
     @staticmethod
     def _parse(raw: Dict[str, Any], file_path: str) -> TokenizationConfig:
-        """Validate top-level sections, then parse attributes and token rules."""
+        """Validate top-level sections, then parse attributes and token rules.
+
+        Args:
+            raw: Raw YAML payload represented as a Python mapping.
+            file_path: Source path used for validation error context.
+
+        Returns:
+            Parsed TokenizationConfig with normalized attributes and token rules.
+        """
         if "attributes" not in raw or not raw["attributes"]:
             raise ValueError(f"Configuration '{file_path}' must define a non-empty 'attributes' section.")
 
@@ -40,7 +55,15 @@ class TokenizationConfigLoader:
 
     @staticmethod
     def _parse_attributes(raw_attributes: Any, file_path: str) -> Dict[str, AttributeMappingEntry]:
-        """Parse attribute mappings keyed by source column name."""
+        """Parse attribute mappings keyed by source column name.
+
+        Args:
+            raw_attributes: Raw attributes section from the YAML payload.
+            file_path: Source path used for validation error context.
+
+        Returns:
+            Mapping of source column names to AttributeMappingEntry values.
+        """
         if not isinstance(raw_attributes, dict):
             raise ValueError(f"Configuration '{file_path}': 'attributes' must be a mapping.")
 
@@ -68,7 +91,16 @@ class TokenizationConfigLoader:
         attributes: Dict[str, AttributeMappingEntry],
         file_path: str,
     ) -> Dict[str, list]:
-        """Parse token rules and ensure each referenced field exists in attributes."""
+        """Parse token rules and ensure each referenced field exists in attributes.
+
+        Args:
+            raw_token_rules: Raw token_rules section from the YAML payload.
+            attributes: Parsed attributes used to validate referenced field ids.
+            file_path: Source path used for validation error context.
+
+        Returns:
+            Mapping of token ids to ordered TokenRuleEntry lists.
+        """
         if not isinstance(raw_token_rules, dict):
             raise ValueError(f"Configuration '{file_path}': 'token_rules' must be a mapping.")
 
