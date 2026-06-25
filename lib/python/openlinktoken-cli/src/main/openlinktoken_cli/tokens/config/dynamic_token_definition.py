@@ -20,10 +20,7 @@ class DynamicTokenDefinition(BaseTokenDefinition):
             expressions = []
             for entry in rule_entries:
                 attribute_class = factory.get_class_for_field(entry.field)
-                attribute_expression = AttributeExpression(attribute_class, entry.expression)
-                # Config-mode rules resolve row values by logical field id, not by class key.
-                attribute_expression.field_id = entry.field
-                expressions.append(attribute_expression)
+                expressions.append(AttributeExpression(attribute_class, entry.expression))
             self._definitions[token_id] = expressions
 
     def get_version(self) -> str:

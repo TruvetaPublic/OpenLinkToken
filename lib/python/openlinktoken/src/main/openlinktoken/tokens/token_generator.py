@@ -53,7 +53,7 @@ class TokenGenerator:
         self.tokenizer = tokenizer
 
     def _get_token_signature(
-        self, token_id: str, person_attributes: Dict[object, str], result: TokenGeneratorResult
+        self, token_id: str, person_attributes: Dict[Type[Attribute], str], result: TokenGeneratorResult
     ) -> Optional[str]:
         """
         Get the token signature for a given token identifier.
@@ -78,17 +78,15 @@ class TokenGenerator:
 
         for attribute_expression in definition:
             attribute_class = attribute_expression.attribute_class
-            field_id = getattr(attribute_expression, "field_id", None)
-            lookup_key = field_id if field_id is not None and field_id in person_attributes else attribute_class
 
-            if lookup_key not in person_attributes:
+            if attribute_class not in person_attributes:
                 return None
 
             attribute = self.attribute_instance_map.get(attribute_class)
             if attribute is None:
                 return None
 
-            attribute_value = person_attributes[lookup_key]
+            attribute_value = person_attributes[attribute_class]
 
             if not attribute.validate(attribute_value):
                 result.invalid_attributes.add(attribute.get_name())
@@ -107,7 +105,7 @@ class TokenGenerator:
         filtered_values = [v for v in values if v is not None and v.strip() != ""]
         return "|".join(filtered_values)
 
-    def get_all_token_signatures(self, person_attributes: Dict[object, str]) -> Dict[str, str]:
+    def get_all_token_signatures(self, person_attributes: Dict[Type[Attribute], str]) -> Dict[str, str]:
         """
         Get the token signatures for all token/rule identifiers.
 
@@ -132,7 +130,7 @@ class TokenGenerator:
         return signatures
 
     def _get_token(
-        self, token_id: str, person_attributes: Dict[object, str], result: TokenGeneratorResult
+        self, token_id: str, person_attributes: Dict[Type[Attribute], str], result: TokenGeneratorResult
     ) -> Optional[str]:
         """
         Get token for a given token identifier.
@@ -161,7 +159,7 @@ class TokenGenerator:
             logger.error(f"Error generating token for token id: {token_id}", exc_info=e)
             raise TokenGenerationException("Error generating token", e)
 
-    def get_all_tokens(self, person_attributes: Dict[object, str]) -> TokenGeneratorResult:
+    def get_all_tokens(self, person_attributes: Dict[Type[Attribute], str]) -> TokenGeneratorResult:
         """
         Get the tokens for all token/rule identifiers.
 
@@ -183,7 +181,7 @@ class TokenGenerator:
 
         return result
 
-    def get_invalid_person_attributes(self, person_attributes: Dict[object, str]) -> Set[str]:
+    def get_invalid_person_attributes(self, person_attributes: Dict[Type[Attribute], str]) -> Set[str]:
         """
         Get invalid person attribute names.
 

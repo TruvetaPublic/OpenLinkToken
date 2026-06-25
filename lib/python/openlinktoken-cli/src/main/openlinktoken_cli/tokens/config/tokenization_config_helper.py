@@ -35,11 +35,11 @@ class TokenizationConfigHelper:
         config: TokenizationConfig,
         factory: DynamicAttributeFactory,
     ) -> dict:
-        """Build input-column-to-field-id mapping from tokenization config."""
+        """Build input-column-to-attribute-class mapping from tokenization config."""
         attribute_map = {}
         for csv_column in config.attributes:
             try:
-                attribute_map[csv_column] = factory.get_field_for_csv_column(csv_column)
+                attribute_map[csv_column] = factory.get_class_for_csv_column(csv_column)
             except KeyError:
                 logger.warning("CSV column '%s' is in config but has no dynamic class registered.", csv_column)
         return attribute_map

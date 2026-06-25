@@ -9,6 +9,7 @@ from openlinktoken_cli.tokens.config.dynamic_attribute_factory import DynamicAtt
 from openlinktoken_cli.tokens.config.dynamic_token_definition import DynamicTokenDefinition
 from openlinktoken_cli.tokens.config.tokenization_config import AttributeMappingEntry, TokenizationConfig
 from openlinktoken_cli.tokens.config.tokenization_config_helper import TokenizationConfigHelper
+from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute
 
 
 class TestTokenizationConfigHelper:
@@ -51,11 +52,11 @@ token_rules:
         )
 
         factory = MagicMock()
-        factory.get_field_for_csv_column.side_effect = ["FirstName", KeyError("missing")]
+        factory.get_class_for_csv_column.side_effect = [FirstNameAttribute, KeyError("missing")]
 
         attribute_map = TokenizationConfigHelper.build_configured_input_attribute_map(config, factory)
 
-        assert attribute_map == {"given_nm": "FirstName"}
+        assert attribute_map == {"given_nm": FirstNameAttribute}
         assert "has no dynamic class registered" in caplog.text
 
     def test_create_reader_csv_applies_attribute_map(self):
@@ -68,7 +69,7 @@ token_rules:
         with patch(
             "openlinktoken_cli.tokens.config.tokenization_config_helper.TokenizationConfigHelper"
             ".build_configured_input_attribute_map",
-            return_value={"given_nm": "FirstName"},
+            return_value={"given_nm": FirstNameAttribute},
         ), patch(
             "openlinktoken_cli.tokens.config.tokenization_config_helper.PersonAttributesCSVReader"
         ) as mock_reader_cls:
@@ -78,7 +79,7 @@ token_rules:
             created_reader = TokenizationConfigHelper.create_reader("input.csv", "csv", config, factory)
 
         assert created_reader is reader
-        mock_reader_cls.assert_called_once_with("input.csv", attribute_map={"given_nm": "FirstName"})
+        mock_reader_cls.assert_called_once_with("input.csv", attribute_map={"given_nm": FirstNameAttribute})
 
     def test_create_reader_parquet_applies_attribute_map(self):
         config = TokenizationConfig(
@@ -90,7 +91,7 @@ token_rules:
         with patch(
             "openlinktoken_cli.tokens.config.tokenization_config_helper.TokenizationConfigHelper"
             ".build_configured_input_attribute_map",
-            return_value={"given_nm": "FirstName"},
+            return_value={"given_nm": FirstNameAttribute},
         ), patch(
             "openlinktoken_cli.tokens.config.tokenization_config_helper.PersonAttributesParquetReader"
         ) as mock_reader_cls:
@@ -100,7 +101,7 @@ token_rules:
             created_reader = TokenizationConfigHelper.create_reader("input.parquet", "parquet", config, factory)
 
         assert created_reader is reader
-        mock_reader_cls.assert_called_once_with("input.parquet", attribute_map={"given_nm": "FirstName"})
+        mock_reader_cls.assert_called_once_with("input.parquet", attribute_map={"given_nm": FirstNameAttribute})
 
     def test_create_reader_raises_for_unsupported_type(self):
         with pytest.raises(ValueError, match="Unsupported input type"):
