@@ -59,7 +59,7 @@ uv pip install openlinktoken-pyspark
 import sys
 import os
 from pyspark.sql import SparkSession
-from openlinktoken_pyspark import Open Link TokenProcessor
+from openlinktoken_pyspark import OpenLinkTokenProcessor
 
 # Create Spark session
 spark = SparkSession.builder \
@@ -72,7 +72,7 @@ spark = SparkSession.builder \
 df = spark.read.csv("data.csv", header=True)
 
 # Initialize processor with your secrets
-processor = Open Link TokenProcessor(
+processor = OpenLinkTokenProcessor(
     hashing_secret="your-hashing-secret",
     encryption_key="your-encryption-key-32-chars!!"
 )
@@ -90,13 +90,13 @@ tokens_df.write.mode("overwrite").csv("output/tokens")
 ### Databricks Example
 
 ```python
-from openlinktoken_pyspark import Open Link TokenProcessor
+from openlinktoken_pyspark import OpenLinkTokenProcessor
 
 # Load data from Delta table or CSV
 df = spark.read.table("my_database.person_records")
 
 # Initialize processor using Databricks secrets
-processor = Open Link TokenProcessor(
+processor = OpenLinkTokenProcessor(
     hashing_secret=dbutils.secrets.get("openlinktoken", "hashing_secret"),
     encryption_key=dbutils.secrets.get("openlinktoken", "encryption_key")
 )
@@ -143,10 +143,10 @@ Each input record produces multiple output rows (one per token rule):
 Find matching records between two tokenized datasets:
 
 ```python
-from openlinktoken_pyspark import Open Link TokenOverlapAnalyzer
+from openlinktoken_pyspark import OpenLinkTokenOverlapAnalyzer
 
 # Initialize with encryption key (same key used for token generation)
-analyzer = Open Link TokenOverlapAnalyzer("encryption-key-32-characters!!")
+analyzer = OpenLinkTokenOverlapAnalyzer("encryption-key-32-characters!!")
 
 # Analyze overlap - match on T1 and T2 (both must match)
 results = analyzer.analyze_overlap(
@@ -192,7 +192,7 @@ for result in results:
 ## Custom Token Definitions
 
 ```python
-from openlinktoken_pyspark import Open Link TokenProcessor
+from openlinktoken_pyspark import OpenLinkTokenProcessor
 from openlinktoken_pyspark.notebook_helpers import TokenBuilder, CustomTokenDefinition
 
 # Define custom token rule
@@ -207,7 +207,7 @@ custom_token = TokenBuilder("T6") \
 custom_definition = CustomTokenDefinition().add_token(custom_token)
 
 # Create processor with custom definition
-processor = Open Link TokenProcessor(
+processor = OpenLinkTokenProcessor(
     hashing_secret="your-hashing-secret",
     encryption_key="your-encryption-key-32-chars!!",
     token_definition=custom_definition
@@ -284,12 +284,12 @@ Unity Catalog (UC) is the right place to govern **data access** (tables, volumes
 **Example: read secrets + write UC table**
 
 ```python
-from openlinktoken_pyspark import Open Link TokenProcessor
+from openlinktoken_pyspark import OpenLinkTokenProcessor
 
 hashing_secret = dbutils.secrets.get("openlinktoken", "hashing_secret")
 encryption_key = dbutils.secrets.get("openlinktoken", "encryption_key")
 
-processor = Open Link TokenProcessor(
+processor = OpenLinkTokenProcessor(
     hashing_secret=hashing_secret,
     encryption_key=encryption_key,
 )

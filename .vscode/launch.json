@@ -2,8 +2,39 @@
   // Use IntelliSense to learn about possible attributes.
   // Hover to view descriptions of existing attributes.
   // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  //
+  // First-time setup: run "Setup 1" then "Setup 2" once. The consumer
+  // launches below pick up the resulting exchange config and auto-discover
+  // the matching private key from ~/.openlinktoken/.
   "version": "0.2.0",
   "configurations": [
+    {
+      "name": "Setup 1: generate-key-pair (recipient)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/lib/python/openlinktoken-cli/src/main/openlinktoken_cli/main.py",
+      "env": {
+        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main"
+      },
+      "args": ["generate-key-pair", "--name", "local-recipient", "--force"]
+    },
+    {
+      "name": "Setup 2: initiate-exchange",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/lib/python/openlinktoken-cli/src/main/openlinktoken_cli/main.py",
+      "env": {
+        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main"
+      },
+      "args": [
+        "initiate-exchange",
+        "--public-key",
+        "${env:HOME}/.openlinktoken/local-recipient.public.pem",
+        "--output",
+        "${workspaceFolder}/lib/python/openlinktoken-cli/target/local.exchange.json",
+        "--force"
+      ]
+    },
     {
       "name": "Python: tokenize",
       "type": "debugpy",
@@ -15,15 +46,13 @@
       "args": [
         "tokenize",
         "-i",
-        "resources/sample.${input:inputType}",
-        "-t",
-        "${input:inputType}",
+        "${workspaceFolder}/resources/sample.${input:inputType}",
         "-o",
-        "lib/python/openlinktoken-cli/target/output.${input:outputType}",
-        "-ot",
-        "${input:outputType}",
-        "-h",
-        "HashingKey"
+        "${workspaceFolder}/lib/python/openlinktoken-cli/target/output.${input:outputType}",
+        "--exchange-config",
+        "${workspaceFolder}/lib/python/openlinktoken-cli/target/local.exchange.json",
+        "--mode",
+        "${input:tokenizeMode}"
       ]
     },
     {
@@ -37,17 +66,11 @@
       "args": [
         "package",
         "-i",
-        "resources/sample.${input:inputType}",
-        "-t",
-        "${input:inputType}",
+        "${workspaceFolder}/resources/sample.${input:inputType}",
         "-o",
-        "lib/python/openlinktoken-cli/target/output.${input:outputType}",
-        "-ot",
-        "${input:outputType}",
-        "-h",
-        "HashingKey",
-        "-e",
-        "Secret-Encryption-Key-Goes-Here."
+        "${workspaceFolder}/lib/python/openlinktoken-cli/target/output.${input:outputType}",
+        "--exchange-config",
+        "${workspaceFolder}/lib/python/openlinktoken-cli/target/local.exchange.json"
       ]
     },
     {
@@ -61,15 +84,11 @@
       "args": [
         "encrypt",
         "-i",
-        "lib/python/openlinktoken-cli/target/output.${input:outputType}",
-        "-t",
-        "${input:outputType}",
+        "${workspaceFolder}/lib/python/openlinktoken-cli/target/output.${input:outputType}",
         "-o",
-        "lib/python/openlinktoken-cli/target/encrypted.${input:outputType}",
-        "-ot",
-        "${input:outputType}",
-        "-e",
-        "Secret-Encryption-Key-Goes-Here."
+        "${workspaceFolder}/lib/python/openlinktoken-cli/target/encrypted.${input:outputType}",
+        "--exchange-config",
+        "${workspaceFolder}/lib/python/openlinktoken-cli/target/local.exchange.json"
       ]
     },
     {
@@ -83,15 +102,11 @@
       "args": [
         "decrypt",
         "-i",
-        "lib/python/openlinktoken-cli/target/encrypted.${input:outputType}",
-        "-t",
-        "${input:outputType}",
+        "${workspaceFolder}/lib/python/openlinktoken-cli/target/encrypted.${input:outputType}",
         "-o",
-        "lib/python/openlinktoken-cli/target/decrypted.${input:outputType}",
-        "-ot",
-        "${input:outputType}",
-        "-e",
-        "Secret-Encryption-Key-Goes-Here."
+        "${workspaceFolder}/lib/python/openlinktoken-cli/target/decrypted.${input:outputType}",
+        "--exchange-config",
+        "${workspaceFolder}/lib/python/openlinktoken-cli/target/local.exchange.json"
       ]
     }
   ],
@@ -109,6 +124,13 @@
       "description": "Select output type",
       "options": ["csv", "parquet"],
       "default": "csv"
+    },
+    {
+      "id": "tokenizeMode",
+      "type": "pickString",
+      "description": "Select tokenize mode",
+      "options": ["default", "hash-only", "demo"],
+      "default": "default"
     }
   ]
 }

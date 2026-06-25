@@ -210,9 +210,9 @@ def process_csv(input_path, output_path, hashing_secret, encryption_key):
 For distributed processing on Spark, use the `openlinktoken_pyspark` bridge:
 
 ```python
-from openlinktoken_pyspark import Open Link TokenProcessor
+from openlinktoken_pyspark import OpenLinkTokenProcessor
 
-processor = Open Link TokenProcessor(
+processor = OpenLinkTokenProcessor(
     hashing_secret="HashingSecret",
     encryption_key="EncryptionKey-32Characters-Here",
 )
@@ -227,9 +227,9 @@ df_tokens.show()
 For overlap analysis between two tokenized datasets, use:
 
 ```python
-from openlinktoken_pyspark import Open Link TokenOverlapAnalyzer
+from openlinktoken_pyspark import OpenLinkTokenOverlapAnalyzer
 
-analyzer = Open Link TokenOverlapAnalyzer("EncryptionKey-32Characters-Here")
+analyzer = OpenLinkTokenOverlapAnalyzer("EncryptionKey-32Characters-Here")
 results = analyzer.analyze_overlap(tokens_df1, tokens_df2, ["T1", "T2"])
 analyzer.print_summary(results)
 ```

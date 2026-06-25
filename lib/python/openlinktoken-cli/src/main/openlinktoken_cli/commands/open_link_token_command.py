@@ -87,7 +87,7 @@ class OpenLinkTokenCommand:
             description="Available commands",
             dest="command",
             metavar="<command>",
-            help="Use 'openlinktoken <command> --help' for command-specific help",
+            help="Use 'olt <command> --help' for command-specific help",
         )
 
         # Import command modules here to avoid circular imports
@@ -148,9 +148,7 @@ class OpenLinkTokenCommand:
         # requires arguments to run, display its help page instead of an error.
         if len(raw_args) == 1 and not raw_args[0].startswith("-"):
             subparser_map = OpenLinkTokenCommand._get_subcommand_map(parser)
-            if raw_args[0] in subparser_map and OpenLinkTokenCommand._subcommand_needs_args(
-                subparser_map[raw_args[0]]
-            ):
+            if raw_args[0] in subparser_map and OpenLinkTokenCommand._subcommand_needs_args(subparser_map[raw_args[0]]):
                 try:
                     parser.parse_args([raw_args[0], "--help"])
                 except SystemExit as error:
@@ -167,14 +165,16 @@ class OpenLinkTokenCommand:
 
         version_checker = None
         if should_start_version_check:
-            # Start the asynchronous version check before executing the command
-            version_checker = start_version_check(OpenLinkTokenCommand.VERSION, no_update_check=no_update_check)
+            try:
+                version_checker = start_version_check(OpenLinkTokenCommand.VERSION, no_update_check=no_update_check)
+            except Exception:
+                # Version check startup must never prevent command execution.
+                logger.debug("Failed to start version check", exc_info=True)
 
         # If no subcommand specified, show help
         if not parsed_args.command:
             parser.print_help()
-            if version_checker is not None:
-                version_checker.wait_and_notify()
+            OpenLinkTokenCommand._safe_wait_and_notify(version_checker)
             return 0
 
         # Execute the command
@@ -186,9 +186,8 @@ class OpenLinkTokenCommand:
             logger.debug("Command execution failed", exc_info=error)
             exit_code = 1
 
-        # Wait for the version check and surface any update notice after command output
-        if version_checker is not None:
-            version_checker.wait_and_notify()
+        # Surface any update notice after command output; never let this affect the exit code.
+        OpenLinkTokenCommand._safe_wait_and_notify(version_checker)
         return exit_code
 
     @staticmethod
@@ -256,10 +255,19 @@ class OpenLinkTokenCommand:
         if any(action.required for action in subparser._actions):
             return True
         # Required mutually-exclusive groups (e.g. initiate-exchange --public-key)
-        return any(
-            group.required
-            for group in getattr(subparser, "_mutually_exclusive_groups", [])
-        )
+        return any(group.required for group in getattr(subparser, "_mutually_exclusive_groups", []))
+
+    @staticmethod
+    def _safe_wait_and_notify(version_checker) -> None:
+        """Call wait_and_notify, swallowing all exceptions so notice display
+        can never affect the exit code or mask command output."""
+        if version_checker is None:
+            return
+        try:
+            sys.stdout.flush()
+            version_checker.wait_and_notify()
+        except Exception:
+            logger.debug("Version notice display failed", exc_info=True)
 
     @staticmethod
     def _should_start_version_check(parsed_args: argparse.Namespace) -> bool:

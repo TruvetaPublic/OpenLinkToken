@@ -54,29 +54,63 @@ Perfect for understanding privacy-preserving record linkage concepts before divi
 
 **Self-contained executable (easiest):**
 
-Download the [latest release](https://github.com/TruvetaPublic/OpenLinkToken/releases) for your platform and run:
+Download the binary for your platform from the [latest release](https://github.com/TruvetaPublic/OpenLinkToken/releases):
+
+| Platform                      | Asset                           |
+| ----------------------------- | ------------------------------- |
+| Linux                         | `olt-vX.Y.Z-linux-x86_64`       |
+| macOS (Intel + Apple Silicon) | `olt-vX.Y.Z-macos-universal`    |
+| Windows                       | `olt-vX.Y.Z-windows-x86_64.exe` |
+
+Each asset has a matching `.sha256` file you can use to verify the download.
+
+```bash
+# Linux
+chmod +x olt-v*-linux-x86_64
+mv olt-v*-linux-x86_64 olt
+
+# macOS — make executable, clear Gatekeeper quarantine, and rename
+chmod +x olt-v*-macos-universal
+xattr -d com.apple.quarantine olt-v*-macos-universal
+mv olt-v*-macos-universal olt
+```
+
+Then run:
 
 ```bash
 # Linux/macOS
-./olt generate-key-pair --name recipient --force
-./olt initiate-exchange --name quickstart --public-key "$HOME/.openlinktoken/recipient.public.pem" --output ./resources/quickstart.exchange.json
-./olt package -i ./resources/sample.csv -o ./resources/output.csv \
-  --exchange-config ./resources/quickstart.exchange.json --private-key "$HOME/.openlinktoken/quickstart.private.pem"
+# Simulate receiving the recipient's public key (in practice, your partner provides this)
+./olt generate-key-pair --name recipient
+# Create the exchange config using the recipient's public key
+./olt initiate-exchange --public-key "$HOME/.openlinktoken/recipient.public.pem"
+./olt package -i ./resources/sample.csv
 
 # Windows
-.\olt.exe generate-key-pair --name recipient --force
-.\olt.exe initiate-exchange --name quickstart --public-key "$HOME/.openlinktoken/recipient.public.pem" --output .\resources\quickstart.exchange.json
-.\olt.exe package -i .\resources\sample.csv -o .\resources\output.csv `
-  --exchange-config .\resources\quickstart.exchange.json --private-key "$HOME/.openlinktoken/quickstart.private.pem"
+# Simulate receiving the recipient's public key (in practice, your partner provides this)
+.\olt.exe generate-key-pair --name recipient
+# Create the exchange config using the recipient's public key
+.\olt.exe initiate-exchange --public-key "$HOME/.openlinktoken/recipient.public.pem"
+.\olt.exe package -i .\resources\sample.csv
 ```
 
-**Subcommand Interface:**
+**Docker convenience scripts (Linux/macOS and Windows):**
 
 ```bash
-./run-openlinktoken.sh package \
-  -i ./resources/sample.csv -o ./resources/output.csv \
-  --exchange-config ./resources/quickstart.exchange.json \
-  --private-key "$HOME/.openlinktoken/quickstart.private.pem"
+# Linux/macOS
+./run-olt.sh generate-key-pair --name recipient
+./run-olt.sh initiate-exchange --public-key "$HOME/.openlinktoken/recipient.public.pem"
+./run-olt.sh package \
+  -i ./resources/sample.csv -o ./resources/output.zip \
+  --exchange-config ./resources/openlinktoken.exchange.json \
+  --private-key "$HOME/.openlinktoken/recipient.private.pem"
+
+# Windows
+.\run-olt.ps1 generate-key-pair --name recipient
+.\run-olt.ps1 initiate-exchange --public-key "$HOME\.openlinktoken\recipient.public.pem"
+.\run-olt.ps1 package `
+  -i .\resources\sample.csv -o .\resources\output.zip `
+  --exchange-config .\resources\openlinktoken.exchange.json `
+  --private-key "$HOME\.openlinktoken\recipient.private.pem"
 ```
 
 **Available Commands:**
@@ -98,13 +132,15 @@ See <a href="https://truvetapublic.github.io/OpenLinkToken/quickstarts/" target=
 
 ## Running Open Link Token
 
-- **Subcommand Interface**: Modern command-based interface:
+- **CLI subcommands** (`olt` binary or Docker convenience scripts):
   - `tokenize` - Internal hashed token generation (`--mode hash-only` is available for deterministic SHA-256 output)
   - `encrypt` - Encrypt existing hashed tokens
   - `decrypt` - Decrypt encrypted tokens
   - `package` - Tokenize + encrypt in one step (recommended)
+  - `initiate-exchange` - Create an exchange config from a partner's public key
+  - `generate-key-pair` - Generate an ECDH key pair
   - See <a href="https://truvetapublic.github.io/OpenLinkToken/running-openlinktoken/" target="_blank" rel="noopener noreferrer">Running Open Link Token</a>
-- **Docker**: Convenience scripts for containerized runs — see <a href="https://truvetapublic.github.io/OpenLinkToken/quickstarts/" target="_blank" rel="noopener noreferrer">Quickstarts</a>
+- **Docker convenience scripts**: `run-olt.sh` (Linux/macOS) and `run-olt.ps1` (Windows) wrap Docker automatically — see <a href="https://truvetapublic.github.io/OpenLinkToken/quickstarts/" target="_blank" rel="noopener noreferrer">Quickstarts</a>
 - **PySpark**: Distributed processing for large datasets — see <a href="https://truvetapublic.github.io/OpenLinkToken/operations/spark-or-databricks.html" target="_blank" rel="noopener noreferrer">Spark or Databricks</a>
 
 ## Security Notes

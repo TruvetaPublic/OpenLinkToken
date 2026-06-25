@@ -20,7 +20,7 @@ No dependencies required. Extract and run.
 
 ### Other Options
 
-- **Docker**: Use `run-openlinktoken.sh` (Linux/Mac) or `run-openlinktoken.ps1` (Windows)
+- **Docker**: Use `run-olt.sh` (Linux/Mac) or `run-olt.ps1` (Windows)
 - **Python**: Install with `uv pip install openlinktoken-cli`, then run `openlinktoken` or `python -m openlinktoken_cli.main`
 
 For installation details, see the [CLI Quickstart](../quickstarts/cli-quickstart.md).
@@ -428,10 +428,10 @@ For long-running processing commands (`package`, `tokenize`, `encrypt`, and `dec
 
 ## Docker Script Options
 
-### Bash (run-openlinktoken.sh)
+### Bash (run-olt.sh)
 
 ```bash
-./run-openlinktoken.sh package \
+./run-olt.sh package \
   -i ./input.csv \
   -o ./output.csv \
   --exchange-config ./partner.exchange.json \
@@ -445,10 +445,10 @@ For long-running processing commands (`package`, `tokenize`, `encrypt`, and `dec
 | `--verbose`    | Show detailed output      |
 | `--help`       | Show help message         |
 
-### PowerShell (run-openlinktoken.ps1)
+### PowerShell (run-olt.ps1)
 
 ```powershell
-.\run-openlinktoken.ps1 package `
+.\run-olt.ps1 package `
   -i .\input.csv `
   -o .\output.csv `
   --exchange-config .\partner.exchange.json `
