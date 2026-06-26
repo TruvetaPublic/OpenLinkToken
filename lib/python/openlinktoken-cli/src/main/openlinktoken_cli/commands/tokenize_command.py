@@ -6,9 +6,6 @@ from typing import List, Optional
 
 from openlinktoken.metadata import Metadata
 from openlinktoken_cli.tokens.config.tokenization_config_helper import TokenizationConfigHelper
-from openlinktoken_cli.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
-from openlinktoken_cli.tokens.config.dynamic_token_definition import DynamicTokenDefinition
-from openlinktoken_cli.tokens.config.tokenization_config import TokenizationConfig
 from openlinktoken.tokens.tokenizer.passthrough_tokenizer import PassthroughTokenizer
 from openlinktoken_cli.tokens.config.tokenization_config_loader import TokenizationConfigLoader
 from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
@@ -322,9 +319,11 @@ class TokenizeCommand:
             raise RuntimeError("Failed to initialize transformer") from e
 
         try:
-            config, factory, token_definition = TokenizeCommand._load_tokenization_config(tokenization_config_path)
+            config, factory, token_definition = TokenizationConfigLoader.load_runtime_components(
+                tokenization_config_path
+            )
             with (
-                TokenizeCommand._create_reader(input_path, input_type, config, factory) as reader,
+                TokenizationConfigHelper.create_reader(input_path, input_type, config, factory) as reader,
                 TokenizeCommand._create_writer(output_path, output_type) as writer,
             ):
                 metadata = Metadata()
@@ -454,31 +453,6 @@ class TokenizeCommand:
         if hash_record_ids:
             lines.append("Record ID hashing: enabled")
         return lines
-
-    @staticmethod
-    def _create_reader(
-        path: str,
-        file_type: str,
-        config: Optional[TokenizationConfig] = None,
-        factory: Optional[DynamicAttributeFactory] = None,
-    ):
-        """Create a PersonAttributesReader based on file type."""
-        return TokenizationConfigHelper.create_reader(path, file_type, config, factory)
-
-    @staticmethod
-    def _load_tokenization_config(
-        tokenization_config_path: Optional[str] = None,
-    ) -> tuple[TokenizationConfig | None, DynamicAttributeFactory | None, DynamicTokenDefinition | None]:
-        """Load tokenization config via loader runtime-components API."""
-        return TokenizationConfigLoader.load_runtime_components(tokenization_config_path)
-
-    @staticmethod
-    def _build_configured_input_attribute_map(
-        config: TokenizationConfig,
-        factory: DynamicAttributeFactory,
-    ) -> dict:
-        """Build attribute map via helper."""
-        return TokenizationConfigHelper.build_configured_input_attribute_map(config, factory)
 
     @staticmethod
     def _create_writer(path: str, file_type: str):
