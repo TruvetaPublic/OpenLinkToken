@@ -107,3 +107,23 @@ token_rules:
 
         with pytest.raises(ValueError, match="references unknown field"):
             TokenizationConfigLoader.load(str(config_path))
+
+    def test_load_raises_on_unknown_expression_operator(self, tmp_path):
+        config_path = tmp_path / "config.yaml"
+        config_path.write_text(
+            """
+attributes:
+  given_nm:
+    field: FirstName
+    type: GivenName
+
+token_rules:
+  T1:
+    - field: FirstName
+      expression: "T|Y"
+""".strip(),
+            encoding="utf-8",
+        )
+
+        with pytest.raises(ValueError, match="unknown expression operator"):
+            TokenizationConfigLoader.load(str(config_path))

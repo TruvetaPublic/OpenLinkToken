@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 
+import re
 from typing import Any, Dict, Optional
 
 import yaml
@@ -157,7 +158,25 @@ class TokenizationConfigLoader:
                         f"Configuration '{file_path}': token rule '{token_id}' references unknown field "
                         f"'{field_id}'. Valid field ids are: {sorted(valid_field_ids)}."
                     )
+                TokenizationConfigLoader._validate_expression(entry["expression"], token_id, index, file_path)
                 rule_entries.append(TokenRuleEntry(field=field_id, expression=entry["expression"]))
             token_rules[token_id] = rule_entries
 
         return token_rules
+
+    @staticmethod
+    def _validate_expression(expression: str, token_id: str, index: int, file_path: str) -> None:
+        """Raise ValueError if expression contains an unrecognised operator."""
+        _KNOWN_OPERATORS = {"T", "U", "S", "D", "M", "R"}
+        _OPERATOR_PATTERN = re.compile(r"\s*(?P<op>[A-Za-z]+)(?:\([^)]*\))?", re.IGNORECASE)
+        for part in expression.split("|"):
+            part = part.strip()
+            if not part:
+                continue
+            match = _OPERATOR_PATTERN.fullmatch(part)
+            if not match or match.group("op").upper() not in _KNOWN_OPERATORS:
+                raise ValueError(
+                    f"Configuration '{file_path}': token rule '{token_id}' entry {index} "
+                    f"contains unknown expression operator '{part}'. "
+                    f"Accepted operators are: {sorted(_KNOWN_OPERATORS)}."
+                )
