@@ -78,7 +78,7 @@ Top-level keys:
 | Field           | Required | Type    | Description                                                                                                                           |
 | --------------- | -------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | `<column_name>` | Yes      | Mapping | Input column name from the CSV or Parquet schema (for example `given_nm`).                                                            |
-| `field`         | Yes      | String  | Logical field identifier used by token rules (for example `GivenName`).                                                               |
+| `field`         | Yes      | String  | Logical field identifier used by token rules (for example `GivenName`). See [Attribute Types](#attribute-types) for canonical names.  |
 | `type`          | Yes      | String  | Open Link Token attribute type/alias (for example `GivenName`, `LastName`, `BirthDate`, `Sex`, `PostalCode`, `SocialSecurityNumber`). |
 
 `token_rules` entry schema:
@@ -104,3 +104,24 @@ Validation enforced by the CLI:
 
 - `--config` works with `tokenize` for both CSV and Parquet input.
 - Built-in aliases continue to work when `--config` is omitted.
+
+## Attribute Types
+
+All accepted values for the `type` field. Either the canonical name or any listed alias is accepted.
+
+| `type`                 | Accepted `field` Values                                |
+| ---------------------- | ------------------------------------------------------ |
+| `Age`                  | `Age`                                                  |
+| `BirthDate`            | `BirthDate`                                            |
+| `BirthYear`            | `BirthYear`, `YearOfBirth`                             |
+| `Date`                 | `Date`                                                 |
+| `Decimal`              | `Decimal`                                              |
+| `FirstName`            | `FirstName`, `GivenName`                               |
+| `Integer`              | `Integer`                                              |
+| `LastName`             | `LastName`, `Surname`                                  |
+| `PostalCode`           | `PostalCode`, `ZIP3`, `ZIP4`, `ZIP5`, `ZipCode`        |
+| `RecordId`             | `Id`, `RecordId`                                       |
+| `Sex`                  | `Gender`, `Sex`                                        |
+| `SocialSecurityNumber` | `NationalIdentificationNumber`, `SocialSecurityNumber` |
+| `String`               | `String`, `Text`                                       |
+| `Year`                 | `Year`                                                 |
