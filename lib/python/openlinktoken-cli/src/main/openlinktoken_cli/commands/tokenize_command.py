@@ -10,6 +10,7 @@ from openlinktoken_cli.tokens.config.dynamic_attribute_factory import DynamicAtt
 from openlinktoken_cli.tokens.config.dynamic_token_definition import DynamicTokenDefinition
 from openlinktoken_cli.tokens.config.tokenization_config import TokenizationConfig
 from openlinktoken.tokens.tokenizer.passthrough_tokenizer import PassthroughTokenizer
+from openlinktoken_cli.tokens.config.tokenization_config_loader import TokenizationConfigLoader
 from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 from openlinktoken.tokentransformer.token_transformer import TokenTransformer
 from openlinktoken_cli.io.csv.person_attributes_csv_writer import PersonAttributesCSVWriter
@@ -360,7 +361,7 @@ class TokenizeCommand:
     ) -> tuple[PersonAttributesProcessingSummary, str]:
         """Process tokens in hash-only mode using SHA-256 only (no HMAC, no secret)."""
         try:
-            config, factory, token_definition = TokenizationConfigHelper.load_tokenization_config(
+            config, factory, token_definition = TokenizationConfigLoader.load_runtime_components(
                 tokenization_config_path
             )
             with (
@@ -399,7 +400,7 @@ class TokenizeCommand:
     ) -> tuple[PersonAttributesProcessingSummary, str]:
         """Process tokens in demo mode using PassthroughTokenizer (no hashing)."""
         try:
-            config, factory, token_definition = TokenizationConfigHelper.load_tokenization_config(
+            config, factory, token_definition = TokenizationConfigLoader.load_runtime_components(
                 tokenization_config_path
             )
             with (
@@ -468,8 +469,8 @@ class TokenizeCommand:
     def _load_tokenization_config(
         tokenization_config_path: Optional[str] = None,
     ) -> tuple[TokenizationConfig | None, DynamicAttributeFactory | None, DynamicTokenDefinition | None]:
-        """Load tokenization config via helper."""
-        return TokenizationConfigHelper.load_tokenization_config(tokenization_config_path)
+        """Load tokenization config via loader runtime-components API."""
+        return TokenizationConfigLoader.load_runtime_components(tokenization_config_path)
 
     @staticmethod
     def _build_configured_input_attribute_map(

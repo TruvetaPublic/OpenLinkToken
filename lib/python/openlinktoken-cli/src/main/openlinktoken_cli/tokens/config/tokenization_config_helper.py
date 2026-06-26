@@ -6,38 +6,14 @@ from typing import Optional
 from openlinktoken_cli.io.csv.person_attributes_csv_reader import PersonAttributesCSVReader
 from openlinktoken_cli.io.parquet.person_attributes_parquet_reader import PersonAttributesParquetReader
 from openlinktoken_cli.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
-from openlinktoken_cli.tokens.config.dynamic_token_definition import DynamicTokenDefinition
 from openlinktoken_cli.tokens.config.tokenization_config import TokenizationConfig
-from openlinktoken_cli.tokens.config.tokenization_config_loader import TokenizationConfigLoader
 from openlinktoken_cli.util.file_type_detector import FileTypeDetector
 
 logger = logging.getLogger(__name__)
 
 
 class TokenizationConfigHelper:
-    """Utilities for loading and applying tokenization configs."""
-
-    @staticmethod
-    def load_tokenization_config(
-        tokenization_config_path: Optional[str] = None,
-    ) -> tuple[TokenizationConfig | None, DynamicAttributeFactory | None, DynamicTokenDefinition | None]:
-        """Load tokenization config and create factories for config-driven token generation.
-
-        Args:
-            tokenization_config_path: Path to YAML tokenization config file.
-                If None or omitted, returns (None, None, None).
-
-        Returns:
-            Tuple of (TokenizationConfig, DynamicAttributeFactory, DynamicTokenDefinition)
-                or (None, None, None) if config not provided.
-        """
-        if not tokenization_config_path:
-            return None, None, None
-
-        config = TokenizationConfigLoader.load(tokenization_config_path)
-        factory = DynamicAttributeFactory(config)
-        token_definition = DynamicTokenDefinition(config, factory)
-        return config, factory, token_definition
+    """Utilities for mapping config-driven attributes and creating readers."""
 
     @staticmethod
     def build_configured_input_attribute_map(

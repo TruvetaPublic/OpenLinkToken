@@ -1,47 +1,15 @@
 # SPDX-License-Identifier: MIT
 
-import tempfile
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from openlinktoken_cli.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
-from openlinktoken_cli.tokens.config.dynamic_token_definition import DynamicTokenDefinition
 from openlinktoken_cli.tokens.config.tokenization_config import AttributeMappingEntry, TokenizationConfig
 from openlinktoken_cli.tokens.config.tokenization_config_helper import TokenizationConfigHelper
 from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute
 
 
 class TestTokenizationConfigHelper:
-    def test_load_tokenization_config_without_path_returns_none_tuple(self):
-        config, factory, token_definition = TokenizationConfigHelper.load_tokenization_config(None)
-
-        assert config is None
-        assert factory is None
-        assert token_definition is None
-
-    def test_load_tokenization_config_with_path_builds_config_factory_and_definition(self):
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as file:
-            file.write(
-                """
-attributes:
-  given_nm:
-    field: FirstName
-    type: GivenName
-token_rules:
-  T1:
-    - field: FirstName
-      expression: T|U
-""".strip()
-            )
-            config_path = file.name
-
-        config, factory, token_definition = TokenizationConfigHelper.load_tokenization_config(config_path)
-
-        assert isinstance(config, TokenizationConfig)
-        assert isinstance(factory, DynamicAttributeFactory)
-        assert isinstance(token_definition, DynamicTokenDefinition)
-
     def test_build_configured_input_attribute_map_warns_when_factory_misses_entry(self, caplog):
         config = TokenizationConfig(
             attributes={

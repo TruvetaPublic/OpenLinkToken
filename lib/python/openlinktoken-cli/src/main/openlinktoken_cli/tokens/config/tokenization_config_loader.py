@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import yaml
 
@@ -9,10 +9,34 @@ from openlinktoken_cli.tokens.config.tokenization_config import (
     TokenizationConfig,
     TokenRuleEntry,
 )
+from openlinktoken_cli.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
+from openlinktoken_cli.tokens.config.dynamic_token_definition import DynamicTokenDefinition
 
 
 class TokenizationConfigLoader:
     """Loads and validates a tokenization configuration from a YAML file."""
+
+    @staticmethod
+    def load_runtime_components(
+        tokenization_config_path: Optional[str] = None,
+    ) -> tuple[TokenizationConfig | None, DynamicAttributeFactory | None, DynamicTokenDefinition | None]:
+        """Load config and build runtime components used by tokenization commands.
+
+        Args:
+            tokenization_config_path: Optional path to a YAML tokenization config.
+                When omitted or None, returns a tuple of Nones.
+
+        Returns:
+            Tuple of (TokenizationConfig, DynamicAttributeFactory, DynamicTokenDefinition)
+            or (None, None, None) when no config path is provided.
+        """
+        if not tokenization_config_path:
+            return None, None, None
+
+        config = TokenizationConfigLoader.load(tokenization_config_path)
+        factory = DynamicAttributeFactory(config)
+        token_definition = DynamicTokenDefinition(config, factory)
+        return config, factory, token_definition
 
     @staticmethod
     def load(file_path: str) -> TokenizationConfig:

@@ -4,10 +4,41 @@ from pathlib import Path
 
 import pytest
 
+from openlinktoken_cli.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
+from openlinktoken_cli.tokens.config.dynamic_token_definition import DynamicTokenDefinition
 from openlinktoken_cli.tokens.config.tokenization_config_loader import TokenizationConfigLoader
 
 
 class TestTokenizationConfigLoader:
+    def test_load_runtime_components_without_path_returns_none_tuple(self):
+        config, factory, token_definition = TokenizationConfigLoader.load_runtime_components(None)
+
+        assert config is None
+        assert factory is None
+        assert token_definition is None
+
+    def test_load_runtime_components_with_path_builds_runtime_objects(self, tmp_path: Path):
+        config_path = tmp_path / "tokenization-config.yaml"
+        config_path.write_text(
+            """
+attributes:
+  given_nm:
+    field: FirstName
+    type: GivenName
+token_rules:
+  T1:
+    - field: FirstName
+      expression: T|U
+""".strip(),
+            encoding="utf-8",
+        )
+
+        config, factory, token_definition = TokenizationConfigLoader.load_runtime_components(str(config_path))
+
+        assert config is not None
+        assert isinstance(factory, DynamicAttributeFactory)
+        assert isinstance(token_definition, DynamicTokenDefinition)
+
     def test_load_valid_config(self, tmp_path: Path):
         config_path = tmp_path / "tokenization-config.yaml"
         config_path.write_text(

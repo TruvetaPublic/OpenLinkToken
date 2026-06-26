@@ -12,6 +12,7 @@ from openlinktoken.tokentransformer.encrypt_token_transformer import EncryptToke
 from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 from openlinktoken.tokentransformer.token_transformer import TokenTransformer
 from openlinktoken_cli.tokens.config.tokenization_config_helper import TokenizationConfigHelper
+from openlinktoken_cli.tokens.config.tokenization_config_loader import TokenizationConfigLoader
 from openlinktoken_cli.io.csv.person_attributes_csv_writer import PersonAttributesCSVWriter
 from openlinktoken_cli.io.json.metadata_json_writer import MetadataJsonWriter
 from openlinktoken_cli.io.parquet.person_attributes_parquet_writer import PersonAttributesParquetWriter
@@ -269,7 +270,7 @@ class PackageCommand:
             raise RuntimeError("Failed to initialize transformers") from e
 
         try:
-            config, factory, token_definition = TokenizationConfigHelper.load_tokenization_config(
+            config, factory, token_definition = TokenizationConfigLoader.load_runtime_components(
                 tokenization_config_path
             )
             with (
