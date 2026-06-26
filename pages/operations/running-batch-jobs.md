@@ -114,7 +114,7 @@ The resulting archive contains two files:
 ```bash
 cd /path/to/OpenLinkToken
 
-./run-openlinktoken.sh package \
+./run-olt.sh package \
   -i ./resources/sample.csv \
   -o ./resources/output.csv \
   --exchange-config ./resources/batch.exchange.json
@@ -125,7 +125,7 @@ cd /path/to/OpenLinkToken
 ```powershell
 cd C:\path\to\OpenLinkToken
 
-.\run-openlinktoken.ps1 package `
+.\run-olt.ps1 package `
   -i .\resources\sample.csv `
   -o .\resources\output.csv `
   --exchange-config .\resources\batch.exchange.json
