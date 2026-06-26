@@ -137,8 +137,7 @@ class PersonAttributesParquetReader(PersonAttributesReader):
         # PyArrow handles resource cleanup automatically
         # No explicit file handle to close
 
-    @staticmethod
-    def _build_attribute_map_from_aliases() -> Dict[str, Type[Attribute]]:
+    def _build_attribute_map_from_aliases(self) -> Dict[str, Type[Attribute]]:
         """Build lowercase alias-to-attribute mapping from AttributeLoader."""
         alias_map: Dict[str, Type[Attribute]] = {}
         attributes: Set[Attribute] = AttributeLoader.load()
