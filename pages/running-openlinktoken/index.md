@@ -134,7 +134,7 @@ record1,T2,pUxPgYL9+cMxkA+8928Pil+9W+dm9kISwHYPdkZS+I2nQ/bQ/8HyL3FOVf3NYPW5NKZZO
 ```json
 {
   "JavaVersion": "21.0.0",
-  "Version": "2.0.0-alpha",
+  "Version": "2.0.0",
   "Platform": "Java",
   "TotalRows": 1,
   "TotalRowsWithInvalidAttributes": 0,
@@ -174,7 +174,7 @@ Scripts automatically build and run the container.
 ```bash
 cd /path/to/OpenLinkToken
 
-./run-openlinktoken.sh package \
+./run-olt.sh package \
   -i ./resources/sample.csv \
   -o ./resources/output.csv \
   --exchange-config ./resources/quickstart.exchange.json
@@ -185,7 +185,7 @@ cd /path/to/OpenLinkToken
 ```powershell
 cd C:\path\to\Open Link Token
 
-.\run-openlinktoken.ps1 package `
+.\run-olt.ps1 package `
   -i .\resources\sample.csv `
   -o .\resources\output.csv `
   --exchange-config .\resources\quickstart.exchange.json

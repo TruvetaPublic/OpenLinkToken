@@ -36,7 +36,7 @@ class VersionChecker:
         Initialize the VersionChecker.
 
         Args:
-            current_version: The currently running version string (e.g. "2.0.0-alpha").
+            current_version: The currently running version string (e.g. "2.0.0").
             no_update_check: When True the checker is disabled entirely.
         """
         self._current_version = current_version
@@ -86,7 +86,9 @@ class VersionChecker:
             return
 
         if self._result and self._is_newer(self._result, self._current_version):
-            self._print_notice(self._result)
+            if self._notice_due():
+                self._print_notice(self._result)
+                self._record_notice_shown()
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -179,6 +181,44 @@ class VersionChecker:
         except Exception as exc:
             logger.debug("Could not write version cache", exc_info=exc)
 
+    def _notice_due(self) -> bool:
+        """Return True if the update notice has not been shown in the last 24 hours."""
+        try:
+            cache_path = self._get_cache_path()
+            if not cache_path.exists():
+                return True
+            with cache_path.open("r", encoding="utf-8") as f:
+                data = json.load(f)
+            last_notified_str = data.get("last_notified", "")
+            if not last_notified_str:
+                return True
+            last_notified = datetime.fromisoformat(last_notified_str)
+            if last_notified.tzinfo is None:
+                last_notified = last_notified.replace(tzinfo=timezone.utc)
+            age_seconds = (datetime.now(timezone.utc) - last_notified).total_seconds()
+            return age_seconds > _CACHE_TTL_SECONDS
+        except Exception as exc:
+            logger.debug("Could not read last_notified from cache", exc_info=exc)
+            return True
+
+    def _record_notice_shown(self) -> None:
+        """Stamp last_notified in the cache so the notice is suppressed for 24 hours."""
+        try:
+            cache_path = self._get_cache_path()
+            data: dict = {}
+            if cache_path.exists():
+                try:
+                    with cache_path.open("r", encoding="utf-8") as f:
+                        data = json.load(f)
+                except Exception:
+                    pass
+            data["last_notified"] = datetime.now(timezone.utc).isoformat()
+            cache_path.parent.mkdir(parents=True, exist_ok=True)
+            with cache_path.open("w", encoding="utf-8") as f:
+                json.dump(data, f)
+        except Exception as exc:
+            logger.debug("Could not record notice shown", exc_info=exc)
+
     # ------------------------------------------------------------------
     # Version comparison and notice
     # ------------------------------------------------------------------
@@ -213,7 +253,10 @@ class VersionChecker:
             f"   Release notes: https://github.com/TruvetaPublic/OpenLinkToken/releases/tag/{tag}",
             f"   Run 'olt update' to upgrade, or set {_ENV_DISABLE}=1 to silence this message.",
         ]
-        print("\n".join(lines), file=sys.stderr)
+        try:
+            print("\n".join(lines), file=sys.stderr)
+        except Exception:
+            pass
 
     @staticmethod
     def _stderr_is_interactive() -> bool:

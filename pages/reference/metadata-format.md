@@ -126,7 +126,7 @@ Extension: .metadata.json
 {
   "Platform": "Java",
   "JavaVersion": "21.0.0",
-  "Version": "2.0.0-alpha",
+  "Version": "2.0.0",
   "TotalRows": 101,
   "TotalRowsWithInvalidAttributes": 9,
   "InvalidAttributesByType": {
@@ -154,7 +154,7 @@ Extension: .metadata.json
 {
   "Platform": "Python",
   "PythonVersion": "3.11.5",
-  "Version": "2.0.0-alpha",
+  "Version": "2.0.0",
   "TotalRows": 50,
   "TotalRowsWithInvalidAttributes": 2,
   "InvalidAttributesByType": {
@@ -268,7 +268,7 @@ Verify that the secrets used for token generation match expected values without 
 1. **Calculate hash of your secret**:
 
    ```bash
-   python tools/hash_calculator.py --hashing-secret "HashingKey"
+   python tools/hash/hash_calculator.py --hashing-secret "HashingKey"
    ```
 
 2. **Compare to metadata**:
@@ -322,11 +322,11 @@ private static String bytesToHex(byte[] bytes) {
 
 ### Using the Hash Calculator Tool
 
-The `tools/hash_calculator.py` script provides command-line hash calculation:
+The `tools/hash/hash_calculator.py` script provides command-line hash calculation:
 
 ```bash
 # Calculate both hashes
-python tools/hash_calculator.py \
+python tools/hash/hash_calculator.py \
   --hashing-secret "HashingKey" \
   --encryption-key "Secret-Encryption-Key-Goes-Here."
 
@@ -381,5 +381,5 @@ Metadata files contain SHA-256 hashes of secrets:
 
 - **View token rules**: [Concepts: Token Rules](../concepts/token-rules.md)
 - **Understand validation**: [Security](../security.md)
-- **Use hash calculator**: `tools/hash_calculator.py`
+- **Use hash calculator**: `tools/hash/hash_calculator.py`
 - **See full examples**: [Quickstarts](../quickstarts/index.md)

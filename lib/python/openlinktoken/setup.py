@@ -3,13 +3,6 @@
 
 import os
 
-# Python 3.11+ includes tomllib; keep tomli fallback for Python 3.10 support
-# when loading project metadata from pyproject.toml.
-try:
-    import tomllib
-except ImportError:  # pragma: no cover
-    import tomli as tomllib
-
 from setuptools import find_packages, setup
 
 # Read the contents of the project README file.
@@ -22,16 +15,9 @@ try:
 except FileNotFoundError:
     # Fallback to a short description if README is unavailable
     long_description = "Open Link Token Python implementation for record linkage."
-
-with open(os.path.join(this_directory, "pyproject.toml"), "rb") as f:
-    project_config = tomllib.load(f).get("project", {})
-
-requirements = project_config.get("dependencies", [])
-optional_dependencies = project_config.get("optional-dependencies", {})
-
 setup(
     name="openlinktoken",
-    version="2.0.0-alpha",
+    version="2.0.0",
     author="Open Link Token Contributors",
     description="Open Link Token Python core library for record linkage",
     long_description=long_description,
@@ -44,6 +30,4 @@ setup(
     package_dir={"": "src/main"},
     packages=find_packages(where="src/main"),
     python_requires=">=3.10",
-    install_requires=requirements,
-    extras_require=optional_dependencies,
 )
