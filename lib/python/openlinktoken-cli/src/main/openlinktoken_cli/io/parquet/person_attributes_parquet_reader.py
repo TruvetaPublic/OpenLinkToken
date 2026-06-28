@@ -21,7 +21,7 @@ class PersonAttributesParquetReader(PersonAttributesReader):
     Implements the PersonAttributesReader interface.
     """
 
-    def __init__(self, file_path: str, attribute_map: Dict[str, object] | None = None):
+    def __init__(self, file_path: str, attribute_map: Dict[str, Type[Attribute]] | None = None):
         """
         Initialize the class with the input file in Parquet format.
 
@@ -43,7 +43,7 @@ class PersonAttributesParquetReader(PersonAttributesReader):
             self.closed = False
             self.has_next_called = False
             self.has_next_result = False
-            self._attribute_map: Dict[str, object] = {}
+            self._attribute_map: Dict[str, Type[Attribute]] = {}
             if attribute_map is not None:
                 self.attribute_map = attribute_map
             else:
@@ -54,12 +54,12 @@ class PersonAttributesParquetReader(PersonAttributesReader):
             raise IOError(f"Failed to read Parquet file: {file_path}") from e
 
     @property
-    def attribute_map(self) -> Dict[str, object]:
+    def attribute_map(self) -> Dict[str, Type[Attribute]]:
         """Return the normalized input-column mapping for this reader."""
         return self._attribute_map
 
     @attribute_map.setter
-    def attribute_map(self, value: Dict[str, object]) -> None:
+    def attribute_map(self, value: Dict[str, Type[Attribute]]) -> None:
         """Store column mappings using lowercase keys for case-insensitive lookups."""
         self._attribute_map = {column_name.lower(): mapped_key for column_name, mapped_key in value.items()}
 
@@ -86,7 +86,7 @@ class PersonAttributesParquetReader(PersonAttributesReader):
 
         return self.has_next_result
 
-    def __next__(self) -> Dict[object, str]:
+    def __next__(self) -> Dict[Type[Attribute], str]:
         """
         Get the next record from the Parquet file.
 
@@ -118,11 +118,11 @@ class PersonAttributesParquetReader(PersonAttributesReader):
         self.current_row += 1
 
         # Map to attribute classes
-        attributes: Dict[object, str] = {}
+        attributes: Dict[Type[Attribute], str] = {}
         for field_name, field_value in row_dict.items():
             mapped_key = self.attribute_map.get(field_name.lower())
             if mapped_key is not None:
-                field_value_str = str(field_value) if field_value is not None else None
+                field_value_str = str(field_value) if field_value is not None else ""
                 attributes[mapped_key] = field_value_str
 
         return attributes

@@ -17,7 +17,7 @@ class PersonAttributesCSVReader(PersonAttributesReader):
     Implements the PersonAttributesReader interface.
     """
 
-    def __init__(self, file_path: str, attribute_map: Dict[str, object] | None = None):
+    def __init__(self, file_path: str, attribute_map: Dict[str, Type[Attribute]] | None = None):
         """
         Initialize the class with the input file in CSV format.
 
@@ -70,7 +70,7 @@ class PersonAttributesCSVReader(PersonAttributesReader):
         """Return the iterator object."""
         return self
 
-    def __next__(self) -> Dict[object, str]:
+    def __next__(self) -> Dict[Type[Attribute], str]:
         """
         Get the next record from the CSV file.
 
@@ -79,7 +79,7 @@ class PersonAttributesCSVReader(PersonAttributesReader):
         """
         record = next(self.iterator)
 
-        person_attributes: Dict[object, str] = {}
+        person_attributes: Dict[Type[Attribute], str] = {}
         for key, value in record.items():
             mapped_key = self.attribute_map.get(key)
             if mapped_key is not None:
