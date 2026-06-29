@@ -294,7 +294,7 @@ class TokenizeCommand:
             return 0
         except Exception as error:
             report = archive_cli_error(error, command_name="tokenize", existing_report=reporter.log_report)
-            print(f"Error: {error}", file=sys.stderr)
+            print(f"\033[31mError:\033[0m {error}", file=sys.stderr)
             print(format_error_reference_message(report), file=sys.stderr)
             return 1
 
