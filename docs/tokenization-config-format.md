@@ -28,8 +28,8 @@ A-1002,Marcus,Nguyen,1979-11-05,M,10001,234-56-7890
 ```yaml
 attributes:
   given_nm:
-    field: FirstName
-    type: GivenName
+    field: GivenName
+    type: FirstName
   surname_txt:
     field: FamilyName
     type: LastName
@@ -50,7 +50,7 @@ token_rules:
   T1:
     - field: FamilyName
       expression: T|U
-    - field: FirstName
+    - field: GivenName
       expression: T|S(0,1)|U
     - field: DateOfBirth
       expression: T|D
@@ -124,21 +124,21 @@ T|M("\\d+")    # trim, assert all digits
 
 ## Attribute Types
 
-All values accepted in the `type` field:
+Accepted values for the field `type`.
 
-| Valid `type` values                                    |
-| ------------------------------------------------------ |
-| `Age`                                                  |
-| `BirthDate`                                            |
-| `BirthYear`, `YearOfBirth`                             |
-| `Date`                                                 |
-| `Decimal`                                              |
-| `FirstName`, `GivenName`                               |
-| `Integer`                                              |
-| `LastName`, `Surname`                                  |
-| `PostalCode`, `ZIP3`, `ZIP4`, `ZIP5`, `ZipCode`        |
-| `Id`, `RecordId`                                       |
-| `Gender`, `Sex`                                        |
-| `NationalIdentificationNumber`, `SocialSecurityNumber` |
-| `String`, `Text`                                       |
-| `Year`                                                 |
+| `type` value           | Description                    |
+| ---------------------- | ------------------------------ |
+| `Age`                  | Age (numeric)                  |
+| `BirthDate`            | Date of birth                  |
+| `BirthYear`            | Year of birth                  |
+| `Date`                 | Generic date                   |
+| `Decimal`              | Decimal number                 |
+| `FirstName`            | Given / first name             |
+| `Integer`              | Integer number                 |
+| `LastName`             | Family / last name             |
+| `PostalCode`           | Postal or ZIP code             |
+| `RecordId`             | Record identifier              |
+| `Sex`                  | Biological sex                 |
+| `SocialSecurityNumber` | National identification number |
+| `String`               | Generic string                 |
+| `Year`                 | Generic year                   |

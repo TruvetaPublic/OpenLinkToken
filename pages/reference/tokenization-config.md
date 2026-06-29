@@ -34,8 +34,8 @@ A-1002,Marcus,Nguyen,1979-11-05,M,10001,234-56-7890
 ```yaml
 attributes:
   given_nm:
-    field: FirstName
-    type: GivenName
+    field: GivenName
+    type: FirstName
   surname_txt:
     field: FamilyName
     type: LastName
@@ -56,7 +56,7 @@ token_rules:
   T1:
     - field: FamilyName
       expression: T|U
-    - field: FirstName
+    - field: GivenName
       expression: T|S(0,1)|U
     - field: DateOfBirth
       expression: T|D
@@ -75,19 +75,19 @@ Top-level keys:
 
 `attributes` entry schema:
 
-| Field           | Required | Type    | Description                                                                                            |
-| --------------- | -------- | ------- | ------------------------------------------------------------------------------------------------------ |
-| `<column_name>` | Yes      | Mapping | Input column name from the CSV or Parquet schema (for example `given_nm`).                             |
-| `field`         | Yes      | String  | Logical field identifier used by token rules (for example `GivenName`).                                |
-| `type`          | Yes      | String  | Open Link Token attribute type/alias. See [Attribute Types](#attribute-types) for all accepted values. |
+| Field           | Required | Type    | Description                                                                                                                                                                                                                                         |
+| --------------- | -------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<column_name>` | Yes      | Mapping | Input column name from the CSV or Parquet schema (for example `given_nm`).                                                                                                                                                                          |
+| `field`         | Yes      | String  | Logical field identifier used by token rules (for example `GivenName`).                                                                                                                                                                             |
+| `type`          | Yes      | String  | Open Link Token attribute type/alias. See [Attribute Types](#attribute-types) for all accepted values. Each type applies its own normalization and validation rules — see [Normalization and Validation](../concepts/normalization-and-validation). |
 
 `token_rules` entry schema:
 
-| Field        | Required | Type   | Description                                                      |
-| ------------ | -------- | ------ | ---------------------------------------------------------------- |
-| `<rule_id>`  | Yes      | List   | Token rule identifier (`T1`, `T2`, `T3`, `T4`, `T5`, or custom). |
-| `field`      | Yes      | String | Must match one of the `attributes.*.field` values.               |
-| `expression` | Yes      | String | Attribute-expression pipeline used by token generation.          |
+| Field        | Required | Type   | Description                                                                                                |
+| ------------ | -------- | ------ | ---------------------------------------------------------------------------------------------------------- |
+| `<rule_id>`  | Yes      | List   | Token rule identifier (`T1`, `T2`, `T3`, `T4`, `T5`, or custom).                                           |
+| `field`      | Yes      | String | Must match one of the `attributes.*.field` values.                                                         |
+| `expression` | Yes      | String | Attribute-expression pipeline used by token generation. See [Expression Syntax](#expression-syntax) below. |
 
 ## Validation Rules
 
@@ -100,6 +100,27 @@ Validation enforced by the CLI:
 - Every declared `type` must resolve to a known Open Link Token attribute class/alias.
 - Token-rule entry order is preserved and used as-is during token construction.
 
+## Expression Syntax
+
+An expression is a `|`-separated pipeline of operators applied to an attribute value before token generation:
+
+| Operator       | Description                                             |
+| -------------- | ------------------------------------------------------- |
+| `T`            | Trim whitespace                                         |
+| `U`            | Convert to upper case                                   |
+| `S(start,end)` | Substring from `start` (inclusive) to `end` (exclusive) |
+| `D`            | Parse as a date in `yyyy-MM-dd` format                  |
+| `M(regex)`     | Assert value matches the regular expression             |
+| `R(old,new)`   | Replace all occurrences of `old` with `new`             |
+
+Examples:
+
+```
+T|S(0,3)|U      # trim, take first 3 chars, uppercase
+T|D             # trim, treat as date
+T|M("\\d+")    # trim, assert all digits
+```
+
 ## Notes
 
 - `--config` works with `tokenize` for both CSV and Parquet input.
@@ -107,21 +128,21 @@ Validation enforced by the CLI:
 
 ## Attribute Types
 
-All values accepted in the `type` field:
+Accepted values for the field `type`.
 
-| Valid `type` values                                    |
-| ------------------------------------------------------ |
-| `Age`                                                  |
-| `BirthDate`                                            |
-| `BirthYear`, `YearOfBirth`                             |
-| `Date`                                                 |
-| `Decimal`                                              |
-| `FirstName`, `GivenName`                               |
-| `Integer`                                              |
-| `LastName`, `Surname`                                  |
-| `PostalCode`, `ZIP3`, `ZIP4`, `ZIP5`, `ZipCode`        |
-| `Id`, `RecordId`                                       |
-| `Gender`, `Sex`                                        |
-| `NationalIdentificationNumber`, `SocialSecurityNumber` |
-| `String`, `Text`                                       |
-| `Year`                                                 |
+| `type` value           | Description                    |
+| ---------------------- | ------------------------------ |
+| `Age`                  | Age (numeric)                  |
+| `BirthDate`            | Date of birth                  |
+| `BirthYear`            | Year of birth                  |
+| `Date`                 | Generic date                   |
+| `Decimal`              | Decimal number                 |
+| `FirstName`            | Given / first name             |
+| `Integer`              | Integer number                 |
+| `LastName`             | Family / last name             |
+| `PostalCode`           | Postal or ZIP code             |
+| `RecordId`             | Record identifier              |
+| `Sex`                  | Biological sex                 |
+| `SocialSecurityNumber` | National identification number |
+| `String`               | Generic string                 |
+| `Year`                 | Generic year                   |
