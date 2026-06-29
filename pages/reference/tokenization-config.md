@@ -83,11 +83,11 @@ Top-level keys:
 
 `token_rules` entry schema:
 
-| Field        | Required | Type   | Description                                                                                                |
-| ------------ | -------- | ------ | ---------------------------------------------------------------------------------------------------------- |
-| `<rule_id>`  | Yes      | List   | Token rule identifier (`T1`, `T2`, `T3`, `T4`, `T5`, or custom).                                           |
-| `field`      | Yes      | String | Must match one of the `attributes.*.field` values.                                                         |
-| `expression` | Yes      | String | Attribute-expression pipeline used by token generation. See [Expression Syntax](#expression-syntax) below. |
+| Field        | Required | Type   | Description                                                                                                                 |
+| ------------ | -------- | ------ | --------------------------------------------------------------------------------------------------------------------------- |
+| `<rule_id>`  | Yes      | List   | Token rule identifier (`T1`, `T2`, `T3`, `T4`, `T5`, or custom).                                                            |
+| `field`      | Yes      | String | Must match one of the `attributes.*.field` values.                                                                          |
+| `expression` | Yes      | String | Attribute-expression pipeline used by token generation. See [Expression Syntax](../concepts/token-rules#expression-syntax). |
 
 ## Validation Rules
 
@@ -102,24 +102,7 @@ Validation enforced by the CLI:
 
 ## Expression Syntax
 
-An expression is a `|`-separated pipeline of operators applied to an attribute value before token generation:
-
-| Operator       | Description                                             |
-| -------------- | ------------------------------------------------------- |
-| `T`            | Trim whitespace                                         |
-| `U`            | Convert to upper case                                   |
-| `S(start,end)` | Substring from `start` (inclusive) to `end` (exclusive) |
-| `D`            | Parse as a date in `yyyy-MM-dd` format                  |
-| `M(regex)`     | Assert value matches the regular expression             |
-| `R(old,new)`   | Replace all occurrences of `old` with `new`             |
-
-Examples:
-
-```
-T|S(0,3)|U      # trim, take first 3 chars, uppercase
-T|D             # trim, treat as date
-T|M("\\d+")    # trim, assert all digits
-```
+See [Expression Syntax](../concepts/token-rules#expression-syntax) in the Token Rules concept page.
 
 ## Notes
 
@@ -128,7 +111,7 @@ T|M("\\d+")    # trim, assert all digits
 
 ## Attribute Types
 
-Accepted values for the field `type`.
+Accepted values for the field `type`. Each type applies its own normalization and validation rules — see [Normalization and Validation](../concepts/normalization-and-validation). |
 
 | `type` value           | Description                    |
 | ---------------------- | ------------------------------ |
@@ -141,7 +124,6 @@ Accepted values for the field `type`.
 | `Integer`              | Integer number                 |
 | `LastName`             | Family / last name             |
 | `PostalCode`           | Postal or ZIP code             |
-| `RecordId`             | Record identifier              |
 | `Sex`                  | Biological sex                 |
 | `SocialSecurityNumber` | National identification number |
 | `String`               | Generic string                 |

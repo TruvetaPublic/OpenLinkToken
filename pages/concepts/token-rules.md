@@ -225,6 +225,29 @@ Notes:
 
 ---
 
+## Expression Syntax
+
+Each `AttributeExpression` takes an expression string — a `|`-separated pipeline of operators applied to the attribute value before token generation:
+
+| Operator       | Description                                             |
+| -------------- | ------------------------------------------------------- |
+| `T`            | Trim whitespace                                         |
+| `U`            | Convert to upper case                                   |
+| `S(start,end)` | Substring from `start` (inclusive) to `end` (exclusive) |
+| `D`            | Parse as a date in `yyyy-MM-dd` format                  |
+| `M(regex)`     | Assert value matches the regular expression             |
+| `R(old,new)`   | Replace all occurrences of `old` with `new`             |
+
+Examples:
+
+```
+T|S(0,3)|U      # trim, take first 3 chars, uppercase
+T|D             # trim, treat as date
+T|M("\\d+")    # trim, assert all digits
+```
+
+---
+
 ## Custom Token Rules
 
 Open Link Token supports defining custom token rules:
