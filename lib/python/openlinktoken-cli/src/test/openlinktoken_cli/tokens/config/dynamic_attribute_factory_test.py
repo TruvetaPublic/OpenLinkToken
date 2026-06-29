@@ -25,10 +25,10 @@ class TestDynamicAttributeFactory:
         assert patient_class is hospital_class
         assert issubclass(patient_class, PostalCodeAttribute)
         assert issubclass(hospital_class, PostalCodeAttribute)
-        assert factory.get_field_for_csv_column("patient_zip") == "PatientZip"
-        assert factory.get_field_for_csv_column("hospital_zip") == "HospitalZip"
-        assert factory.get_class_for_csv_column("patient_zip") is patient_class
-        assert factory.get_class_for_csv_column("hospital_zip") is hospital_class
+        assert factory.get_field_for_column("patient_zip") == "PatientZip"
+        assert factory.get_field_for_column("hospital_zip") == "HospitalZip"
+        assert factory.get_class_for_column("patient_zip") is patient_class
+        assert factory.get_class_for_column("hospital_zip") is hospital_class
 
     def test_unknown_field_lookup_raises_key_error(self):
         config = TokenizationConfig(

@@ -52,8 +52,8 @@ class TestConfiguredAttributeMappingInPersonAttributesParquetReader:
         )
         pq.write_table(table, self.temp_file_path)
 
-        given_name_class = self.factory.get_class_for_csv_column("given_nm")
-        family_name_class = self.factory.get_class_for_csv_column("family_nm")
+        given_name_class = self.factory.get_class_for_column("given_nm")
+        family_name_class = self.factory.get_class_for_column("family_nm")
 
         attribute_map = {
             "given_nm": given_name_class,
@@ -77,8 +77,8 @@ class TestConfiguredAttributeMappingInPersonAttributesParquetReader:
         )
         pq.write_table(table, self.temp_file_path)
 
-        given_name_class = self.factory.get_class_for_csv_column("given_nm")
-        family_name_class = self.factory.get_class_for_csv_column("family_nm")
+        given_name_class = self.factory.get_class_for_column("given_nm")
+        family_name_class = self.factory.get_class_for_column("family_nm")
 
         attribute_map = {
             "given_nm": given_name_class,
@@ -96,8 +96,8 @@ class TestConfiguredAttributeMappingInPersonAttributesParquetReader:
         table = pa.table({"given_nm": ["Maria"]})
         pq.write_table(table, self.temp_file_path)
 
-        given_name_class = self.factory.get_class_for_csv_column("given_nm")
-        family_name_class = self.factory.get_class_for_csv_column("family_nm")
+        given_name_class = self.factory.get_class_for_column("given_nm")
+        family_name_class = self.factory.get_class_for_column("family_nm")
 
         attribute_map = {
             "given_nm": given_name_class,

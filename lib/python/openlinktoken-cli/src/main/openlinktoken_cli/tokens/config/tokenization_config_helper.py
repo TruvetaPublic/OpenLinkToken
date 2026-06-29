@@ -27,14 +27,14 @@ class TokenizationConfigHelper:
             factory: Factory used to resolve each config column to its built-in attribute class.
 
         Returns:
-            A dict mapping each input CSV column name to its corresponding attribute class.
+            A dict mapping each input column name to its corresponding attribute class.
         """
         attribute_map = {}
-        for csv_column in config.attributes:
+        for column in config.attributes:
             try:
-                attribute_map[csv_column] = factory.get_class_for_csv_column(csv_column)
+                attribute_map[column] = factory.get_class_for_column(column)
             except KeyError:
-                logger.warning("CSV column '%s' is in config but has no dynamic class registered.", csv_column)
+                logger.warning("Column '%s' is in config but has no dynamic class registered.", column)
         return attribute_map
 
     @staticmethod

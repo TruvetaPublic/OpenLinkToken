@@ -41,8 +41,8 @@ class TestConfiguredAttributeMappingInPersonAttributesCSVReader:
             f.write("given_nm,family_nm,ignored\n")
             f.write("Maria,Garcia,something\n")
 
-        given_name_class = self.factory.get_class_for_csv_column("given_nm")
-        family_name_class = self.factory.get_class_for_csv_column("family_nm")
+        given_name_class = self.factory.get_class_for_column("given_nm")
+        family_name_class = self.factory.get_class_for_column("family_nm")
 
         attribute_map = {
             "given_nm": given_name_class,
@@ -62,10 +62,10 @@ class TestConfiguredAttributeMappingInPersonAttributesCSVReader:
             f.write("given_nm\n")
             f.write("Maria\n")
 
-        family_name_class = self.factory.get_class_for_csv_column("family_nm")
+        family_name_class = self.factory.get_class_for_column("family_nm")
 
         attribute_map = {
-            "given_nm": self.factory.get_class_for_csv_column("given_nm"),
+            "given_nm": self.factory.get_class_for_column("given_nm"),
             "family_nm": family_name_class,
         }
 

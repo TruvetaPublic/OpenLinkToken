@@ -20,7 +20,7 @@ class TestTokenizationConfigHelper:
         )
 
         factory = MagicMock()
-        factory.get_class_for_csv_column.side_effect = [FirstNameAttribute, KeyError("missing")]
+        factory.get_class_for_column.side_effect = [FirstNameAttribute, KeyError("missing")]
 
         attribute_map = TokenizationConfigHelper.build_configured_input_attribute_map(config, factory)
 

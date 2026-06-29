@@ -93,20 +93,20 @@ class TokenizationConfigLoader:
             raise ValueError(f"Configuration '{file_path}': 'attributes' must be a mapping.")
 
         attributes = {}
-        for csv_column, entry in raw_attributes.items():
+        for column, entry in raw_attributes.items():
             if not isinstance(entry, dict):
                 raise ValueError(
-                    f"Configuration '{file_path}': attribute entry for '{csv_column}' must be a mapping."
+                    f"Configuration '{file_path}': attribute entry for '{column}' must be a mapping."
                 )
             if "field" not in entry or not entry["field"]:
                 raise ValueError(
-                    f"Configuration '{file_path}': attribute '{csv_column}' is missing required field 'field'."
+                    f"Configuration '{file_path}': attribute '{column}' is missing required field 'field'."
                 )
             if "type" not in entry or not entry["type"]:
                 raise ValueError(
-                    f"Configuration '{file_path}': attribute '{csv_column}' is missing required field 'type'."
+                    f"Configuration '{file_path}': attribute '{column}' is missing required field 'type'."
                 )
-            attributes[csv_column] = AttributeMappingEntry(field=entry["field"], type=entry["type"])
+            attributes[column] = AttributeMappingEntry(field=entry["field"], type=entry["type"])
 
         return attributes
 
@@ -129,7 +129,7 @@ class TokenizationConfigLoader:
         if not isinstance(raw_token_rules, dict):
             raise ValueError(f"Configuration '{file_path}': 'token_rules' must be a mapping.")
 
-        # Token rules reference logical field ids, not CSV column names.
+        # Token rules reference logical field ids, not input column names.
         valid_field_ids = {entry.field for entry in attributes.values()}
         token_rules = {}
         for token_id, entries in raw_token_rules.items():
