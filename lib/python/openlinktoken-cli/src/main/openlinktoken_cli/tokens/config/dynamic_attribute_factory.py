@@ -18,9 +18,13 @@ class DynamicAttributeFactory:
         """
         self._field_id_to_class: Dict[str, Type[Attribute]] = {}
         self._column_to_field_id: Dict[str, str] = {}
+        self._attribute_instance_overrides: Dict[Type[Attribute], Attribute] = {}
 
         type_name_to_base_class = self._build_type_name_index()
-        self._register_field_mappings(config.attributes, type_name_to_base_class)
+        base_class_to_instance: Dict[Type[Attribute], Attribute] = {
+            type(attr): attr for attr in AttributeLoader.load()
+        }
+        self._register_field_mappings(config.attributes, type_name_to_base_class, base_class_to_instance)
 
     def get_class_for_field(self, field_id: str) -> Type[Attribute]:
         """Return the attribute class registered for a logical field id.
@@ -65,6 +69,19 @@ class DynamicAttributeFactory:
         """
         return self._column_to_field_id[column]
 
+    def get_attribute_instance_overrides(self) -> Dict[Type[Attribute], Attribute]:
+        """Return per-field class to attribute instance mappings for TokenGenerator injection.
+
+        Each field gets a unique subclass of its base attribute type so that two fields
+        sharing the same type can coexist in the per-row attribute dict without collision.
+        The returned dict maps each unique field class to the real attribute instance
+        (shared with the base class) so that normalization and validation still work.
+
+        Returns:
+            A dict of unique field class to attribute instance.
+        """
+        return self._attribute_instance_overrides
+
     def get_all_classes(self) -> Set[Type[Attribute]]:
         """Return all attribute classes registered across all configured fields.
 
@@ -77,6 +94,7 @@ class DynamicAttributeFactory:
         self,
         attributes: Dict[str, AttributeMappingEntry],
         type_name_to_base_class: Dict[str, Type[Attribute]],
+        base_class_to_instance: Dict[Type[Attribute], Attribute],
     ) -> None:
         for column, entry in attributes.items():
             base_class = type_name_to_base_class.get(entry.type)
@@ -86,8 +104,14 @@ class DynamicAttributeFactory:
                     f"Recognized types are: {sorted(type_name_to_base_class.keys())}."
                 )
 
-            self._field_id_to_class[entry.field] = base_class
+            # Each field gets a unique subclass so two fields sharing the same type
+            # produce distinct keys in the per-row attribute dict, preventing silent
+            # overwrites during token generation.
+            field_class = type(f"_DynAttr_{entry.field}", (base_class,), {})
+
+            self._field_id_to_class[entry.field] = field_class
             self._column_to_field_id[column] = entry.field
+            self._attribute_instance_overrides[field_class] = base_class_to_instance[base_class]
 
     @staticmethod
     def _build_type_name_index() -> Dict[str, Type[Attribute]]:

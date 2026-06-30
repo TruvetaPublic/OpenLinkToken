@@ -149,6 +149,8 @@ class PersonAttributesProcessor:
             hash_record_ids: When True, each record ID is SHA-256 hashed before writing.
         """
         token_generator = TokenGenerator(token_definition, tokenizer)
+        if hasattr(token_definition, 'attribute_instance_overrides'):
+            token_generator.attribute_instance_map.update(token_definition.attribute_instance_overrides)
 
         row_counter = 0
         last_reported_count = 0
@@ -273,8 +275,15 @@ class PersonAttributesProcessor:
         # Sort token IDs for consistent output
         token_ids = sorted(token_generator_result.tokens.keys())
 
-        # Generate a UUID for RecordId if it's not present in the input data
+        # Generate a UUID for RecordId if it's not present in the input data.
+        # In config-driven mode the key is a unique subclass of RecordIdAttribute,
+        # so scan all class keys that are subclasses of RecordIdAttribute.
         record_id = row.get(RecordIdAttribute) or row.get("RecordId")
+        if record_id is None or record_id == "":
+            for key in row:
+                if isinstance(key, type) and issubclass(key, RecordIdAttribute) and key is not RecordIdAttribute:
+                    record_id = row[key]
+                    break
         if record_id is None or record_id == "":
             record_id = str(uuid.uuid4())
 

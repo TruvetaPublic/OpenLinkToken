@@ -33,6 +33,9 @@ A-1002,Marcus,Nguyen,1979-11-05,M,10001,234-56-7890
 
 ```yaml
 attributes:
+  member_id:
+    field: RecordId
+    type: RecordId
   given_nm:
     field: GivenName
     type: FirstName

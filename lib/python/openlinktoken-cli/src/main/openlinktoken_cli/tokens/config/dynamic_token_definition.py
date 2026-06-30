@@ -25,6 +25,7 @@ class DynamicTokenDefinition(BaseTokenDefinition):
             None. Populates ``self._definitions`` for runtime token generation.
         """
         self._definitions: Dict[str, List[AttributeExpression]] = {}
+        self.attribute_instance_overrides = factory.get_attribute_instance_overrides()
 
         for token_id, rule_entries in config.token_rules.items():
             expressions = []

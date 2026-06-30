@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 
+import logging
 import re
 from typing import Any, Dict, Optional
 
@@ -12,6 +13,8 @@ from openlinktoken_cli.tokens.config.tokenization_config import (
 )
 from openlinktoken_cli.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
 from openlinktoken_cli.tokens.config.dynamic_token_definition import DynamicTokenDefinition
+
+logger = logging.getLogger(__name__)
 
 
 class TokenizationConfigLoader:
@@ -76,6 +79,14 @@ class TokenizationConfigLoader:
 
         attributes = TokenizationConfigLoader._parse_attributes(raw["attributes"], file_path)
         token_rules = TokenizationConfigLoader._parse_token_rules(raw["token_rules"], attributes, file_path)
+
+        if not any(entry.type == "RecordId" for entry in attributes.values()):
+            logger.warning(
+                "Configuration '%s' does not map any column to type 'RecordId'. "
+                "Source record IDs will not be preserved — output will use randomly generated UUIDs instead.",
+                file_path,
+            )
+
         return TokenizationConfig(attributes=attributes, token_rules=token_rules)
 
     @staticmethod
