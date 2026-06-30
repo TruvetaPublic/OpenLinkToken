@@ -15,7 +15,6 @@ try:
 except FileNotFoundError:
     # Fallback to a short description if README is unavailable
     long_description = "Open Link Token Python implementation for record linkage."
-
 setup(
     name="openlinktoken",
     version="2.0.0",

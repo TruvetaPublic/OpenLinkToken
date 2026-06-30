@@ -2,18 +2,16 @@
 
 import logging
 import sys
-from typing import List
+from typing import List, Optional
 
 from openlinktoken.metadata import Metadata
+from openlinktoken_cli.tokens.config.tokenization_config_helper import TokenizationConfigHelper
 from openlinktoken.tokens.tokenizer.passthrough_tokenizer import PassthroughTokenizer
+from openlinktoken_cli.tokens.config.tokenization_config_loader import TokenizationConfigLoader
 from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 from openlinktoken.tokentransformer.token_transformer import TokenTransformer
-from openlinktoken_cli.io.csv.person_attributes_csv_reader import PersonAttributesCSVReader
 from openlinktoken_cli.io.csv.person_attributes_csv_writer import PersonAttributesCSVWriter
 from openlinktoken_cli.io.json.metadata_json_writer import MetadataJsonWriter
-from openlinktoken_cli.io.parquet.person_attributes_parquet_reader import (
-    PersonAttributesParquetReader,
-)
 from openlinktoken_cli.io.parquet.person_attributes_parquet_writer import (
     PersonAttributesParquetWriter,
 )
@@ -114,6 +112,17 @@ class TokenizeCommand:
             help="Path to the exchange config JSON (default: ./openlinktoken-YYYY-MM-DD.exchange.json)",
         )
 
+        parser.add_argument(
+            "--config",
+            required=False,
+            dest="tokenization_config",
+            metavar="PATH",
+            help=(
+                "Path to a YAML tokenization config that defines input field mappings and token rules. "
+                "Supported for CSV and Parquet input."
+            ),
+        )
+
         private_key_group = parser.add_mutually_exclusive_group(required=False)
         private_key_group.add_argument(
             "--private-key",
@@ -158,6 +167,7 @@ class TokenizeCommand:
         """Execute the tokenize command."""
         mode = getattr(args, "mode", TokenizeCommand._MODE_DEFAULT)
         hash_record_ids = getattr(args, "hash_record_ids", False)
+        tokenization_config_path = getattr(args, "tokenization_config", None)
 
         input_type = FileTypeDetector.detect_input_type(args.input_path)
         if not input_type:
@@ -217,7 +227,7 @@ class TokenizeCommand:
                         # Count total rows via reader to enable %/ETA
                     total_rows: int | None = None
                     try:
-                        reader = TokenizeCommand._create_reader(args.input_path, input_type)
+                        reader = TokenizationConfigHelper.create_reader(args.input_path, input_type)
                         total_rows = reader.row_count()
                         reader.close()
                     except Exception:
@@ -233,6 +243,7 @@ class TokenizeCommand:
                             output_path,
                             input_type,
                             output_type,
+                            tokenization_config_path,
                             progress_callback=reporter.make_progress_callback("Tokenizing records", "records"),
                         )
                     elif mode == TokenizeCommand._MODE_HASH_ONLY:
@@ -243,6 +254,7 @@ class TokenizeCommand:
                             input_type,
                             output_type,
                             hash_record_ids,
+                            tokenization_config_path,
                             progress_callback=reporter.make_progress_callback("Tokenizing records", "records"),
                         )
                     else:
@@ -261,6 +273,7 @@ class TokenizeCommand:
                             output_type,
                             exchange.hashing_secret,
                             hash_record_ids,
+                            tokenization_config_path,
                             progress_callback=reporter.make_progress_callback("Tokenizing records", "records"),
                         )
                     logger.info("Token generation completed successfully")
@@ -281,7 +294,7 @@ class TokenizeCommand:
             return 0
         except Exception as error:
             report = archive_cli_error(error, command_name="tokenize", existing_report=reporter.log_report)
-            print(f"Error: {error}", file=sys.stderr)
+            print(f"\033[31mError:\033[0m {error}", file=sys.stderr)
             print(format_error_reference_message(report), file=sys.stderr)
             return 1
 
@@ -293,6 +306,7 @@ class TokenizeCommand:
         output_type: str,
         hashing_secret: str | bytes,
         hash_record_ids: bool = False,
+        tokenization_config_path: Optional[str] = None,
         progress_callback=None,
     ) -> tuple[PersonAttributesProcessingSummary, str]:
         """Process tokens in normal mode using SHA-256 + HMAC-SHA256."""
@@ -305,8 +319,11 @@ class TokenizeCommand:
             raise RuntimeError("Failed to initialize transformer") from e
 
         try:
+            config, factory, token_definition = TokenizationConfigLoader.load_runtime_components(
+                tokenization_config_path
+            )
             with (
-                TokenizeCommand._create_reader(input_path, input_type) as reader,
+                TokenizationConfigHelper.create_reader(input_path, input_type, config, factory) as reader,
                 TokenizeCommand._create_writer(output_path, output_type) as writer,
             ):
                 metadata = Metadata()
@@ -320,6 +337,7 @@ class TokenizeCommand:
                     token_transformer_list,
                     metadata_map,
                     hash_record_ids=hash_record_ids,
+                    token_definition=token_definition,
                     progress_callback=progress_callback,
                 )
 
@@ -337,12 +355,16 @@ class TokenizeCommand:
         input_type: str,
         output_type: str,
         hash_record_ids: bool = False,
+        tokenization_config_path: Optional[str] = None,
         progress_callback=None,
     ) -> tuple[PersonAttributesProcessingSummary, str]:
         """Process tokens in hash-only mode using SHA-256 only (no HMAC, no secret)."""
         try:
+            config, factory, token_definition = TokenizationConfigLoader.load_runtime_components(
+                tokenization_config_path
+            )
             with (
-                TokenizeCommand._create_reader(input_path, input_type) as reader,
+                TokenizationConfigHelper.create_reader(input_path, input_type, config, factory) as reader,
                 TokenizeCommand._create_writer(output_path, output_type) as writer,
             ):
                 metadata = Metadata()
@@ -355,6 +377,7 @@ class TokenizeCommand:
                     [],
                     metadata_map,
                     hash_record_ids=hash_record_ids,
+                    token_definition=token_definition,
                     progress_callback=progress_callback,
                 )
 
@@ -371,12 +394,16 @@ class TokenizeCommand:
         output_path: str,
         input_type: str,
         output_type: str,
+        tokenization_config_path: Optional[str] = None,
         progress_callback=None,
     ) -> tuple[PersonAttributesProcessingSummary, str]:
         """Process tokens in demo mode using PassthroughTokenizer (no hashing)."""
         try:
+            config, factory, token_definition = TokenizationConfigLoader.load_runtime_components(
+                tokenization_config_path
+            )
             with (
-                TokenizeCommand._create_reader(input_path, input_type) as reader,
+                TokenizationConfigHelper.create_reader(input_path, input_type, config, factory) as reader,
                 TokenizeCommand._create_writer(output_path, output_type) as writer,
             ):
                 metadata = Metadata()
@@ -388,6 +415,7 @@ class TokenizeCommand:
                     writer,
                     PassthroughTokenizer([]),
                     metadata_map,
+                    token_definition=token_definition,
                     progress_callback=progress_callback,
                 )
 
@@ -425,17 +453,6 @@ class TokenizeCommand:
         if hash_record_ids:
             lines.append("Record ID hashing: enabled")
         return lines
-
-    @staticmethod
-    def _create_reader(path: str, file_type: str):
-        """Create a PersonAttributesReader based on file type."""
-        file_type_lower = file_type.lower()
-        if file_type_lower == FileTypeDetector.TYPE_CSV:
-            return PersonAttributesCSVReader(path)
-        elif file_type_lower == FileTypeDetector.TYPE_PARQUET:
-            return PersonAttributesParquetReader(path)
-        else:
-            raise ValueError(f"Unsupported input type: {file_type}")
 
     @staticmethod
     def _create_writer(path: str, file_type: str):

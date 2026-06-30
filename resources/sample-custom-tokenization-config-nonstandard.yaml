@@ -1,0 +1,53 @@
+attributes:
+  encounter_id:
+    field: RecordId
+    type: RecordId
+  birth_year:
+    field: BirthYear
+    type: LastName
+  age_at_encounter:
+    field: AgeAtEncounter
+    type: PostalCode
+  encounter_date:
+    field: EncounterDate
+    type: BirthDate
+  encounter_type:
+    field: EncounterType
+    type: FirstName
+  patient_gender:
+    field: Gender
+    type: Sex
+  ssn:
+    field: PatientSSN
+    type: SocialSecurityNumber
+
+token_rules:
+  T_ALL_BASE:
+    - field: BirthYear
+      expression: "T"
+    - field: EncounterType
+      expression: "T|U"
+    - field: EncounterDate
+      expression: "T|D"
+    - field: Gender
+      expression: "T|S(0,1)|U"
+    - field: AgeAtEncounter
+      expression: "T"
+    - field: PatientSSN
+      expression: "T|M(\\d+)"
+  T_INITIALS_PLUS_AGE:
+    - field: BirthYear
+      expression: "T"
+    - field: EncounterType
+      expression: "T|S(0,2)|U"
+    - field: EncounterDate
+      expression: "T|D"
+    - field: AgeAtEncounter
+      expression: "T"
+  T_IDENTITY_LIGHT:
+    - field: EncounterType
+      expression: "T|S(0,2)|U"
+    - field: EncounterDate
+      expression: "T|D"
+    - field: Gender
+      expression: "T|U"

@@ -762,7 +762,7 @@ class TestOpenLinkTokenCommand:
         log_files = list(log_dir.glob("*.log"))
 
         assert exit_code != 0
-        assert "Error: boom" in captured.err
+        assert "\x1b[31mError:\x1b[0m boom" in captured.err
         assert "\x1b[90mStack trace:" in captured.err
         assert len(log_files) == 1
         assert str(log_files[0]) in captured.err

@@ -85,6 +85,7 @@ The automatic version check can also be disabled permanently by setting the envi
 | `--exchange-config` |       | Default mode only | `./openlinktoken-YYYY-MM-DD.exchange.json` | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted.                                                                                                                                |
 | `--private-key`     |       | No\*              |                                            | Private key PEM used to decrypt the exchange config                                                                                                                                                                            |
 | `--private-key-env` |       | No\*              |                                            | Environment variable containing the private key PEM                                                                                                                                                                            |
+| `--config`          |       | No                |                                            | YAML config file for custom input field mapping and token-rule definitions. See [Tokenization Configuration Reference](tokenization-config.md). Supported for CSV and Parquet input.                                           |
 | `--mode`            |       | No                | `default`                                  | Mode selector: `default`, `hash-only`, or `demo`. `hash-only` cannot be combined with exchange-config, private-key options, or `--hash-record-ids`; `demo` cannot be combined with `--exchange-config` or `--hash-record-ids`. |
 | `--hash-record-ids` |       | No                |                                            | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability; default tokenize mode only)                                                                                                             |
 
@@ -284,6 +285,17 @@ olt tokenize \
 ```
 Signature → SHA-256 → HMAC-SHA256 → Base64
 ```
+
+## Custom Tokenization Configuration (`tokenize --config`)
+
+Use `--config` to decouple tokenization from built-in column aliases.
+
+For complete details, see [Tokenization Configuration Reference](tokenization-config.md), including:
+
+- unusual-field input examples
+- full YAML configuration examples
+- configuration-file specification
+- CLI validation rules and constraints
 
 ### Hash-only Mode (`tokenize --mode hash-only`)
 

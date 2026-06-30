@@ -1,0 +1,65 @@
+attributes:
+  RecordId:
+    field: RecordId
+    type: RecordId
+  BirthDate:
+    field: BirthDate
+    type: BirthDate
+  FirstName:
+    field: FirstName
+    type: FirstName
+  LastName:
+    field: LastName
+    type: LastName
+  PostalCode:
+    field: PostalCode
+    type: PostalCode
+  Sex:
+    field: Sex
+    type: Sex
+  SocialSecurityNumber:
+    field: SocialSecurityNumber
+    type: SocialSecurityNumber
+
+token_rules:
+  T1:
+    - field: LastName
+      expression: "T|U"
+    - field: FirstName
+      expression: "T|S(0,1)|U"
+    - field: Sex
+      expression: "T|U"
+    - field: BirthDate
+      expression: "T|D"
+  T2:
+    - field: LastName
+      expression: "T|U"
+    - field: FirstName
+      expression: "T|U"
+    - field: BirthDate
+      expression: "T|D"
+    - field: PostalCode
+      expression: "T|S(0,3)|U"
+  T3:
+    - field: LastName
+      expression: "T|U"
+    - field: FirstName
+      expression: "T|U"
+    - field: Sex
+      expression: "T|U"
+    - field: BirthDate
+      expression: "T|D"
+  T4:
+    - field: SocialSecurityNumber
+      expression: "T|M(\\d+)"
+    - field: Sex
+      expression: "T|U"
+    - field: BirthDate
+      expression: "T|D"
+  T5:
+    - field: LastName
+      expression: "T|U"
+    - field: FirstName
+      expression: "T|S(0,3)|U"
+    - field: Sex
+      expression: "T|U"

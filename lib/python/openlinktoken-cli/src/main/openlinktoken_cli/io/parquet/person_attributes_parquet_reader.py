@@ -21,12 +21,15 @@ class PersonAttributesParquetReader(PersonAttributesReader):
     Implements the PersonAttributesReader interface.
     """
 
-    def __init__(self, file_path: str):
+    def __init__(self, file_path: str, attribute_map: Dict[str, Type[Attribute]] | None = None):
         """
         Initialize the class with the input file in Parquet format.
 
         Args:
             file_path: The input file path.
+            attribute_map: Optional explicit mapping from input column name to output key
+                (attribute class or logical field id). When omitted, mapping is discovered
+                via built-in attribute aliases.
 
         Raises:
             IOError: If an I/O error occurs.
@@ -40,17 +43,25 @@ class PersonAttributesParquetReader(PersonAttributesReader):
             self.closed = False
             self.has_next_called = False
             self.has_next_result = False
-            self.attribute_map: Dict[str, Attribute] = {}
-
-            # Load attributes and build the mapping
-            attributes: Set[Attribute] = AttributeLoader.load()
-            for attribute in attributes:
-                for alias in attribute.get_aliases():
-                    self.attribute_map[alias.lower()] = attribute
+            self._attribute_map: Dict[str, Type[Attribute]] = {}
+            if attribute_map is not None:
+                self.attribute_map = attribute_map
+            else:
+                self.attribute_map = self._build_attribute_map_from_aliases()
 
         except Exception as e:
             logger.error(f"Error in reading Parquet file: {e}")
             raise IOError(f"Failed to read Parquet file: {file_path}") from e
+
+    @property
+    def attribute_map(self) -> Dict[str, Type[Attribute]]:
+        """Return the normalized input-column mapping for this reader."""
+        return self._attribute_map
+
+    @attribute_map.setter
+    def attribute_map(self, value: Dict[str, Type[Attribute]]) -> None:
+        """Store column mappings using lowercase keys for case-insensitive lookups."""
+        self._attribute_map = {column_name.lower(): mapped_key for column_name, mapped_key in value.items()}
 
     def __iter__(self):
         """Return the iterator object."""
@@ -109,11 +120,10 @@ class PersonAttributesParquetReader(PersonAttributesReader):
         # Map to attribute classes
         attributes: Dict[Type[Attribute], str] = {}
         for field_name, field_value in row_dict.items():
-            attribute = self.attribute_map.get(field_name.lower())
-            if attribute is not None:
-                attribute_class = type(attribute)
-                field_value_str = str(field_value) if field_value is not None else None
-                attributes[attribute_class] = field_value_str
+            mapped_key = self.attribute_map.get(field_name.lower())
+            if mapped_key is not None:
+                field_value_str = str(field_value) if field_value is not None else ""
+                attributes[mapped_key] = field_value_str
 
         return attributes
 
@@ -126,3 +136,12 @@ class PersonAttributesParquetReader(PersonAttributesReader):
         self.closed = True
         # PyArrow handles resource cleanup automatically
         # No explicit file handle to close
+
+    def _build_attribute_map_from_aliases(self) -> Dict[str, Type[Attribute]]:
+        """Build lowercase alias-to-attribute mapping from AttributeLoader."""
+        alias_map: Dict[str, Type[Attribute]] = {}
+        attributes: Set[Attribute] = AttributeLoader.load()
+        for attribute in attributes:
+            for alias in attribute.get_aliases():
+                alias_map[alias.lower()] = type(attribute)
+        return alias_map

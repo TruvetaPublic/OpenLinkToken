@@ -16,6 +16,7 @@ Our approach to record linkage relies on building a set of matching tokens (or t
   - [Key Matching Ideas](#key-matching-ideas)
   - [Running Open Link Token](#running-open-link-token)
   - [Security Notes](#security-notes)
+  - [Custom Tokenization Configuration](#custom-tokenization-configuration)
   - [Contributing \& Community](#contributing--community)
   - [Documentation](#documentation)
 
@@ -132,8 +133,8 @@ See <a href="https://truvetapublic.github.io/OpenLinkToken/quickstarts/" target=
 
 ## Running Open Link Token
 
-- **CLI subcommands** (`olt` binary or Docker convenience scripts):
-  - `tokenize` - Internal hashed token generation (`--mode hash-only` is available for deterministic SHA-256 output)
+- **Subcommand Interface**: Modern command-based interface:
+  - `tokenize` - Internal hashed token generation (`--mode hash-only` is available for deterministic SHA-256 output; `--config` is available for custom field mapping and token rules)
   - `encrypt` - Encrypt existing hashed tokens
   - `decrypt` - Decrypt encrypted tokens
   - `package` - Tokenize + encrypt in one step (recommended)
@@ -149,6 +150,12 @@ See <a href="https://truvetapublic.github.io/OpenLinkToken/quickstarts/" target=
 - **`tokenize --mode hash-only`**: Deterministic SHA-256 output with no exchange config or secret. Useful for local exploration, but **not** for production or cross-organisation exchange
 - **Secret management**: Handle hashing/encryption secrets securely; avoid committing secrets; prefer env/secret stores
 - **Validation**: Reject placeholders and malformed attributes before tokenization
+
+## Custom Tokenization Configuration
+
+For `tokenize --config` usage, example input/config files, and the full configuration-file specification, see:
+
+- <a href="https://truvetapublic.github.io/OpenLinkToken/reference/tokenization-config.html" target="_blank" rel="noopener noreferrer">Tokenization Configuration Reference</a>
 
 ## Contributing & Community
 
