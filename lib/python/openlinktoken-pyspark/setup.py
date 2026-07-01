@@ -72,7 +72,7 @@ setup(
         ],
         # Development dependencies
         "dev": [
-            "pytest==9.0.3",
+            "pytest==9.1.1",
             "pytest-cov==7.1.0",
             "flake8==7.3.0",
             "jupyter==1.1.1",
