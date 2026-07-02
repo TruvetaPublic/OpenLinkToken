@@ -11,5 +11,5 @@ pycryptodome>=3.18.0
 
 # Jupyter support (for notebooks in openlinktoken-pyspark)
 jupyter>=1.0.0
-notebook>=7.0.0
+notebook>=7.6.0
 ipykernel>=7.3.0
