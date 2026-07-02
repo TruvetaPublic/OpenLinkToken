@@ -23,9 +23,9 @@ class T5Token(Token):
     def __init__(self):
         """Initialize the T5 token definition."""
         self._definition = [
-            AttributeExpression(LastNameAttribute, "T|U"),
-            AttributeExpression(FirstNameAttribute, "T|S(0,3)|U"),
-            AttributeExpression(SexAttribute, "T|U"),
+            AttributeExpression(LastNameAttribute, "T|U", field_id="LastName"),
+            AttributeExpression(FirstNameAttribute, "T|S(0,3)|U", field_id="FirstName"),
+            AttributeExpression(SexAttribute, "T|U", field_id="Sex"),
         ]
 
     def get_identifier(self) -> str:

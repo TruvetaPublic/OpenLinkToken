@@ -28,10 +28,10 @@ public class T2Token implements Token {
     private final ArrayList<AttributeExpression> definition = new ArrayList<>();
 
     public T2Token() {
-        definition.add(new AttributeExpression(LastNameAttribute.class, "T|U"));
-        definition.add(new AttributeExpression(FirstNameAttribute.class, "T|U"));
-        definition.add(new AttributeExpression(BirthDateAttribute.class, "T|D"));
-        definition.add(new AttributeExpression(PostalCodeAttribute.class, "T|S(0,3)|U"));
+        definition.add(new AttributeExpression("LastName", LastNameAttribute.class, "T|U"));
+        definition.add(new AttributeExpression("FirstName", FirstNameAttribute.class, "T|U"));
+        definition.add(new AttributeExpression("BirthDate", BirthDateAttribute.class, "T|D"));
+        definition.add(new AttributeExpression("PostalCode", PostalCodeAttribute.class, "T|S(0,3)|U"));
     }
 
     @Override

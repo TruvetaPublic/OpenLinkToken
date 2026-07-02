@@ -23,9 +23,9 @@ class T4Token(Token):
     def __init__(self):
         """Initialize the T4 token definition."""
         self._definition = [
-            AttributeExpression(SocialSecurityNumberAttribute, "T|M(\\d+)"),
-            AttributeExpression(SexAttribute, "T|U"),
-            AttributeExpression(BirthDateAttribute, "T|D"),
+            AttributeExpression(SocialSecurityNumberAttribute, "T|M(\\d+)", field_id="SocialSecurityNumber"),
+            AttributeExpression(SexAttribute, "T|U", field_id="Sex"),
+            AttributeExpression(BirthDateAttribute, "T|D", field_id="BirthDate"),
         ]
 
     def get_identifier(self) -> str:

@@ -27,9 +27,9 @@ public class T4Token implements Token {
     private final ArrayList<AttributeExpression> definition = new ArrayList<>();
 
     public T4Token() {
-        definition.add(new AttributeExpression(SocialSecurityNumberAttribute.class, "T|M(\\d+)"));
-        definition.add(new AttributeExpression(SexAttribute.class, "T|U"));
-        definition.add(new AttributeExpression(BirthDateAttribute.class, "T|D"));
+        definition.add(new AttributeExpression("SocialSecurityNumber", SocialSecurityNumberAttribute.class, "T|M(\\d+)"));
+        definition.add(new AttributeExpression("Sex", SexAttribute.class, "T|U"));
+        definition.add(new AttributeExpression("BirthDate", BirthDateAttribute.class, "T|D"));
     }
 
     @Override

@@ -24,10 +24,10 @@ class T2Token(Token):
     def __init__(self):
         """Initialize the T2 token definition."""
         self._definition = [
-            AttributeExpression(LastNameAttribute, "T|U"),
-            AttributeExpression(FirstNameAttribute, "T|U"),
-            AttributeExpression(BirthDateAttribute, "T|D"),
-            AttributeExpression(PostalCodeAttribute, "T|S(0,3)|U"),
+            AttributeExpression(LastNameAttribute, "T|U", field_id="LastName"),
+            AttributeExpression(FirstNameAttribute, "T|U", field_id="FirstName"),
+            AttributeExpression(BirthDateAttribute, "T|D", field_id="BirthDate"),
+            AttributeExpression(PostalCodeAttribute, "T|S(0,3)|U", field_id="PostalCode"),
         ]
 
     def get_identifier(self) -> str:

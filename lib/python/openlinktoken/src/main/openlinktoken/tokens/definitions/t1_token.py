@@ -24,10 +24,10 @@ class T1Token(Token):
     def __init__(self):
         """Initialize the T1 token definition."""
         self._definition = [
-            AttributeExpression(LastNameAttribute, "T|U"),
-            AttributeExpression(FirstNameAttribute, "T|S(0,1)|U"),
-            AttributeExpression(SexAttribute, "T|U"),
-            AttributeExpression(BirthDateAttribute, "T|D"),
+            AttributeExpression(LastNameAttribute, "T|U", field_id="LastName"),
+            AttributeExpression(FirstNameAttribute, "T|S(0,1)|U", field_id="FirstName"),
+            AttributeExpression(SexAttribute, "T|U", field_id="Sex"),
+            AttributeExpression(BirthDateAttribute, "T|D", field_id="BirthDate"),
         ]
 
     def get_identifier(self) -> str:
