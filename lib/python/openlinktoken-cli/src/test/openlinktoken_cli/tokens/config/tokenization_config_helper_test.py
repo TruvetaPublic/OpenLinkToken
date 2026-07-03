@@ -4,9 +4,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute
 from openlinktoken_cli.tokens.config.tokenization_config import AttributeMappingEntry, TokenizationConfig
 from openlinktoken_cli.tokens.config.tokenization_config_helper import TokenizationConfigHelper
-from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute
 
 
 class TestTokenizationConfigHelper:
@@ -20,12 +20,12 @@ class TestTokenizationConfigHelper:
         )
 
         factory = MagicMock()
-        factory.get_class_for_column.side_effect = [FirstNameAttribute, KeyError("missing")]
+        factory.get_field_for_column.side_effect = ["FirstName", KeyError("missing")]
 
         attribute_map = TokenizationConfigHelper.build_configured_input_attribute_map(config, factory)
 
-        assert attribute_map == {"given_nm": FirstNameAttribute}
-        assert "has no dynamic class registered" in caplog.text
+        assert attribute_map == {"given_nm": "FirstName"}
+        assert "has no field id registered" in caplog.text
 
     def test_create_reader_csv_applies_attribute_map(self):
         config = TokenizationConfig(
@@ -34,13 +34,16 @@ class TestTokenizationConfigHelper:
         )
         factory = MagicMock()
 
-        with patch(
-            "openlinktoken_cli.tokens.config.tokenization_config_helper.TokenizationConfigHelper"
-            ".build_configured_input_attribute_map",
-            return_value={"given_nm": FirstNameAttribute},
-        ), patch(
-            "openlinktoken_cli.tokens.config.tokenization_config_helper.PersonAttributesCSVReader"
-        ) as mock_reader_cls:
+        with (
+            patch(
+                "openlinktoken_cli.tokens.config.tokenization_config_helper.TokenizationConfigHelper"
+                ".build_configured_input_attribute_map",
+                return_value={"given_nm": FirstNameAttribute},
+            ),
+            patch(
+                "openlinktoken_cli.tokens.config.tokenization_config_helper.PersonAttributesCSVReader"
+            ) as mock_reader_cls,
+        ):
             reader = MagicMock()
             mock_reader_cls.return_value = reader
 
@@ -56,13 +59,16 @@ class TestTokenizationConfigHelper:
         )
         factory = MagicMock()
 
-        with patch(
-            "openlinktoken_cli.tokens.config.tokenization_config_helper.TokenizationConfigHelper"
-            ".build_configured_input_attribute_map",
-            return_value={"given_nm": FirstNameAttribute},
-        ), patch(
-            "openlinktoken_cli.tokens.config.tokenization_config_helper.PersonAttributesParquetReader"
-        ) as mock_reader_cls:
+        with (
+            patch(
+                "openlinktoken_cli.tokens.config.tokenization_config_helper.TokenizationConfigHelper"
+                ".build_configured_input_attribute_map",
+                return_value={"given_nm": FirstNameAttribute},
+            ),
+            patch(
+                "openlinktoken_cli.tokens.config.tokenization_config_helper.PersonAttributesParquetReader"
+            ) as mock_reader_cls,
+        ):
             reader = MagicMock()
             mock_reader_cls.return_value = reader
 

@@ -3,6 +3,7 @@
 from typing import Dict, List, Set
 
 from openlinktoken.attributes.attribute_expression import AttributeExpression
+from openlinktoken.attributes.field_registry import FieldRegistry
 from openlinktoken.tokens.base_token_definition import BaseTokenDefinition
 from openlinktoken_cli.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
 from openlinktoken_cli.tokens.config.tokenization_config import TokenizationConfig
@@ -19,19 +20,19 @@ class DynamicTokenDefinition(BaseTokenDefinition):
         Args:
             config: Parsed tokenization configuration containing token rule entries.
             factory: Dynamic attribute factory used to resolve each rule field id
-                to its generated attribute class.
+                to its attribute class and build the field registry.
 
         Returns:
             None. Populates ``self._definitions`` for runtime token generation.
         """
         self._definitions: Dict[str, List[AttributeExpression]] = {}
-        self.attribute_instance_overrides = factory.get_attribute_instance_overrides()
+        self.field_registry: FieldRegistry = factory.build_field_registry()
 
         for token_id, rule_entries in config.token_rules.items():
             expressions = []
             for entry in rule_entries:
                 attribute_class = factory.get_class_for_field(entry.field)
-                expressions.append(AttributeExpression(attribute_class, entry.expression))
+                expressions.append(AttributeExpression.of(entry.field, attribute_class, entry.expression))
             self._definitions[token_id] = expressions
 
     def get_version(self) -> str:

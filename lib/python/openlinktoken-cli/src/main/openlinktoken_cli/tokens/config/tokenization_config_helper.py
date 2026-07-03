@@ -20,21 +20,21 @@ class TokenizationConfigHelper:
         config: TokenizationConfig,
         factory: DynamicAttributeFactory,
     ) -> dict:
-        """Build input-column-to-attribute-class mapping from tokenization config.
+        """Build input-column-to-field-id mapping from tokenization config.
 
         Args:
             config: Parsed tokenization config containing the attribute column mappings.
-            factory: Factory used to resolve each config column to its built-in attribute class.
+            factory: Factory used to resolve each config column to its logical field id.
 
         Returns:
-            A dict mapping each input column name to its corresponding attribute class.
+            A dict mapping each input column name to its corresponding field id string.
         """
         attribute_map = {}
         for column in config.attributes:
             try:
-                attribute_map[column] = factory.get_class_for_column(column)
+                attribute_map[column] = factory.get_field_for_column(column)
             except KeyError:
-                logger.warning("Column '%s' is in config but has no dynamic class registered.", column)
+                logger.warning("Column '%s' is in config but has no field id registered.", column)
         return attribute_map
 
     @staticmethod

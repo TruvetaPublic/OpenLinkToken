@@ -3,9 +3,6 @@
 import os
 import tempfile
 
-from openlinktoken.attributes.general.record_id_attribute import RecordIdAttribute
-from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute
-from openlinktoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
 from openlinktoken_cli.io.parquet.person_attributes_parquet_reader import PersonAttributesParquetReader
 from openlinktoken_cli.io.parquet.person_attributes_parquet_writer import PersonAttributesParquetWriter
 
@@ -37,14 +34,13 @@ class TestPersonAttributesParquetWriter:
         with PersonAttributesParquetReader(self.temp_file_path) as reader:
             record = next(reader)
             assert record is not None
-            assert record[RecordIdAttribute] == "123"
-            assert record[SocialSecurityNumberAttribute] == "123-45-6789"
-            assert record[FirstNameAttribute] == "John"
+            assert record["RecordId"] == "123"
+            assert record["SocialSecurityNumber"] == "123-45-6789"
+            assert record["FirstName"] == "John"
 
     def test_write_multiple_records(self):
         """Test writing multiple records to Parquet."""
         data1 = {"RecordId": "123", "FirstName": "John", "SocialSecurityNumber": "123-45-6789"}
-
         data2 = {"RecordId": "456", "FirstName": "Jane", "SocialSecurityNumber": "987-65-4321"}
 
         self.writer.write_attributes(data1)
@@ -55,16 +51,16 @@ class TestPersonAttributesParquetWriter:
             # Test first record
             record = next(reader)
             assert record is not None
-            assert record[RecordIdAttribute] == "123"
-            assert record[SocialSecurityNumberAttribute] == "123-45-6789"
-            assert record[FirstNameAttribute] == "John"
+            assert record["RecordId"] == "123"
+            assert record["SocialSecurityNumber"] == "123-45-6789"
+            assert record["FirstName"] == "John"
 
             # Test second record
             record = next(reader)
             assert record is not None
-            assert record[RecordIdAttribute] == "456"
-            assert record[SocialSecurityNumberAttribute] == "987-65-4321"
-            assert record[FirstNameAttribute] == "Jane"
+            assert record["RecordId"] == "456"
+            assert record["SocialSecurityNumber"] == "987-65-4321"
+            assert record["FirstName"] == "Jane"
 
     def test_write_basename_output_path_in_current_directory(self, tmp_path, monkeypatch):
         """Test that a basename-only output path writes to the current directory."""
