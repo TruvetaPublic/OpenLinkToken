@@ -50,29 +50,32 @@ jobs:
       - name: Setup toolchain (Java)
         uses: ./.github/actions/setup-toolchain
         with:
+          enable-java: true
           enable-python: false
 
       - name: Build with Maven
         run: cd lib/java && mvn -B package --file pom.xml
 
-      - name: Publish to GitHub Packages Apache Maven
+      - name: Publish to Sonatype (Maven Central)
         run: |
-          set -euo pipefail
-          base_url="https://maven.pkg.github.com/TruvetaPublic/OpenLinkToken/org/openlinktoken"
-          version="${VERSION}"
-          parent_metadata_url="${base_url}/openlinktoken-parent/maven-metadata.xml"
+          cd lib/java
+          mvn deploy \
+            -s "$GITHUB_WORKSPACE/settings.xml" \
+            -Dmaven.deploy.altDeploymentRepository=sonatype::default::https://oss.sonatype.org/service/local/staging/deploy/maven2/ \
+            -Dmaven.test.skip=true \
+            -B --file pom.xml
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
 
-          if metadata=$(curl -fsSL \
-            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            "$parent_metadata_url"); then
-            if echo "$metadata" | grep -q "<version>${version}</version>"; then
-              echo "Open Link Token parent ${version} already published. Skipping deploy."
-              exit 0
-            fi
-          fi
-
-          (cd lib/java && mvn deploy -s "$GITHUB_WORKSPACE/settings.xml")
+      - name: Publish to GitHub Packages
+        run: |
+          cd lib/java
+          mvn deploy \
+            -s "$GITHUB_WORKSPACE/settings.xml" \
+            -Dmaven.test.skip=true \
+            -B --file pom.xml
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
@@ -105,7 +108,7 @@ jobs:
                 releaseId = release.data.id;
                 console.log(`[DEBUG] Found release on second query with ID ${releaseId}`);
               } catch (error) {
-                console.log(`✗ No release found for tag ${tag}`);
+                console.log(`No release found for tag ${tag}`);
                 console.log(`[DEBUG] Error: ${error.message}`);
                 return;
               }
@@ -117,7 +120,7 @@ jobs:
               console.log(`[DEBUG] Processing artifact directory: ${artifactDir}`);
 
               if (!fs.existsSync(artifactDir)) {
-                console.log(`✗ No artifacts directory found at ${artifactDir}`);
+                console.log(`No artifacts directory found at ${artifactDir}`);
                 continue;
               }
 
@@ -141,10 +144,10 @@ jobs:
                     name: file,
                     data: fs.readFileSync(filePath)
                   });
-                  console.log(`✓ Successfully uploaded ${file}`);
+                  console.log(`Successfully uploaded ${file}`);
                   console.log(`[DEBUG] Asset ID: ${response.data.id}`);
                 } catch (error) {
-                  console.log(`✗ Error uploading ${file}: ${error.message}`);
+                  console.log(`Error uploading ${file}: ${error.message}`);
                   if (error.status) {
                     console.log(`[DEBUG] HTTP Status: ${error.status}`);
                   }

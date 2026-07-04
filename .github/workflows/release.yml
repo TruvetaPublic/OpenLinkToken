@@ -1,0 +1,78 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup toolchain (Python)
+        uses: ./.github/actions/setup-toolchain
+        with:
+          enable-java: false
+          enable-python: true
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          uv pip install --break-system-packages --system -r lib/python/openlinktoken/requirements.txt pytest pytest-cov ruff -e lib/python/openlinktoken/
+          uv pip install --break-system-packages --system -r lib/python/openlinktoken-cli/requirements.txt pytest pytest-cov ruff -e lib/python/openlinktoken-cli/
+          uv pip install --break-system-packages --system -e lib/python/openlinktoken/ -e lib/python/openlinktoken-cli/ -e "lib/python/openlinktoken-pyspark[spark40]"
+
+      - name: Test openlinktoken
+        run: |
+          PYTHONPATH=lib/python/openlinktoken/src/main pytest lib/python/openlinktoken/src/test --junitxml=lib/python/openlinktoken/test-results.xml --cov=lib/python/openlinktoken/src/main --cov-report=xml:lib/python/openlinktoken/coverage.xml --cov-report=html:lib/python/openlinktoken/htmlcov
+
+      - name: Test openlinktoken-cli
+        run: |
+          PYTHONPATH=lib/python/openlinktoken/src/main:lib/python/openlinktoken-cli/src/main pytest lib/python/openlinktoken-cli/src/test --junitxml=lib/python/openlinktoken-cli/test-results.xml --cov=lib/python/openlinktoken-cli/src/main --cov-report=xml:lib/python/openlinktoken-cli/coverage.xml --cov-report=html:lib/python/openlinktoken-cli/htmlcov
+
+      - name: Build distributions
+        run: |
+          cd lib/python/openlinktoken && uv build
+          cd lib/python/openlinktoken-cli && uv build
+          cd lib/python/openlinktoken-pyspark && uv build
+          mkdir -p all_dists
+          cp lib/python/openlinktoken/dist/*.whl lib/python/openlinktoken/dist/*.tar.gz all_dists/ || true
+          cp lib/python/openlinktoken-cli/dist/*.whl lib/python/openlinktoken-cli/dist/*.tar.gz all_dists/ || true
+          cp lib/python/openlinktoken-pyspark/dist/*.whl lib/python/openlinktoken-pyspark/dist/*.tar.gz all_dists/ || true
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-packages
+          path: all_dists/
+
+  publish_to_pypi:
+    needs: build_and_test
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup toolchain (Python)
+        uses: ./.github/actions/setup-toolchain
+        with:
+          enable-java: false
+          enable-python: true
+          python-version: "3.10"
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: python-packages
+          path: dists
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages: |
+            dists/*.whl
+            dists/*.tar.gz

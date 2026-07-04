@@ -38,6 +38,24 @@ runs:
         server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
         settings-path: ${{ github.workspace }} # location for the settings.xml file
 
+     # Add Sonatype server credentials to the generated settings.xml
+    - name: Add Sonatype credentials to settings.xml
+      if: inputs.enable-java == 'true'
+      run: |
+        cat >> "$GITHUB_WORKSPACE/settings.xml" << 'EOF'
+        <servers>
+          <server>
+            <id>sonatype</id>
+            <username>${env.SONATYPE_USERNAME}</username>
+            <password>${env.SONATYPE_PASSWORD}</password>
+          </server>
+        </servers>
+EOF
+        echo "Added sonatype server to settings.xml"
+      env:
+        SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+        SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+
     - name: Set up Python
       if: inputs.enable-python == 'true'
       uses: actions/setup-python@v5

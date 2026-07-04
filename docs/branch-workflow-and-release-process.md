@@ -266,8 +266,13 @@ A: Repository admins can override branch protection, but it's strongly discourag
 
 ## Related Documentation
 
+- [Publishing Guide](./publishing-guide.md) - Automated Maven Central, PyPI, and Docker publishing workflows
 - [Branch Protection and Release Workflows](./branch-protection-and-release-workflows.md) - Admin setup instructions for branch protection
 - [Development Guide](./dev-guide-development.md) - Development environment setup and language-specific build instructions
-- Workflow files:
+- Publishing workflow files:
+  - `.github/workflows/python-publish.yml`
+  - `.github/workflows/maven-publish.yml`
+  - `.github/workflows/docker-publish.yml`
+- Release workflow files:
   - `.github/workflows/auto-version-bump.yml`
   - `.github/workflows/auto-release.yml`
