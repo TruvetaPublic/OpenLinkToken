@@ -34,7 +34,11 @@ class TokenizationConfigHelper:
             try:
                 attribute_map[entry.column_name] = factory.get_class_for_column(entry.column_name)
             except KeyError:
-                logger.warning("Column '%s' (field '%s') is in config but has no dynamic class registered.", entry.column_name, field_id)
+                logger.warning(
+                    "Column '%s' (field '%s') is in config but has no dynamic class registered.",
+                    entry.column_name,
+                    field_id,
+                )
         return attribute_map
 
     @staticmethod

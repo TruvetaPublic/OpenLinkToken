@@ -111,7 +111,8 @@ class TokenizationConfigLoader:
                 )
             if "column_name" not in entry or not entry["column_name"]:
                 raise ValueError(
-                    f"Configuration '{file_path}': column_mappings entry '{field_id}' is missing required field 'column_name'."
+                    f"Configuration '{file_path}': column_mappings entry '{field_id}' "
+                    f"is missing required field 'column_name'."
                 )
             if "type" not in entry or not entry["type"]:
                 raise ValueError(
