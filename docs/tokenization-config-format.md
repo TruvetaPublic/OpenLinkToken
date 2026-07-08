@@ -26,27 +26,27 @@ A-1002,Marcus,Nguyen,1979-11-05,M,10001,234-56-7890
 ## Example Configuration File
 
 ```yaml
-attributes:
-  member_id:
-    field: RecordId
+column_mappings:
+  RecordId:
+    column_name: "member_id"
     type: RecordId
-  given_nm:
-    field: GivenName
+  GivenName:
+    column_name: "given_nm"
     type: FirstName
-  surname_txt:
-    field: FamilyName
+  FamilyName:
+    column_name: "surname_txt"
     type: LastName
-  dob_iso:
-    field: DateOfBirth
+  DateOfBirth:
+    column_name: "dob_iso"
     type: BirthDate
-  gender_code:
-    field: SexAtBirth
+  SexAtBirth:
+    column_name: "gender_code"
     type: Sex
-  zip_5:
-    field: HomeZip
+  HomeZip:
+    column_name: "zip_5"
     type: PostalCode
-  national_id:
-    field: NationalId
+  NationalId:
+    column_name: "national_id"
     type: SocialSecurityNumber
 
 token_rules:
@@ -65,35 +65,35 @@ token_rules:
 
 Top-level keys:
 
-| Key           | Required | Type    | Description                                                                  |
-| ------------- | -------- | ------- | ---------------------------------------------------------------------------- |
-| `attributes`  | Yes      | Mapping | Maps input column names to logical field IDs and attribute types.            |
-| `token_rules` | Yes      | Mapping | Defines each token rule as an ordered list of `{field, expression}` entries. |
+| Key               | Required | Type    | Description                                                                  |
+| ----------------- | -------- | ------- | ---------------------------------------------------------------------------- |
+| `column_mappings` | Yes      | Mapping | Maps logical field IDs to source column names and attribute types.           |
+| `token_rules`     | Yes      | Mapping | Defines each token rule as an ordered list of `{field, expression}` entries. |
 
-`attributes` entry schema:
+`column_mappings` entry schema:
 
-| Field           | Required | Type    | Description                                                                                            |
-| --------------- | -------- | ------- | ------------------------------------------------------------------------------------------------------ |
-| `<column_name>` | Yes      | Mapping | Input column name from the CSV or Parquet schema (for example `given_nm`).                             |
-| `field`         | Yes      | String  | Logical field identifier used by token rules (for example `FirstName`).                                |
-| `type`          | Yes      | String  | Open Link Token attribute type/alias. See [Attribute Types](#attribute-types) for all accepted values. |
+| Field         | Required | Type    | Description                                                                                      |
+| ------------- | -------- | ------- | ------------------------------------------------------------------------------------------------ |
+| `<field_id>`  | Yes      | Mapping | Logical field identifier used by token rules (for example `GivenName`).                          |
+| `column_name` | Yes      | String  | Source column name in the CSV or Parquet file (for example `"given_nm"`).                        |
+| `type`        | Yes      | String  | Open Link Token attribute type. See [Attribute Types](#attribute-types) for all accepted values. |
 
 `token_rules` entry schema:
 
 | Field        | Required | Type   | Description                                                                                                |
 | ------------ | -------- | ------ | ---------------------------------------------------------------------------------------------------------- |
 | `<rule_id>`  | Yes      | List   | Token rule identifier (`T1`, `T2`, `T3`, `T4`, `T5`, or custom).                                           |
-| `field`      | Yes      | String | Must match one of the `attributes.*.field` values.                                                         |
+| `field`      | Yes      | String | Must match one of the `column_mappings` field IDs.                                                         |
 | `expression` | Yes      | String | Attribute-expression pipeline used by token generation. See [Expression syntax](#expression-syntax) below. |
 
 ## Validation Rules
 
 Validation enforced by the CLI:
 
-- `attributes` must be present and non-empty.
+- `column_mappings` must be present and non-empty.
 - `token_rules` must be present and non-empty.
 - Every token-rule entry must contain non-empty `field` and `expression`.
-- Every token-rule `field` must reference a declared `attributes.*.field` value.
+- Every token-rule `field` must reference a declared `column_mappings` field ID.
 - Every declared `type` must resolve to a known Open Link Token attribute class/alias.
 - Token-rule entry order is preserved and used as-is during token construction.
 

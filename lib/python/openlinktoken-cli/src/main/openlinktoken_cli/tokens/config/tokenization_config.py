@@ -8,7 +8,7 @@ from typing import Dict, List
 class AttributeMappingEntry:
     """Represents a single attribute mapping entry from the config file."""
 
-    field: str
+    column_name: str
     type: str
 
 
@@ -24,5 +24,5 @@ class TokenRuleEntry:
 class TokenizationConfig:
     """Parsed representation of a custom tokenization configuration file."""
 
-    attributes: Dict[str, AttributeMappingEntry] = field(default_factory=dict)
+    column_mappings: Dict[str, AttributeMappingEntry] = field(default_factory=dict)
     token_rules: Dict[str, List[TokenRuleEntry]] = field(default_factory=dict)

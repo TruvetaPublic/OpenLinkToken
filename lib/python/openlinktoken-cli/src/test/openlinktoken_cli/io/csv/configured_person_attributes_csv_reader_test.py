@@ -22,9 +22,9 @@ class TestConfiguredAttributeMappingInPersonAttributesCSVReader:
         self.temp_file.close()
 
         self.config = TokenizationConfig(
-            attributes={
-                "given_nm": AttributeMappingEntry(field="FirstName", type="GivenName"),
-                "family_nm": AttributeMappingEntry(field="FamilyName", type="LastName"),
+            column_mappings={
+                "FirstName": AttributeMappingEntry(column_name="given_nm", type="GivenName"),
+                "FamilyName": AttributeMappingEntry(column_name="family_nm", type="LastName"),
             },
             token_rules={},
         )

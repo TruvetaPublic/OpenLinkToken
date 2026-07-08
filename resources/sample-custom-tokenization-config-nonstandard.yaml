@@ -1,24 +1,24 @@
-attributes:
-  encounter_id:
-    field: RecordId
+column_mappings:
+  RecordId:
+    column_name: "encounter_id"
     type: RecordId
-  birth_year:
-    field: BirthYear
-    type: LastName
-  age_at_encounter:
-    field: AgeAtEncounter
-    type: PostalCode
-  encounter_date:
-    field: EncounterDate
+  BirthYear:
+    column_name: "birth_year"
+    type: BirthYear
+  AgeAtEncounter:
+    column_name: "age_at_encounter"
+    type: Age
+  EncounterDate:
+    column_name: "encounter_date"
     type: BirthDate
-  encounter_type:
-    field: EncounterType
+  EncounterType:
+    column_name: "encounter_type"
     type: FirstName
-  patient_gender:
-    field: Gender
+  Gender:
+    column_name: "patient_gender"
     type: Sex
-  ssn:
-    field: PatientSSN
+  PatientSSN:
+    column_name: "ssn"
     type: SocialSecurityNumber
 
 token_rules:

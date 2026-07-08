@@ -11,9 +11,9 @@ from openlinktoken_cli.tokens.config.tokenization_config import AttributeMapping
 class TestDynamicAttributeFactory:
     def test_maps_same_base_type_to_distinct_field_classes(self):
         config = TokenizationConfig(
-            attributes={
-                "patient_zip": AttributeMappingEntry(field="PatientZip", type="PostalCode"),
-                "hospital_zip": AttributeMappingEntry(field="HospitalZip", type="PostalCode"),
+            column_mappings={
+                "PatientZip": AttributeMappingEntry(column_name="patient_zip", type="PostalCode"),
+                "HospitalZip": AttributeMappingEntry(column_name="hospital_zip", type="PostalCode"),
             },
             token_rules={},
         )
@@ -34,8 +34,8 @@ class TestDynamicAttributeFactory:
 
     def test_unknown_field_lookup_raises_key_error(self):
         config = TokenizationConfig(
-            attributes={
-                "patient_zip": AttributeMappingEntry(field="PatientZip", type="PostalCode"),
+            column_mappings={
+                "PatientZip": AttributeMappingEntry(column_name="patient_zip", type="PostalCode"),
             },
             token_rules={},
         )
@@ -47,8 +47,8 @@ class TestDynamicAttributeFactory:
 
     def test_unknown_attribute_type_raises_value_error(self):
         config = TokenizationConfig(
-            attributes={
-                "some_column": AttributeMappingEntry(field="SomeField", type="NotARealType"),
+            column_mappings={
+                "SomeField": AttributeMappingEntry(column_name="some_column", type="NotARealType"),
             },
             token_rules={},
         )
@@ -74,8 +74,8 @@ class TestDynamicAttributeFactory:
         monkeypatch.setattr(AttributeLoader, "load", lambda: [FirstAttribute(), SecondAttribute()])
 
         config = TokenizationConfig(
-            attributes={
-                "source": AttributeMappingEntry(field="SomeField", type="SharedAlias"),
+            column_mappings={
+                "SomeField": AttributeMappingEntry(column_name="source", type="SharedAlias"),
             },
             token_rules={},
         )

@@ -1,24 +1,24 @@
-attributes:
+column_mappings:
   RecordId:
-    field: RecordId
+    column_name: "RecordId"
     type: RecordId
   BirthDate:
-    field: BirthDate
+    column_name: "BirthDate"
     type: BirthDate
   FirstName:
-    field: FirstName
+    column_name: "FirstName"
     type: FirstName
   LastName:
-    field: LastName
+    column_name: "LastName"
     type: LastName
   PostalCode:
-    field: PostalCode
+    column_name: "PostalCode"
     type: PostalCode
   Sex:
-    field: Sex
+    column_name: "Sex"
     type: Sex
   SocialSecurityNumber:
-    field: SocialSecurityNumber
+    column_name: "SocialSecurityNumber"
     type: SocialSecurityNumber
 
 token_rules:

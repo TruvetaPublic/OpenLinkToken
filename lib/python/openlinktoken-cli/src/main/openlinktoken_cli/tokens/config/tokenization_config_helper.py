@@ -30,11 +30,11 @@ class TokenizationConfigHelper:
             A dict mapping each input column name to its corresponding attribute class.
         """
         attribute_map = {}
-        for column in config.attributes:
+        for field_id, entry in config.column_mappings.items():
             try:
-                attribute_map[column] = factory.get_class_for_column(column)
+                attribute_map[entry.column_name] = factory.get_class_for_column(entry.column_name)
             except KeyError:
-                logger.warning("Column '%s' is in config but has no dynamic class registered.", column)
+                logger.warning("Column '%s' (field '%s') is in config but has no dynamic class registered.", entry.column_name, field_id)
         return attribute_map
 
     @staticmethod
