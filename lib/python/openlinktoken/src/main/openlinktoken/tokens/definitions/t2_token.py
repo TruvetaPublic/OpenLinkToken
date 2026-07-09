@@ -7,6 +7,7 @@ from openlinktoken.attributes.person.birth_date_attribute import BirthDateAttrib
 from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute
 from openlinktoken.attributes.person.last_name_attribute import LastNameAttribute
 from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttribute
+from openlinktoken.tokens.definitions.field_ids import FieldIds
 from openlinktoken.tokens.token import Token
 
 
@@ -24,10 +25,10 @@ class T2Token(Token):
     def __init__(self):
         """Initialize the T2 token definition."""
         self._definition = [
-            AttributeExpression(LastNameAttribute, "T|U", field_id="LastName"),
-            AttributeExpression(FirstNameAttribute, "T|U", field_id="FirstName"),
-            AttributeExpression(BirthDateAttribute, "T|D", field_id="BirthDate"),
-            AttributeExpression(PostalCodeAttribute, "T|S(0,3)|U", field_id="PostalCode"),
+            AttributeExpression(LastNameAttribute, "T|U", field_id=FieldIds.LAST_NAME),
+            AttributeExpression(FirstNameAttribute, "T|U", field_id=FieldIds.FIRST_NAME),
+            AttributeExpression(BirthDateAttribute, "T|D", field_id=FieldIds.BIRTH_DATE),
+            AttributeExpression(PostalCodeAttribute, "T|S(0,3)|U", field_id=FieldIds.POSTAL_CODE),
         ]
 
     def get_identifier(self) -> str:

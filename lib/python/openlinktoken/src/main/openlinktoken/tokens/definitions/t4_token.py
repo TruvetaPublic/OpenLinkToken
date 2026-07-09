@@ -6,6 +6,7 @@ from openlinktoken.attributes.attribute_expression import AttributeExpression
 from openlinktoken.attributes.person.birth_date_attribute import BirthDateAttribute
 from openlinktoken.attributes.person.sex_attribute import SexAttribute
 from openlinktoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
+from openlinktoken.tokens.definitions.field_ids import FieldIds
 from openlinktoken.tokens.token import Token
 
 
@@ -23,9 +24,9 @@ class T4Token(Token):
     def __init__(self):
         """Initialize the T4 token definition."""
         self._definition = [
-            AttributeExpression(SocialSecurityNumberAttribute, "T|M(\\d+)", field_id="SocialSecurityNumber"),
-            AttributeExpression(SexAttribute, "T|U", field_id="Sex"),
-            AttributeExpression(BirthDateAttribute, "T|D", field_id="BirthDate"),
+            AttributeExpression(SocialSecurityNumberAttribute, "T|M(\\d+)", field_id=FieldIds.SOCIAL_SECURITY_NUMBER),
+            AttributeExpression(SexAttribute, "T|U", field_id=FieldIds.SEX),
+            AttributeExpression(BirthDateAttribute, "T|D", field_id=FieldIds.BIRTH_DATE),
         ]
 
     def get_identifier(self) -> str:
