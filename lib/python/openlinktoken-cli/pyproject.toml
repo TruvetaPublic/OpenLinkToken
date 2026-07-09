@@ -18,7 +18,7 @@ dependencies = [
   "cryptography==49.0.0",
   "urllib3==2.7.0",
   "jwcrypto==1.5.7",
-  "packaging==26.1",
+  "packaging==26.2",
 ]
 
 [project.scripts]
