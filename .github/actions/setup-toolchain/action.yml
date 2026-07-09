@@ -25,6 +25,22 @@ inputs:
     description: "Python version to install"
     required: false
     default: "3.10"
+  central-username:
+    description: "Central Publisher Portal user token username (for Maven Central deploys). Leave unset to skip."
+    required: false
+    default: ""
+  central-password:
+    description: "Central Publisher Portal user token password (for Maven Central deploys). Leave unset to skip."
+    required: false
+    default: ""
+  gpg-private-key:
+    description: "Base64-encoded, armored GPG private key used to sign Maven Central release artifacts. Leave unset to skip."
+    required: false
+    default: ""
+  gpg-passphrase:
+    description: "Passphrase for the GPG private key above. Leave unset to skip."
+    required: false
+    default: ""
 runs:
   using: "composite"
   steps:
@@ -38,23 +54,33 @@ runs:
         server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
         settings-path: ${{ github.workspace }} # location for the settings.xml file
 
-     # Add Sonatype server credentials to the generated settings.xml
-    - name: Add Sonatype credentials to settings.xml
-      if: inputs.enable-java == 'true'
+    # actions/setup-java only writes a single <server> entry (for "github" above) and
+    # closes the <settings> root element. Appending a second <servers> block after
+    # </settings> would produce invalid XML, so instead we insert the "central" server
+    # (Central Publisher Portal user token, used by central-publishing-maven-plugin) and
+    # a gpg.passphrase server entry before the existing </servers> closing tag.
+    - name: Add Central Portal and GPG credentials to settings.xml
+      if: inputs.enable-java == 'true' && inputs.central-username != ''
+      shell: bash
       run: |
-        cat >> "$GITHUB_WORKSPACE/settings.xml" << 'EOF'
-        <servers>
-          <server>
-            <id>sonatype</id>
-            <username>${env.SONATYPE_USERNAME}</username>
-            <password>${env.SONATYPE_PASSWORD}</password>
-          </server>
-        </servers>
-EOF
-        echo "Added sonatype server to settings.xml"
+        set -euo pipefail
+        SETTINGS_FILE="$GITHUB_WORKSPACE/settings.xml"
+        sed -i "s#</servers>#<server><id>central</id><username>\${env.CENTRAL_PORTAL_USERNAME}</username><password>\${env.CENTRAL_PORTAL_PASSWORD}</password></server><server><id>gpg.passphrase</id><passphrase>\${env.GPG_PASSPHRASE}</passphrase></server></servers>#" "$SETTINGS_FILE"
+        echo "Added central and gpg.passphrase server entries to settings.xml"
       env:
-        SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-        SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+        CENTRAL_PORTAL_USERNAME: ${{ inputs.central-username }}
+        CENTRAL_PORTAL_PASSWORD: ${{ inputs.central-password }}
+        GPG_PASSPHRASE: ${{ inputs.gpg-passphrase }}
+
+    - name: Import GPG signing key
+      if: inputs.enable-java == 'true' && inputs.gpg-private-key != ''
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo "$GPG_PRIVATE_KEY" | base64 --decode | gpg --batch --import
+        echo "Imported GPG signing key"
+      env:
+        GPG_PRIVATE_KEY: ${{ inputs.gpg-private-key }}
 
     - name: Set up Python
       if: inputs.enable-python == 'true'

@@ -30,6 +30,7 @@ jobs:
       release-tag: ${{ github.event.inputs.version && format('v{0}', github.event.inputs.version) || '' }}
 
   build_and_test:
+    needs: release-info
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -77,10 +78,11 @@ jobs:
             lib/python/openlinktoken-pyspark/dist/*.tar.gz
 
   publish_to_pypi:
-    needs: build_and_test
+    needs: [release-info, build_and_test]
     runs-on: ubuntu-latest
+    environment: pypi
     permissions:
-      id-token: write
+      id-token: write # required for PyPI Trusted Publishing (OIDC) — no API token needed
       contents: read
     steps:
       - name: Download Python artifacts
@@ -92,4 +94,4 @@ jobs:
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          packages: dist_temp/*
+          packages-dir: dist_temp

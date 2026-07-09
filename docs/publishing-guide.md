@@ -1,13 +1,13 @@
 # Publishing OpenLinkToken to Maven Central and PyPI
 
-This guide documents the configuration required to publish OpenLinkToken artifacts to Maven Central (Sonatype) and PyPI. It covers prerequisite accounts, repository secrets, Maven settings, and the automated GitHub Actions workflows that perform the actual publishing.
+This guide documents the configuration required to publish OpenLinkToken artifacts to Maven Central (via the Sonatype Central Publisher Portal) and PyPI. It covers prerequisite accounts, repository secrets, Maven settings, and the automated GitHub Actions workflows that perform the actual publishing.
 
 ---
 
 ## Table of Contents
 
 1. [Publishing Overview](#publishing-overview)
-2. [Maven Central (Sonatype OSSRH)](#maven-central-sonatype-ossrh)
+2. [Maven Central (Sonatype Central Publisher Portal)](#maven-central-sonatype-central-publisher-portal)
 3. [PyPI — Python Package Index](#pypi--python-package-index)
 4. [Publishing Triggers](#publishing-triggers)
 5. [Manual Publishing](#manual-publishing)
@@ -19,157 +19,182 @@ This guide documents the configuration required to publish OpenLinkToken artifac
 
 OpenLinkToken artifacts are published to two primary registries via GitHub Actions:
 
-| Artifact                                     | Registry               | Workflow                                                        |
-| -------------------------------------------- | ---------------------- | --------------------------------------------------------------- |
-| `openlinktoken` Java JAR + POM               | Sonatype Maven Central | [`maven-publish.yml`](../.github/workflows/maven-publish.yml)   |
-| `openlinktoken` Python wheel + sdist         | PyPI                   | [`python-publish.yml`](../.github/workflows/python-publish.yml) |
-| `openlinktoken-pyspark` Python wheel + sdist | PyPI                   | [`python-publish.yml`](../.github/workflows/python-publish.yml) |
+| Artifact                                     | Registry                                                   | Workflow                                                        |
+| -------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------- |
+| `openlinktoken` Java JAR + POM               | Maven Central (Central Publisher Portal) + GitHub Packages | [`maven-publish.yml`](../.github/workflows/maven-publish.yml)   |
+| `openlinktoken` Python wheel + sdist         | PyPI                                                       | [`python-publish.yml`](../.github/workflows/python-publish.yml) |
+| `openlinktoken-pyspark` Python wheel + sdist | PyPI                                                       | [`python-publish.yml`](../.github/workflows/python-publish.yml) |
+
+Both registries use **short-lived, workload-identity-based authentication** rather than long-lived static API tokens wherever the platform supports it:
+
+- **PyPI** uses [Trusted Publishing](https://docs.pypi.org/trusted-publishers/) — GitHub Actions authenticates via OpenID Connect (OIDC); there is no PyPI API token stored as a secret.
+- **Maven Central** (via the Central Publisher Portal) still requires a Portal **user token** (username/password pair) plus a **GPG signing key**, since the Portal does not yet support OIDC. These are stored as repository secrets.
 
 ### Prerequisites Checklist
 
-| Item                                     | Required For             | How to Configure                                                                                                                                                                           |
-| ---------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `SONATYPE_USERNAME`                      | Maven Central publishing | Add as a [repository secret](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enforcing-secure-settings/managing-secrets-for-your-dependency-stack) |
-| `SONATYPE_PASSWORD` (API token)          | Maven Central publishing | Generate at [Sonatype User Data](https://issues.sonatype.org/secure/ViewProfile.jspa?selectedItem=USER-DATA); scope must include `Publish`                                                 |
-| `PYPI_TOKEN` (API token)                 | PyPI publishing          | Create at [PyPI Account Settings](https://pypi.org/manage/account/); format is `pypi-AAPi...`                                                                                              |
-| `settings.xml` with `sonatype` server ID | Maven Central publishing | See the Maven Settings section below                                                                                                                                                       |
+| Item                                                  | Required For                                                     | How to Configure                                                                                                                                                                                                                                                                       |
+| ----------------------------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PyPI Trusted Publisher entry                          | PyPI publishing (`openlinktoken`, `openlinktoken-pyspark`)       | Configure on [pypi.org](https://pypi.org) per-project — **no GitHub secret needed**. See [PyPI section](#pypi--python-package-index) below.                                                                                                                                            |
+| `CENTRAL_PORTAL_USERNAME` / `CENTRAL_PORTAL_PASSWORD` | Maven Central publishing                                         | Generate a [Central Portal user token](https://central.sonatype.com/account) and add both values as [repository secrets](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enforcing-secure-settings/managing-secrets-for-your-dependency-stack) |
+| `GPG_PRIVATE_KEY` / `GPG_PASSPHRASE`                  | Maven Central publishing (artifact signing, required by Central) | Generate a GPG key pair and add the base64-encoded armored private key and its passphrase as repository secrets. See [Maven Central section](#maven-central-sonatype-central-publisher-portal) below.                                                                                  |
 
 ---
 
-## Maven Central (Sonatype OSSRH)
+## Maven Central (Sonatype Central Publisher Portal)
 
-### 1. Create a Sonatype Project
+> **Note:** Sonatype OSSRH (`oss.sonatype.org`) was fully decommissioned on 2025-06-30. All new publishing goes through the [Central Publisher Portal](https://central.sonatype.com/), which uses the `central-publishing-maven-plugin` instead of a plain `mvn deploy` to a Nexus staging URL.
 
-1. Register at [issues.sonatype.org](https://issues.sonatype.org) (if you do not already have an account).
-2. Create a **New Project** issue (type: `Community Support - OSSRH`).
-3. Provide the following details:
-   - **Group ID**: `org.openlinktoken`
-   - **Project URL**: `https://github.com/TruvetaPublic/OpenLinkToken`
-   - **SCM URL**: `https://github.com/TruvetaPublic/OpenLinkToken`
-   - **Description**: OpenLink Token privacy-preserving data matching library
-4. Once approved (typically 1–2 business days), your group `org.openlinktoken` will be available on [Central Repository](https://central.sonatype.com/).
+### 1. Create a Central Publisher Portal Account and Namespace
 
-### 2. Generate an API Token
+1. Register at [central.sonatype.com](https://central.sonatype.com/) (if you do not already have an account — existing OSSRH/JIRA accounts can sign in with the same credentials).
+2. Go to **Namespaces** and verify ownership of the `org.openlinktoken` namespace (via a DNS TXT record or GitHub repository verification, per the Portal's instructions).
+3. Once verified, you can publish any artifact under the `org.openlinktoken` group ID.
 
-1. Go to [Sonatype User Data](https://issues.sonatype.org/secure/ViewProfile.jspa?selectedItem=USER-DATA).
-2. Click **Create API Token** (or **Generate Token**).
-3. Give it a descriptive name (e.g., `OpenLinkToken-CI`).
-4. **Copy the token immediately** — it will be hidden afterward.
-5. Add to your repository secrets as `SONATYPE_PASSWORD`.
+### 2. Generate a Portal User Token
 
-### 3. Add Repository Secrets
+1. Go to [central.sonatype.com/account](https://central.sonatype.com/account).
+2. Click **Generate User Token**.
+3. **Copy the username and password immediately** — the password is only shown once.
 
-Navigate to **Settings → Secrets and variables → Actions** in your GitHub repository. Add the following secrets:
+> Legacy OSSRH JIRA credentials (`issues.sonatype.org`) **do not work** against the Portal — publishing with them returns `401 Unauthorized`. You must generate a new Portal user token.
 
-| Secret Name         | Example Value           | Notes                     |
-| ------------------- | ----------------------- | ------------------------- |
-| `SONATYPE_USERNAME` | `truvetapublic`         | Your Sonatype username    |
-| `SONATYPE_PASSWORD` | `AaBbCc...` (32+ chars) | API token generated above |
+### 3. Generate a GPG Signing Key
 
-### 4. Maven Settings Configuration
+Maven Central requires every release artifact (JAR, POM, sources jar, javadoc jar) to be signed with GPG.
 
-The `settings.xml` file is generated by `actions/setup-java@v4` in [`setup-toolchain/action.yml`](../.github/actions/setup-toolchain/action.yml). The generated file includes credentials for the `github` server ID (used for GitHub Packages deployment), but **you must also add credentials for the `sonatype` server ID**.
+```bash
+# Generate a new key (use a real name/email; a passphrase is strongly recommended)
+gpg --full-generate-key
 
-The `maven-publish.yml` workflow uses the following deploy command:
+# List keys to get the key ID
+gpg --list-secret-keys --keyid-format LONG
 
-```yaml
-- run: |
-    mvn deploy       -s "$GITHUB_WORKSPACE/settings.xml"       -DaltReleaseDeploymentRepository=sonatype::https://oss.sonatype.org/service/local/staging/deploy/maven2/
+# Publish the public key so Central can verify signatures
+gpg --keyserver keyserver.ubuntu.com --send-keys <KEY_ID>
+
+# Export the private key for use in CI (base64-encode so it survives as a GitHub secret)
+gpg --export-secret-keys --armor <KEY_ID> | base64 -w0 > gpg-private-key.b64
 ```
 
-To support this, ensure your `settings.xml` includes a `<server>` block for the `sonatype` ID. You can either:
+### 4. Add Repository Secrets
 
-- Add a `<server>` entry using the `SONATYPE_USERNAME` / `SONATYPE_PASSWORD` environment variables in the `settings.xml` template used by `setup-toolchain`.
-- Or provide them directly in the workflow by adding:
+Navigate to **Settings → Secrets and variables → Actions** in your GitHub repository. Add:
+
+| Secret Name               | Value                                              |
+| ------------------------- | -------------------------------------------------- |
+| `CENTRAL_PORTAL_USERNAME` | The Portal user token **username** from step 2     |
+| `CENTRAL_PORTAL_PASSWORD` | The Portal user token **password** from step 2     |
+| `GPG_PRIVATE_KEY`         | Contents of `gpg-private-key.b64` from step 3      |
+| `GPG_PASSPHRASE`          | The passphrase you set when generating the GPG key |
+
+### 5. How Authentication Is Wired Up in CI
+
+[`setup-toolchain/action.yml`](../.github/actions/setup-toolchain/action.yml) accepts `central-username`, `central-password`, `gpg-private-key`, and `gpg-passphrase` inputs. When Maven publishing needs them, `maven-publish.yml` passes the secrets in as inputs:
 
 ```yaml
-env:
-  SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-  SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+- name: Setup toolchain (Java)
+  uses: ./.github/actions/setup-toolchain
+  with:
+    enable-java: true
+    enable-python: false
+    central-username: ${{ secrets.CENTRAL_PORTAL_USERNAME }}
+    central-password: ${{ secrets.CENTRAL_PORTAL_PASSWORD }}
+    gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+    gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
 ```
 
-And updating the `settings.xml` block to reference these via `${env.SONATYPE_USERNAME}` and `${env.SONATYPE_PASSWORD}`.
+The composite action then:
 
-### 5. POM Configuration
+1. Lets `actions/setup-java@v4` generate `settings.xml` with the `github` server entry (for GitHub Packages).
+2. Inserts a `central` server entry (Portal user token) and a `gpg.passphrase` server entry into that same `settings.xml`, referencing environment variables that are supplied at `mvn deploy` time (never written to disk in plaintext).
+3. Imports the GPG private key into the runner's keyring with `gpg --batch --import`.
 
-The parent POM at [`lib/java/pom.xml`](../lib/java/pom.xml) already contains the necessary `<distributionManagement>` configuration:
+The publish step in `maven-publish.yml` then runs:
+
+```yaml
+- name: Publish to Maven Central
+  run: |
+    cd lib/java
+    mvn deploy -s "$GITHUB_WORKSPACE/settings.xml" -Pcentral-release -Dmaven.test.skip=true -B --file pom.xml
+  env:
+    CENTRAL_PORTAL_USERNAME: ${{ secrets.CENTRAL_PORTAL_USERNAME }}
+    CENTRAL_PORTAL_PASSWORD: ${{ secrets.CENTRAL_PORTAL_PASSWORD }}
+    GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+```
+
+The `-Pcentral-release` profile (defined in [`lib/java/pom.xml`](../lib/java/pom.xml)) activates the `central-publishing-maven-plugin`, attaches sources/javadoc jars, and signs all artifacts with `maven-gpg-plugin` — all scoped to this profile so a normal `mvn package`/`mvn deploy` (e.g. the separate "Publish to GitHub Packages" step) never requires a GPG key or Portal credentials.
+
+### 6. POM Configuration
 
 ```xml
 <distributionManagement>
-     <repository>
-         <id>github</id>
-         <name>GitHub Packages</name>
-         <url>https://maven.pkg.github.com/TruvetaPublic/OpenLinkToken</url>
-     </repository>
-     <snapshotRepository>
-         <id>sonatype</id>
-         <name>Sonatype OSS Snapshot Repository</name>
-         <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-     </snapshotRepository>
-     <repository>
-         <id>sonatype</id>
-         <name>Sonatype OSS Staging Repository</name>
-         <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-     </repository>
+    <repository>
+        <id>github</id>
+        <name>GitHub Packages</name>
+        <url>https://maven.pkg.github.com/TruvetaPublic/OpenLinkToken</url>
+    </repository>
+    <snapshotRepository>
+        <id>central</id>
+        <name>Central Portal Snapshot Repository</name>
+        <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+    </snapshotRepository>
 </distributionManagement>
 ```
 
-The `-DaltReleaseDeploymentRepository` flag in the workflow tells Maven to deploy releases to Sonatype instead of the `${repository}` defined as `github` in the POM.
+Note that Maven Central **releases** are not deployed via `distributionManagement` at all — the `central-publishing-maven-plugin` bundles and uploads artifacts directly to the Portal API when the `central-release` profile is active.
 
 ---
 
 ## PyPI — Python Package Index
 
-### 1. Create a PyPI API Token
+OpenLinkToken publishes to PyPI using **Trusted Publishing (OIDC)** — there is no PyPI API token stored anywhere in this repository. GitHub Actions presents a short-lived OIDC identity token scoped to this repository and workflow, and PyPI exchanges it for a temporary upload credential.
 
-1. Register at [pypi.org](https://pypi.org/account/register/).
-2. Go to [Account Settings → API tokens](https://pypi.org/manage/account/).
-3. Click **Add API token**.
-4. Give it a name (e.g., `OpenLinkToken`) and scope (`Entire account`).
-5. **Copy the token immediately** — it will be hidden afterward.
-6. Format: `pypi-AAPi...` (starts with `pypi-`).
+### 1. Register a Trusted Publisher on PyPI
 
-### 2. Add the `PYPI_TOKEN` Secret
+This must be configured **once per PyPI project** (`openlinktoken` and `openlinktoken-pyspark` each need their own entry):
 
-Navigate to **Settings → Secrets and variables → Actions** in your GitHub repository. Add:
+1. Sign in at [pypi.org](https://pypi.org/) and go to the project's **Settings → Publishing** page (for a brand-new project that hasn't been published yet, use [pypi.org/manage/account/publishing](https://pypi.org/manage/account/publishing/) to pre-register a "pending" trusted publisher instead).
+2. Click **Add a new publisher** and choose **GitHub**.
+3. Fill in:
 
-| Field     | Value                                          |
-| --------- | ---------------------------------------------- |
-| **Name**  | `PYPI_TOKEN`                                   |
-| **Value** | The full PyPI API token (e.g., `pypi-AAPi...`) |
+   | Field             | Value                                                |
+   | ----------------- | ---------------------------------------------------- |
+   | PyPI Project Name | `openlinktoken` (repeat for `openlinktoken-pyspark`) |
+   | Owner             | `TruvetaPublic`                                      |
+   | Repository name   | `OpenLinkToken`                                      |
+   | Workflow name     | `python-publish.yml`                                 |
+   | Environment name  | `pypi`                                               |
 
-### 3. PyPI Publish Workflow
+4. Save. No secret or token is generated or copied — PyPI now trusts OIDC tokens minted by this repository's `python-publish.yml` workflow when it runs under the `pypi` GitHub Environment.
 
-The [`python-publish.yml`](../.github/workflows/python-publish.yml) workflow includes a conditional `Publish to PyPI` step:
+### 2. How Authentication Is Wired Up in CI
+
+The `publish_to_pypi` job in [`python-publish.yml`](../.github/workflows/python-publish.yml) declares:
 
 ```yaml
-- name: Publish to PyPI
-  env:
-    PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
-  run: |
-    set -euo pipefail
-    if [ -n "$PYPI_TOKEN" ]; then
-      pip install twine
-      twine upload \
-           --non-interactive \
-           -u __token__ \
-           -p "$PYPI_TOKEN" \
-        lib/python/openlinktoken/dist/* \
-        lib/python/openlinktoken-pyspark/dist/*
-      echo "Successfully published to PyPI"
-    else
-      echo "No PyPI token configured - skipping publish"
-    fi
+publish_to_pypi:
+  needs: [release-info, build_and_test]
+  runs-on: ubuntu-latest
+  environment: pypi
+  permissions:
+    id-token: write # required for PyPI Trusted Publishing (OIDC) — no API token needed
+    contents: read
+  steps:
+    - name: Download Python artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: python-packages-${{ needs.release-info.outputs['tag'] }}
+        path: dist_temp
+
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        packages-dir: dist_temp
 ```
 
-**Key points:**
+`permissions: id-token: write` is what allows the job to request an OIDC token from GitHub's OIDC provider; `pypa/gh-action-pypi-publish` handles exchanging that token with PyPI automatically. There is no `password`, `user`, or token input to configure — adding one would be a sign something has regressed back to token-based auth.
 
-- If `PYPI_TOKEN` is **not set**, the step silently skips PyPI publishing (no error) and only attaches artifacts to the GitHub Release.
-- If `PYPI_TOKEN` **is set**, the step uploads both `openlinktoken` and `openlinktoken-pyspark` packages to PyPI.
-- The `-u __token__` username is required by PyPI for API token authentication.
-- The packages are built to `lib/python/openlinktoken/dist/` and `lib/python/openlinktoken-pyspark/dist/` by `uv build` in preceding steps.
-
-### 4. Verify on PyPI
+### 3. Verify on PyPI
 
 After publishing, verify the packages appear on PyPI:
 
@@ -203,6 +228,8 @@ maven-publish.yml + python-publish.yml (AUTOMATICALLY TRIGGERED)
     Build -> Deploy -> Attach to Release
 ```
 
+There is intentionally only **one** workflow per ecosystem watching for releases (`maven-publish.yml`, `python-publish.yml`). A tag-push-triggered `release.yml` workflow previously existed alongside `python-publish.yml` and would have double-published the same version to PyPI for every release; it has been removed in favor of this single trigger chain.
+
 ---
 
 ## Manual Publishing
@@ -218,56 +245,46 @@ To publish a specific version manually:
 The workflow will:
 
 1. Check out the `main` branch.
-2. Read the version from `release-context.yml` shared workflow.
+2. Read the version from the `release-context.yml` shared workflow.
 3. Build the package (`mvn package` for Maven; `uv build` for Python).
-4. Deploy to Sonatype (Maven) and/or PyPI (Python).
-5. Attach artifacts to the named release (or create one if it does not exist).
+4. Deploy to Maven Central + GitHub Packages, or to PyPI.
+5. Attach artifacts to the named release (Maven) or the workflow run (Python).
 
 ---
 
 ## Troubleshooting
 
-### Maven deploy fails with "Authentication Failed"
+### Maven deploy fails with "401 Unauthorized"
 
-- Verify `settings.xml` contains the `<server><id>sonatype</id>...</server>` block.
-- Confirm `SONATYPE_USERNAME` and `SONATYPE_PASSWORD` are set in repository secrets.
-- Ensure the Sonatype API token has `Publish` and `Administer` scopes.
-- Check that the `org.openlinktoken` group ID is approved by Sonatype.
+- Confirm `CENTRAL_PORTAL_USERNAME` / `CENTRAL_PORTAL_PASSWORD` are a **Central Portal user token** (from [central.sonatype.com/account](https://central.sonatype.com/account)), not a legacy OSSRH JIRA username/password — the old credentials are rejected by the Portal.
+- Verify `settings.xml` contains a `<server><id>central</id>...</server>` block (added by `setup-toolchain/action.yml`).
 
-### Maven deploy fails with "Already Exists"
+### Maven deploy fails with "no signature" / "artifact not signed"
 
-The workflow includes a pre-check: it queries GitHub Packages for `maven-metadata.xml` and skips deployment if the version already exists. This check only covers GitHub Packages — **if the version already exists on Sonatype**, you must:
+- Confirm `GPG_PRIVATE_KEY` (base64-encoded, armored) and `GPG_PASSPHRASE` are set — the Central Publisher Portal rejects unsigned releases.
+- Confirm the `-Pcentral-release` profile is active on the deploy command; GPG signing only runs inside that profile.
 
-1. Use a different version.
-2. Or contact Sonatype to unstage the existing deployment.
+### Maven deploy fails with "Namespace not verified"
 
-### PyPI publish reports "No PyPI token configured"
+- Verify the `org.openlinktoken` namespace ownership at [central.sonatype.com/publishing/namespaces](https://central.sonatype.com/publishing/namespaces).
 
-This is **expected behavior** if `PYPI_TOKEN` is not set. Add the secret under **Settings → Secrets and variables → Actions → New repository secret**.
+### PyPI upload fails with "invalid-publisher" or "no matching trusted publisher"
+
+- Re-check the Trusted Publisher entry on pypi.org: Owner (`TruvetaPublic`), Repository (`OpenLinkToken`), Workflow filename (`python-publish.yml`), and Environment name (`pypi`) must match exactly, including the environment the `publish_to_pypi` job declares.
+- Confirm the job has `permissions: id-token: write` — without it, no OIDC token is requested and the publish step fails before it even reaches PyPI.
 
 ### PyPI upload returns `403 Forbidden`
 
-- Verify the `PYPI_TOKEN` value is correct (no extra whitespace).
-- The token may have expired — regenerate at <https://pypi.org/manage/account/>.
-- The token may lack permission for the target account — verify the scope in the API token settings.
+- This is expected if a Trusted Publisher has not been registered for the project yet, or was registered with mismatched repository/workflow/environment values — see above.
+- OpenLinkToken does not use a `PYPI_TOKEN` secret; if you see references to one, treat it as stale/incorrect documentation.
 
-### Sonatype staging fails with "Invalid POM" or "Missing fields"
+### Artifacts not appearing in Maven Central after `mvn deploy -Pcentral-release`
 
-- Ensure the POM includes `<licenses>`, `<developers>`, and `<scm>` elements.
-- The POM must contain a valid URL and source SCM link.
-- Ensure `maven.deploy.skip` is `false` on the parent POM.
+With `autoPublish: true` configured on `central-publishing-maven-plugin`, a successful `mvn deploy` publishes automatically once validation passes. If it doesn't appear:
 
-### Artifacts not appearing in Maven Central after `mvn deploy`
-
-`mvn deploy` deploys to _staging_ (Sonatype OSSRH repository). After deploying, you must also:
-
-1. Navigate to [Sonatype Nexus](https://central.sonatype.com/namespace/manage).
-2. Find the staging repository for `org.openlinktoken`.
-3. **Close** the staging repository.
-4. **Release** it (this publishes to Maven Central).
-5. The artifact will typically appear on Maven Central within 10–30 minutes after release.
-
-Alternatively, you can use the [Sonatype CLI (`staging` or `s01)`](https://central.sonatype.com/publish/requirements/using-the-client/) to automate closing and releasing.
+1. Navigate to [central.sonatype.com/publishing/deployments](https://central.sonatype.com/publishing/deployments).
+2. Check the deployment's validation status — failed validation (e.g., missing sources/javadoc jar, missing signature, invalid POM metadata) blocks publishing.
+3. The artifact typically appears on Maven Central within 10–30 minutes after a successful publish.
 
 ### Artifacts not appearing in GitHub Packages
 

@@ -52,22 +52,26 @@ jobs:
         with:
           enable-java: true
           enable-python: false
+          central-username: ${{ secrets.CENTRAL_PORTAL_USERNAME }}
+          central-password: ${{ secrets.CENTRAL_PORTAL_PASSWORD }}
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Build with Maven
         run: cd lib/java && mvn -B package --file pom.xml
 
-      - name: Publish to Sonatype (Maven Central)
+      - name: Publish to Maven Central
         run: |
           cd lib/java
           mvn deploy \
             -s "$GITHUB_WORKSPACE/settings.xml" \
-            -Dmaven.deploy.altDeploymentRepository=sonatype::default::https://oss.sonatype.org/service/local/staging/deploy/maven2/ \
+            -Pcentral-release \
             -Dmaven.test.skip=true \
             -B --file pom.xml
         env:
-          GITHUB_TOKEN: ${{ github.token }}
-          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          CENTRAL_PORTAL_USERNAME: ${{ secrets.CENTRAL_PORTAL_USERNAME }}
+          CENTRAL_PORTAL_PASSWORD: ${{ secrets.CENTRAL_PORTAL_PASSWORD }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Publish to GitHub Packages
         run: |
