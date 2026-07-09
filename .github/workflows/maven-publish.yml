@@ -68,7 +68,7 @@ jobs:
           parent_metadata_url="${base_url}/openlinktoken-parent/maven-metadata.xml"
 
           if metadata=$(curl -fsSL \
-            -H "Authorization: ******" \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
             "$parent_metadata_url"); then
             if echo "$metadata" | grep -q "<version>${version}</version>"; then
