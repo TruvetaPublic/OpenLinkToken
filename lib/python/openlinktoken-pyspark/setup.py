@@ -76,7 +76,7 @@ setup(
             "pytest-cov==7.1.0",
             "flake8==7.3.0",
             "jupyter==1.1.1",
-            "notebook==7.5.7",
+            "notebook==7.6.0",
             "ipykernel==7.3.0",
         ],
     },
