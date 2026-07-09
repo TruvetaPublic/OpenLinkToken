@@ -41,7 +41,7 @@ jobs:
       RELEASE_ID: ${{ needs.release-info.outputs['release-id'] }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup toolchain (Python only)
         uses: ./.github/actions/setup-toolchain
@@ -68,7 +68,7 @@ jobs:
           cd lib/python/openlinktoken-pyspark && uv build -w dist/
 
       - name: Upload Python artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: python-packages-${{ env.TAG }}
           path: |
@@ -86,7 +86,7 @@ jobs:
       contents: read
     steps:
       - name: Download Python artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: python-packages-${{ needs.release-info.outputs['tag'] }}
           path: dist_temp
