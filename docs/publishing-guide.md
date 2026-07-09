@@ -122,7 +122,7 @@ The publish step in `maven-publish.yml` then runs:
     GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 ```
 
-The `-Pcentral-release` profile (defined in [`lib/java/pom.xml`](../lib/java/pom.xml)) activates the `central-publishing-maven-plugin`, attaches sources/javadoc jars, and signs all artifacts with `maven-gpg-plugin` — all scoped to this profile so a normal `mvn package`/`mvn deploy` (e.g. the separate "Publish to GitHub Packages" step) never requires a GPG key or Portal credentials.
+The `-Pcentral-release` profile (defined in [`lib/java/pom.xml`](../lib/java/pom.xml)) activates the `central-publishing-maven-plugin`, attaches sources/javadoc jars, and signs all artifacts with `maven-gpg-plugin` — all scoped to this profile so a normal `mvn package`/`mvn deploy` (e.g. the separate "Publish to GitHub Packages Apache Maven" step) never requires a GPG key or Portal credentials.
 
 ### 6. POM Configuration
 

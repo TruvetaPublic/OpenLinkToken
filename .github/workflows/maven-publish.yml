@@ -60,6 +60,27 @@ jobs:
       - name: Build with Maven
         run: cd lib/java && mvn -B package --file pom.xml
 
+      - name: Publish to GitHub Packages Apache Maven
+        run: |
+          set -euo pipefail
+          base_url="https://maven.pkg.github.com/TruvetaPublic/OpenLinkToken/org/openlinktoken"
+          version="${VERSION}"
+          parent_metadata_url="${base_url}/openlinktoken-parent/maven-metadata.xml"
+
+          if metadata=$(curl -fsSL \
+            -H "Authorization: ******" \
+            -H "Accept: application/vnd.github+json" \
+            "$parent_metadata_url"); then
+            if echo "$metadata" | grep -q "<version>${version}</version>"; then
+              echo "Open Link Token parent ${version} already published. Skipping deploy."
+              exit 0
+            fi
+          fi
+
+          (cd lib/java && mvn deploy -s "$GITHUB_WORKSPACE/settings.xml")
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
       - name: Publish to Maven Central
         run: |
           cd lib/java
@@ -72,16 +93,6 @@ jobs:
           CENTRAL_PORTAL_USERNAME: ${{ secrets.CENTRAL_PORTAL_USERNAME }}
           CENTRAL_PORTAL_PASSWORD: ${{ secrets.CENTRAL_PORTAL_PASSWORD }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-
-      - name: Publish to GitHub Packages
-        run: |
-          cd lib/java
-          mvn deploy \
-            -s "$GITHUB_WORKSPACE/settings.xml" \
-            -Dmaven.test.skip=true \
-            -B --file pom.xml
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
 
       - name: Upload Maven artifacts to release
         if: env.RELEASE_FOUND == 'true'
