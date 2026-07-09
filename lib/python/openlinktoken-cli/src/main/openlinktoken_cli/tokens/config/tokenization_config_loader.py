@@ -6,13 +6,13 @@ from typing import Any, Dict, Optional
 
 import yaml
 
+from openlinktoken_cli.tokens.config.configured_attribute_resolver import ConfiguredAttributeResolver
+from openlinktoken_cli.tokens.config.dynamic_token_definition import DynamicTokenDefinition
 from openlinktoken_cli.tokens.config.tokenization_config import (
     AttributeMappingEntry,
     TokenizationConfig,
     TokenRuleEntry,
 )
-from openlinktoken_cli.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
-from openlinktoken_cli.tokens.config.dynamic_token_definition import DynamicTokenDefinition
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ class TokenizationConfigLoader:
     @staticmethod
     def load_runtime_components(
         tokenization_config_path: Optional[str] = None,
-    ) -> tuple[TokenizationConfig | None, DynamicAttributeFactory | None, DynamicTokenDefinition | None]:
+    ) -> tuple[TokenizationConfig | None, ConfiguredAttributeResolver | None, DynamicTokenDefinition | None]:
         """Load config and build runtime components used by tokenization commands.
 
         Args:
@@ -31,16 +31,16 @@ class TokenizationConfigLoader:
                 When omitted or None, returns a tuple of Nones.
 
         Returns:
-            Tuple of (TokenizationConfig, DynamicAttributeFactory, DynamicTokenDefinition)
+            Tuple of (TokenizationConfig, ConfiguredAttributeResolver, DynamicTokenDefinition)
             or (None, None, None) when no config path is provided.
         """
         if not tokenization_config_path:
             return None, None, None
 
         config = TokenizationConfigLoader.load(tokenization_config_path)
-        factory = DynamicAttributeFactory(config)
-        token_definition = DynamicTokenDefinition(config, factory)
-        return config, factory, token_definition
+        resolver = ConfiguredAttributeResolver(config)
+        token_definition = DynamicTokenDefinition(config, resolver)
+        return config, resolver, token_definition
 
     @staticmethod
     def load(file_path: str) -> TokenizationConfig:
@@ -106,17 +106,13 @@ class TokenizationConfigLoader:
         attributes = {}
         for column, entry in raw_attributes.items():
             if not isinstance(entry, dict):
-                raise ValueError(
-                    f"Configuration '{file_path}': attribute entry for '{column}' must be a mapping."
-                )
+                raise ValueError(f"Configuration '{file_path}': attribute entry for '{column}' must be a mapping.")
             if "field" not in entry or not entry["field"]:
                 raise ValueError(
                     f"Configuration '{file_path}': attribute '{column}' is missing required field 'field'."
                 )
             if "type" not in entry or not entry["type"]:
-                raise ValueError(
-                    f"Configuration '{file_path}': attribute '{column}' is missing required field 'type'."
-                )
+                raise ValueError(f"Configuration '{file_path}': attribute '{column}' is missing required field 'type'.")
             attributes[column] = AttributeMappingEntry(field=entry["field"], type=entry["type"])
 
         return attributes
@@ -145,9 +141,7 @@ class TokenizationConfigLoader:
         token_rules = {}
         for token_id, entries in raw_token_rules.items():
             if not isinstance(entries, list) or not entries:
-                raise ValueError(
-                    f"Configuration '{file_path}': token rule '{token_id}' must be a non-empty list."
-                )
+                raise ValueError(f"Configuration '{file_path}': token rule '{token_id}' must be a non-empty list.")
             rule_entries = []
             for index, entry in enumerate(entries):
                 if not isinstance(entry, dict):

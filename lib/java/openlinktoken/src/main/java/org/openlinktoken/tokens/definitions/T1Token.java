@@ -28,10 +28,11 @@ public class T1Token implements Token {
     private final ArrayList<AttributeExpression> definition = new ArrayList<>();
 
     public T1Token() {
-        definition.add(new AttributeExpression(LastNameAttribute.class, "T|U"));
-        definition.add(new AttributeExpression(FirstNameAttribute.class, "T|S(0,1)|U"));
-        definition.add(new AttributeExpression(SexAttribute.class, "T|U"));
-        definition.add(new AttributeExpression(BirthDateAttribute.class, "T|D"));
+        definition.add(new AttributeExpression(FieldIds.LAST_NAME.getFieldId(), LastNameAttribute.class, "T|U"));
+        definition.add(
+                new AttributeExpression(FieldIds.FIRST_NAME.getFieldId(), FirstNameAttribute.class, "T|S(0,1)|U"));
+        definition.add(new AttributeExpression(FieldIds.SEX.getFieldId(), SexAttribute.class, "T|U"));
+        definition.add(new AttributeExpression(FieldIds.BIRTH_DATE.getFieldId(), BirthDateAttribute.class, "T|D"));
     }
 
     @Override

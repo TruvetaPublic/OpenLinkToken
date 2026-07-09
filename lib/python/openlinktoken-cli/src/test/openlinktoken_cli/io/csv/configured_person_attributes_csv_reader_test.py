@@ -7,9 +7,9 @@ import tempfile
 
 import pytest
 
-from openlinktoken_cli.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
-from openlinktoken_cli.tokens.config.tokenization_config import AttributeMappingEntry, TokenizationConfig
 from openlinktoken_cli.io.csv.person_attributes_csv_reader import PersonAttributesCSVReader
+from openlinktoken_cli.tokens.config.configured_attribute_resolver import ConfiguredAttributeResolver
+from openlinktoken_cli.tokens.config.tokenization_config import AttributeMappingEntry, TokenizationConfig
 
 
 class TestConfiguredAttributeMappingInPersonAttributesCSVReader:
@@ -28,7 +28,7 @@ class TestConfiguredAttributeMappingInPersonAttributesCSVReader:
             },
             token_rules={},
         )
-        self.factory = DynamicAttributeFactory(self.config)
+        self.resolver = ConfiguredAttributeResolver(self.config)
 
     def teardown_method(self):
         """Clean up after each test method."""
@@ -36,24 +36,21 @@ class TestConfiguredAttributeMappingInPersonAttributesCSVReader:
             os.unlink(self.temp_file_path)
 
     def test_read_valid_csv_with_configured_columns(self):
-        """Reads configured columns into their corresponding dynamic attribute classes."""
+        """Reads configured columns into their corresponding field ids."""
         with open(self.temp_file_path, "w", encoding="utf-8") as f:
             f.write("given_nm,family_nm,ignored\n")
             f.write("Maria,Garcia,something\n")
 
-        given_name_class = self.factory.get_class_for_column("given_nm")
-        family_name_class = self.factory.get_class_for_column("family_nm")
-
         attribute_map = {
-            "given_nm": given_name_class,
-            "family_nm": family_name_class,
+            "given_nm": self.resolver.get_field_for_column("given_nm"),
+            "family_nm": self.resolver.get_field_for_column("family_nm"),
         }
 
         with PersonAttributesCSVReader(self.temp_file_path, attribute_map=attribute_map) as reader:
             record = next(reader)
 
-        assert record[given_name_class] == "Maria"
-        assert record[family_name_class] == "Garcia"
+        assert record["FirstName"] == "Maria"
+        assert record["FamilyName"] == "Garcia"
         assert len(record) == 2
 
     def test_missing_configured_column_is_skipped(self):
@@ -62,17 +59,15 @@ class TestConfiguredAttributeMappingInPersonAttributesCSVReader:
             f.write("given_nm\n")
             f.write("Maria\n")
 
-        family_name_class = self.factory.get_class_for_column("family_nm")
-
         attribute_map = {
-            "given_nm": self.factory.get_class_for_column("given_nm"),
-            "family_nm": family_name_class,
+            "given_nm": self.resolver.get_field_for_column("given_nm"),
+            "family_nm": self.resolver.get_field_for_column("family_nm"),
         }
 
         with PersonAttributesCSVReader(self.temp_file_path, attribute_map=attribute_map) as reader:
             record = next(reader)
 
-        assert family_name_class not in record
+        assert "FamilyName" not in record
 
     def test_constructor_throws_io_exception(self):
         """Raises IOError for a missing CSV file path."""

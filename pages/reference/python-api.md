@@ -9,12 +9,6 @@ Document the Python modules and functions for programmatic token generation.
 ## Core Modules
 
 ```python
-from openlinktoken.attributes.person.birth_date_attribute import BirthDateAttribute
-from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute
-from openlinktoken.attributes.person.last_name_attribute import LastNameAttribute
-from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttribute
-from openlinktoken.attributes.person.sex_attribute import SexAttribute
-from openlinktoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
 from openlinktoken.tokens.token_definition import TokenDefinition
 from openlinktoken.tokens.token_generator import TokenGenerator
 from openlinktoken.tokens.tokenizer.sha256_tokenizer import SHA256Tokenizer
@@ -24,20 +18,20 @@ from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTrans
 
 ## Person Attribute Dict
 
-Open Link Token's Python library represents a person's values as a dict keyed by attribute class:
+Open Link Token's Python library represents a person's values as a dict keyed by field ID:
 
 ```python
 person_attributes = {
-    FirstNameAttribute: "John",
-    LastNameAttribute: "Doe",
-    BirthDateAttribute: "1980-01-15",
-    SexAttribute: "Male",
-    PostalCodeAttribute: "98004",
-    SocialSecurityNumberAttribute: "123-45-6789",
+    "FirstName": "John",
+    "LastName": "Doe",
+    "BirthDate": "1980-01-15",
+    "Sex": "Male",
+    "PostalCode": "98004",
+    "SocialSecurityNumber": "123-45-6789",
 }
 ```
 
-Normalization and validation are handled internally by `TokenGenerator` using the attribute implementations loaded via `AttributeLoader`.
+Field IDs like `"FirstName"` and `"LastName"` are resolved to attribute behavior (normalization and validation) through `FieldRegistry`. Built-in field IDs work out of the box via `FieldRegistry.create_default()`, which `TokenGenerator` uses internally. To register custom field IDs — for example, when multiple person fields share the same underlying attribute type — see [FieldRegistry and Field IDs](token-registration.md#fieldregistry-and-field-ids-1).
 
 ## TokenDefinition
 
@@ -53,11 +47,10 @@ token_definition = TokenDefinition()
 
 ### Methods
 
-| Method                                             | Return Type            | Description                                                    |
-| -------------------------------------------------- | ---------------------- | -------------------------------------------------------------- |
-| `get_all_token_signatures(person_attributes)`      | `Dict[str, str]`       | Generates signatures for all rules (debug/logging)             |
-| `get_all_tokens(person_attributes)`                | `TokenGeneratorResult` | Generates tokens for all rules and captures invalid/blank info |
-| `get_invalid_person_attributes(person_attributes)` | `Set[str]`             | Validates all provided attribute values                        |
+| Method                                                     | Return Type            | Description                                                                                |
+| ---------------------------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------ |
+| `get_all_token_signatures_via_field_id(person_attributes)` | `Dict[str, str]`       | Generates signatures for all rules using a field-ID-keyed dict (debug/logging)             |
+| `get_all_tokens_via_field_id(person_attributes)`           | `TokenGeneratorResult` | Generates tokens for all rules using a field-ID-keyed dict and captures invalid/blank info |
 
 ### Example
 
@@ -69,11 +62,7 @@ tokenizer = SHA256Tokenizer([
 
 generator = TokenGenerator(TokenDefinition(), tokenizer)
 
-invalid = generator.get_invalid_person_attributes(person_attributes)
-if invalid:
-    print(f"Invalid attributes: {sorted(invalid)}")
-
-result = generator.get_all_tokens(person_attributes)
+result = generator.get_all_tokens_via_field_id(person_attributes)
 for rule_id, token in result.tokens.items():
     print(f"{rule_id}: {token}")
 ```
@@ -111,12 +100,6 @@ encrypted_token = encryptor.transform(signature)
 ## Complete Example
 
 ```python
-from openlinktoken.attributes.person.birth_date_attribute import BirthDateAttribute
-from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute
-from openlinktoken.attributes.person.last_name_attribute import LastNameAttribute
-from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttribute
-from openlinktoken.attributes.person.sex_attribute import SexAttribute
-from openlinktoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
 from openlinktoken.tokens.token_definition import TokenDefinition
 from openlinktoken.tokens.token_generator import TokenGenerator
 from openlinktoken.tokens.tokenizer.sha256_tokenizer import SHA256Tokenizer
@@ -127,12 +110,12 @@ def generate_tokens():
     record_id = "patient_001"
 
     person_attributes = {
-        FirstNameAttribute: "John",
-        LastNameAttribute: "Doe",
-        BirthDateAttribute: "1980-01-15",
-        SexAttribute: "Male",
-        PostalCodeAttribute: "98004",
-        SocialSecurityNumberAttribute: "123-45-6789",
+        "FirstName": "John",
+        "LastName": "Doe",
+        "BirthDate": "1980-01-15",
+        "Sex": "Male",
+        "PostalCode": "98004",
+        "SocialSecurityNumber": "123-45-6789",
     }
 
     tokenizer = SHA256Tokenizer([
@@ -141,12 +124,7 @@ def generate_tokens():
     ])
     generator = TokenGenerator(TokenDefinition(), tokenizer)
 
-    invalid = generator.get_invalid_person_attributes(person_attributes)
-    if invalid:
-        print(f"Invalid attributes: {sorted(invalid)}")
-        return
-
-    result = generator.get_all_tokens(person_attributes)
+    result = generator.get_all_tokens_via_field_id(person_attributes)
     for rule_id, token in result.tokens.items():
         print(f"{record_id},{rule_id},{token}")
 
@@ -160,12 +138,6 @@ For processing multiple records:
 
 ```python
 import csv
-from openlinktoken.attributes.person.birth_date_attribute import BirthDateAttribute
-from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute
-from openlinktoken.attributes.person.last_name_attribute import LastNameAttribute
-from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttribute
-from openlinktoken.attributes.person.sex_attribute import SexAttribute
-from openlinktoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
 from openlinktoken.tokens.token_definition import TokenDefinition
 from openlinktoken.tokens.token_generator import TokenGenerator
 from openlinktoken.tokens.tokenizer.sha256_tokenizer import SHA256Tokenizer
@@ -188,19 +160,15 @@ def process_csv(input_path, output_path, hashing_secret, encryption_key):
             record_id = row.get('RecordId', '')
 
             person_attributes = {
-                FirstNameAttribute: row.get('FirstName', ''),
-                LastNameAttribute: row.get('LastName', ''),
-                BirthDateAttribute: row.get('BirthDate', ''),
-                SexAttribute: row.get('Sex', ''),
-                PostalCodeAttribute: row.get('PostalCode', ''),
-                SocialSecurityNumberAttribute: row.get('SSN', ''),
+                "FirstName": row.get('FirstName', ''),
+                "LastName": row.get('LastName', ''),
+                "BirthDate": row.get('BirthDate', ''),
+                "Sex": row.get('Sex', ''),
+                "PostalCode": row.get('PostalCode', ''),
+                "SocialSecurityNumber": row.get('SSN', ''),
             }
 
-            invalid = generator.get_invalid_person_attributes(person_attributes)
-            if invalid:
-                continue
-
-            result = generator.get_all_tokens(person_attributes)
+            result = generator.get_all_tokens_via_field_id(person_attributes)
             for rule_id, token in result.tokens.items():
                 writer.writerow([record_id, rule_id, token])
 ```
@@ -243,12 +211,12 @@ Open Link Token guarantees identical output between Java and Python:
 ```python
 # This Python code produces the exact same tokens as equivalent Java code
 person_attributes = {
-    FirstNameAttribute: "John",
-    LastNameAttribute: "Doe",
-    BirthDateAttribute: "1980-01-15",
-    SexAttribute: "Male",
-    PostalCodeAttribute: "98004",
-    SocialSecurityNumberAttribute: "123-45-6789",
+    "FirstName": "John",
+    "LastName": "Doe",
+    "BirthDate": "1980-01-15",
+    "Sex": "Male",
+    "PostalCode": "98004",
+    "SocialSecurityNumber": "123-45-6789",
 }
 ```
 
@@ -270,17 +238,17 @@ try:
     generator = TokenGenerator(TokenDefinition(), tokenizer)
 
     person_attributes = {
-        FirstNameAttribute: "",  # Empty - will be invalid
-        LastNameAttribute: "Doe",
-        BirthDateAttribute: "invalid-date",  # Bad format
-        SexAttribute: "Unknown",  # Not Male/Female
-        PostalCodeAttribute: "98004",
-        SocialSecurityNumberAttribute: "123-45-6789",
+        "FirstName": "",  # Empty - will be invalid
+        "LastName": "Doe",
+        "BirthDate": "invalid-date",  # Bad format
+        "Sex": "Unknown",  # Not Male/Female
+        "PostalCode": "98004",
+        "SocialSecurityNumber": "123-45-6789",
     }
 
-    invalid = generator.get_invalid_person_attributes(person_attributes)
-    if invalid:
-        raise ValueError(f"Invalid attributes: {sorted(invalid)}")
+    result = generator.get_all_tokens_via_field_id(person_attributes)
+    if result.invalid_attributes:
+        raise ValueError(f"Invalid attributes: {sorted(result.invalid_attributes)}")
 
 except ValueError as e:
     print(f"Validation error: {e}")

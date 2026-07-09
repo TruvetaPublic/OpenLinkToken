@@ -22,7 +22,7 @@ dev = [
    "cryptography==49.0.0",
    "jwcrypto==1.5.7",
    "csv2parquet==0.0.9",
-   "pytest==9.0.3",
+   "pytest==9.1.1",
    "pytest-cov==7.1.0",
    "ruff==0.15.20",
    "pycryptodome==3.23.0",

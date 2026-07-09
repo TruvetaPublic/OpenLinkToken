@@ -2,14 +2,14 @@
 
 import pytest
 
-from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttribute
 from openlinktoken.attributes.attribute_loader import AttributeLoader
-from openlinktoken_cli.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
+from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttribute
+from openlinktoken_cli.tokens.config.configured_attribute_resolver import ConfiguredAttributeResolver
 from openlinktoken_cli.tokens.config.tokenization_config import AttributeMappingEntry, TokenizationConfig
 
 
-class TestDynamicAttributeFactory:
-    def test_maps_same_base_type_to_distinct_field_classes(self):
+class TestConfiguredAttributeResolver:
+    def test_maps_same_base_type_to_same_class_with_distinct_field_ids(self):
         config = TokenizationConfig(
             attributes={
                 "patient_zip": AttributeMappingEntry(field="PatientZip", type="PostalCode"),
@@ -18,19 +18,33 @@ class TestDynamicAttributeFactory:
             token_rules={},
         )
 
-        factory = DynamicAttributeFactory(config)
-        patient_class = factory.get_class_for_field("PatientZip")
-        hospital_class = factory.get_class_for_field("HospitalZip")
+        resolver = ConfiguredAttributeResolver(config)
+        patient_class = resolver.get_class_for_field("PatientZip")
+        hospital_class = resolver.get_class_for_field("HospitalZip")
 
-        # Each field gets a unique subclass so they produce distinct per-row dict keys,
-        # preventing silent overwrites when two fields share the same attribute type.
-        assert patient_class is not hospital_class
-        assert issubclass(patient_class, PostalCodeAttribute)
-        assert issubclass(hospital_class, PostalCodeAttribute)
-        assert factory.get_field_for_column("patient_zip") == "PatientZip"
-        assert factory.get_field_for_column("hospital_zip") == "HospitalZip"
-        assert factory.get_class_for_column("patient_zip") is patient_class
-        assert factory.get_class_for_column("hospital_zip") is hospital_class
+        # Both fields map to the same base class; field IDs are the distinguishing keys.
+        assert patient_class is PostalCodeAttribute
+        assert hospital_class is PostalCodeAttribute
+        assert resolver.get_field_for_column("patient_zip") == "PatientZip"
+        assert resolver.get_field_for_column("hospital_zip") == "HospitalZip"
+
+    def test_build_field_registry_contains_all_configured_fields(self):
+        config = TokenizationConfig(
+            attributes={
+                "patient_zip": AttributeMappingEntry(field="PatientZip", type="PostalCode"),
+                "hospital_zip": AttributeMappingEntry(field="HospitalZip", type="PostalCode"),
+            },
+            token_rules={},
+        )
+
+        resolver = ConfiguredAttributeResolver(config)
+        registry = resolver.build_field_registry()
+
+        assert "PatientZip" in registry.get_field_ids()
+        assert "HospitalZip" in registry.get_field_ids()
+        assert registry.get_attribute("PatientZip") is not None
+        assert registry.get_attribute("HospitalZip") is not None
+        assert isinstance(registry.get_attribute("PatientZip"), PostalCodeAttribute)
 
     def test_unknown_field_lookup_raises_key_error(self):
         config = TokenizationConfig(
@@ -40,10 +54,10 @@ class TestDynamicAttributeFactory:
             token_rules={},
         )
 
-        factory = DynamicAttributeFactory(config)
+        resolver = ConfiguredAttributeResolver(config)
 
         with pytest.raises(KeyError):
-            factory.get_class_for_field("DoesNotExist")
+            resolver.get_class_for_field("DoesNotExist")
 
     def test_unknown_attribute_type_raises_value_error(self):
         config = TokenizationConfig(
@@ -54,7 +68,7 @@ class TestDynamicAttributeFactory:
         )
 
         with pytest.raises(ValueError, match="Unknown attribute type"):
-            DynamicAttributeFactory(config)
+            ConfiguredAttributeResolver(config)
 
     def test_conflicting_aliases_raise_value_error(self, monkeypatch):
         class FirstAttribute:
@@ -81,4 +95,4 @@ class TestDynamicAttributeFactory:
         )
 
         with pytest.raises(ValueError, match="Conflicting attribute type mapping for 'SharedAlias'"):
-            DynamicAttributeFactory(config)
+            ConfiguredAttributeResolver(config)

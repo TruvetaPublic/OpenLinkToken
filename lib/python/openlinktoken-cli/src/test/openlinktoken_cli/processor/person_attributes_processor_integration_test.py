@@ -12,8 +12,6 @@ from typing import Dict, List
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
-from openlinktoken.attributes.general.record_id_attribute import RecordIdAttribute
-from openlinktoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
 from openlinktoken.metadata import Metadata
 from openlinktoken.tokens.token import Token
 from openlinktoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
@@ -330,8 +328,8 @@ class TestPersonAttributesProcessorIntegration:
 
         with PersonAttributesCSVReader(input_csv_file_path) as reader:
             for row in reader:
-                ssn = row.get(SocialSecurityNumberAttribute)
-                record_id = row.get(RecordIdAttribute)
+                ssn = row.get("SocialSecurityNumber")
+                record_id = row.get("RecordId")
 
                 if ssn not in ssn_to_record_ids_map:
                     ssn_to_record_ids_map[ssn] = []

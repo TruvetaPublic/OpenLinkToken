@@ -2,7 +2,7 @@
 
 import csv
 import logging
-from typing import Dict, Set, Type
+from typing import Dict, Set
 
 from openlinktoken.attributes.attribute import Attribute
 from openlinktoken.attributes.attribute_loader import AttributeLoader
@@ -17,15 +17,15 @@ class PersonAttributesCSVReader(PersonAttributesReader):
     Implements the PersonAttributesReader interface.
     """
 
-    def __init__(self, file_path: str, attribute_map: Dict[str, Type[Attribute]] | None = None):
+    def __init__(self, file_path: str, attribute_map: Dict[str, str] | None = None):
         """
         Initialize the class with the input file in CSV format.
 
         Args:
             file_path: The input file path.
-            attribute_map: Optional explicit mapping from CSV column name to output key
-                (attribute class or logical field id). When omitted, mapping is discovered
-                via attribute aliases.
+            attribute_map: Optional explicit mapping from CSV column name to field id.
+                When omitted, mapping is discovered via attribute aliases and each column
+                is mapped to its canonical attribute name (e.g. "FirstName", "LastName").
 
         Raises:
             IOError: If an I/O error occurs.
@@ -38,7 +38,7 @@ class PersonAttributesCSVReader(PersonAttributesReader):
             if attribute_map is not None:
                 self.attribute_map = attribute_map.copy()
             else:
-                self.attribute_map = self._build_attribute_map_from_aliases()
+                self.attribute_map = self._build_column_to_field_id_map()
 
         except IOError as e:
             logger.error(f"Error in reading CSV file: {e}")
@@ -70,20 +70,20 @@ class PersonAttributesCSVReader(PersonAttributesReader):
         """Return the iterator object."""
         return self
 
-    def __next__(self) -> Dict[Type[Attribute], str]:
+    def __next__(self) -> Dict[str, str]:
         """
         Get the next record from the CSV file.
 
         Returns:
-            A person attributes map.
+            A person attributes map keyed by field id.
         """
         record = next(self.iterator)
 
-        person_attributes: Dict[Type[Attribute], str] = {}
+        person_attributes: Dict[str, str] = {}
         for key, value in record.items():
-            mapped_key = self.attribute_map.get(key)
-            if mapped_key is not None:
-                person_attributes[mapped_key] = value
+            field_id = self.attribute_map.get(key)
+            if field_id is not None:
+                person_attributes[field_id] = value
             # else ignore attribute as it's not supported
 
         return person_attributes
@@ -93,14 +93,14 @@ class PersonAttributesCSVReader(PersonAttributesReader):
         if self.file_handle:
             self.file_handle.close()
 
-    def _build_attribute_map_from_aliases(self) -> Dict[str, Type[Attribute]]:
-        """Build column-to-attribute mapping using AttributeLoader aliases."""
-        alias_map: Dict[str, Type[Attribute]] = {}
+    def _build_column_to_field_id_map(self) -> Dict[str, str]:
+        """Build column-to-field-id mapping using AttributeLoader aliases."""
+        field_id_map: Dict[str, str] = {}
         attributes: Set[Attribute] = AttributeLoader.load()
         for header_name in self.csv_reader.fieldnames or []:
             for attribute in attributes:
                 for alias in attribute.get_aliases():
                     if header_name.lower() == alias.lower():
-                        alias_map[header_name] = type(attribute)
+                        field_id_map[header_name] = attribute.get_name()
                         break
-        return alias_map
+        return field_id_map
