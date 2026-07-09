@@ -42,8 +42,6 @@ Both registries use **short-lived, workload-identity-based authentication** rath
 
 ## Maven Central (Sonatype Central Publisher Portal)
 
-> **Note:** Sonatype OSSRH (`oss.sonatype.org`) was fully decommissioned on 2025-06-30. All new publishing goes through the [Central Publisher Portal](https://central.sonatype.com/), which uses the `central-publishing-maven-plugin` instead of a plain `mvn deploy` to a Nexus staging URL.
-
 ### 1. Create a Central Publisher Portal Account and Namespace
 
 1. Register at [central.sonatype.com](https://central.sonatype.com/) (if you do not already have an account — existing OSSRH/JIRA accounts can sign in with the same credentials).
