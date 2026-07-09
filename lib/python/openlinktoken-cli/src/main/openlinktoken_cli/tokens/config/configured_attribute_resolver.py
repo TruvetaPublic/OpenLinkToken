@@ -8,7 +8,7 @@ from openlinktoken.attributes.field_registry import FieldRegistry
 from openlinktoken_cli.tokens.config.tokenization_config import AttributeMappingEntry, TokenizationConfig
 
 
-class DynamicAttributeFactory:
+class ConfiguredAttributeResolver:
     """Resolves config field ids to built-in attribute classes and column mappings."""
 
     def __init__(self, config: TokenizationConfig):
@@ -91,9 +91,9 @@ class DynamicAttributeFactory:
         )
         for attribute in attributes:
             attribute_class = type(attribute)
-            DynamicAttributeFactory._register_index_mapping(index, attribute.get_name(), attribute_class)
+            ConfiguredAttributeResolver._register_index_mapping(index, attribute.get_name(), attribute_class)
             for alias in attribute.get_aliases():
-                DynamicAttributeFactory._register_index_mapping(index, alias, attribute_class)
+                ConfiguredAttributeResolver._register_index_mapping(index, alias, attribute_class)
         return index
 
     @staticmethod

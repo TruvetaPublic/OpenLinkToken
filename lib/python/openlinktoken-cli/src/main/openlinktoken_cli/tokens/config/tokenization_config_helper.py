@@ -5,7 +5,7 @@ from typing import Optional
 
 from openlinktoken_cli.io.csv.person_attributes_csv_reader import PersonAttributesCSVReader
 from openlinktoken_cli.io.parquet.person_attributes_parquet_reader import PersonAttributesParquetReader
-from openlinktoken_cli.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
+from openlinktoken_cli.tokens.config.configured_attribute_resolver import ConfiguredAttributeResolver
 from openlinktoken_cli.tokens.config.tokenization_config import TokenizationConfig
 from openlinktoken_cli.util.file_type_detector import FileTypeDetector
 
@@ -18,13 +18,13 @@ class TokenizationConfigHelper:
     @staticmethod
     def build_configured_input_attribute_map(
         config: TokenizationConfig,
-        factory: DynamicAttributeFactory,
+        resolver: ConfiguredAttributeResolver,
     ) -> dict:
         """Build input-column-to-field-id mapping from tokenization config.
 
         Args:
             config: Parsed tokenization config containing the attribute column mappings.
-            factory: Factory used to resolve each config column to its logical field id.
+            resolver: Resolver used to resolve each config column to its logical field id.
 
         Returns:
             A dict mapping each input column name to its corresponding field id string.
@@ -32,7 +32,7 @@ class TokenizationConfigHelper:
         attribute_map = {}
         for column in config.attributes:
             try:
-                attribute_map[column] = factory.get_field_for_column(column)
+                attribute_map[column] = resolver.get_field_for_column(column)
             except KeyError:
                 logger.warning("Column '%s' is in config but has no field id registered.", column)
         return attribute_map
@@ -42,7 +42,7 @@ class TokenizationConfigHelper:
         path: str,
         file_type: str,
         config: Optional[TokenizationConfig] = None,
-        factory: Optional[DynamicAttributeFactory] = None,
+        resolver: Optional[ConfiguredAttributeResolver] = None,
     ):
         """Create and optionally configure a reader for CSV or Parquet inputs.
 
@@ -50,7 +50,7 @@ class TokenizationConfigHelper:
             path: Path to the input file.
             file_type: Format of the input file; must be 'csv' or 'parquet' (case-insensitive).
             config: Optional tokenization config used to build the attribute map.
-            factory: Optional factory required when config is provided.
+            resolver: Optional resolver required when config is provided.
 
         Returns:
             A PersonAttributesCSVReader or PersonAttributesParquetReader initialised with
@@ -60,8 +60,8 @@ class TokenizationConfigHelper:
             ValueError: If file_type is not 'csv' or 'parquet'.
         """
         attribute_map = None
-        if config is not None and factory is not None:
-            attribute_map = TokenizationConfigHelper.build_configured_input_attribute_map(config, factory)
+        if config is not None and resolver is not None:
+            attribute_map = TokenizationConfigHelper.build_configured_input_attribute_map(config, resolver)
 
         file_type_lower = file_type.lower()
         if file_type_lower == FileTypeDetector.TYPE_CSV:

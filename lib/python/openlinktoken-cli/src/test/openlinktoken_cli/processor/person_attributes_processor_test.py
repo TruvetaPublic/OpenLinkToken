@@ -9,7 +9,7 @@ from openlinktoken.tokentransformer.token_transformer import TokenTransformer
 from openlinktoken_cli.io.person_attributes_reader import PersonAttributesReader
 from openlinktoken_cli.io.person_attributes_writer import PersonAttributesWriter
 from openlinktoken_cli.processor.person_attributes_processor import PersonAttributesProcessor
-from openlinktoken_cli.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
+from openlinktoken_cli.tokens.config.configured_attribute_resolver import ConfiguredAttributeResolver
 from openlinktoken_cli.tokens.config.dynamic_token_definition import DynamicTokenDefinition
 from openlinktoken_cli.tokens.config.tokenization_config import (
     AttributeMappingEntry,
@@ -211,8 +211,8 @@ class TestPersonAttributesProcessor:
                 ]
             },
         )
-        factory = DynamicAttributeFactory(config)
-        token_definition = DynamicTokenDefinition(config, factory)
+        resolver = ConfiguredAttributeResolver(config)
+        token_definition = DynamicTokenDefinition(config, resolver)
 
         row = {
             "RecordId": "TestRecordId",

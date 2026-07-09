@@ -10,7 +10,7 @@ from openlinktoken_cli.tokens.config.tokenization_config_helper import Tokenizat
 
 
 class TestTokenizationConfigHelper:
-    def test_build_configured_input_attribute_map_warns_when_factory_misses_entry(self, caplog):
+    def test_build_configured_input_attribute_map_warns_when_resolver_misses_entry(self, caplog):
         config = TokenizationConfig(
             attributes={
                 "given_nm": AttributeMappingEntry(field="FirstName", type="GivenName"),
@@ -19,10 +19,10 @@ class TestTokenizationConfigHelper:
             token_rules={},
         )
 
-        factory = MagicMock()
-        factory.get_field_for_column.side_effect = ["FirstName", KeyError("missing")]
+        resolver = MagicMock()
+        resolver.get_field_for_column.side_effect = ["FirstName", KeyError("missing")]
 
-        attribute_map = TokenizationConfigHelper.build_configured_input_attribute_map(config, factory)
+        attribute_map = TokenizationConfigHelper.build_configured_input_attribute_map(config, resolver)
 
         assert attribute_map == {"given_nm": "FirstName"}
         assert "has no field id registered" in caplog.text
@@ -32,7 +32,7 @@ class TestTokenizationConfigHelper:
             attributes={"given_nm": AttributeMappingEntry(field="FirstName", type="GivenName")},
             token_rules={},
         )
-        factory = MagicMock()
+        resolver = MagicMock()
 
         with (
             patch(
@@ -47,7 +47,7 @@ class TestTokenizationConfigHelper:
             reader = MagicMock()
             mock_reader_cls.return_value = reader
 
-            created_reader = TokenizationConfigHelper.create_reader("input.csv", "csv", config, factory)
+            created_reader = TokenizationConfigHelper.create_reader("input.csv", "csv", config, resolver)
 
         assert created_reader is reader
         mock_reader_cls.assert_called_once_with("input.csv", attribute_map={"given_nm": FirstNameAttribute})
@@ -57,7 +57,7 @@ class TestTokenizationConfigHelper:
             attributes={"given_nm": AttributeMappingEntry(field="FirstName", type="GivenName")},
             token_rules={},
         )
-        factory = MagicMock()
+        resolver = MagicMock()
 
         with (
             patch(
@@ -72,7 +72,7 @@ class TestTokenizationConfigHelper:
             reader = MagicMock()
             mock_reader_cls.return_value = reader
 
-            created_reader = TokenizationConfigHelper.create_reader("input.parquet", "parquet", config, factory)
+            created_reader = TokenizationConfigHelper.create_reader("input.parquet", "parquet", config, resolver)
 
         assert created_reader is reader
         mock_reader_cls.assert_called_once_with("input.parquet", attribute_map={"given_nm": FirstNameAttribute})

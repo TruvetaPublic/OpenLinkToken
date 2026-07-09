@@ -14,7 +14,7 @@ except ImportError:
     pytest.skip("PyArrow required for Parquet tests", allow_module_level=True)
 
 from openlinktoken_cli.io.parquet.person_attributes_parquet_reader import PersonAttributesParquetReader
-from openlinktoken_cli.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
+from openlinktoken_cli.tokens.config.configured_attribute_resolver import ConfiguredAttributeResolver
 from openlinktoken_cli.tokens.config.tokenization_config import AttributeMappingEntry, TokenizationConfig
 
 
@@ -34,7 +34,7 @@ class TestConfiguredAttributeMappingInPersonAttributesParquetReader:
             },
             token_rules={},
         )
-        self.factory = DynamicAttributeFactory(self.config)
+        self.resolver = ConfiguredAttributeResolver(self.config)
 
     def teardown_method(self):
         """Clean up after each test method."""
@@ -53,8 +53,8 @@ class TestConfiguredAttributeMappingInPersonAttributesParquetReader:
         pq.write_table(table, self.temp_file_path)
 
         attribute_map = {
-            "given_nm": self.factory.get_field_for_column("given_nm"),
-            "family_nm": self.factory.get_field_for_column("family_nm"),
+            "given_nm": self.resolver.get_field_for_column("given_nm"),
+            "family_nm": self.resolver.get_field_for_column("family_nm"),
         }
 
         with PersonAttributesParquetReader(self.temp_file_path, attribute_map=attribute_map) as reader:
@@ -75,8 +75,8 @@ class TestConfiguredAttributeMappingInPersonAttributesParquetReader:
         pq.write_table(table, self.temp_file_path)
 
         attribute_map = {
-            "given_nm": self.factory.get_field_for_column("given_nm"),
-            "family_nm": self.factory.get_field_for_column("family_nm"),
+            "given_nm": self.resolver.get_field_for_column("given_nm"),
+            "family_nm": self.resolver.get_field_for_column("family_nm"),
         }
 
         with PersonAttributesParquetReader(self.temp_file_path, attribute_map=attribute_map) as reader:
@@ -91,8 +91,8 @@ class TestConfiguredAttributeMappingInPersonAttributesParquetReader:
         pq.write_table(table, self.temp_file_path)
 
         attribute_map = {
-            "given_nm": self.factory.get_field_for_column("given_nm"),
-            "family_nm": self.factory.get_field_for_column("family_nm"),
+            "given_nm": self.resolver.get_field_for_column("given_nm"),
+            "family_nm": self.resolver.get_field_for_column("family_nm"),
         }
 
         with PersonAttributesParquetReader(self.temp_file_path, attribute_map=attribute_map) as reader:

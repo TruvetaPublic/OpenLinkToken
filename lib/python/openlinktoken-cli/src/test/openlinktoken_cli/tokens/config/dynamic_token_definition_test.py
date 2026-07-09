@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
 
-from openlinktoken_cli.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
+from openlinktoken_cli.tokens.config.configured_attribute_resolver import ConfiguredAttributeResolver
 from openlinktoken_cli.tokens.config.dynamic_token_definition import DynamicTokenDefinition
 from openlinktoken_cli.tokens.config.tokenization_config import (
     AttributeMappingEntry,
@@ -24,8 +24,8 @@ class TestDynamicTokenDefinition:
             },
         )
 
-        factory = DynamicAttributeFactory(config)
-        definition = DynamicTokenDefinition(config, factory)
+        resolver = ConfiguredAttributeResolver(config)
+        definition = DynamicTokenDefinition(config, resolver)
 
         assert definition.get_version() == "custom"
         assert definition.get_token_identifiers() == {"T1"}
@@ -34,9 +34,9 @@ class TestDynamicTokenDefinition:
 
         t1_definition = definition.get_token_definition("T1")
         assert len(t1_definition) == 2
-        assert t1_definition[0].attribute_class is factory.get_class_for_field("FamilyName")
+        assert t1_definition[0].attribute_class is resolver.get_class_for_field("FamilyName")
         assert t1_definition[0].field_id == "FamilyName"
         assert t1_definition[0].expressions == "T|U"
-        assert t1_definition[1].attribute_class is factory.get_class_for_field("FirstName")
+        assert t1_definition[1].attribute_class is resolver.get_class_for_field("FirstName")
         assert t1_definition[1].field_id == "FirstName"
         assert t1_definition[1].expressions == "T|S(0,1)|U"

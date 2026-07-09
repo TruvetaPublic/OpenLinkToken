@@ -11,8 +11,6 @@ from openlinktoken.metadata import Metadata
 from openlinktoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
 from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 from openlinktoken.tokentransformer.token_transformer import TokenTransformer
-from openlinktoken_cli.tokens.config.tokenization_config_helper import TokenizationConfigHelper
-from openlinktoken_cli.tokens.config.tokenization_config_loader import TokenizationConfigLoader
 from openlinktoken_cli.io.csv.person_attributes_csv_writer import PersonAttributesCSVWriter
 from openlinktoken_cli.io.json.metadata_json_writer import MetadataJsonWriter
 from openlinktoken_cli.io.parquet.person_attributes_parquet_writer import PersonAttributesParquetWriter
@@ -20,6 +18,8 @@ from openlinktoken_cli.processor.person_attributes_processor import (
     PersonAttributesProcessingSummary,
     PersonAttributesProcessor,
 )
+from openlinktoken_cli.tokens.config.tokenization_config_helper import TokenizationConfigHelper
+from openlinktoken_cli.tokens.config.tokenization_config_loader import TokenizationConfigLoader
 from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
 from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
 from openlinktoken_cli.util.exchange_config import derive_transport_encryption_key, resolve_exchange_config
@@ -122,15 +122,15 @@ class PackageCommand:
             ),
         )
 
-         # --no-progress / -q: suppress interactive progress indicator
+        # --no-progress / -q: suppress interactive progress indicator
         parser.add_argument(
-              "--no-progress",
-              "-q",
+            "--no-progress",
+            "-q",
             action="store_true",
             default=False,
             dest="no_progress",
             help="Suppress interactive progress indicator (e.g. for non-interactive / CI environments)",
-            )
+        )
 
         parser.set_defaults(func=PackageCommand.execute)
 
@@ -177,8 +177,7 @@ class PackageCommand:
                     # Determine total rows via reader to enable %/ETA
                     total_rows: int | None = None
                     try:
-                        reader = TokenizationConfigHelper.create_reader(
-                            args.input_path, input_type)
+                        reader = TokenizationConfigHelper.create_reader(args.input_path, input_type)
                         total_rows = reader.row_count()
                         reader.close()
                     except Exception:
@@ -270,11 +269,11 @@ class PackageCommand:
             raise RuntimeError("Failed to initialize transformers") from e
 
         try:
-            config, factory, token_definition = TokenizationConfigLoader.load_runtime_components(
+            config, resolver, token_definition = TokenizationConfigLoader.load_runtime_components(
                 tokenization_config_path
             )
             with (
-                TokenizationConfigHelper.create_reader(input_path, input_type, config, factory) as reader,
+                TokenizationConfigHelper.create_reader(input_path, input_type, config, resolver) as reader,
                 PackageCommand._create_writer(output_path, output_type) as writer,
             ):
                 # Create metadata
