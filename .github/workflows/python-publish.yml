@@ -91,7 +91,12 @@ jobs:
           name: python-packages-${{ needs.release-info.outputs['tag'] }}
           path: dist_temp
 
+      - name: Prepare Python distributions
+        run: |
+          mkdir -p dist
+          find dist_temp -type f \( -name '*.whl' -o -name '*.tar.gz' \) -exec cp {} dist/ \;
+
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          packages-dir: dist_temp
+          packages-dir: dist
