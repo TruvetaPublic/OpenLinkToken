@@ -79,14 +79,21 @@ class TokenizationConfigLoader:
         Returns:
             Parsed TokenizationConfig with normalized attributes and token rules.
         """
-        if TokenizationConfigLoader.KEY_COLUMN_MAPPINGS not in raw or not raw[TokenizationConfigLoader.KEY_COLUMN_MAPPINGS]:
+        if (
+            TokenizationConfigLoader.KEY_COLUMN_MAPPINGS not in raw
+            or not raw[TokenizationConfigLoader.KEY_COLUMN_MAPPINGS]
+        ):
             raise ValueError(f"Configuration '{file_path}' must define a non-empty 'column_mappings' section.")
 
         if TokenizationConfigLoader.KEY_TOKEN_RULES not in raw or not raw[TokenizationConfigLoader.KEY_TOKEN_RULES]:
             raise ValueError(f"Configuration '{file_path}' must define a non-empty 'token_rules' section.")
 
-        column_mappings = TokenizationConfigLoader._parse_column_mappings(raw[TokenizationConfigLoader.KEY_COLUMN_MAPPINGS], file_path)
-        token_rules = TokenizationConfigLoader._parse_token_rules(raw[TokenizationConfigLoader.KEY_TOKEN_RULES], column_mappings, file_path)
+        column_mappings = TokenizationConfigLoader._parse_column_mappings(
+            raw[TokenizationConfigLoader.KEY_COLUMN_MAPPINGS], file_path
+        )
+        token_rules = TokenizationConfigLoader._parse_token_rules(
+            raw[TokenizationConfigLoader.KEY_TOKEN_RULES], column_mappings, file_path
+        )
 
         if not any(entry.type == TokenizationConfigLoader.RECORD_ID_TYPE for entry in column_mappings.values()):
             logger.warning(
@@ -115,14 +122,22 @@ class TokenizationConfigLoader:
         for field_id, entry in raw_column_mappings.items():
             if not isinstance(entry, dict):
                 raise ValueError(f"Configuration '{file_path}': attribute entry for '{field_id}' must be a mapping.")
-            if TokenizationConfigLoader.KEY_COLUMN_NAME not in entry or not entry[TokenizationConfigLoader.KEY_COLUMN_NAME]:
+            if (
+                TokenizationConfigLoader.KEY_COLUMN_NAME not in entry
+                or not entry[TokenizationConfigLoader.KEY_COLUMN_NAME]
+            ):
                 raise ValueError(
                     f"Configuration '{file_path}': column_mappings entry '{field_id}' "
                     f"is missing required field 'column_name'."
                 )
             if TokenizationConfigLoader.KEY_TYPE not in entry or not entry[TokenizationConfigLoader.KEY_TYPE]:
-                raise ValueError(f"Configuration '{file_path}': attribute '{field_id}' is missing required field 'type'.")
-            column_mappings[field_id] = AttributeMappingEntry(column_name=entry[TokenizationConfigLoader.KEY_COLUMN_NAME], type=entry[TokenizationConfigLoader.KEY_TYPE])
+                raise ValueError(
+                    f"Configuration '{file_path}': attribute '{field_id}' is missing required field 'type'."
+                )
+            column_mappings[field_id] = AttributeMappingEntry(
+                column_name=entry[TokenizationConfigLoader.KEY_COLUMN_NAME],
+                type=entry[TokenizationConfigLoader.KEY_TYPE],
+            )
 
         return column_mappings
 
@@ -161,7 +176,10 @@ class TokenizationConfigLoader:
                     raise ValueError(
                         f"Configuration '{file_path}': token rule '{token_id}' entry {index} is missing 'field'."
                     )
-                if TokenizationConfigLoader.KEY_EXPRESSION not in entry or not entry[TokenizationConfigLoader.KEY_EXPRESSION]:
+                if (
+                    TokenizationConfigLoader.KEY_EXPRESSION not in entry
+                    or not entry[TokenizationConfigLoader.KEY_EXPRESSION]
+                ):
                     raise ValueError(
                         f"Configuration '{file_path}': token rule '{token_id}' entry {index} is missing 'expression'."
                     )
@@ -172,8 +190,15 @@ class TokenizationConfigLoader:
                         f"Configuration '{file_path}': token rule '{token_id}' references unknown field "
                         f"'{field_id}'. Valid field ids are: {sorted(valid_field_ids)}."
                     )
-                TokenizationConfigLoader._validate_expression(entry[TokenizationConfigLoader.KEY_EXPRESSION], token_id, index, file_path)
-                rule_entries.append(TokenRuleEntry(field=field_id, expression=entry[TokenizationConfigLoader.KEY_EXPRESSION]))
+                TokenizationConfigLoader._validate_expression(
+                    entry[TokenizationConfigLoader.KEY_EXPRESSION], token_id, index, file_path
+                )
+                rule_entries.append(
+                    TokenRuleEntry(
+                        field=field_id,
+                        expression=entry[TokenizationConfigLoader.KEY_EXPRESSION],
+                    )
+                )
             token_rules[token_id] = rule_entries
 
         return token_rules
