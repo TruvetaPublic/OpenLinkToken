@@ -64,8 +64,8 @@ jobs:
 
       - name: Build distributions
         run: |
-          cd lib/python/openlinktoken && uv build -o dist/
-          cd lib/python/openlinktoken-pyspark && uv build -o dist/
+          (cd lib/python/openlinktoken && uv build -o dist/)
+          (cd lib/python/openlinktoken-pyspark && uv build -o dist/)
 
       - name: Upload Python artifacts
         uses: actions/upload-artifact@v7
