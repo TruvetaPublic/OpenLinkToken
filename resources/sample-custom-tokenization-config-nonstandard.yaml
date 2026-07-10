@@ -12,7 +12,7 @@ column_mappings:
     column_name: "encounter_date"
     type: BirthDate
   EncounterType:
-    column_name: "encounter_type"
+    column_name: "encounter type"
     type: FirstName
   Gender:
     column_name: "patient_gender"

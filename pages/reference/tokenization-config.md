@@ -37,7 +37,7 @@ column_mappings:
     column_name: "member_id"
     type: RecordId
   GivenName:
-    column_name: "given_nm"
+    column_name: "given nm"
     type: FirstName
   FamilyName:
     column_name: "surname_txt"

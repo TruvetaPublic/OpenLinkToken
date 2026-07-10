@@ -48,7 +48,7 @@ column_mappings:
     column_name: "given_nm"
     type: GivenName
   FamilyName:
-    column_name: "family_nm"
+    column_name: "family nm"
     type: LastName
 
 token_rules:

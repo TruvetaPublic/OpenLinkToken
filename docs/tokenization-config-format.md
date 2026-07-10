@@ -18,7 +18,7 @@ olt tokenize \
 ## Example Input (Unusual Fields)
 
 ```csv
-member_id,given_nm,surname_txt,dob_iso,gender_code,zip_5,national_id
+member_id,given nm,surname_txt,dob_iso,gender_code,zip_5,national_id
 A-1001,Ana,Lopez,1988-03-12,F,98052,123-45-6789
 A-1002,Marcus,Nguyen,1979-11-05,M,10001,234-56-7890
 ```
@@ -31,7 +31,7 @@ column_mappings:
     column_name: "member_id"
     type: RecordId
   GivenName:
-    column_name: "given_nm"
+    column_name: "given nm"
     type: FirstName
   FamilyName:
     column_name: "surname_txt"
