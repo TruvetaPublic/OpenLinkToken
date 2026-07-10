@@ -83,7 +83,7 @@ jobs:
 
       - name: Publish to Maven Central
         run: |
-          cd lib/java
+          cd lib/java/openlinktoken
           mvn deploy \
             -s "$GITHUB_WORKSPACE/settings.xml" \
             -Pcentral-release \
