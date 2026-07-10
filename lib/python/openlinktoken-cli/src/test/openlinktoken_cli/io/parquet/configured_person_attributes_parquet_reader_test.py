@@ -14,7 +14,7 @@ except ImportError:
     pytest.skip("PyArrow required for Parquet tests", allow_module_level=True)
 
 from openlinktoken_cli.io.parquet.person_attributes_parquet_reader import PersonAttributesParquetReader
-from openlinktoken_cli.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
+from openlinktoken_cli.tokens.config.configured_attribute_resolver import ConfiguredAttributeResolver
 from openlinktoken_cli.tokens.config.tokenization_config import AttributeMappingEntry, TokenizationConfig
 
 
@@ -34,7 +34,7 @@ class TestConfiguredAttributeMappingInPersonAttributesParquetReader:
             },
             token_rules={},
         )
-        self.factory = DynamicAttributeFactory(self.config)
+        self.resolver = ConfiguredAttributeResolver(self.config)
 
     def teardown_method(self):
         """Clean up after each test method."""
@@ -42,7 +42,7 @@ class TestConfiguredAttributeMappingInPersonAttributesParquetReader:
             os.unlink(self.temp_file_path)
 
     def test_read_valid_parquet_with_configured_columns(self):
-        """Reads configured columns into their corresponding dynamic attribute classes."""
+        """Reads configured columns into their corresponding field ids."""
         table = pa.table(
             {
                 "given_nm": ["Maria"],
@@ -52,19 +52,16 @@ class TestConfiguredAttributeMappingInPersonAttributesParquetReader:
         )
         pq.write_table(table, self.temp_file_path)
 
-        given_name_class = self.factory.get_class_for_column("given_nm")
-        family_name_class = self.factory.get_class_for_column("family_nm")
-
         attribute_map = {
-            "given_nm": given_name_class,
-            "family_nm": family_name_class,
+            "given_nm": self.resolver.get_field_for_column("given_nm"),
+            "family_nm": self.resolver.get_field_for_column("family_nm"),
         }
 
         with PersonAttributesParquetReader(self.temp_file_path, attribute_map=attribute_map) as reader:
             record = next(reader)
 
-        assert record[given_name_class] == "Maria"
-        assert record[family_name_class] == "Garcia"
+        assert record["FirstName"] == "Maria"
+        assert record["FamilyName"] == "Garcia"
         assert len(record) == 2
 
     def test_parquet_mapping_is_case_insensitive(self):
@@ -77,35 +74,29 @@ class TestConfiguredAttributeMappingInPersonAttributesParquetReader:
         )
         pq.write_table(table, self.temp_file_path)
 
-        given_name_class = self.factory.get_class_for_column("given_nm")
-        family_name_class = self.factory.get_class_for_column("family_nm")
-
         attribute_map = {
-            "given_nm": given_name_class,
-            "family_nm": family_name_class,
+            "given_nm": self.resolver.get_field_for_column("given_nm"),
+            "family_nm": self.resolver.get_field_for_column("family_nm"),
         }
 
         with PersonAttributesParquetReader(self.temp_file_path, attribute_map=attribute_map) as reader:
             record = next(reader)
 
-        assert record[given_name_class] == "Maria"
-        assert record[family_name_class] == "Garcia"
+        assert record["FirstName"] == "Maria"
+        assert record["FamilyName"] == "Garcia"
 
     def test_missing_configured_column_is_skipped(self):
         """Skips configured columns that are absent from the Parquet schema."""
         table = pa.table({"given_nm": ["Maria"]})
         pq.write_table(table, self.temp_file_path)
 
-        given_name_class = self.factory.get_class_for_column("given_nm")
-        family_name_class = self.factory.get_class_for_column("family_nm")
-
         attribute_map = {
-            "given_nm": given_name_class,
-            "family_nm": family_name_class,
+            "given_nm": self.resolver.get_field_for_column("given_nm"),
+            "family_nm": self.resolver.get_field_for_column("family_nm"),
         }
 
         with PersonAttributesParquetReader(self.temp_file_path, attribute_map=attribute_map) as reader:
             record = next(reader)
 
-        assert record[given_name_class] == "Maria"
-        assert family_name_class not in record
+        assert record["FirstName"] == "Maria"
+        assert "FamilyName" not in record

@@ -5,9 +5,7 @@ import sys
 from typing import List, Optional
 
 from openlinktoken.metadata import Metadata
-from openlinktoken_cli.tokens.config.tokenization_config_helper import TokenizationConfigHelper
 from openlinktoken.tokens.tokenizer.passthrough_tokenizer import PassthroughTokenizer
-from openlinktoken_cli.tokens.config.tokenization_config_loader import TokenizationConfigLoader
 from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 from openlinktoken.tokentransformer.token_transformer import TokenTransformer
 from openlinktoken_cli.io.csv.person_attributes_csv_writer import PersonAttributesCSVWriter
@@ -19,6 +17,8 @@ from openlinktoken_cli.processor.person_attributes_processor import (
     PersonAttributesProcessingSummary,
     PersonAttributesProcessor,
 )
+from openlinktoken_cli.tokens.config.tokenization_config_helper import TokenizationConfigHelper
+from openlinktoken_cli.tokens.config.tokenization_config_loader import TokenizationConfigLoader
 from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
 from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
 from openlinktoken_cli.util.exchange_config import resolve_exchange_config
@@ -319,11 +319,11 @@ class TokenizeCommand:
             raise RuntimeError("Failed to initialize transformer") from e
 
         try:
-            config, factory, token_definition = TokenizationConfigLoader.load_runtime_components(
+            config, resolver, token_definition = TokenizationConfigLoader.load_runtime_components(
                 tokenization_config_path
             )
             with (
-                TokenizationConfigHelper.create_reader(input_path, input_type, config, factory) as reader,
+                TokenizationConfigHelper.create_reader(input_path, input_type, config, resolver) as reader,
                 TokenizeCommand._create_writer(output_path, output_type) as writer,
             ):
                 metadata = Metadata()
@@ -360,11 +360,11 @@ class TokenizeCommand:
     ) -> tuple[PersonAttributesProcessingSummary, str]:
         """Process tokens in hash-only mode using SHA-256 only (no HMAC, no secret)."""
         try:
-            config, factory, token_definition = TokenizationConfigLoader.load_runtime_components(
+            config, resolver, token_definition = TokenizationConfigLoader.load_runtime_components(
                 tokenization_config_path
             )
             with (
-                TokenizationConfigHelper.create_reader(input_path, input_type, config, factory) as reader,
+                TokenizationConfigHelper.create_reader(input_path, input_type, config, resolver) as reader,
                 TokenizeCommand._create_writer(output_path, output_type) as writer,
             ):
                 metadata = Metadata()
@@ -399,11 +399,11 @@ class TokenizeCommand:
     ) -> tuple[PersonAttributesProcessingSummary, str]:
         """Process tokens in demo mode using PassthroughTokenizer (no hashing)."""
         try:
-            config, factory, token_definition = TokenizationConfigLoader.load_runtime_components(
+            config, resolver, token_definition = TokenizationConfigLoader.load_runtime_components(
                 tokenization_config_path
             )
             with (
-                TokenizationConfigHelper.create_reader(input_path, input_type, config, factory) as reader,
+                TokenizationConfigHelper.create_reader(input_path, input_type, config, resolver) as reader,
                 TokenizeCommand._create_writer(output_path, output_type) as writer,
             ):
                 metadata = Metadata()

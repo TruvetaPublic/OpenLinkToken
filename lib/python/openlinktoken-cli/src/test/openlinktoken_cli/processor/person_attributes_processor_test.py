@@ -2,27 +2,20 @@
 
 from unittest.mock import Mock
 
-from openlinktoken.attributes.general.record_id_attribute import RecordIdAttribute
-from openlinktoken.attributes.person.birth_date_attribute import BirthDateAttribute
-from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute
-from openlinktoken.attributes.person.last_name_attribute import LastNameAttribute
-from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttribute
-from openlinktoken.attributes.person.sex_attribute import SexAttribute
-from openlinktoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
-from openlinktoken.tokens.token_definition import TokenDefinition
 from openlinktoken.metadata import Metadata
-from openlinktoken_cli.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
-from openlinktoken_cli.tokens.config.dynamic_token_definition import DynamicTokenDefinition
-from openlinktoken_cli.tokens.config.tokenization_config import (
-    AttributeMappingEntry,
-    TokenRuleEntry,
-    TokenizationConfig,
-)
+from openlinktoken.tokens.token_definition import TokenDefinition
 from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 from openlinktoken.tokentransformer.token_transformer import TokenTransformer
 from openlinktoken_cli.io.person_attributes_reader import PersonAttributesReader
 from openlinktoken_cli.io.person_attributes_writer import PersonAttributesWriter
 from openlinktoken_cli.processor.person_attributes_processor import PersonAttributesProcessor
+from openlinktoken_cli.tokens.config.configured_attribute_resolver import ConfiguredAttributeResolver
+from openlinktoken_cli.tokens.config.dynamic_token_definition import DynamicTokenDefinition
+from openlinktoken_cli.tokens.config.tokenization_config import (
+    AttributeMappingEntry,
+    TokenizationConfig,
+    TokenRuleEntry,
+)
 
 
 class TestPersonAttributesProcessor:
@@ -31,7 +24,7 @@ class TestPersonAttributesProcessor:
     def test_process_happy_path(self):
         """Test process happy path."""
         token_transformer_list = [Mock(spec=HashTokenTransformer)]
-        data = {RecordIdAttribute: "TestRecordId", FirstNameAttribute: "John", LastNameAttribute: "Spencer"}
+        data = {"RecordId": "TestRecordId", "FirstName": "John", "LastName": "Spencer"}
 
         reader = Mock(spec=PersonAttributesReader)
         writer = Mock(spec=PersonAttributesWriter)
@@ -50,7 +43,7 @@ class TestPersonAttributesProcessor:
     def test_process_io_exception_writing_attributes(self):
         """Test process with IOException writing attributes."""
         token_transformer_list = [Mock(spec=TokenTransformer)]
-        data = {RecordIdAttribute: "TestRecordId", FirstNameAttribute: "John", LastNameAttribute: "Spencer"}
+        data = {"RecordId": "TestRecordId", "FirstName": "John", "LastName": "Spencer"}
 
         reader = Mock(spec=PersonAttributesReader)
         writer = Mock(spec=PersonAttributesWriter)
@@ -73,7 +66,7 @@ class TestPersonAttributesProcessor:
     def test_metadata_map_contains_correct_values(self):
         """Test metadata map contains correct values."""
         token_transformer_list = [Mock(spec=HashTokenTransformer)]
-        data = {RecordIdAttribute: "TestRecordId", FirstNameAttribute: "John", LastNameAttribute: "Spencer"}
+        data = {"RecordId": "TestRecordId", "FirstName": "John", "LastName": "Spencer"}
 
         reader = Mock(spec=PersonAttributesReader)
         writer = Mock(spec=PersonAttributesWriter)
@@ -123,13 +116,13 @@ class TestPersonAttributesProcessor:
         token_transformer_list = [Mock(spec=HashTokenTransformer)]
         # Provide all required attributes so no blank tokens are generated
         data = {
-            RecordIdAttribute: "TestRecordId",
-            FirstNameAttribute: "John",
-            LastNameAttribute: "Spencer",
-            SocialSecurityNumberAttribute: "234-56-7890",
-            BirthDateAttribute: "1990-01-15",
-            SexAttribute: "Male",
-            PostalCodeAttribute: "98052",
+            "RecordId": "TestRecordId",
+            "FirstName": "John",
+            "LastName": "Spencer",
+            "SocialSecurityNumber": "234-56-7890",
+            "BirthDate": "1990-01-15",
+            "Sex": "Male",
+            "PostalCode": "98052",
         }
 
         reader = Mock(spec=PersonAttributesReader)
@@ -161,9 +154,9 @@ class TestPersonAttributesProcessor:
         token_transformer_list = [Mock(spec=HashTokenTransformer)]
 
         # Create three data records
-        data1 = {RecordIdAttribute: "TestRecordId1", FirstNameAttribute: "John", LastNameAttribute: "Spencer"}
-        data2 = {RecordIdAttribute: "TestRecordId2", FirstNameAttribute: "Jane", LastNameAttribute: "Doe"}
-        data3 = {RecordIdAttribute: "TestRecordId3", FirstNameAttribute: "Alex", LastNameAttribute: "Smith"}
+        data1 = {"RecordId": "TestRecordId1", "FirstName": "John", "LastName": "Spencer"}
+        data2 = {"RecordId": "TestRecordId2", "FirstName": "Jane", "LastName": "Doe"}
+        data3 = {"RecordId": "TestRecordId3", "FirstName": "Alex", "LastName": "Smith"}
 
         reader = Mock(spec=PersonAttributesReader)
         writer = Mock(spec=PersonAttributesWriter)
@@ -183,7 +176,7 @@ class TestPersonAttributesProcessor:
     def test_metadata_map_preserves_existing_entries(self):
         """Test metadata map preserves existing entries."""
         token_transformer_list = [Mock(spec=HashTokenTransformer)]
-        data = {RecordIdAttribute: "TestRecordId", FirstNameAttribute: "John", LastNameAttribute: "Spencer"}
+        data = {"RecordId": "TestRecordId", "FirstName": "John", "LastName": "Spencer"}
 
         reader = Mock(spec=PersonAttributesReader)
         writer = Mock(spec=PersonAttributesWriter)
@@ -218,15 +211,13 @@ class TestPersonAttributesProcessor:
                 ]
             },
         )
-        factory = DynamicAttributeFactory(config)
-        token_definition = DynamicTokenDefinition(config, factory)
+        resolver = ConfiguredAttributeResolver(config)
+        token_definition = DynamicTokenDefinition(config, resolver)
 
-        given_name_class = factory.get_class_for_field("FirstName")
-        family_name_class = factory.get_class_for_field("FamilyName")
         row = {
-            RecordIdAttribute: "TestRecordId",
-            given_name_class: "John",
-            family_name_class: "Spencer",
+            "RecordId": "TestRecordId",
+            "FirstName": "John",
+            "FamilyName": "Spencer",
         }
 
         reader = Mock(spec=PersonAttributesReader)
@@ -251,13 +242,13 @@ class TestPersonAttributesProcessor:
         token_transformer_list = [Mock(spec=HashTokenTransformer)]
         # Invalid birth date should surface as Date/BirthDate depending on attribute implementation.
         data = {
-            RecordIdAttribute: "TestRecordId",
-            FirstNameAttribute: "John",
-            LastNameAttribute: "Spencer",
-            SocialSecurityNumberAttribute: "234-56-7890",
-            BirthDateAttribute: "",
-            SexAttribute: "Male",
-            PostalCodeAttribute: "98052",
+            "RecordId": "TestRecordId",
+            "FirstName": "John",
+            "LastName": "Spencer",
+            "SocialSecurityNumber": "234-56-7890",
+            "BirthDate": "",
+            "Sex": "Male",
+            "PostalCode": "98052",
         }
 
         reader = Mock(spec=PersonAttributesReader)

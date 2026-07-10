@@ -5,7 +5,7 @@ from typing import Optional
 
 from openlinktoken_cli.io.csv.person_attributes_csv_reader import PersonAttributesCSVReader
 from openlinktoken_cli.io.parquet.person_attributes_parquet_reader import PersonAttributesParquetReader
-from openlinktoken_cli.tokens.config.dynamic_attribute_factory import DynamicAttributeFactory
+from openlinktoken_cli.tokens.config.configured_attribute_resolver import ConfiguredAttributeResolver
 from openlinktoken_cli.tokens.config.tokenization_config import TokenizationConfig
 from openlinktoken_cli.util.file_type_detector import FileTypeDetector
 
@@ -18,27 +18,23 @@ class TokenizationConfigHelper:
     @staticmethod
     def build_configured_input_attribute_map(
         config: TokenizationConfig,
-        factory: DynamicAttributeFactory,
+        resolver: ConfiguredAttributeResolver,
     ) -> dict:
-        """Build input-column-to-attribute-class mapping from tokenization config.
+        """Build input-column-to-field-id mapping from tokenization config.
 
         Args:
             config: Parsed tokenization config containing the attribute column mappings.
-            factory: Factory used to resolve each config column to its built-in attribute class.
+            resolver: Resolver used to resolve each config column to its logical field id.
 
         Returns:
-            A dict mapping each input column name to its corresponding attribute class.
+            A dict mapping each input column name to its corresponding field id string.
         """
         attribute_map = {}
         for field_id, entry in config.column_mappings.items():
             try:
-                attribute_map[entry.column_name] = factory.get_class_for_column(entry.column_name)
+                attribute_map[entry.column_name] = resolver.get_field_for_column(entry.column_name)
             except KeyError:
-                logger.warning(
-                    "Column '%s' (field '%s') is in config but has no dynamic class registered.",
-                    entry.column_name,
-                    field_id,
-                )
+                logger.warning("Column '%s' is in config but has no field id registered.", entry.column_name)
         return attribute_map
 
     @staticmethod
@@ -46,7 +42,7 @@ class TokenizationConfigHelper:
         path: str,
         file_type: str,
         config: Optional[TokenizationConfig] = None,
-        factory: Optional[DynamicAttributeFactory] = None,
+        resolver: Optional[ConfiguredAttributeResolver] = None,
     ):
         """Create and optionally configure a reader for CSV or Parquet inputs.
 
@@ -54,7 +50,7 @@ class TokenizationConfigHelper:
             path: Path to the input file.
             file_type: Format of the input file; must be 'csv' or 'parquet' (case-insensitive).
             config: Optional tokenization config used to build the attribute map.
-            factory: Optional factory required when config is provided.
+            resolver: Optional resolver required when config is provided.
 
         Returns:
             A PersonAttributesCSVReader or PersonAttributesParquetReader initialised with
@@ -64,8 +60,8 @@ class TokenizationConfigHelper:
             ValueError: If file_type is not 'csv' or 'parquet'.
         """
         attribute_map = None
-        if config is not None and factory is not None:
-            attribute_map = TokenizationConfigHelper.build_configured_input_attribute_map(config, factory)
+        if config is not None and resolver is not None:
+            attribute_map = TokenizationConfigHelper.build_configured_input_attribute_map(config, resolver)
 
         file_type_lower = file_type.lower()
         if file_type_lower == FileTypeDetector.TYPE_CSV:

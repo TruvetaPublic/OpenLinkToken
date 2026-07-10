@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Set, Type
 
 from openlinktoken.attributes.attribute import Attribute
-from openlinktoken.attributes.general.record_id_attribute import RecordIdAttribute
 from openlinktoken.tokens.base_token_definition import BaseTokenDefinition
 from openlinktoken.tokens.token_definition import TokenDefinition
 from openlinktoken.tokens.token_generator import TokenGenerator
@@ -148,9 +147,8 @@ class PersonAttributesProcessor:
             ring_id: Optional ring ID for JWE wrapping.
             hash_record_ids: When True, each record ID is SHA-256 hashed before writing.
         """
-        token_generator = TokenGenerator(token_definition, tokenizer)
-        if hasattr(token_definition, 'attribute_instance_overrides'):
-            token_generator.attribute_instance_map.update(token_definition.attribute_instance_overrides)
+        field_registry = getattr(token_definition, "field_registry", None)
+        token_generator = TokenGenerator(token_definition, tokenizer, field_registry=field_registry)
 
         row_counter = 0
         last_reported_count = 0
@@ -178,7 +176,7 @@ class PersonAttributesProcessor:
             for row in reader:
                 row_counter += 1
 
-                token_generator_result = token_generator.get_all_tokens(row)
+                token_generator_result = token_generator.get_all_tokens_via_field_id(row)
                 logger.debug(f"Tokens: {token_generator_result.tokens}")
 
                 PersonAttributesProcessor._keep_track_of_invalid_attributes(
@@ -276,14 +274,7 @@ class PersonAttributesProcessor:
         token_ids = sorted(token_generator_result.tokens.keys())
 
         # Generate a UUID for RecordId if it's not present in the input data.
-        # In config-driven mode the key is a unique subclass of RecordIdAttribute,
-        # so scan all class keys that are subclasses of RecordIdAttribute.
-        record_id = row.get(RecordIdAttribute) or row.get("RecordId")
-        if record_id is None or record_id == "":
-            for key in row:
-                if isinstance(key, type) and issubclass(key, RecordIdAttribute) and key is not RecordIdAttribute:
-                    record_id = row[key]
-                    break
+        record_id = row.get("RecordId")
         if record_id is None or record_id == "":
             record_id = str(uuid.uuid4())
 

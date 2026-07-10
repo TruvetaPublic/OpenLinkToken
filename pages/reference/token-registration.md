@@ -112,10 +112,10 @@ public class T6Token implements Token {
     private final ArrayList<AttributeExpression> definition = new ArrayList<>();
 
     public T6Token() {
-        definition.add(new AttributeExpression(LastNameAttribute.class, "T|U"));
-        definition.add(new AttributeExpression(FirstNameAttribute.class, "T|U"));
-        definition.add(new AttributeExpression(BirthDateAttribute.class, "T|D"));
-        definition.add(new AttributeExpression(PostalCodeAttribute.class, "T|S(0,3)"));
+        definition.add(new AttributeExpression("LastName", LastNameAttribute.class, "T|U"));
+        definition.add(new AttributeExpression("FirstName", FirstNameAttribute.class, "T|U"));
+        definition.add(new AttributeExpression("BirthDate", BirthDateAttribute.class, "T|D"));
+        definition.add(new AttributeExpression("PostalCode", PostalCodeAttribute.class, "T|S(0,3)"));
     }
 
     @Override
@@ -130,6 +130,8 @@ public class T6Token implements Token {
 }
 ```
 
+Each `AttributeExpression` takes the field ID (`"LastName"`, `"FirstName"`, etc.) as its first argument — the string key used to look up the value in the person-attributes map at token generation time. For built-in attributes, use the attribute's canonical name as the field ID so it resolves automatically; see [FieldRegistry and Field IDs](#fieldregistry-and-field-ids) below.
+
 2. **Register in service file** at [lib/java/openlinktoken/src/main/resources/META-INF/services/org.openlinktoken.tokens.Token](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/lib/java/openlinktoken/src/main/resources/META-INF/services/org.openlinktoken.tokens.Token):
 
 ```
@@ -140,6 +142,40 @@ org.openlinktoken.tokens.definitions.T4Token
 org.openlinktoken.tokens.definitions.T5Token
 org.openlinktoken.tokens.definitions.T6Token
 ```
+
+### FieldRegistry and Field IDs
+
+`FieldRegistry` is the resolution layer that maps a field ID string (the key used in the person-attributes map) to the `Attribute` instance that provides normalization and validation for it.
+
+- `FieldRegistry.createDefault()` auto-populates a registry using every built-in attribute's canonical name (`Attribute.getName()`) as its field ID — this is why field IDs like `"LastName"`, `"FirstName"`, `"Sex"`, `"BirthDate"`, `"PostalCode"`, and `"SocialSecurityNumber"` work with no extra registration.
+- `TokenGenerator(tokenDefinition, tokenizer)` uses `FieldRegistry.createDefault()` internally, so no setup is required for built-in fields.
+- For custom fields — for example, a token that needs both `MotherLastName` and `FatherLastName` — use `FieldRegistry.Builder` to register additional field IDs, then pass the registry explicitly to `TokenGenerator`:
+
+```java
+import org.openlinktoken.attributes.FieldRegistry;
+import org.openlinktoken.attributes.general.StringAttribute;
+import org.openlinktoken.tokens.TokenGenerator;
+
+var stringAttribute = new StringAttribute();
+
+FieldRegistry fieldRegistry = FieldRegistry.Builder.fromDefaults()
+    .register("MotherLastName", StringAttribute.class, stringAttribute)
+    .register("FatherLastName", StringAttribute.class, stringAttribute)
+    .build();
+
+TokenGenerator generator = new TokenGenerator(new TokenDefinition(), new SHA256Tokenizer(transformers), fieldRegistry);
+```
+
+Then reference the new field IDs in a token definition, both backed by the same `StringAttribute` class:
+
+```java
+definition.add(new AttributeExpression("MotherLastName", StringAttribute.class, "T|U"));
+definition.add(new AttributeExpression("FatherLastName", StringAttribute.class, "T|U"));
+```
+
+Because entries are looked up by field ID string, `"MotherLastName"` and `"FatherLastName"` stay distinct even though both resolve to `StringAttribute` behavior — any number of fields can share the same attribute class this way.
+
+To generate tokens with a custom `FieldRegistry`, use `getAllTokensViaFieldId(Map<String, String>)` and `getAllTokenSignaturesViaFieldId(Map<String, String>)` on `TokenGenerator`, passing a person-attributes map keyed by field ID string. See [Java API Reference](java-api.md) for full method signatures.
 
 ## Python Registration (Explicit Imports)
 
@@ -227,10 +263,10 @@ class T6Token(Token):
 
     def __init__(self):
         self._definition = [
-            AttributeExpression(LastNameAttribute, "T|U"),
-            AttributeExpression(FirstNameAttribute, "T|U"),
-            AttributeExpression(BirthDateAttribute, "T|D"),
-            AttributeExpression(PostalCodeAttribute, "T|S(0,3)"),
+            AttributeExpression(LastNameAttribute, "T|U", field_id="LastName"),
+            AttributeExpression(FirstNameAttribute, "T|U", field_id="FirstName"),
+            AttributeExpression(BirthDateAttribute, "T|D", field_id="BirthDate"),
+            AttributeExpression(PostalCodeAttribute, "T|S(0,3)", field_id="PostalCode"),
         ]
 
     def get_identifier(self) -> str:
@@ -240,9 +276,49 @@ class T6Token(Token):
         return self._definition
 ```
 
+Each `AttributeExpression` takes `field_id` — the string key used to look up the value in the person-attributes dict at token generation time. For built-in attributes, use the attribute's canonical name as the field ID so it resolves automatically; see [FieldRegistry and Field IDs](#fieldregistry-and-field-ids-1) below.
+
 2. **No registry edit needed for tokens**:
 
 The Python `TokenRegistry.load_all_tokens()` implementation discovers `Token` subclasses by scanning modules in `openlinktoken.tokens.definitions`. As long as your new token lives under that package (for example `t6_token.py`), it will be picked up automatically.
+
+### FieldRegistry and Field IDs
+
+`FieldRegistry` is the resolution layer that maps a field ID string (the key used in the person-attributes dict) to the `Attribute` instance that provides normalization and validation for it.
+
+- `FieldRegistry.create_default()` auto-populates a registry using every built-in attribute's canonical name (`get_name()`) as its field ID — this is why field IDs like `"LastName"`, `"FirstName"`, `"Sex"`, `"BirthDate"`, `"PostalCode"`, and `"SocialSecurityNumber"` work with no extra registration.
+- `TokenGenerator(token_definition, tokenizer)` defaults to `FieldRegistry.create_default()` internally (via the optional `field_registry=` keyword argument), so no setup is required for built-in fields.
+- For custom fields — for example, a token that needs both `MotherLastName` and `FatherLastName` — use `FieldRegistry.Builder` to register additional field IDs, then pass the registry explicitly to `TokenGenerator`:
+
+```python
+from openlinktoken.attributes.field_registry import FieldRegistry
+from openlinktoken.attributes.general.string_attribute import StringAttribute
+from openlinktoken.tokens.token_generator import TokenGenerator
+
+string_attribute = StringAttribute()
+
+field_registry = (
+    FieldRegistry.Builder.from_defaults()
+    .register("MotherLastName", StringAttribute, string_attribute)
+    .register("FatherLastName", StringAttribute, string_attribute)
+    .build()
+)
+
+generator = TokenGenerator(TokenDefinition(), tokenizer, field_registry=field_registry)
+```
+
+Then reference the new field IDs in a token definition, both backed by the same `StringAttribute` class:
+
+```python
+AttributeExpression(StringAttribute, "T|U", field_id="MotherLastName"),
+AttributeExpression(StringAttribute, "T|U", field_id="FatherLastName"),
+```
+
+Because entries are looked up by field ID string, `"MotherLastName"` and `"FatherLastName"` stay distinct even though both resolve to `StringAttribute` behavior — any number of fields can share the same attribute class this way.
+
+To generate tokens with a custom `FieldRegistry`, use `get_all_tokens_via_field_id(person_attributes)` and `get_all_token_signatures_via_field_id(person_attributes)` on `TokenGenerator`, passing a person-attributes dict keyed by field ID string. See [Python API Reference](python-api.md) for full method signatures.
+
+> **Note:** The `openlinktoken_pyspark` bridge package (`TokenBuilder`, `CustomTokenDefinition`) uses the class-keyed API and continues to work unchanged.
 
 ## Cross-Language Sync Verification
 
