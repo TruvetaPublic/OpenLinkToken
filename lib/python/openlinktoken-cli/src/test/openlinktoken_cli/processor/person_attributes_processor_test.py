@@ -237,6 +237,39 @@ class TestPersonAttributesProcessor:
         assert writer.write_attributes.call_count == 1
         assert summary.blank_tokens_by_rule["T1"] == 0
 
+    def test_process_preserves_record_id_from_config_mapped_column(self):
+        """Config-mapped RecordId column is used as output record ID, not replaced by a UUID."""
+        config = TokenizationConfig(
+            column_mappings={
+                "RecordId": AttributeMappingEntry(column_name="encounter_id", type="RecordId"),
+                "FirstName": AttributeMappingEntry(column_name="given_nm", type="GivenName"),
+            },
+            token_rules={
+                "T1": [TokenRuleEntry(field="FirstName", expression="T|U")],
+            },
+        )
+        resolver = ConfiguredAttributeResolver(config)
+        token_definition = DynamicTokenDefinition(config, resolver)
+
+        # Simulate the per-row dict as produced by a config-driven reader:
+        # keys are unique attribute subclasses, not plain strings.
+        record_id_class = resolver.get_class_for_field("RecordId")
+        first_name_class = resolver.get_class_for_field("FirstName")
+        row = {
+            record_id_class: "enc-001",
+            first_name_class: "Ana",
+        }
+
+        reader = Mock(spec=PersonAttributesReader)
+        writer = Mock(spec=PersonAttributesWriter)
+        reader.__iter__ = Mock(return_value=iter([row]))
+        metadata_map = Metadata().initialize()
+
+        PersonAttributesProcessor.process(reader, writer, [], metadata_map, token_definition=token_definition)
+
+        written = writer.write_attributes.call_args[0][0]
+        assert written["RecordId"] == "enc-001", "Source record ID must be preserved, not replaced by a UUID"
+
     def test_process_tracks_unknown_invalid_attribute_name_without_crashing(self):
         """Handles invalid attribute names that were not pre-initialized in metadata maps."""
         token_transformer_list = [Mock(spec=HashTokenTransformer)]
