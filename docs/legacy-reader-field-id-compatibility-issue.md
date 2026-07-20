@@ -91,9 +91,11 @@ reader contract:
   generator API.
 - Legacy rows emit one deprecation warning per processing run. Custom readers
   should migrate to field-ID string keys.
-- String `RecordId` values are preserved. For legacy rows, exact or subclass
-  `RecordIdAttribute` values are also preserved; when no record ID is present,
-  the processor falls back to a generated UUID.
+- Record IDs are resolved in this implementation order: a string `"RecordId"`
+  key first, an exact `RecordIdAttribute` class key second, any
+  `RecordIdAttribute` subclass key third, and a generated UUID last when no
+  record-ID value is present. Values found through any of the first three
+  keys are preserved.
 - Empty rows are shape-neutral: they follow an already established non-empty
   row shape, and use field-ID behavior when no non-empty shape has been
   established.
