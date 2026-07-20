@@ -238,10 +238,15 @@ class TestPersonAttributesProcessor:
         assert summary.blank_tokens_by_rule["T1"] == 0
 
     def test_process_preserves_record_id_from_config_mapped_column(self):
-        """Config-mapped RecordId column is used as output record ID, not replaced by a UUID."""
+        """Config-mapped RecordId column is used as output record ID, not replaced by a UUID.
+
+        The field id ("EncounterId") intentionally differs from the type ("RecordId") to
+        verify that the fix handles any RecordIdAttribute subclass key, not just ones named
+        "RecordId".
+        """
         config = TokenizationConfig(
             column_mappings={
-                "RecordId": AttributeMappingEntry(column_name="encounter_id", type="RecordId"),
+                "EncounterId": AttributeMappingEntry(column_name="encounter_id", type="RecordId"),
                 "FirstName": AttributeMappingEntry(column_name="given_nm", type="GivenName"),
             },
             token_rules={
@@ -253,7 +258,7 @@ class TestPersonAttributesProcessor:
 
         # Simulate the per-row dict as produced by a config-driven reader:
         # keys are unique attribute subclasses, not plain strings.
-        record_id_class = resolver.get_class_for_field("RecordId")
+        record_id_class = resolver.get_class_for_field("EncounterId")
         first_name_class = resolver.get_class_for_field("FirstName")
         row = {
             record_id_class: "enc-001",
