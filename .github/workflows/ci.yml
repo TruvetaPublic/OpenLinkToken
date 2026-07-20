@@ -24,7 +24,7 @@ jobs:
       actions: read
       security-events: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup toolchain (Java)
         uses: ./.github/actions/setup-toolchain
@@ -52,14 +52,14 @@ jobs:
         run: cd lib/java && mvn jacoco:report
 
       - name: Upload JaCoCo artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: java-code-coverage
           path: |
             lib/java/openlinktoken/target/site/jacoco/*
 
       - name: Add Java code coverage to PR
-        uses: madrapps/jacoco-report@v1.7.1
+        uses: madrapps/jacoco-report@v1.8.0
         with:
           paths: |
             lib/java/openlinktoken/target/site/jacoco/jacoco.xml
@@ -89,7 +89,7 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup toolchain (Python)
         uses: ./.github/actions/setup-toolchain
@@ -111,7 +111,7 @@ jobs:
           PYTHONPATH=lib/python/openlinktoken/src/main pytest lib/python/openlinktoken/src/test --junitxml=lib/python/openlinktoken/test-results-${{ matrix.python-version }}.xml --cov=lib/python/openlinktoken/src/main --cov-report=xml:lib/python/openlinktoken/coverage.xml --cov-report=html:lib/python/openlinktoken/htmlcov
 
       - name: Upload Python coverage artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: python-code-coverage-${{ matrix.python-version }}
           path: |
@@ -120,7 +120,7 @@ jobs:
 
       - name: Upload Python JUnit results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: python-junit-core-${{ matrix.python-version }}
           path: |
@@ -138,7 +138,7 @@ jobs:
 
       - name: Add Python code coverage to PR
         if: matrix.python-version == '3.10'
-        uses: orgoro/coverage@v3.2
+        uses: orgoro/coverage@v3.3.1
         with:
           coverageFile: lib/python/openlinktoken/coverage.xml
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -158,7 +158,7 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup toolchain (Python)
         uses: ./.github/actions/setup-toolchain
@@ -180,7 +180,7 @@ jobs:
           PYTHONPATH=lib/python/openlinktoken/src/main:lib/python/openlinktoken-cli/src/main pytest lib/python/openlinktoken-cli/src/test --junitxml=lib/python/openlinktoken-cli/test-results-${{ matrix.python-version }}.xml --cov=lib/python/openlinktoken-cli/src/main --cov-report=xml:lib/python/openlinktoken-cli/coverage.xml --cov-report=html:lib/python/openlinktoken-cli/htmlcov
 
       - name: Upload Python CLI coverage artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: python-cli-code-coverage-${{ matrix.python-version }}
           path: |
@@ -189,7 +189,7 @@ jobs:
 
       - name: Upload Python CLI JUnit results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: python-junit-cli-${{ matrix.python-version }}
           path: |
@@ -260,7 +260,7 @@ jobs:
           - python-version: "3.14"
             spark-version: "3.5"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup toolchain (Python + Java for PySpark)
         uses: ./.github/actions/setup-toolchain
@@ -303,7 +303,7 @@ jobs:
 
       - name: Upload PySpark coverage artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: pyspark-code-coverage-${{ matrix.python-version }}-spark${{ matrix.spark-version }}
           path: |
@@ -312,7 +312,7 @@ jobs:
 
       - name: Upload PySpark JUnit results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: python-junit-pyspark-${{ matrix.python-version }}-spark${{ matrix.spark-version }}
           path: |
@@ -330,7 +330,7 @@ jobs:
 
       - name: Add PySpark code coverage to PR
         if: matrix.python-version == '3.10' && matrix.spark-version == '4.0'
-        uses: orgoro/coverage@v3.2
+        uses: orgoro/coverage@v3.3.1
         with:
           coverageFile: lib/python/openlinktoken-pyspark/coverage-${{ matrix.python-version }}-spark${{ matrix.spark-version }}.xml
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -350,7 +350,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Download Python JUnit artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: python-junit-*
           path: test-results
@@ -459,7 +459,7 @@ jobs:
       - name: Upsert sticky Python test comment
         if: always() && steps.build-summary.outcome == 'success' && steps.build-summary.outputs.body != ''
         continue-on-error: true
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const commentMarker = '<!-- python-tests-sticky-comment -->';
@@ -525,7 +525,7 @@ jobs:
       packages: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup toolchain (Java + Python)
         uses: ./.github/actions/setup-toolchain
@@ -551,7 +551,7 @@ jobs:
 
       - name: Upload interoperability artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: interoperability-test-results
           path: |

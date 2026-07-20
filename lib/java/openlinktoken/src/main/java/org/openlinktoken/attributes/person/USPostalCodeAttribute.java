@@ -107,8 +107,8 @@ public class USPostalCodeAttribute extends BaseAttribute {
      *
      * For US ZIP codes:
      * - Codes shorter than minLength are rejected (return original)
-     * - 3-digit ZIP code (ZIP-3) is padded with "00" to create 5-digit format (e.g., "951" becomes "95100") if minLength <= 3
-     * - 4-digit ZIP code (ZIP-4) is padded with "0" to create 5-digit format (e.g., "1234" becomes "12340") if minLength <= 4
+     * - 3-digit ZIP code (ZIP-3) is padded with "00" to create 5-digit format (e.g., "951" becomes "95100") if minLength &lt;= 3
+     * - 4-digit ZIP code (ZIP-4) is padded with "0" to create 5-digit format (e.g., "1234" becomes "12340") if minLength &lt;= 4
      * - 5-digit or longer ZIP codes return the first 5 digits (e.g., "12345-6789" becomes "12345")
      * If the input value is null or doesn't match US ZIP pattern, the original
      * trimmed value is returned.
