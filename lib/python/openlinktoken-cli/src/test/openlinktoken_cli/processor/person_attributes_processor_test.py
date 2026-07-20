@@ -361,6 +361,39 @@ class TestPersonAttributesProcessor:
         assert sum("deprecated" in message.lower() for message in caplog.messages) == 1
 
     @pytest.mark.parametrize(
+        ("rows", "legacy_row_count"),
+        [
+            pytest.param([{}, _complete_legacy_row()], 1, id="empty-before-legacy"),
+            pytest.param(
+                [_complete_legacy_row(), {}, _complete_legacy_row()],
+                2,
+                id="empty-between-legacy",
+            ),
+        ],
+    )
+    def test_process_empty_rows_preserve_established_legacy_shape(self, rows, legacy_row_count, caplog):
+        """Empty rows should not prevent established legacy rows from using compatibility token generation."""
+        expected_reader = Mock(spec=PersonAttributesReader)
+        expected_writer = Mock(spec=PersonAttributesWriter)
+        expected_reader.__iter__ = Mock(return_value=iter([_complete_legacy_row()]))
+
+        caplog.set_level(logging.WARNING, logger="openlinktoken_cli.processor.person_attributes_processor")
+        PersonAttributesProcessor.process(expected_reader, expected_writer, [], Metadata().initialize())
+        expected_legacy_payloads = _written_payloads(expected_writer)
+        caplog.clear()
+
+        reader = Mock(spec=PersonAttributesReader)
+        writer = Mock(spec=PersonAttributesWriter)
+        reader.__iter__ = Mock(return_value=iter(rows))
+
+        summary = PersonAttributesProcessor.process(reader, writer, [], Metadata().initialize())
+
+        legacy_payloads = [payload for payload in _written_payloads(writer) if payload["RecordId"] == "A-1001"]
+        assert summary.total_rows == len(rows)
+        assert legacy_payloads == expected_legacy_payloads * legacy_row_count
+        assert sum("deprecated" in message.lower() for message in caplog.messages) == 1
+
+    @pytest.mark.parametrize(
         "rows",
         [
             pytest.param(

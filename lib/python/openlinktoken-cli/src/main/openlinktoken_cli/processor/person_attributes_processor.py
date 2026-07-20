@@ -188,10 +188,12 @@ class PersonAttributesProcessor:
             for row in reader:
                 row_counter += 1
 
-                row_shape = PersonAttributesProcessor._classify_row_shape(row)
-                reader_row_shape = PersonAttributesProcessor._require_consistent_row_shape(
-                    reader_row_shape, row_shape, row_counter
-                )
+                classified_row_shape = PersonAttributesProcessor._classify_row_shape(row)
+                if classified_row_shape is not None:
+                    reader_row_shape = PersonAttributesProcessor._require_consistent_row_shape(
+                        reader_row_shape, classified_row_shape, row_counter
+                    )
+                row_shape = reader_row_shape or classified_row_shape or _PersonAttributesRowShape.FIELD_ID
 
                 if row_shape is _PersonAttributesRowShape.LEGACY_ATTRIBUTE_CLASS:
                     if not legacy_row_warning_emitted:
@@ -329,7 +331,7 @@ class PersonAttributesProcessor:
                 logger.error("Error writing attributes to file for row %s", f"{row_counter:,}")
 
     @staticmethod
-    def _classify_row_shape(row: Dict[object, str]) -> _PersonAttributesRowShape:
+    def _classify_row_shape(row: Dict[object, str]) -> _PersonAttributesRowShape | None:
         """Classify a row by its key shape and reject unsupported combinations."""
         has_string_keys = False
         has_legacy_attribute_class_keys = False
@@ -351,7 +353,7 @@ class PersonAttributesProcessor:
         if has_legacy_attribute_class_keys:
             return _PersonAttributesRowShape.LEGACY_ATTRIBUTE_CLASS
 
-        return _PersonAttributesRowShape.FIELD_ID
+        return _PersonAttributesRowShape.FIELD_ID if has_string_keys else None
 
     @staticmethod
     def _require_consistent_row_shape(
