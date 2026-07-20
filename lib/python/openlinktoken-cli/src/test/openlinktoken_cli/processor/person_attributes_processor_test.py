@@ -335,11 +335,24 @@ class TestPersonAttributesProcessor:
 
         assert sum("deprecated" in message.lower() for message in caplog.messages) == 1
 
-    def test_process_row_shape_change_from_legacy_to_field_id_raises_value_error(self):
-        """Readers must not switch from legacy rows to field-ID rows mid-stream."""
+    @pytest.mark.parametrize(
+        "rows",
+        [
+            pytest.param(
+                [_complete_legacy_row(), _complete_field_id_row()],
+                id="legacy-to-field-id",
+            ),
+            pytest.param(
+                [_complete_field_id_row(), _complete_legacy_row()],
+                id="field-id-to-legacy",
+            ),
+        ],
+    )
+    def test_process_row_shape_change_raises_value_error(self, rows):
+        """Readers must not switch row shapes mid-stream."""
         reader = Mock(spec=PersonAttributesReader)
         writer = Mock(spec=PersonAttributesWriter)
-        reader.__iter__ = Mock(return_value=iter([_complete_legacy_row(), _complete_field_id_row()]))
+        reader.__iter__ = Mock(return_value=iter(rows))
 
         with pytest.raises(ValueError, match="row shape"):
             PersonAttributesProcessor.process(reader, writer, [], Metadata().initialize())
