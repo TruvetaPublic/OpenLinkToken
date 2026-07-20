@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Set, Type
 
 from openlinktoken.attributes.attribute import Attribute
+from openlinktoken.attributes.general.record_id_attribute import RecordIdAttribute
 from openlinktoken.tokens.base_token_definition import BaseTokenDefinition
 from openlinktoken.tokens.token_definition import TokenDefinition
 from openlinktoken.tokens.token_generator import TokenGenerator
@@ -273,8 +274,14 @@ class PersonAttributesProcessor:
         # Sort token IDs for consistent output
         token_ids = sorted(token_generator_result.tokens.keys())
 
-        # Generate a UUID for RecordId if it's not present in the input data.
-        record_id = row.get("RecordId")
+        # In config-driven mode the row is keyed by unique RecordIdAttribute subclasses,
+        # so scan for any subclass key before falling back to a random UUID.
+        record_id = row.get(RecordIdAttribute) or row.get("RecordId")
+        if record_id is None or record_id == "":
+            for key in row:
+                if isinstance(key, type) and issubclass(key, RecordIdAttribute):
+                    record_id = row[key]
+                    break
         if record_id is None or record_id == "":
             record_id = str(uuid.uuid4())
 
