@@ -3,9 +3,11 @@
 import logging
 import uuid
 from dataclasses import dataclass
+from enum import Enum
 from typing import Any, Dict, List, Set, Type
 
 from openlinktoken.attributes.attribute import Attribute
+from openlinktoken.attributes.general.record_id_attribute import RecordIdAttribute
 from openlinktoken.tokens.base_token_definition import BaseTokenDefinition
 from openlinktoken.tokens.token_definition import TokenDefinition
 from openlinktoken.tokens.token_generator import TokenGenerator
@@ -20,6 +22,13 @@ from openlinktoken_cli.processor.token_constants import TokenConstants
 from openlinktoken_cli.util.record_id_hasher import RecordIdHasher
 
 logger = logging.getLogger(__name__)
+
+
+class _PersonAttributesRowShape(Enum):
+    """Supported person-attribute row key shapes at the processor boundary."""
+
+    FIELD_ID = "field-id"
+    LEGACY_ATTRIBUTE_CLASS = "legacy-attribute-class"
 
 
 @dataclass(frozen=True)
@@ -45,6 +54,7 @@ class PersonAttributesProcessor:
     TOTAL_ROWS_WITH_INVALID_ATTRIBUTES = "TotalRowsWithInvalidAttributes"
     INVALID_ATTRIBUTES_BY_TYPE = "InvalidAttributesByType"
     BLANK_TOKENS_BY_RULE = "BlankTokensByRule"
+    _LEGACY_ROW_WARNING = "Deprecated legacy reader row shape detected; migrate custom readers to field-ID string keys."
 
     def __init__(self):
         """Private constructor to prevent instantiation."""
@@ -152,6 +162,8 @@ class PersonAttributesProcessor:
 
         row_counter = 0
         last_reported_count = 0
+        reader_row_shape: _PersonAttributesRowShape | None = None
+        legacy_row_warning_emitted = False
         invalid_attribute_count: Dict[str, int] = PersonAttributesProcessor._initialize_invalid_attribute_count(
             token_definition
         )
@@ -176,7 +188,18 @@ class PersonAttributesProcessor:
             for row in reader:
                 row_counter += 1
 
-                token_generator_result = token_generator.get_all_tokens_via_field_id(row)
+                row_shape = PersonAttributesProcessor._classify_row_shape(row)
+                reader_row_shape = PersonAttributesProcessor._require_consistent_row_shape(
+                    reader_row_shape, row_shape, row_counter
+                )
+
+                if row_shape is _PersonAttributesRowShape.LEGACY_ATTRIBUTE_CLASS:
+                    if not legacy_row_warning_emitted:
+                        logger.warning(PersonAttributesProcessor._LEGACY_ROW_WARNING)
+                        legacy_row_warning_emitted = True
+                    token_generator_result = token_generator.get_all_tokens(row)
+                else:
+                    token_generator_result = token_generator.get_all_tokens_via_field_id(row)
                 logger.debug(f"Tokens: {token_generator_result.tokens}")
 
                 PersonAttributesProcessor._keep_track_of_invalid_attributes(
@@ -274,9 +297,7 @@ class PersonAttributesProcessor:
         token_ids = sorted(token_generator_result.tokens.keys())
 
         # Generate a UUID for RecordId if it's not present in the input data.
-        record_id = row.get("RecordId")
-        if record_id is None or record_id == "":
-            record_id = str(uuid.uuid4())
+        record_id = PersonAttributesProcessor._get_record_id(row)
 
         # Hash the record ID when requested (no mapping file — intentionally no traceability)
         if hash_record_ids:
@@ -306,6 +327,58 @@ class PersonAttributesProcessor:
                 writer.write_attributes(row_result)
             except IOError:
                 logger.error("Error writing attributes to file for row %s", f"{row_counter:,}")
+
+    @staticmethod
+    def _classify_row_shape(row: Dict[object, str]) -> _PersonAttributesRowShape:
+        """Classify a row by its key shape and reject unsupported combinations."""
+        has_string_keys = False
+        has_legacy_attribute_class_keys = False
+
+        for key in row:
+            if isinstance(key, str):
+                has_string_keys = True
+                continue
+
+            if isinstance(key, type) and issubclass(key, Attribute):
+                has_legacy_attribute_class_keys = True
+                continue
+
+            raise TypeError(f"Person attribute row has unsupported key type: {type(key).__name__}")
+
+        if has_string_keys and has_legacy_attribute_class_keys:
+            raise TypeError("Person attribute row cannot mix field-ID string keys with legacy Attribute-class keys")
+
+        if has_legacy_attribute_class_keys:
+            return _PersonAttributesRowShape.LEGACY_ATTRIBUTE_CLASS
+
+        return _PersonAttributesRowShape.FIELD_ID
+
+    @staticmethod
+    def _require_consistent_row_shape(
+        reader_row_shape: _PersonAttributesRowShape | None,
+        row_shape: _PersonAttributesRowShape,
+        row_counter: int,
+    ) -> _PersonAttributesRowShape:
+        """Ensure a reader does not switch row shapes mid-stream."""
+        if reader_row_shape is None:
+            return row_shape
+
+        if reader_row_shape is not row_shape:
+            raise ValueError(
+                f"Reader row shape changed from {reader_row_shape.value} to {row_shape.value} at row {row_counter:,}"
+            )
+
+        return reader_row_shape
+
+    @staticmethod
+    def _get_record_id(row: Dict[object, str]) -> str:
+        """Return the record ID, preserving legacy class-keyed values when present."""
+        record_id = row.get("RecordId")
+        if record_id is None or record_id == "":
+            record_id = row.get(RecordIdAttribute)
+        if record_id is None or record_id == "":
+            return str(uuid.uuid4())
+        return record_id
 
     @staticmethod
     def _keep_track_of_invalid_attributes(

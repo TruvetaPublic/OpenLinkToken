@@ -4,9 +4,14 @@ from abc import ABC, abstractmethod
 from typing import Dict, Iterator
 
 
-class PersonAttributesReader(ABC, Iterator[Dict[str, str]]):
+class PersonAttributesReader(ABC, Iterator[Dict[object, str]]):
     """
     A generic interface for a streaming person attributes reader.
+
+    Built-in readers emit field-ID string keys such as ``"FirstName"`` and
+    ``"RecordId"``. For temporary compatibility, the processor also accepts
+    legacy custom-reader rows keyed by :class:`openlinktoken.attributes.attribute.Attribute`
+    subclasses. Built-in reader output should remain field-ID keyed.
     """
 
     @abstractmethod
@@ -15,7 +20,7 @@ class PersonAttributesReader(ABC, Iterator[Dict[str, str]]):
         pass
 
     @abstractmethod
-    def __next__(self) -> Dict[str, str]:
+    def __next__(self) -> Dict[object, str]:
         """
         Retrieve the next set of person attributes from an input source.
 
@@ -31,12 +36,13 @@ class PersonAttributesReader(ABC, Iterator[Dict[str, str]]):
         }
 
         Returns:
-            A person attributes map keyed by field id.
+            A person attributes map keyed by field ID strings for built-in readers,
+            or temporarily by legacy Attribute subclasses for compatible custom readers.
         """
         pass
 
     @abstractmethod
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Dict[object, str]]:
         """Return the iterator object."""
         return self
 
