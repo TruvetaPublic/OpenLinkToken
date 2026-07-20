@@ -1,7 +1,17 @@
 # SPDX-License-Identifier: MIT
 
-from unittest.mock import Mock
+import logging
+from unittest.mock import Mock, call
 
+import pytest
+
+from openlinktoken.attributes.general.record_id_attribute import RecordIdAttribute
+from openlinktoken.attributes.person.birth_date_attribute import BirthDateAttribute
+from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute
+from openlinktoken.attributes.person.last_name_attribute import LastNameAttribute
+from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttribute
+from openlinktoken.attributes.person.sex_attribute import SexAttribute
+from openlinktoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
 from openlinktoken.metadata import Metadata
 from openlinktoken.tokens.token_definition import TokenDefinition
 from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
@@ -16,6 +26,34 @@ from openlinktoken_cli.tokens.config.tokenization_config import (
     TokenizationConfig,
     TokenRuleEntry,
 )
+
+
+def _complete_field_id_row() -> dict[str, str]:
+    return {
+        "RecordId": "A-1001",
+        "FirstName": "Alice",
+        "LastName": "Wonderland",
+        "BirthDate": "1993-08-10",
+        "Sex": "F",
+        "SocialSecurityNumber": "345-54-6795",
+        "PostalCode": "98052",
+    }
+
+
+def _complete_legacy_row() -> dict[type, str]:
+    return {
+        RecordIdAttribute: "A-1001",
+        FirstNameAttribute: "Alice",
+        LastNameAttribute: "Wonderland",
+        BirthDateAttribute: "1993-08-10",
+        SexAttribute: "F",
+        SocialSecurityNumberAttribute: "345-54-6795",
+        PostalCodeAttribute: "98052",
+    }
+
+
+def _written_payloads(writer: Mock) -> list[dict[str, str]]:
+    return [write_call.args[0] for write_call in writer.write_attributes.call_args_list]
 
 
 class TestPersonAttributesProcessor:
@@ -266,3 +304,51 @@ class TestPersonAttributesProcessor:
 
         assert summary.total_rows == 1
         assert summary.total_rows_with_invalid_attributes == 1
+
+    def test_process_legacy_row_matches_field_id_writer_payloads(self):
+        """Legacy class-keyed rows should emit the same tokens and record IDs as field-ID rows."""
+        field_id_reader = Mock(spec=PersonAttributesReader)
+        field_id_writer = Mock(spec=PersonAttributesWriter)
+        field_id_reader.__iter__ = Mock(return_value=iter([_complete_field_id_row()]))
+
+        legacy_reader = Mock(spec=PersonAttributesReader)
+        legacy_writer = Mock(spec=PersonAttributesWriter)
+        legacy_reader.__iter__ = Mock(return_value=iter([_complete_legacy_row()]))
+
+        PersonAttributesProcessor.process(field_id_reader, field_id_writer, [], Metadata().initialize())
+        PersonAttributesProcessor.process(legacy_reader, legacy_writer, [], Metadata().initialize())
+
+        expected_payloads = _written_payloads(field_id_writer)
+
+        assert legacy_writer.write_attributes.call_args_list == [call(payload) for payload in expected_payloads]
+        assert {payload["RecordId"] for payload in _written_payloads(legacy_writer)} == {"A-1001"}
+
+    def test_process_legacy_rows_warn_once_when_reader_uses_deprecated_shape(self, caplog):
+        """Legacy reader rows should emit a single deprecation warning per processing run."""
+        reader = Mock(spec=PersonAttributesReader)
+        writer = Mock(spec=PersonAttributesWriter)
+        reader.__iter__ = Mock(return_value=iter([_complete_legacy_row(), _complete_legacy_row()]))
+
+        caplog.set_level(logging.WARNING, logger="openlinktoken_cli.processor.person_attributes_processor")
+
+        PersonAttributesProcessor.process(reader, writer, [], Metadata().initialize())
+
+        assert sum("deprecated" in message.lower() for message in caplog.messages) == 1
+
+    def test_process_row_shape_change_from_legacy_to_field_id_raises_value_error(self):
+        """Readers must not switch from legacy rows to field-ID rows mid-stream."""
+        reader = Mock(spec=PersonAttributesReader)
+        writer = Mock(spec=PersonAttributesWriter)
+        reader.__iter__ = Mock(return_value=iter([_complete_legacy_row(), _complete_field_id_row()]))
+
+        with pytest.raises(ValueError, match="row shape"):
+            PersonAttributesProcessor.process(reader, writer, [], Metadata().initialize())
+
+    def test_process_unsupported_row_key_type_raises_type_error(self):
+        """Rows with unsupported key types should be rejected."""
+        reader = Mock(spec=PersonAttributesReader)
+        writer = Mock(spec=PersonAttributesWriter)
+        reader.__iter__ = Mock(return_value=iter([{1: "bad-key"}]))
+
+        with pytest.raises(TypeError, match="unsupported key"):
+            PersonAttributesProcessor.process(reader, writer, [], Metadata().initialize())
