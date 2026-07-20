@@ -424,3 +424,12 @@ class TestPersonAttributesProcessor:
 
         with pytest.raises(TypeError, match="unsupported key"):
             PersonAttributesProcessor.process(reader, writer, [], Metadata().initialize())
+
+    def test_process_mixed_row_key_types_raises_type_error(self):
+        """Rows mixing field-ID and Attribute-class keys should be rejected."""
+        reader = Mock(spec=PersonAttributesReader)
+        writer = Mock(spec=PersonAttributesWriter)
+        reader.__iter__ = Mock(return_value=iter([{"FirstName": "Alice", LastNameAttribute: "Wonderland"}]))
+
+        with pytest.raises(TypeError, match="cannot mix"):
+            PersonAttributesProcessor.process(reader, writer, [], Metadata().initialize())
