@@ -1,10 +1,12 @@
 # SPDX-License-Identifier: MIT
 
 from abc import ABC, abstractmethod
-from typing import Dict, Iterator
+from typing import Dict, Iterator, Type, Union
+
+from openlinktoken.attributes.attribute import Attribute
 
 
-class PersonAttributesReader(ABC, Iterator[Dict[object, str]]):
+class PersonAttributesReader(ABC, Iterator[Union[Dict[str, str], Dict[Type[Attribute], str]]]):
     """
     A generic interface for a streaming person attributes reader.
 
@@ -20,7 +22,7 @@ class PersonAttributesReader(ABC, Iterator[Dict[object, str]]):
         pass
 
     @abstractmethod
-    def __next__(self) -> Dict[object, str]:
+    def __next__(self) -> Union[Dict[str, str], Dict[Type[Attribute], str]]:
         """
         Retrieve the next set of person attributes from an input source.
 
@@ -42,7 +44,7 @@ class PersonAttributesReader(ABC, Iterator[Dict[object, str]]):
         pass
 
     @abstractmethod
-    def __iter__(self) -> Iterator[Dict[object, str]]:
+    def __iter__(self) -> Iterator[Union[Dict[str, str], Dict[Type[Attribute], str]]]:
         """Return the iterator object."""
         return self
 

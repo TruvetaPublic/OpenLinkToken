@@ -52,6 +52,10 @@ def _complete_legacy_row() -> dict[type, str]:
     }
 
 
+class LegacyRecordIdAttribute(RecordIdAttribute):
+    """Custom record ID attribute used by a legacy reader."""
+
+
 def _written_payloads(writer: Mock) -> list[dict[str, str]]:
     return [write_call.args[0] for write_call in writer.write_attributes.call_args_list]
 
@@ -322,6 +326,27 @@ class TestPersonAttributesProcessor:
 
         assert legacy_writer.write_attributes.call_args_list == [call(payload) for payload in expected_payloads]
         assert {payload["RecordId"] for payload in _written_payloads(legacy_writer)} == {"A-1001"}
+
+    def test_process_legacy_record_id_attribute_subclass_preserves_record_id(self):
+        """Legacy rows keyed by a RecordIdAttribute subclass preserve their supplied ID."""
+        row = {
+            LegacyRecordIdAttribute: "legacy-record-id",
+            FirstNameAttribute: "Alice",
+            LastNameAttribute: "Wonderland",
+            BirthDateAttribute: "1993-08-10",
+            SexAttribute: "F",
+            SocialSecurityNumberAttribute: "345-54-6795",
+            PostalCodeAttribute: "98052",
+        }
+        reader = Mock(spec=PersonAttributesReader)
+        writer = Mock(spec=PersonAttributesWriter)
+        reader.__iter__ = Mock(return_value=iter([row]))
+
+        PersonAttributesProcessor.process(reader, writer, [], Metadata().initialize())
+
+        payloads = _written_payloads(writer)
+        assert payloads
+        assert {payload["RecordId"] for payload in payloads} == {"legacy-record-id"}
 
     def test_process_legacy_rows_warn_once_when_reader_uses_deprecated_shape(self, caplog):
         """Legacy reader rows should emit a single deprecation warning per processing run."""

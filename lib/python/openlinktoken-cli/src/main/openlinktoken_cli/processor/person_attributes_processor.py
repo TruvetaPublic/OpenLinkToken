@@ -377,6 +377,11 @@ class PersonAttributesProcessor:
         if record_id is None or record_id == "":
             record_id = row.get(RecordIdAttribute)
         if record_id is None or record_id == "":
+            for key, value in row.items():
+                if isinstance(key, type) and issubclass(key, RecordIdAttribute) and value is not None and value != "":
+                    record_id = value
+                    break
+        if record_id is None or record_id == "":
             return str(uuid.uuid4())
         return record_id
 
