@@ -22,8 +22,10 @@ class ConfiguredAttributeResolver:
         self._column_to_field_id: Dict[str, str] = {}
 
         type_name_to_base_class = self._build_type_name_index()
-        base_class_to_instance: Dict[Type[Attribute], Attribute] = {type(attr): attr for attr in AttributeLoader.load()}
-        self._register_field_mappings(config.attributes, type_name_to_base_class, base_class_to_instance)
+        base_class_to_instance: Dict[Type[Attribute], Attribute] = {
+            type(attr): attr for attr in AttributeLoader.load()
+        }
+        self._register_field_mappings(config.column_mappings, type_name_to_base_class, base_class_to_instance)
 
     def get_class_for_field(self, field_id: str) -> Type[Attribute]:
         """Return the attribute class registered for a logical field id.
@@ -70,17 +72,22 @@ class ConfiguredAttributeResolver:
         type_name_to_base_class: Dict[str, Type[Attribute]],
         base_class_to_instance: Dict[Type[Attribute], Attribute],
     ) -> None:
-        for column, entry in attributes.items():
+        for field_id, entry in attributes.items():
             base_class = type_name_to_base_class.get(entry.type)
             if base_class is None:
                 raise ValueError(
-                    f"Unknown attribute type '{entry.type}' for field '{entry.field}'. "
+                    f"Unknown attribute type '{entry.type}' for field '{field_id}'. "
                     f"Recognized types are: {sorted(type_name_to_base_class.keys())}."
                 )
 
-            self._field_id_to_class[entry.field] = base_class
-            self._field_id_to_instance[entry.field] = base_class_to_instance[base_class]
-            self._column_to_field_id[column] = entry.field
+            # Each field gets a unique subclass so two fields sharing the same type
+            # produce distinct keys in the per-row attribute dict, preventing silent
+            # overwrites during token generation.
+            field_class = type(f"_DynAttr_{field_id}", (base_class,), {})
+
+            self._field_id_to_class[field_id] = field_class
+            self._field_id_to_instance[field_id] = base_class_to_instance[base_class]
+            self._column_to_field_id[entry.column_name] = field_id
 
     @staticmethod
     def _build_type_name_index() -> Dict[str, Type[Attribute]]:

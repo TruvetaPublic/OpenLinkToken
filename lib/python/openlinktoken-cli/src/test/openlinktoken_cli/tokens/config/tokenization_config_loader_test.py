@@ -21,9 +21,9 @@ class TestTokenizationConfigLoader:
         config_path = tmp_path / "tokenization-config.yaml"
         config_path.write_text(
             """
-attributes:
-  given_nm:
-    field: FirstName
+column_mappings:
+  FirstName:
+    column_name: "given_nm"
     type: GivenName
 token_rules:
   T1:
@@ -43,12 +43,12 @@ token_rules:
         config_path = tmp_path / "tokenization-config.yaml"
         config_path.write_text(
             """
-attributes:
-  given_nm:
-    field: FirstName
+column_mappings:
+  FirstName:
+    column_name: "given_nm"
     type: GivenName
-  family_nm:
-    field: FamilyName
+  FamilyName:
+    column_name: "family nm"
     type: LastName
 
 token_rules:
@@ -63,8 +63,8 @@ token_rules:
 
         config = TokenizationConfigLoader.load(str(config_path))
 
-        assert config.attributes["given_nm"].field == "FirstName"
-        assert config.attributes["given_nm"].type == "GivenName"
+        assert config.column_mappings["FirstName"].column_name == "given_nm"
+        assert config.column_mappings["FirstName"].type == "GivenName"
         assert "T1" in config.token_rules
         assert config.token_rules["T1"][0].field == "FamilyName"
         assert config.token_rules["T1"][0].expression == "T|U"
@@ -73,8 +73,8 @@ token_rules:
         config_path = tmp_path / "invalid-config.yaml"
         config_path.write_text(
             """
-attributes:
-  given_nm:
+column_mappings:
+  FirstName:
     type: GivenName
 
 token_rules:
@@ -85,16 +85,16 @@ token_rules:
             encoding="utf-8",
         )
 
-        with pytest.raises(ValueError, match="missing required field 'field'"):
+        with pytest.raises(ValueError, match="missing required field 'column_name'"):
             TokenizationConfigLoader.load(str(config_path))
 
     def test_load_unknown_field_reference_raises(self, tmp_path: Path):
         config_path = tmp_path / "invalid-config.yaml"
         config_path.write_text(
             """
-attributes:
-  given_nm:
-    field: FirstName
+column_mappings:
+  FirstName:
+    column_name: "given_nm"
     type: GivenName
 
 token_rules:
@@ -112,9 +112,9 @@ token_rules:
         config_path = tmp_path / "config.yaml"
         config_path.write_text(
             """
-attributes:
-  given_nm:
-    field: FirstName
+column_mappings:
+  FirstName:
+    column_name: "given_nm"
     type: GivenName
 
 token_rules:

@@ -12,9 +12,9 @@ from openlinktoken_cli.tokens.config.tokenization_config import (
 class TestDynamicTokenDefinition:
     def test_builds_token_definitions_from_config(self):
         config = TokenizationConfig(
-            attributes={
-                "family_nm": AttributeMappingEntry(field="FamilyName", type="LastName"),
-                "given_nm": AttributeMappingEntry(field="FirstName", type="GivenName"),
+            column_mappings={
+                "FamilyName": AttributeMappingEntry(column_name="family_nm", type="LastName"),
+                "FirstName": AttributeMappingEntry(column_name="given_nm", type="GivenName"),
             },
             token_rules={
                 "T1": [
