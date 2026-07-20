@@ -369,6 +369,7 @@ class TestPersonAttributesProcessor:
                 2,
                 id="empty-between-legacy",
             ),
+            pytest.param([_complete_legacy_row(), {}], 1, id="empty-after-legacy"),
         ],
     )
     def test_process_empty_rows_preserve_established_legacy_shape(self, rows, legacy_row_count, caplog):
