@@ -13,6 +13,26 @@
     <description>Open Link Token Parent POM - Privacy-preserving record linkage library</description>
     <url>https://truvetapublic.github.io/OpenLinkToken/</url>
 
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://opensource.org/licenses/MIT</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+    <developers>
+        <developer>
+            <id>openlinktoken</id>
+            <name>Open Link Token Team</name>
+            <email>contact@openlinktoken.org</email>
+            <url>https://truvetapublic.github.io/OpenLinkToken/</url>
+        </developer>
+    </developers>
+    <scm>
+        <url>https://github.com/TruvetaPublic/OpenLinkToken</url>
+        <connection>scm:git:git://github.com/TruvetaPublic/OpenLinkToken.git</connection>
+        <developerConnection>scm:git:git@github.com:TruvetaPublic/OpenLinkToken.git</developerConnection>
+    </scm>
     <modules>
         <module>openlinktoken</module>
     </modules>
@@ -23,12 +43,17 @@
             <name>GitHub Packages</name>
             <url>https://maven.pkg.github.com/TruvetaPublic/OpenLinkToken</url>
         </repository>
+        <snapshotRepository>
+            <id>central</id>
+            <name>Central Portal Snapshot Repository</name>
+            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+        </snapshotRepository>
     </distributionManagement>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>21</java.version>
-        <maven.deploy.skip>true</maven.deploy.skip>
+        <maven.deploy.skip>false</maven.deploy.skip>
         <maven.compiler.release>17</maven.compiler.release>
         <junit.jupiter.version>6.1.0</junit.jupiter.version>
         <surefire.plugin.version>3.5.6</surefire.plugin.version>
@@ -249,4 +274,78 @@
             </plugin>
         </plugins>
     </reporting>
+
+    <profiles>
+        <!--
+            Activated explicitly (-Pcentral-release) only for the Maven Central deploy step in
+            maven-publish.yml. Kept out of the default build so that ordinary `mvn package`/`mvn
+            deploy` (GitHub Packages) runs never require a GPG key or Central Portal credentials.
+        -->
+        <profile>
+            <id>central-release</id>
+            <build>
+                <plugins>
+                    <!-- Publishes to Maven Central via the Central Publisher Portal -->
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>0.9.0</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <publishingServerId>central</publishingServerId>
+                            <autoPublish>true</autoPublish>
+                        </configuration>
+                    </plugin>
+                    <!-- Maven Central requires a sources jar for every release artifact -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>3.3.1</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <!-- Maven Central requires a javadoc jar for every release artifact -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <!-- Maven Central requires GPG-signed artifacts -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>3.2.7</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <gpgArguments>
+                                <arg>--pinentry-mode</arg>
+                                <arg>loopback</arg>
+                            </gpgArguments>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
