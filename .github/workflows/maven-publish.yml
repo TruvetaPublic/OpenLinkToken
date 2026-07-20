@@ -45,12 +45,17 @@ jobs:
       RELEASE_ID: ${{ needs.release-info.outputs['release-id'] }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup toolchain (Java)
         uses: ./.github/actions/setup-toolchain
         with:
+          enable-java: true
           enable-python: false
+          central-username: ${{ secrets.CENTRAL_PORTAL_USERNAME }}
+          central-password: ${{ secrets.CENTRAL_PORTAL_PASSWORD }}
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Build with Maven
         run: cd lib/java && mvn -B package --file pom.xml
@@ -76,9 +81,22 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
+      - name: Publish to Maven Central
+        run: |
+          cd lib/java/openlinktoken
+          mvn deploy \
+            -s "$GITHUB_WORKSPACE/settings.xml" \
+            -Pcentral-release \
+            -Dmaven.test.skip=true \
+            -B --file pom.xml
+        env:
+          CENTRAL_PORTAL_USERNAME: ${{ secrets.CENTRAL_PORTAL_USERNAME }}
+          CENTRAL_PORTAL_PASSWORD: ${{ secrets.CENTRAL_PORTAL_PASSWORD }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
       - name: Upload Maven artifacts to release
         if: env.RELEASE_FOUND == 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
@@ -105,7 +123,7 @@ jobs:
                 releaseId = release.data.id;
                 console.log(`[DEBUG] Found release on second query with ID ${releaseId}`);
               } catch (error) {
-                console.log(`✗ No release found for tag ${tag}`);
+                console.log(`No release found for tag ${tag}`);
                 console.log(`[DEBUG] Error: ${error.message}`);
                 return;
               }
@@ -117,7 +135,7 @@ jobs:
               console.log(`[DEBUG] Processing artifact directory: ${artifactDir}`);
 
               if (!fs.existsSync(artifactDir)) {
-                console.log(`✗ No artifacts directory found at ${artifactDir}`);
+                console.log(`No artifacts directory found at ${artifactDir}`);
                 continue;
               }
 
@@ -141,10 +159,10 @@ jobs:
                     name: file,
                     data: fs.readFileSync(filePath)
                   });
-                  console.log(`✓ Successfully uploaded ${file}`);
+                  console.log(`Successfully uploaded ${file}`);
                   console.log(`[DEBUG] Asset ID: ${response.data.id}`);
                 } catch (error) {
-                  console.log(`✗ Error uploading ${file}: ${error.message}`);
+                  console.log(`Error uploading ${file}: ${error.message}`);
                   if (error.status) {
                     console.log(`[DEBUG] HTTP Status: ${error.status}`);
                   }
