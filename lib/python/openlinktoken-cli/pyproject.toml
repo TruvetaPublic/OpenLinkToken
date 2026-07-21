@@ -10,7 +10,7 @@ dynamic = [
   "urls",
 ]
 dependencies = [
-  "openlinktoken==2.0.0",
+  "openlinktoken==2.1.0",
   "pandas==2.2.3; python_version < '3.11'",
   "pandas==3.0.3; python_version >= '3.11'",
   "pyarrow==24.0.0",
