@@ -57,7 +57,15 @@ class PersonAttributesProcessor:
     _LEGACY_ROW_WARNING = "Deprecated legacy reader row shape detected; migrate custom readers to field-ID string keys."
 
     def __init__(self):
-        """Private constructor to prevent instantiation."""
+        """
+        Prevent instantiation of this static utility class.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+        """
 
     @staticmethod
     def process(
@@ -86,6 +94,11 @@ class PersonAttributesProcessor:
             ring_id: Optional ring ID for JWE wrapping (None to skip JWE).
             hash_record_ids: When True, each record ID is SHA-256 hashed before writing
                              to the output. This is a one-way operation with no traceability.
+            token_definition: Optional token definition to use for token generation.
+            progress_callback: Optional callback invoked with the number of processed rows.
+
+        Returns:
+            A summary of the token generation results.
         """
         token_definition = token_definition or TokenDefinition()
         return PersonAttributesProcessor._process_with_tokenizer(
@@ -121,6 +134,11 @@ class PersonAttributesProcessor:
             writer: The writer initialized with the output data source.
             tokenizer: The tokenizer to use (e.g. SHA256Tokenizer or PassthroughTokenizer).
             metadata_map: Optional metadata map to update with processing statistics.
+            token_definition: Optional token definition to use for token generation.
+            progress_callback: Optional callback invoked with the number of processed rows.
+
+        Returns:
+            A summary of the token generation results.
         """
         token_definition = token_definition or TokenDefinition()
         return PersonAttributesProcessor._process_with_tokenizer(
@@ -156,6 +174,10 @@ class PersonAttributesProcessor:
             encryption_key: Optional encryption key for JWE wrapping.
             ring_id: Optional ring ID for JWE wrapping.
             hash_record_ids: When True, each record ID is SHA-256 hashed before writing.
+            progress_callback: Optional callback invoked with the number of processed rows.
+
+        Returns:
+            A summary of the token generation results.
         """
         field_registry = getattr(token_definition, "field_registry", None)
         token_generator = TokenGenerator(token_definition, tokenizer, field_registry=field_registry)
@@ -294,6 +316,9 @@ class PersonAttributesProcessor:
             ring_id: Optional ring ID for JWE wrapping (None to skip JWE).
             jwe_formatters: Optional cached JWE formatters.
             hash_record_ids: When True, each record ID is SHA-256 hashed before writing.
+
+        Returns:
+            None.
         """
         # Sort token IDs for consistent output
         token_ids = sorted(token_generator_result.tokens.keys())
@@ -332,7 +357,15 @@ class PersonAttributesProcessor:
 
     @staticmethod
     def _classify_row_shape(row: Dict[object, str]) -> _PersonAttributesRowShape | None:
-        """Classify a row by its key shape and reject unsupported combinations."""
+        """
+        Classify a row by its key shape and reject unsupported combinations.
+
+        Args:
+            row: The person attribute row to classify.
+
+        Returns:
+            The row shape, or None when the row has no keys.
+        """
         has_string_keys = False
         has_legacy_attribute_class_keys = False
 
@@ -361,7 +394,17 @@ class PersonAttributesProcessor:
         row_shape: _PersonAttributesRowShape,
         row_counter: int,
     ) -> _PersonAttributesRowShape:
-        """Ensure a reader does not switch row shapes mid-stream."""
+        """
+        Ensure a reader does not switch row shapes mid-stream.
+
+        Args:
+            reader_row_shape: The row shape previously observed by the reader.
+            row_shape: The row shape observed for the current row.
+            row_counter: The current row number.
+
+        Returns:
+            The consistent row shape.
+        """
         if reader_row_shape is None:
             return row_shape
 
@@ -374,7 +417,15 @@ class PersonAttributesProcessor:
 
     @staticmethod
     def _get_record_id(row: Dict[object, str]) -> str:
-        """Return the record ID, preserving legacy class-keyed values when present."""
+        """
+        Return the record ID, preserving legacy class-keyed values when present.
+
+        Args:
+            row: The person attribute row containing a possible record ID.
+
+        Returns:
+            The record ID, generating a UUID when none is present.
+        """
         record_id = row.get("RecordId")
         if record_id is None or record_id == "":
             record_id = row.get(RecordIdAttribute)
@@ -400,6 +451,9 @@ class PersonAttributesProcessor:
             token_generator_result: The result from token generation.
             row_counter: The current row number.
             invalid_attribute_count: Dictionary to track invalid attribute counts.
+
+        Returns:
+            None.
         """
         if token_generator_result.invalid_attributes:
             logger.info(f"Invalid Attributes for row {row_counter:,}: {token_generator_result.invalid_attributes}")
@@ -421,6 +475,9 @@ class PersonAttributesProcessor:
             token_generator_result: The result from token generation.
             row_counter: The current row number.
             blank_tokens_by_rule_count: Dictionary to track blank token counts by rule.
+
+        Returns:
+            None.
         """
         if token_generator_result.blank_tokens_by_rule:
             logger.debug(f"Blank tokens for row {row_counter:,}: {token_generator_result.blank_tokens_by_rule}")
@@ -438,10 +495,10 @@ class PersonAttributesProcessor:
         even in happy path scenarios.
 
         Args:
-            token_definition: The token definition containing all token rules and their attribute expressions
+            token_definition: The token definition containing all token rules and their attribute expressions.
 
         Returns:
-            A dictionary with all attribute names used in token definitions initialized to 0
+            A dictionary with all attribute names used in token definitions initialized to 0.
         """
         invalid_attribute_count: Dict[str, int] = {}
         attribute_classes: Set[Type[Attribute]] = set()
@@ -472,10 +529,10 @@ class PersonAttributesProcessor:
         This ensures that all token rules appear in the metadata even in happy path scenarios.
 
         Args:
-            token_definition: The token definition containing all token identifiers
+            token_definition: The token definition containing all token identifiers.
 
         Returns:
-            A dictionary with all token identifiers initialized to 0
+            A dictionary with all token identifiers initialized to 0.
         """
         blank_tokens_by_rule_count: Dict[str, int] = {}
         for token_id in token_definition.get_token_identifiers():

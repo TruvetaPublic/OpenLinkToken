@@ -11,9 +11,9 @@ from openlinktoken_cli.tokens.config.tokenization_config import AttributeMapping
 class TestConfiguredAttributeResolver:
     def test_maps_same_base_type_to_same_class_with_distinct_field_ids(self):
         config = TokenizationConfig(
-            attributes={
-                "patient_zip": AttributeMappingEntry(field="PatientZip", type="PostalCode"),
-                "hospital_zip": AttributeMappingEntry(field="HospitalZip", type="PostalCode"),
+            column_mappings={
+                "PatientZip": AttributeMappingEntry(column_name="patient_zip", type="PostalCode"),
+                "HospitalZip": AttributeMappingEntry(column_name="hospital_zip", type="PostalCode"),
             },
             token_rules={},
         )
@@ -23,16 +23,18 @@ class TestConfiguredAttributeResolver:
         hospital_class = resolver.get_class_for_field("HospitalZip")
 
         # Both fields map to the same base class; field IDs are the distinguishing keys.
-        assert patient_class is PostalCodeAttribute
-        assert hospital_class is PostalCodeAttribute
+        assert issubclass(patient_class, PostalCodeAttribute)
+        assert issubclass(hospital_class, PostalCodeAttribute)
+        # Each field gets a distinct dynamic subclass so they don't collide.
+        assert patient_class is not hospital_class
         assert resolver.get_field_for_column("patient_zip") == "PatientZip"
         assert resolver.get_field_for_column("hospital_zip") == "HospitalZip"
 
     def test_build_field_registry_contains_all_configured_fields(self):
         config = TokenizationConfig(
-            attributes={
-                "patient_zip": AttributeMappingEntry(field="PatientZip", type="PostalCode"),
-                "hospital_zip": AttributeMappingEntry(field="HospitalZip", type="PostalCode"),
+            column_mappings={
+                "PatientZip": AttributeMappingEntry(column_name="patient_zip", type="PostalCode"),
+                "HospitalZip": AttributeMappingEntry(column_name="hospital_zip", type="PostalCode"),
             },
             token_rules={},
         )
@@ -48,8 +50,8 @@ class TestConfiguredAttributeResolver:
 
     def test_unknown_field_lookup_raises_key_error(self):
         config = TokenizationConfig(
-            attributes={
-                "patient_zip": AttributeMappingEntry(field="PatientZip", type="PostalCode"),
+            column_mappings={
+                "PatientZip": AttributeMappingEntry(column_name="patient_zip", type="PostalCode"),
             },
             token_rules={},
         )
@@ -61,8 +63,8 @@ class TestConfiguredAttributeResolver:
 
     def test_unknown_attribute_type_raises_value_error(self):
         config = TokenizationConfig(
-            attributes={
-                "some_column": AttributeMappingEntry(field="SomeField", type="NotARealType"),
+            column_mappings={
+                "SomeField": AttributeMappingEntry(column_name="some_column", type="NotARealType"),
             },
             token_rules={},
         )
@@ -88,8 +90,8 @@ class TestConfiguredAttributeResolver:
         monkeypatch.setattr(AttributeLoader, "load", lambda: [FirstAttribute(), SecondAttribute()])
 
         config = TokenizationConfig(
-            attributes={
-                "source": AttributeMappingEntry(field="SomeField", type="SharedAlias"),
+            column_mappings={
+                "SomeField": AttributeMappingEntry(column_name="source", type="SharedAlias"),
             },
             token_rules={},
         )

@@ -12,9 +12,9 @@ from openlinktoken_cli.tokens.config.tokenization_config_helper import Tokenizat
 class TestTokenizationConfigHelper:
     def test_build_configured_input_attribute_map_warns_when_resolver_misses_entry(self, caplog):
         config = TokenizationConfig(
-            attributes={
-                "given_nm": AttributeMappingEntry(field="FirstName", type="GivenName"),
-                "family_nm": AttributeMappingEntry(field="FamilyName", type="LastName"),
+            column_mappings={
+                "FirstName": AttributeMappingEntry(column_name="given_nm", type="GivenName"),
+                "FamilyName": AttributeMappingEntry(column_name="family_nm", type="LastName"),
             },
             token_rules={},
         )
@@ -29,7 +29,7 @@ class TestTokenizationConfigHelper:
 
     def test_create_reader_csv_applies_attribute_map(self):
         config = TokenizationConfig(
-            attributes={"given_nm": AttributeMappingEntry(field="FirstName", type="GivenName")},
+            column_mappings={"FirstName": AttributeMappingEntry(column_name="given_nm", type="GivenName")},
             token_rules={},
         )
         resolver = MagicMock()
@@ -54,7 +54,7 @@ class TestTokenizationConfigHelper:
 
     def test_create_reader_parquet_applies_attribute_map(self):
         config = TokenizationConfig(
-            attributes={"given_nm": AttributeMappingEntry(field="FirstName", type="GivenName")},
+            column_mappings={"FirstName": AttributeMappingEntry(column_name="given_nm", type="GivenName")},
             token_rules={},
         )
         resolver = MagicMock()

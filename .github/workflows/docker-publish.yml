@@ -58,7 +58,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # Install the cosign tool for signing images (only needed for releases)
       # https://github.com/sigstore/cosign-installer
@@ -127,7 +127,7 @@ jobs:
 
       - name: Upload Docker image details to release
         if: env.RELEASE_FOUND == 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const version = '${{ env.VERSION }}';
