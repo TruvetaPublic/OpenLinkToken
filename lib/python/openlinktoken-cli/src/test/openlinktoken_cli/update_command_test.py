@@ -14,8 +14,8 @@ from openlinktoken_cli.commands.update_command import UpdateCommand
 # ---------------------------------------------------------------------------
 
 _FAKE_VERSION = "2.0.0"
-_NEWER_VERSION = "2.1.0"
-_NEWER_TAG = "v2.1.0"
+_NEWER_VERSION = "99.9.9"
+_NEWER_TAG = f"v{_NEWER_VERSION}"
 
 
 def _make_release(tag: str = _NEWER_TAG, assets: list | None = None) -> dict:
@@ -184,7 +184,7 @@ class TestAlreadyUpToDate:
 class TestChecksumMismatch:
     def test_checksum_mismatch_returns_nonzero(self, tmp_path, capsys):
         release = _make_release()
-        fake_binary = tmp_path / "openlinktoken-v2.1.0-linux-x86_64"
+        fake_binary = tmp_path / f"openlinktoken-{_NEWER_TAG}-linux-x86_64"
         fake_binary.write_bytes(b"fake binary content")
 
         args = _make_args()
