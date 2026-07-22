@@ -37,6 +37,22 @@ Metadata captures the processing environment alongside the row-level counters:
 
 - `Platform`, `Version`, and `JavaVersion`/`PythonVersion` identify the runtime
 - Processing statistics show how the run behaved without exposing secret material
+- `HashingSecretHash`: Hash of the hashing secret
+- `EncryptionSecretHash`: Hash of the encryption key (if used)
+
+**Purpose:**
+
+- Verify correct secrets were used without exposing them
+- Audit trail for compliance
+- Detect configuration errors (mismatched secrets)
+
+Use `tools/hash/hash_calculator.py` to verify:
+
+```bash
+python tools/hash/hash_calculator.py \
+  --hashing-secret "YourSecret" \
+  --encryption-key "YourKey"
+```
 
 ### Audit Trail
 
@@ -61,3 +77,4 @@ For full field descriptions, JSON schema, examples, and interpretation guidance:
 
 - **View metadata structure**: [Reference: Metadata Format](../reference/metadata-format.md)
 - **Understand validation rules**: [Normalization & Validation](normalization-and-validation.md)
+- **Use hash calculator**: [tools/hash/hash_calculator.py](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/tools/hash/hash_calculator.py)

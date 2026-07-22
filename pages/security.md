@@ -201,6 +201,26 @@ processor = SparkPersonTokenProcessor(
 - **Never log secrets.** CLI output and metadata files should exclude secret material.
 - **Never hard-code secrets in scripts checked into git.** Use environment variables or secret-store references.
 
+### Secret Verification via Metadata
+
+Each run produces a `.metadata.json` with SHA-256 hashes of secrets:
+
+```json
+{
+  "HashingSecretHash": "e0b4e60b...",
+  "EncryptionSecretHash": "a1b2c3d4..."
+}
+```
+
+Use [tools/hash/hash_calculator.py](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/tools/hash/hash_calculator.py) to verify:
+
+```bash
+python tools/hash/hash_calculator.py \
+  --hashing-secret "YourSecret" \
+  --encryption-key "YourEncryptionKey"
+# Compare output hashes to metadata file
+```
+
 ### Cross-References
 
 - **CLI flags for exchange configs and private keys**: [CLI Reference](reference/cli.md)

@@ -2,8 +2,39 @@
   // Use IntelliSense to learn about possible attributes.
   // Hover to view descriptions of existing attributes.
   // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  //
+  // First-time setup: run "Setup 1" then "Setup 2" once. The consumer
+  // launches below pick up the resulting exchange config and auto-discover
+  // the matching private key from ~/.openlinktoken/.
   "version": "0.2.0",
   "configurations": [
+    {
+      "name": "Setup 1: generate-key-pair (recipient)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/lib/python/openlinktoken-cli/src/main/openlinktoken_cli/main.py",
+      "env": {
+        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main"
+      },
+      "args": ["generate-key-pair", "--name", "local-recipient", "--force"]
+    },
+    {
+      "name": "Setup 2: initiate-exchange",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/lib/python/openlinktoken-cli/src/main/openlinktoken_cli/main.py",
+      "env": {
+        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main"
+      },
+      "args": [
+        "initiate-exchange",
+        "--public-key",
+        "${env:HOME}/.openlinktoken/local-recipient.public.pem",
+        "--output",
+        "${workspaceFolder}/lib/python/openlinktoken-cli/target/local.exchange.json",
+        "--force"
+      ]
+    },
     {
       "name": "Python: tokenize (demo mode)",
       "type": "debugpy",
@@ -36,15 +67,15 @@
       "args": [
         "tokenize",
         "-i",
-        "resources/sample.${input:inputType}",
-        "-t",
-        "${input:inputType}",
+        "${workspaceFolder}/resources/sample.${input:inputType}",
         "-o",
-        "lib/python/openlinktoken-cli/target/output.${input:outputType}",
+        "${workspaceFolder}/lib/python/openlinktoken-cli/target/output.${input:outputType}",
         "-ot",
         "${input:outputType}",
         "--exchange-config",
-        "${input:exchangeConfigPath}"
+        "${input:exchangeConfigPath}",
+        "--mode",
+        "${input:tokenizeMode}"
       ]
     },
     {
@@ -58,11 +89,11 @@
       "args": [
         "package",
         "-i",
-        "lib/python/openlinktoken-cli/target/output.${input:inputType}",
+        "${workspaceFolder}/resources/sample.${input:inputType}",
         "-t",
         "${input:inputType}",
         "-o",
-        "lib/python/openlinktoken-cli/target/packaged.${input:outputType}",
+        "${workspaceFolder}/lib/python/openlinktoken-cli/target/packaged.${input:outputType}",
         "-ot",
         "${input:outputType}",
         "--exchange-config",
@@ -80,11 +111,11 @@
       "args": [
         "encrypt",
         "-i",
-        "lib/python/openlinktoken-cli/target/output.${input:inputType}",
+        "${workspaceFolder}/lib/python/openlinktoken-cli/target/output.${input:inputType}",
         "-t",
         "${input:inputType}",
         "-o",
-        "lib/python/openlinktoken-cli/target/encrypted.${input:outputType}",
+        "${workspaceFolder}/lib/python/openlinktoken-cli/target/encrypted.${input:outputType}",
         "-ot",
         "${input:outputType}",
         "--exchange-config",
@@ -102,7 +133,7 @@
       "args": [
         "decrypt",
         "-i",
-        "lib/python/openlinktoken-cli/target/encrypted.${input:inputType}",
+        "${workspaceFolder}/lib/python/openlinktoken-cli/target/encrypted.${input:inputType}",
         "-t",
         "${input:inputType}",
         "-o",
@@ -188,7 +219,7 @@
       },
       "args": [
         "--exchange-config",
-        "${input:exchangeConfigPath}",
+        "${input:exchangeConfigPathForInspect}",
         "--json"
       ]
     }
@@ -219,6 +250,13 @@
       "type": "promptString",
       "description": "Path to the exchange config JSON for inspection",
       "default": "${workspaceFolder}/lib/python/openlinktoken-cli/target/debug-exchange.exchange.json"
+    },
+    {
+      "id": "tokenizeMode",
+      "type": "pickString",
+      "description": "Select tokenize mode",
+      "options": ["default", "hash-only", "demo"],
+      "default": "default"
     }
   ]
 }

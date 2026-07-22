@@ -20,7 +20,7 @@ No dependencies required. Extract and run.
 
 ### Other Options
 
-- **Docker**: Use `run-openlinktoken.sh` (Linux/Mac) or `run-openlinktoken.ps1` (Windows)
+- **Docker**: Use `run-olt.sh` (Linux/Mac) or `run-olt.ps1` (Windows)
 - **Python**: Install with `uv pip install openlinktoken-cli`, then run `openlinktoken` or `python -m openlinktoken_cli.main`
 
 For installation details, see the [CLI Quickstart](../quickstarts/cli-quickstart.md).
@@ -85,6 +85,7 @@ The automatic version check can also be disabled permanently by setting the envi
 | `--exchange-config` | `-c`  | Default mode only | `./openlinktoken-YYYY-MM-DD.exchange.json` | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted.                                                                                                                                |
 | `--private-key`     |       | No\*              |                                            | Private key PEM used to decrypt the exchange config                                                                                                                                                                            |
 | `--private-key-env` |       | No\*              |                                            | Environment variable containing the private key PEM                                                                                                                                                                            |
+| `--config`          |       | No                |                                            | YAML config file for custom input field mapping and token-rule definitions. See [Tokenization Configuration Reference](tokenization-config.md). Supported for CSV and Parquet input.                                           |
 | `--mode`            |       | No                | `default`                                  | Mode selector: `default`, `hash-only`, or `demo`. `hash-only` cannot be combined with exchange-config, private-key options, or `--hash-record-ids`; `demo` cannot be combined with `--exchange-config` or `--hash-record-ids`. |
 | `--hash-record-ids` |       | No                |                                            | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability; default tokenize mode only)                                                                                                             |
 
@@ -315,6 +316,17 @@ olt tokenize \
 Signature → SHA-256 → HMAC-SHA256 → Base64
 ```
 
+## Custom Tokenization Configuration (`tokenize --config`)
+
+Use `--config` to decouple tokenization from built-in column aliases.
+
+For complete details, see [Tokenization Configuration Reference](tokenization-config.md), including:
+
+- unusual-field input examples
+- full YAML configuration examples
+- configuration-file specification
+- CLI validation rules and constraints
+
 ### Hash-only Mode (`tokenize --mode hash-only`)
 
 Generates deterministic SHA-256 output without HMAC, an exchange config, or a private key.
@@ -433,7 +445,7 @@ Every run generates a `.metadata.json` file:
 {
   "Platform": "Python",
   "PythonVersion": "3.11.0",
-  "Version": "2.0.0-alpha",
+  "Version": "2.0.0",
   "TotalRows": 100,
   "TotalRowsWithInvalidAttributes": 3,
   "InvalidAttributesByType": {
@@ -455,10 +467,10 @@ For long-running processing commands (`package`, `tokenize`, `encrypt`, and `dec
 
 ## Docker Script Options
 
-### Bash (run-openlinktoken.sh)
+### Bash (run-olt.sh)
 
 ```bash
-./run-openlinktoken.sh package \
+./run-olt.sh package \
   -i ./input.csv \
   -o ./output.csv \
   --exchange-config ./partner.exchange.json \
@@ -472,10 +484,10 @@ For long-running processing commands (`package`, `tokenize`, `encrypt`, and `dec
 | `--verbose`    | Show detailed output      |
 | `--help`       | Show help message         |
 
-### PowerShell (run-openlinktoken.ps1)
+### PowerShell (run-olt.ps1)
 
 ```powershell
-.\run-openlinktoken.ps1 package `
+.\run-olt.ps1 package `
   -i .\input.csv `
   -o .\output.csv `
   --exchange-config .\partner.exchange.json `

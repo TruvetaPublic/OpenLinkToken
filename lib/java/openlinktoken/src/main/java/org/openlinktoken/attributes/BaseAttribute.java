@@ -20,7 +20,6 @@ import org.openlinktoken.attributes.validation.SerializableAttributeValidator;
  * <ul>
  * <li>Not null or empty</li>
  * </ul>
- * </p>
  */
 public abstract class BaseAttribute implements SerializableAttribute {
 

@@ -1,2 +1,2 @@
-faker==40.23.0
+faker==40.28.1
 pycryptodome==3.23.0

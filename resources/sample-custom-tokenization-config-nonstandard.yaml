@@ -1,0 +1,53 @@
+column_mappings:
+  RecordId:
+    column_name: "encounter_id"
+    type: RecordId
+  BirthYear:
+    column_name: "birth_year"
+    type: BirthYear
+  AgeAtEncounter:
+    column_name: "age_at_encounter"
+    type: Age
+  EncounterDate:
+    column_name: "encounter_date"
+    type: BirthDate
+  EncounterType:
+    column_name: "encounter type"
+    type: FirstName
+  Gender:
+    column_name: "patient_gender"
+    type: Sex
+  PatientSSN:
+    column_name: "ssn"
+    type: SocialSecurityNumber
+
+token_rules:
+  T_ALL_BASE:
+    - field: BirthYear
+      expression: "T"
+    - field: EncounterType
+      expression: "T|U"
+    - field: EncounterDate
+      expression: "T|D"
+    - field: Gender
+      expression: "T|S(0,1)|U"
+    - field: AgeAtEncounter
+      expression: "T"
+    - field: PatientSSN
+      expression: "T|M(\\d+)"
+  T_INITIALS_PLUS_AGE:
+    - field: BirthYear
+      expression: "T"
+    - field: EncounterType
+      expression: "T|S(0,2)|U"
+    - field: EncounterDate
+      expression: "T|D"
+    - field: AgeAtEncounter
+      expression: "T"
+  T_IDENTITY_LIGHT:
+    - field: EncounterType
+      expression: "T|S(0,2)|U"
+    - field: EncounterDate
+      expression: "T|D"
+    - field: Gender
+      expression: "T|U"

@@ -11,9 +11,6 @@ try:
 except ImportError:
     pytest.skip("PyArrow required for Parquet tests", allow_module_level=True)
 
-from openlinktoken.attributes.general.record_id_attribute import RecordIdAttribute
-from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute
-from openlinktoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
 from openlinktoken_cli.io.parquet.person_attributes_parquet_reader import PersonAttributesParquetReader
 from openlinktoken_cli.io.parquet.person_attributes_parquet_writer import PersonAttributesParquetWriter
 
@@ -44,15 +41,15 @@ class TestPersonAttributesParquetReader:
         with PersonAttributesParquetReader(self.temp_file_path) as reader:
             # Test first record
             first_record = next(reader)
-            assert first_record[RecordIdAttribute] == "1"
-            assert first_record[SocialSecurityNumberAttribute] == "123-45-6789"
-            assert first_record[FirstNameAttribute] == "John"
+            assert first_record["RecordId"] == "1"
+            assert first_record["SocialSecurityNumber"] == "123-45-6789"
+            assert first_record["FirstName"] == "John"
 
             # Test second record
             second_record = next(reader)
-            assert second_record[RecordIdAttribute] == "2"
-            assert second_record[SocialSecurityNumberAttribute] == "987-65-4321"
-            assert second_record[FirstNameAttribute] == "Jane"
+            assert second_record["RecordId"] == "2"
+            assert second_record["SocialSecurityNumber"] == "987-65-4321"
+            assert second_record["FirstName"] == "Jane"
 
             # Test no more records
             with pytest.raises(StopIteration):
@@ -90,9 +87,9 @@ class TestPersonAttributesParquetReader:
         with PersonAttributesParquetReader(self.temp_file_path) as reader:
             # Test that we can iterate
             for record in reader:
-                assert record[RecordIdAttribute] == "1"
-                assert record[SocialSecurityNumberAttribute] == "123-45-6789"
-                assert record[FirstNameAttribute] == "John"
+                assert record["RecordId"] == "1"
+                assert record["SocialSecurityNumber"] == "123-45-6789"
+                assert record["FirstName"] == "John"
                 break
 
     def test_next(self):
@@ -104,9 +101,9 @@ class TestPersonAttributesParquetReader:
         with PersonAttributesParquetReader(self.temp_file_path) as reader:
             record = next(reader)
             assert record is not None
-            assert record[RecordIdAttribute] == "1"
-            assert record[SocialSecurityNumberAttribute] == "123-45-6789"
-            assert record[FirstNameAttribute] == "John"
+            assert record["RecordId"] == "1"
+            assert record["SocialSecurityNumber"] == "123-45-6789"
+            assert record["FirstName"] == "John"
 
     def test_close(self):
         """Test close method."""
@@ -127,6 +124,29 @@ class TestPersonAttributesParquetReader:
         with pytest.raises(IOError):
             PersonAttributesParquetReader(invalid_file_path)
 
+    def test_read_parquet_with_explicit_attribute_map(self):
+        """Supports config-style explicit field id mappings for non-standard Parquet fields."""
+        table = pa.table(
+            {
+                "member_id": ["A-1"],
+                "given_nm": ["Ana"],
+                "surname_txt": ["Lopez"],
+            }
+        )
+        pq.write_table(table, self.temp_file_path)
+
+        attribute_map = {
+            "given_nm": "FirstName",
+            "surname_txt": "LastName",
+        }
+
+        with PersonAttributesParquetReader(self.temp_file_path, attribute_map=attribute_map) as reader:
+            record = next(reader)
+
+        assert record["FirstName"] == "Ana"
+        assert record["LastName"] == "Lopez"
+        assert len(record) == 2
+
     def test_row_count_returns_total_rows(self):
         """Row counting should return the Parquet row total without breaking iteration."""
         with PersonAttributesParquetWriter(self.temp_file_path) as writer:
@@ -137,4 +157,4 @@ class TestPersonAttributesParquetReader:
             assert reader.row_count() == 2
 
             first_record = next(reader)
-            assert first_record[RecordIdAttribute] == "1"
+            assert first_record["RecordId"] == "1"

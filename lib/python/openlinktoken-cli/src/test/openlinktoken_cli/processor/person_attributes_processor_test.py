@@ -2,19 +2,20 @@
 
 from unittest.mock import Mock
 
-from openlinktoken.attributes.general.record_id_attribute import RecordIdAttribute
-from openlinktoken.attributes.person.birth_date_attribute import BirthDateAttribute
-from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute
-from openlinktoken.attributes.person.last_name_attribute import LastNameAttribute
-from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttribute
-from openlinktoken.attributes.person.sex_attribute import SexAttribute
-from openlinktoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
 from openlinktoken.metadata import Metadata
+from openlinktoken.tokens.token_definition import TokenDefinition
 from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 from openlinktoken.tokentransformer.token_transformer import TokenTransformer
 from openlinktoken_cli.io.person_attributes_reader import PersonAttributesReader
 from openlinktoken_cli.io.person_attributes_writer import PersonAttributesWriter
 from openlinktoken_cli.processor.person_attributes_processor import PersonAttributesProcessor
+from openlinktoken_cli.tokens.config.configured_attribute_resolver import ConfiguredAttributeResolver
+from openlinktoken_cli.tokens.config.dynamic_token_definition import DynamicTokenDefinition
+from openlinktoken_cli.tokens.config.tokenization_config import (
+    AttributeMappingEntry,
+    TokenizationConfig,
+    TokenRuleEntry,
+)
 
 
 class TestPersonAttributesProcessor:
@@ -23,7 +24,7 @@ class TestPersonAttributesProcessor:
     def test_process_happy_path(self):
         """Test process happy path."""
         token_transformer_list = [Mock(spec=HashTokenTransformer)]
-        data = {RecordIdAttribute: "TestRecordId", FirstNameAttribute: "John", LastNameAttribute: "Spencer"}
+        data = {"RecordId": "TestRecordId", "FirstName": "John", "LastName": "Spencer"}
 
         reader = Mock(spec=PersonAttributesReader)
         writer = Mock(spec=PersonAttributesWriter)
@@ -42,7 +43,7 @@ class TestPersonAttributesProcessor:
     def test_process_io_exception_writing_attributes(self):
         """Test process with IOException writing attributes."""
         token_transformer_list = [Mock(spec=TokenTransformer)]
-        data = {RecordIdAttribute: "TestRecordId", FirstNameAttribute: "John", LastNameAttribute: "Spencer"}
+        data = {"RecordId": "TestRecordId", "FirstName": "John", "LastName": "Spencer"}
 
         reader = Mock(spec=PersonAttributesReader)
         writer = Mock(spec=PersonAttributesWriter)
@@ -65,7 +66,7 @@ class TestPersonAttributesProcessor:
     def test_metadata_map_contains_correct_values(self):
         """Test metadata map contains correct values."""
         token_transformer_list = [Mock(spec=HashTokenTransformer)]
-        data = {RecordIdAttribute: "TestRecordId", FirstNameAttribute: "John", LastNameAttribute: "Spencer"}
+        data = {"RecordId": "TestRecordId", "FirstName": "John", "LastName": "Spencer"}
 
         reader = Mock(spec=PersonAttributesReader)
         writer = Mock(spec=PersonAttributesWriter)
@@ -115,13 +116,13 @@ class TestPersonAttributesProcessor:
         token_transformer_list = [Mock(spec=HashTokenTransformer)]
         # Provide all required attributes so no blank tokens are generated
         data = {
-            RecordIdAttribute: "TestRecordId",
-            FirstNameAttribute: "John",
-            LastNameAttribute: "Spencer",
-            SocialSecurityNumberAttribute: "234-56-7890",
-            BirthDateAttribute: "1990-01-15",
-            SexAttribute: "Male",
-            PostalCodeAttribute: "98052",
+            "RecordId": "TestRecordId",
+            "FirstName": "John",
+            "LastName": "Spencer",
+            "SocialSecurityNumber": "234-56-7890",
+            "BirthDate": "1990-01-15",
+            "Sex": "Male",
+            "PostalCode": "98052",
         }
 
         reader = Mock(spec=PersonAttributesReader)
@@ -153,9 +154,9 @@ class TestPersonAttributesProcessor:
         token_transformer_list = [Mock(spec=HashTokenTransformer)]
 
         # Create three data records
-        data1 = {RecordIdAttribute: "TestRecordId1", FirstNameAttribute: "John", LastNameAttribute: "Spencer"}
-        data2 = {RecordIdAttribute: "TestRecordId2", FirstNameAttribute: "Jane", LastNameAttribute: "Doe"}
-        data3 = {RecordIdAttribute: "TestRecordId3", FirstNameAttribute: "Alex", LastNameAttribute: "Smith"}
+        data1 = {"RecordId": "TestRecordId1", "FirstName": "John", "LastName": "Spencer"}
+        data2 = {"RecordId": "TestRecordId2", "FirstName": "Jane", "LastName": "Doe"}
+        data3 = {"RecordId": "TestRecordId3", "FirstName": "Alex", "LastName": "Smith"}
 
         reader = Mock(spec=PersonAttributesReader)
         writer = Mock(spec=PersonAttributesWriter)
@@ -175,7 +176,7 @@ class TestPersonAttributesProcessor:
     def test_metadata_map_preserves_existing_entries(self):
         """Test metadata map preserves existing entries."""
         token_transformer_list = [Mock(spec=HashTokenTransformer)]
-        data = {RecordIdAttribute: "TestRecordId", FirstNameAttribute: "John", LastNameAttribute: "Spencer"}
+        data = {"RecordId": "TestRecordId", "FirstName": "John", "LastName": "Spencer"}
 
         reader = Mock(spec=PersonAttributesReader)
         writer = Mock(spec=PersonAttributesWriter)
@@ -195,3 +196,111 @@ class TestPersonAttributesProcessor:
 
         # And new entries are added
         assert "TotalRows" in metadata_map, "Metadata should contain totalRows key"
+
+    def test_process_with_custom_token_definition(self):
+        """Processes records using a runtime-defined token definition from config."""
+        config = TokenizationConfig(
+            column_mappings={
+                "FirstName": AttributeMappingEntry(column_name="given_nm", type="GivenName"),
+                "FamilyName": AttributeMappingEntry(column_name="family_nm", type="LastName"),
+            },
+            token_rules={
+                "T1": [
+                    TokenRuleEntry(field="FamilyName", expression="T|U"),
+                    TokenRuleEntry(field="FirstName", expression="T|S(0,1)|U"),
+                ]
+            },
+        )
+        resolver = ConfiguredAttributeResolver(config)
+        token_definition = DynamicTokenDefinition(config, resolver)
+
+        row = {
+            "RecordId": "TestRecordId",
+            "FirstName": "John",
+            "FamilyName": "Spencer",
+        }
+
+        reader = Mock(spec=PersonAttributesReader)
+        writer = Mock(spec=PersonAttributesWriter)
+        reader.__iter__ = Mock(return_value=iter([row]))
+        metadata_map = Metadata().initialize()
+
+        summary = PersonAttributesProcessor.process(
+            reader,
+            writer,
+            [],
+            metadata_map,
+            token_definition=token_definition,
+        )
+
+        assert summary.total_rows == 1
+        assert writer.write_attributes.call_count == 1
+        assert summary.blank_tokens_by_rule["T1"] == 0
+
+    def test_process_preserves_record_id_from_config_mapped_column(self):
+        """Config-mapped RecordId column is used as output record ID, not replaced by a UUID.
+
+        The field id ("EncounterId") intentionally differs from the type ("RecordId") to
+        verify that the fix handles any RecordIdAttribute subclass key, not just ones named
+        "RecordId".
+        """
+        config = TokenizationConfig(
+            column_mappings={
+                "EncounterId": AttributeMappingEntry(column_name="encounter_id", type="RecordId"),
+                "FirstName": AttributeMappingEntry(column_name="given_nm", type="GivenName"),
+            },
+            token_rules={
+                "T1": [TokenRuleEntry(field="FirstName", expression="T|U")],
+            },
+        )
+        resolver = ConfiguredAttributeResolver(config)
+        token_definition = DynamicTokenDefinition(config, resolver)
+
+        # Simulate the per-row dict as produced by a config-driven reader:
+        # keys are unique attribute subclasses, not plain strings.
+        record_id_class = resolver.get_class_for_field("EncounterId")
+        first_name_class = resolver.get_class_for_field("FirstName")
+        row = {
+            record_id_class: "enc-001",
+            first_name_class: "Ana",
+        }
+
+        reader = Mock(spec=PersonAttributesReader)
+        writer = Mock(spec=PersonAttributesWriter)
+        reader.__iter__ = Mock(return_value=iter([row]))
+        metadata_map = Metadata().initialize()
+
+        PersonAttributesProcessor.process(reader, writer, [], metadata_map, token_definition=token_definition)
+
+        written = writer.write_attributes.call_args[0][0]
+        assert written["RecordId"] == "enc-001", "Source record ID must be preserved, not replaced by a UUID"
+
+    def test_process_tracks_unknown_invalid_attribute_name_without_crashing(self):
+        """Handles invalid attribute names that were not pre-initialized in metadata maps."""
+        token_transformer_list = [Mock(spec=HashTokenTransformer)]
+        # Invalid birth date should surface as Date/BirthDate depending on attribute implementation.
+        data = {
+            "RecordId": "TestRecordId",
+            "FirstName": "John",
+            "LastName": "Spencer",
+            "SocialSecurityNumber": "234-56-7890",
+            "BirthDate": "",
+            "Sex": "Male",
+            "PostalCode": "98052",
+        }
+
+        reader = Mock(spec=PersonAttributesReader)
+        writer = Mock(spec=PersonAttributesWriter)
+        reader.__iter__ = Mock(return_value=iter([data]))
+        metadata_map = Metadata().initialize()
+
+        summary = PersonAttributesProcessor.process(
+            reader,
+            writer,
+            token_transformer_list,
+            metadata_map,
+            token_definition=TokenDefinition(),
+        )
+
+        assert summary.total_rows == 1
+        assert summary.total_rows_with_invalid_attributes == 1

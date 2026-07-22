@@ -157,9 +157,9 @@ public class CanadianPostalCodeAttribute extends BaseAttribute {
      *
      * For Canadian postal codes:
      * - Codes shorter than minLength are rejected (return original)
-     * - 3-character format (e.g., "J1X") is padded with " 000" to create full format (e.g., "J1X 000") if minLength <= 3
-     * - 4-character format (e.g., "J1X 1") is padded with "A0" to create full format (e.g., "J1X 1A0") if minLength <= 4
-     * - 5-character format (e.g., "J1X 1A") is padded with "0" to create full format (e.g., "J1X 1A0") if minLength <= 5
+     * - 3-character format (e.g., "J1X") is padded with " 000" to create full format (e.g., "J1X 000") if minLength &lt;= 3
+     * - 4-character format (e.g., "J1X 1") is padded with "A0" to create full format (e.g., "J1X 1A0") if minLength &lt;= 4
+     * - 5-character format (e.g., "J1X 1A") is padded with "0" to create full format (e.g., "J1X 1A0") if minLength &lt;= 5
      * - 6-character format returns uppercase format with space (e.g., "k1a0a6" becomes "K1A 0A6")
      * If the input value is null or doesn't match Canadian postal pattern, the
      * original trimmed value is returned.

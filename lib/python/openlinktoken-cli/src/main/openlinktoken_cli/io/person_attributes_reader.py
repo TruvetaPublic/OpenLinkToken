@@ -1,12 +1,10 @@
 # SPDX-License-Identifier: MIT
 
 from abc import ABC, abstractmethod
-from typing import Dict, Iterator, Type
-
-from openlinktoken.attributes.attribute import Attribute
+from typing import Dict, Iterator
 
 
-class PersonAttributesReader(ABC, Iterator[Dict[Type[Attribute], str]]):
+class PersonAttributesReader(ABC, Iterator[Dict[str, str]]):
     """
     A generic interface for a streaming person attributes reader.
     """
@@ -17,23 +15,23 @@ class PersonAttributesReader(ABC, Iterator[Dict[Type[Attribute], str]]):
         pass
 
     @abstractmethod
-    def __next__(self) -> Dict[Type[Attribute], str]:
+    def __next__(self) -> Dict[str, str]:
         """
         Retrieve the next set of person attributes from an input source.
 
         Example person attribute map:
         {
-            RecordIdAttribute: "2ea45fee-90c3-494a-a503-36022c9e1281",
-            FirstNameAttribute: "John",
-            LastNameAttribute: "Doe",
-            SexAttribute: "Male",
-            BirthDateAttribute: "01/01/2001",
-            PostalCodeAttribute: "54321",
-            SocialSecurityNumberAttribute: "123-45-6789"
+            "RecordId": "2ea45fee-90c3-494a-a503-36022c9e1281",
+            "FirstName": "John",
+            "LastName": "Doe",
+            "Sex": "Male",
+            "BirthDate": "01/01/2001",
+            "PostalCode": "54321",
+            "SocialSecurityNumber": "123-45-6789"
         }
 
         Returns:
-            A person attributes map.
+            A person attributes map keyed by field id.
         """
         pass
 

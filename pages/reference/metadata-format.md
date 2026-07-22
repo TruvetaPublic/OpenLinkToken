@@ -108,7 +108,7 @@ Extension: .metadata.json
 {
   "Platform": "Java",
   "JavaVersion": "21.0.0",
-  "Version": "2.0.0-alpha",
+  "Version": "2.0.0",
   "TotalRows": 101,
   "TotalRowsWithInvalidAttributes": 9,
   "InvalidAttributesByType": {
@@ -134,7 +134,7 @@ Extension: .metadata.json
 {
   "Platform": "Python",
   "PythonVersion": "3.11.5",
-  "Version": "2.0.0-alpha",
+  "Version": "2.0.0",
   "TotalRows": 50,
   "TotalRowsWithInvalidAttributes": 2,
   "InvalidAttributesByType": {
@@ -234,6 +234,86 @@ Blank tokens occur when a rule requires an invalid attribute.
 
 ---
 
+## Hash Verification
+
+### Purpose
+
+Verify that the secrets used for token generation match expected values without exposing the secrets themselves.
+
+### Verification Process
+
+1. **Calculate hash of your secret**:
+
+   ```bash
+   python tools/hash/hash_calculator.py --hashing-secret "HashingKey"
+   ```
+
+2. **Compare to metadata**:
+
+   ```bash
+   cat output.metadata.json | grep HashingSecretHash
+   ```
+
+3. **Match = correct secret used**
+
+### Hash Calculation
+
+The hash is computed as:
+
+```
+SHA-256(secret) → hex-encoded string (64 hex characters)
+```
+
+**Python implementation:**
+
+```python
+import hashlib
+
+def calculate_hash(secret: str) -> str:
+    return hashlib.sha256(secret.encode('utf-8')).hexdigest()
+
+hashing_hash = calculate_hash("HashingKey")
+encryption_hash = calculate_hash("Secret-Encryption-Key-Goes-Here.")
+```
+
+**Java implementation:**
+
+```java
+import java.security.MessageDigest;
+import java.nio.charset.StandardCharsets;
+
+public static String calculateHash(String secret) throws Exception {
+    MessageDigest digest = MessageDigest.getInstance("SHA-256");
+    byte[] hash = digest.digest(secret.getBytes(StandardCharsets.UTF_8));
+    return bytesToHex(hash);
+}
+
+private static String bytesToHex(byte[] bytes) {
+    StringBuilder result = new StringBuilder();
+    for (byte b : bytes) {
+        result.append(String.format("%02x", b));
+    }
+    return result.toString();
+}
+```
+
+### Using the Hash Calculator Tool
+
+The `tools/hash/hash_calculator.py` script provides command-line hash calculation:
+
+```bash
+# Calculate both hashes
+python tools/hash/hash_calculator.py \
+  --hashing-secret "HashingKey" \
+  --encryption-key "Secret-Encryption-Key-Goes-Here."
+
+# Output:
+# HashingSecretHash: e0b4e60b6a9f7ea3b13c0d6a6e1b8c5d...
+# EncryptionSecretHash: a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6...
+```
+
+---
+
 ## Usage Notes
 
 ### Audit Trail
@@ -277,4 +357,5 @@ Metadata files exclude raw person data and secret material:
 
 - **View token rules**: [Concepts: Token Rules](../concepts/token-rules.md)
 - **Understand validation**: [Security](../security.md)
+- **Use hash calculator**: `tools/hash/hash_calculator.py`
 - **See full examples**: [Quickstarts](../quickstarts/index.md)

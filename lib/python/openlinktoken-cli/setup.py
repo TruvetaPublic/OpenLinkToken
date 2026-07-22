@@ -16,13 +16,9 @@ except FileNotFoundError:
     # Fallback to a short description if README is unavailable
     long_description = "Open Link Token CLI - Command line interface for record linkage."
 
-# Read requirements from requirements.txt
-with open(os.path.join(this_directory, "requirements.txt"), encoding="utf-8") as f:
-    requirements = [line.strip() for line in f if line.strip() and not line.startswith("#")]
-
 setup(
     name="openlinktoken-cli",
-    version="2.0.0-alpha",
+    version="2.0.0",
     author="Open Link Token Contributors",
     description="Open Link Token CLI - Command line interface for record linkage",
     long_description=long_description,
@@ -35,12 +31,4 @@ setup(
     package_dir={"": "src/main"},
     packages=find_packages(where="src/main"),
     python_requires=">=3.10",
-    install_requires=requirements,
-    extras_require={
-        "dev": [
-            "pytest==9.0.3",
-            "pytest-cov==7.1.0",
-        ],
-        "test": ["pytest==9.0.3"],
-    },
 )

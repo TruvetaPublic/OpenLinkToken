@@ -12,7 +12,6 @@ import java.util.regex.PatternSyntaxException;
 
 import org.apache.commons.lang3.time.DateUtils;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -43,7 +42,6 @@ import lombok.Setter;
  * matches the regular expression.</li>
  * </ul>
  */
-@AllArgsConstructor
 @Getter
 @Setter
 public final class AttributeExpression implements Serializable {
@@ -53,7 +51,35 @@ public final class AttributeExpression implements Serializable {
             .compile("\\s*(?<expr>[^ (]+)(?:\\((?<args>[^\\)]+)\\))?");
 
     private Class<? extends Attribute> attributeClass;
+    private String fieldId;
     private String expressions;
+
+    /**
+     * Creates an attribute expression using an attribute class as the field identity.
+     *
+     * @param attributeClass the attribute class (used as both identity and behavior)
+     * @param expressions    the expression pipeline string
+     * @deprecated Use {@link #AttributeExpression(String, Class, String)} instead.
+     */
+    @Deprecated(since = "2.1.0", forRemoval = false)
+    public AttributeExpression(Class<? extends Attribute> attributeClass, String expressions) {
+        this.attributeClass = attributeClass;
+        this.expressions = expressions;
+        this.fieldId = null;
+    }
+
+    /**
+     * Creates an attribute expression using a field ID for identity and an attribute class for behavior.
+     *
+     * @param fieldId        unique field identifier from the FieldRegistry
+     * @param attributeClass the attribute class providing normalization and validation
+     * @param expressions    the expression pipeline string
+     */
+    public AttributeExpression(String fieldId, Class<? extends Attribute> attributeClass, String expressions) {
+        this.fieldId = fieldId;
+        this.attributeClass = attributeClass;
+        this.expressions = expressions;
+    }
 
     /**
      * Get the effective value for an attribute after application

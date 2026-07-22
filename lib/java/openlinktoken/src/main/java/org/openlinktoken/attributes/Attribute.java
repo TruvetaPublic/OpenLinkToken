@@ -12,7 +12,7 @@ package org.openlinktoken.attributes;
  * An attribute has a name and a list of aliases. The name is the canonical name
  * of the attribute, while the aliases are alternative names that can be used to
  * refer to the attribute.
- * <p>
+ * </p>
  *
  * <p>
  * An attribute also has a normalization function that converts the attribute

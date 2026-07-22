@@ -32,16 +32,39 @@ class AttributeExpression:
 
     EXPRESSION_PATTERN = re.compile(r"\s*(?P<expr>[^ (]+)(?:\((?P<args>[^\)]+)\))?")
 
-    def __init__(self, attribute_class: Type["Attribute"], expressions: Optional[str]):
+    def __init__(
+        self,
+        attribute_class: Type["Attribute"],
+        expressions: Optional[str],
+        field_id: Optional[str] = None,
+    ):
         """
         Initialize the AttributeExpression.
 
         Args:
             attribute_class: The class of the attribute being processed.
             expressions: The string of expressions to apply.
+            field_id: Optional field identifier for field-based lookup. When None,
+                the attribute class is used directly as the identity key (legacy behavior).
         """
         self.attribute_class = attribute_class
         self.expressions = expressions
+        self.field_id = field_id
+
+    @classmethod
+    def of(cls, field_id: str, attribute_class: Type["Attribute"], expressions: Optional[str]) -> "AttributeExpression":
+        """
+        Create an attribute expression using a field ID for identity.
+
+        Args:
+            field_id: Unique field identifier from the FieldRegistry.
+            attribute_class: The class of the attribute providing normalization and validation.
+            expressions: The string of expressions to apply.
+
+        Returns:
+            A new AttributeExpression with field_id set.
+        """
+        return cls(attribute_class, expressions, field_id=field_id)
 
     def get_effective_value(self, value: Optional[str]) -> str:
         """

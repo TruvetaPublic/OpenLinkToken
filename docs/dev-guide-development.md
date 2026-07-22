@@ -250,7 +250,7 @@ If you also want the same ZIP and checksum bundle produced by the release workfl
 
 ```shell
 python -m openlinktoken_cli.util.release_assets \
-  --version 2.0.0-alpha \
+  --version 2.0.0 \
   --runner-os Linux \
   --dist-dir dist \
   --output-dir release-assets
@@ -349,11 +349,11 @@ Basic Usage:
 
 ```python
 from pyspark.sql import SparkSession
-from openlinktoken_pyspark import Open Link TokenProcessor
+from openlinktoken_pyspark import OpenLinkTokenProcessor
 
-spark = SparkSession.builder.master("local[2]").appName("Open Link TokenExample").getOrCreate()
+spark = SparkSession.builder.master("local[2]").appName("OpenLinkTokenExample").getOrCreate()
 df = spark.read.csv("people.csv", header=True)
-processor = Open Link TokenProcessor("HashingKey", "Secret-Encryption-Key-Goes-Here.")
+processor = OpenLinkTokenProcessor("HashingKey", "Secret-Encryption-Key-Goes-Here.")
 token_df = processor.process_dataframe(df)
 token_df.show()
 ```
@@ -361,7 +361,7 @@ token_df.show()
 Custom Token Definitions (example adding ML1):
 
 ```python
-from openlinktoken_pyspark import Open Link TokenProcessor
+from openlinktoken_pyspark import OpenLinkTokenProcessor
 from openlinktoken_pyspark.notebook_helpers import TokenBuilder, CustomTokenDefinition
 
 ml1 = TokenBuilder("ML1") \
@@ -371,7 +371,7 @@ ml1 = TokenBuilder("ML1") \
   .build()
 
 definition = CustomTokenDefinition().add_token(t6)
-processor = Open Link TokenProcessor(
+processor = OpenLinkTokenProcessor(
   hashing_secret="HashingKey",
   encryption_key="Secret-Encryption-Key-Goes-Here.",
   token_definition=definition

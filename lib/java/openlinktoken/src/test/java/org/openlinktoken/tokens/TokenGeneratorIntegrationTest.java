@@ -77,4 +77,32 @@ class TokenGeneratorIntegrationTest {
         assertEquals("21c3cf1fdb4fd45197e5def14d0228d26c56bcec1b8641079f9b9ec24f9a6a0b", tokens.get("T4"));
         assertEquals("3756556f2323148cb57e1e13b1abcd457e1c1706a84ae83d522a3fc0ad43506d", tokens.get("T5"));
     }
+
+    @Test
+    void testGetAllTokensViaFieldId_validPersonAttributes_generatesSameTokensAsClassBasedApi() {
+        // Regression test: the field-ID-based API must produce byte-identical tokens
+        // to the deprecated class-based API for the real T1-T5 token definitions.
+        tokenDefinition = new TokenDefinition();
+        tokenGenerator = new TokenGenerator(tokenDefinition, new SHA256Tokenizer(new ArrayList<>()));
+
+        // Person attributes keyed by field ID, matching the same values used in
+        // testGetAllTokens_validPersonAttributes_generatesTokens.
+        Map<String, String> personAttributes = new HashMap<>();
+        personAttributes.put("FirstName", "Alice");
+        personAttributes.put("LastName", "Wonderland");
+        personAttributes.put("SocialSecurityNumber", "345-54-6795");
+        personAttributes.put("Sex", "F");
+        personAttributes.put("BirthDate", "1993-08-10");
+
+        Map<String, String> tokens = tokenGenerator.getAllTokensViaFieldId(personAttributes).getTokens();
+
+        assertNotNull(tokens);
+        assertEquals(5, tokens.size(), "Expected 5 tokens to be generated");
+
+        assertEquals("02292af14559b4c2a28a772536b81760ad7b8ebac8ce49e8450ca0fa5044e37f", tokens.get("T1"));
+        assertEquals("0000000000000000000000000000000000000000000000000000000000000000", tokens.get("T2"));
+        assertEquals("a76c3bff664bec8d0f77b4b47ad555d212dc671949ed3cf1c1edef68733835b2", tokens.get("T3"));
+        assertEquals("21c3cf1fdb4fd45197e5def14d0228d26c56bcec1b8641079f9b9ec24f9a6a0b", tokens.get("T4"));
+        assertEquals("3756556f2323148cb57e1e13b1abcd457e1c1706a84ae83d522a3fc0ad43506d", tokens.get("T5"));
+    }
 }

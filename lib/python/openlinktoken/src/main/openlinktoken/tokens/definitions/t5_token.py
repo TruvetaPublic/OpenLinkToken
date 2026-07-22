@@ -6,6 +6,7 @@ from openlinktoken.attributes.attribute_expression import AttributeExpression
 from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute
 from openlinktoken.attributes.person.last_name_attribute import LastNameAttribute
 from openlinktoken.attributes.person.sex_attribute import SexAttribute
+from openlinktoken.tokens.definitions.field_ids import FieldIds
 from openlinktoken.tokens.token import Token
 
 
@@ -23,9 +24,9 @@ class T5Token(Token):
     def __init__(self):
         """Initialize the T5 token definition."""
         self._definition = [
-            AttributeExpression(LastNameAttribute, "T|U"),
-            AttributeExpression(FirstNameAttribute, "T|S(0,3)|U"),
-            AttributeExpression(SexAttribute, "T|U"),
+            AttributeExpression(LastNameAttribute, "T|U", field_id=FieldIds.LAST_NAME),
+            AttributeExpression(FirstNameAttribute, "T|S(0,3)|U", field_id=FieldIds.FIRST_NAME),
+            AttributeExpression(SexAttribute, "T|U", field_id=FieldIds.SEX),
         ]
 
     def get_identifier(self) -> str:

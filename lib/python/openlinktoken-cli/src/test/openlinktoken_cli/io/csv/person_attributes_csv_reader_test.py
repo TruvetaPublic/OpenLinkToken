@@ -5,10 +5,6 @@ import tempfile
 
 import pytest
 
-from openlinktoken.attributes.general.record_id_attribute import RecordIdAttribute
-from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute
-from openlinktoken.attributes.person.last_name_attribute import LastNameAttribute
-from openlinktoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
 from openlinktoken_cli.io.csv.person_attributes_csv_reader import PersonAttributesCSVReader
 
 
@@ -36,17 +32,17 @@ class TestPersonAttributesCSVReader:
         with PersonAttributesCSVReader(self.temp_file_path) as reader:
             # Test first record
             first_record = next(reader)
-            assert first_record[RecordIdAttribute] == "1"
-            assert first_record[SocialSecurityNumberAttribute] == "123-45-6789"
-            assert first_record[FirstNameAttribute] == "John"
-            assert first_record[LastNameAttribute] == "Doe"
+            assert first_record["RecordId"] == "1"
+            assert first_record["SocialSecurityNumber"] == "123-45-6789"
+            assert first_record["FirstName"] == "John"
+            assert first_record["LastName"] == "Doe"
 
             # Test second record
             second_record = next(reader)
-            assert second_record[RecordIdAttribute] == "2"
-            assert second_record[SocialSecurityNumberAttribute] == "987-65-4321"
-            assert second_record[FirstNameAttribute] == "Jane"
-            assert second_record[LastNameAttribute] == "Smith"
+            assert second_record["RecordId"] == "2"
+            assert second_record["SocialSecurityNumber"] == "987-65-4321"
+            assert second_record["FirstName"] == "Jane"
+            assert second_record["LastName"] == "Smith"
 
             # Test no more records
             with pytest.raises(StopIteration):
@@ -70,10 +66,10 @@ class TestPersonAttributesCSVReader:
         with PersonAttributesCSVReader(self.temp_file_path) as reader:
             # Test that we can iterate
             for record in reader:
-                assert record[RecordIdAttribute] == "1"
-                assert record[SocialSecurityNumberAttribute] == "123-45-6789"
-                assert record[FirstNameAttribute] == "John"
-                assert record[LastNameAttribute] == "Doe"
+                assert record["RecordId"] == "1"
+                assert record["SocialSecurityNumber"] == "123-45-6789"
+                assert record["FirstName"] == "John"
+                assert record["LastName"] == "Doe"
                 break
 
     def test_next(self):
@@ -85,10 +81,10 @@ class TestPersonAttributesCSVReader:
         with PersonAttributesCSVReader(self.temp_file_path) as reader:
             record = next(reader)
             assert record is not None
-            assert record[RecordIdAttribute] == "1"
-            assert record[SocialSecurityNumberAttribute] == "123-45-6789"
-            assert record[FirstNameAttribute] == "John"
-            assert record[LastNameAttribute] == "Doe"
+            assert record["RecordId"] == "1"
+            assert record["SocialSecurityNumber"] == "123-45-6789"
+            assert record["FirstName"] == "John"
+            assert record["LastName"] == "Doe"
 
     def test_close(self):
         """Test close method."""
@@ -122,5 +118,5 @@ class TestPersonAttributesCSVReader:
             first_record = next(reader)
             second_record = next(reader)
 
-            assert first_record[RecordIdAttribute] == "1"
-            assert second_record[RecordIdAttribute] == "2"
+            assert first_record["RecordId"] == "1"
+            assert second_record["RecordId"] == "2"

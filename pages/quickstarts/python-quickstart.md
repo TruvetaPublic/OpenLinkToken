@@ -58,62 +58,52 @@ uv pip install -r requirements.txt -e .
 
 ## Run Token Generation
 
+Run the following from any directory — the `olt` console script is installed into your virtualenv. The examples below assume you are in the project root (`/path/to/OpenLinkToken`) so the `./resources/...` paths work.
+
 Create a local exchange config once before running the consumer commands:
 
 ```bash
-olt generate-key-pair --name recipient --force
-olt initiate-exchange \
-  --name quickstart \
-  --public-key ~/.openlinktoken/recipient.public.pem \
-  --output ../../../resources/quickstart.exchange.json
+# Simulate receiving the recipient's public key (in practice, your partner provides this)
+olt generate-key-pair --name recipient
+# Create the exchange config using the recipient's public key
+olt initiate-exchange --public-key ~/.openlinktoken/recipient.public.pem
 ```
 
 ### Package Command (Tokenize + Encrypt)
 
+By default, `package` writes a self-contained `<input>_packaged.zip` bundle (tokens + metadata + exchange config), ready to share. Pass `-o tokens.csv` if you want a plain CSV instead:
+
 ```bash
-olt package \
-  -i ../../../resources/sample.csv \
-  -o ../../../resources/output.csv \
-  --exchange-config ../../../resources/quickstart.exchange.json
+olt package -i ./resources/sample.csv -o tokens.csv
 ```
 
-### Tokenize Command (Hash-Only, No Encryption)
+### Tokenize Command (HMAC hash, no encryption)
+
+Produces deterministic HMAC-SHA256 tokens — useful for internal analysis when both sides hold the same exchange config.
 
 ```bash
-olt tokenize \
-  -i ../../../resources/sample.csv \
-  -o ../../../resources/output.csv \
-  --exchange-config ../../../resources/quickstart.exchange.json
+olt tokenize -i ./resources/sample.csv -o tokens.csv
 ```
 
 ### Parquet Format
 
 ```bash
-olt package \
-  -i input.parquet \
-  -o output.parquet \
-  --exchange-config ../../../resources/quickstart.exchange.json
+olt package -i input.parquet -o tokens.parquet
 ```
 
 ### Decrypt Command
 
 ```bash
-olt decrypt \
-  -i ../../../resources/output.csv \
-  -o ../../../resources/decrypted.csv \
-  --exchange-config ../../../resources/quickstart.exchange.json
+olt decrypt -i tokens.csv -o decrypted.csv
 ```
 
 ### Generate ECDH Key Pair
 
 ```bash
-olt generate-key-pair \
-  --curve P-256 \
-  --name my-key
+olt generate-key-pair --curve P-256 --name my-key
 ```
 
-This writes `~/.openlinktoken/my-key.private.pem` and `~/.openlinktoken/my-key.public.pem`. Add `--force` to overwrite
-existing files.
+This writes `~/.openlinktoken/my-key.private.pem` and `~/.openlinktoken/my-key.public.pem`. Add `--force` to overwrite existing files.
 
 ## Getting Help
 
