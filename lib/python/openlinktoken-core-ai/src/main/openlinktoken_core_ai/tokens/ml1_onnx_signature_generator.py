@@ -385,6 +385,37 @@ class ML1OnnxSignatureGenerator:
         ).hex()
 
 
+def serialize_ml_embedding(embedding: "np.ndarray") -> str:
+    """Serialize a float32 embedding vector as a big-endian hex string.
+
+    Delegates to the same packing logic used internally by ML1OnnxSignatureGenerator
+    so ML2 raw-embedding tokens and ML1 fallback signatures share identical encoding.
+
+    Args:
+        embedding: 1-D float32 numpy array.
+
+    Returns:
+        Lowercase hex string of the big-endian float32 byte representation.
+    """
+    return ML1OnnxSignatureGenerator._serialize_embedding(embedding)
+
+
+def format_embedding_as_floats(embedding: "np.ndarray") -> str:
+    """Format a float32 embedding vector as a comma-separated string of decimal values.
+
+    Produces a human-readable, ML-friendly representation suitable for storage
+    as the ML2 token value.  Each value is formatted with enough precision to
+    round-trip a float32 (up to 9 significant digits).
+
+    Args:
+        embedding: 1-D float32 numpy array.
+
+    Returns:
+        Comma-separated string of float values, e.g. ``"0.12345678,-0.9876543,..."``.
+    """
+    return ",".join(f"{float(v):.9g}" for v in embedding)
+
+
 def ml1_payload_to_json(payload: Dict[str, str]) -> str:
     """Convert an ordered payload map to JSON used for ML1 tokenization.
 

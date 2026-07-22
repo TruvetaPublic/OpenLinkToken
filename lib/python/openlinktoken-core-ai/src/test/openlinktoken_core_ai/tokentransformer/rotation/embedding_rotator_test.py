@@ -77,9 +77,10 @@ class TestEmbeddingRotator:
         bias = [0.0, 0.0]
         embedding = [1.0, 0.0]
         result = rotate(embedding, matrices, bias, k=2)
-        # Rotating [1,0] by 45° → [cos45, sin45]
-        assert result[0][0] == pytest.approx(sq2, abs=1e-9)
-        assert result[0][1] == pytest.approx(sq2, abs=1e-9)
+        # Rotating [1,0] by 45° → [cos45, sin45].
+        # Output is float32-precision so tolerance reflects float32 rounding (~1.2e-8).
+        assert result[0][0] == pytest.approx(sq2, abs=2e-7)
+        assert result[0][1] == pytest.approx(sq2, abs=2e-7)
 
     def test_k_less_than_n_truncates_output(self):
         """When k < N, only the first k rows of the rotation are returned."""

@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Set, Type
 
 from openlinktoken_core_ai.tokens.ml1_inference_config import ML1InferenceConfig
+from openlinktoken_core_ai.tokens.ml1_onnx_signature_generator import format_embedding_as_floats
 
 from openlinktoken.attributes.attribute import Attribute
 from openlinktoken.attributes.general.record_id_attribute import RecordIdAttribute
@@ -407,6 +408,7 @@ class PersonAttributesProcessor:
             if row_counter % 10000 == 0:
                 logger.info(f"Processed {row_counter:,} records")
                 last_reported_count = row_counter
+            if row_counter % 10 == 0:
                 if progress_callback is not None:
                     progress_callback(row_counter)
         if progress_callback is not None and row_counter != last_reported_count:
@@ -435,8 +437,9 @@ class PersonAttributesProcessor:
         for row in reader:
             row_counter += 1
             token_generator_result = token_generator.get_all_tokens_via_field_id(row)
-            token_generator_result.tokens.pop("ML1", None)
-            token_generator_result.blank_tokens_by_rule.discard("ML1")
+            for token_id in ("ML1", "ML2"):
+                token_generator_result.tokens.pop(token_id, None)
+                token_generator_result.blank_tokens_by_rule.discard(token_id)
             pending_rows.append(
                 _PendingRow(
                     row=row,
@@ -516,13 +519,20 @@ class PersonAttributesProcessor:
             ml1_signatures = batch_result.signatures
 
         for i, pending_row in enumerate(pending_rows):
-            # Only store the ML1 token when inference was actually invoked; if the provider
-            # is unavailable, ML1 produces no output rather than recording a spurious blank.
+            # Only store the ML1/ML2 tokens when inference was actually invoked; if the provider
+            # is unavailable, both produce no output rather than recording a spurious blank.
             if inference_was_invoked:
                 ml1_signature = ml1_signatures[i] if i < len(ml1_signatures) else None
                 if ml1_signature:
                     # ML1 is already HMAC-hashed internally; bypass the tokenizer/transformer chain.
                     token_generator.store_raw_token(pending_row.token_generator_result, "ML1", ml1_signature)
+
+                # ML2: raw embedding as comma-separated floats without rotation.
+                raw_emb = batch_result.raw_embeddings[i] if i < len(batch_result.raw_embeddings) else None
+                if raw_emb is not None:
+                    token_generator.store_raw_token(
+                        pending_row.token_generator_result, "ML2", format_embedding_as_floats(raw_emb)
+                    )
 
             logger.debug(f"Tokens: {pending_row.token_generator_result.tokens}")
 

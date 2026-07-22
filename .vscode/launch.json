@@ -204,10 +204,7 @@
       "env": {
         "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main"
       },
-      "args": [
-        "--exchange-config",
-        "${input:exchangeConfigPath}"
-      ]
+      "args": ["--exchange-config", "${input:exchangeConfigPath}"]
     },
     {
       "name": "Python: inspect-exchange-config (JSON)",
