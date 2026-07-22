@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Set, Type
 
 from openlinktoken.attributes.attribute import Attribute
 from openlinktoken.attributes.general.record_id_attribute import RecordIdAttribute
+from openlinktoken.tokens.base_token_definition import BaseTokenDefinition
 from openlinktoken.tokens.token_definition import TokenDefinition
 from openlinktoken.tokens.token_generator import TokenGenerator
 from openlinktoken.tokens.token_generator_result import TokenGeneratorResult
@@ -58,6 +59,7 @@ class PersonAttributesProcessor:
         encryption_key: str = None,
         ring_id: str = None,
         hash_record_ids: bool = False,
+        token_definition: BaseTokenDefinition = None,
         progress_callback=None,
     ) -> PersonAttributesProcessingSummary:
         """
@@ -76,8 +78,7 @@ class PersonAttributesProcessor:
             hash_record_ids: When True, each record ID is SHA-256 hashed before writing
                              to the output. This is a one-way operation with no traceability.
         """
-        # TokenGenerator code
-        token_definition = TokenDefinition()
+        token_definition = token_definition or TokenDefinition()
         return PersonAttributesProcessor._process_with_tokenizer(
             reader,
             writer,
@@ -96,6 +97,7 @@ class PersonAttributesProcessor:
         writer: PersonAttributesWriter,
         tokenizer: Tokenizer,
         metadata_map: Dict[str, Any] = None,
+        token_definition: BaseTokenDefinition = None,
         progress_callback=None,
     ) -> PersonAttributesProcessingSummary:
         """
@@ -111,7 +113,7 @@ class PersonAttributesProcessor:
             tokenizer: The tokenizer to use (e.g. SHA256Tokenizer or PassthroughTokenizer).
             metadata_map: Optional metadata map to update with processing statistics.
         """
-        token_definition = TokenDefinition()
+        token_definition = token_definition or TokenDefinition()
         return PersonAttributesProcessor._process_with_tokenizer(
             reader,
             writer,
@@ -126,7 +128,7 @@ class PersonAttributesProcessor:
         reader: PersonAttributesReader,
         writer: PersonAttributesWriter,
         tokenizer: Tokenizer,
-        token_definition: TokenDefinition,
+        token_definition: BaseTokenDefinition,
         metadata_map: Dict[str, Any] = None,
         encryption_key: str = None,
         ring_id: str = None,
@@ -146,7 +148,8 @@ class PersonAttributesProcessor:
             ring_id: Optional ring ID for JWE wrapping.
             hash_record_ids: When True, each record ID is SHA-256 hashed before writing.
         """
-        token_generator = TokenGenerator(token_definition, tokenizer)
+        field_registry = getattr(token_definition, "field_registry", None)
+        token_generator = TokenGenerator(token_definition, tokenizer, field_registry=field_registry)
 
         row_counter = 0
         last_reported_count = 0
@@ -174,7 +177,7 @@ class PersonAttributesProcessor:
             for row in reader:
                 row_counter += 1
 
-                token_generator_result = token_generator.get_all_tokens(row)
+                token_generator_result = token_generator.get_all_tokens_via_field_id(row)
                 logger.debug(f"Tokens: {token_generator_result.tokens}")
 
                 PersonAttributesProcessor._keep_track_of_invalid_attributes(
@@ -246,7 +249,7 @@ class PersonAttributesProcessor:
     @staticmethod
     def _write_tokens(
         writer: PersonAttributesWriter,
-        row: Dict[Type[Attribute], str],
+        row: Dict[object, str],
         row_counter: int,
         token_generator_result: TokenGeneratorResult,
         encryption_key: str = None,
@@ -271,8 +274,14 @@ class PersonAttributesProcessor:
         # Sort token IDs for consistent output
         token_ids = sorted(token_generator_result.tokens.keys())
 
-        # Generate a UUID for RecordId if it's not present in the input data
-        record_id = row.get(RecordIdAttribute)
+        # In config-driven mode the row is keyed by unique RecordIdAttribute subclasses,
+        # so scan for any subclass key before falling back to a random UUID.
+        record_id = row.get(RecordIdAttribute) or row.get("RecordId")
+        if record_id is None or record_id == "":
+            for key in row:
+                if isinstance(key, type) and issubclass(key, RecordIdAttribute):
+                    record_id = row[key]
+                    break
         if record_id is None or record_id == "":
             record_id = str(uuid.uuid4())
 
@@ -323,6 +332,7 @@ class PersonAttributesProcessor:
             logger.info(f"Invalid Attributes for row {row_counter:,}: {token_generator_result.invalid_attributes}")
 
             for invalid_attribute in token_generator_result.invalid_attributes:
+                invalid_attribute_count.setdefault(invalid_attribute, 0)
                 invalid_attribute_count[invalid_attribute] += 1
 
     @staticmethod

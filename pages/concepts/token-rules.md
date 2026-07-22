@@ -225,9 +225,34 @@ Notes:
 
 ---
 
+## Expression Syntax
+
+Each `AttributeExpression` takes an expression string — a `|`-separated pipeline of operators applied to the attribute value before token generation:
+
+| Operator       | Description                                             |
+| -------------- | ------------------------------------------------------- |
+| `T`            | Trim whitespace                                         |
+| `U`            | Convert to upper case                                   |
+| `S(start,end)` | Substring from `start` (inclusive) to `end` (exclusive) |
+| `D`            | Parse as a date in `yyyy-MM-dd` format                  |
+| `M(regex)`     | Assert value matches the regular expression             |
+| `R(old,new)`   | Replace all occurrences of `old` with `new`             |
+
+Examples:
+
+```
+T|S(0,3)|U      # trim, take first 3 chars, uppercase
+T|D             # trim, treat as date
+T|M("\\d+")    # trim, assert all digits
+```
+
+---
+
 ## Custom Token Rules
 
 Open Link Token supports defining custom token rules:
+
+Each `AttributeExpression` is given an explicit field ID (`"LastName"`, `"BirthDate"`) that is used as the lookup key in the person-attributes map at token generation time. See [FieldRegistry and Field IDs](../reference/token-registration.md#fieldregistry-and-field-ids) for how field IDs resolve to attribute behavior, including how to register custom fields that reuse an existing attribute type (e.g. `MotherLastName`/`FatherLastName`, both backed by `StringAttribute`).
 
 ### Java
 
@@ -247,8 +272,8 @@ public class CustomToken implements Token {
 
   public CustomToken() {
     // Example signature: U(LastName)|BirthDate
-    definition.add(new AttributeExpression(LastNameAttribute.class, "T|U"));
-    definition.add(new AttributeExpression(BirthDateAttribute.class, "T|D"));
+    definition.add(new AttributeExpression("LastName", LastNameAttribute.class, "T|U"));
+    definition.add(new AttributeExpression("BirthDate", BirthDateAttribute.class, "T|D"));
   }
 
   @Override
@@ -279,8 +304,8 @@ class CustomToken(Token):
   def __init__(self):
     # Example signature: U(LastName)|BirthDate
     self._definition = [
-      AttributeExpression(LastNameAttribute, "T|U"),
-      AttributeExpression(BirthDateAttribute, "T|D"),
+      AttributeExpression(LastNameAttribute, "T|U", field_id="LastName"),
+      AttributeExpression(BirthDateAttribute, "T|D", field_id="BirthDate"),
     ]
 
   def get_identifier(self) -> str:
@@ -290,7 +315,7 @@ class CustomToken(Token):
     return self._definition
 ```
 
-See [Token Registration](../reference/token-registration.md) for registration details.
+See [Token Registration](../reference/token-registration.md) for registration details, including the `FieldRegistry` custom-field example.
 
 ---
 

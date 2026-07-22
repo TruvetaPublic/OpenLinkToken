@@ -1,5 +1,8 @@
 # Cryptography - mandate secure version to address CVE-2026-44432
-cryptography==48.0.1
+cryptography==49.0.0
 
 # JOSE/JWE for match token format
 jwcrypto==1.5.7
+
+# YAML parsing for tokenization config loader
+PyYAML==6.0.3

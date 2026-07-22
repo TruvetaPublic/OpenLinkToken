@@ -13,13 +13,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.openlinktoken.attributes.Attribute;
-import org.openlinktoken.attributes.person.BirthDateAttribute;
-import org.openlinktoken.attributes.person.FirstNameAttribute;
-import org.openlinktoken.attributes.person.LastNameAttribute;
-import org.openlinktoken.attributes.person.PostalCodeAttribute;
-import org.openlinktoken.attributes.person.SexAttribute;
-import org.openlinktoken.attributes.person.SocialSecurityNumberAttribute;
 import org.openlinktoken.tokens.TokenDefinition;
 import org.openlinktoken.tokens.TokenGenerator;
 import org.openlinktoken.tokens.TokenGeneratorResult;
@@ -31,19 +24,19 @@ import org.openlinktoken.tokentransformer.TokenTransformer;
 
 ## Person Attribute Map
 
-Open Link Token's Java library represents a person's values as a map keyed by attribute class:
+Open Link Token's Java library represents a person's values as a map keyed by field ID:
 
 ```java
-Map<Class<? extends Attribute>, String> personAttributes = new HashMap<>();
-personAttributes.put(FirstNameAttribute.class, "John");
-personAttributes.put(LastNameAttribute.class, "Doe");
-personAttributes.put(BirthDateAttribute.class, "1980-01-15");
-personAttributes.put(SexAttribute.class, "Male");
-personAttributes.put(PostalCodeAttribute.class, "98004");
-personAttributes.put(SocialSecurityNumberAttribute.class, "123-45-6789");
+Map<String, String> personAttributes = new HashMap<>();
+personAttributes.put("FirstName", "John");
+personAttributes.put("LastName", "Doe");
+personAttributes.put("BirthDate", "1980-01-15");
+personAttributes.put("Sex", "Male");
+personAttributes.put("PostalCode", "98004");
+personAttributes.put("SocialSecurityNumber", "123-45-6789");
 ```
 
-Normalization and validation are handled internally by `TokenGenerator` using the attribute implementations loaded via `AttributeLoader`.
+Field IDs like `"FirstName"` and `"LastName"` are resolved to attribute behavior (normalization and validation) through `FieldRegistry`. Built-in field IDs work out of the box via `FieldRegistry.createDefault()`, which `TokenGenerator` uses internally. To register custom field IDs — for example, when multiple person fields share the same underlying attribute type — see [FieldRegistry and Field IDs](token-registration.md#fieldregistry-and-field-ids).
 
 ## TokenDefinition
 
@@ -59,11 +52,10 @@ TokenDefinition tokenDefinition = new TokenDefinition();
 
 ### Methods
 
-| Method                                                                | Return Type            | Description                                                    |
-| --------------------------------------------------------------------- | ---------------------- | -------------------------------------------------------------- |
-| `getAllTokenSignatures(Map<Class<? extends Attribute>, String>)`      | `Map<String, String>`  | Generates signatures for all rules (debug/logging)             |
-| `getAllTokens(Map<Class<? extends Attribute>, String>)`               | `TokenGeneratorResult` | Generates tokens for all rules and captures invalid/blank info |
-| `getInvalidPersonAttributes(Map<Class<? extends Attribute>, String>)` | `Set<String>`          | Validates all provided attribute values                        |
+| Method                                                 | Return Type            | Description                                                                               |
+| ------------------------------------------------------ | ---------------------- | ----------------------------------------------------------------------------------------- |
+| `getAllTokenSignaturesViaFieldId(Map<String, String>)` | `Map<String, String>`  | Generates signatures for all rules using a field-ID-keyed map (debug/logging)             |
+| `getAllTokensViaFieldId(Map<String, String>)`          | `TokenGeneratorResult` | Generates tokens for all rules using a field-ID-keyed map and captures invalid/blank info |
 
 ### Example
 
@@ -78,12 +70,7 @@ TokenGenerator generator = new TokenGenerator(
     new SHA256Tokenizer(transformers)
 );
 
-var invalid = generator.getInvalidPersonAttributes(personAttributes);
-if (!invalid.isEmpty()) {
-    System.out.println("Invalid attributes: " + invalid);
-}
-
-TokenGeneratorResult result = generator.getAllTokens(personAttributes);
+TokenGeneratorResult result = generator.getAllTokensViaFieldId(personAttributes);
 result.getTokens().forEach((ruleId, token) -> System.out.println(ruleId + ": " + token));
 ```
 
@@ -124,13 +111,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.openlinktoken.attributes.Attribute;
-import org.openlinktoken.attributes.person.BirthDateAttribute;
-import org.openlinktoken.attributes.person.FirstNameAttribute;
-import org.openlinktoken.attributes.person.LastNameAttribute;
-import org.openlinktoken.attributes.person.PostalCodeAttribute;
-import org.openlinktoken.attributes.person.SexAttribute;
-import org.openlinktoken.attributes.person.SocialSecurityNumberAttribute;
 import org.openlinktoken.tokens.TokenDefinition;
 import org.openlinktoken.tokens.TokenGenerator;
 import org.openlinktoken.tokens.TokenGeneratorResult;
@@ -143,13 +123,13 @@ public class TokenGenerator {
     public static void main(String[] args) {
         String recordId = "patient_001";
 
-        Map<Class<? extends Attribute>, String> personAttributes = new HashMap<>();
-        personAttributes.put(FirstNameAttribute.class, "John");
-        personAttributes.put(LastNameAttribute.class, "Doe");
-        personAttributes.put(BirthDateAttribute.class, "1980-01-15");
-        personAttributes.put(SexAttribute.class, "Male");
-        personAttributes.put(PostalCodeAttribute.class, "98004");
-        personAttributes.put(SocialSecurityNumberAttribute.class, "123-45-6789");
+        Map<String, String> personAttributes = new HashMap<>();
+        personAttributes.put("FirstName", "John");
+        personAttributes.put("LastName", "Doe");
+        personAttributes.put("BirthDate", "1980-01-15");
+        personAttributes.put("Sex", "Male");
+        personAttributes.put("PostalCode", "98004");
+        personAttributes.put("SocialSecurityNumber", "123-45-6789");
 
         List<TokenTransformer> transformers = List.of(
             new HashTokenTransformer("HashingSecret"),
@@ -161,13 +141,7 @@ public class TokenGenerator {
             new SHA256Tokenizer(transformers)
         );
 
-        var invalid = generator.getInvalidPersonAttributes(personAttributes);
-        if (!invalid.isEmpty()) {
-            System.err.println("Invalid attributes: " + invalid);
-            return;
-        }
-
-        TokenGeneratorResult result = generator.getAllTokens(personAttributes);
+        TokenGeneratorResult result = generator.getAllTokensViaFieldId(personAttributes);
         result.getTokens().forEach((ruleId, token) ->
             System.out.printf("%s,%s,%s%n", recordId, ruleId, token)
         );
@@ -179,15 +153,15 @@ public class TokenGenerator {
 
 The Java library focuses on in-memory token generation. It does not include CSV, Parquet, or other file I/O helper classes.
 
-Use your application's reader or writer layer to map each record into `Map<Class<? extends Attribute>, String>`, then pass that map to `TokenGenerator`.
+Use your application's reader or writer layer to map each record into `Map<String, String>` keyed by field ID, then pass that map to `TokenGenerator`.
 
 ```java
-Map<Class<? extends Attribute>, String> personAttributes = new HashMap<>();
-personAttributes.put(FirstNameAttribute.class, row.get("FirstName"));
-personAttributes.put(LastNameAttribute.class, row.get("LastName"));
-// ...populate the remaining attributes needed for your token rules
+Map<String, String> personAttributes = new HashMap<>();
+personAttributes.put("FirstName", row.get("FirstName"));
+personAttributes.put("LastName", row.get("LastName"));
+// ...populate the remaining fields needed for your token rules
 
-TokenGeneratorResult result = generator.getAllTokens(personAttributes);
+TokenGeneratorResult result = generator.getAllTokensViaFieldId(personAttributes);
 ```
 
 ## Thread Safety
@@ -198,9 +172,9 @@ All transformer classes are thread-safe and can be shared across threads:
 // Token generation is safe to parallelize across independent records.
 // For best clarity, create the per-record attribute map inside the task.
 ExecutorService executor = Executors.newFixedThreadPool(4);
-for (Map<Class<? extends Attribute>, String> personAttributes : persons) {
+for (Map<String, String> personAttributes : persons) {
     executor.submit(() -> {
-        TokenGeneratorResult result = generator.getAllTokens(personAttributes);
+        TokenGeneratorResult result = generator.getAllTokensViaFieldId(personAttributes);
         // ...
     });
 }
@@ -212,7 +186,7 @@ for (Map<Class<? extends Attribute>, String> personAttributes : persons) {
 <dependency>
     <groupId>org.openlinktoken</groupId>
     <artifactId>openlinktoken</artifactId>
-    <version>2.0.0</version>
+    <version>2.1.0</version>
 </dependency>
 ```
 

@@ -5,21 +5,21 @@ import logging
 import sys
 import tempfile
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from openlinktoken.metadata import Metadata
 from openlinktoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
 from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 from openlinktoken.tokentransformer.token_transformer import TokenTransformer
-from openlinktoken_cli.io.csv.person_attributes_csv_reader import PersonAttributesCSVReader
 from openlinktoken_cli.io.csv.person_attributes_csv_writer import PersonAttributesCSVWriter
 from openlinktoken_cli.io.json.metadata_json_writer import MetadataJsonWriter
-from openlinktoken_cli.io.parquet.person_attributes_parquet_reader import PersonAttributesParquetReader
 from openlinktoken_cli.io.parquet.person_attributes_parquet_writer import PersonAttributesParquetWriter
 from openlinktoken_cli.processor.person_attributes_processor import (
     PersonAttributesProcessingSummary,
     PersonAttributesProcessor,
 )
+from openlinktoken_cli.tokens.config.tokenization_config_helper import TokenizationConfigHelper
+from openlinktoken_cli.tokens.config.tokenization_config_loader import TokenizationConfigLoader
 from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
 from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
 from openlinktoken_cli.util.exchange_config import derive_transport_encryption_key, resolve_exchange_config
@@ -78,6 +78,17 @@ class PackageCommand:
             help="Path to the exchange config JSON (default: ./openlinktoken-YYYY-MM-DD.exchange.json)",
         )
 
+        parser.add_argument(
+            "--config",
+            required=False,
+            dest="tokenization_config",
+            metavar="PATH",
+            help=(
+                "Path to a YAML tokenization config that defines input field mappings and token rules. "
+                "Supported for CSV and Parquet input."
+            ),
+        )
+
         private_key_group = parser.add_mutually_exclusive_group(required=False)
         private_key_group.add_argument(
             "--private-key",
@@ -111,15 +122,15 @@ class PackageCommand:
             ),
         )
 
-         # --no-progress / -q: suppress interactive progress indicator
+        # --no-progress / -q: suppress interactive progress indicator
         parser.add_argument(
-              "--no-progress",
-              "-q",
+            "--no-progress",
+            "-q",
             action="store_true",
             default=False,
             dest="no_progress",
             help="Suppress interactive progress indicator (e.g. for non-interactive / CI environments)",
-            )
+        )
 
         parser.set_defaults(func=PackageCommand.execute)
 
@@ -140,6 +151,7 @@ class PackageCommand:
             return 1
         ring_id = resolve_ring_id(args.ring_id)
         hash_record_ids = getattr(args, "hash_record_ids", False)
+        tokenization_config_path = getattr(args, "tokenization_config", None)
         reporter = CliRunReporter("package", no_progress=args.no_progress)
 
         try:
@@ -165,8 +177,7 @@ class PackageCommand:
                     # Determine total rows via reader to enable %/ETA
                     total_rows: int | None = None
                     try:
-                        reader = PackageCommand._create_reader(
-                            args.input_path, input_type)
+                        reader = TokenizationConfigHelper.create_reader(args.input_path, input_type)
                         total_rows = reader.row_count()
                         reader.close()
                     except Exception:
@@ -207,6 +218,7 @@ class PackageCommand:
                             encryption_key,
                             ring_id,
                             hash_record_ids,
+                            tokenization_config_path,
                             progress_callback=reporter.make_progress_callback("Packaging records", "records"),
                         )
 
@@ -243,6 +255,7 @@ class PackageCommand:
         encryption_key: bytes,
         ring_id: str,
         hash_record_ids: bool = False,
+        tokenization_config_path: Optional[str] = None,
         progress_callback=None,
     ) -> tuple[PersonAttributesProcessingSummary, str]:
         """Process tokens from person attributes."""
@@ -256,8 +269,11 @@ class PackageCommand:
             raise RuntimeError("Failed to initialize transformers") from e
 
         try:
+            config, resolver, token_definition = TokenizationConfigLoader.load_runtime_components(
+                tokenization_config_path
+            )
             with (
-                PackageCommand._create_reader(input_path, input_type) as reader,
+                TokenizationConfigHelper.create_reader(input_path, input_type, config, resolver) as reader,
                 PackageCommand._create_writer(output_path, output_type) as writer,
             ):
                 # Create metadata
@@ -275,6 +291,7 @@ class PackageCommand:
                     encryption_key,
                     ring_id,
                     hash_record_ids,
+                    token_definition=token_definition,
                     progress_callback=progress_callback,
                 )
 
@@ -311,17 +328,6 @@ class PackageCommand:
         if hash_record_ids:
             lines.append("Record ID hashing: enabled")
         return lines
-
-    @staticmethod
-    def _create_reader(path: str, file_type: str):
-        """Create a PersonAttributesReader based on file type."""
-        file_type_lower = file_type.lower()
-        if file_type_lower == FileTypeDetector.TYPE_CSV:
-            return PersonAttributesCSVReader(path)
-        elif file_type_lower == FileTypeDetector.TYPE_PARQUET:
-            return PersonAttributesParquetReader(path)
-        else:
-            raise ValueError(f"Unsupported input type: {file_type}")
 
     @staticmethod
     def _create_writer(path: str, file_type: str):

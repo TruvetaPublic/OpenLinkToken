@@ -78,6 +78,7 @@ coverage-*.xml
 htmlcov/
 htmlcov-*/
 test-results-*.xml
+test-output.xml
 tools/sync-report-*.json
 demos/pprl-superhero-example/outputs/
 demos/pprl-superhero-example/datasets/

@@ -19,12 +19,12 @@ openlinktoken = { workspace = true }
 
 [dependency-groups]
 dev = [
-   "cryptography==48.0.1",
+   "cryptography==49.0.0",
    "jwcrypto==1.5.7",
    "csv2parquet==0.0.9",
-   "pytest==9.0.3",
+   "pytest==9.1.1",
    "pytest-cov==7.1.0",
-   "ruff==0.15.17",
+   "ruff==0.15.21",
    "pycryptodome==3.23.0",
    "jupyter==1.1.1",
    "notebook==7.5.7",

@@ -18,14 +18,14 @@ except FileNotFoundError:
 
 # Core dependencies (version-agnostic, no PySpark)
 core_requirements = [
-    "openlinktoken==2.0.0",
+    "openlinktoken==2.1.0",
     "pycryptodome==3.23.0",
     "jwcrypto==1.5.7",
 ]
 
 setup(
     name="openlinktoken-pyspark",
-    version="2.0.0",
+    version="2.1.0",
     author="Open Link Token Contributors",
     description="Open Link Token PySpark bridge for distributed token generation",
     long_description=long_description,
@@ -60,7 +60,7 @@ setup(
             "pyarrow==19.0.0",
             "pandas==2.2.3; python_version < '3.11'",
             "pandas==3.0.3; python_version >= '3.11'",
-            "setuptools==82.0.1; python_version >= '3.12'",
+            "setuptools==83.0.0; python_version >= '3.12'",
         ],
         # Spark 3.4.x - Legacy support
         "spark34": [
@@ -68,15 +68,15 @@ setup(
             "pyarrow==15.0.0",
             "pandas==2.1.4; python_version < '3.11'",
             "pandas==3.0.3; python_version >= '3.11'",
-            "setuptools==82.0.1; python_version >= '3.12'",
+            "setuptools==83.0.0; python_version >= '3.12'",
         ],
         # Development dependencies
         "dev": [
-            "pytest==9.0.3",
+            "pytest==9.1.1",
             "pytest-cov==7.1.0",
             "flake8==7.3.0",
             "jupyter==1.1.1",
-            "notebook==7.5.7",
+            "notebook==7.6.0",
             "ipykernel==7.3.0",
         ],
     },

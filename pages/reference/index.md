@@ -36,13 +36,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.openlinktoken.attributes.Attribute;
-import org.openlinktoken.attributes.person.BirthDateAttribute;
-import org.openlinktoken.attributes.person.FirstNameAttribute;
-import org.openlinktoken.attributes.person.LastNameAttribute;
-import org.openlinktoken.attributes.person.PostalCodeAttribute;
-import org.openlinktoken.attributes.person.SexAttribute;
-import org.openlinktoken.attributes.person.SocialSecurityNumberAttribute;
 import org.openlinktoken.tokens.TokenDefinition;
 import org.openlinktoken.tokens.TokenGenerator;
 import org.openlinktoken.tokens.TokenGeneratorResult;
@@ -61,17 +54,19 @@ TokenGenerator tokenGenerator = new TokenGenerator(
   new SHA256Tokenizer(transformers)
 );
 
-Map<Class<? extends Attribute>, String> personAttributes = new HashMap<>();
-personAttributes.put(FirstNameAttribute.class, "Elena");
-personAttributes.put(LastNameAttribute.class, "Vasquez");
-personAttributes.put(BirthDateAttribute.class, "1992-07-14");
-personAttributes.put(SexAttribute.class, "Female");
-personAttributes.put(PostalCodeAttribute.class, "30301");
-personAttributes.put(SocialSecurityNumberAttribute.class, "452-38-7291");
+Map<String, String> personAttributes = new HashMap<>();
+personAttributes.put("FirstName", "Elena");
+personAttributes.put("LastName", "Vasquez");
+personAttributes.put("BirthDate", "1992-07-14");
+personAttributes.put("Sex", "Female");
+personAttributes.put("PostalCode", "30301");
+personAttributes.put("SocialSecurityNumber", "452-38-7291");
 
-TokenGeneratorResult result = tokenGenerator.getAllTokens(personAttributes);
+TokenGeneratorResult result = tokenGenerator.getAllTokensViaFieldId(personAttributes);
 result.getTokens().forEach((ruleId, token) -> System.out.println(ruleId + ": " + token));
 ```
+
+> Field IDs (e.g. `"FirstName"`, `"LastName"`) are resolved to attribute behavior through `FieldRegistry`, which also supports registering multiple person fields under the same attribute type (e.g. `MotherLastName` and `FatherLastName`). See the [Java API Reference](java-api.md) for details.
 
 **Full reference:** [Java API Reference](java-api.md)
 
@@ -91,12 +86,6 @@ The Python API mirrors the Java API for cross-language parity.
 **Quick example:**
 
 ```python
-from openlinktoken.attributes.person.birth_date_attribute import BirthDateAttribute
-from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute
-from openlinktoken.attributes.person.last_name_attribute import LastNameAttribute
-from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttribute
-from openlinktoken.attributes.person.sex_attribute import SexAttribute
-from openlinktoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
 from openlinktoken.tokens.token_definition import TokenDefinition
 from openlinktoken.tokens.token_generator import TokenGenerator
 from openlinktoken.tokens.tokenizer.sha256_tokenizer import SHA256Tokenizer
@@ -111,18 +100,20 @@ tokenizer = SHA256Tokenizer([
 token_generator = TokenGenerator(token_definition, tokenizer)
 
 person_attributes = {
-  FirstNameAttribute: "Elena",
-  LastNameAttribute: "Vasquez",
-  BirthDateAttribute: "1992-07-14",
-  SexAttribute: "Female",
-  PostalCodeAttribute: "30301",
-  SocialSecurityNumberAttribute: "452-38-7291",
+  "FirstName": "Elena",
+  "LastName": "Vasquez",
+  "BirthDate": "1992-07-14",
+  "Sex": "Female",
+  "PostalCode": "30301",
+  "SocialSecurityNumber": "452-38-7291",
 }
 
-result = token_generator.get_all_tokens(person_attributes)
+result = token_generator.get_all_tokens_via_field_id(person_attributes)
 for rule_id, token in result.tokens.items():
   print(f"{rule_id}: {token}")
 ```
+
+> Field IDs (e.g. `"FirstName"`, `"LastName"`) are resolved to attribute behavior through `FieldRegistry`, which also supports registering multiple person fields under the same attribute type (e.g. `MotherLastName` and `FatherLastName`). See the [Python API Reference](python-api.md) for details.
 
 **Full reference:** [Python API Reference](python-api.md)
 

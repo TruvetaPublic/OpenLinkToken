@@ -5,7 +5,7 @@
 -e ./lib/python/openlinktoken-cli
 cffi==2.0.0 ; platform_python_implementation != 'PyPy'
     # via cryptography
-cryptography==48.0.1
+cryptography==49.0.0
     # via
     #   jwcrypto
     #   openlinktoken

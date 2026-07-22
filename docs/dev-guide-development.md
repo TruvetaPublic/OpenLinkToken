@@ -248,7 +248,7 @@ If you also want the same ZIP and checksum bundle produced by the release workfl
 
 ```shell
 python -m openlinktoken_cli.util.release_assets \
-  --version 2.0.0 \
+  --version 2.1.0 \
   --runner-os Linux \
   --dist-dir dist \
   --output-dir release-assets
