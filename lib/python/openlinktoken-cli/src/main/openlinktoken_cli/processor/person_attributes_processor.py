@@ -504,7 +504,14 @@ class PersonAttributesProcessor:
         inference_provider = TokenGenerator.get_inference_provider()
         inference_was_invoked = inference_provider is not None and inference_provider.is_enabled()
         if inference_was_invoked:
-            rows = [pr.row for pr in pending_rows]
+            rows = [
+                {
+                    type(attribute): value
+                    for field_id, value in pending_row.row.items()
+                    if (attribute := token_generator.field_registry.get_attribute(field_id)) is not None
+                }
+                for pending_row in pending_rows
+            ]
             batch_result = inference_provider.generate_batch(rows)
             ml1_signatures = batch_result.signatures
 
@@ -513,8 +520,9 @@ class PersonAttributesProcessor:
             # is unavailable, ML1 produces no output rather than recording a spurious blank.
             if inference_was_invoked:
                 ml1_signature = ml1_signatures[i] if i < len(ml1_signatures) else None
-                # ML1 is already HMAC-hashed internally; bypass the tokenizer/transformer chain.
-                token_generator.store_raw_token(pending_row.token_generator_result, "ML1", ml1_signature)
+                if ml1_signature:
+                    # ML1 is already HMAC-hashed internally; bypass the tokenizer/transformer chain.
+                    token_generator.store_raw_token(pending_row.token_generator_result, "ML1", ml1_signature)
 
             logger.debug(f"Tokens: {pending_row.token_generator_result.tokens}")
 
