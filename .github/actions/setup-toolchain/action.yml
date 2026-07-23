@@ -78,7 +78,19 @@ runs:
       run: |
         set -euo pipefail
         echo "$GPG_PRIVATE_KEY" | base64 --decode | gpg --batch --import
-        gpg_keyname="$(gpg --batch --list-secret-keys --with-colons | awk -F: '$1 == "fpr" { print $10; exit }')"
+        gpg_keyname="$(
+          gpg --batch --list-secret-keys --with-colons |
+            awk -F: '
+              ($1 == "sec" || $1 == "ssb") {
+                signing_candidate = ($12 ~ /s/)
+                next
+              }
+              $1 == "fpr" && signing_candidate {
+                print $10
+                exit
+              }
+            '
+        )"
         if [[ -z "$gpg_keyname" ]]; then
           echo "::error::No GPG secret key fingerprint found after import"
           exit 1
