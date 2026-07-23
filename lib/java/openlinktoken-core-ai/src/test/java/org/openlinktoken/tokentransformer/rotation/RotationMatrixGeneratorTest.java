@@ -19,6 +19,7 @@ class RotationMatrixGeneratorTest {
     private static final int DIMENSION = 4;
     private static final int COUNT = 3;
     private static final double TOLERANCE = 1e-10;
+    private static final double QR_FIXTURE_TOLERANCE = 1e-15;
 
     @Test
     void testReturnsCorrectCount() {
@@ -146,6 +147,26 @@ class RotationMatrixGeneratorTest {
                 }
             }
             assertTrue(Math.abs(computeDet(m, n) - 1.0) < TOLERANCE);
+        }
+    }
+
+    @Test
+    void testMatchesNumpyHouseholderQrReferenceFixture() {
+        // NumPy QR output after normalizing columns by sign(diag(R)) and enforcing det(Q) = +1.
+        double[][] expected = {
+                { -0.11033054293072242, -0.65094870327709264, 0.73763853752775732, 0.14135892243645001 },
+                { 0.45120119662062919, -0.059568165581975238, 0.18195883986509798, -0.87164218255672898 },
+                { -0.86485909149250417, -0.11280580567809925, -0.13902921534993631, -0.46900370931076435 },
+                { -0.19042952325593890, 0.74832631221705959, 0.63517812133923512, -0.017119617054466726 }
+        };
+
+        double[][] actual = RotationMatrixGenerator.generate(IV, 1, DIMENSION).get(0);
+
+        for (int row = 0; row < DIMENSION; row++) {
+            for (int col = 0; col < DIMENSION; col++) {
+                assertEquals(expected[row][col], actual[row][col], QR_FIXTURE_TOLERANCE,
+                        "Q[" + row + "][" + col + "]");
+            }
         }
     }
 

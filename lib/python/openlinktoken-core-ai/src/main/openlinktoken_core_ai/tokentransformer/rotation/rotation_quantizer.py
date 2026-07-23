@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: MIT
 
-import math
 from typing import List
 
 
@@ -21,9 +20,8 @@ def quantize(
     Returns:
         Space-separated string of integer bin indices.
     """
-    num_bins = math.ceil((max_val - min_val) / bin_width)
     bins = []
     for v in x:
-        b = int(math.floor((v - min_val) / bin_width))
-        bins.append(max(0, min(b, num_bins - 1)))
+        clamped_value = min(max(v, min_val), max_val)
+        bins.append(int((clamped_value - min_val) // bin_width))
     return " ".join(str(b) for b in bins)

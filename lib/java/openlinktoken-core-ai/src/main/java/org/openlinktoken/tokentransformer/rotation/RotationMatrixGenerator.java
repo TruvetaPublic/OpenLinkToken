@@ -15,9 +15,9 @@ import javax.crypto.spec.SecretKeySpec;
  * Generates deterministic orthogonal rotation matrices from an initialization vector (IV).
  *
  * <p>The algorithm uses HMAC-SHA256 in counter mode as a PRNG, Box-Muller transform to produce
- * standard-normal values, and Modified Gram-Schmidt for orthonormalization. The algorithm is
- * fully specified in terms of standard operations and produces bit-exact results across Java
- * and Python implementations when given the same IV.
+ * standard-normal values, and Householder QR decomposition for orthonormalization. The
+ * resulting columns are normalized by the signs of the QR diagonal to match the persisted
+ * PersonMatching rotation-matrix contract.
  *
  * <p>Each returned matrix Q satisfies {@code Q * Q^T = I} and {@code det(Q) = +1}.
  */
@@ -83,32 +83,7 @@ public final class RotationMatrixGenerator {
             }
         }
 
-        // Modified Gram-Schmidt orthonormalization on columns.
-        // q[row][col] accumulates orthonormal column vectors.
-        double[][] q = new double[n][n];
-        for (int j = 0; j < n; j++) {
-            double[] vj = new double[n];
-            for (int row = 0; row < n; row++) {
-                vj[row] = raw[row][j];
-            }
-            for (int previousColumn = 0; previousColumn < j; previousColumn++) {
-                double proj = 0.0;
-                for (int row = 0; row < n; row++) {
-                    proj += vj[row] * q[row][previousColumn];
-                }
-                for (int row = 0; row < n; row++) {
-                    vj[row] -= proj * q[row][previousColumn];
-                }
-            }
-            double norm = 0.0;
-            for (int row = 0; row < n; row++) {
-                norm += vj[row] * vj[row];
-            }
-            norm = Math.sqrt(norm);
-            for (int row = 0; row < n; row++) {
-                q[row][j] = vj[row] / norm;
-            }
-        }
+        double[][] q = householderQr(raw, n);
 
         // Ensure det(Q) = +1 (proper rotation, no reflection).
         if (computeDetSign(q, n) < 0) {
@@ -118,6 +93,106 @@ public final class RotationMatrixGenerator {
         }
 
         return q;
+    }
+
+    private static double[][] householderQr(double[][] raw, int n) {
+        double[][] q = identityMatrix(n);
+        double[][] r = copyMatrix(raw, n);
+
+        for (int col = 0; col < n; col++) {
+            double[] reflector = new double[n - col];
+            for (int row = col; row < n; row++) {
+                reflector[row - col] = r[row][col];
+            }
+
+            double norm = vectorNorm(reflector);
+            if (norm == 0.0) {
+                continue;
+            }
+            reflector[0] += Math.copySign(norm, reflector[0]);
+            applyReflectorFromLeft(r, reflector, col, col, n);
+            applyReflectorFromRight(q, reflector, col, n);
+        }
+
+        for (int col = 0; col < n; col++) {
+            if (r[col][col] < 0.0) {
+                for (int row = 0; row < n; row++) {
+                    q[row][col] = -q[row][col];
+                }
+            }
+        }
+        return q;
+    }
+
+    private static double[][] identityMatrix(int n) {
+        double[][] identity = new double[n][n];
+        for (int row = 0; row < n; row++) {
+            identity[row][row] = 1.0;
+        }
+        return identity;
+    }
+
+    private static double[][] copyMatrix(double[][] matrix, int n) {
+        double[][] copy = new double[n][];
+        for (int row = 0; row < n; row++) {
+            copy[row] = matrix[row].clone();
+        }
+        return copy;
+    }
+
+    private static double vectorNorm(double[] values) {
+        double scale = 0.0;
+        double sumOfSquares = 1.0;
+        for (double value : values) {
+            double absoluteValue = Math.abs(value);
+            if (absoluteValue == 0.0) {
+                continue;
+            }
+            if (scale < absoluteValue) {
+                sumOfSquares = 1.0 + sumOfSquares * (scale / absoluteValue) * (scale / absoluteValue);
+                scale = absoluteValue;
+            } else {
+                sumOfSquares += (absoluteValue / scale) * (absoluteValue / scale);
+            }
+        }
+        return scale == 0.0 ? 0.0 : scale * Math.sqrt(sumOfSquares);
+    }
+
+    private static void applyReflectorFromLeft(
+            double[][] matrix, double[] reflector, int startRow, int startColumn, int n) {
+        double squaredNorm = squaredNorm(reflector);
+        for (int col = startColumn; col < n; col++) {
+            double dotProduct = 0.0;
+            for (int row = startRow; row < n; row++) {
+                dotProduct += reflector[row - startRow] * matrix[row][col];
+            }
+            double multiplier = 2.0 * dotProduct / squaredNorm;
+            for (int row = startRow; row < n; row++) {
+                matrix[row][col] -= multiplier * reflector[row - startRow];
+            }
+        }
+    }
+
+    private static void applyReflectorFromRight(double[][] matrix, double[] reflector, int startColumn, int n) {
+        double squaredNorm = squaredNorm(reflector);
+        for (int row = 0; row < n; row++) {
+            double dotProduct = 0.0;
+            for (int col = startColumn; col < n; col++) {
+                dotProduct += matrix[row][col] * reflector[col - startColumn];
+            }
+            double multiplier = 2.0 * dotProduct / squaredNorm;
+            for (int col = startColumn; col < n; col++) {
+                matrix[row][col] -= multiplier * reflector[col - startColumn];
+            }
+        }
+    }
+
+    private static double squaredNorm(double[] values) {
+        double sum = 0.0;
+        for (double value : values) {
+            sum += value * value;
+        }
+        return sum;
     }
 
     /**

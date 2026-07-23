@@ -93,7 +93,7 @@ class RotationEmbeddingTransformerTest {
 
         List<String> tokens = transformer.transform(embedding);
 
-        assertEquals(List.of("102 95 107", "95 126 103"), tokens);
+        assertEquals(List.of("102 94 107", "95 126 103"), tokens);
     }
 
     @Test
@@ -138,7 +138,7 @@ class RotationEmbeddingTransformerTest {
     @Test
     void testWithDefaultsCreatesZeroBias() {
         // A zero-bias transformer applied to the zero vector should project to zero,
-        // and the zero vector should quantize to the midpoint bin (100 for [-5,5]/0.05).
+        // and Python floor division maps it to bin 99 for [-5,5]/0.05.
         int dimension = 4;
         RotationEmbeddingTransformer transformer =
                 RotationEmbeddingTransformer.withDefaults(IV, 2, dimension, dimension);
@@ -149,8 +149,8 @@ class RotationEmbeddingTransformerTest {
         assertEquals(2, tokens.size());
         for (String token : tokens) {
             for (String part : token.split(" ")) {
-                // Zero vector projected through any rotation is still zero; bin = 100
-                assertEquals("100", part, "Zero embedding should map to midpoint bin");
+                // Zero vector projected through any rotation is still zero; bin = 99
+                assertEquals("99", part, "Zero embedding should map to midpoint bin");
             }
         }
     }

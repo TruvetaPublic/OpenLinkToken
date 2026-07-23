@@ -1,5 +1,5 @@
 # Core package dependency
-openlinktoken>=2.0.0-alpha
+openlinktoken>=2.0.0
 
 # ML1 ONNX inference
 numpy>=1.26.0

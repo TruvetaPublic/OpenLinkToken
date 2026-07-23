@@ -113,7 +113,7 @@ class TestTokenizeCommandHashOnly:
         assert (temp_dir / "output.metadata.json").exists()
 
     def test_hash_only_mode_rejects_exchange_config(self, temp_dir: Path):
-        """Hash-only mode should reject --exchange-config."""
+        """Hash-only mode requires a private key when given an exchange config."""
         exchange_config, _ = self._create_exchange_config(temp_dir, "hash-with-config")
         exit_code = OpenLinkTokenCommand.execute(
             [
@@ -129,6 +129,31 @@ class TestTokenizeCommandHashOnly:
             ]
         )
         assert exit_code != 0
+
+    def test_hash_only_mode_accepts_exchange_config_for_rotation(self, temp_dir: Path):
+        """Hash-only mode may load an exchange's rotation configuration without HMAC hashing."""
+        exchange_config, private_key = self._create_exchange_config(temp_dir, "hash-with-config")
+        output_csv = temp_dir / "output.csv"
+
+        exit_code = OpenLinkTokenCommand.execute(
+            [
+                "tokenize",
+                "-i",
+                str(temp_dir / "input.csv"),
+                "-o",
+                str(output_csv),
+                "--mode",
+                "hash-only",
+                "--exchange-config",
+                str(exchange_config),
+                "--private-key",
+                str(private_key),
+                "--disable-inferencing",
+            ]
+        )
+
+        assert exit_code == 0
+        assert output_csv.exists()
 
     def test_hash_only_mode_rejects_private_key(self, temp_dir: Path):
         """Hash-only mode should reject --private-key."""

@@ -8,10 +8,10 @@ from openlinktoken_core_ai.tokentransformer.rotation.rotation_quantizer import q
 class TestRotationQuantizer:
     """Unit tests for the rotation quantizer."""
 
-    def test_zero_maps_to_bin_100(self):
-        """0.0 should map to bin 100 — the midpoint of [-5, 5] with width 0.05."""
+    def test_zero_maps_to_bin_99(self):
+        """0.0 must use the same float floor-division bin as PersonMatching."""
         result = quantize([0.0])
-        assert result == "100"
+        assert result == "99"
 
     def test_clamping_below_min_gives_bin_zero(self):
         """Values below min_val (-5.0) clamp to bin 0."""
@@ -48,14 +48,14 @@ class TestRotationQuantizer:
         assert num_bins == 200
 
     def test_known_positive_value(self):
-        """2.5 → bin = floor((2.5 - (-5.0)) / 0.05) = floor(150.0) = 150."""
+        """2.5 must use PersonMatching's float floor-division boundary bin."""
         result = quantize([2.5])
-        assert result == "150"
+        assert result == "149"
 
     def test_known_negative_value(self):
-        """-2.5 → bin = floor((-2.5 - (-5.0)) / 0.05) = floor(50.0) = 50."""
+        """-2.5 must use PersonMatching's float floor-division boundary bin."""
         result = quantize([-2.5])
-        assert result == "50"
+        assert result == "49"
 
     def test_empty_list_produces_empty_string(self):
         """Empty input list should produce an empty string."""

@@ -11,6 +11,7 @@ dynamic = [
 ]
 dependencies = [
   "openlinktoken==2.0.0",
+  "openlinktoken-core-ai==2.0.0",
   "pandas==2.2.3; python_version < '3.11'",
   "pandas==3.0.3; python_version >= '3.11'",
   "pyarrow==24.0.0",

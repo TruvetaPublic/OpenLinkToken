@@ -54,17 +54,30 @@ def _compute_t1_signature(person_attributes: Dict[Type[Attribute], str]) -> Opti
     return "|".join(values) if values else None
 
 
-def _hash_rotation_values(rotation_values: List[str], t1_signature: str) -> List[str]:
-    """SHA-256 hash each rotation-quantized string concatenated with the T1 signature.
+def _compute_blocking_key(
+    person_attributes: Dict[Type[Attribute], str],
+) -> Optional[str]:
+    """Compute the SHA-256 T1 blocking key used by PersonMatching rotations."""
+    t1_signature = _compute_t1_signature(person_attributes)
+    if t1_signature is None:
+        return None
+    return hashlib.sha256(t1_signature.encode("utf-8")).hexdigest()
+
+
+def _hash_rotation_values(rotation_values: List[str], blocking_key: str) -> List[str]:
+    """SHA-256 hash each rotation-quantized string concatenated with the blocking key.
 
     Args:
         rotation_values: Space-separated bin-index strings, one per rotation matrix.
-        t1_signature: Raw T1 token signature appended to each rotation value before hashing.
+        blocking_key: SHA-256 T1 blocking key appended to each rotation value before hashing.
 
     Returns:
         List of SHA-256 hex digest strings, one per rotation value.
     """
-    return [hashlib.sha256((rv + t1_signature).encode("utf-8")).hexdigest() for rv in rotation_values]
+    return [
+        hashlib.sha256((rotation_value + blocking_key).encode("utf-8")).hexdigest()
+        for rotation_value in rotation_values
+    ]
 
 
 # Ordered field name mapping for ML1 payload.
@@ -131,9 +144,9 @@ class OnnxML1SignatureProvider:
                 transformer = self._get_rotation_transformer(len(embedding))
                 if transformer is not None:
                     rotation_values: List[str] = transformer.transform(list(embedding))
-                    t1_sig = _compute_t1_signature(person_attributes)
-                    if t1_sig:
-                        rotation_values = _hash_rotation_values(rotation_values, t1_sig)
+                    blocking_key = _compute_blocking_key(person_attributes)
+                    if blocking_key:
+                        rotation_values = _hash_rotation_values(rotation_values, blocking_key)
                     return ",".join(rotation_values)
             return sig
         except Exception as error:
@@ -177,9 +190,9 @@ class OnnxML1SignatureProvider:
                 raw_embeddings[original_index] = embedding
                 if transformer is not None and embedding is not None:
                     rotation_values: List[str] = transformer.transform(list(embedding))
-                    t1_sig = _compute_t1_signature(rows[original_index])
-                    if t1_sig:
-                        rotation_values = _hash_rotation_values(rotation_values, t1_sig)
+                    blocking_key = _compute_blocking_key(rows[original_index])
+                    if blocking_key:
+                        rotation_values = _hash_rotation_values(rotation_values, blocking_key)
                     signatures[original_index] = ",".join(rotation_values)
                 else:
                     signatures[original_index] = batch_sigs[vi]

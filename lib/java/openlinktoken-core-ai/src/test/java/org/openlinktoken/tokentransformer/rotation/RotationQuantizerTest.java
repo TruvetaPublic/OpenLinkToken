@@ -17,9 +17,9 @@ class RotationQuantizerTest {
     @Test
     void testZeroMapsToMidpointBin() {
         // 0.0 is the midpoint of [-5, 5].
-        // bin = floor((0.0 - (-5.0)) / 0.05) = floor(100.0) = 100
+        // Python float floor division gives (0.0 - (-5.0)) // 0.05 = 99.0.
         String result = RotationQuantizer.quantize(new float[] { 0.0f });
-        assertEquals("100", result);
+        assertEquals("99", result);
     }
 
     @Test
@@ -31,14 +31,14 @@ class RotationQuantizerTest {
 
     @Test
     void testClampingAboveMax() {
-        // Values above (or at) max should clamp to last bin (numBins - 1 = 199)
+        // Values above max clamp to max; Python's 10.0 // 0.05 is 199.0.
         String result = RotationQuantizer.quantize(new float[] { 10.0f });
         assertEquals(String.valueOf(NUM_BINS - 1), result);
     }
 
     @Test
     void testClampingAtExactMax() {
-        // 5.0 is exactly at max; floor((5.0 - (-5.0)) / 0.05) = floor(200) = 200, clamped to 199
+        // Python float floor division gives (5.0 - (-5.0)) // 0.05 = 199.0.
         String result = RotationQuantizer.quantize(new float[] { 5.0f });
         assertEquals(String.valueOf(NUM_BINS - 1), result);
     }
@@ -91,7 +91,7 @@ class RotationQuantizerTest {
 
     @Test
     void testCustomRangeClamping() {
-        // Range [0, 1), binWidth 0.1 → numBins = 10; last bin = 9
+        // Python float floor division maps 1.0 // 0.1 to 9.
         String belowMin = RotationQuantizer.quantize(new float[] { -1.0f }, 0.0, 1.0, 0.1);
         assertEquals("0", belowMin);
 
@@ -106,14 +106,20 @@ class RotationQuantizerTest {
         String[] parts = result.split(" ");
         assertEquals(3, parts.length);
         assertEquals("0", parts[0]);
-        assertEquals("100", parts[1]);
+        assertEquals("99", parts[1]);
         assertEquals(String.valueOf(NUM_BINS - 1), parts[2]);
     }
 
     @Test
     void testSingleElementOutput() {
         String result = RotationQuantizer.quantize(new float[] { 2.5f });
-        // floor((2.5 - (-5.0)) / 0.05) = floor(150.0) = 150
-        assertEquals("150", result);
+        // Python float floor division gives (2.5 - (-5.0)) // 0.05 = 149.0.
+        assertEquals("149", result);
+    }
+
+    @Test
+    void testPythonFloorDivisionBoundaryFixtures() {
+        String result = RotationQuantizer.quantize(new float[] { -2.5f, 0.0f, 2.5f, 5.0f });
+        assertEquals("49 99 149 199", result);
     }
 }

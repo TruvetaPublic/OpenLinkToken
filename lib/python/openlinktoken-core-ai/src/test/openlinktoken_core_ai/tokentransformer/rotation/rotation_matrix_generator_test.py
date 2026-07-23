@@ -86,6 +86,24 @@ class TestRotationMatrixGenerator:
             det = _det(matrix, n)
             assert abs(det - 1.0) < 1e-10
 
+    def test_matches_person_matching_qr_fixture(self):
+        """Matrices must match the persisted PersonMatching QR-generation contract."""
+        matrix = generate("qr-parity-fixture", 1, 8)[0]
+
+        np.testing.assert_array_equal(
+            matrix[0],
+            [
+                -0.40747839357338234,
+                -0.1408568566341346,
+                -0.11969515964474949,
+                0.2890408553442878,
+                -0.6332317872229138,
+                -0.03396738148325333,
+                0.5422064923077496,
+                0.14186260167654755,
+            ],
+        )
+
     def test_thread_safety(self):
         """Concurrent calls with the same IV must all produce the same result."""
         results = [None] * 100

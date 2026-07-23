@@ -4,7 +4,6 @@ import re
 import threading
 
 import numpy as np
-
 from openlinktoken_core_ai.tokentransformer.rotation.rotation_embedding_transformer import RotationEmbeddingTransformer
 from openlinktoken_core_ai.tokentransformer.rotation.rotation_matrix_generator import generate
 
@@ -87,11 +86,9 @@ class TestRotationEmbeddingTransformer:
             hash_dimension=3,
         )
 
-        tokens = transformer.transform(
-            [0.125, -0.25, 0.375, -0.5, 0.625, -0.75, 0.875, -1.0]
-        )
+        tokens = transformer.transform([0.125, -0.25, 0.375, -0.5, 0.625, -0.75, 0.875, -1.0])
 
-        assert tokens == ["102 95 107", "95 126 103"]
+        assert tokens == ["102 94 107", "95 126 103"]
 
     def test_matrix_caching_returns_identical_results(self):
         """Calling transform() twice on the same instance returns identical results."""

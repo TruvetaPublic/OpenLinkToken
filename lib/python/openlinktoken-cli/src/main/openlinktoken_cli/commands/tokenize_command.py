@@ -239,7 +239,7 @@ class TokenizeCommand:
         if not output_type:
             logger.error("Unable to auto-detect output type from provided/generated path.")
             return 1
-        
+
         ml1_enabled = not getattr(args, "disable_inferencing", False)
         ML1InferenceConfig.configure(
             enable_ml1=ml1_enabled,
@@ -266,16 +266,16 @@ class TokenizeCommand:
             logger.error("--mode demo cannot be combined with --exchange-config.")
             return 1
 
-        if mode == TokenizeCommand._MODE_HASH_ONLY and args.exchange_config:
-            logger.error("--mode hash-only cannot be combined with --exchange-config.")
-            return 1
-
         if mode == TokenizeCommand._MODE_HASH_ONLY and hash_record_ids:
             logger.error("--mode hash-only cannot be combined with --hash-record-ids.")
             return 1
 
-        if mode == TokenizeCommand._MODE_HASH_ONLY and (args.private_key or args.private_key_env):
-            logger.error("--mode hash-only cannot be combined with --private-key or --private-key-env.")
+        if (
+            mode == TokenizeCommand._MODE_HASH_ONLY
+            and (args.private_key or args.private_key_env)
+            and not args.exchange_config
+        ):
+            logger.error("--mode hash-only only accepts --private-key or --private-key-env with --exchange-config.")
             return 1
 
         reporter = CliRunReporter("tokenize", no_progress=args.no_progress)
@@ -310,7 +310,7 @@ class TokenizeCommand:
                         num_threads if num_threads > 0 else "auto",
                     )
 
-                        # Count total rows via reader to enable %/ETA
+                    # Count total rows via reader to enable %/ETA
                     total_rows: int | None = None
                     try:
                         reader = TokenizationConfigHelper.create_reader(args.input_path, input_type)
@@ -343,6 +343,15 @@ class TokenizeCommand:
                             progress_callback=reporter.make_progress_callback("Tokenizing records", "records"),
                         )
                     elif mode == TokenizeCommand._MODE_HASH_ONLY:
+                        if args.exchange_config:
+                            reporter.update_status("Resolving exchange rotation configuration")
+                            exchange = resolve_exchange_config(
+                                args.exchange_config,
+                                private_key_path=args.private_key,
+                                private_key_env=args.private_key_env,
+                            )
+                            logger.info(f"Exchange config: {exchange.path}")
+                            TokenizeCommand._configure_rotation(exchange, rotation_iv)
                         reporter.update_status("Tokenizing records")
                         summary, metadata_path = TokenizeCommand._process_tokens_hash_only(
                             args.input_path,
@@ -362,29 +371,7 @@ class TokenizeCommand:
                         )
                         logger.info(f"Exchange config: {exchange.path}")
 
-                        effective_iv = rotation_iv if rotation_iv is not None else None
-                        if exchange.rotation_iv:
-                            exchange_iv_str = exchange.rotation_iv.decode("utf-8", errors="replace")
-                            if effective_iv is None:
-                                effective_iv = exchange_iv_str
-                        effective_rotation_count = (
-                            exchange.rotation_count
-                            if exchange.rotation_count > 0
-                            else RotationConfig.DEFAULT_ROTATION_COUNT
-                        )
-                        effective_bin_width = exchange.bin_width
-                        effective_dimension_bias = exchange.dimension_bias if exchange.dimension_bias else None
-
-                        if effective_iv is not None:
-                            RotationConfig.configure(
-                                enable=True,
-                                rotation_iv=effective_iv,
-                                rotation_count=effective_rotation_count,
-                                bin_width=effective_bin_width
-                                if effective_bin_width > 0
-                                else RotationConfig.DEFAULT_BIN_WIDTH,
-                                dimension_bias=effective_dimension_bias,
-                            )
+                        TokenizeCommand._configure_rotation(exchange, rotation_iv)
 
                         logger.info(
                             "Rotation token generation: enabled=%s, iv=%s, count=%s, hashDimension=%s, binWidth=%s",
@@ -427,6 +414,26 @@ class TokenizeCommand:
             print(f"\033[31mError:\033[0m {error}", file=sys.stderr)
             print(format_error_reference_message(report), file=sys.stderr)
             return 1
+
+    @staticmethod
+    def _configure_rotation(exchange, rotation_iv: str | None) -> None:
+        """Apply an exchange's rotation settings, allowing an explicit IV override."""
+        effective_iv = rotation_iv
+        if exchange.rotation_iv and effective_iv is None:
+            effective_iv = exchange.rotation_iv.decode("utf-8", errors="replace")
+
+        if effective_iv is None:
+            return
+
+        RotationConfig.configure(
+            enable=True,
+            rotation_iv=effective_iv,
+            rotation_count=(
+                exchange.rotation_count if exchange.rotation_count > 0 else RotationConfig.DEFAULT_ROTATION_COUNT
+            ),
+            bin_width=(exchange.bin_width if exchange.bin_width > 0 else RotationConfig.DEFAULT_BIN_WIDTH),
+            dimension_bias=exchange.dimension_bias if exchange.dimension_bias else None,
+        )
 
     @staticmethod
     def _process_tokens(

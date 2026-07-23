@@ -20,7 +20,7 @@ def generate(iv: str, rotation_count: int, dimension: int) -> List[np.ndarray]:
 
     The matrices are derived from the IV using HMAC-SHA256 in counter mode for
     pseudo-random number generation, Box-Muller transform for standard normal
-    values, and Modified Gram-Schmidt for orthonormalization. The algorithm is
+    values, and QR decomposition for orthonormalization. The algorithm is
     fully specified in terms of standard operations and produces bit-exact
     results across Python and Java implementations.
 
@@ -56,18 +56,8 @@ def _generate_one(key_material: bytes, rotation_index: int, n: int) -> np.ndarra
                 raw[offset, col] = r_val * math.sin(theta)
                 offset += 1
 
-    return _column_mgs(raw, n)
-
-
-def _column_mgs(raw_cols: np.ndarray, n: int) -> np.ndarray:
-    """Full N×N Modified Gram-Schmidt on columns, with det=+1 fix."""
-    q = np.empty((n, n), dtype=np.float64)
-    for j in range(n):
-        v = raw_cols[:, j].copy()
-        if j > 0:
-            proj = np.einsum("ij,i->j", q[:, :j], v)
-            v -= np.einsum("ij,j->i", q[:, :j], proj)
-        q[:, j] = v / np.linalg.norm(v)
+    q, r = np.linalg.qr(raw)
+    q = q * np.sign(np.diag(r))[np.newaxis, :]
     if np.sign(np.linalg.det(q)) < 0:
         q[:, n - 1] = -q[:, n - 1]
     return q

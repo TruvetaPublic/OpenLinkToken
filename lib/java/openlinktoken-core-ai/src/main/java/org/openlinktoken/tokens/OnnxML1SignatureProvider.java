@@ -75,7 +75,7 @@ public class OnnxML1SignatureProvider implements InferenceSignatureProvider {
                 List<String> rotationValues = getOrCreateTransformer(embedding.length).transform(embedding);
                 String t1Sig = computeT1Signature(personAttributes);
                 if (t1Sig != null) {
-                    rotationValues = hashRotationValues(rotationValues, t1Sig);
+                    rotationValues = hashRotationValues(rotationValues, computeT1BlockingKey(t1Sig));
                 }
                 return String.join(",", rotationValues);
             }
@@ -133,7 +133,7 @@ public class OnnxML1SignatureProvider implements InferenceSignatureProvider {
                 List<String> rotationValues = getOrCreateTransformer(embedding.length).transform(embedding);
                 String t1Sig = computeT1Signature(rows.get(originalIndex));
                 if (t1Sig != null) {
-                    rotationValues = hashRotationValues(rotationValues, t1Sig);
+                    rotationValues = hashRotationValues(rotationValues, computeT1BlockingKey(t1Sig));
                 }
                 signatures.set(originalIndex, String.join(",", rotationValues));
                 embeddings.set(originalIndex, embedding);
@@ -219,22 +219,34 @@ public class OnnxML1SignatureProvider implements InferenceSignatureProvider {
     }
 
     /**
-     * SHA-256 hash each rotation value string concatenated with the T1 signature.
+     * Computes the PersonMatching T1 blocking key from the raw T1 signature.
+     *
+     * @param t1Signature raw pipe-delimited T1 signature
+     * @return lowercase hex-encoded SHA-256 T1 blocking key
+     */
+    String computeT1BlockingKey(String t1Signature) {
+        return sha256Hex(t1Signature);
+    }
+
+    /**
+     * SHA-256 hash each rotation value string concatenated with the T1 blocking key.
      *
      * @param rotationValues list of space-separated bin index strings from the rotation pipeline
-     * @param t1Signature    the T1 raw signature appended to each rotation value before hashing
+     * @param t1BlockingKey  SHA-256 hex of the raw T1 signature appended to each rotation value
      * @return list of lowercase hex-encoded SHA-256 digests, one per rotation value
      */
-    List<String> hashRotationValues(List<String> rotationValues, String t1Signature) {
+    List<String> hashRotationValues(List<String> rotationValues, String t1BlockingKey) {
+        List<String> result = new ArrayList<>(rotationValues.size());
+        for (String rotationValue : rotationValues) {
+            result.add(sha256Hex(rotationValue + t1BlockingKey));
+        }
+        return result;
+    }
+
+    private static String sha256Hex(String value) {
         try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            List<String> result = new ArrayList<>(rotationValues.size());
-            for (String rv : rotationValues) {
-                digest.reset();
-                byte[] hash = digest.digest((rv + t1Signature).getBytes(StandardCharsets.UTF_8));
-                result.add(HexFormat.of().formatHex(hash));
-            }
-            return result;
+            byte[] hash = MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash);
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 is unavailable", e);
         }

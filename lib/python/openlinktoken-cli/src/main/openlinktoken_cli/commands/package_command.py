@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from openlinktoken_core_ai.tokens.ml1_inference_config import ML1InferenceConfig
+from openlinktoken_core_ai.tokens.rotation_config import RotationConfig
 
 from openlinktoken.metadata import Metadata
 from openlinktoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
@@ -171,6 +172,13 @@ class PackageCommand:
             default=0,
             help="ORT intra/inter-op thread count for ML1 inference (0 = auto-detect, default: 0)",
         )
+        parser.add_argument(
+            "--rotation-iv",
+            dest="rotation_iv",
+            default=None,
+            metavar="STRING",
+            help="Initialization vector for rotation-based ML1 token generation.",
+        )
         # --no-progress / -q: suppress interactive progress indicator
         parser.add_argument(
             "--no-progress",
@@ -244,6 +252,34 @@ class PackageCommand:
                     )
                     encryption_key = derive_transport_encryption_key(exchange)
                     logger.info(f"Exchange config: {exchange.path}")
+
+                    effective_iv = getattr(args, "rotation_iv", None)
+                    if exchange.rotation_iv and effective_iv is None:
+                        effective_iv = exchange.rotation_iv.decode("utf-8", errors="replace")
+
+                    if effective_iv is not None:
+                        RotationConfig.configure(
+                            enable=True,
+                            rotation_iv=effective_iv,
+                            rotation_count=(
+                                exchange.rotation_count
+                                if exchange.rotation_count > 0
+                                else RotationConfig.DEFAULT_ROTATION_COUNT
+                            ),
+                            bin_width=(
+                                exchange.bin_width if exchange.bin_width > 0 else RotationConfig.DEFAULT_BIN_WIDTH
+                            ),
+                            dimension_bias=(exchange.dimension_bias if exchange.dimension_bias else None),
+                        )
+
+                    logger.info(
+                        "Rotation token generation: enabled=%s, iv=%s, count=%s, hashDimension=%s, binWidth=%s",
+                        RotationConfig.is_enabled(),
+                        RotationConfig.get_rotation_iv(),
+                        RotationConfig.get_rotation_count(),
+                        RotationConfig.get_hash_dimension(),
+                        RotationConfig.get_bin_width(),
+                    )
 
                     reporter.update_status("Packaging records")
                     # Determine total rows via reader to enable %/ETA

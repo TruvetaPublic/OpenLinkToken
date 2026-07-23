@@ -4,11 +4,17 @@ import csv as csv_module
 import json
 import zipfile
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
+from openlinktoken_core_ai.tokens.rotation_config import RotationConfig
 
 from openlinktoken_cli.commands.open_link_token_command import OpenLinkTokenCommand
+from openlinktoken_cli.commands.package_command import PackageCommand
+from openlinktoken_cli.processor.person_attributes_processor import (
+    PersonAttributesProcessingSummary,
+)
 from openlinktoken_cli.util.ec_key_utils import generate_key_pair
 
 HASHING_SECRET = "TestHashingSecret"
@@ -217,6 +223,57 @@ class TestPackageCommandZipOutput:
             metadata = json.loads(zf.read("output.metadata.json").decode("utf-8"))
 
         assert metadata["TotalRows"] == 2
+
+    def test_package_applies_exchange_rotation_configuration(self, temp_dir: Path):
+        """Package must configure ML1 rotation exactly as tokenize does before processing."""
+        exchange = SimpleNamespace(
+            path=temp_dir / "test.exchange.json",
+            hashing_secret=b"hashing-secret",
+            rotation_iv=b"artifact-iv",
+            rotation_count=2,
+            bin_width=0.25,
+            dimension_bias=[0.1, 0.2, 0.3],
+        )
+        summary = PersonAttributesProcessingSummary(0, 0, {}, {})
+        RotationConfig.configure(enable=True, rotation_iv="default-iv")
+
+        with (
+            patch(
+                "openlinktoken_cli.commands.package_command.resolve_exchange_config",
+                return_value=exchange,
+            ),
+            patch(
+                "openlinktoken_cli.commands.package_command.derive_transport_encryption_key",
+                return_value=b"encryption-key",
+            ),
+            patch.object(
+                PackageCommand,
+                "_process_tokens",
+                return_value=(summary, str(temp_dir / "output.metadata.json")),
+            ),
+        ):
+            exit_code = OpenLinkTokenCommand.execute(
+                [
+                    "package",
+                    "-i",
+                    str(temp_dir / "input.csv"),
+                    "-o",
+                    str(temp_dir / "output.csv"),
+                    "--exchange-config",
+                    str(exchange.path),
+                    "--private-key",
+                    str(temp_dir / "test.private.pem"),
+                    "--ring-id",
+                    "test-ring",
+                    "--no-progress",
+                ]
+            )
+
+        assert exit_code == 0
+        assert RotationConfig.get_rotation_iv() == "artifact-iv"
+        assert RotationConfig.get_rotation_count() == 2
+        assert RotationConfig.get_bin_width() == 0.25
+        assert RotationConfig.get_dimension_bias() == [0.1, 0.2, 0.3]
 
     # ------------------------------------------------------------------
     # Error cases

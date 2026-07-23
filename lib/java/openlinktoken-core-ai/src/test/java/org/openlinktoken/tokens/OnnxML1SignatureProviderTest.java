@@ -2,7 +2,6 @@
 package org.openlinktoken.tokens;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -194,13 +193,13 @@ class OnnxML1SignatureProviderTest {
 
     @Test
     void hashRotationValues_knownVector() {
-        // Pre-computed: SHA-256("94 104 96 97" + "WRIGHT|R|FEMALE|1990-07-09")
-        // Validated externally via Python:
-        //   hashlib.sha256(("94 104 96 97" + "WRIGHT|R|FEMALE|1990-07-09").encode("utf-8")).hexdigest()
-        List<String> result = provider.hashRotationValues(
-                List.of("94 104 96 97"), "WRIGHT|R|FEMALE|1990-07-09");
-        assertNotNull(result.get(0));
-        assertEquals(64, result.get(0).length());
+        String rawT1 = "MEISTER|C|FEMALE|1989-05-25";
+        String blockingKey = provider.computeT1BlockingKey(rawT1);
+
+        assertEquals("f016a96ba8552da8c9d7ac327f91081e22740f0ddd71dc372fa4dbba2ca34253", blockingKey);
+        assertEquals(
+                List.of("4ff691600f8c2df6142c405cbcd6f166a588ba83bd93ba6f028e082ef99decd8"),
+                provider.hashRotationValues(List.of("99 100 100 101"), blockingKey));
     }
 
     private static RotationEmbeddingTransformer getRotationTransformer(int embeddingDim) throws Exception {
