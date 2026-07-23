@@ -105,7 +105,7 @@ The composite action then:
 
 1. Lets `actions/setup-java@v4` generate `settings.xml` with the `github` server entry (for GitHub Packages).
 2. Inserts a `central` server entry (Portal user token) and a `gpg.passphrase` server entry into that same `settings.xml`, referencing environment variables that are supplied at `mvn deploy` time (never written to disk in plaintext).
-3. Imports the GPG private key into the runner's keyring with `gpg --batch --import`.
+3. Imports the GPG private key into the runner's keyring with `gpg --batch --import` and records its full fingerprint as `MAVEN_GPG_KEYNAME`, so Maven signs with the imported key explicitly instead of relying on GPG's default-key selection.
 
 The publish step in `maven-publish.yml` then runs:
 

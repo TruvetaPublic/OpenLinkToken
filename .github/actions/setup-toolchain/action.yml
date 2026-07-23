@@ -78,6 +78,12 @@ runs:
       run: |
         set -euo pipefail
         echo "$GPG_PRIVATE_KEY" | base64 --decode | gpg --batch --import
+        gpg_keyname="$(gpg --batch --list-secret-keys --with-colons | awk -F: '$1 == "fpr" { print $10; exit }')"
+        if [[ -z "$gpg_keyname" ]]; then
+          echo "::error::No GPG secret key fingerprint found after import"
+          exit 1
+        fi
+        echo "MAVEN_GPG_KEYNAME=$gpg_keyname" >> "$GITHUB_ENV"
         echo "Imported GPG signing key"
       env:
         GPG_PRIVATE_KEY: ${{ inputs.gpg-private-key }}
