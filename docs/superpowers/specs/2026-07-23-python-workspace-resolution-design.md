@@ -14,13 +14,15 @@ not resolve the uv workspace. The release CLI workflow runs `uv sync
 ## Design
 
 Use `notebook==7.6.0` as the canonical exact pin in the root workspace,
-matching the PySpark development extra and the existing lockfile state.
-Regenerate `uv.lock` from the aligned manifests.
+matching the PySpark development extra. The repository intentionally ignores
+`uv.lock`, so regenerate it locally to verify the full workspace but do not
+commit it.
 
 Add a pull-request dependency-resolution guard to the existing CI workflow.
-The guard runs uv’s universal lock validation so supported Python versions,
-platform markers, workspace packages, and declared extras are resolved before
-merge. It should validate the lockfile rather than silently rewrite it.
+The guard runs `uv lock`, which performs uv’s universal resolution so supported
+Python versions, platform markers, workspace packages, and declared extras are
+resolved before merge. Since no lockfile is committed, the CI job validates
+resolution rather than checking a committed lockfile.
 
 Keep the existing package-specific test installation paths unchanged. Those
 jobs deliberately install only the Spark extra under test and the shared test
@@ -31,7 +33,7 @@ by release builds.
 
 - The root dev group and `openlinktoken-pyspark[dev]` resolve to the same
   notebook version.
-- `uv lock --check` passes against the committed manifests and lockfile.
+- `uv lock` passes against the committed manifests.
 - The new CI guard fails if a future dependency update creates an unsatisfiable
   workspace.
 - Existing Python, PySpark, CLI, and release build workflows continue to use
