@@ -81,13 +81,31 @@ runs:
         gpg_keyname="$(
           gpg --batch --list-secret-keys --with-colons |
             awk -F: '
-              ($1 == "sec" || $1 == "ssb") {
-                signing_candidate = ($12 ~ /s/)
+              $1 == "sec" {
+                primary_signing = ($12 ~ /s/)
+                primary_fingerprint = ""
                 next
               }
-              $1 == "fpr" && signing_candidate {
-                print $10
-                exit
+              $1 == "ssb" {
+                signing_subkey = ($12 ~ /s/)
+                next
+              }
+              $1 == "fpr" {
+                if (signing_subkey) {
+                  print $10
+                  found = 1
+                  exit
+                }
+                if (primary_signing) {
+                  primary_fingerprint = $10
+                }
+                signing_subkey = 0
+                primary_signing = 0
+              }
+              END {
+                if (!found && primary_fingerprint != "") {
+                  print primary_fingerprint
+                }
               }
             '
         )"
