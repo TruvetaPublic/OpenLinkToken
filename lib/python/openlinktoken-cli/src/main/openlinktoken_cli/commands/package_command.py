@@ -10,6 +10,7 @@ from typing import List, Optional
 from openlinktoken_core_ai.tokens.ml1_inference_config import ML1InferenceConfig
 from openlinktoken_core_ai.tokens.rotation_config import RotationConfig
 
+from openlinktoken.exchange_config import rotation_iv_to_text
 from openlinktoken.metadata import Metadata
 from openlinktoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
 from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
@@ -255,7 +256,7 @@ class PackageCommand:
 
                     effective_iv = getattr(args, "rotation_iv", None)
                     if exchange.rotation_iv and effective_iv is None:
-                        effective_iv = exchange.rotation_iv.decode("utf-8", errors="replace")
+                        effective_iv = rotation_iv_to_text(exchange.rotation_iv)
 
                     if effective_iv is not None:
                         RotationConfig.configure(

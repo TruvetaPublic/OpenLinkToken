@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 
+import base64
 import csv as csv_module
 import json
 import zipfile
@@ -12,6 +13,7 @@ from openlinktoken_core_ai.tokens.rotation_config import RotationConfig
 
 from openlinktoken_cli.commands.open_link_token_command import OpenLinkTokenCommand
 from openlinktoken_cli.commands.package_command import PackageCommand
+from openlinktoken_cli.commands.tokenize_command import TokenizeCommand
 from openlinktoken_cli.processor.person_attributes_processor import (
     PersonAttributesProcessingSummary,
 )
@@ -224,12 +226,21 @@ class TestPackageCommandZipOutput:
 
         assert metadata["TotalRows"] == 2
 
-    def test_package_applies_exchange_rotation_configuration(self, temp_dir: Path):
+    @pytest.mark.parametrize(
+        ("rotation_iv", "expected_iv"),
+        [
+            (b"artifact-iv", "artifact-iv"),
+            (b"t\xecst-rotation-iv", base64.b64encode(b"t\xecst-rotation-iv").decode("ascii")),
+        ],
+    )
+    def test_package_applies_exchange_rotation_configuration(
+        self, temp_dir: Path, rotation_iv: bytes, expected_iv: str
+    ):
         """Package must configure ML1 rotation exactly as tokenize does before processing."""
         exchange = SimpleNamespace(
             path=temp_dir / "test.exchange.json",
             hashing_secret=b"hashing-secret",
-            rotation_iv=b"artifact-iv",
+            rotation_iv=rotation_iv,
             rotation_count=2,
             bin_width=0.25,
             dimension_bias=[0.1, 0.2, 0.3],
@@ -270,10 +281,30 @@ class TestPackageCommandZipOutput:
             )
 
         assert exit_code == 0
-        assert RotationConfig.get_rotation_iv() == "artifact-iv"
+        assert RotationConfig.get_rotation_iv() == expected_iv
         assert RotationConfig.get_rotation_count() == 2
         assert RotationConfig.get_bin_width() == 0.25
         assert RotationConfig.get_dimension_bias() == [0.1, 0.2, 0.3]
+
+    @pytest.mark.parametrize(
+        ("rotation_iv", "expected_iv"),
+        [
+            (b"tokenize-iv", "tokenize-iv"),
+            (b"t\xecst-rotation-iv", base64.b64encode(b"t\xecst-rotation-iv").decode("ascii")),
+        ],
+    )
+    def test_tokenize_applies_exchange_rotation_iv_encoding(self, rotation_iv: bytes, expected_iv: str):
+        """Tokenize must use the same IV conversion as package."""
+        exchange = SimpleNamespace(
+            rotation_iv=rotation_iv,
+            rotation_count=2,
+            bin_width=0.25,
+            dimension_bias=[0.1, 0.2, 0.3],
+        )
+
+        TokenizeCommand._configure_rotation(exchange, None)
+
+        assert RotationConfig.get_rotation_iv() == expected_iv
 
     # ------------------------------------------------------------------
     # Error cases

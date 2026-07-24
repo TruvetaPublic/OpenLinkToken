@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 
+import base64
 import json
 from pathlib import Path
 
@@ -14,6 +15,7 @@ from openlinktoken.exchange_config import (
     resolve_exchange_config,
     resolve_exchange_config_inputs,
     resolve_exchange_config_private_key,
+    rotation_iv_to_text,
 )
 from openlinktoken.exchange_jwe import (
     EXCHANGE_JWE_CONTENT_TYPE,
@@ -29,6 +31,13 @@ from openlinktoken.exchange_jwe import (
 def test_fingerprint_to_kid_normalizes_sha256_fingerprint():
     """Fingerprint-based recipient ids use lowercase hyphenated sha256 values."""
     assert fingerprint_to_kid("AA:BB:CC:DD:EE:FF") == "sha256:aa-bb-cc-dd-ee-ff"
+
+
+def test_rotation_iv_to_text_recovers_non_utf8_exchange_bytes():
+    """Legacy Truveta exchange payload bytes recover the original base64 IV text."""
+    raw_iv = b"t\xecst-rotation-iv"
+
+    assert rotation_iv_to_text(raw_iv) == base64.b64encode(raw_iv).decode("ascii")
 
 
 def test_build_exchange_envelope_round_trips_for_either_private_key():

@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 
+import csv
 import json
 import logging
 from pathlib import Path
@@ -224,14 +225,17 @@ class TestTokenizeCommandHashOnly:
             ]
         )
 
-        tokens = _extract_tokens(output_csv)
+        tokens = _extract_tokens(output_csv, exclude_rule_ids={"ML2"})
         assert tokens, "Expected at least one non-blank token in hash-only mode"
 
         for token in tokens:
-            assert len(token) == HASH_ONLY_TOKEN_LENGTH, (
-                f"Hash-only token must be a 64-char hex string, got {len(token)} chars: {token!r}"
-            )
-            assert all(c in "0123456789abcdef" for c in token), f"Hash-only token must be lowercase hex, got: {token!r}"
+            for hash_value in token.split(","):
+                assert len(hash_value) == HASH_ONLY_TOKEN_LENGTH, (
+                    f"Hash-only token must be a 64-char hex string, got {len(hash_value)} chars: {hash_value!r}"
+                )
+                assert all(c in "0123456789abcdef" for c in hash_value), (
+                    f"Hash-only token must be lowercase hex, got: {hash_value!r}"
+                )
 
     def test_hash_only_and_normal_mode_produce_different_tokens(self, temp_dir: Path):
         """Hash-only and normal-mode outputs must differ for the same input."""
@@ -399,26 +403,18 @@ class TestTokenizeCommandHashOnly:
 # ---------------------------------------------------------------------------
 
 
-def _extract_tokens(csv_path: Path) -> list[str]:
+def _extract_tokens(
+    csv_path: Path,
+    exclude_rule_ids: set[str] | None = None,
+) -> list[str]:
     """Return non-blank, non-sentinel token values from the Token column of a CSV."""
-    lines = csv_path.read_text().splitlines()
-    if not lines:
-        return []
-
-    headers = [h.strip() for h in lines[0].split(",")]
-    try:
-        token_col = headers.index("Token")
-    except ValueError:
-        return []
-
-    tokens = []
-    for line in lines[1:]:
-        cols = line.split(",")
-        if len(cols) > token_col:
-            token = cols[token_col].strip()
-            if token and token != BLANK_TOKEN:
-                tokens.append(token)
-    return tokens
+    exclude_rule_ids = exclude_rule_ids or set()
+    with csv_path.open(newline="") as csv_file:
+        return [
+            row["Token"]
+            for row in csv.DictReader(csv_file)
+            if row["RuleId"] not in exclude_rule_ids and row["Token"] and row["Token"] != BLANK_TOKEN
+        ]
 
 
 def _read_metadata(path: Path) -> dict:

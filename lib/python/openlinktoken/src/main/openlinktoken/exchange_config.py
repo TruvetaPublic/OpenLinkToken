@@ -330,6 +330,18 @@ def _decode_rotation_iv(payload: Mapping[str, Any]) -> bytes:
         raise ValueError(f"rotationIv is not valid base64url data: {error}") from error
 
 
+def rotation_iv_to_text(rotation_iv: bytes) -> str:
+    """Convert resolved rotation-IV bytes to the text used by ML1 generation.
+
+    Exchange configs produced by older Truveta clients contain the base64-decoded
+    bytes of the original text IV. Non-UTF-8 bytes identify that representation.
+    """
+    try:
+        return rotation_iv.decode("utf-8")
+    except UnicodeDecodeError:
+        return base64.b64encode(rotation_iv).decode("ascii")
+
+
 def _decode_rotation_count(payload: Mapping[str, Any]) -> int:
     value = payload.get("rotationCount")
     if value is None or value == 0:

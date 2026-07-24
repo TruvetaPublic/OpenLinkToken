@@ -7,6 +7,7 @@ from typing import List, Optional
 from openlinktoken_core_ai.tokens.ml1_inference_config import ML1InferenceConfig
 from openlinktoken_core_ai.tokens.rotation_config import RotationConfig
 
+from openlinktoken.exchange_config import rotation_iv_to_text
 from openlinktoken.metadata import Metadata
 from openlinktoken.tokens.tokenizer.passthrough_tokenizer import PassthroughTokenizer
 from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
@@ -420,7 +421,7 @@ class TokenizeCommand:
         """Apply an exchange's rotation settings, allowing an explicit IV override."""
         effective_iv = rotation_iv
         if exchange.rotation_iv and effective_iv is None:
-            effective_iv = exchange.rotation_iv.decode("utf-8", errors="replace")
+            effective_iv = rotation_iv_to_text(exchange.rotation_iv)
 
         if effective_iv is None:
             return
