@@ -296,4 +296,4 @@ Notes:
 
 - [Matching Model](matching-model.md) - How normalized data becomes tokens
 - [Token Rules](token-rules.md) - Which attributes each rule uses
-- [API Reference](../reference/) - Programmatic attribute handling
+- [API Reference](../reference/index.md) - Programmatic attribute handling
