@@ -78,19 +78,19 @@ Top-level keys:
 
 `column_mappings` entry schema:
 
-| Field         | Required | Type    | Description                                                                                                                                                                                                                                   |
-| ------------- | -------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `<field_id>`  | Yes      | Mapping | Logical field identifier used by token rules (for example `GivenName`).                                                                                                                                                                       |
-| `column_name` | Yes      | String  | Source column name in the CSV or Parquet file (for example `"given_nm"`).                                                                                                                                                                     |
-| `type`        | Yes      | String  | Open Link Token attribute type. See [Attribute Types](#attribute-types) for all accepted values. Each type applies its own normalization and validation rules — see [Normalization and Validation](../concepts/normalization-and-validation). |
+| Field         | Required | Type    | Description                                                                                                                                                                                                                                      |
+| ------------- | -------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `<field_id>`  | Yes      | Mapping | Logical field identifier used by token rules (for example `GivenName`).                                                                                                                                                                          |
+| `column_name` | Yes      | String  | Source column name in the CSV or Parquet file (for example `"given_nm"`).                                                                                                                                                                        |
+| `type`        | Yes      | String  | Open Link Token attribute type. See [Attribute Types](#attribute-types) for all accepted values. Each type applies its own normalization and validation rules — see [Normalization and Validation](../concepts/normalization-and-validation.md). |
 
 `token_rules` entry schema:
 
-| Field        | Required | Type   | Description                                                                                                                 |
-| ------------ | -------- | ------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `<rule_id>`  | Yes      | List   | Token rule identifier (`T1`, `T2`, `T3`, `T4`, `T5`, or custom).                                                            |
-| `field`      | Yes      | String | Must match one of the `column_mappings` field IDs.                                                                          |
-| `expression` | Yes      | String | Attribute-expression pipeline used by token generation. See [Expression Syntax](../concepts/token-rules#expression-syntax). |
+| Field        | Required | Type   | Description                                                                                                                    |
+| ------------ | -------- | ------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `<rule_id>`  | Yes      | List   | Token rule identifier (`T1`, `T2`, `T3`, `T4`, `T5`, or custom).                                                               |
+| `field`      | Yes      | String | Must match one of the `column_mappings` field IDs.                                                                             |
+| `expression` | Yes      | String | Attribute-expression pipeline used by token generation. See [Expression Syntax](../concepts/token-rules.md#expression-syntax). |
 
 ## Validation Rules
 
@@ -105,7 +105,7 @@ Validation enforced by the CLI:
 
 ## Expression Syntax
 
-See [Expression Syntax](../concepts/token-rules#expression-syntax) in the Token Rules concept page.
+See [Expression Syntax](../concepts/token-rules.md#expression-syntax) in the Token Rules concept page.
 
 ## Notes
 
@@ -114,7 +114,7 @@ See [Expression Syntax](../concepts/token-rules#expression-syntax) in the Token 
 
 ## Attribute Types
 
-Accepted values for the field `type`. Each type applies its own normalization and validation rules — see [Normalization and Validation](../concepts/normalization-and-validation). |
+Accepted values for the field `type`. Each type applies its own normalization and validation rules — see [Normalization and Validation](../concepts/normalization-and-validation.md). |
 
 | `type` value           | Description                    |
 | ---------------------- | ------------------------------ |
