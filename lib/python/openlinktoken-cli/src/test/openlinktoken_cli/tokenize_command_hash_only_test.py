@@ -225,7 +225,7 @@ class TestTokenizeCommandHashOnly:
             ]
         )
 
-        tokens = _extract_tokens(output_csv, exclude_rule_ids={"ML2"})
+        tokens = _extract_tokens(output_csv)
         assert tokens, "Expected at least one non-blank token in hash-only mode"
 
         for token in tokens:

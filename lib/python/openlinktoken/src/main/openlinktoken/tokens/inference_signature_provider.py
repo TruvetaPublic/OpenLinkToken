@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Protocol, Type, runtime_checkable
+from typing import Dict, List, Protocol, Type, runtime_checkable
 
 from openlinktoken.attributes.attribute import Attribute
 
@@ -14,12 +14,9 @@ class InferenceBatchResult:
 
     Attributes:
         signatures: Hex-encoded token signatures in the same order as the input rows.
-        raw_embeddings: Raw float embedding vectors (List[np.ndarray] when the AI
-            module is present) in the same order as the input rows.
     """
 
     signatures: List[str] = field(default_factory=list)
-    raw_embeddings: List[Any] = field(default_factory=list)  # List[np.ndarray] at runtime
 
 
 @runtime_checkable
@@ -54,16 +51,13 @@ class InferenceSignatureProvider(Protocol):
         """
         ...
 
-    def generate_batch(
-        self, rows: List[Dict[Type[Attribute], str]]
-    ) -> InferenceBatchResult:
+    def generate_batch(self, rows: List[Dict[Type[Attribute], str]]) -> InferenceBatchResult:
         """Generate inference-based signatures for a batch of records in one pass.
 
         Args:
             rows: List of normalised attribute maps, one per record.
 
         Returns:
-            :class:`InferenceBatchResult` with parallel lists of signatures and
-            raw embedding vectors.
+            :class:`InferenceBatchResult` with signatures in input row order.
         """
         ...

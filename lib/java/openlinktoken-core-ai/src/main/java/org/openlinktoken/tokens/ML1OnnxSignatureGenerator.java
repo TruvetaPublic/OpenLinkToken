@@ -75,35 +75,20 @@ public final class ML1OnnxSignatureGenerator {
      * @return list of hex-encoded CLS embedding signatures in the same order
      */
     public static List<String> generateSignatures(List<String> inputJsonRows) {
-        return generateSignaturesAndRawEmbeddings(inputJsonRows).signatures();
+        return generateSignaturesAndEmbeddings(inputJsonRows).signatures();
     }
 
     /**
-     * Generates raw CLS embedding float vectors for multiple JSON-formatted input rows.
-     *
-     * <p>This performs the same batched ONNX inference as {@link #generateSignatures} but
-     * returns raw {@code float[]} vectors instead of hex-encoded strings, suitable for
-     * rotation-based token generation.
-     *
-     * @param inputJsonRows list of JSON strings representing person records
-     * @return list of {@code float[]} CLS embedding vectors in the same order
-     */
-    public static List<float[]> generateRawEmbeddings(List<String> inputJsonRows) {
-        return generateSignaturesAndRawEmbeddings(inputJsonRows).rawEmbeddings();
-    }
-
-    /**
-     * Generates both hex-encoded ML1 signatures and raw CLS embedding vectors in a single
+     * Generates both hex-encoded ML1 signatures and CLS embedding vectors in a single
      * inference pass.
      *
-     * <p>Use this when both the ML1 token and rotation tokens are needed to avoid
-     * running ONNX inference twice.
+     * <p>The embeddings are retained internally for ML1 rotation.
      *
      * @param inputJsonRows list of JSON strings representing person records
      * @return a {@link GenerationResult} containing parallel lists of hex signatures and
-     *         raw float embeddings in the same order as the input
+     *         embeddings in the same order as the input
      */
-    public static GenerationResult generateSignaturesAndRawEmbeddings(List<String> inputJsonRows) {
+    static GenerationResult generateSignaturesAndEmbeddings(List<String> inputJsonRows) {
         if (inputJsonRows == null || inputJsonRows.isEmpty()) {
             return new GenerationResult(List.of(), List.of());
         }
@@ -113,7 +98,7 @@ public final class ML1OnnxSignatureGenerator {
 
             int configuredBatchSize = ML1InferenceConfig.getBatchSize();
             List<String> signatures = new ArrayList<>(inputJsonRows.size());
-            List<float[]> rawEmbeddings = new ArrayList<>(inputJsonRows.size());
+            List<float[]> allEmbeddings = new ArrayList<>(inputJsonRows.size());
             double totalInferenceMillis = 0.0;
 
             for (int start = 0; start < inputJsonRows.size(); start += configuredBatchSize) {
@@ -130,10 +115,10 @@ public final class ML1OnnxSignatureGenerator {
                 double inferenceElapsedMillis = batchRunResult.elapsedMillis();
                 totalInferenceMillis += inferenceElapsedMillis;
 
-                    for (int i = 0; i < realBatch.size(); i++) {
-                        signatures.add(serializeEmbedding(embeddings[i]));
-                        rawEmbeddings.add(embeddings[i]);
-                    }
+                for (int i = 0; i < realBatch.size(); i++) {
+                    signatures.add(serializeEmbedding(embeddings[i]));
+                    allEmbeddings.add(embeddings[i]);
+                }
 
                 if (LOGGER.isInfoEnabled()) {
                     LOGGER.info(
@@ -148,22 +133,22 @@ public final class ML1OnnxSignatureGenerator {
                         inputJsonRows.size(), totalInferenceMillis, totalInferenceMillis / inputJsonRows.size());
             }
 
-            return new GenerationResult(signatures, rawEmbeddings);
+            return new GenerationResult(signatures, allEmbeddings);
         } catch (Exception e) {
             throw new IllegalStateException("Failed to generate ONNX-based ML1 signatures.", e);
         }
     }
 
     /**
-     * Bundles ML1 hex signatures and raw float embeddings generated in one inference pass.
+     * Bundles ML1 hex signatures and embeddings generated in one inference pass.
      *
-     * <p>{@code signatures} and {@code rawEmbeddings} are parallel lists: index {@code i}
+     * <p>{@code signatures} and {@code embeddings} are parallel lists: index {@code i}
      * of each list corresponds to the same input row.
      *
      * @param signatures    hex-encoded CLS embedding signatures
-     * @param rawEmbeddings raw CLS embedding float vectors
+     * @param embeddings CLS embedding float vectors
      */
-    public record GenerationResult(List<String> signatures, List<float[]> rawEmbeddings) {
+    record GenerationResult(List<String> signatures, List<float[]> embeddings) {
     }
 
     private static BatchRunResult runBatchInference(List<String> inferenceBatch) throws TranslateException {

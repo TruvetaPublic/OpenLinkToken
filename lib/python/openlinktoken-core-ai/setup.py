@@ -74,7 +74,6 @@ setup(
         ],
         "openlinktoken.tokens.definitions": [
             "ml1_token = openlinktoken_core_ai.tokens.ml1_token:ML1Token",
-            "ml2_token = openlinktoken_core_ai.tokens.ml2_token:ML2Token",
         ],
     },
     extras_require={

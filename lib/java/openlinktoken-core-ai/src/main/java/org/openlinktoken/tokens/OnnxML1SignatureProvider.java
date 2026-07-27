@@ -70,8 +70,9 @@ public class OnnxML1SignatureProvider implements InferenceSignatureProvider {
         }
         try {
             if (RotationConfig.isEnabled()) {
-                List<float[]> rawEmbeddings = ML1OnnxSignatureGenerator.generateRawEmbeddings(List.of(payload));
-                float[] embedding = rawEmbeddings.get(0);
+                ML1OnnxSignatureGenerator.GenerationResult result =
+                        ML1OnnxSignatureGenerator.generateSignaturesAndEmbeddings(List.of(payload));
+                float[] embedding = result.embeddings().get(0);
                 List<String> rotationValues = getOrCreateTransformer(embedding.length).transform(embedding);
                 String t1Sig = computeT1Signature(personAttributes);
                 if (t1Sig != null) {
@@ -107,29 +108,25 @@ public class OnnxML1SignatureProvider implements InferenceSignatureProvider {
 
         if (validPayloads.isEmpty()) {
             List<String> emptySigs = new ArrayList<>();
-            List<float[]> emptyEmbs = new ArrayList<>();
             for (int i = 0; i < rows.size(); i++) {
                 emptySigs.add(null);
-                emptyEmbs.add(null);
             }
-            return new InferenceBatchResult(emptySigs, emptyEmbs);
+            return new InferenceBatchResult(emptySigs);
         }
 
         ML1OnnxSignatureGenerator.GenerationResult batchResult =
-                ML1OnnxSignatureGenerator.generateSignaturesAndRawEmbeddings(validPayloads);
+                ML1OnnxSignatureGenerator.generateSignaturesAndEmbeddings(validPayloads);
 
         // Map results back to original row indices (null for invalid rows)
         List<String> signatures = new ArrayList<>(rows.size());
-        List<float[]> embeddings = new ArrayList<>(rows.size());
         for (int i = 0; i < rows.size(); i++) {
             signatures.add(null);
-            embeddings.add(null);
         }
 
         if (RotationConfig.isEnabled()) {
             for (int vi = 0; vi < validIndices.size(); vi++) {
                 int originalIndex = validIndices.get(vi);
-                float[] embedding = batchResult.rawEmbeddings().get(vi);
+                float[] embedding = batchResult.embeddings().get(vi);
                 List<String> rotationValues = getOrCreateTransformer(embedding.length).transform(embedding);
                 String t1Sig = computeT1Signature(rows.get(originalIndex));
                 if (t1Sig != null) {
@@ -142,11 +139,10 @@ public class OnnxML1SignatureProvider implements InferenceSignatureProvider {
             for (int vi = 0; vi < validIndices.size(); vi++) {
                 int originalIndex = validIndices.get(vi);
                 signatures.set(originalIndex, batchResult.signatures().get(vi));
-                embeddings.set(originalIndex, batchResult.rawEmbeddings().get(vi));
             }
         }
 
-        return new InferenceBatchResult(signatures, embeddings);
+        return new InferenceBatchResult(signatures);
     }
 
     /**

@@ -139,7 +139,7 @@ class OnnxML1SignatureProvider:
         if payload_json is None:
             return None
         try:
-            sig, embedding = ML1OnnxSignatureGenerator.generate_signature_with_raw_embedding(payload_json)
+            sig, embedding = ML1OnnxSignatureGenerator._generate_signature_with_embedding(payload_json)
             if RotationConfig.is_enabled() and embedding is not None:
                 transformer = self._get_rotation_transformer(len(embedding))
                 if transformer is not None:
@@ -172,12 +172,8 @@ class OnnxML1SignatureProvider:
         valid_payload_list = [payloads[i] for i in valid_indices]
 
         signatures: List[Optional[str]] = [None] * len(rows)
-        raw_embeddings = [None] * len(rows)
-
         if valid_payload_list:
-            batch_sigs, batch_embs = ML1OnnxSignatureGenerator.generate_signatures_with_raw_embeddings(
-                valid_payload_list
-            )
+            batch_sigs, batch_embs = ML1OnnxSignatureGenerator._generate_signatures_with_embeddings(valid_payload_list)
 
             # Resolve the rotation transformer once for this batch (cached across calls).
             first_emb = next((e for e in batch_embs if e is not None), None)
@@ -187,7 +183,6 @@ class OnnxML1SignatureProvider:
 
             for vi, original_index in enumerate(valid_indices):
                 embedding = batch_embs[vi]
-                raw_embeddings[original_index] = embedding
                 if transformer is not None and embedding is not None:
                     rotation_values: List[str] = transformer.transform(list(embedding))
                     blocking_key = _compute_blocking_key(rows[original_index])
@@ -197,7 +192,7 @@ class OnnxML1SignatureProvider:
                 else:
                     signatures[original_index] = batch_sigs[vi]
 
-        return InferenceBatchResult(signatures=signatures, raw_embeddings=raw_embeddings)
+        return InferenceBatchResult(signatures=signatures)
 
     def build_ml1_payload(
         self,

@@ -37,10 +37,10 @@ public interface InferenceSignatureProvider {
 
     /**
      * Generate inference-based token signatures for a batch of records in a single
-     * inference pass, also returning the raw embedding vectors needed for rotation tokens.
+     * inference pass.
      *
      * @param rows list of normalised attribute maps, one per record
-     * @return {@link InferenceBatchResult} with parallel lists of signatures and embeddings
+     * @return {@link InferenceBatchResult} with signatures in input row order
      */
     InferenceBatchResult generateBatch(List<Map<Class<? extends Attribute>, String>> rows);
 }

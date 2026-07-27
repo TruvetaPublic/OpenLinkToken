@@ -74,9 +74,9 @@ class ML1OnnxSignatureGenerator:
         return signatures[0]
 
     @classmethod
-    def generate_signature_with_raw_embedding(cls, input_json: str) -> tuple[str, np.ndarray]:
-        """Generate a deterministic ML1 signature and raw embedding for one input JSON row."""
-        signatures, embeddings = cls.generate_signatures_with_raw_embeddings([input_json])
+    def _generate_signature_with_embedding(cls, input_json: str) -> tuple[str, np.ndarray]:
+        """Generate a deterministic ML1 signature and embedding for one input JSON row."""
+        signatures, embeddings = cls._generate_signatures_with_embeddings([input_json])
         if not signatures:
             raise RuntimeError("Failed to generate ONNX-based ML1 signature.")
         return signatures[0], embeddings[0]
@@ -84,37 +84,20 @@ class ML1OnnxSignatureGenerator:
     @classmethod
     def generate_signatures(cls, input_json_rows: List[str]) -> List[str]:
         """Generate deterministic ML1 signatures for multiple rows using batched ONNX inference."""
-        signatures, _ = cls.generate_signatures_with_raw_embeddings(input_json_rows)
+        signatures, _ = cls._generate_signatures_with_embeddings(input_json_rows)
         return signatures
 
     @classmethod
-    def generate_raw_embeddings(cls, input_json_rows: List[str]) -> List[np.ndarray]:
-        """Generate raw CLS embedding float arrays for multiple JSON-formatted input rows.
+    def _generate_signatures_with_embeddings(cls, input_json_rows: List[str]) -> tuple[List[str], List[np.ndarray]]:
+        """Generate ML1 hex signatures and embeddings in a single inference pass.
 
-        Performs the same batched ONNX inference as generate_signatures but returns
-        raw np.ndarray vectors instead of hex-encoded strings.
-
-        Args:
-            input_json_rows: list of JSON strings representing person records
-
-        Returns:
-            list of 1-D float32 np.ndarray CLS embedding vectors in the same order
-        """
-        _, raw_embeddings = cls.generate_signatures_with_raw_embeddings(input_json_rows)
-        return raw_embeddings
-
-    @classmethod
-    def generate_signatures_with_raw_embeddings(cls, input_json_rows: List[str]) -> tuple[List[str], List[np.ndarray]]:
-        """Generate ML1 hex signatures AND raw CLS embeddings in a single inference pass.
-
-        Use when both ML1 token and rotation tokens are needed, to avoid running
-        ONNX inference twice.
+        The embeddings are retained internally for ML1 rotation.
 
         Args:
             input_json_rows: list of JSON strings representing person records
 
         Returns:
-            (signatures, raw_embeddings) — parallel lists with same length as input
+            (signatures, embeddings) — parallel lists with same length as input
         """
         if not input_json_rows:
             return [], []
@@ -123,7 +106,7 @@ class ML1OnnxSignatureGenerator:
 
         configured_batch_size = ML1InferenceConfig.get_batch_size()
         signatures: List[str] = []
-        raw_embeddings: List[np.ndarray] = []
+        all_embeddings: List[np.ndarray] = []
         total_inference_ms = 0.0
 
         for start in range(0, len(input_json_rows), configured_batch_size):
@@ -133,12 +116,12 @@ class ML1OnnxSignatureGenerator:
             while len(inference_batch) < configured_batch_size:
                 inference_batch.append(cls._pad_input_json)
 
-            embeddings, batch_ms = cls._run_batch_inference(inference_batch)
+            batch_embeddings, batch_ms = cls._run_batch_inference(inference_batch)
             total_inference_ms += batch_ms
 
             for index in range(len(real_batch)):
-                signatures.append(cls._serialize_embedding(embeddings[index]))
-                raw_embeddings.append(embeddings[index])
+                signatures.append(cls._serialize_embedding(batch_embeddings[index]))
+                all_embeddings.append(batch_embeddings[index])
 
             if logger.isEnabledFor(logging.INFO):
                 logger.info(
@@ -157,7 +140,7 @@ class ML1OnnxSignatureGenerator:
                 total_inference_ms / len(input_json_rows),
             )
 
-        return signatures, raw_embeddings
+        return signatures, all_embeddings
 
     @classmethod
     def _run_batch_inference(cls, input_json_rows: List[str]) -> tuple[float, float]:
@@ -383,37 +366,6 @@ class ML1OnnxSignatureGenerator:
         return b"".join(
             struct.pack(">I", struct.unpack(">I", struct.pack(">f", float(value)))[0]) for value in embedding
         ).hex()
-
-
-def serialize_ml_embedding(embedding: "np.ndarray") -> str:
-    """Serialize a float32 embedding vector as a big-endian hex string.
-
-    Delegates to the same packing logic used internally by ML1OnnxSignatureGenerator
-    so ML2 raw-embedding tokens and ML1 fallback signatures share identical encoding.
-
-    Args:
-        embedding: 1-D float32 numpy array.
-
-    Returns:
-        Lowercase hex string of the big-endian float32 byte representation.
-    """
-    return ML1OnnxSignatureGenerator._serialize_embedding(embedding)
-
-
-def format_embedding_as_floats(embedding: "np.ndarray") -> str:
-    """Format a float32 embedding vector as a comma-separated string of decimal values.
-
-    Produces a human-readable, ML-friendly representation suitable for storage
-    as the ML2 token value.  Each value is formatted with enough precision to
-    round-trip a float32 (up to 9 significant digits).
-
-    Args:
-        embedding: 1-D float32 numpy array.
-
-    Returns:
-        Comma-separated string of float values, e.g. ``"0.12345678,-0.9876543,..."``.
-    """
-    return ",".join(f"{float(v):.9g}" for v in embedding)
 
 
 def ml1_payload_to_json(payload: Dict[str, str]) -> str:
