@@ -6,6 +6,7 @@ layout: default
 
 Guides for running and managing Open Link Token in production.
 
+- [Running OpenLinkToken](../running-openlinktoken/index.md) — CLI, Docker, and PySpark execution guidance
 - [Running Batch Jobs](running-batch-jobs.md) — Processing large datasets
 - [Spark or Databricks](spark-or-databricks.md) — Distributed processing with PySpark
 - [Sharing Tokenized Data](sharing-tokenized-data.md) — Exchanging tokens between organizations

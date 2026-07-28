@@ -13,4 +13,5 @@ Configure Open Link Token for your environment.
 
 - **Get started**: [Quickstarts](../quickstarts/index.md)
 - **Operational guides**: [Operations](../operations/index.md)
+- **Advanced tuning**: [Configuration & Tuning](../configuration-tuning/index.md)
 - **Security settings**: [Security](../security.md)
