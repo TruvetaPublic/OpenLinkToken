@@ -67,11 +67,11 @@ across platforms.
 The test runs in two steps for each test vector:
 
 1. **Java side** — invokes `RotationMatrixInteropHarness` (in
-   `lib/java/openlinktoken-core-ai/src/test/.../tools/`) via the Maven exec plugin.
+   `lib/java/openlinktoken-core-ai/src/test/.../core/ai/tools/`) via the Maven exec plugin.
    The harness generates matrices from the IV and writes them to a temporary JSON
    file.
 2. **Python side** — calls
-   `openlinktoken_core_ai.tokentransformer.rotation.rotation_matrix_generator.generate()`
+   `openlinktoken.core.ai.tokentransformer.rotation.rotation_matrix_generator.generate()`
    directly in-process.
 
 Both sets of matrices are compared element-by-element with a tolerance of `1e-12`
@@ -82,14 +82,14 @@ machine epsilon).
 
 ### Test Vectors
 
-| IV (truncated) | Rotation count | Dimension |
-|---|---|---|
-| `test-rotation-iv-2024` | 3 | 4 |
-| `different-iv-abc` | 2 | 4 |
-| `unicode-iv-éàü` | 1 | 4 |
-| `empty-like-iv-` | 5 | 6 |
-| `single-char-iv-x` | 1 | 2 |
-| `long-iv-aaa…` (64 chars) | 2 | 8 |
+| IV (truncated)            | Rotation count | Dimension |
+| ------------------------- | -------------- | --------- |
+| `test-rotation-iv-2024`   | 3              | 4         |
+| `different-iv-abc`        | 2              | 4         |
+| `unicode-iv-éàü`          | 1              | 4         |
+| `empty-like-iv-`          | 5              | 6         |
+| `single-char-iv-x`        | 1              | 2         |
+| `long-iv-aaa…` (64 chars) | 2              | 8         |
 
 ### Prerequisites
 
@@ -128,7 +128,7 @@ pytest tools/interoperability/rotation_matrix_interop_test.py -v
 ### Java Harness
 
 The Java side of the test is `RotationMatrixInteropHarness.java` in
-`lib/java/openlinktoken-core-ai/src/test/java/org/openlinktoken/tools/`.
+`lib/java/openlinktoken-core-ai/src/test/java/org/openlinktoken/core/ai/tools/`.
 It accepts four arguments — `<iv> <rotation_count> <dimension> <output.json>` —
 and writes a JSON file in the format:
 
@@ -150,7 +150,7 @@ The harness can also be run standalone for manual spot-checks:
 cd <repo-root>/lib/java
 mvn -pl openlinktoken-core-ai -DskipTests \
   org.codehaus.mojo:exec-maven-plugin:3.5.0:java \
-  -Dexec.mainClass=org.openlinktoken.tools.RotationMatrixInteropHarness \
+  -Dexec.mainClass=org.openlinktoken.core.ai.tools.RotationMatrixInteropHarness \
   -Dexec.classpathScope=test \
   "-Dexec.args=my-iv 3 4 /tmp/matrices.json"
 cat /tmp/matrices.json

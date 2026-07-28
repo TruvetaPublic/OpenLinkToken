@@ -19,7 +19,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "lib/python/openlinktoken-core-ai/src/main"))
 
-from openlinktoken_core_ai.tokentransformer.rotation.rotation_matrix_generator import generate  # noqa: E402
+from openlinktoken.core.ai.tokentransformer.rotation.rotation_matrix_generator import generate  # noqa: E402
 
 # Test vectors: (iv, rotation_count, dimension)
 TEST_VECTORS = [
@@ -39,13 +39,14 @@ TEST_VECTORS = [
 # to accommodate any platform-specific variation in transcendental functions.
 FLOAT_TOLERANCE = 1e-12
 
-JAVA_MAIN_CLASS = "org.openlinktoken.tools.RotationMatrixInteropHarness"
+JAVA_MAIN_CLASS = "org.openlinktoken.core.ai.tools.RotationMatrixInteropHarness"
 
 
 class JavaRotationHarness:
     """Runs the Java RotationMatrixInteropHarness via Maven and parses its JSON output."""
 
     def __init__(self):
+        """Initialize the harness with the repository root as its working directory."""
         self.project_root = PROJECT_ROOT
 
     def generate_matrices(
@@ -144,6 +145,7 @@ class TestRotationMatrixInterop:
     """Cross-language rotation matrix interoperability tests."""
 
     def setup_method(self):
+        """Create a fresh Java harness wrapper for each interoperability test."""
         self.java_harness = JavaRotationHarness()
 
     def test_java_python_rotation_matrices_match(self):

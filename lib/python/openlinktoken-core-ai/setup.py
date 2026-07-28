@@ -4,7 +4,7 @@
 import os
 import shutil
 
-from setuptools import find_packages, setup
+from setuptools import find_namespace_packages, setup
 from setuptools.command.build_py import build_py
 
 THIS_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -13,8 +13,8 @@ THIS_DIR = os.path.abspath(os.path.dirname(__file__))
 INFERENCING_ASSETS_SRC = os.path.abspath(os.path.join(THIS_DIR, "../../../resources/inferencing/ml1"))
 INFERENCING_ASSETS = ["model.onnx", "model.onnx.data", "tokenizer.json", "vocab.txt"]
 
-# Target: openlinktoken_core_ai/tokens inside the built package tree
-INFERENCING_ASSETS_PKG = os.path.join("openlinktoken_core_ai", "tokens")
+# Target: openlinktoken/core/ai/tokens inside the built package tree
+INFERENCING_ASSETS_PKG = os.path.join("openlinktoken", "core", "ai", "tokens")
 
 
 class BuildWithInferencingAssets(build_py):
@@ -26,6 +26,7 @@ class BuildWithInferencingAssets(build_py):
     """
 
     def run(self):
+        """Build Python modules and copy shared ML1 assets into the package."""
         super().run()
         dst = os.path.join(self.build_lib, INFERENCING_ASSETS_PKG)
         os.makedirs(dst, exist_ok=True)
@@ -61,19 +62,19 @@ setup(
         "Documentation": "https://github.com/Truveta/OpenTokenPrivate/blob/main/README.md",
     },
     package_dir={"": "src/main"},
-    packages=find_packages(where="src/main"),
+    packages=find_namespace_packages(where="src/main"),
     package_data={
-        "openlinktoken_core_ai.tokens": INFERENCING_ASSETS,
+        "openlinktoken.core.ai.tokens": INFERENCING_ASSETS,
     },
     python_requires=">=3.10",
     install_requires=requirements,
     cmdclass={"build_py": BuildWithInferencingAssets},
     entry_points={
         "openlinktoken.inference_providers": [
-            "ml1 = openlinktoken_core_ai.ml1_signature_provider:OnnxML1SignatureProvider",
+            "ml1 = openlinktoken.core.ai.ml1_signature_provider:OnnxML1SignatureProvider",
         ],
         "openlinktoken.tokens.definitions": [
-            "ml1_token = openlinktoken_core_ai.tokens.ml1_token:ML1Token",
+            "ml1_token = openlinktoken.core.ai.tokens.ml1_token:ML1Token",
         ],
     },
     extras_require={

@@ -4,9 +4,8 @@ import logging
 import sys
 from typing import List, Optional
 
-from openlinktoken_core_ai.tokens.ml1_inference_config import ML1InferenceConfig
-from openlinktoken_core_ai.tokens.rotation_config import RotationConfig
-
+from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig
+from openlinktoken.core.ai.tokens.rotation_config import RotationConfig
 from openlinktoken.exchange_config import rotation_iv_to_text
 from openlinktoken.metadata import Metadata
 from openlinktoken.tokens.tokenizer.passthrough_tokenizer import PassthroughTokenizer
@@ -584,6 +583,7 @@ class TokenizeCommand:
         mode: str,
         hash_record_ids: bool,
     ) -> list[str]:
+        """Build the human-readable completion summary for a tokenize run."""
         mode_labels = {
             TokenizeCommand._MODE_DEFAULT: "default HMAC-SHA256",
             TokenizeCommand._MODE_HASH_ONLY: "hash-only SHA-256",

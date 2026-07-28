@@ -9,8 +9,8 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
-from openlinktoken_core_ai.tokens.rotation_config import RotationConfig
 
+from openlinktoken.core.ai.tokens.rotation_config import RotationConfig
 from openlinktoken_cli.commands.open_link_token_command import OpenLinkTokenCommand
 from openlinktoken_cli.commands.package_command import PackageCommand
 from openlinktoken_cli.commands.tokenize_command import TokenizeCommand

@@ -7,9 +7,8 @@ import tempfile
 from pathlib import Path
 from typing import List, Optional
 
-from openlinktoken_core_ai.tokens.ml1_inference_config import ML1InferenceConfig
-from openlinktoken_core_ai.tokens.rotation_config import RotationConfig
-
+from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig
+from openlinktoken.core.ai.tokens.rotation_config import RotationConfig
 from openlinktoken.exchange_config import rotation_iv_to_text
 from openlinktoken.metadata import Metadata
 from openlinktoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
@@ -421,6 +420,7 @@ class PackageCommand:
         summary: PersonAttributesProcessingSummary,
         hash_record_ids: bool,
     ) -> list[str]:
+        """Build the human-readable completion summary for a package run."""
         lines = [
             f"Output: {output_path}",
         ]
