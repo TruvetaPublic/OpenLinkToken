@@ -113,7 +113,7 @@ After decryption, the payload is JSON with these fields:
 | `exchangeId`              | string  | Random UUID used to identify the exchange artifact.                                     |
 | `rotationIv`              | string  | Initialization vector for the rotation matrix generator, encoded as unpadded base64url. |
 | `rotationIvEncoding`      | string  | Encoding marker. Current value: `base64url`.                                            |
-| `rotationCount`           | integer | Number of rotation matrices to generate. Default: `30`.                                 |
+| `rotationCount`           | integer | Number of rotation matrices to generate. Default: `50`.                                 |
 | `binWidth`                | number  | Quantization bin width for rotation-based token generation. Default: `0.05`.            |
 | `dimensionBias`           | array   | Per-dimension bias vector subtracted before rotation. Default: `[]` (all zeros).        |
 
