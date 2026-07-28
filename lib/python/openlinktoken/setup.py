@@ -22,7 +22,7 @@ with open(os.path.join(THIS_DIR, "requirements.txt"), encoding="utf-8") as f:
 
 setup(
     name="openlinktoken",
-    version="2.0.0",
+    version="2.1.0",
     author="Open Link Token Contributors",
     description="Open Link Token Python core library for record linkage",
     long_description=long_description,

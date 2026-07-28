@@ -179,6 +179,7 @@ Open Link Token supports defining custom token rules beyond T1–T5. Custom rule
 - [CLI Reference](cli.md) — All CLI flags, modes, and examples
 - [Metadata Format](metadata-format.md) — Metadata file schema and fields
 - [Token Registration](token-registration.md) — Adding custom token rules
+- [Tokenization Configuration](tokenization-config.md) — Mapping input columns and defining token rules with `tokenize --config`
 - [Extension Author Reference](extensions.md) — Building CLI extensions: ABC contract, entry points, security model, and binary compatibility
 
 ---

@@ -1,6 +1,12 @@
 title: Open Link Token
 description: Privacy-preserving tokenization and matching library for secure PII-based person linkage
 markdown: kramdown
+permalink: pretty
 theme: jekyll-theme-cayman
 plugins:
   - jekyll-seo-tag
+  - jekyll-relative-links
+
+relative_links:
+  enabled: true
+  collections: true
