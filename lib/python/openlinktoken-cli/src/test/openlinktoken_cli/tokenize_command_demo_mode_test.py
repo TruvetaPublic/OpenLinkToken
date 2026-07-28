@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 import pytest
 
+from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig
 from openlinktoken_cli.commands.open_link_token_command import OpenLinkTokenCommand
 from openlinktoken_cli.util.ec_key_utils import generate_key_pair
 
@@ -86,6 +87,25 @@ class TestTokenizeCommandDemoMode:
         ]
         exit_code = OpenLinkTokenCommand.execute(args)
         assert exit_code == 0
+
+    def test_demo_mode_uses_default_ml1_thread_count_when_omitted(self, temp_dir: Path):
+        """Omitting the ML1 thread option should configure the detected default."""
+        args = [
+            "tokenize",
+            "-i",
+            str(temp_dir / "input.csv"),
+            "-o",
+            str(temp_dir / "output.csv"),
+            "--mode",
+            "demo",
+            "--disable-inferencing",
+        ]
+
+        with patch.object(ML1InferenceConfig, "configure", wraps=ML1InferenceConfig.configure) as configure:
+            exit_code = OpenLinkTokenCommand.execute(args)
+
+        assert exit_code == 0
+        assert configure.call_args.kwargs["configured_num_threads"] == ML1InferenceConfig.DEFAULT_NUM_THREADS
 
     def test_demo_mode_accepts_bare_csv_paths_from_working_directory(
         self, temp_dir: Path, monkeypatch: pytest.MonkeyPatch

@@ -169,8 +169,8 @@ class PackageCommand:
             "--ml1-num-threads",
             dest="ml1_num_threads",
             type=int,
-            default=0,
-            help="ORT intra/inter-op thread count for ML1 inference (0 = auto-detect, default: 0)",
+            default=None,
+            help="ORT intra/inter-op thread count for ML1 inference (default: auto-detect)",
         )
         parser.add_argument(
             "--rotation-iv",
@@ -212,6 +212,9 @@ class PackageCommand:
         reporter = CliRunReporter("package", no_progress=args.no_progress)
 
         ml1_enabled = not getattr(args, "disable_ml1", False)
+        configured_num_threads = getattr(args, "ml1_num_threads", None)
+        if configured_num_threads is None:
+            configured_num_threads = ML1InferenceConfig.DEFAULT_NUM_THREADS
         ML1InferenceConfig.configure(
             enable_ml1=ml1_enabled,
             configured_model_path=getattr(args, "ml1_model_path", ML1InferenceConfig.DEFAULT_MODEL_PATH),
@@ -220,9 +223,9 @@ class PackageCommand:
                 args, "ml1_max_sequence_length", ML1InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH
             ),
             configured_batch_size=getattr(args, "ml1_batch_size", ML1InferenceConfig.DEFAULT_BATCH_SIZE),
-            configured_num_threads=getattr(args, "ml1_num_threads", 0),
+            configured_num_threads=configured_num_threads,
         )
-        num_threads = getattr(args, "ml1_num_threads", 0)
+        num_threads = getattr(args, "ml1_num_threads", None)
 
         try:
             with reporter:
@@ -241,7 +244,7 @@ class PackageCommand:
                         getattr(args, "ml1_tokenizer_path", ML1InferenceConfig.DEFAULT_TOKENIZER_PATH),
                         getattr(args, "ml1_max_sequence_length", ML1InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH),
                         getattr(args, "ml1_batch_size", ML1InferenceConfig.DEFAULT_BATCH_SIZE),
-                        num_threads if num_threads > 0 else "auto",
+                        num_threads if num_threads and num_threads > 0 else "auto",
                     )
 
                     reporter.update_status("Resolving exchange config")

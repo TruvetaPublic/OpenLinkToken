@@ -4,7 +4,7 @@ layout: default
 
 # Token Rules
 
-Open Link Token generates five default token types (T1-T5), and can optionally generate ML1 when ONNX inference is enabled. Each rule defines a **token signature** (a deterministic, normalized string) which is then transformed into the output token via hashing (and optionally encryption).
+Open Link Token generates five deterministic token types (T1-T5) and, by default, ML1. T1-T5 rules define a **token signature** (a deterministic, normalized string) that is transformed into the output token via hashing (and optionally encryption). ML1 uses an ONNX matching model to generate an embedding, then derives rotation-based, quantized token projections.
 
 ---
 
@@ -178,16 +178,16 @@ Token Signature: "SMITH|JON|M"
 
 ## Token Rule Summary
 
-| RuleId | Signature attributes           | Typical precision | Typical recall |
-| ------ | ------------------------------ | ----------------- | -------------- |
-| T1     | Last, First[0], Sex, BirthDate | Medium-high       | High           |
-| T2     | Last, First, BirthDate, ZIP3   | High              | Good           |
-| T3     | Last, First, Sex, BirthDate    | High              | Medium-high    |
-| T4     | SSN(digits), Sex, BirthDate    | Very high         | Low            |
-| T5     | Last, First[0:3], Sex          | Lower             | Highest        |
-| ML1*    | ONNX embedding from PostalCode, Birthdate, GivenName, Surname, Gender | Model-dependent | Model-dependent |
+| RuleId | Signature attributes                                                                                                                                               | Typical precision | Typical recall  |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------- | --------------- |
+| T1     | Last, First[0], Sex, BirthDate                                                                                                                                     | Medium-high       | High            |
+| T2     | Last, First, BirthDate, ZIP3                                                                                                                                       | High              | Good            |
+| T3     | Last, First, Sex, BirthDate                                                                                                                                        | High              | Medium-high     |
+| T4     | SSN(digits), Sex, BirthDate                                                                                                                                        | Very high         | Low             |
+| T5     | Last, First[0:3], Sex                                                                                                                                              | Lower             | Highest         |
+| ML1\*  | ONNX embedding from PostalCode, BirthDate, GivenName, Surname, Gender; rotation-based, quantized projections, hashed with a T1-derived blocking key when available | Model-dependent   | Model-dependent |
 
-\* ML1 is enabled by default. Use `--disable-ml1` to opt out, and use `--ml1-model-path`, `--ml1-tokenizer-path`, and `--ml1-max-seq-length` to customize inference settings.
+\* ML1 is enabled by default. It is more compute-intensive and slower than T1-T5, but produces significantly better matching outcomes than T1-T5 alone. The improvement and its precision/recall balance depend on the input population, so validate it with your own matching data. To omit it, use `package --disable-ml1` or `tokenize --disable-inferencing`. See the [CLI reference](../reference/cli.md) for ML1 options.
 
 ---
 
@@ -269,7 +269,7 @@ import org.openlinktoken.tokens.Token;
 
 public class CustomToken implements Token {
   private static final long serialVersionUID = 1L;
-  private static final String ID = "ML1";
+  private static final String ID = "CUSTOM1";
 
   private final ArrayList<AttributeExpression> definition = new ArrayList<>();
 
@@ -302,7 +302,7 @@ from openlinktoken.attributes.person.last_name_attribute import LastNameAttribut
 from openlinktoken.tokens.token import Token
 
 class CustomToken(Token):
-  ID = "ML1"
+  ID = "CUSTOM1"
 
   def __init__(self):
     # Example signature: U(LastName)|BirthDate

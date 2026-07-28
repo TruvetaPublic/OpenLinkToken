@@ -27,13 +27,15 @@ class ML1InferenceConfig:
         configured_tokenizer_path: str,
         configured_max_sequence_length: int,
         configured_batch_size: int = DEFAULT_BATCH_SIZE,
-        configured_num_threads: int = 0,
+        configured_num_threads: int = DEFAULT_NUM_THREADS,
     ) -> None:
         """Apply ML1 runtime configuration."""
         if configured_max_sequence_length <= 0:
             raise ValueError("ML1 max sequence length must be greater than zero.")
         if configured_batch_size <= 0:
             raise ValueError("ML1 batch size must be greater than zero.")
+        if configured_num_threads <= 0:
+            raise ValueError("ML1 num threads must be greater than zero.")
 
         cls._enabled = enable_ml1
         cls._model_path = (
@@ -48,7 +50,7 @@ class ML1InferenceConfig:
         )
         cls._max_sequence_length = configured_max_sequence_length
         cls._batch_size = configured_batch_size
-        cls._num_threads = configured_num_threads if configured_num_threads > 0 else cls.DEFAULT_NUM_THREADS
+        cls._num_threads = configured_num_threads
 
     @classmethod
     def is_enabled(cls) -> bool:

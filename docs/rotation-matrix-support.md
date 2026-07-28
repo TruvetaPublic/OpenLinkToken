@@ -3,9 +3,17 @@
 ## Overview
 
 Rotation-based ML1 token generation is implemented in both the Java and Python
-AI libraries. It turns an ML1 ONNX embedding into a comma-separated value stored
-under the single `ML1` rule. It does **not** emit separate `ML1-R0`,
-`ML1-R1`, … output rows.
+AI libraries. It turns an ML1 ONNX embedding into rotation-based, quantized
+token projections and stores their comma-separated value under the single `ML1`
+rule. It does **not** emit separate `ML1-R0`, `ML1-R1`, … output rows.
+
+ML1 runs an ONNX matching model to generate embeddings, then derives
+rotation-based, quantized token projections. When a valid T1 signature is
+available, it hashes each projection with a T1-derived blocking key before
+producing the ML1 signature. Rotation alone is not de-identification. This
+inference is more compute-intensive and slower than generating T1–T5, but
+matching outcomes are significantly better with ML1 enabled than with T1–T5
+alone.
 
 For each valid ML1 input, the provider:
 

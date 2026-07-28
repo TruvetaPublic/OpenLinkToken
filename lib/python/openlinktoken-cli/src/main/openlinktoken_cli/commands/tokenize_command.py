@@ -197,8 +197,8 @@ class TokenizeCommand:
             "--inferencing-num-threads",
             dest="inferencing_num_threads",
             type=int,
-            default=0,
-            help="ORT intra/inter-op thread count for ML1 inference (0 = auto-detect, default: 0)",
+            default=None,
+            help="ORT intra/inter-op thread count for ML1 inference (default: auto-detect)",
         )
 
         parser.add_argument(
@@ -241,6 +241,9 @@ class TokenizeCommand:
             return 1
 
         ml1_enabled = not getattr(args, "disable_inferencing", False)
+        configured_num_threads = getattr(args, "inferencing_num_threads", None)
+        if configured_num_threads is None:
+            configured_num_threads = ML1InferenceConfig.DEFAULT_NUM_THREADS
         ML1InferenceConfig.configure(
             enable_ml1=ml1_enabled,
             configured_model_path=getattr(args, "ml1_model_path", ML1InferenceConfig.DEFAULT_MODEL_PATH),
@@ -249,9 +252,9 @@ class TokenizeCommand:
                 args, "ml1_max_sequence_length", ML1InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH
             ),
             configured_batch_size=getattr(args, "inferencing_batch_size", ML1InferenceConfig.DEFAULT_BATCH_SIZE),
-            configured_num_threads=getattr(args, "inferencing_num_threads", 0),
+            configured_num_threads=configured_num_threads,
         )
-        num_threads = getattr(args, "inferencing_num_threads", 0)
+        num_threads = getattr(args, "inferencing_num_threads", None)
 
         rotation_iv = getattr(args, "rotation_iv", None)
 
@@ -300,7 +303,7 @@ class TokenizeCommand:
                         getattr(args, "ml1_tokenizer_path", ML1InferenceConfig.DEFAULT_TOKENIZER_PATH),
                         getattr(args, "ml1_max_sequence_length", ML1InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH),
                         getattr(args, "inferencing_batch_size", ML1InferenceConfig.DEFAULT_BATCH_SIZE),
-                        num_threads if num_threads > 0 else "auto",
+                        num_threads if num_threads and num_threads > 0 else "auto",
                     )
 
                     # Count total rows via reader to enable %/ETA

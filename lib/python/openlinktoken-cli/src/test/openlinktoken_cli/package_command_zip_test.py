@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 import pytest
 
+from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig
 from openlinktoken.core.ai.tokens.rotation_config import RotationConfig
 from openlinktoken_cli.commands.open_link_token_command import OpenLinkTokenCommand
 from openlinktoken_cli.commands.package_command import PackageCommand
@@ -80,23 +81,25 @@ class TestPackageCommandZipOutput:
         exchange_config, private_key = self._create_exchange_config(temp_dir)
         zip_path = temp_dir / "output.zip"
 
-        exit_code = OpenLinkTokenCommand.execute(
-            [
-                "package",
-                "-i",
-                str(temp_dir / "input.csv"),
-                "-o",
-                str(zip_path),
-                "--exchange-config",
-                str(exchange_config),
-                "--private-key",
-                str(private_key),
-                "--disable-ml1",
-            ]
-        )
+        with patch.object(ML1InferenceConfig, "configure", wraps=ML1InferenceConfig.configure) as configure:
+            exit_code = OpenLinkTokenCommand.execute(
+                [
+                    "package",
+                    "-i",
+                    str(temp_dir / "input.csv"),
+                    "-o",
+                    str(zip_path),
+                    "--exchange-config",
+                    str(exchange_config),
+                    "--private-key",
+                    str(private_key),
+                    "--disable-ml1",
+                ]
+            )
 
         assert exit_code == 0
         assert zip_path.exists()
+        assert configure.call_args.kwargs["configured_num_threads"] == ML1InferenceConfig.DEFAULT_NUM_THREADS
 
     def test_zip_contains_csv_and_metadata(self, temp_dir: Path):
         """The ZIP must contain a CSV token file and a metadata JSON file."""

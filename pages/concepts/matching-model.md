@@ -4,7 +4,7 @@ layout: default
 
 # Matching Model
 
-Open Link Token uses a multi-rule tokenization strategy to enable privacy-preserving record linkage across datasets that contain PII.
+Open Link Token uses a multi-rule tokenization strategy to enable privacy-preserving record linkage across datasets that contain PII. Alongside the five deterministic token rules (T1-T5), ML1 is enabled by default. ML1 uses an ONNX matching model to generate an embedding, then derives rotation-based, quantized token projections.
 
 ---
 
@@ -37,10 +37,11 @@ The matching model generates cryptographically secure tokens from personal ident
                         │
                         ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                Token Generation (T1-T5)                         │
-│  - Concatenate attributes per rule                              │
-│  - HMAC-SHA256 hash                                             │
-│  - Optional AES-256 encryption                                  │
+│             Token and Embedding Generation                      │
+│  - T1-T5: concatenate attributes per rule                       │
+│  - ML1: ONNX matching model generates an embedding              │
+│  - ML1: rotation-based, quantized token projections             │
+│  - T1-T5: HMAC-SHA256 hash; optional AES-256 encryption         │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -55,7 +56,7 @@ Real-world data is messy:
 - SSNs may be missing or partially known
 - Addresses change over time
 
-Using **five distinct rules** allows matching at different confidence levels:
+Using **five deterministic rules** allows matching at different confidence levels:
 
 Open Link Token emits tokens with a `RuleId` of `T1`–`T5`. These identifiers are **rule names**, not “tiers” (they don’t imply an ordering). In practice, different rules tend to trade off precision vs. recall based on which attributes they include.
 
@@ -66,6 +67,14 @@ Open Link Token emits tokens with a `RuleId` of `T1`–`T5`. These identifiers a
 | T3     | Last + First + Sex + BirthDate         | Higher precision; stricter than T1                      |
 | T4     | SSN (digits) + Sex + BirthDate         | Very high precision when SSN is present                 |
 | T5     | Last + First[0:3] + Sex                | Highest recall / lowest precision; use cautiously       |
+
+---
+
+## ML1: ONNX Matching Model
+
+ML1 complements T1-T5 by using an ONNX matching model to generate an embedding from PostalCode, BirthDate, GivenName, Surname, and Gender. It derives rotation-based, quantized token projections from that embedding. When a valid T1 signature is available, each projection is SHA-256 hashed with a T1-derived blocking key. Rotation alone is not de-identification.
+
+ML1 is enabled by default. It is more compute-intensive and slower than T1-T5, but produces significantly better matching outcomes than T1-T5 alone. The size of the improvement, and its precision/recall balance, depend on the input population; validate it against your own matching data. To omit ML1, use `package --disable-ml1` or `tokenize --disable-inferencing`; see the [CLI reference](../reference/cli.md) for the full set of ML1 options.
 
 ---
 
@@ -229,7 +238,7 @@ Open Link Token normalizes each field before token generation. For full rules, s
 
 ### Step 2: Token Generation
 
-Each record produces up to five tokens (T1–T5). In encrypted mode, tokens are emitted as `olt.V1` JWE strings. In normal `tokenize` mode (or after decryption), tokens are base64-encoded HMAC values used for deterministic equality checks. The separate CLI option `tokenize --mode hash-only` instead emits 64-character SHA-256 hex values when you intentionally skip HMAC.
+Each record produces up to five deterministic token values (T1–T5) plus ML1 by default. ML1 is a token signature derived from rotation-based, quantized projections; the examples below illustrate the deterministic T1-T5 tokens. In encrypted mode, tokens are emitted as `olt.V1` JWE strings. In normal `tokenize` mode (or after decryption), tokens are base64-encoded HMAC values used for deterministic equality checks. The separate CLI option `tokenize --mode hash-only` instead emits 64-character SHA-256 hex values when you intentionally skip HMAC.
 
 For detailed rule compositions, see [Token Rules](token-rules.md).
 
