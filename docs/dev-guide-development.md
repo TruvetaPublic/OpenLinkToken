@@ -46,7 +46,7 @@ This guide centralizes contributor-facing information. It covers local setup, la
     - [Full Multi-language Build](#full-multi-language-build)
     - [Docker Image](#docker-image)
   - [Running the Tool (CLI)](#running-the-tool-cli)
-      - [Progress display environment variables](#progress-display-environment-variables)
+    - [Progress display environment variables](#progress-display-environment-variables)
     - [Key Pair Generation](#key-pair-generation)
   - [Local Extension Development](#local-extension-development)
     - [Setup](#setup)
@@ -358,19 +358,19 @@ token_df = processor.process_dataframe(df)
 token_df.show()
 ```
 
-Custom Token Definitions (example adding ML1):
+Custom Token Definitions (example adding TL6):
 
 ```python
 from openlinktoken_pyspark import OpenLinkTokenProcessor
 from openlinktoken_pyspark.notebook_helpers import TokenBuilder, CustomTokenDefinition
 
-ml1 = TokenBuilder("ML1") \
+tl6 = TokenBuilder("TL6") \
   .add("last_name", "T|U") \
   .add("first_name", "T|U") \
   .add("birth_date", "T|D") \
   .build()
 
-definition = CustomTokenDefinition().add_token(t6)
+definition = CustomTokenDefinition().add_token(tl6)
 processor = OpenLinkTokenProcessor(
   hashing_secret="HashingKey",
   encryption_key="Secret-Encryption-Key-Goes-Here.",
@@ -577,7 +577,7 @@ Open Link Token supports three core processing modes across Java, Python, and th
 
 Notes:
 
-- The underlying signature (before hashing) is produced by ordered attribute expressions for each token rule (e.g., T1→T5 or custom ML1+). Plain mode exposes this directly for inspection.
+- The underlying signature (before hashing) is produced by ordered attribute expressions for each token rule (e.g., T1→T5 or custom TL6+). Plain mode exposes this directly for inspection.
 - Encryption uses AES-256-GCM with a random IV; identical hashed inputs yield different encrypted outputs each run. Matching encrypted tokens across datasets therefore requires either: (a) decryption with the shared key (to reach the tokenized representation) or (b) using the `tokenize` subcommand specifically for overlap workflows. Do NOT attempt to match encrypted blobs directly.
 - Tokenizer polymorphism: Java & Python `TokenGenerator` accept an injectable tokenizer. Defaults to SHA-256; when plain mode is active a `PassthroughTokenizer` is used so downstream transformers (if any) receive the raw signature.
 - Security: Plain, hash-only, and tokenized modes reduce protection. Never use plain mode for sharing PHI. `tokenize --mode hash-only` is deterministic SHA-256 with no secret and is not suitable for production or cross-organisation exchange. Normal tokenized output may still leak structural frequency information, so encrypted mode remains the required format for external distribution.
@@ -627,7 +627,7 @@ Python uses two mechanisms:
 
 Add a Token:
 
-1. Create `lib/python/openlinktoken/src/main/openlinktoken/tokens/definitions/ml1_token.py` (example).
+1. Create `lib/python/openlinktoken/src/main/openlinktoken/tokens/definitions/tl6_token.py` (example).
 2. Define a class inheriting `Token` with `get_identifier()` & `get_definition()`.
 3. Ensure file and class names are unique and public.
 4. Run `pytest src/test` to verify auto-discovery.
