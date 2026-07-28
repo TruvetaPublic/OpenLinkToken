@@ -143,7 +143,7 @@
         "--output",
         "${workspaceFolder}/lib/python/openlinktoken-cli/target/debug-exchange.exchange.json",
         "--rotation-count",
-        "30",
+        "50",
         "--rotation-bin-width",
         "0.05",
         "--rotation-embedding-dimension",
