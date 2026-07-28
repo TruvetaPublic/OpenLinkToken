@@ -10,8 +10,10 @@ from setuptools.command.build_py import build_py
 THIS_DIR = os.path.abspath(os.path.dirname(__file__))
 
 # Shared inferencing assets live here (single source of truth alongside the Java resources)
-INFERENCING_ASSETS_SRC = os.path.abspath(os.path.join(THIS_DIR, "../../../resources/inferencing/ml1"))
-INFERENCING_ASSETS = ["model.onnx", "model.onnx.data", "tokenizer.json", "vocab.txt"]
+INFERENCING_ASSETS_SRC = os.path.abspath(os.path.join(
+    THIS_DIR, "../../../resources/inferencing/ml1"))
+INFERENCING_ASSETS = ["model.onnx",
+                      "model.onnx.data", "tokenizer.json", "vocab.txt"]
 
 # Target: openlinktoken_core_ai/tokens inside the built package tree
 INFERENCING_ASSETS_PKG = os.path.join("openlinktoken_core_ai", "tokens")
@@ -37,7 +39,8 @@ class BuildWithInferencingAssets(build_py):
 
 # Read the contents of the project README file.
 root_readme = os.path.abspath(os.path.join(THIS_DIR, "..", "..", "README.md"))
-readme_path = root_readme if os.path.exists(root_readme) else os.path.join(THIS_DIR, "README.md")
+readme_path = root_readme if os.path.exists(
+    root_readme) else os.path.join(THIS_DIR, "README.md")
 try:
     with open(readme_path, encoding="utf-8") as f:
         long_description = f.read()
@@ -46,11 +49,12 @@ except FileNotFoundError:
 
 # Read requirements from requirements.txt
 with open(os.path.join(THIS_DIR, "requirements.txt"), encoding="utf-8") as f:
-    requirements = [line.strip() for line in f if line.strip() and not line.startswith("#")]
+    requirements = [line.strip() for line in f if line.strip()
+                    and not line.startswith("#")]
 
 setup(
     name="openlinktoken-core-ai",
-    version="2.0.0",
+    version="2.1.0",
     author="Open Link Token Contributors",
     description="Open Link Token Core AI package for ML1/ONNX inference",
     long_description=long_description,
