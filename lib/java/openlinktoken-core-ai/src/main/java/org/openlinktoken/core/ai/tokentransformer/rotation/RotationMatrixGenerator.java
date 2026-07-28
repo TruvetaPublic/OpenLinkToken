@@ -58,6 +58,9 @@ public final class RotationMatrixGenerator {
         return matrices;
     }
 
+    /**
+     * Generate one matrix by deriving Gaussian samples from the IV and orthonormalizing them.
+     */
     private static double[][] generateOne(byte[] keyMaterial, int rotationIndex, int n) {
         int pairsPerCol = (n + 1) / 2;
 
@@ -95,6 +98,9 @@ public final class RotationMatrixGenerator {
         return q;
     }
 
+    /**
+     * Compute the orthogonal factor of a matrix using Householder QR decomposition.
+     */
     private static double[][] householderQr(double[][] raw, int n) {
         double[][] q = identityMatrix(n);
         double[][] r = copyMatrix(raw, n);
@@ -124,6 +130,9 @@ public final class RotationMatrixGenerator {
         return q;
     }
 
+    /**
+     * Create an identity matrix used as the initial orthogonal factor.
+     */
     private static double[][] identityMatrix(int n) {
         double[][] identity = new double[n][n];
         for (int row = 0; row < n; row++) {
@@ -132,6 +141,9 @@ public final class RotationMatrixGenerator {
         return identity;
     }
 
+    /**
+     * Copy a square matrix without sharing its row arrays.
+     */
     private static double[][] copyMatrix(double[][] matrix, int n) {
         double[][] copy = new double[n][];
         for (int row = 0; row < n; row++) {
@@ -140,6 +152,9 @@ public final class RotationMatrixGenerator {
         return copy;
     }
 
+    /**
+     * Compute a Euclidean norm with scaling to reduce overflow and underflow risk.
+     */
     private static double vectorNorm(double[] values) {
         double scale = 0.0;
         double sumOfSquares = 1.0;
@@ -158,6 +173,9 @@ public final class RotationMatrixGenerator {
         return scale == 0.0 ? 0.0 : scale * Math.sqrt(sumOfSquares);
     }
 
+    /**
+     * Apply a Householder reflector to matrix rows from {@code startRow} onward.
+     */
     private static void applyReflectorFromLeft(
             double[][] matrix, double[] reflector, int startRow, int startColumn, int n) {
         double squaredNorm = squaredNorm(reflector);
@@ -173,6 +191,9 @@ public final class RotationMatrixGenerator {
         }
     }
 
+    /**
+     * Apply a Householder reflector to matrix columns from {@code startColumn} onward.
+     */
     private static void applyReflectorFromRight(double[][] matrix, double[] reflector, int startColumn, int n) {
         double squaredNorm = squaredNorm(reflector);
         for (int row = 0; row < n; row++) {
@@ -187,6 +208,9 @@ public final class RotationMatrixGenerator {
         }
     }
 
+    /**
+     * Compute the squared Euclidean norm of a vector.
+     */
     private static double squaredNorm(double[] values) {
         double sum = 0.0;
         for (double value : values) {
@@ -243,6 +267,9 @@ public final class RotationMatrixGenerator {
         return sign;
     }
 
+    /**
+     * Encode a long as an eight-byte big-endian value for HMAC counter input.
+     */
     private static byte[] longToBytes(long value) {
         byte[] bytes = new byte[8];
         for (int i = 7; i >= 0; i--) {
@@ -252,6 +279,9 @@ public final class RotationMatrixGenerator {
         return bytes;
     }
 
+    /**
+     * Hash input with SHA-256.
+     */
     private static byte[] sha256(byte[] data) {
         try {
             return MessageDigest.getInstance("SHA-256").digest(data);
@@ -260,6 +290,9 @@ public final class RotationMatrixGenerator {
         }
     }
 
+    /**
+     * Authenticate input with HMAC-SHA256 using the supplied key.
+     */
     private static byte[] hmacSha256(byte[] key, byte[] data) {
         try {
             Mac mac = Mac.getInstance("HmacSHA256");

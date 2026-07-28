@@ -262,6 +262,9 @@ public class ML1OnnxSignatureProvider implements InferenceSignatureProvider {
         return result;
     }
 
+    /**
+     * Return the lowercase hexadecimal SHA-256 digest of a string.
+     */
     private static String sha256Hex(String value) {
         try {
             byte[] hash = MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));
@@ -347,6 +350,9 @@ public class ML1OnnxSignatureProvider implements InferenceSignatureProvider {
         return sb.append('}').toString();
     }
 
+    /**
+     * Append a string using the JSON escapes required by Python's ASCII-safe encoder.
+     */
     private static void appendJsonString(StringBuilder sb, String value) {
         for (int i = 0; i < value.length(); i++) {
             char c = value.charAt(i);

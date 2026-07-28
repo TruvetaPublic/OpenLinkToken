@@ -151,6 +151,9 @@ public final class ML1OnnxSignatureGenerator {
     record GenerationResult(List<String> signatures, List<float[]> embeddings) {
     }
 
+    /**
+     * Run one padded inference batch and record its elapsed time.
+     */
     private static BatchRunResult runBatchInference(List<String> inferenceBatch) throws TranslateException {
         long inferenceStartNanos = System.nanoTime();
         float[][] embeddings = generateEmbeddings(inferenceBatch);
@@ -186,6 +189,9 @@ public final class ML1OnnxSignatureGenerator {
         }
     }
 
+    /**
+     * Load the configured ONNX model and tokenizer when they are not already active.
+     */
     private static void initializeIfNeeded() throws IOException, ModelException {
         String modelPath = ML1InferenceConfig.getModelPath();
         String tokenizerPath = ML1InferenceConfig.getTokenizerPath();
@@ -231,6 +237,9 @@ public final class ML1OnnxSignatureGenerator {
         activeTokenizerPath = tokenizerPath;
     }
 
+    /**
+     * Select CUDA when available and otherwise use the CPU execution device.
+     */
     private static Device selectInferenceDevice() {
         if (CudaUtils.getGpuCount() > 0) {
             LOGGER.info("ML1 inference: CUDA GPU available, using GPU acceleration");
@@ -245,6 +254,9 @@ public final class ML1OnnxSignatureGenerator {
         return Device.cpu();
     }
 
+    /**
+     * Tokenize rows, build model inputs, run ONNX inference, and extract CLS embeddings.
+     */
     private static float[][] generateEmbeddings(List<String> inputJsonRows) throws TranslateException {
         int maxSequenceLength = ML1InferenceConfig.getMaxSequenceLength();
 
@@ -322,6 +334,9 @@ public final class ML1OnnxSignatureGenerator {
         }
     }
 
+    /**
+     * Copy values into a zero-padded array truncated to the requested length.
+     */
     private static long[] toFixedLength(long[] values, int maxSequenceLength) {
         long[] response = new long[maxSequenceLength];
         if (values == null || values.length == 0) {
@@ -332,6 +347,9 @@ public final class ML1OnnxSignatureGenerator {
         return response;
     }
 
+    /**
+     * Create sequential position IDs from zero through {@code maxSequenceLength - 1}.
+     */
     private static long[] createPositionIds(int maxSequenceLength) {
         long[] positionIds = new long[maxSequenceLength];
         for (int i = 0; i < maxSequenceLength; i++) {
@@ -340,6 +358,9 @@ public final class ML1OnnxSignatureGenerator {
         return positionIds;
     }
 
+    /**
+     * Close the active predictor and model before re-initialization.
+     */
     private static void closeModel() {
         if (predictor != null) {
             try {
@@ -361,6 +382,9 @@ public final class ML1OnnxSignatureGenerator {
         }
     }
 
+    /**
+     * Resolve a configured filesystem or classpath resource path.
+     */
     private static Path resolvePath(String configuredPath) {
         if (configuredPath != null && configuredPath.startsWith("classpath:")) {
             return extractClasspathResource(configuredPath.substring("classpath:".length()));
@@ -368,6 +392,9 @@ public final class ML1OnnxSignatureGenerator {
         return Paths.get(configuredPath);
     }
 
+    /**
+     * Resolve a classpath resource, extracting it to a temporary file when necessary.
+     */
     private static Path extractClasspathResource(String resourcePath) {
         String normalized = resourcePath.startsWith("/") ? resourcePath.substring(1) : resourcePath;
 
@@ -413,6 +440,9 @@ public final class ML1OnnxSignatureGenerator {
                         + "Configure an explicit path or place the file at: resources/" + normalized);
     }
 
+    /**
+     * Serialize an embedding as a big-endian, IEEE-754 float bit-pattern hex string.
+     */
     private static String serializeEmbedding(float[] embedding) {
         ByteBuffer buffer = ByteBuffer.allocate(embedding.length * Float.BYTES).order(ByteOrder.BIG_ENDIAN);
         for (float value : embedding) {

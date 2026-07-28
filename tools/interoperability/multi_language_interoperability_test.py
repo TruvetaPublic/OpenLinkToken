@@ -21,7 +21,16 @@ from typing import Any, Dict
 # Add Python library to path
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "lib/python/openlinktoken/src/main"))
+sys.path.insert(0, str(PROJECT_ROOT / "lib/python/openlinktoken-core-ai/src/main"))
 
+from openlinktoken.attributes.person.birth_date_attribute import BirthDateAttribute  # noqa: E402
+from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute  # noqa: E402
+from openlinktoken.attributes.person.last_name_attribute import LastNameAttribute  # noqa: E402
+from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttribute  # noqa: E402
+from openlinktoken.attributes.person.sex_attribute import SexAttribute  # noqa: E402
+from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig  # noqa: E402
+from openlinktoken.core.ai.tokens.ml1_onnx_signature_provider import ML1OnnxSignatureProvider  # noqa: E402
+from openlinktoken.core.ai.tokens.rotation_config import RotationConfig  # noqa: E402
 
 # These fixture values are intentionally kept aligned with the Java
 # TokenGeneratorIntegrationTest so this interop job verifies the same
@@ -203,6 +212,59 @@ class JavaLibraryHarness(InteroperabilityTooling):
         return result
 
 
+class ML1JavaLibraryHarness(InteroperabilityTooling):
+    """Runs the Java ML1 interoperability harness through Maven."""
+
+    JAVA_MAIN_CLASS = "org.openlinktoken.core.ai.tools.Ml1InteropHarness"
+
+    def generate_signatures(self, input_file: Path, output_file: Path) -> Dict[str, str | None]:
+        """Generate RecordId-to-ML1 mappings with the Java core-AI module."""
+        java_dir = self.project_root / "lib/java"
+        compile_cmd = [
+            "mvn",
+            "-pl",
+            "openlinktoken-core-ai",
+            "-am",
+            "-DskipTests",
+            "-q",
+            "install",
+        ]
+        compile_result = subprocess.run(
+            compile_cmd,
+            capture_output=True,
+            text=True,
+            cwd=java_dir,
+            check=False,
+        )
+        if compile_result.returncode != 0:
+            raise RuntimeError(f"Java ML1 module install failed: {compile_result.stderr}")
+
+        execute_cmd = [
+            "mvn",
+            "-pl",
+            "openlinktoken-core-ai",
+            "-DskipTests",
+            "org.codehaus.mojo:exec-maven-plugin:3.5.0:java",
+            f"-Dexec.mainClass={self.JAVA_MAIN_CLASS}",
+            "-Dexec.classpathScope=test",
+            f"-Dexec.args={input_file} {output_file}",
+        ]
+        execute_result = subprocess.run(
+            execute_cmd,
+            capture_output=True,
+            text=True,
+            cwd=java_dir,
+            check=False,
+        )
+        if execute_result.returncode != 0:
+            raise RuntimeError(
+                f"Java ML1 harness failed:\nstdout:\n{execute_result.stdout}\nstderr:\n{execute_result.stderr}"
+            )
+
+        with output_file.open("r", encoding="utf-8") as file_handle:
+            return json.load(file_handle)
+
+
 class TokenValidator:
     """Utility class for validating and comparing tokens."""
 
@@ -359,6 +421,60 @@ class TestTokenCompatibility:
             print("✅ Java core library and Python CLI token outputs match!")
             print("-" * 30)
 
+    def test_java_ml1_harness_matches_python_provider(self):
+        """Compare Java and Python ML1 signatures, including invalid-row handling."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            input_file = temp_path / "ml1_input.csv"
+            java_output = temp_path / "ml1_java_output.json"
+
+            with input_file.open("w", encoding="utf-8", newline="") as file_handle:
+                writer = csv.writer(file_handle)
+                writer.writerow(["RecordId", "BirthDate", "FirstName", "LastName", "PostalCode", "Sex"])
+                writer.writerow(["ml1-valid", "1989-05-25", "Chelsea", "Meister", "06582", "Female"])
+                writer.writerow(["ml1-invalid", "not-a-date", "Chelsea", "Meister", "06582", "Female"])
+
+            java_tokens = ML1JavaLibraryHarness().generate_signatures(input_file, java_output)
+
+            python_rows = [
+                {
+                    BirthDateAttribute: "1989-05-25",
+                    FirstNameAttribute: "Chelsea",
+                    LastNameAttribute: "Meister",
+                    PostalCodeAttribute: "06582",
+                    SexAttribute: "Female",
+                },
+                {
+                    BirthDateAttribute: "not-a-date",
+                    FirstNameAttribute: "Chelsea",
+                    LastNameAttribute: "Meister",
+                    PostalCodeAttribute: "06582",
+                    SexAttribute: "Female",
+                },
+            ]
+            ML1InferenceConfig.configure(
+                True,
+                ML1InferenceConfig.DEFAULT_MODEL_PATH,
+                ML1InferenceConfig.DEFAULT_TOKENIZER_PATH,
+                ML1InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH,
+            )
+            RotationConfig.configure(
+                True,
+                RotationConfig.DEFAULT_IV,
+                RotationConfig.DEFAULT_ROTATION_COUNT,
+                RotationConfig.DEFAULT_HASH_DIMENSION,
+                RotationConfig.DEFAULT_BIN_WIDTH,
+                RotationConfig.DEFAULT_MIN_VAL,
+                RotationConfig.DEFAULT_MAX_VAL,
+            )
+            python_result = ML1OnnxSignatureProvider().generate_batch(python_rows)
+            python_tokens = {
+                record_id: signature
+                for record_id, signature in zip(("ml1-valid", "ml1-invalid"), python_result.signatures)
+            }
+
+            assert java_tokens == python_tokens
+
     def test_metadata_consistency(self):
         """Test that the Python CLI produces metadata files with expected fields."""
         print("\nTesting Metadata Consistency")
@@ -509,6 +625,7 @@ if __name__ == "__main__":
         test.test_python_library_matches_known_java_fixture_values()
         test.test_python_cli_module_entrypoint_tokenize_flow()
         test.test_java_library_harness_matches_python_cli_tokenize_output()
+        test.test_java_ml1_harness_matches_python_provider()
         test.test_metadata_consistency()
         test.test_package_command_zip_output()
         test.test_encrypt_command_zip_output()

@@ -30,7 +30,11 @@ import org.openlinktoken.tokentransformer.HashTokenTransformer;
 import org.openlinktoken.tokentransformer.TokenTransformer;
 
 /**
- * Generates both the token signature and the token itself.
+ * Generates token signatures and transforms them into tokens.
+ *
+ * <p>The generator supports the legacy attribute-class API and the preferred field-ID API.
+ * Inference providers may supply pre-hashed signatures; those signatures bypass the hash
+ * transformer while still receiving any remaining transformations.
  */
 @Getter
 @Setter
@@ -94,20 +98,19 @@ public class TokenGenerator implements Serializable {
         this.fieldRegistry = fieldRegistry;
     }
 
-    /*
-     * Get the token signature for a given token identifier. Populates the
-     * invalidAttributes list in the result object with the attributes that are
-     * invalid.
+    /**
+     * Gets a token signature for a token identifier using attribute classes.
      *
-     * @param tokenId the token identifier.
+     * <p>If an enabled inference provider owns the identifier, the provider generates the
+     * signature. Otherwise, the configured token definition resolves and normalizes each
+     * required attribute, recording invalid attributes in {@code result}.
      *
-     * @param personAttributes The person attributes. It is a map of the person
-     * attributes.
+     * @param tokenId          the token identifier
+     * @param personAttributes the person attributes keyed by attribute class
+     * @param result           the result object that receives invalid attribute names
      *
-     * @param result the token generator result.
-     *
-     * @return the token signature using the token definition for the given token
-     * identifier.
+     * @return the normalized token signature, or {@code null} when required data is missing
+     *         or invalid
      */
     @Deprecated(since = "2.1.0", forRemoval = false)
     protected String getTokenSignature(String tokenId, Map<Class<? extends Attribute>, String> personAttributes,
@@ -160,6 +163,13 @@ public class TokenGenerator implements Serializable {
                 .collect(Collectors.joining("|"));
     }
 
+    /**
+     * Generates tokens for every configured identifier except the supplied exclusions.
+     *
+     * @param personAttributes the person attributes keyed by attribute class
+     * @param excludedTokenIds token identifiers to skip
+     * @return generated tokens and any invalid attributes encountered
+     */
     public TokenGeneratorResult generateTokensExcluding(
             Map<Class<? extends Attribute>, String> personAttributes,
             Set<String> excludedTokenIds) {

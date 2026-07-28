@@ -29,6 +29,10 @@ After changing any dependency file, run `uv lock` to verify the full workspace r
 
 After finishing changes to files in this repository, run `prek run --files <changed-files>` from the repository root before considering the task complete. Use the exact files changed for the current task rather than running prek across the whole repository. If it reports problems, address them or clearly report the blocker.
 
+## Superpowers specs
+
+Keep Superpowers design specifications as local working artifacts; never commit files under `docs/superpowers/`.
+
 ## launch.json coverage for CLI commands
 
 Every CLI command must have a corresponding entry in `.vscode/launch.json`. When adding or updating any command in `lib/python/openlinktoken-cli/src/main/openlinktoken_cli/commands/`, add or update the matching debug configuration.

@@ -26,7 +26,7 @@ from openlinktoken_cli.util.stdin_utils import read_required_env_bytes, read_req
 logger = logging.getLogger(__name__)
 
 EXCHANGE_CONFIG_VERSION = EXCHANGE_JWE_VERSION
-DEFAULT_ROTATION_COUNT = 30
+DEFAULT_ROTATION_COUNT = 50
 DEFAULT_BIN_WIDTH = 0.05
 DEFAULT_EMBEDDING_DIMENSION = 1024
 

@@ -187,7 +187,9 @@ python tools/interoperability/cli_parity_test.py
 
 Use `tools/interoperability/multi_language_interoperability_test.py` to compare
 Python tokenization output against the Java core-library harness and verify
-known deterministic fixture values.
+known deterministic fixture values. The same script also performs full
+Java/Python ML1 signature parity, including invalid-row handling, in addition
+to the T1-T5 and metadata checks.
 
 ```bash
 cd lib/java

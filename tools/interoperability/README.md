@@ -33,7 +33,7 @@ python tools/interoperability/cli_parity_test.py
 
 ## Token Interoperability Tests
 
-The `multi_language_interoperability_test.py` script executes two parity checks:
+The `multi_language_interoperability_test.py` script executes three parity checks:
 
 - **Unit-level fixture parity:** verifies that the Python library reproduces the
   same deterministic token fixture values already asserted by the Java
@@ -41,6 +41,9 @@ The `multi_language_interoperability_test.py` script executes two parity checks:
 - **Java harness vs Python CLI parity:** invokes a thin Java harness built on the
   Java core library API and compares its `tokenize`-compatible CSV output against
   the Python CLI `tokenize` command
+- **Java ML1 harness vs Python ML1 provider parity:** invokes
+  `Ml1InteropHarness` from the Java core-AI module and compares its
+  `RecordId`-to-signature JSON against the Python ML1 provider
 
 The script also verifies that the Python CLI metadata file contains the expected
 fields for tokenized output.
@@ -52,6 +55,24 @@ cd <repo-root>/lib/java
 mvn -pl openlinktoken -DskipTests test-compile
 cd <repo-root>
 python tools/interoperability/multi_language_interoperability_test.py
+```
+
+The script creates a temporary two-row ML1 CSV containing one valid person and
+one invalid birth date. It sends both rows through the Java
+`org.openlinktoken.core.ai.tools.Ml1InteropHarness` and Python
+`ML1OnnxSignatureProvider`, then compares the complete `RecordId`-to-signature
+mapping, including the expected `null` for the invalid row. The Java side
+explicitly uses the bundled `model.onnx` and `tokenizer.json` assets with the
+default rotation configuration. The script installs the Java
+`openlinktoken-core-ai` reactor artifacts before running the test-scope harness,
+so the comparison uses the current source tree rather than a stale local Maven
+artifact.
+
+To run only the ML1 parity test:
+
+```bash
+source /home/vscode/.local/share/openlinktoken/.venv/bin/activate
+python -m pytest tools/interoperability/multi_language_interoperability_test.py -k ml1 -v
 ```
 
 ## Rotation Matrix Interoperability Tests

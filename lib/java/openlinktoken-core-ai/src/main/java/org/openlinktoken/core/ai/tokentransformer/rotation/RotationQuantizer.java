@@ -57,6 +57,9 @@ public final class RotationQuantizer {
         return String.join(" ", Arrays.stream(bins).mapToObj(String::valueOf).toArray(String[]::new));
     }
 
+    /**
+     * Perform floor division with the floating-point behavior used by Python.
+     */
     private static double pythonFloorDivide(double dividend, double divisor) {
         double remainder = dividend % divisor;
         double quotient = (dividend - remainder) / divisor;

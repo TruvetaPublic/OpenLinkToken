@@ -71,7 +71,7 @@ setup(
     cmdclass={"build_py": BuildWithInferencingAssets},
     entry_points={
         "openlinktoken.inference_providers": [
-            "ml1 = openlinktoken.core.ai.ml1_onnx_signature_provider:ML1OnnxSignatureProvider",
+            "ml1 = openlinktoken.core.ai.tokens.ml1_onnx_signature_provider:ML1OnnxSignatureProvider",
         ],
         "openlinktoken.tokens.definitions": [
             "ml1_token = openlinktoken.core.ai.tokens.ml1_token:ML1Token",

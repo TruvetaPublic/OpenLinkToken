@@ -3,7 +3,7 @@ from openlinktoken.attributes.person.first_name_attribute import FirstNameAttrib
 from openlinktoken.attributes.person.last_name_attribute import LastNameAttribute
 from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttribute
 from openlinktoken.attributes.person.sex_attribute import SexAttribute
-from openlinktoken.core.ai.ml1_onnx_signature_provider import (
+from openlinktoken.core.ai.tokens.ml1_onnx_signature_provider import (
     ML1OnnxSignatureProvider,
     _compute_blocking_key,
     _hash_rotation_values,

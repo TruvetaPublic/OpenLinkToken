@@ -10,14 +10,17 @@ import org.openlinktoken.attributes.Attribute;
 import org.openlinktoken.attributes.person.BirthDateAttribute;
 import org.openlinktoken.attributes.person.FirstNameAttribute;
 import org.openlinktoken.attributes.person.LastNameAttribute;
+import org.openlinktoken.attributes.person.PostalCodeAttribute;
 import org.openlinktoken.attributes.person.SexAttribute;
 import org.openlinktoken.core.ai.tokens.definitions.ML1Token;
+import org.openlinktoken.tokens.TokenGeneratorResult;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +52,78 @@ class ML1OnnxSignatureProviderTest {
                 RotationConfig.DEFAULT_BIN_WIDTH,
                 RotationConfig.DEFAULT_MIN_VAL,
                 RotationConfig.DEFAULT_MAX_VAL);
+        ML1InferenceConfig.configure(
+                true,
+                ML1InferenceConfig.DEFAULT_MODEL_PATH,
+                ML1InferenceConfig.DEFAULT_TOKENIZER_PATH,
+                ML1InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH,
+                ML1InferenceConfig.DEFAULT_BATCH_SIZE,
+                ML1InferenceConfig.DEFAULT_NUM_THREADS);
         resetRotationTransformer();
+    }
+
+    // -----------------------------------------------------------------------
+    // ML1 payload construction and provider state
+    // -----------------------------------------------------------------------
+
+    @Test
+    void buildMl1Payload_validAttributes_preservesFieldOrderAndNormalization() {
+        Map<Class<? extends Attribute>, String> attrs = new HashMap<>();
+        attrs.put(PostalCodeAttribute.class, "95123");
+        attrs.put(BirthDateAttribute.class, "1990-07-09");
+        attrs.put(FirstNameAttribute.class, " Alice ");
+        attrs.put(LastNameAttribute.class, " Smith ");
+        attrs.put(SexAttribute.class, "female");
+
+        String payload = provider.buildMl1Payload(attrs, new TokenGeneratorResult());
+
+        assertEquals(
+                "{\"PostalCode\": \"95123\", \"Birthdate\": \"1990-07-09\", "
+                        + "\"GivenName\": \"Alice\", \"Surname\": \"Smith\", \"Gender\": \"Female\"}",
+                payload);
+    }
+
+    @Test
+    void buildMl1Payload_missingRequiredField_returnsNull() {
+        Map<Class<? extends Attribute>, String> attrs = new HashMap<>();
+        attrs.put(PostalCodeAttribute.class, "95123");
+        attrs.put(BirthDateAttribute.class, "1990-07-09");
+        attrs.put(FirstNameAttribute.class, "Alice");
+        attrs.put(LastNameAttribute.class, "Smith");
+
+        assertNull(provider.buildMl1Payload(attrs, new TokenGeneratorResult()));
+    }
+
+    @Test
+    void buildMl1Payload_invalidRequiredField_recordsInvalidAttribute() {
+        Map<Class<? extends Attribute>, String> attrs = new HashMap<>();
+        attrs.put(PostalCodeAttribute.class, "95123");
+        attrs.put(BirthDateAttribute.class, "1990-07-09");
+        attrs.put(FirstNameAttribute.class, "Alice");
+        attrs.put(LastNameAttribute.class, "Smith");
+        attrs.put(SexAttribute.class, "unknown");
+        TokenGeneratorResult result = new TokenGeneratorResult();
+
+        assertNull(provider.buildMl1Payload(attrs, result));
+        assertTrue(result.getInvalidAttributes().contains("Sex"), result.getInvalidAttributes().toString());
+    }
+
+    @Test
+    void isEnabled_reflectsInferenceConfiguration() {
+        ML1InferenceConfig.configure(false, "", "", 128, 64, 1);
+        assertTrue(!provider.isEnabled());
+
+        ML1InferenceConfig.configure(true, "", "", 128, 64, 1);
+        assertTrue(provider.isEnabled());
+    }
+
+    @Test
+    void generateBatch_allInvalidRows_returnsNullForEachRow() {
+        List<Map<Class<? extends Attribute>, String>> rows = List.of(Map.of(), Map.of());
+
+        List<String> signatures = provider.generateBatch(rows).signatures();
+
+        assertEquals(Arrays.asList(null, null), signatures);
     }
 
     // -----------------------------------------------------------------------
