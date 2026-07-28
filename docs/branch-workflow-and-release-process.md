@@ -221,7 +221,7 @@ git checkout -b dev/<github-username>/new-token-type
 
 # Make changes, commit
 git add .
-git commit -m "Add new token type ML1"
+git commit -m "Add new token type T6"
 
 # Push and open PR to develop
 git push origin dev/<github-username>/new-token-type
