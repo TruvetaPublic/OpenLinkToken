@@ -256,15 +256,8 @@ class TokenizeCommand:
 
         rotation_iv = getattr(args, "rotation_iv", None)
 
-        if mode == TokenizeCommand._MODE_DEMO and args.exchange_config:
-            logger.error("--mode demo cannot be combined with --exchange-config.")
-
         if mode == TokenizeCommand._MODE_DEMO and hash_record_ids:
             logger.error("--mode demo cannot be combined with --hash-record-ids.")
-            return 1
-
-        if mode == TokenizeCommand._MODE_DEMO and args.exchange_config:
-            logger.error("--mode demo cannot be combined with --exchange-config.")
             return 1
 
         if mode == TokenizeCommand._MODE_HASH_ONLY and hash_record_ids:
@@ -324,7 +317,16 @@ class TokenizeCommand:
                         reporter.set_total_rows(total_rows)
 
                     if mode == TokenizeCommand._MODE_DEMO:
-                        if rotation_iv is not None:
+                        if args.exchange_config:
+                            reporter.update_status("Resolving exchange rotation configuration")
+                            exchange = resolve_exchange_config(
+                                args.exchange_config,
+                                private_key_path=args.private_key,
+                                private_key_env=args.private_key_env,
+                            )
+                            logger.info(f"Exchange config: {exchange.path}")
+                            TokenizeCommand._configure_rotation(exchange, rotation_iv)
+                        elif rotation_iv is not None:
                             RotationConfig.configure(enable=True, rotation_iv=rotation_iv)
                         logger.info(
                             "Rotation token generation: enabled=%s, iv=%s, count=%s, hashDimension=%s, binWidth=%s",

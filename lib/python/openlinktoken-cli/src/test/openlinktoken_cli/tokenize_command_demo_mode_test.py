@@ -150,9 +150,9 @@ class TestTokenizeCommandDemoMode:
             os.chdir(original_cwd)
         assert exit_code != 0
 
-    def test_demo_mode_rejects_exchange_config(self, temp_dir: Path):
-        """Demo mode should reject --exchange-config to keep the contract explicit."""
-        exchange_config, _ = self._create_exchange_config(temp_dir, "demo-with-config")
+    def test_demo_mode_accepts_exchange_config(self, temp_dir: Path):
+        """Demo mode should accept --exchange-config for optional rotation settings."""
+        exchange_config, private_key = self._create_exchange_config(temp_dir, "demo-with-config")
         args = [
             "tokenize",
             "-i",
@@ -163,9 +163,11 @@ class TestTokenizeCommandDemoMode:
             "demo",
             "--exchange-config",
             str(exchange_config),
+            "--private-key",
+            str(private_key),
         ]
         exit_code = OpenLinkTokenCommand.execute(args)
-        assert exit_code != 0
+        assert exit_code == 0
 
     def test_demo_mode_rejects_hash_record_ids(self, temp_dir: Path):
         """Demo mode should reject --hash-record-ids."""

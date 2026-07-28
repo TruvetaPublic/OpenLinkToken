@@ -36,28 +36,7 @@
       ]
     },
     {
-      "name": "Python: tokenize (demo mode)",
-      "type": "debugpy",
-      "request": "launch",
-      "program": "${workspaceFolder}/lib/python/openlinktoken-cli/src/main/openlinktoken_cli/main.py",
-      "env": {
-        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main"
-      },
-      "args": [
-        "tokenize",
-        "--demo-mode",
-        "-i",
-        "resources/sample.${input:inputType}",
-        "-t",
-        "${input:inputType}",
-        "-o",
-        "lib/python/openlinktoken-cli/target/output.${input:outputType}",
-        "-ot",
-        "${input:outputType}"
-      ]
-    },
-    {
-      "name": "Python: tokenize (exchange config)",
+      "name": "Python: tokenize",
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/lib/python/openlinktoken-cli/src/main/openlinktoken_cli/main.py",
@@ -67,11 +46,9 @@
       "args": [
         "tokenize",
         "-i",
-        "${workspaceFolder}/resources/sample.${input:inputType}",
+        "${workspaceFolder}/resources/sample.csv",
         "-o",
-        "${workspaceFolder}/lib/python/openlinktoken-cli/target/output.${input:outputType}",
-        "-ot",
-        "${input:outputType}",
+        "${workspaceFolder}/lib/python/openlinktoken-cli/target/output.csv",
         "--exchange-config",
         "${input:exchangeConfigPath}",
         "--mode",
@@ -89,13 +66,9 @@
       "args": [
         "package",
         "-i",
-        "${workspaceFolder}/resources/sample.${input:inputType}",
-        "-t",
-        "${input:inputType}",
+        "${workspaceFolder}/resources/sample.csv",
         "-o",
-        "${workspaceFolder}/lib/python/openlinktoken-cli/target/packaged.${input:outputType}",
-        "-ot",
-        "${input:outputType}",
+        "${workspaceFolder}/lib/python/openlinktoken-cli/target/packaged.csv",
         "--exchange-config",
         "${input:exchangeConfigPath}"
       ]
@@ -111,13 +84,9 @@
       "args": [
         "encrypt",
         "-i",
-        "${workspaceFolder}/lib/python/openlinktoken-cli/target/output.${input:inputType}",
-        "-t",
-        "${input:inputType}",
+        "${workspaceFolder}/lib/python/openlinktoken-cli/target/output.csv",
         "-o",
-        "${workspaceFolder}/lib/python/openlinktoken-cli/target/encrypted.${input:outputType}",
-        "-ot",
-        "${input:outputType}",
+        "${workspaceFolder}/lib/python/openlinktoken-cli/target/encrypted.csv",
         "--exchange-config",
         "${input:exchangeConfigPath}"
       ]
@@ -133,13 +102,9 @@
       "args": [
         "decrypt",
         "-i",
-        "${workspaceFolder}/lib/python/openlinktoken-cli/target/encrypted.${input:inputType}",
-        "-t",
-        "${input:inputType}",
+        "${workspaceFolder}/lib/python/openlinktoken-cli/target/encrypted.csv",
         "-o",
-        "lib/python/openlinktoken-cli/target/decrypted.${input:outputType}",
-        "-ot",
-        "${input:outputType}",
+        "${workspaceFolder}/lib/python/openlinktoken-cli/target/decrypted.csv",
         "--exchange-config",
         "${input:exchangeConfigPath}"
       ]
@@ -223,30 +188,16 @@
   ],
   "inputs": [
     {
-      "id": "inputType",
-      "type": "pickString",
-      "description": "Select input type",
-      "options": ["csv", "parquet"],
-      "default": "csv"
-    },
-    {
-      "id": "outputType",
-      "type": "pickString",
-      "description": "Select output type",
-      "options": ["csv", "parquet"],
-      "default": "csv"
-    },
-    {
       "id": "exchangeConfigPath",
       "type": "promptString",
       "description": "Path to the exchange config JSON",
-      "default": "./openlinktoken-YYYY-MM-DD.exchange.json"
+      "default": "${workspaceFolder}/lib/python/openlinktoken-cli/target/local.exchange.json"
     },
     {
       "id": "exchangeConfigPathForInspect",
       "type": "promptString",
       "description": "Path to the exchange config JSON for inspection",
-      "default": "${workspaceFolder}/lib/python/openlinktoken-cli/target/debug-exchange.exchange.json"
+      "default": "${workspaceFolder}/lib/python/openlinktoken-cli/target/local.exchange.json"
     },
     {
       "id": "tokenizeMode",
