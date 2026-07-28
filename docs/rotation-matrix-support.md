@@ -119,7 +119,7 @@ sentinel pass-through value and `rotationCount - 1` proper rotations.
 The Python `initiate-exchange` command writes `rotationIv`,
 `rotationIvEncoding`, `rotationCount`, `binWidth`, and `dimensionBias` into the
 encrypted exchange payload. Its defaults are a randomly generated IV,
-`rotationCount=30`, `binWidth=0.05`, and a zero-filled `dimensionBias` with
+`rotationCount=50`, `binWidth=0.05`, and a zero-filled `dimensionBias` with
 `1024` entries. `--rotation-embedding-dimension` changes that bias length, and
 `--rotation-embedding-bias` supplies an explicit JSON bias array.
 
