@@ -9,6 +9,7 @@ import org.openlinktoken.attributes.person.FirstNameAttribute;
 import org.openlinktoken.attributes.person.LastNameAttribute;
 import org.openlinktoken.attributes.person.PostalCodeAttribute;
 import org.openlinktoken.attributes.person.SexAttribute;
+import org.openlinktoken.core.ai.tokens.definitions.ML1Token;
 import org.openlinktoken.tokens.definitions.T1Token;
 import org.openlinktoken.tokens.InferenceBatchResult;
 import org.openlinktoken.tokens.InferenceSignatureProvider;
@@ -34,9 +35,7 @@ import java.util.Map;
  * discovers it at runtime when {@code openlinktoken-core-ai} is on the classpath.
  */
 @Slf4j
-public class OnnxML1SignatureProvider implements InferenceSignatureProvider {
-
-    private static final String TOKEN_ID = "ML1";
+public class ML1OnnxSignatureProvider implements InferenceSignatureProvider {
 
     /**
      * Lazily initialized, cached rotation embedding transformer.
@@ -49,7 +48,7 @@ public class OnnxML1SignatureProvider implements InferenceSignatureProvider {
     /**
      * No-arg constructor required by {@link java.util.ServiceLoader}.
      */
-    public OnnxML1SignatureProvider() {
+    public ML1OnnxSignatureProvider() {
         attributeInstanceMap = new HashMap<>();
         AttributeLoader.load().forEach(attribute -> attributeInstanceMap.put(attribute.getClass(), attribute));
     }
@@ -61,7 +60,7 @@ public class OnnxML1SignatureProvider implements InferenceSignatureProvider {
      */
     @Override
     public String getTokenId() {
-        return TOKEN_ID;
+        return ML1Token.TOKEN_ID;
     }
 
     /**
@@ -180,7 +179,7 @@ public class OnnxML1SignatureProvider implements InferenceSignatureProvider {
      */
     private static RotationEmbeddingTransformer getOrCreateTransformer(int embeddingDim) {
         if (rotationTransformer == null) {
-            synchronized (OnnxML1SignatureProvider.class) {
+            synchronized (ML1OnnxSignatureProvider.class) {
                 if (rotationTransformer == null) {
                     float[] configuredBias = RotationConfig.getDimensionBias();
                     float[] effectiveBias = configuredBias == null ? new float[embeddingDim] : configuredBias;

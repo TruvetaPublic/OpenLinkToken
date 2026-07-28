@@ -18,6 +18,7 @@ from openlinktoken.core.ai.tokens.ml1_onnx_signature_generator import (
     ML1OnnxSignatureGenerator,
     ml1_payload_to_json,
 )
+from openlinktoken.core.ai.tokens.ml1_token import ML1Token
 from openlinktoken.core.ai.tokens.rotation_config import RotationConfig
 from openlinktoken.core.ai.tokentransformer.rotation.rotation_embedding_transformer import (
     RotationEmbeddingTransformer,
@@ -99,7 +100,7 @@ _ML1_FIELDS = [
 _ML1_ATTRIBUTE_INSTANCES = {attr_cls: attr_cls() for attr_cls, _ in _ML1_FIELDS}
 
 
-class OnnxML1SignatureProvider:
+class ML1OnnxSignatureProvider:
     """ONNX-backed implementation of InferenceSignatureProvider for ML1 tokens."""
 
     # Class-level rotation transformer cache so expensive matrix generation
@@ -109,7 +110,7 @@ class OnnxML1SignatureProvider:
 
     def get_token_id(self) -> str:
         """Return the registry identifier for the ML1 inference provider."""
-        return "ML1"
+        return ML1Token.TOKEN_ID
 
     def is_enabled(self) -> bool:
         """Return whether ML1 inference is enabled in the runtime configuration."""

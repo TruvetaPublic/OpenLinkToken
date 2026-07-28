@@ -17,7 +17,7 @@ import org.openlinktoken.attributes.person.LastNameAttribute;
 import org.openlinktoken.attributes.person.PostalCodeAttribute;
 import org.openlinktoken.attributes.person.SexAttribute;
 import org.openlinktoken.tokens.InferenceBatchResult;
-import org.openlinktoken.core.ai.tokens.OnnxML1SignatureProvider;
+import org.openlinktoken.core.ai.tokens.ML1OnnxSignatureProvider;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -64,7 +64,7 @@ public final class Ml1InteropHarness {
             }
         }
 
-        OnnxML1SignatureProvider provider = new OnnxML1SignatureProvider();
+        ML1OnnxSignatureProvider provider = new ML1OnnxSignatureProvider();
         InferenceBatchResult result = provider.generateBatch(rows);
         Map<String, String> byRecordId = new LinkedHashMap<>();
         for (int index = 0; index < recordIds.size(); index++) {

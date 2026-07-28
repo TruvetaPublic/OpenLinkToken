@@ -149,7 +149,7 @@ For the encrypted payload field definitions, see
 | Projection            | `lib/java/openlinktoken-core-ai/src/main/java/org/openlinktoken/core/ai/tokentransformer/rotation/EmbeddingRotator.java`             | `lib/python/openlinktoken-core-ai/src/main/openlinktoken/core/ai/tokentransformer/rotation/embedding_rotator.py`              |
 | Quantization          | `lib/java/openlinktoken-core-ai/src/main/java/org/openlinktoken/core/ai/tokentransformer/rotation/RotationQuantizer.java`            | `lib/python/openlinktoken-core-ai/src/main/openlinktoken/core/ai/tokentransformer/rotation/rotation_quantizer.py`             |
 | Composite transformer | `lib/java/openlinktoken-core-ai/src/main/java/org/openlinktoken/core/ai/tokentransformer/rotation/RotationEmbeddingTransformer.java` | `lib/python/openlinktoken-core-ai/src/main/openlinktoken/core/ai/tokentransformer/rotation/rotation_embedding_transformer.py` |
-| ML1 integration       | `lib/java/openlinktoken-core-ai/src/main/java/org/openlinktoken/core/ai/tokens/OnnxML1SignatureProvider.java`                        | `lib/python/openlinktoken-core-ai/src/main/openlinktoken/core/ai/ml1_signature_provider.py`                                   |
+| ML1 integration       | `lib/java/openlinktoken-core-ai/src/main/java/org/openlinktoken/core/ai/tokens/ML1OnnxSignatureProvider.java`                        | `lib/python/openlinktoken-core-ai/src/main/openlinktoken/core/ai/ml1_onnx_signature_provider.py`                              |
 
 Unit tests cover matrix generation, projection, quantization, transformer
 caching, and ML1 blocking-key hashing in both implementations. The Java

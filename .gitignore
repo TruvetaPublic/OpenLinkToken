@@ -48,6 +48,7 @@ buildNumber.properties
 # Ignore DER files generated during conversion
 .devcontainer/scripts/zscaler_root.pem.der
 core
+!**/core/
 !docs/spec/core/
 !docs/spec/core/**
 

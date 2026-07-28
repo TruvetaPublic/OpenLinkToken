@@ -498,7 +498,7 @@ class PersonAttributesProcessor:
         """Run batched ML1 inference for queued rows and emit final tokens.
 
         ML1 signatures now contain comma-separated rotation-quantized values
-        (produced inside OnnxML1SignatureProvider); no separate ML1-R rows are emitted.
+        (produced inside ML1OnnxSignatureProvider); no separate ML1-R rows are emitted.
         """
         ml1_signatures: List = [None] * len(pending_rows)
 

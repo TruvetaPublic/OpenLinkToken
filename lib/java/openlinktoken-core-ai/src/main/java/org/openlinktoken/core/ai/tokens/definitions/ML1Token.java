@@ -11,7 +11,7 @@ import org.openlinktoken.tokens.Token;
  */
 public class ML1Token implements Token {
     private static final long serialVersionUID = 1L;
-    private static final String ID = "ML1";
+    public static final String TOKEN_ID = "ML1";
 
     private final ArrayList<AttributeExpression> definition = new ArrayList<>();
 
@@ -22,7 +22,7 @@ public class ML1Token implements Token {
      */
     @Override
     public String getIdentifier() {
-        return ID;
+        return TOKEN_ID;
     }
 
     /**

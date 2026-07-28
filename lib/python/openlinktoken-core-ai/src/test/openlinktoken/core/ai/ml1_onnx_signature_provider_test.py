@@ -3,10 +3,12 @@ from openlinktoken.attributes.person.first_name_attribute import FirstNameAttrib
 from openlinktoken.attributes.person.last_name_attribute import LastNameAttribute
 from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttribute
 from openlinktoken.attributes.person.sex_attribute import SexAttribute
-from openlinktoken.core.ai.ml1_signature_provider import (
+from openlinktoken.core.ai.ml1_onnx_signature_provider import (
+    ML1OnnxSignatureProvider,
     _compute_blocking_key,
     _hash_rotation_values,
 )
+from openlinktoken.core.ai.tokens.ml1_token import ML1Token
 
 
 def test_rotation_hash_uses_hashed_t1_blocking_key():
@@ -25,3 +27,8 @@ def test_rotation_hash_uses_hashed_t1_blocking_key():
     assert _hash_rotation_values(["99 100 100 101"], blocking_key) == [
         "4ff691600f8c2df6142c405cbcd6f166a588ba83bd93ba6f028e082ef99decd8"
     ]
+
+
+def test_provider_uses_ml1_token_identifier():
+    """Provider and token definition must share the ML1 registry identifier."""
+    assert ML1OnnxSignatureProvider().get_token_id() == ML1Token.TOKEN_ID

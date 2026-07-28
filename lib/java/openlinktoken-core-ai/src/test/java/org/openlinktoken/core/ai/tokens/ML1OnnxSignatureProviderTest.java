@@ -11,6 +11,7 @@ import org.openlinktoken.attributes.person.BirthDateAttribute;
 import org.openlinktoken.attributes.person.FirstNameAttribute;
 import org.openlinktoken.attributes.person.LastNameAttribute;
 import org.openlinktoken.attributes.person.SexAttribute;
+import org.openlinktoken.core.ai.tokens.definitions.ML1Token;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,13 +25,18 @@ import java.util.Map;
 /**
  * Tests ML1 payload construction, signatures, rotation hashing, and batch behavior.
  */
-class OnnxML1SignatureProviderTest {
+class ML1OnnxSignatureProviderTest {
 
-    private OnnxML1SignatureProvider provider;
+    private ML1OnnxSignatureProvider provider;
+
+    @Test
+    void getTokenId_matchesMl1TokenIdentifier() {
+        assertEquals(ML1Token.TOKEN_ID, provider.getTokenId());
+    }
 
     @BeforeEach
     void setUp() {
-        provider = new OnnxML1SignatureProvider();
+        provider = new ML1OnnxSignatureProvider();
     }
 
     @AfterEach
@@ -206,7 +212,7 @@ class OnnxML1SignatureProviderTest {
     }
 
     private static RotationEmbeddingTransformer getRotationTransformer(int embeddingDim) throws Exception {
-        Method getOrCreateTransformer = OnnxML1SignatureProvider.class.getDeclaredMethod(
+        Method getOrCreateTransformer = ML1OnnxSignatureProvider.class.getDeclaredMethod(
                 "getOrCreateTransformer",
                 int.class);
         getOrCreateTransformer.setAccessible(true);
@@ -220,7 +226,7 @@ class OnnxML1SignatureProviderTest {
     }
 
     private static void resetRotationTransformer() throws Exception {
-        Field transformerField = OnnxML1SignatureProvider.class.getDeclaredField("rotationTransformer");
+        Field transformerField = ML1OnnxSignatureProvider.class.getDeclaredField("rotationTransformer");
         transformerField.setAccessible(true);
         transformerField.set(null, null);
     }

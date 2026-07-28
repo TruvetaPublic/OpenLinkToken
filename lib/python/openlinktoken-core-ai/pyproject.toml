@@ -18,7 +18,7 @@ dependencies = [
 ]
 
 [project.entry-points."openlinktoken.inference_providers"]
-ml1 = "openlinktoken.core.ai.ml1_signature_provider:OnnxML1SignatureProvider"
+ml1 = "openlinktoken.core.ai.ml1_onnx_signature_provider:ML1OnnxSignatureProvider"
 
 [project.entry-points."openlinktoken.tokens.definitions"]
 ml1_token = "openlinktoken.core.ai.tokens.ml1_token:ML1Token"
