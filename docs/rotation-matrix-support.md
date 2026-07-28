@@ -2,218 +2,159 @@
 
 ## Overview
 
-This document tracks the design and implementation of rotation matrix support
-for Open Link Token's ML1 embeddings. It covers both the Java and Python libraries.
+Rotation-based ML1 token generation is implemented in both the Java and Python
+AI libraries. It turns an ML1 ONNX embedding into a comma-separated value stored
+under the single `ML1` rule. It does **not** emit separate `ML1-R0`,
+`ML1-R1`, … output rows.
 
-The goal is to enable **privacy-preserving approximate matching** by rotating
-ML1 ONNX embeddings with deterministic orthogonal matrices derived from a shared
-initialization vector (IV). Both parties derive identical rotation matrices from
-the same IV, rotate their embeddings, quantize the rotated projections into
-discrete tokens, and match those tokens without ever exposing raw embedding
-vectors.
+For each valid ML1 input, the provider:
 
----
+1. obtains the raw ONNX embedding;
+2. centres, projects, and quantizes the embedding with the configured rotation
+   transformer;
+3. derives a T1 blocking key when the record has a valid T1 signature;
+4. hashes each quantized rotation value with that blocking key; and
+5. joins the resulting values with commas for the `ML1` signature.
 
-## Background: PersonMatching Reference
+The Java provider is registered through
+`META-INF/services/org.openlinktoken.tokens.InferenceSignatureProvider`. The
+Python provider is registered as the `ml1` entry point in
+`openlinktoken.inference_providers`.
 
-The approach mirrors the rotation-based matching in the internal PersonMatching
-service, which operates on 1024-dimensional BERT embeddings using:
+## Rotation Pipeline
 
-- 30 random orthogonal rotation matrices per IV
-- QR decomposition on normally-distributed random matrices
-- Per-rotation quantization into discrete bins (bin width 0.05)
-- Position-sensitive token hashing against blocking keys (T1)
+`RotationEmbeddingTransformer` creates `rotationCount` projected values for an
+embedding of dimension `N`:
 
-Open Link Token adapts this for its ML1 ONNX embeddings (768-dim CLS vectors) with a
-portable, language-agnostic algorithm.
+1. Entry 0 is the `[[ -1 ]]` sentinel. It passes through the first
+   `hashDimension` values of the centred embedding without rotation.
+2. The remaining `rotationCount - 1` entries are deterministic `N × N` proper
+   rotation matrices derived from the IV.
+3. For each entry, the transformer subtracts the per-dimension bias. For a
+   proper rotation, it computes the first `hashDimension` rows of
+   `R @ (embedding - bias)`.
+4. Each projected vector is quantized to a space-separated string of integer
+   bin indices.
 
----
+Matrices are generated lazily and cached for the lifetime of a transformer.
+The ML1 provider also caches its transformer after the first use.
 
-## Design Decisions
+### Quantization
 
-### Storage
+The default quantizer range is `[-5.0, 5.0]` with a bin width of `0.05`.
+Each value is clamped to the configured range and assigned with
+`int((value - min) // binWidth)`, using Python-compatible floating-point floor
+division. With the defaults, the tested bin values are `0` through `199`;
+`-5.0` maps to `0`, `0.0` maps to `99`, and `5.0` maps to `199`.
 
-| Component | Decision | Rationale |
-|-----------|----------|-----------|
-| Rotation matrix | **In-memory only** | Deterministic from IV — regenerate each run (~100 ms for N=4). No serialization format to maintain. |
-| IV | **Exchange config** | Sits alongside `hashing_secret` in the JWE-encrypted payload. Both parties derive identical matrices from a shared IV. `--rotation-iv` CLI override available for testing. |
+### ML1 Signature Value
 
-### Cross-Language Determinism
+The raw quantized value for each projection is a string such as
+`"99 100 100 101"`. When a T1 signature can be computed, the provider:
 
-PersonMatching uses `numpy.random.RandomState` (Mersenne Twister), which Java
-cannot replicate exactly. Open Link Token instead uses:
-
-1. **HMAC-SHA256 counter mode** as a portable PRNG  
-   `h = HMAC-SHA256(key=SHA-256(IV), msg=counter_as_8_byte_big_endian)`
-2. **Box-Muller transform** on 53-bit uniform values extracted from `h`  
-   `u = ((int64(h[0:8]) >>> 11) & (2^53 - 1)) / 2^53`
-3. **Modified Gram-Schmidt** orthonormalization (no external linear algebra library)
-4. **Gaussian elimination** determinant sign check to enforce `det(Q) = +1`
-
-All operations are IEEE 754 double-precision arithmetic applied in identical
-order in both languages, giving bit-exact (or sub-1e-12 tolerance) results.
-
----
-
-## Implementation Plan
-
-### Todo List
-
-| # | ID | Description | Status |
-|---|-----|-------------|--------|
-| 1 | `rotation-matrix-core` | Deterministic rotation matrix generation (Java + Python) | ✅ Done |
-| 2 | `tests-unit` | Unit tests: orthogonality, det=+1, determinism, thread-safety | ✅ Done |
-| 3 | `tests-interop` | Cross-language parity tests (Java harness vs Python in-process) | 🔄 In progress |
-| 4 | `embedding-rotation` | `EmbeddingRotator`: `R @ (x - bias)`, project to K dims | ⬜ Pending |
-| 5 | `rotation-quantizer` | Bin-assignment quantizer → space-separated token string | ⬜ Pending |
-| 6 | `rotation-token-transformer` | Composite transformer (matrix gen + rotation + quantization) | ⬜ Pending |
-| 7 | `ml1-pipeline-integration` | Expose raw float[] from ML1; produce `ML1-R*` output tokens | ⬜ Pending |
-| 8 | `iv-configuration` | Exchange config + CLI args (`--rotation-iv`, `--rotation-count`, etc.) | ⬜ Pending |
-
-### Dependencies
-
-```
-rotation-matrix-core ✅
-    ├── embedding-rotation ⬜
-    │       └── rotation-token-transformer ⬜
-    │               ├── rotation-quantizer ⬜
-    │               └── ml1-pipeline-integration ⬜
-    │                       └── iv-configuration ⬜
-    └── tests-interop 🔄
-
-tests-unit ✅  (covers rotation-matrix-core)
-tests-interop 🔄 (covers full Java↔Python parity once Java builds)
+```text
+blockingKey = SHA-256(T1-signature)
+rotationToken = SHA-256(quantizedValue + blockingKey)
 ```
 
----
+It returns the comma-separated `rotationToken` values as the `ML1` signature.
+Those values are lowercase 64-character SHA-256 hexadecimal digests. If a T1
+signature cannot be computed, the provider returns the un-hashed quantized
+values instead.
 
-## Files Created
+The Python CLI's batched ML1 path stores this signature directly and does not
+apply its normal token-transformer chain to it. Packaging can subsequently wrap
+the single `ML1` token for transport.
 
-### Core Implementation
+## Deterministic Matrix Generation
 
-| File | Language | Description |
-|------|----------|-------------|
-| `lib/java/openlinktoken-core-ai/src/main/java/org/openlinktoken/tokentransformer/rotation/RotationMatrixGenerator.java` | Java | HMAC-PRNG + Box-Muller + Modified Gram-Schmidt |
-| `lib/python/openlinktoken-core-ai/src/main/openlinktoken_core_ai/tokentransformer/rotation/rotation_matrix_generator.py` | Python | Identical algorithm using only `hashlib`, `hmac`, `math` |
-| `lib/python/openlinktoken-core-ai/src/main/openlinktoken_core_ai/tokentransformer/rotation/__init__.py` | Python | Package marker |
+`RotationMatrixGenerator.generate(iv, rotationCount, dimension)` derives each
+matrix as follows:
 
-### Unit Tests
+```text
+key = SHA-256(UTF-8(iv))
 
-| File | Language | Coverage |
-|------|----------|----------|
-| `lib/java/openlinktoken-core-ai/src/test/java/org/openlinktoken/tokentransformer/rotation/RotationMatrixGeneratorTest.java` | Java | 11 tests: count, dimensions, orthogonality, det=+1, determinism, different IVs, rotation indices, dim-2, dim-8, thread-safety |
-| `lib/python/openlinktoken-core-ai/src/test/openlinktoken_core_ai/tokentransformer/rotation/rotation_matrix_generator_test.py` | Python | Same 11 tests — all passing ✅ |
+for each rotation index r:
+  fill an N × N matrix column-by-column with Box-Muller normal values
+  where each pair uses:
+    HMAC-SHA256(key, counter as 8-byte big-endian integer)
+    counter = (r * N + column) * ceil(N / 2) + pair
 
-### Interoperability Infrastructure
-
-| File | Description |
-|------|-------------|
-| `lib/java/openlinktoken-core-ai/src/test/java/org/openlinktoken/tools/RotationMatrixInteropHarness.java` | Java harness: accepts `<iv> <rotation_count> <dimension> <output.json>`, writes full-precision JSON |
-| `tools/interoperability/rotation_matrix_interop_test.py` | Cross-language test: invokes Java harness via Maven, runs Python generator in-process, compares element-by-element within 1e-12 tolerance |
-
----
-
-## Algorithm Reference
-
-### `RotationMatrixGenerator.generate(iv, rotation_count, dimension)`
-
-```
-key = SHA-256(iv.encode("utf-8"))                              // 32 bytes
-
-for r in 0..rotation_count-1:
-  pairs_per_col = ceil(dimension / 2)
-
-  // Fill column-major raw matrix via HMAC-PRNG + Box-Muller
-  for col in 0..N-1:
-    for pair in 0..pairs_per_col-1:
-      counter = (r * N + col) * pairs_per_col + pair
-      h = HMAC-SHA256(key, counter as 8-byte big-endian uint64)
-      u1 = max(((uint64(h[0:8]) >>> 11) & (2^53-1)) / 2^53, 2^-53)
-      u2 =    ((uint64(h[8:16]) >>> 11) & (2^53-1)) / 2^53
-      z0 = sqrt(-2 * ln(u1)) * cos(2π * u2)        // Box-Muller
-      z1 = sqrt(-2 * ln(u1)) * sin(2π * u2)
-      raw[offset][col]   = z0
-      raw[offset+1][col] = z1  (if within bounds)
-
-  // Modified Gram-Schmidt orthonormalization on columns
-  for j in 0..N-1:
-    v = raw[:, j]
-    for k in 0..j-1:
-      v -= dot(v, q[:, k]) * q[:, k]
-    q[:, j] = v / ||v||
-
-  // Enforce det(Q) = +1 via Gaussian elimination sign check
-  if det_sign(Q) < 0:
-    Q[:, N-1] = -Q[:, N-1]
-
-  matrices[r] = Q
+  Q, R = Householder QR decomposition of the raw matrix
+  normalize columns of Q by sign(diag(R))
+  if det(Q) < 0:
+    negate the final column of Q
 ```
 
-### Interoperability Guarantee
+The resulting `Q` is orthogonal with determinant `+1`. Java implements the
+Householder QR steps directly; Python uses `numpy.linalg.qr` and applies the
+same diagonal-sign and determinant corrections. Both implementations use
+HMAC-SHA256 counter-mode input, 53-bit uniform values, and Box-Muller
+transformation.
 
-Both Java and Python:
-- Use the same HMAC-SHA256 key derivation and counter encoding
-- Extract uniform doubles with identical 53-bit shift-and-scale
-- Apply Box-Muller using IEEE 754 `sqrt`, `log`, `cos`, `sin`
-- Run Modified Gram-Schmidt with left-to-right floating-point accumulation
-- Run Gaussian elimination with identical partial-pivot row ordering
+Cross-language interoperability compares every matrix element with a tolerance
+of `1e-12`. The implementation and tests do not promise bit-for-bit equality
+on every platform.
 
-Empirical tolerance observed: **0.0 ULP** (bit-exact on tested platforms).
-Test tolerance set to **1e-12** to accommodate rare platform variation.
+## Configuration
 
----
+### Runtime Defaults
 
-## Remaining Work
+`RotationConfig` enables rotation by default when the AI module is installed:
 
-### 4. `embedding-rotation`
+| Setting         | Default                |
+| --------------- | ---------------------- |
+| IV              | `openlinktoken-ml1-v1` |
+| Rotation count  | `50`                   |
+| Hash dimension  | `4`                    |
+| Quantizer range | `[-5.0, 5.0]`          |
+| Bin width       | `0.05`                 |
+| Dimension bias  | all zeros              |
 
-Apply rotation matrices to raw float vectors:
+`rotationCount` is the total number of values returned by the transformer: one
+sentinel pass-through value and `rotationCount - 1` proper rotations.
 
-```
-rotate(embedding: float[], matrices, bias: float[], k: int) → List[float[k]]
-  x_centered = embedding - bias
-  for each R in matrices:
-    rotated = R @ x_centered
-    yield rotated[:k]
-```
+### Exchange Configuration and CLI
 
-**Files**: `EmbeddingRotator.java`, `embedding_rotator.py`
+The Python `initiate-exchange` command writes `rotationIv`,
+`rotationIvEncoding`, `rotationCount`, `binWidth`, and `dimensionBias` into the
+encrypted exchange payload. Its defaults are a randomly generated IV,
+`rotationCount=30`, `binWidth=0.05`, and a zero-filled `dimensionBias` with
+`1024` entries. `--rotation-embedding-dimension` changes that bias length, and
+`--rotation-embedding-bias` supplies an explicit JSON bias array.
 
-### 5. `rotation-quantizer`
+`tokenize` and `package` apply the exchange rotation settings when an IV is
+present. Their `--rotation-iv` option overrides only the IV; the count, bin
+width, and bias still come from the exchange payload. If neither an exchange
+IV nor an explicit override is supplied, those commands leave the existing
+runtime rotation configuration unchanged.
 
-Convert a low-dimensional float vector into a discrete token string:
+The configured bias must have the same length as the ML1 embedding. No command
+adjusts a supplied or generated bias to the model output dimension. The Java
+transformer rejects a mismatched bias length; Python's array operation also
+requires compatible lengths.
 
-```
-quantize(x: float[], min=-5.0, max=5.0, bin_width=0.05) → String
-  bins = [floor((v - min) / bin_width) for v in x]
-  bins = clamp(bins, 0, ceil((max - min) / bin_width) - 1)
-  return " ".join(str(b) for b in bins)
-```
+There is no CLI option for hash dimension or for disabling rotation alone.
+`tokenize --disable-inferencing` and `package --disable-ml1` disable ML1
+inference, rather than only the rotation stage.
 
-**Files**: `RotationQuantizer.java`, `rotation_quantizer.py`
+For the encrypted payload field definitions, see
+[Exchange Config Format](exchange-config-format.md).
 
-### 6. `rotation-token-transformer`
+## Implementation and Verification
 
-New `EmbeddingTransformer` interface (`float[] → List<String>`) composing steps
-3–5. Accepts IV, rotation count, hash dimension, quantization params.
+| Area                  | Java                                                                                                                         | Python                                                                                                                        |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Matrix generation     | `lib/java/openlinktoken-core-ai/src/main/java/org/openlinktoken/tokentransformer/rotation/RotationMatrixGenerator.java`      | `lib/python/openlinktoken-core-ai/src/main/openlinktoken_core_ai/tokentransformer/rotation/rotation_matrix_generator.py`      |
+| Projection            | `lib/java/openlinktoken-core-ai/src/main/java/org/openlinktoken/tokentransformer/rotation/EmbeddingRotator.java`             | `lib/python/openlinktoken-core-ai/src/main/openlinktoken_core_ai/tokentransformer/rotation/embedding_rotator.py`              |
+| Quantization          | `lib/java/openlinktoken-core-ai/src/main/java/org/openlinktoken/tokentransformer/rotation/RotationQuantizer.java`            | `lib/python/openlinktoken-core-ai/src/main/openlinktoken_core_ai/tokentransformer/rotation/rotation_quantizer.py`             |
+| Composite transformer | `lib/java/openlinktoken-core-ai/src/main/java/org/openlinktoken/tokentransformer/rotation/RotationEmbeddingTransformer.java` | `lib/python/openlinktoken-core-ai/src/main/openlinktoken_core_ai/tokentransformer/rotation/rotation_embedding_transformer.py` |
+| ML1 integration       | `lib/java/openlinktoken-core-ai/src/main/java/org/openlinktoken/tokens/OnnxML1SignatureProvider.java`                        | `lib/python/openlinktoken-core-ai/src/main/openlinktoken_core_ai/ml1_signature_provider.py`                                   |
 
-### 7. `ml1-pipeline-integration`
-
-- Add `generateEmbeddingsRaw() → float[][]` to `ML1OnnxSignatureGenerator`
-- Modify `TokenGenerator` to produce `ML1-R0`…`ML1-R{N-1}` tokens per record
-- Add rotation token map to `TokenGeneratorResult`
-- New CSV/Parquet rows: `RuleId=ML1-R0`, `Token=<quantized>`, `RecordId=…`
-
-### 8. `iv-configuration`
-
-- Add `rotation_iv` field to exchange config JWE payload
-- New `RotationConfig` class (both languages)
-- CLI args: `--rotation-iv`, `--rotation-count`, `--hash-dimension`, `--disable-rotation`
-
----
-
-## Out of Scope
-
-- **Dimension bias** (median-per-dimension from sampled embeddings) — use zero vector bias for now
-- **Rotation-based matching** — handled downstream by PersonMatching, not Open Link Token
-- **Blocking-key hashing** — PersonMatching hashes quantized tokens with a T1 blocking key; Open Link Token emits raw quantized tokens and leaves blocking to the consumer
+Unit tests cover matrix generation, projection, quantization, transformer
+caching, and ML1 blocking-key hashing in both implementations. The Java
+`RotationMatrixInteropHarness` and
+`tools/interoperability/rotation_matrix_interop_test.py` compare Java and
+Python matrices across shared test vectors. See
+[Interoperability Tests](../tools/interoperability/README.md) for the command
+and prerequisites.
