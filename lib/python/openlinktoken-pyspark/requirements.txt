@@ -1,5 +1,6 @@
 # Core openlinktoken dependency
 openlinktoken==2.1.0
+jwcrypto==1.5.7
 
 # Cryptography for token decryption in overlap analysis
 pycryptodome==3.23.0

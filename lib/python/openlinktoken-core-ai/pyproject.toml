@@ -4,11 +4,17 @@ version = "2.1.0"
 requires-python = ">=3.10"
 dynamic = [
   "authors",
-  "dependencies",
   "description",
   "optional-dependencies",
   "readme",
   "urls",
+]
+dependencies = [
+  "openlinktoken==2.1.0",
+  "numpy==1.26.4",
+  "onnxruntime==1.24.3; python_version < '3.11'",
+  "onnxruntime==1.25.1; python_version >= '3.11'",
+  "tokenizers==0.23.1",
 ]
 
 [project.entry-points."openlinktoken.inference_providers"]
@@ -18,7 +24,7 @@ ml1 = "openlinktoken_core_ai.ml1_signature_provider:OnnxML1SignatureProvider"
 ml1_token = "openlinktoken_core_ai.tokens.ml1_token:ML1Token"
 
 [build-system]
-requires = ["setuptools>=40.8.0", "wheel"]
+requires = ["setuptools==83.0.0", "wheel==0.47.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
