@@ -131,7 +131,7 @@ Example decrypted payload:
   "exchangeId": "0f3d5f8a-3f2a-4c2f-b69d-cb1f9d08d4ab",
   "rotationIv": "R2VuZXJhdGVkUm90YXRpb25JVkJ5dGVzMDEyMzQ1Njc",
   "rotationIvEncoding": "base64url",
-  "rotationCount": 30,
+  "rotationCount": 50,
   "binWidth": 0.05,
   "dimensionBias": []
 }

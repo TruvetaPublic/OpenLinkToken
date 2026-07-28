@@ -54,7 +54,7 @@ def test_build_exchange_envelope_round_trips_for_either_private_key():
         created_at="2026-03-11T00:00:00Z",
         exchange_id="exchange-123",
         rotation_iv=b"test-rotation-iv-24",
-        rotation_count=30,
+        rotation_count=50,
     )
 
     sender_payload = json.loads(decrypt_exchange_envelope(envelope, sender_private_pem))
@@ -74,7 +74,7 @@ def test_build_exchange_envelope_round_trips_for_either_private_key():
         "senderPublicKey": sender_public_pem.decode("utf-8"),
         "rotationIv": "dGVzdC1yb3RhdGlvbi1pdi0yNA",
         "rotationIvEncoding": "base64url",
-        "rotationCount": 30,
+        "rotationCount": 50,
         "binWidth": 0.05,
         "dimensionBias": [],
     }
@@ -126,7 +126,7 @@ def test_resolve_exchange_config_decodes_hashing_secret_and_identifies_sender_ro
                 created_at="2026-03-12T00:00:00Z",
                 exchange_id="exchange-456",
                 rotation_iv=b"test-rotation-iv-2024",
-                rotation_count=30,
+                rotation_count=50,
             )
         ),
         encoding="utf-8",
@@ -140,7 +140,7 @@ def test_resolve_exchange_config_decodes_hashing_secret_and_identifies_sender_ro
     assert resolved.private_key_role == "sender"
     assert resolved.hashing_secret == b"shared-hashing-secret"
     assert resolved.rotation_iv == b"test-rotation-iv-2024"
-    assert resolved.rotation_count == 30
+    assert resolved.rotation_count == 50
     assert resolved.bin_width == 0.05
     assert resolved.dimension_bias == []
     assert resolved.payload["exchangeId"] == "exchange-456"
@@ -162,7 +162,7 @@ def test_derive_transport_encryption_key_matches_for_both_participants(tmp_path:
                 created_at="2026-03-12T00:00:00Z",
                 exchange_id="exchange-789",
                 rotation_iv=b"test-rotation-iv-2024",
-                rotation_count=30,
+                rotation_count=50,
             )
         ),
         encoding="utf-8",
@@ -189,7 +189,7 @@ def test_load_exchange_config_rejects_future_v2_exchange_config(tmp_path: Path):
         "createdAt": "2026-03-12T00:00:00Z",
         "exchangeId": "exchange-legacy",
         "rotationIv": "test-rotation-iv-2024",
-        "rotationCount": 30,
+        "rotationCount": 50,
     }
     protected = {
         "typ": EXCHANGE_JWE_TYPE,
@@ -306,7 +306,7 @@ def _write_current_exchange_config(tmp_path: Path) -> tuple[Path, bytes]:
                 created_at="2026-03-12T00:00:00Z",
                 exchange_id="exchange-helpers",
                 rotation_iv=b"test-rotation-iv-2024",
-                rotation_count=30,
+                rotation_count=50,
             )
         ),
         encoding="utf-8",
@@ -435,7 +435,7 @@ def test_resolve_loaded_exchange_config_missing_rotation_iv_disables_rotation(tm
         created_at="2026-03-20T00:00:00Z",
         exchange_id="exchange-missing-iv",
         rotation_iv=b"placeholder",
-        rotation_count=30,
+        rotation_count=50,
     )
 
     # Tamper: rebuild envelope with rotationIv and rotationIvEncoding removed
@@ -487,7 +487,7 @@ def test_resolve_loaded_exchange_config_zero_rotation_count_disables_rotation(tm
         created_at="2026-03-20T00:00:00Z",
         exchange_id="exchange-bad-count",
         rotation_iv=b"some-iv",
-        rotation_count=30,
+        rotation_count=50,
     )
 
     raw_payload = json.loads(decrypt_exchange_envelope(envelope, sender_private_pem))
