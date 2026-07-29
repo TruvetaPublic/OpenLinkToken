@@ -1,13 +1,14 @@
 # SPDX-License-Identifier: MIT
 
 import base64
-import csv as csv_module
 import json
 import zipfile
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
+import pyarrow as pa
+import pyarrow.parquet as pq
 import pytest
 
 from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig
@@ -101,8 +102,8 @@ class TestPackageCommandZipOutput:
         assert zip_path.exists()
         assert configure.call_args.kwargs["configured_num_threads"] == ML1InferenceConfig.DEFAULT_NUM_THREADS
 
-    def test_zip_contains_csv_and_metadata(self, temp_dir: Path):
-        """The ZIP must contain a CSV token file and a metadata JSON file."""
+    def test_zip_contains_parquet_and_metadata(self, temp_dir: Path):
+        """The ZIP must contain a Parquet token file and a metadata JSON file."""
         exchange_config, private_key = self._create_exchange_config(temp_dir)
         zip_path = temp_dir / "output.zip"
 
@@ -124,11 +125,11 @@ class TestPackageCommandZipOutput:
         with zipfile.ZipFile(zip_path) as zf:
             names = zf.namelist()
 
-        assert "output.csv" in names
+        assert "output.parquet" in names
         assert "output.metadata.json" in names
 
-    def test_embedded_csv_has_token_rows(self, temp_dir: Path):
-        """The CSV inside the ZIP must contain token rows for the two input records."""
+    def test_embedded_parquet_has_token_rows(self, temp_dir: Path):
+        """The Parquet inside the ZIP must contain token rows for the two input records."""
         exchange_config, private_key = self._create_exchange_config(temp_dir)
         zip_path = temp_dir / "output.zip"
 
@@ -148,10 +149,10 @@ class TestPackageCommandZipOutput:
         )
 
         with zipfile.ZipFile(zip_path) as zf:
-            csv_text = zf.read("output.csv").decode("utf-8")
+            table = pq.read_table(pa.BufferReader(zf.read("output.parquet")))
 
-        rows = list(csv_module.DictReader(csv_text.splitlines()))
-        assert len(rows) > 0, "Expected at least one token row in the embedded CSV"
+        rows = table.to_pylist()
+        assert len(rows) > 0, "Expected at least one token row in the embedded Parquet file"
         record_ids = {row["RecordId"] for row in rows}
         assert "rec-001" in record_ids
         assert "rec-002" in record_ids

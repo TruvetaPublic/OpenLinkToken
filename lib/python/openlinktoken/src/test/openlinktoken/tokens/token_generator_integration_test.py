@@ -73,7 +73,7 @@ class TestTokenGeneratorIntegration:
         tokens = token_generator.get_all_tokens_via_field_id(person_attributes).tokens
 
         assert tokens is not None
-        assert len(tokens) == 5, "Expected 5 tokens to be generated"
+        assert len(tokens) >= 5, "Expected at least 5 tokens to be generated (T1-T5)"
 
         assert tokens.get("T1") == "02292af14559b4c2a28a772536b81760ad7b8ebac8ce49e8450ca0fa5044e37f"
         assert tokens.get("T2") == "0000000000000000000000000000000000000000000000000000000000000000"

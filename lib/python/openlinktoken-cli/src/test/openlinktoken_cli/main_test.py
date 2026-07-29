@@ -277,7 +277,7 @@ class TestOpenLinkTokenCommand:
             )
 
         assert encrypt_exit_code == 0
-        set_total_rows.assert_called_once_with(10)
+        set_total_rows.assert_called_once_with(11)
 
     def test_decrypt_command(self, temp_dir):
         """Test decrypt command."""

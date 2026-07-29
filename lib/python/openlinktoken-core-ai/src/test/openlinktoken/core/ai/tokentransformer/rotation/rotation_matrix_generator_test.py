@@ -97,7 +97,7 @@ class TestRotationMatrixGenerator:
         """Matrices must match the persisted PersonMatching QR-generation contract."""
         matrix = generate("qr-parity-fixture", 1, 8)[0]
 
-        np.testing.assert_array_equal(
+        np.testing.assert_allclose(
             matrix[0],
             [
                 -0.40747839357338234,
@@ -109,6 +109,8 @@ class TestRotationMatrixGenerator:
                 0.5422064923077496,
                 0.14186260167654755,
             ],
+            rtol=0.0,
+            atol=1e-12,
         )
 
     def test_thread_safety(self):

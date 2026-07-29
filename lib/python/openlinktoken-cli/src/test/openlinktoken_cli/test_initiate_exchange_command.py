@@ -1154,7 +1154,7 @@ class TestRotationIvAndCount:
     """Integration tests for --rotation-iv and --rotation-count flags."""
 
     def test_exchange_config_payload_includes_rotation_iv_and_count_by_default(self, tmp_path):
-        """Generated exchange config payload includes rotationIv and rotationCount=30 by default."""
+        """Generated exchange config payload includes rotationIv and rotationCount=50 by default."""
         partner_private_pem, partner_public_pem = generate_key_pair("P-256")
         partner_pem_path = tmp_path / "partner.public.pem"
         partner_pem_path.write_bytes(partner_public_pem)
@@ -1179,7 +1179,7 @@ class TestRotationIvAndCount:
         assert isinstance(payload["rotationIv"], str)
         assert payload["rotationIvEncoding"] == "base64url"
         assert len(base64.urlsafe_b64decode(payload["rotationIv"] + "==")) == 32
-        assert payload["rotationCount"] == 30
+        assert payload["rotationCount"] == 50
 
     def test_exchange_config_accepts_explicit_rotation_iv(self, tmp_path):
         """--rotation-iv stores the provided value base64url-encoded in the encrypted payload."""
