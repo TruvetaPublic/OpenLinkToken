@@ -19,6 +19,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.apache.commons.codec.binary.Hex;
 import org.slf4j.Logger;
@@ -263,7 +264,7 @@ public final class ML1OnnxSignatureGenerator {
         // Tokenize in parallel across available processors
         Encoding[] encodings = new Encoding[inputJsonRows.size()];
         ForkJoinPool.commonPool()
-                .submit(() -> java.util.stream.IntStream.range(0, inputJsonRows.size()).parallel().forEach(i -> {
+                .submit(() -> IntStream.range(0, inputJsonRows.size()).parallel().forEach(i -> {
                     try {
                         encodings[i] = tokenizer.encode(inputJsonRows.get(i));
                     } catch (Exception e) {

@@ -36,7 +36,7 @@ public final class RotationConfig {
     private static volatile double binWidth = DEFAULT_BIN_WIDTH;
     private static volatile double minVal = DEFAULT_MIN_VAL;
     private static volatile double maxVal = DEFAULT_MAX_VAL;
-    private static volatile float[] dimensionBias = null;
+    private static volatile double[] dimensionBias = null;
 
     private RotationConfig() {
     }
@@ -124,7 +124,7 @@ public final class RotationConfig {
             double configuredBinWidth,
             double configuredMinVal,
             double configuredMaxVal,
-            float[] configuredDimensionBias) {
+            double[] configuredDimensionBias) {
         if (configuredRotationCount <= 0) {
             throw new IllegalArgumentException("rotationCount must be greater than zero.");
         }
@@ -219,7 +219,7 @@ public final class RotationConfig {
      *
      * @return cloned bias vector, or {@code null} when zero-bias defaults should be used
      */
-    public static float[] getDimensionBias() {
+    public static double[] getDimensionBias() {
         return dimensionBias == null ? null : dimensionBias.clone();
     }
 }

@@ -32,7 +32,7 @@ class EmbeddingRotatorTest {
     void testResultListSizeEqualsMatrixCount() {
         List<double[][]> matrices = RotationMatrixGenerator.generate("test-iv", 5, 4);
         float[] embedding = { 1.0f, 2.0f, 3.0f, 4.0f };
-        float[] bias = new float[4];
+        double[] bias = new double[4];
 
         List<float[]> result = EmbeddingRotator.rotate(embedding, matrices, bias, 4);
 
@@ -44,7 +44,7 @@ class EmbeddingRotatorTest {
         int k = 3;
         List<double[][]> matrices = RotationMatrixGenerator.generate("test-iv", 4, 4);
         float[] embedding = { 0.5f, -0.5f, 1.0f, -1.0f };
-        float[] bias = new float[4];
+        double[] bias = new double[4];
 
         List<float[]> result = EmbeddingRotator.rotate(embedding, matrices, bias, k);
 
@@ -57,7 +57,7 @@ class EmbeddingRotatorTest {
     void testZeroBiasOutputMatchesDirectProjection() {
         double[][] r = rotation2d(Math.PI / 4.0); // 45-degree rotation
         float[] embedding = { 1.0f, 0.0f };
-        float[] bias = new float[2];
+        double[] bias = new double[2];
 
         List<float[]> result = EmbeddingRotator.rotate(embedding, List.<double[][]>of(r), bias, 2);
         float[] projected = result.get(0);
@@ -71,7 +71,7 @@ class EmbeddingRotatorTest {
     void testNonZeroBiasIsSubtracted() {
         double[][] r = new double[][] { { 1.0, 0.0 }, { 0.0, 1.0 } }; // identity
         float[] embedding = { 3.0f, 5.0f };
-        float[] bias = { 1.0f, 2.0f };
+        double[] bias = { 1.0, 2.0 };
 
         List<float[]> result = EmbeddingRotator.rotate(embedding, List.<double[][]>of(r), bias, 2);
         float[] projected = result.get(0);
@@ -82,10 +82,22 @@ class EmbeddingRotatorTest {
     }
 
     @Test
+    void testDoublePrecisionBiasIsPreservedBeforeOutputCast() {
+        double[][] identity = { { 1.0, 0.0 }, { 0.0, 1.0 } };
+        float[] embedding = { 0.0f, 0.0f };
+        double[] bias = { 0.10000001, 0.0 };
+
+        List<float[]> result = EmbeddingRotator.rotate(embedding, List.<double[][]>of(identity), bias, 2);
+
+        assertEquals(-0.10000001f, result.get(0)[0]);
+        assertEquals(0.0f, result.get(0)[1]);
+    }
+
+    @Test
     void testKnown2dRotation45Degrees() {
         double[][] r = rotation2d(Math.PI / 4.0);
         float[] embedding = { 1.0f, 1.0f };
-        float[] bias = new float[2];
+        double[] bias = new double[2];
 
         List<float[]> result = EmbeddingRotator.rotate(embedding, List.<double[][]>of(r), bias, 2);
         float[] projected = result.get(0);
@@ -99,7 +111,7 @@ class EmbeddingRotatorTest {
     void testRotationPreservesVectorLength() {
         List<double[][]> matrices = RotationMatrixGenerator.generate("length-test-iv", 3, 8);
         float[] embedding = { 1.0f, -2.0f, 3.0f, 0.5f, -1.5f, 2.5f, -0.5f, 1.0f };
-        float[] bias = new float[8];
+        double[] bias = new double[8];
 
         double inputNorm = 0.0;
         for (float v : embedding) {
@@ -124,7 +136,7 @@ class EmbeddingRotatorTest {
     void testBiasLengthMismatchThrows() {
         List<double[][]> matrices = RotationMatrixGenerator.generate("test-iv", 1, 4);
         float[] embedding = { 1.0f, 2.0f, 3.0f, 4.0f };
-        float[] wrongBias = { 0.0f, 0.0f }; // wrong length
+        double[] wrongBias = { 0.0, 0.0 }; // wrong length
 
         assertThrows(IllegalArgumentException.class,
                 () -> EmbeddingRotator.rotate(embedding, matrices, wrongBias, 4));
@@ -134,7 +146,7 @@ class EmbeddingRotatorTest {
     void testKExceedsMatrixRowsThrows() {
         List<double[][]> matrices = RotationMatrixGenerator.generate("test-iv", 1, 4);
         float[] embedding = { 1.0f, 2.0f, 3.0f, 4.0f };
-        float[] bias = new float[4];
+        double[] bias = new double[4];
 
         assertThrows(IllegalArgumentException.class,
                 () -> EmbeddingRotator.rotate(embedding, matrices, bias, 5)); // k=5 > N=4
@@ -150,7 +162,7 @@ class EmbeddingRotatorTest {
             { 0.0, 0.0, 0.0, 1.0 }
         };
         float[] embedding = { 5.0f, 7.0f, 11.0f, 13.0f };
-        float[] bias = new float[4];
+        double[] bias = new double[4];
 
         List<float[]> result = EmbeddingRotator.rotate(embedding, List.<double[][]>of(identity4), bias, 2);
         float[] projected = result.get(0);
@@ -166,7 +178,7 @@ class EmbeddingRotatorTest {
         double[][] sentinel = { { -1.0 } };
         double[][] identity3 = { { 1.0, 0.0, 0.0 }, { 0.0, 1.0, 0.0 }, { 0.0, 0.0, 1.0 } };
         float[] embedding = { 3.0f, 5.0f, 7.0f };
-        float[] bias = { 1.0f, 2.0f, 3.0f };
+        double[] bias = { 1.0, 2.0, 3.0 };
         // x_centered = [2, 3, 4]; sentinel result = first k=2 values
         List<float[]> result = EmbeddingRotator.rotate(embedding, List.of(sentinel, identity3), bias, 2);
         assertEquals(2, result.size());
@@ -182,7 +194,7 @@ class EmbeddingRotatorTest {
         // Sentinel works when it is the only entry in the matrices list.
         double[][] sentinel = { { -1.0 } };
         float[] embedding = { 10.0f, 20.0f, 30.0f };
-        float[] bias = new float[3];
+        double[] bias = new double[3];
         List<float[]> result = EmbeddingRotator.rotate(embedding, List.<double[][]>of(sentinel), bias, 2);
         assertEquals(1, result.size());
         assertEquals(10.0f, result.get(0)[0], (float) TOLERANCE);
@@ -201,7 +213,7 @@ class EmbeddingRotatorTest {
     void testMultipleMatricesProduceDifferentResults() {
         List<double[][]> matrices = RotationMatrixGenerator.generate("multi-test-iv", 3, 4);
         float[] embedding = { 1.0f, 2.0f, 3.0f, 4.0f };
-        float[] bias = new float[4];
+        double[] bias = new double[4];
 
         List<float[]> result = EmbeddingRotator.rotate(embedding, matrices, bias, 4);
 

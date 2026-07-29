@@ -30,7 +30,7 @@ public final class EmbeddingRotator {
      * <p>For each non-sentinel matrix {@code R} (shape N×N, though only the first
      * {@code k} rows are used):
      * <pre>
-     *   x_centered[i] = (double) embedding[i] - (double) bias[i]
+     *   x_centered[i] = (double) embedding[i] - bias[i]
      *   rotated[row]  = (float) sum_col( R[row][col] * x_centered[col] )
      * </pre>
      *
@@ -45,7 +45,7 @@ public final class EmbeddingRotator {
      * @throws IllegalArgumentException if {@code bias.length != embedding.length}
      *                                  or {@code k} exceeds the matrix row count for a non-sentinel entry
      */
-    public static List<float[]> rotate(float[] embedding, List<double[][]> matrices, float[] bias, int k) {
+    public static List<float[]> rotate(float[] embedding, List<double[][]> matrices, double[] bias, int k) {
         if (bias.length != embedding.length) {
             throw new IllegalArgumentException(
                     "bias.length (" + bias.length + ") must equal embedding.length (" + embedding.length + ")");
@@ -56,7 +56,7 @@ public final class EmbeddingRotator {
         // Pre-compute centered vector in double once for all matrices.
         double[] xCentered = new double[n];
         for (int i = 0; i < n; i++) {
-            xCentered[i] = (double) embedding[i] - (double) bias[i];
+            xCentered[i] = (double) embedding[i] - bias[i];
         }
 
         List<float[]> results = new ArrayList<>(matrices.size());

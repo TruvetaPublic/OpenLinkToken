@@ -182,8 +182,8 @@ public class ML1OnnxSignatureProvider implements InferenceSignatureProvider {
         if (rotationTransformer == null) {
             synchronized (ML1OnnxSignatureProvider.class) {
                 if (rotationTransformer == null) {
-                    float[] configuredBias = RotationConfig.getDimensionBias();
-                    float[] effectiveBias = configuredBias == null ? new float[embeddingDim] : configuredBias;
+                    double[] configuredBias = RotationConfig.getDimensionBias();
+                    double[] effectiveBias = configuredBias == null ? new double[embeddingDim] : configuredBias;
                     rotationTransformer = new RotationEmbeddingTransformer(
                             RotationConfig.getRotationIv(),
                             RotationConfig.getRotationCount(),

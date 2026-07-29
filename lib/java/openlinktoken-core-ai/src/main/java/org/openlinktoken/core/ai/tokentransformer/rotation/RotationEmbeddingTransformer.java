@@ -25,7 +25,7 @@ public final class RotationEmbeddingTransformer implements EmbeddingTransformer 
     private final int rotationCount;
     private final int dimension;
     private final int hashDimension;
-    private final float[] bias;
+    private final double[] bias;
     private final double minVal;
     private final double maxVal;
     private final double binWidth;
@@ -51,7 +51,7 @@ public final class RotationEmbeddingTransformer implements EmbeddingTransformer 
             int rotationCount,
             int dimension,
             int hashDimension,
-            float[] bias,
+            double[] bias,
             double minVal,
             double maxVal,
             double binWidth) {
@@ -97,7 +97,7 @@ public final class RotationEmbeddingTransformer implements EmbeddingTransformer 
      */
     public static RotationEmbeddingTransformer withDefaults(
             String iv, int rotationCount, int dimension, int hashDimension) {
-        float[] zeroBias = new float[dimension];
+        double[] zeroBias = new double[dimension];
         return new RotationEmbeddingTransformer(
                 iv, rotationCount, dimension, hashDimension, zeroBias,
                 RotationQuantizer.DEFAULT_MIN, RotationQuantizer.DEFAULT_MAX, RotationQuantizer.DEFAULT_BIN_WIDTH);

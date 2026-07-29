@@ -222,7 +222,7 @@ class ML1OnnxSignatureProviderTest {
 
     @Test
     void getOrCreateTransformer_usesConfiguredRotationParameters() throws Exception {
-        RotationConfig.configure(true, "", 3, 2, 0.25, -2.5, 2.5, new float[] { 1.5f, -0.5f, 0.0f, 2.0f });
+        RotationConfig.configure(true, "", 3, 2, 0.25, -2.5, 2.5, new double[] { 1.5, -0.5, 0.0, 2.0 });
         resetRotationTransformer();
 
         RotationEmbeddingTransformer transformer = getRotationTransformer(4);
@@ -233,8 +233,8 @@ class ML1OnnxSignatureProviderTest {
         assertEquals(0.25d, (double) readField(transformer, "binWidth"));
         assertEquals(-2.5d, (double) readField(transformer, "minVal"));
         assertEquals(2.5d, (double) readField(transformer, "maxVal"));
-        float[] bias = (float[]) readField(transformer, "bias");
-        assertEquals(List.of(1.5f, -0.5f, 0.0f, 2.0f), List.of(bias[0], bias[1], bias[2], bias[3]));
+        double[] bias = (double[]) readField(transformer, "bias");
+        assertEquals(List.of(1.5, -0.5, 0.0, 2.0), List.of(bias[0], bias[1], bias[2], bias[3]));
     }
 
     // -----------------------------------------------------------------------
