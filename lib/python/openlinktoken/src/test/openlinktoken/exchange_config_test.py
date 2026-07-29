@@ -9,6 +9,10 @@ from jwcrypto import jwe, jwk
 
 from openlinktoken.ec_key_utils import fingerprint_to_kid, generate_key_pair, public_key_fingerprint
 from openlinktoken.exchange_config import (
+    _decode_bin_width,
+    _decode_dimension_bias,
+    _decode_rotation_count,
+    _decode_rotation_iv,
     default_exchange_config_path,
     derive_transport_encryption_key,
     load_exchange_config,
@@ -55,6 +59,7 @@ def test_build_exchange_envelope_round_trips_for_either_private_key():
         exchange_id="exchange-123",
         rotation_iv=b"test-rotation-iv-24",
         rotation_count=50,
+        dimension_bias=[0.1, -0.2],
     )
 
     sender_payload = json.loads(decrypt_exchange_envelope(envelope, sender_private_pem))
@@ -76,7 +81,7 @@ def test_build_exchange_envelope_round_trips_for_either_private_key():
         "rotationIvEncoding": "base64url",
         "rotationCount": 50,
         "binWidth": 0.05,
-        "dimensionBias": [],
+        "dimensionBias": [0.1, -0.2],
     }
 
     recipient_headers = [entry["header"] for entry in envelope["recipients"]]
@@ -417,6 +422,93 @@ def test_resolve_exchange_config_exposes_rotation_iv_and_count(tmp_path: Path):
 
     assert resolved.rotation_iv == b"custom-rotation-iv-abc"
     assert resolved.rotation_count == 10
+
+
+@pytest.mark.parametrize(
+    ("payload", "expected"),
+    [
+        ({}, b""),
+        ({"rotationIv": None}, b""),
+        ({"rotationIv": "", "rotationIvEncoding": "base64url"}, b""),
+        ({"rotationIv": "dGVzdC1pdg", "rotationIvEncoding": "base64url"}, b"test-iv"),
+    ],
+)
+def test_decode_rotation_iv_handles_optional_and_valid_values(payload, expected):
+    """Rotation IV decoding supports absent values and valid base64url payloads."""
+    assert _decode_rotation_iv(payload) == expected
+
+
+def test_decode_rotation_iv_rejects_unsupported_encoding():
+    """Rotation IV payloads must declare base64url encoding."""
+    with pytest.raises(ValueError, match="Unsupported rotationIvEncoding"):
+        _decode_rotation_iv({"rotationIv": "dGVzdA", "rotationIvEncoding": "hex"})
+
+
+def test_decode_rotation_iv_rejects_invalid_base64():
+    """Malformed rotation IV data is rejected instead of silently accepted."""
+    with pytest.raises(ValueError, match="rotationIv is not valid base64url data"):
+        _decode_rotation_iv({"rotationIv": "abc!", "rotationIvEncoding": "base64url"})
+
+
+@pytest.mark.parametrize("value", [None, 0])
+def test_decode_rotation_count_defaults_to_zero(value):
+    """Missing and explicit zero rotation counts disable rotation."""
+    assert _decode_rotation_count({"rotationCount": value}) == 0
+
+
+@pytest.mark.parametrize("value", [1, 50])
+def test_decode_rotation_count_accepts_positive_integers(value):
+    """Positive integer rotation counts are preserved."""
+    assert _decode_rotation_count({"rotationCount": value}) == value
+
+
+@pytest.mark.parametrize("value", [-1, "1", True])
+def test_decode_rotation_count_rejects_invalid_values(value):
+    """Rotation counts reject non-positive, non-integer, and boolean values."""
+    with pytest.raises(ValueError, match="invalid rotationCount"):
+        _decode_rotation_count({"rotationCount": value})
+
+
+def test_decode_bin_width_defaults_when_missing():
+    """Missing bin widths use the exchange-config default."""
+    assert _decode_bin_width({}) == 0.05
+
+
+@pytest.mark.parametrize("value", [0.1, 1])
+def test_decode_bin_width_accepts_positive_numbers(value):
+    """Positive numeric bin widths are normalized to floats."""
+    assert _decode_bin_width({"binWidth": value}) == float(value)
+
+
+@pytest.mark.parametrize("value", [0, -0.1, "0.1", True])
+def test_decode_bin_width_rejects_invalid_values(value):
+    """Bin widths reject non-positive, non-numeric, and boolean values."""
+    with pytest.raises(ValueError, match="invalid binWidth"):
+        _decode_bin_width({"binWidth": value})
+
+
+def test_decode_dimension_bias_defaults_when_missing():
+    """Missing dimension bias uses an empty list."""
+    assert _decode_dimension_bias({}) == []
+
+
+def test_decode_dimension_bias_converts_numeric_values_to_float():
+    """Dimension-bias values are normalized to floats."""
+    assert _decode_dimension_bias({"dimensionBias": [1, 0.25, -2]}) == [1.0, 0.25, -2.0]
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "not-a-list",
+        [True],
+        [1, "0.25"],
+    ],
+)
+def test_decode_dimension_bias_rejects_invalid_values(value):
+    """Dimension bias requires a list containing only numeric values."""
+    with pytest.raises(ValueError, match="dimensionBias"):
+        _decode_dimension_bias({"dimensionBias": value})
 
 
 def test_resolve_loaded_exchange_config_missing_rotation_iv_disables_rotation(tmp_path: Path):

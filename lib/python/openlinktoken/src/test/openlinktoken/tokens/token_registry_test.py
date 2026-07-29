@@ -1,8 +1,20 @@
 # SPDX-License-Identifier: MIT
 
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
+import openlinktoken.tokens.token_registry as token_registry_module
+from openlinktoken.tokens.token import Token
 from openlinktoken.tokens.token_registry import TokenRegistry
+
+
+class ExternalToken(Token):
+    """Minimal token implementation used to test entry-point registration."""
+
+    def get_identifier(self):
+        return "EXT"
+
+    def get_definition(self):
+        return []
 
 
 def test_load_all_tokens_returns_non_empty_dict():
@@ -129,3 +141,30 @@ def test_load_all_tokens_consistency_across_fallbacks():
     for token_id in tokens_normal.keys():
         assert len(tokens_normal[token_id]) == len(tokens_resources[token_id])
         assert len(tokens_normal[token_id]) == len(tokens_hardcoded[token_id])
+
+
+def test_load_all_tokens_discovers_external_entry_point_token():
+    """External token definitions are added to the built-in registry."""
+    entry_point = type("EntryPoint", (), {"load": lambda self: ExternalToken})()
+
+    with patch.object(token_registry_module, "entry_points", return_value=[entry_point]):
+        tokens = TokenRegistry.load_all_tokens()
+
+    assert tokens["EXT"] == []
+
+
+def test_load_all_tokens_ignores_invalid_external_entry_points():
+    """Invalid or broken external token providers do not break built-in loading."""
+    invalid_entry_point = type("EntryPoint", (), {"load": lambda self: object})()
+    broken_entry_point = Mock()
+    broken_entry_point.load.side_effect = RuntimeError("entry point failed")
+
+    with patch.object(
+        token_registry_module,
+        "entry_points",
+        return_value=[invalid_entry_point, broken_entry_point],
+    ):
+        tokens = TokenRegistry.load_all_tokens()
+
+    assert set(["T1", "T2", "T3", "T4", "T5"]).issubset(tokens)
+    assert "EXT" not in tokens
