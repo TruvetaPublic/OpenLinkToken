@@ -12,12 +12,15 @@ ENV PIP_NO_CACHE_DIR=1 \
 WORKDIR /app
 
 COPY README.md /app/README.md
+COPY resources/inferencing/ml1 /app/resources/inferencing/ml1
 COPY lib/python/openlinktoken /app/lib/python/openlinktoken
+COPY lib/python/openlinktoken-core-ai /app/lib/python/openlinktoken-core-ai
 COPY lib/python/openlinktoken-cli /app/lib/python/openlinktoken-cli
 
 RUN python -m pip install --upgrade pip && \
     python -m pip install --prefix=/install \
     /app/lib/python/openlinktoken \
+    /app/lib/python/openlinktoken-core-ai \
     /app/lib/python/openlinktoken-cli
 
 ##################################################
