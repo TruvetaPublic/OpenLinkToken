@@ -57,7 +57,7 @@ division. With the defaults, the tested bin values are `0` through `199`;
 
 ### ML1 Signature Value
 
-The raw quantized value for each projection is a string such as
+The pre-hash quantized value for each projection is a string such as
 `"99 100 100 101"`. When a T1 signature can be computed, the provider:
 
 ```text
@@ -67,8 +67,8 @@ rotationToken = SHA-256(quantizedValue + blockingKey)
 
 It returns the comma-separated `rotationToken` values as the `ML1` signature.
 Those values are lowercase 64-character SHA-256 hexadecimal digests. If a T1
-signature cannot be computed, the provider returns the un-hashed quantized
-values instead.
+signature cannot be computed, the provider returns the canonical blank ML1
+token; it never emits quantized rotation values directly.
 
 The Python CLI's batched ML1 path stores this signature directly and does not
 apply its normal token-transformer chain to it. Packaging can subsequently wrap

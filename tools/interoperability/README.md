@@ -78,10 +78,10 @@ python -m pytest tools/interoperability/multi_language_interoperability_test.py 
 ## Rotation Matrix Interoperability Tests
 
 `rotation_matrix_interop_test.py` verifies that the Java and Python
-`RotationMatrixGenerator` implementations produce **bit-exact** rotation matrices
-for the same IV, rotation count, and dimension. This is the parity gate for ML1
-inferencing tokens: if the rotation matrices diverge, ML1 tokens will never match
-across platforms.
+`RotationMatrixGenerator` implementations produce deterministic rotation
+matrices within a tolerance for the same IV, rotation count, and dimension.
+This is the parity gate for ML1 inferencing tokens: if the rotation matrices
+diverge beyond the tolerance, ML1 tokens will not match across platforms.
 
 ### How It Works
 
@@ -95,11 +95,12 @@ The test runs in two steps for each test vector:
    `openlinktoken.core.ai.tokentransformer.rotation.rotation_matrix_generator.generate()`
    directly in-process.
 
-Both sets of matrices are compared element-by-element with a tolerance of `1e-12`
-to accommodate any platform-specific variation in transcendental functions (both
-languages use IEEE 754 double precision and the same HMAC-SHA256 + Box-Muller +
-Modified Gram-Schmidt algorithm, so results are expected to be identical to
-machine epsilon).
+Both sets of matrices are compared element-by-element with a tolerance of
+`1e-12` to accommodate platform-specific variation in transcendental functions.
+Java uses Householder QR and Python uses NumPy QR, followed by matching
+diagonal-sign normalization and determinant correction. Both implementations
+use IEEE 754 double precision, HMAC-SHA256 counter input, and Box-Muller
+sampling; the test does not promise bit-for-bit equality on every platform.
 
 ### Test Vectors
 

@@ -40,6 +40,7 @@ This site organizes quickstarts, concepts, operations guidance, configuration, r
   - [Extension Quickstart](quickstarts/extension-quickstart.md)
 - [Concepts](concepts/index.md)
   - [Matching Model](concepts/matching-model.md)
+  - [ML1 Model and Rotation](concepts/ml1-model-and-rotation.md)
   - [Token Rules](concepts/token-rules.md)
   - [Match Token Format](concepts/match-token-format.md)
   - [Normalization and Validation](concepts/normalization-and-validation.md)

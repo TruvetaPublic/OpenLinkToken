@@ -72,9 +72,19 @@ Open Link Token emits tokens with a `RuleId` of `T1`–`T5`. These identifiers a
 
 ## ML1: ONNX Matching Model
 
-ML1 complements T1-T5 by using an ONNX matching model to generate an embedding from PostalCode, BirthDate, GivenName, Surname, and Gender. It derives rotation-based, quantized token projections from that embedding. When a valid T1 signature is available, each projection is SHA-256 hashed with a T1-derived blocking key. Rotation alone is not de-identification.
+ML1 complements T1-T5 by using an ONNX matching model to generate an
+embedding from PostalCode, BirthDate, GivenName, Surname, and Gender. It
+derives rotation-based, quantized token projections and hashes them with a
+T1-derived blocking value when the T1 signature is available. Rotation alone
+is not de-identification. See [ML1 Model and Rotation](ml1-model-and-rotation.md)
+for the model tensor contract, 1024-dimensional embedding, rotation math,
+quantization, signature format, and security limitations.
 
-ML1 is enabled by default. It is more compute-intensive and slower than T1-T5, but produces significantly better matching outcomes than T1-T5 alone. The size of the improvement, and its precision/recall balance, depend on the input population; validate it against your own matching data. To omit ML1, use `package --disable-ml1` or `tokenize --disable-inferencing`; see the [CLI reference](../reference/cli.md) for the full set of ML1 options.
+ML1 is enabled by default and is more compute-intensive than T1-T5. Its
+matching quality and precision/recall balance depend on the input population;
+validate it against your own matching data. To omit ML1, use
+`package --disable-ml1` or `tokenize --disable-inferencing`; see the
+[CLI reference](../reference/cli.md) for the full set of ML1 options.
 
 ---
 
