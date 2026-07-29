@@ -33,17 +33,22 @@ python tools/interoperability/cli_parity_test.py
 
 ## Token Interoperability Tests
 
-The `multi_language_interoperability_test.py` script executes three parity checks:
+The `multi_language_interoperability_test.py` script executes four parity checks:
 
 - **Unit-level fixture parity:** verifies that the Python library reproduces the
   same deterministic token fixture values already asserted by the Java
   `TokenGeneratorIntegrationTest`
 - **Java harness vs Python CLI parity:** invokes a thin Java harness built on the
-  Java core library API and compares its `tokenize`-compatible CSV output against
-  the Python CLI `tokenize` command
+  Java core library API and compares its T1-T5 `tokenize`-compatible CSV output
+  against the Python CLI `tokenize` command with ML1 inferencing disabled
 - **Java ML1 harness vs Python ML1 provider parity:** invokes
   `Ml1InteropHarness` from the Java core-AI module and compares its
   `RecordId`-to-signature JSON against the Python ML1 provider
+- **Python ML1 provider vs Python CLI parity:** runs the Python CLI `tokenize`
+  command with ML1 inferencing enabled and compares its emitted `ML1` CSV rows
+  against the direct Python provider by `RecordId`; the provider-vs-Java check
+  above establishes the cross-language link without launching a second Java
+  ONNX process
 
 The script also verifies that the Python CLI metadata file contains the expected
 fields for tokenized output.
@@ -57,13 +62,17 @@ cd <repo-root>
 python tools/interoperability/multi_language_interoperability_test.py
 ```
 
-The script creates a temporary two-row ML1 CSV containing one valid person and
-one invalid birth date. It sends both rows through the Java
+The ML1 checks create a temporary two-row CSV containing one valid person and
+one invalid birth date. They send both rows through the Java
 `org.openlinktoken.core.ai.tools.Ml1InteropHarness` and Python
-`ML1OnnxSignatureProvider`, then compares the complete `RecordId`-to-signature
-mapping, including the expected `null` for the invalid row. The Java side
-explicitly uses the bundled `model.onnx` and `tokenizer.json` assets with the
-default rotation configuration. The script installs the Java
+`ML1OnnxSignatureProvider`; the CLI check additionally runs the complete
+Python `tokenize` path and compares the emitted `ML1` rows with a direct
+provider run. The provider-vs-Java and CLI-vs-provider checks together compare
+the complete `RecordId`-to-signature mapping, including the expected `null` or
+missing CLI row for the invalid input. The Java side explicitly uses the
+bundled `model.onnx` and `tokenizer.json` assets with the default rotation
+configuration. The CLI harness provisions the same default rotation IV in its
+exchange config so its output uses identical rotation settings. The script installs the Java
 `openlinktoken-core-ai` reactor artifacts before running the test-scope harness,
 so the comparison uses the current source tree rather than a stale local Maven
 artifact.

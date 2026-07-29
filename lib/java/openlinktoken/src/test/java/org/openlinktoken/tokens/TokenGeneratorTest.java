@@ -8,6 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
@@ -97,6 +99,17 @@ class TokenGeneratorTest {
 
         // Validate that no tokens are generated
         assertTrue(tokens.isEmpty(), "Expected no tokens to be generated due to validation failure");
+    }
+
+    @Test
+    void testGetAllTokensViaFieldId_emptyDefinition_skipsTokenization() throws Exception {
+        when(tokenDefinition.getTokenIdentifiers()).thenReturn(Set.of("ML1"));
+        when(tokenDefinition.getTokenDefinition("ML1")).thenReturn(List.of());
+
+        var result = tokenGenerator.getAllTokensViaFieldId(Map.of());
+
+        assertTrue(result.getTokens().isEmpty());
+        verify(tokenizer, never()).tokenize(anyString());
     }
 
     @Test

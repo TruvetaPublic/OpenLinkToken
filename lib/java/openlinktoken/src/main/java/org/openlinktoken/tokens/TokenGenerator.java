@@ -408,6 +408,9 @@ public class TokenGenerator implements Serializable {
         if (personAttributes == null) {
             throw new IllegalArgumentException("Person attributes cannot be null.");
         }
+        if (definition == null || definition.isEmpty()) {
+            return null;
+        }
 
         var values = new ArrayList<String>(definition.size());
 
@@ -459,6 +462,10 @@ public class TokenGenerator implements Serializable {
 
         for (String tokenId : tokenDefinition.getTokenIdentifiers()) {
             try {
+                var definition = tokenDefinition.getTokenDefinition(tokenId);
+                if (definition == null || definition.isEmpty()) {
+                    continue;
+                }
                 var signature = getTokenSignatureViaFieldId(tokenId, personAttributes, result);
                 logger.debug("Token signature for token id {}: {}", tokenId, signature);
                 try {

@@ -371,6 +371,9 @@ class TokenGenerator:
         if person_attributes is None:
             raise ValueError("Person attributes cannot be null.")
 
+        if not definition:
+            return None
+
         values = []
 
         for attribute_expression in definition:
@@ -417,6 +420,8 @@ class TokenGenerator:
 
         for token_id in self.token_definition.get_token_identifiers():
             try:
+                if not self.token_definition.get_token_definition(token_id):
+                    continue
                 signature = self._get_token_signature_via_field_id(token_id, person_attributes, result)
                 logger.debug(f"Token signature for token id {token_id}: {signature}")
                 try:

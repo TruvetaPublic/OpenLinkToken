@@ -414,6 +414,17 @@ class TestTokenGenerator:
         assert token is None
         self.tokenizer.tokenize.assert_not_called()
 
+    def test_field_id_tokens_skip_empty_definition_without_provider(self):
+        """Field-ID token generation skips inference-only definitions when disabled."""
+        self.token_definition.get_token_identifiers.return_value = {"ML1"}
+        self.token_definition.get_token_definition.return_value = []
+
+        with patch.object(token_generator_module, "entry_points", return_value=[]):
+            result = self.token_generator.get_all_tokens_via_field_id({})
+
+        assert result.tokens == {}
+        self.tokenizer.tokenize.assert_not_called()
+
     def test_generate_tokens_excluding_skips_requested_identifiers(self):
         """Excluded identifiers are omitted while other tokens are generated."""
         self.token_definition.get_token_identifiers.return_value = {"include", "exclude"}
