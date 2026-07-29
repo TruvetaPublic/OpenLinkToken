@@ -86,6 +86,7 @@ public final class SHA256Tokenizer implements Tokenizer {
      *
      * @return unmodifiable view of the transformer list
      */
+    @Override
     public List<TokenTransformer> getTokenTransformerList() {
         return Collections.unmodifiableList(tokenTransformerList);
     }

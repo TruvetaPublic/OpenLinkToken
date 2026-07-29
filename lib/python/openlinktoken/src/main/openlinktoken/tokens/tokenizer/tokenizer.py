@@ -1,6 +1,9 @@
 # SPDX-License-Identifier: MIT
 
 from abc import ABC, abstractmethod
+from typing import List
+
+from openlinktoken.tokentransformer.token_transformer import TokenTransformer
 
 
 class Tokenizer(ABC):
@@ -29,3 +32,7 @@ class Tokenizer(ABC):
                        unsupported encoding or cryptographic algorithm issues.
         """
         pass
+
+    def get_token_transformer_list(self) -> List[TokenTransformer]:
+        """Return transformers configured after tokenization."""
+        return []

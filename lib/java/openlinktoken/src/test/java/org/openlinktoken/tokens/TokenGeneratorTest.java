@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -24,7 +25,9 @@ import org.openlinktoken.attributes.Attribute;
 import org.openlinktoken.attributes.AttributeExpression;
 import org.openlinktoken.attributes.person.FirstNameAttribute;
 import org.openlinktoken.attributes.person.LastNameAttribute;
+import org.openlinktoken.tokens.tokenizer.PassthroughTokenizer;
 import org.openlinktoken.tokens.tokenizer.Tokenizer;
+import org.openlinktoken.tokentransformer.TokenTransformer;
 
 class TokenGeneratorTest {
     @Mock
@@ -230,5 +233,18 @@ class TokenGeneratorTest {
         assertThrows(TokenGenerationException.class, () -> {
             tokenGenerator.getToken("token1", personAttributes, new TokenGeneratorResult());
         });
+    }
+
+    @Test
+    void storeRawToken_appliesNonHashTransformersWithPassthroughTokenizer() {
+        TokenTransformer encryptTransformer = token -> "encrypted:" + token;
+        tokenGenerator = new TokenGenerator(
+                tokenDefinition,
+                new PassthroughTokenizer(List.of(encryptTransformer)));
+        TokenGeneratorResult result = new TokenGeneratorResult();
+
+        tokenGenerator.storeRawToken(result, "ML1", "quantized-signature");
+
+        assertEquals("encrypted:quantized-signature", result.getTokens().get("ML1"));
     }
 }

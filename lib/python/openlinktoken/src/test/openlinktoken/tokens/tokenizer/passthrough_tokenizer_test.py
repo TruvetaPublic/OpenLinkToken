@@ -53,6 +53,13 @@ class TestPassthroughTokenizer:
 
         assert result == "encrypted-token"  # Check the final result after applying transformers
 
+    def test_get_token_transformer_list_returns_configured_transformers(self, setup):
+        """Configured transformers should be available to callers that bypass hashing."""
+        assert self.tokenizer.get_token_transformer_list() == [
+            self.hash_transformer_mock,
+            self.encrypt_transformer_mock,
+        ]
+
     def test_tokenize_valid_input_no_transformers_returns_original_value(self):
         """Test that without transformers, the original value is returned unchanged."""
         input_value = "test-input"

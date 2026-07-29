@@ -294,7 +294,7 @@ class TokenGenerator:
             token_id: The token identifier key to store the result under.
             token_value: The pre-hashed token value, or ``None`` / blank to record a blank token.
         """
-        all_transformers = getattr(self.tokenizer, "token_transformer_list", [])
+        all_transformers = self.tokenizer.get_token_transformer_list()
         encrypt_transformers = [t for t in all_transformers if not isinstance(t, HashTokenTransformer)]
         passthrough = PassthroughTokenizer(encrypt_transformers)
         try:

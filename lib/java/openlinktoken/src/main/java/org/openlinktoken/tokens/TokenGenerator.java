@@ -338,12 +338,9 @@ public class TokenGenerator implements Serializable {
     }
 
     private List<TokenTransformer> encryptOnlyTransformers() {
-        if (tokenizer instanceof SHA256Tokenizer sha256) {
-            return sha256.getTokenTransformerList().stream()
-                    .filter(t -> !(t instanceof HashTokenTransformer))
-                    .toList();
-        }
-        return List.of();
+        return tokenizer.getTokenTransformerList().stream()
+                .filter(t -> !(t instanceof HashTokenTransformer))
+                .toList();
     }
 
     /**
