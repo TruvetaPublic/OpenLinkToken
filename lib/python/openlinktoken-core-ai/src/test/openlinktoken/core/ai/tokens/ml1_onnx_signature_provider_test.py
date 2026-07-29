@@ -8,11 +8,13 @@ from openlinktoken.attributes.person.sex_attribute import SexAttribute
 from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig
 from openlinktoken.core.ai.tokens.ml1_onnx_signature_provider import (
     ML1OnnxSignatureProvider,
+    _build_rotation_signature,
     _compute_blocking_key,
     _hash_rotation_values,
 )
 from openlinktoken.core.ai.tokens.ml1_token import ML1Token
 from openlinktoken.core.ai.tokens.rotation_config import RotationConfig
+from openlinktoken.tokens.token import Token
 from openlinktoken.tokens.token_generator_result import TokenGeneratorResult
 
 
@@ -52,6 +54,16 @@ def test_rotation_hash_uses_hashed_t1_blocking_key():
     assert _hash_rotation_values(["99 100 100 101"], blocking_key) == [
         "4ff691600f8c2df6142c405cbcd6f166a588ba83bd93ba6f028e082ef99decd8"
     ]
+
+
+def test_rotation_hash_without_blocking_key_returns_no_token():
+    """Rotation values must not be emitted when no T1 blocking key is available."""
+    assert _hash_rotation_values(["99 100 100 101"], None) is None
+
+
+def test_rotation_signature_without_blocking_key_returns_blank_token():
+    """A missing T1 blocking key should produce the canonical blank token."""
+    assert _build_rotation_signature(["99 100 100 101"], None) == Token.BLANK
 
 
 def test_provider_uses_ml1_token_identifier():

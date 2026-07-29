@@ -25,6 +25,7 @@ from openlinktoken.core.ai.tokentransformer.rotation.rotation_embedding_transfor
 )
 from openlinktoken.tokens.definitions.t1_token import T1Token
 from openlinktoken.tokens.inference_signature_provider import InferenceBatchResult
+from openlinktoken.tokens.token import Token
 from openlinktoken.tokens.token_generator_result import TokenGeneratorResult
 
 logger = logging.getLogger(__name__)
@@ -70,20 +71,29 @@ def _compute_blocking_key(
     return hashlib.sha256(t1_signature.encode("utf-8")).hexdigest()
 
 
-def _hash_rotation_values(rotation_values: List[str], blocking_key: str) -> List[str]:
+def _hash_rotation_values(rotation_values: List[str], blocking_key: Optional[str]) -> Optional[List[str]]:
     """SHA-256 hash each rotation-quantized string concatenated with the blocking key.
 
     Args:
         rotation_values: Space-separated bin-index strings, one per rotation matrix.
-        blocking_key: SHA-256 T1 blocking key appended to each rotation value before hashing.
+        blocking_key: SHA-256 T1 blocking key appended to each rotation value before hashing,
+            or None when the key cannot be computed.
 
     Returns:
-        List of SHA-256 hex digest strings, one per rotation value.
+        List of SHA-256 hex digest strings, or None when no blocking key is available.
     """
+    if not blocking_key:
+        return None
     return [
         hashlib.sha256((rotation_value + blocking_key).encode("utf-8")).hexdigest()
         for rotation_value in rotation_values
     ]
+
+
+def _build_rotation_signature(rotation_values: List[str], blocking_key: Optional[str]) -> str:
+    """Build a hashed rotation signature or return the canonical blank token."""
+    hashed_values = _hash_rotation_values(rotation_values, blocking_key)
+    return Token.BLANK if hashed_values is None else ",".join(hashed_values)
 
 
 # Ordered field name mapping for ML1 payload.
@@ -153,9 +163,7 @@ class ML1OnnxSignatureProvider:
                 if transformer is not None:
                     rotation_values: List[str] = transformer.transform(list(embedding))
                     blocking_key = _compute_blocking_key(person_attributes)
-                    if blocking_key:
-                        rotation_values = _hash_rotation_values(rotation_values, blocking_key)
-                    return ",".join(rotation_values)
+                    return _build_rotation_signature(rotation_values, blocking_key)
             return sig
         except Exception as error:
             logger.error("Error generating ML1 signature", exc_info=error)
@@ -194,9 +202,7 @@ class ML1OnnxSignatureProvider:
                 if transformer is not None and embedding is not None:
                     rotation_values: List[str] = transformer.transform(list(embedding))
                     blocking_key = _compute_blocking_key(rows[original_index])
-                    if blocking_key:
-                        rotation_values = _hash_rotation_values(rotation_values, blocking_key)
-                    signatures[original_index] = ",".join(rotation_values)
+                    signatures[original_index] = _build_rotation_signature(rotation_values, blocking_key)
                 else:
                     signatures[original_index] = batch_sigs[vi]
 

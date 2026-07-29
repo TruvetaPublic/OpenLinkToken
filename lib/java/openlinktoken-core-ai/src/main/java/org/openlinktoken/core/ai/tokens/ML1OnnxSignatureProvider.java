@@ -13,6 +13,7 @@ import org.openlinktoken.core.ai.tokens.definitions.ML1Token;
 import org.openlinktoken.tokens.definitions.T1Token;
 import org.openlinktoken.tokens.InferenceBatchResult;
 import org.openlinktoken.tokens.InferenceSignatureProvider;
+import org.openlinktoken.tokens.Token;
 import org.openlinktoken.tokens.TokenGeneratorResult;
 import org.openlinktoken.core.ai.tokentransformer.rotation.RotationEmbeddingTransformer;
 import lombok.extern.slf4j.Slf4j;
@@ -93,10 +94,9 @@ public class ML1OnnxSignatureProvider implements InferenceSignatureProvider {
                 float[] embedding = result.embeddings().get(0);
                 List<String> rotationValues = getOrCreateTransformer(embedding.length).transform(embedding);
                 String t1Sig = computeT1Signature(personAttributes);
-                if (t1Sig != null) {
-                    rotationValues = hashRotationValues(rotationValues, computeT1BlockingKey(t1Sig));
-                }
-                return String.join(",", rotationValues);
+                return buildRotationSignature(
+                        rotationValues,
+                        t1Sig == null ? null : computeT1BlockingKey(t1Sig));
             }
             return ML1OnnxSignatureGenerator.generateSignature(payload);
         } catch (Exception e) {
@@ -153,10 +153,11 @@ public class ML1OnnxSignatureProvider implements InferenceSignatureProvider {
                 float[] embedding = batchResult.embeddings().get(vi);
                 List<String> rotationValues = getOrCreateTransformer(embedding.length).transform(embedding);
                 String t1Sig = computeT1Signature(rows.get(originalIndex));
-                if (t1Sig != null) {
-                    rotationValues = hashRotationValues(rotationValues, computeT1BlockingKey(t1Sig));
-                }
-                signatures.set(originalIndex, String.join(",", rotationValues));
+                signatures.set(
+                        originalIndex,
+                        buildRotationSignature(
+                                rotationValues,
+                                t1Sig == null ? null : computeT1BlockingKey(t1Sig)));
             }
         } else {
             for (int vi = 0; vi < validIndices.size(); vi++) {
@@ -255,11 +256,26 @@ public class ML1OnnxSignatureProvider implements InferenceSignatureProvider {
      * @return list of lowercase hex-encoded SHA-256 digests, one per rotation value
      */
     List<String> hashRotationValues(List<String> rotationValues, String t1BlockingKey) {
+        if (t1BlockingKey == null || t1BlockingKey.isBlank()) {
+            return null;
+        }
         List<String> result = new ArrayList<>(rotationValues.size());
         for (String rotationValue : rotationValues) {
             result.add(sha256Hex(rotationValue + t1BlockingKey));
         }
         return result;
+    }
+
+    /**
+     * Build the final rotation signature without emitting raw quantized values.
+     *
+     * @param rotationValues list of space-separated bin index strings
+     * @param t1BlockingKey SHA-256 T1 blocking key, or {@code null} when unavailable
+     * @return comma-separated hashed rotation values, or the canonical blank token
+     */
+    String buildRotationSignature(List<String> rotationValues, String t1BlockingKey) {
+        List<String> hashedValues = hashRotationValues(rotationValues, t1BlockingKey);
+        return hashedValues == null ? Token.BLANK : String.join(",", hashedValues);
     }
 
     /**

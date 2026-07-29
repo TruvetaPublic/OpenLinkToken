@@ -13,6 +13,7 @@ import org.openlinktoken.attributes.person.LastNameAttribute;
 import org.openlinktoken.attributes.person.PostalCodeAttribute;
 import org.openlinktoken.attributes.person.SexAttribute;
 import org.openlinktoken.core.ai.tokens.definitions.ML1Token;
+import org.openlinktoken.tokens.Token;
 import org.openlinktoken.tokens.TokenGeneratorResult;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -283,6 +284,18 @@ class ML1OnnxSignatureProviderTest {
         assertEquals(
                 List.of("4ff691600f8c2df6142c405cbcd6f166a588ba83bd93ba6f028e082ef99decd8"),
                 provider.hashRotationValues(List.of("99 100 100 101"), blockingKey));
+    }
+
+    @Test
+    void hashRotationValues_missingBlockingKey_returnsNull() {
+        assertNull(provider.hashRotationValues(List.of("99 100 100 101"), null));
+    }
+
+    @Test
+    void buildRotationSignature_missingBlockingKey_returnsBlankToken() {
+        assertEquals(
+                Token.BLANK,
+                provider.buildRotationSignature(List.of("99 100 100 101"), null));
     }
 
     private static RotationEmbeddingTransformer getRotationTransformer(int embeddingDim) throws Exception {
