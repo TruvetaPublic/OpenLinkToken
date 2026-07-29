@@ -81,7 +81,7 @@ def _print_summary(exchange: ResolvedExchangeConfig) -> None:
     print("-" * 60)
     secret_hex = exchange.hashing_secret.hex()
     print(f"  Length  : {len(exchange.hashing_secret)} bytes")
-    print(f"  Hex     : {secret_hex[:32]}{'...' if len(secret_hex) > 32 else ''}")
+    print(f"  Hex     : {secret_hex[:2]}{'*' * max(len(secret_hex) - 4, 0)}{secret_hex[-2:]}")
     print()
 
     print("Rotation Parameters")
