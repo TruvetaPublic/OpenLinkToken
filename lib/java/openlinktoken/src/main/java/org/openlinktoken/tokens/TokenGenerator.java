@@ -115,20 +115,14 @@ public class TokenGenerator implements Serializable {
     @Deprecated(since = "2.1.0", forRemoval = false)
     protected String getTokenSignature(String tokenId, Map<Class<? extends Attribute>, String> personAttributes,
             TokenGeneratorResult result) {
-        Optional<InferenceSignatureProvider> provider = findProvider();
-        if (provider.isPresent() && provider.get().getTokenId().equals(tokenId) && provider.get().isEnabled()) {
-            try {
-                return provider.get().generateSignature(personAttributes);
-            } catch (Exception e) {
-                logger.error("Error generating token signature for token id: {}", tokenId, e);
-                return null;
-            }
-        }
-
-        var definition = tokenDefinition.getTokenDefinition(tokenId);
         if (personAttributes == null) {
             throw new IllegalArgumentException("Person attributes cannot be null.");
         }
+        if (hasActiveInferenceProvider(tokenId)) {
+            return getInferenceSignature(tokenId, toFieldIdMap(personAttributes));
+        }
+
+        var definition = tokenDefinition.getTokenDefinition(tokenId);
         if (definition == null) {
             return null;
         }
@@ -277,33 +271,7 @@ public class TokenGenerator implements Serializable {
         var signature = getTokenSignature(tokenId, personAttributes, result);
         logger.debug("Token signature for token id {}: {}", tokenId, signature);
 
-        // Tokens from inference providers (e.g. ML1) are pre-hashed; skip SHA-256 re-hashing
-        // but still apply any remaining transformers (e.g. encryption) via PassthroughTokenizer.
-        Optional<InferenceSignatureProvider> provider = findProvider();
-        if (provider.isPresent() && provider.get().getTokenId().equals(tokenId) && provider.get().isEnabled()) {
-            if (signature == null || Token.BLANK.equals(signature)) {
-                result.getBlankTokensByRule().add(tokenId);
-                return Token.BLANK;
-            }
-            try {
-                return new PassthroughTokenizer(encryptOnlyTransformers()).tokenize(signature);
-            } catch (Exception e) {
-                logger.error("Error applying transformers to inference token for token id: " + tokenId, e);
-                throw new TokenGenerationException("Error applying transformers to inference token", e);
-            }
-        }
-
-        try {
-            String token = tokenizer.tokenize(signature);
-            // Track blank tokens by rule
-            if (Token.BLANK.equals(token)) {
-                result.getBlankTokensByRule().add(tokenId);
-            }
-            return token;
-        } catch (Exception e) {
-            logger.error("Error generating token for token id: " + tokenId, e);
-            throw new TokenGenerationException("Error generating token", e);
-        }
+        return tokenizeSignature(tokenId, signature, result);
     }
 
     /**
@@ -341,6 +309,51 @@ public class TokenGenerator implements Serializable {
         return tokenizer.getTokenTransformerList().stream()
                 .filter(t -> !(t instanceof HashTokenTransformer))
                 .toList();
+    }
+
+    private boolean hasActiveInferenceProvider(String tokenId) {
+        Optional<InferenceSignatureProvider> provider = findProvider();
+        return provider.isPresent() && provider.get().getTokenId().equals(tokenId) && provider.get().isEnabled();
+    }
+
+    private String getInferenceSignature(String tokenId, Map<String, String> personAttributes) {
+        Optional<InferenceSignatureProvider> provider = findProvider();
+        if (!provider.isPresent() || !provider.get().getTokenId().equals(tokenId) || !provider.get().isEnabled()) {
+            return null;
+        }
+        try {
+            return provider.get().generateSignature(personAttributes);
+        } catch (Exception e) {
+            logger.error("Error generating token signature for token id: {}", tokenId, e);
+            return null;
+        }
+    }
+
+    private String tokenizeSignature(String tokenId, String signature, TokenGeneratorResult result)
+            throws TokenGenerationException {
+        try {
+            String token = hasActiveInferenceProvider(tokenId)
+                    ? new PassthroughTokenizer(encryptOnlyTransformers()).tokenize(signature)
+                    : tokenizer.tokenize(signature);
+            if (Token.BLANK.equals(token)) {
+                result.getBlankTokensByRule().add(tokenId);
+            }
+            return token;
+        } catch (Exception e) {
+            logger.error("Error generating token for token id: " + tokenId, e);
+            throw new TokenGenerationException("Error generating token", e);
+        }
+    }
+
+    private Map<String, String> toFieldIdMap(Map<Class<? extends Attribute>, String> personAttributes) {
+        var fields = new HashMap<String, String>();
+        for (Map.Entry<Class<? extends Attribute>, String> entry : personAttributes.entrySet()) {
+            var attribute = attributeInstanceMap.get(entry.getKey());
+            if (attribute != null) {
+                fields.put(attribute.getName(), entry.getValue());
+            }
+        }
+        return fields;
     }
 
     /**
@@ -404,10 +417,14 @@ public class TokenGenerator implements Serializable {
      */
     protected String getTokenSignatureViaFieldId(String tokenId, Map<String, String> personAttributes,
             TokenGeneratorResult result) {
-        var definition = tokenDefinition.getTokenDefinition(tokenId);
         if (personAttributes == null) {
             throw new IllegalArgumentException("Person attributes cannot be null.");
         }
+        if (hasActiveInferenceProvider(tokenId)) {
+            return getInferenceSignature(tokenId, personAttributes);
+        }
+
+        var definition = tokenDefinition.getTokenDefinition(tokenId);
         if (definition == null || definition.isEmpty()) {
             return null;
         }
@@ -463,21 +480,14 @@ public class TokenGenerator implements Serializable {
         for (String tokenId : tokenDefinition.getTokenIdentifiers()) {
             try {
                 var definition = tokenDefinition.getTokenDefinition(tokenId);
-                if (definition == null || definition.isEmpty()) {
+                if ((definition == null || definition.isEmpty()) && !hasActiveInferenceProvider(tokenId)) {
                     continue;
                 }
                 var signature = getTokenSignatureViaFieldId(tokenId, personAttributes, result);
                 logger.debug("Token signature for token id {}: {}", tokenId, signature);
-                try {
-                    String token = tokenizer.tokenize(signature);
-                    if (Token.BLANK.equals(token)) {
-                        result.getBlankTokensByRule().add(tokenId);
-                    }
-                    if (token != null) {
-                        result.getTokens().put(tokenId, token);
-                    }
-                } catch (Exception e) {
-                    logger.error("Error generating token for token id: " + tokenId, e);
+                String token = tokenizeSignature(tokenId, signature, result);
+                if (token != null) {
+                    result.getTokens().put(tokenId, token);
                 }
             } catch (Exception e) {
                 logger.error("Error generating token for token id: " + tokenId, e);
