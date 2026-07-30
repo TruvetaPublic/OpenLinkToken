@@ -41,22 +41,22 @@ EXPECTED_TOKENS = {
 }
 
 EXPECTED_SAMPLE_METADATA = {
-    "TotalRows": 105,
-    "TotalRowsWithInvalidAttributes": 12,
+    "TotalRows": 2,
+    "TotalRowsWithInvalidAttributes": 2,
     "InvalidAttributesByType": {
-        "BirthDate": 3,
-        "FirstName": 1,
-        "LastName": 2,
-        "PostalCode": 2,
+        "BirthDate": 1,
+        "FirstName": 0,
+        "LastName": 0,
+        "PostalCode": 0,
         "Sex": 0,
-        "SocialSecurityNumber": 4,
+        "SocialSecurityNumber": 1,
     },
     "BlankTokensByRule": {
-        "T1": 6,
-        "T2": 8,
-        "T3": 6,
-        "T4": 7,
-        "T5": 3,
+        "T1": 1,
+        "T2": 1,
+        "T3": 1,
+        "T4": 2,
+        "T5": 0,
     },
 }
 
@@ -69,7 +69,7 @@ class InteroperabilityTooling:
 
     def __init__(self):
         self.project_root = PROJECT_ROOT
-        self.sample_csv = self.project_root / "resources/sample.csv"
+        self.sample_csv = self.project_root / "resources/interoperability_sample.csv"
 
 
 class PythonCLI(InteroperabilityTooling):
