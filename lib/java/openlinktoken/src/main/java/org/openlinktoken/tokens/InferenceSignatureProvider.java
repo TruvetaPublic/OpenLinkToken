@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: MIT */
 package org.openlinktoken.tokens;
 
-import org.openlinktoken.attributes.Attribute;
 import java.util.List;
 import java.util.Map;
 
@@ -28,19 +27,19 @@ public interface InferenceSignatureProvider {
     boolean isEnabled();
 
     /**
-     * Generate a single inference-based token signature from the given person attributes.
+     * Generate a single inference-based token signature from the given field-ID values.
      *
-     * @param personAttributes normalised attribute map for one record
+     * @param personAttributes field-ID map for one record
      * @return hex-encoded signature string, or {@code null} if the record is invalid
      */
-    String generateSignature(Map<Class<? extends Attribute>, String> personAttributes);
+    String generateSignature(Map<String, String> personAttributes);
 
     /**
      * Generate inference-based token signatures for a batch of records in a single
      * inference pass.
      *
-     * @param rows list of normalised attribute maps, one per record
+     * @param rows list of field-ID maps, one per record
      * @return {@link InferenceBatchResult} with signatures in input row order
      */
-    InferenceBatchResult generateBatch(List<Map<Class<? extends Attribute>, String>> rows);
+    InferenceBatchResult generateBatch(List<Map<String, String>> rows);
 }

@@ -6,12 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.openlinktoken.core.ai.tokentransformer.rotation.RotationEmbeddingTransformer;
-import org.openlinktoken.attributes.Attribute;
-import org.openlinktoken.attributes.person.BirthDateAttribute;
-import org.openlinktoken.attributes.person.FirstNameAttribute;
-import org.openlinktoken.attributes.person.LastNameAttribute;
-import org.openlinktoken.attributes.person.PostalCodeAttribute;
-import org.openlinktoken.attributes.person.SexAttribute;
 import org.openlinktoken.core.ai.tokens.definitions.ML1Token;
 import org.openlinktoken.tokens.Token;
 import org.openlinktoken.tokens.TokenGeneratorResult;
@@ -69,12 +63,12 @@ class ML1OnnxSignatureProviderTest {
 
     @Test
     void buildMl1Payload_validAttributes_preservesFieldOrderAndNormalization() {
-        Map<Class<? extends Attribute>, String> attrs = new HashMap<>();
-        attrs.put(PostalCodeAttribute.class, "95123");
-        attrs.put(BirthDateAttribute.class, "1990-07-09");
-        attrs.put(FirstNameAttribute.class, " Alice ");
-        attrs.put(LastNameAttribute.class, " Smith ");
-        attrs.put(SexAttribute.class, "female");
+        Map<String, String> attrs = new HashMap<>();
+        attrs.put("PostalCode", "95123");
+        attrs.put("BirthDate", "1990-07-09");
+        attrs.put("FirstName", " Alice ");
+        attrs.put("LastName", " Smith ");
+        attrs.put("Sex", "female");
 
         String payload = provider.buildMl1Payload(attrs, new TokenGeneratorResult());
 
@@ -86,23 +80,23 @@ class ML1OnnxSignatureProviderTest {
 
     @Test
     void buildMl1Payload_missingRequiredField_returnsNull() {
-        Map<Class<? extends Attribute>, String> attrs = new HashMap<>();
-        attrs.put(PostalCodeAttribute.class, "95123");
-        attrs.put(BirthDateAttribute.class, "1990-07-09");
-        attrs.put(FirstNameAttribute.class, "Alice");
-        attrs.put(LastNameAttribute.class, "Smith");
+        Map<String, String> attrs = new HashMap<>();
+        attrs.put("PostalCode", "95123");
+        attrs.put("BirthDate", "1990-07-09");
+        attrs.put("FirstName", "Alice");
+        attrs.put("LastName", "Smith");
 
         assertNull(provider.buildMl1Payload(attrs, new TokenGeneratorResult()));
     }
 
     @Test
     void buildMl1Payload_invalidRequiredField_recordsInvalidAttribute() {
-        Map<Class<? extends Attribute>, String> attrs = new HashMap<>();
-        attrs.put(PostalCodeAttribute.class, "95123");
-        attrs.put(BirthDateAttribute.class, "1990-07-09");
-        attrs.put(FirstNameAttribute.class, "Alice");
-        attrs.put(LastNameAttribute.class, "Smith");
-        attrs.put(SexAttribute.class, "unknown");
+        Map<String, String> attrs = new HashMap<>();
+        attrs.put("PostalCode", "95123");
+        attrs.put("BirthDate", "1990-07-09");
+        attrs.put("FirstName", "Alice");
+        attrs.put("LastName", "Smith");
+        attrs.put("Sex", "unknown");
         TokenGeneratorResult result = new TokenGeneratorResult();
 
         assertNull(provider.buildMl1Payload(attrs, result));
@@ -120,7 +114,7 @@ class ML1OnnxSignatureProviderTest {
 
     @Test
     void generateBatch_allInvalidRows_returnsNullForEachRow() {
-        List<Map<Class<? extends Attribute>, String>> rows = List.of(Map.of(), Map.of());
+        List<Map<String, String>> rows = List.of(Map.of(), Map.of());
 
         List<String> signatures = provider.generateBatch(rows).signatures();
 
@@ -133,12 +127,12 @@ class ML1OnnxSignatureProviderTest {
 
     @Test
     void computeT1Signature_validAttributes_returnsExpectedSignature() {
-        Map<Class<? extends Attribute>, String> attrs = new HashMap<>();
-        attrs.put(LastNameAttribute.class, "Wright");
-        attrs.put(FirstNameAttribute.class, "Robert");
+        Map<String, String> attrs = new HashMap<>();
+        attrs.put("LastName", "Wright");
+        attrs.put("FirstName", "Robert");
         // SexAttribute validates against ^([Mm](ale)?|[Ff](emale)?)$ — use mixed-case input
-        attrs.put(SexAttribute.class, "Female");
-        attrs.put(BirthDateAttribute.class, "1990-07-09");
+        attrs.put("Sex", "Female");
+        attrs.put("BirthDate", "1990-07-09");
 
         String sig = provider.computeT1Signature(attrs);
 
@@ -153,62 +147,62 @@ class ML1OnnxSignatureProviderTest {
 
     @Test
     void computeT1Signature_missingLastName_returnsNull() {
-        Map<Class<? extends Attribute>, String> attrs = new HashMap<>();
-        attrs.put(FirstNameAttribute.class, "Robert");
-        attrs.put(SexAttribute.class, "FEMALE");
-        attrs.put(BirthDateAttribute.class, "1990-07-09");
+        Map<String, String> attrs = new HashMap<>();
+        attrs.put("FirstName", "Robert");
+        attrs.put("Sex", "FEMALE");
+        attrs.put("BirthDate", "1990-07-09");
 
         assertNull(provider.computeT1Signature(attrs));
     }
 
     @Test
     void computeT1Signature_missingFirstName_returnsNull() {
-        Map<Class<? extends Attribute>, String> attrs = new HashMap<>();
-        attrs.put(LastNameAttribute.class, "Wright");
-        attrs.put(SexAttribute.class, "FEMALE");
-        attrs.put(BirthDateAttribute.class, "1990-07-09");
+        Map<String, String> attrs = new HashMap<>();
+        attrs.put("LastName", "Wright");
+        attrs.put("Sex", "FEMALE");
+        attrs.put("BirthDate", "1990-07-09");
 
         assertNull(provider.computeT1Signature(attrs));
     }
 
     @Test
     void computeT1Signature_missingSex_returnsNull() {
-        Map<Class<? extends Attribute>, String> attrs = new HashMap<>();
-        attrs.put(LastNameAttribute.class, "Wright");
-        attrs.put(FirstNameAttribute.class, "Robert");
-        attrs.put(BirthDateAttribute.class, "1990-07-09");
+        Map<String, String> attrs = new HashMap<>();
+        attrs.put("LastName", "Wright");
+        attrs.put("FirstName", "Robert");
+        attrs.put("BirthDate", "1990-07-09");
 
         assertNull(provider.computeT1Signature(attrs));
     }
 
     @Test
     void computeT1Signature_missingBirthDate_returnsNull() {
-        Map<Class<? extends Attribute>, String> attrs = new HashMap<>();
-        attrs.put(LastNameAttribute.class, "Wright");
-        attrs.put(FirstNameAttribute.class, "Robert");
-        attrs.put(SexAttribute.class, "Female");
+        Map<String, String> attrs = new HashMap<>();
+        attrs.put("LastName", "Wright");
+        attrs.put("FirstName", "Robert");
+        attrs.put("Sex", "Female");
 
         assertNull(provider.computeT1Signature(attrs));
     }
 
     @Test
     void computeT1Signature_invalidBirthDate_returnsNull() {
-        Map<Class<? extends Attribute>, String> attrs = new HashMap<>();
-        attrs.put(LastNameAttribute.class, "Wright");
-        attrs.put(FirstNameAttribute.class, "Robert");
-        attrs.put(SexAttribute.class, "Female");
-        attrs.put(BirthDateAttribute.class, "not-a-date");
+        Map<String, String> attrs = new HashMap<>();
+        attrs.put("LastName", "Wright");
+        attrs.put("FirstName", "Robert");
+        attrs.put("Sex", "Female");
+        attrs.put("BirthDate", "not-a-date");
 
         assertNull(provider.computeT1Signature(attrs));
     }
 
     @Test
     void computeT1Signature_lowercaseInputsAreNormalized() {
-        Map<Class<? extends Attribute>, String> attrs = new HashMap<>();
-        attrs.put(LastNameAttribute.class, "  smith  ");
-        attrs.put(FirstNameAttribute.class, "  alice  ");
-        attrs.put(SexAttribute.class, "male");
-        attrs.put(BirthDateAttribute.class, "2000-01-15");
+        Map<String, String> attrs = new HashMap<>();
+        attrs.put("LastName", "  smith  ");
+        attrs.put("FirstName", "  alice  ");
+        attrs.put("Sex", "male");
+        attrs.put("BirthDate", "2000-01-15");
 
         String sig = provider.computeT1Signature(attrs);
 

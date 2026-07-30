@@ -10,12 +10,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.openlinktoken.attributes.Attribute;
-import org.openlinktoken.attributes.person.BirthDateAttribute;
-import org.openlinktoken.attributes.person.FirstNameAttribute;
-import org.openlinktoken.attributes.person.LastNameAttribute;
-import org.openlinktoken.attributes.person.PostalCodeAttribute;
-import org.openlinktoken.attributes.person.SexAttribute;
 import org.openlinktoken.tokens.InferenceBatchResult;
 import org.openlinktoken.core.ai.tokens.ML1InferenceConfig;
 import org.openlinktoken.core.ai.tokens.ML1OnnxSignatureProvider;
@@ -76,7 +70,7 @@ public final class Ml1InteropHarness {
         // invalid rows to remain represented by a null signature at their
         // original record ID.
         List<String> recordIds = new ArrayList<>();
-        List<Map<Class<? extends Attribute>, String>> rows = new ArrayList<>();
+        List<Map<String, String>> rows = new ArrayList<>();
 
         try (BufferedReader reader = Files.newBufferedReader(inputPath, StandardCharsets.UTF_8)) {
             String headerLine = reader.readLine();
@@ -132,29 +126,28 @@ public final class Ml1InteropHarness {
         return indexes;
     }
 
-    private static Map<Class<? extends Attribute>, String> buildPersonAttributes(
+    private static Map<String, String> buildPersonAttributes(
             Map<String, Integer> headerIndexes,
             String[] values) {
-        Map<Class<? extends Attribute>, String> personAttributes = new LinkedHashMap<>();
-        addAttribute(personAttributes, headerIndexes, values, "BirthDate", BirthDateAttribute.class);
-        addAttribute(personAttributes, headerIndexes, values, "FirstName", FirstNameAttribute.class);
-        addAttribute(personAttributes, headerIndexes, values, "LastName", LastNameAttribute.class);
-        addAttribute(personAttributes, headerIndexes, values, "PostalCode", PostalCodeAttribute.class);
-        addAttribute(personAttributes, headerIndexes, values, "Sex", SexAttribute.class);
+        Map<String, String> personAttributes = new LinkedHashMap<>();
+        addAttribute(personAttributes, headerIndexes, values, "BirthDate");
+        addAttribute(personAttributes, headerIndexes, values, "FirstName");
+        addAttribute(personAttributes, headerIndexes, values, "LastName");
+        addAttribute(personAttributes, headerIndexes, values, "PostalCode");
+        addAttribute(personAttributes, headerIndexes, values, "Sex");
         return personAttributes;
     }
 
     private static void addAttribute(
-            Map<Class<? extends Attribute>, String> personAttributes,
+            Map<String, String> personAttributes,
             Map<String, Integer> headerIndexes,
             String[] values,
-            String columnName,
-            Class<? extends Attribute> attributeClass) {
+            String columnName) {
         // ML1 accepts a subset of person fields. Optional extra columns in the
         // CSV are ignored, while missing ML1 columns are left out so the
         // provider can return its normal invalid-input result.
         if (headerIndexes.containsKey(columnName)) {
-            personAttributes.put(attributeClass, getValue(headerIndexes, values, columnName));
+            personAttributes.put(columnName, getValue(headerIndexes, values, columnName));
         }
     }
 

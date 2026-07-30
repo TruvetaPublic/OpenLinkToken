@@ -81,7 +81,7 @@ public class ML1OnnxSignatureProvider implements InferenceSignatureProvider {
      * @return generated ML1 signature, or {@code null} when required input is invalid
      */
     @Override
-    public String generateSignature(Map<Class<? extends Attribute>, String> personAttributes) {
+    public String generateSignature(Map<String, String> personAttributes) {
         TokenGeneratorResult dummyResult = new TokenGeneratorResult();
         String payload = buildMl1Payload(personAttributes, dummyResult);
         if (payload == null) {
@@ -112,7 +112,7 @@ public class ML1OnnxSignatureProvider implements InferenceSignatureProvider {
      * @return signatures aligned with {@code rows}; invalid rows contain {@code null}
      */
     @Override
-    public InferenceBatchResult generateBatch(List<Map<Class<? extends Attribute>, String>> rows) {
+    public InferenceBatchResult generateBatch(List<Map<String, String>> rows) {
         List<String> payloads = new ArrayList<>(rows.size());
         List<Integer> validIndices = new ArrayList<>(rows.size());
 
@@ -208,7 +208,7 @@ public class ML1OnnxSignatureProvider implements InferenceSignatureProvider {
      * @param personAttributes normalised attribute map for one record
      * @return pipe-delimited T1 signature string, or {@code null} if any field is missing or invalid
      */
-    String computeT1Signature(Map<Class<? extends Attribute>, String> personAttributes) {
+    String computeT1Signature(Map<String, String> personAttributes) {
         if (personAttributes == null) {
             return null;
         }
@@ -216,11 +216,11 @@ public class ML1OnnxSignatureProvider implements InferenceSignatureProvider {
         List<String> parts = new ArrayList<>(t1Definition.size());
         for (AttributeExpression attrExpr : t1Definition) {
             Class<? extends Attribute> attrClass = attrExpr.getAttributeClass();
-            String raw = personAttributes.get(attrClass);
+            Attribute attr = attributeInstanceMap.get(attrClass);
+            String raw = attr == null ? null : personAttributes.get(attr.getName());
             if (raw == null || raw.isBlank()) {
                 return null;
             }
-            Attribute attr = attributeInstanceMap.get(attrClass);
             if (attr == null || !attr.validate(raw)) {
                 return null;
             }
@@ -298,7 +298,7 @@ public class ML1OnnxSignatureProvider implements InferenceSignatureProvider {
      * @param result           result object to record invalid attributes into
      * @return JSON string payload, or {@code null} if any required field is missing/invalid
      */
-    public String buildMl1Payload(Map<Class<? extends Attribute>, String> personAttributes,
+    public String buildMl1Payload(Map<String, String> personAttributes,
             TokenGeneratorResult result) {
         if (personAttributes == null) {
             return null;
@@ -306,21 +306,21 @@ public class ML1OnnxSignatureProvider implements InferenceSignatureProvider {
 
         // Field order matches generate_embeddings.py: PostalCode, Birthdate, GivenName, Surname, Gender
         Map<String, String> payload = new LinkedHashMap<>();
-        if (!addMl1Field(PostalCodeAttribute.class, "PostalCode", personAttributes, result, payload)
-                || !addMl1Field(BirthDateAttribute.class, "Birthdate", personAttributes, result, payload)
-                || !addMl1Field(FirstNameAttribute.class, "GivenName", personAttributes, result, payload)
-                || !addMl1Field(LastNameAttribute.class, "Surname", personAttributes, result, payload)
-                || !addMl1Field(SexAttribute.class, "Gender", personAttributes, result, payload)) {
+        if (!addMl1Field("PostalCode", PostalCodeAttribute.class, "PostalCode", personAttributes, result, payload)
+                || !addMl1Field("BirthDate", BirthDateAttribute.class, "Birthdate", personAttributes, result, payload)
+                || !addMl1Field("FirstName", FirstNameAttribute.class, "GivenName", personAttributes, result, payload)
+                || !addMl1Field("LastName", LastNameAttribute.class, "Surname", personAttributes, result, payload)
+                || !addMl1Field("Sex", SexAttribute.class, "Gender", personAttributes, result, payload)) {
             return null;
         }
 
         return asJson(payload);
     }
 
-    private boolean addMl1Field(Class<? extends Attribute> attributeClass, String fieldName,
-            Map<Class<? extends Attribute>, String> personAttributes, TokenGeneratorResult result,
+    private boolean addMl1Field(String fieldId, Class<? extends Attribute> attributeClass, String fieldName,
+            Map<String, String> personAttributes, TokenGeneratorResult result,
             Map<String, String> payload) {
-        if (!personAttributes.containsKey(attributeClass)) {
+        if (!personAttributes.containsKey(fieldId)) {
             return false;
         }
 
@@ -329,7 +329,7 @@ public class ML1OnnxSignatureProvider implements InferenceSignatureProvider {
             return false;
         }
 
-        String value = personAttributes.get(attributeClass);
+        String value = personAttributes.get(fieldId);
         if (!attribute.validate(value)) {
             result.getInvalidAttributes().add(attribute.getName());
             return false;
