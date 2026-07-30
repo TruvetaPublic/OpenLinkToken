@@ -25,11 +25,6 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "lib/python/openlinktoken/src/main"))
 sys.path.insert(0, str(PROJECT_ROOT / "lib/python/openlinktoken-core-ai/src/main"))
 
-from openlinktoken.attributes.person.birth_date_attribute import BirthDateAttribute  # noqa: E402
-from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute  # noqa: E402
-from openlinktoken.attributes.person.last_name_attribute import LastNameAttribute  # noqa: E402
-from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttribute  # noqa: E402
-from openlinktoken.attributes.person.sex_attribute import SexAttribute  # noqa: E402
 from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig  # noqa: E402
 from openlinktoken.core.ai.tokens.ml1_onnx_signature_provider import ML1OnnxSignatureProvider  # noqa: E402
 from openlinktoken.core.ai.tokens.rotation_config import RotationConfig  # noqa: E402
@@ -469,18 +464,18 @@ class TestTokenCompatibility:
 
             python_rows = [
                 {
-                    BirthDateAttribute: "1989-05-25",
-                    FirstNameAttribute: "Chelsea",
-                    LastNameAttribute: "Meister",
-                    PostalCodeAttribute: "06582",
-                    SexAttribute: "Female",
+                    "BirthDate": "1989-05-25",
+                    "FirstName": "Chelsea",
+                    "LastName": "Meister",
+                    "PostalCode": "06582",
+                    "Sex": "Female",
                 },
                 {
-                    BirthDateAttribute: "not-a-date",
-                    FirstNameAttribute: "Chelsea",
-                    LastNameAttribute: "Meister",
-                    PostalCodeAttribute: "06582",
-                    SexAttribute: "Female",
+                    "BirthDate": "not-a-date",
+                    "FirstName": "Chelsea",
+                    "LastName": "Meister",
+                    "PostalCode": "06582",
+                    "Sex": "Female",
                 },
             ]
             ML1InferenceConfig.configure(
@@ -522,18 +517,18 @@ class TestTokenCompatibility:
 
             python_rows = [
                 {
-                    BirthDateAttribute: "1989-05-25",
-                    FirstNameAttribute: "Chelsea",
-                    LastNameAttribute: "Meister",
-                    PostalCodeAttribute: "06582",
-                    SexAttribute: "Female",
+                    "BirthDate": "1989-05-25",
+                    "FirstName": "Chelsea",
+                    "LastName": "Meister",
+                    "PostalCode": "06582",
+                    "Sex": "Female",
                 },
                 {
-                    BirthDateAttribute: "not-a-date",
-                    FirstNameAttribute: "Chelsea",
-                    LastNameAttribute: "Meister",
-                    PostalCodeAttribute: "06582",
-                    SexAttribute: "Female",
+                    "BirthDate": "not-a-date",
+                    "FirstName": "Chelsea",
+                    "LastName": "Meister",
+                    "PostalCode": "06582",
+                    "Sex": "Female",
                 },
             ]
             ML1InferenceConfig.configure(
