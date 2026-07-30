@@ -20,7 +20,7 @@ openlinktoken = { workspace = true }
 [dependency-groups]
 dev = [
    "cryptography==49.0.0",
-   "jwcrypto==1.5.7",
+   "jwcrypto==1.5.8",
    "csv2parquet==0.0.9",
    "pytest==9.1.1",
    "pytest-cov==7.1.0",
