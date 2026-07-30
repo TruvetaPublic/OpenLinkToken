@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Protocol, Type, runtime_checkable
-
-from openlinktoken.attributes.attribute import Attribute
+from typing import Dict, List, Optional, Protocol, runtime_checkable
 
 
 @dataclass
@@ -40,22 +38,22 @@ class InferenceSignatureProvider(Protocol):
         """Return whether this provider is currently enabled and configured."""
         ...
 
-    def generate_signature(self, person_attributes: Dict[Type[Attribute], str]) -> str:
+    def generate_signature(self, person_attributes: Dict[str, str]) -> Optional[str]:
         """Generate a single inference-based token signature.
 
         Args:
-            person_attributes: Normalised attribute map for one record.
+            person_attributes: Field-ID map for one record.
 
         Returns:
             Hex-encoded signature string, or ``None`` if the record is invalid.
         """
         ...
 
-    def generate_batch(self, rows: List[Dict[Type[Attribute], str]]) -> InferenceBatchResult:
+    def generate_batch(self, rows: List[Dict[str, str]]) -> InferenceBatchResult:
         """Generate inference-based signatures for a batch of records in one pass.
 
         Args:
-            rows: List of normalised attribute maps, one per record.
+            rows: List of field-ID maps, one per record.
 
         Returns:
             :class:`InferenceBatchResult` with signatures in input row order.

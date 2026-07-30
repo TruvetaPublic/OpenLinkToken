@@ -378,6 +378,81 @@ class TestTokenGenerator:
         assert signature == "provider-signature"
         self.token_definition.get_token_definition.assert_not_called()
 
+    def test_field_id_inference_provider_handles_empty_definition(self):
+        """Field-ID APIs invoke enabled providers even without an attribute definition."""
+
+        class Provider:
+            def get_token_id(self):
+                return "ML1"
+
+            def is_enabled(self):
+                return True
+
+            def generate_signature(self, person_attributes):
+                return f"{person_attributes['LastName']}-provider"
+
+        token_generator_module._inference_provider = Provider()
+        token_generator_module._provider_discovered = True
+        self.token_definition.get_token_identifiers.return_value = {"ML1"}
+        self.token_definition.get_token_definition.return_value = []
+        self.tokenizer.get_token_transformer_list.return_value = []
+
+        signatures = self.token_generator.get_all_token_signatures_via_field_id({"LastName": "Smith"})
+        result = self.token_generator.get_all_tokens_via_field_id({"LastName": "Smith"})
+
+        assert signatures == {"ML1": "Smith-provider"}
+        assert result.tokens == {"ML1": "Smith-provider"}
+        assert result.blank_tokens_by_rule == set()
+
+    def test_inference_provider_skips_hashing_and_tracks_blank(self):
+        """Provider signatures bypass hashing while missing values become tracked blanks."""
+
+        class Provider:
+            def get_token_id(self):
+                return "ML1"
+
+            def is_enabled(self):
+                return True
+
+            def generate_signature(self, person_attributes):
+                return person_attributes.get("LastName")
+
+        token_generator_module._inference_provider = Provider()
+        token_generator_module._provider_discovered = True
+        self.token_definition.get_token_identifiers.return_value = {"ML1"}
+        self.token_definition.get_token_definition.return_value = []
+        self.token_generator.tokenizer = SHA256Tokenizer([HashTokenTransformer(b"secret")])
+
+        result = self.token_generator.get_all_tokens_via_field_id({"LastName": "Smith"})
+        blank_result = self.token_generator.get_all_tokens_via_field_id({})
+
+        assert result.tokens == {"ML1": "Smith"}
+        assert result.blank_tokens_by_rule == set()
+        assert blank_result.tokens == {"ML1": Token.BLANK}
+        assert blank_result.blank_tokens_by_rule == {"ML1"}
+
+    def test_deprecated_class_keyed_inference_api_adapts_to_field_ids(self):
+        """Deprecated class-keyed APIs adapt canonical attribute names for providers."""
+
+        class Provider:
+            def get_token_id(self):
+                return "ML1"
+
+            def is_enabled(self):
+                return True
+
+            def generate_signature(self, person_attributes):
+                return f"{person_attributes['LastName']}-provider"
+
+        token_generator_module._inference_provider = Provider()
+        token_generator_module._provider_discovered = True
+        self.token_definition.get_token_identifiers.return_value = {"ML1"}
+        self.token_definition.get_token_definition.return_value = []
+
+        signatures = self.token_generator.get_all_token_signatures({LastNameAttribute: "Smith"})
+
+        assert signatures == {"ML1": "Smith-provider"}
+
     def test_inference_provider_error_returns_none(self, caplog):
         """Provider errors are logged and converted to a missing signature."""
 

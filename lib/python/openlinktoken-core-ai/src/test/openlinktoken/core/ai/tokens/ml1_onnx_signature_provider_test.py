@@ -1,10 +1,5 @@
 import pytest
 
-from openlinktoken.attributes.person.birth_date_attribute import BirthDateAttribute
-from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute
-from openlinktoken.attributes.person.last_name_attribute import LastNameAttribute
-from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttribute
-from openlinktoken.attributes.person.sex_attribute import SexAttribute
 from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig
 from openlinktoken.core.ai.tokens.ml1_onnx_signature_provider import (
     ML1OnnxSignatureProvider,
@@ -41,11 +36,11 @@ def reset_runtime_config():
 def test_rotation_hash_uses_hashed_t1_blocking_key():
     """Verify rotation values are hashed with the normalized T1 blocking key."""
     person_attributes = {
-        BirthDateAttribute: "1989-05-25",
-        FirstNameAttribute: "Chelsea",
-        LastNameAttribute: "Meister",
-        PostalCodeAttribute: "06582",
-        SexAttribute: "Female",
+        "BirthDate": "1989-05-25",
+        "FirstName": "Chelsea",
+        "LastName": "Meister",
+        "PostalCode": "06582",
+        "Sex": "Female",
     }
 
     blocking_key = _compute_blocking_key(person_attributes)
@@ -74,11 +69,11 @@ def test_provider_uses_ml1_token_identifier():
 def test_build_ml1_payload_normalizes_fields_in_definition_order():
     """ML1 payloads should normalize values and preserve the model field order."""
     person_attributes = {
-        PostalCodeAttribute: "95123",
-        BirthDateAttribute: "1990-07-09",
-        FirstNameAttribute: " Alice ",
-        LastNameAttribute: " Smith ",
-        SexAttribute: "female",
+        "PostalCode": "95123",
+        "BirthDate": "1990-07-09",
+        "FirstName": " Alice ",
+        "LastName": " Smith ",
+        "Sex": "female",
     }
     result = TokenGeneratorResult()
 
@@ -94,34 +89,34 @@ def test_build_ml1_payload_normalizes_fields_in_definition_order():
 def test_build_ml1_payload_records_missing_required_field():
     """Missing required ML1 fields should produce no payload and record the field."""
     person_attributes = {
-        PostalCodeAttribute: "95123",
-        BirthDateAttribute: "1990-07-09",
-        FirstNameAttribute: "Alice",
-        LastNameAttribute: "Smith",
+        "PostalCode": "95123",
+        "BirthDate": "1990-07-09",
+        "FirstName": "Alice",
+        "LastName": "Smith",
     }
     result = TokenGeneratorResult()
 
     payload = ML1OnnxSignatureProvider().build_ml1_payload(person_attributes, result)
 
     assert payload is None
-    assert result.invalid_attributes == {SexAttribute.__name__}
+    assert result.invalid_attributes == {"Sex"}
 
 
 def test_build_ml1_payload_records_invalid_field():
     """Invalid required ML1 fields should produce no payload and record the field."""
     person_attributes = {
-        PostalCodeAttribute: "95123",
-        BirthDateAttribute: "1990-07-09",
-        FirstNameAttribute: "Alice",
-        LastNameAttribute: "Smith",
-        SexAttribute: "unknown",
+        "PostalCode": "95123",
+        "BirthDate": "1990-07-09",
+        "FirstName": "Alice",
+        "LastName": "Smith",
+        "Sex": "unknown",
     }
     result = TokenGeneratorResult()
 
     payload = ML1OnnxSignatureProvider().build_ml1_payload(person_attributes, result)
 
     assert payload is None
-    assert result.invalid_attributes == {SexAttribute.__name__}
+    assert result.invalid_attributes == {"Sex"}
 
 
 @pytest.mark.parametrize("enabled", [True, False])

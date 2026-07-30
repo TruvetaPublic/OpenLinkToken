@@ -5,9 +5,8 @@ from __future__ import annotations
 import hashlib
 import logging
 from threading import Lock
-from typing import ClassVar, Dict, List, Optional, Type
+from typing import ClassVar, Dict, List, Optional
 
-from openlinktoken.attributes.attribute import Attribute
 from openlinktoken.attributes.person.birth_date_attribute import BirthDateAttribute
 from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute
 from openlinktoken.attributes.person.last_name_attribute import LastNameAttribute
@@ -35,7 +34,7 @@ _T1_DEFINITION = T1Token().get_definition()
 _T1_ATTRIBUTE_INSTANCES = {expr.attribute_class: expr.attribute_class() for expr in _T1_DEFINITION}
 
 
-def _compute_t1_signature(person_attributes: Dict[Type[Attribute], str]) -> Optional[str]:
+def _compute_t1_signature(person_attributes: Dict[str, str]) -> Optional[str]:
     """Compute the raw (pre-transformer) T1 signature from person attributes.
 
     Applies the same attribute-expression pipeline as the T1 token definition:
@@ -45,10 +44,10 @@ def _compute_t1_signature(person_attributes: Dict[Type[Attribute], str]) -> Opti
     values = []
     for attr_expr in _T1_DEFINITION:
         attr_cls = attr_expr.attribute_class
-        raw = person_attributes.get(attr_cls)
+        attr = _T1_ATTRIBUTE_INSTANCES[attr_cls]
+        raw = person_attributes.get(attr.get_name())
         if not raw:
             return None
-        attr = _T1_ATTRIBUTE_INSTANCES[attr_cls]
         if not attr.validate(raw):
             return None
         normalized = attr.normalize(raw)
@@ -62,7 +61,7 @@ def _compute_t1_signature(person_attributes: Dict[Type[Attribute], str]) -> Opti
 
 
 def _compute_blocking_key(
-    person_attributes: Dict[Type[Attribute], str],
+    person_attributes: Dict[str, str],
 ) -> Optional[str]:
     """Compute the SHA-256 T1 blocking key used by PersonMatching rotations."""
     t1_signature = _compute_t1_signature(person_attributes)
@@ -99,15 +98,15 @@ def _build_rotation_signature(rotation_values: List[str], blocking_key: Optional
 # Ordered field name mapping for ML1 payload.
 # Order matches generate_embeddings.py: PostalCode, Birthdate, GivenName, Surname, Gender.
 _ML1_FIELDS = [
-    (PostalCodeAttribute, "PostalCode"),
-    (BirthDateAttribute, "Birthdate"),
-    (FirstNameAttribute, "GivenName"),
-    (LastNameAttribute, "Surname"),
-    (SexAttribute, "Gender"),
+    ("PostalCode", "PostalCode", PostalCodeAttribute),
+    ("BirthDate", "Birthdate", BirthDateAttribute),
+    ("FirstName", "GivenName", FirstNameAttribute),
+    ("LastName", "Surname", LastNameAttribute),
+    ("Sex", "Gender", SexAttribute),
 ]
 
 # Pre-built attribute instances for ML1 validation and normalization — reused across all calls.
-_ML1_ATTRIBUTE_INSTANCES = {attr_cls: attr_cls() for attr_cls, _ in _ML1_FIELDS}
+_ML1_ATTRIBUTE_INSTANCES = {attr_cls: attr_cls() for _, _, attr_cls in _ML1_FIELDS}
 
 
 class ML1OnnxSignatureProvider:
@@ -146,7 +145,7 @@ class ML1OnnxSignatureProvider:
                     )
         return cls._rotation_transformer
 
-    def generate_signature(self, person_attributes: Dict[Type[Attribute], str]) -> Optional[str]:
+    def generate_signature(self, person_attributes: Dict[str, str]) -> Optional[str]:
         """Generate a single ML1 signature via ONNX inference.
 
         Pipeline: ONNX embed → rotate → quantize → SHA-256 hash with T1 signature.
@@ -169,7 +168,7 @@ class ML1OnnxSignatureProvider:
             logger.error("Error generating ML1 signature", exc_info=error)
             return None
 
-    def generate_batch(self, rows: List[Dict[Type[Attribute], str]]) -> InferenceBatchResult:
+    def generate_batch(self, rows: List[Dict[str, str]]) -> InferenceBatchResult:
         """Generate ML1 signatures for a batch of records.
 
         Pipeline per record: ONNX embed → rotate → quantize → SHA-256 hash with T1 signature.
@@ -210,7 +209,7 @@ class ML1OnnxSignatureProvider:
 
     def build_ml1_payload(
         self,
-        person_attributes: Dict[Type[Attribute], str],
+        person_attributes: Dict[str, str],
         result: TokenGeneratorResult,
     ) -> Optional[str]:
         """Build the deterministic JSON payload for ML1 inference.
@@ -219,18 +218,18 @@ class ML1OnnxSignatureProvider:
         Field order: PostalCode, Birthdate, GivenName, Surname, Gender.
         """
         payload: Dict[str, str] = {}
-        for attr_cls, field_name in _ML1_FIELDS:
-            value = person_attributes.get(attr_cls)
+        for field_id, field_name, attr_cls in _ML1_FIELDS:
+            value = person_attributes.get(field_id)
             if not value:
-                result.invalid_attributes.add(attr_cls.__name__)
+                result.invalid_attributes.add(field_id)
                 return None
             attr = _ML1_ATTRIBUTE_INSTANCES[attr_cls]
             if not attr.validate(value):
-                result.invalid_attributes.add(attr_cls.__name__)
+                result.invalid_attributes.add(field_id)
                 return None
             normalized = attr.normalize(value)
             if not normalized:
-                result.invalid_attributes.add(attr_cls.__name__)
+                result.invalid_attributes.add(field_id)
                 return None
             payload[field_name] = normalized
         return ml1_payload_to_json(payload)

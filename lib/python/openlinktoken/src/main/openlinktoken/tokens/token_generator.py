@@ -104,19 +104,13 @@ class TokenGenerator:
         Returns:
             The token signature using the token definition for the given token identifier.
         """
-        provider = _get_inference_provider()
-        if provider is not None and provider.get_token_id() == token_id and provider.is_enabled():
-            try:
-                return provider.generate_signature(person_attributes)
-            except Exception as error:
-                logger.error("Error generating token signature for token id: %s", token_id, exc_info=error)
-                return None
-
-        definition = self.token_definition.get_token_definition(token_id)
-
         if person_attributes is None:
             raise ValueError("Person attributes cannot be null.")
 
+        if self._has_active_inference_provider(token_id):
+            return self._get_inference_signature(token_id, self._to_field_id_map(person_attributes))
+
+        definition = self.token_definition.get_token_definition(token_id)
         if definition is None or not definition:
             return None
 
@@ -189,25 +183,14 @@ class TokenGenerator:
         logger.debug(f"Token signature for token id {token_id}: {signature}")
 
         definition = self.token_definition.get_token_definition(token_id)
-        provider = _get_inference_provider()
-        token_has_active_provider = (
-            provider is not None and provider.get_token_id() == token_id and provider.is_enabled()
-        )
+        token_has_active_provider = self._has_active_inference_provider(token_id)
 
         # Inference-only tokens (empty definition, no active provider) produce no output by design;
         # skip tokenizing entirely rather than recording a spurious blank.
         if not definition and not token_has_active_provider:
             return None
 
-        try:
-            token = self.tokenizer.tokenize(signature)
-            # Track blank tokens by rule
-            if Token.BLANK == token:
-                result.blank_tokens_by_rule.add(token_id)
-            return token
-        except Exception as e:
-            logger.error(f"Error generating token for token id: {token_id}", exc_info=e)
-            raise TokenGenerationException("Error generating token", e)
+        return self._tokenize_signature(token_id, signature, result)
 
     def get_all_tokens(self, person_attributes: Dict[Type[Attribute], str]) -> TokenGeneratorResult:
         """
@@ -366,11 +349,13 @@ class TokenGenerator:
         Returns:
             The token signature, or None if required fields are missing or invalid.
         """
-        definition = self.token_definition.get_token_definition(token_id)
-
         if person_attributes is None:
             raise ValueError("Person attributes cannot be null.")
 
+        if self._has_active_inference_provider(token_id):
+            return self._get_inference_signature(token_id, person_attributes)
+
+        definition = self.token_definition.get_token_definition(token_id)
         if not definition:
             return None
 
@@ -420,18 +405,14 @@ class TokenGenerator:
 
         for token_id in self.token_definition.get_token_identifiers():
             try:
-                if not self.token_definition.get_token_definition(token_id):
+                definition = self.token_definition.get_token_definition(token_id)
+                if not definition and not self._has_active_inference_provider(token_id):
                     continue
                 signature = self._get_token_signature_via_field_id(token_id, person_attributes, result)
                 logger.debug(f"Token signature for token id {token_id}: {signature}")
-                try:
-                    token = self.tokenizer.tokenize(signature)
-                    if Token.BLANK == token:
-                        result.blank_tokens_by_rule.add(token_id)
-                    if token is not None:
-                        result.tokens[token_id] = token
-                except Exception as e:
-                    logger.error(f"Error generating token for token id: {token_id}", exc_info=e)
+                token = self._tokenize_signature(token_id, signature, result)
+                if token is not None:
+                    result.tokens[token_id] = token
             except Exception as e:
                 logger.error(f"Error generating token for token id: {token_id}", exc_info=e)
 
@@ -458,6 +439,50 @@ class TokenGenerator:
                 logger.error(f"Error generating token signature for token id: {token_id}", exc_info=e)
 
         return signatures
+
+    @staticmethod
+    def _has_active_provider_for_token(token_id: str, provider: Optional[InferenceSignatureProvider]) -> bool:
+        return provider is not None and provider.get_token_id() == token_id and provider.is_enabled()
+
+    def _has_active_inference_provider(self, token_id: str) -> bool:
+        return self._has_active_provider_for_token(token_id, _get_inference_provider())
+
+    def _get_inference_signature(self, token_id: str, person_attributes: Dict[str, str]) -> Optional[str]:
+        provider = _get_inference_provider()
+        if not self._has_active_provider_for_token(token_id, provider):
+            return None
+        try:
+            return provider.generate_signature(person_attributes)
+        except Exception as error:
+            logger.error("Error generating token signature for token id: %s", token_id, exc_info=error)
+            return None
+
+    def _tokenize_signature(
+        self, token_id: str, signature: Optional[str], result: TokenGeneratorResult
+    ) -> Optional[str]:
+        try:
+            if self._has_active_inference_provider(token_id):
+                transformers = [
+                    transformer
+                    for transformer in self.tokenizer.get_token_transformer_list()
+                    if not isinstance(transformer, HashTokenTransformer)
+                ]
+                token = PassthroughTokenizer(transformers).tokenize(signature)
+            else:
+                token = self.tokenizer.tokenize(signature)
+            if Token.BLANK == token:
+                result.blank_tokens_by_rule.add(token_id)
+            return token
+        except Exception as error:
+            logger.error("Error generating token for token id: %s", token_id, exc_info=error)
+            raise TokenGenerationException("Error generating token", error)
+
+    def _to_field_id_map(self, person_attributes: Dict[Type[Attribute], str]) -> Dict[str, str]:
+        return {
+            attribute.get_name(): value
+            for attribute_class, value in person_attributes.items()
+            if (attribute := self.attribute_instance_map.get(attribute_class)) is not None
+        }
 
     def _resolve_field_id(self, expression) -> Optional[str]:
         """Resolve the effective field ID from an AttributeExpression."""
