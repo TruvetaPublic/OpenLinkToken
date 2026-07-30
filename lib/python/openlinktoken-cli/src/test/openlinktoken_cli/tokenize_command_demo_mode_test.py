@@ -84,6 +84,7 @@ class TestTokenizeCommandDemoMode:
             str(temp_dir / "output.csv"),
             "--mode",
             "demo",
+            "--disable-inferencing",
         ]
         exit_code = OpenLinkTokenCommand.execute(args)
         assert exit_code == 0
@@ -122,6 +123,7 @@ class TestTokenizeCommandDemoMode:
                 "output.csv",
                 "--mode",
                 "demo",
+                "--disable-inferencing",
             ]
         )
 
@@ -144,6 +146,7 @@ class TestTokenizeCommandDemoMode:
                 "output.parquet",
                 "--mode",
                 "demo",
+                "--disable-inferencing",
             ]
         )
 
@@ -185,6 +188,7 @@ class TestTokenizeCommandDemoMode:
             str(exchange_config),
             "--private-key",
             str(private_key),
+            "--disable-inferencing",
         ]
         exit_code = OpenLinkTokenCommand.execute(args)
         assert exit_code == 0
@@ -221,6 +225,7 @@ class TestTokenizeCommandDemoMode:
             str(exchange_config),
             "--private-key",
             str(private_key),
+            "--disable-inferencing",
         ]
         exit_code = OpenLinkTokenCommand.execute(args)
         assert exit_code == 0
@@ -284,6 +289,7 @@ class TestTokenizeCommandDemoMode:
                 str(output_csv),
                 "--mode",
                 "demo",
+                "--disable-inferencing",
             ]
         )
 
@@ -316,6 +322,7 @@ class TestTokenizeCommandDemoMode:
                 str(exchange_config),
                 "--private-key",
                 str(private_key),
+                "--disable-inferencing",
             ]
         )
 
@@ -342,6 +349,7 @@ class TestTokenizeCommandDemoMode:
                 str(demo_output),
                 "--mode",
                 "demo",
+                "--disable-inferencing",
             ]
         )
         OpenLinkTokenCommand.execute(
@@ -357,6 +365,7 @@ class TestTokenizeCommandDemoMode:
                 str(exchange_config),
                 "--private-key",
                 str(private_key),
+                "--disable-inferencing",
             ]
         )
 
@@ -377,6 +386,7 @@ class TestTokenizeCommandDemoMode:
                 str(temp_dir / "output.csv"),
                 "--mode",
                 "demo",
+                "--disable-inferencing",
             ]
         )
 
@@ -399,6 +409,7 @@ class TestTokenizeCommandDemoMode:
                 str(exchange_config),
                 "--private-key",
                 str(private_key),
+                "--disable-inferencing",
             ]
         )
 
@@ -416,6 +427,7 @@ class TestTokenizeCommandDemoMode:
                 str(temp_dir / "output.csv"),
                 "--mode",
                 "demo",
+                "--disable-inferencing",
             ]
         )
 
