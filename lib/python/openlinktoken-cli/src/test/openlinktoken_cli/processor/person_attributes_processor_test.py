@@ -7,12 +7,16 @@ from openlinktoken.metadata import Metadata
 from openlinktoken.tokens.inference_signature_provider import InferenceBatchResult
 from openlinktoken.tokens.token_definition import TokenDefinition
 from openlinktoken.tokens.token_generator import TokenGenerator
+from openlinktoken.tokens.token_generator_result import TokenGeneratorResult
 from openlinktoken.tokens.tokenizer.passthrough_tokenizer import PassthroughTokenizer
 from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 from openlinktoken.tokentransformer.token_transformer import TokenTransformer
 from openlinktoken_cli.io.person_attributes_reader import PersonAttributesReader
 from openlinktoken_cli.io.person_attributes_writer import PersonAttributesWriter
-from openlinktoken_cli.processor.person_attributes_processor import PersonAttributesProcessor
+from openlinktoken_cli.processor.person_attributes_processor import (
+    PersonAttributesProcessor,
+    _PendingRow,
+)
 from openlinktoken_cli.tokens.config.configured_attribute_resolver import ConfiguredAttributeResolver
 from openlinktoken_cli.tokens.config.dynamic_token_definition import DynamicTokenDefinition
 from openlinktoken_cli.tokens.config.tokenization_config import (
@@ -69,6 +73,42 @@ class TestPersonAttributesProcessor:
 
         assert provider.single_calls == 0
         assert provider.batch_calls == 1
+
+    def test_flush_pending_rows_uses_precomputed_ml1_signatures(self, monkeypatch):
+        """Flushing applies supplied ML1 signatures without performing inference."""
+
+        def fail_provider_lookup():
+            raise AssertionError("flush must not discover or invoke the inference provider")
+
+        monkeypatch.setattr(TokenGenerator, "get_inference_provider", fail_provider_lookup)
+
+        token_generator = Mock(spec=TokenGenerator)
+        token_generator_result = TokenGeneratorResult()
+        pending_rows = [
+            _PendingRow(
+                row={"RecordId": "row-1"},
+                row_counter=1,
+                token_generator_result=token_generator_result,
+            )
+        ]
+
+        PersonAttributesProcessor._flush_pending_rows(
+            writer=Mock(spec=PersonAttributesWriter),
+            token_generator=token_generator,
+            invalid_attribute_count={},
+            blank_tokens_by_rule_count={},
+            encryption_key=None,
+            ring_id=None,
+            jwe_formatters={},
+            pending_rows=pending_rows,
+            ml1_signatures=["precomputed-signature"],
+        )
+
+        token_generator.store_raw_token.assert_called_once_with(
+            token_generator_result,
+            "ML1",
+            "precomputed-signature",
+        )
 
     def test_process_happy_path(self):
         """Test process happy path."""

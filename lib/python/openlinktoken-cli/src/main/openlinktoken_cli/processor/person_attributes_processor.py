@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import uuid
 from dataclasses import dataclass
-from typing import Any, Dict, List, Set, Type
+from typing import Any, Dict, List, Optional, Set, Type
 
 from openlinktoken.attributes.attribute import Attribute
 from openlinktoken.attributes.general.record_id_attribute import RecordIdAttribute
@@ -445,6 +445,7 @@ class PersonAttributesProcessor:
             )
 
             if len(pending_rows) >= ml1_batch_size:
+                ml1_signatures = PersonAttributesProcessor._infer_ml1_batch(pending_rows)
                 PersonAttributesProcessor._flush_pending_rows(
                     writer,
                     token_generator,
@@ -454,6 +455,7 @@ class PersonAttributesProcessor:
                     ring_id,
                     jwe_formatters,
                     pending_rows,
+                    ml1_signatures,
                     hash_record_ids,
                 )
 
@@ -464,6 +466,7 @@ class PersonAttributesProcessor:
                     progress_callback(row_counter)
 
         if pending_rows:
+            ml1_signatures = PersonAttributesProcessor._infer_ml1_batch(pending_rows)
             PersonAttributesProcessor._flush_pending_rows(
                 writer,
                 token_generator,
@@ -473,6 +476,7 @@ class PersonAttributesProcessor:
                 ring_id,
                 jwe_formatters,
                 pending_rows,
+                ml1_signatures,
                 hash_record_ids,
             )
 
@@ -480,6 +484,20 @@ class PersonAttributesProcessor:
             progress_callback(row_counter)
 
         return row_counter
+
+    @staticmethod
+    def _infer_ml1_batch(pending_rows: List[_PendingRow]) -> List[Optional[str]]:
+        """Generate ML1 signatures for pending rows without writing output."""
+        signatures: List[Optional[str]] = [None] * len(pending_rows)
+        inference_provider = TokenGenerator.get_inference_provider()
+        if inference_provider is None or not inference_provider.is_enabled():
+            return signatures
+
+        rows = [pending_row.row for pending_row in pending_rows]
+        batch_result = inference_provider.generate_batch(rows)
+        return [
+            batch_result.signatures[i] if i < len(batch_result.signatures) else None for i in range(len(pending_rows))
+        ]
 
     @staticmethod
     def _flush_pending_rows(
@@ -491,30 +509,18 @@ class PersonAttributesProcessor:
         ring_id: str,
         jwe_formatters: Dict[str, JweMatchTokenFormatter],
         pending_rows: List[_PendingRow],
+        ml1_signatures: List[Optional[str]],
         hash_record_ids: bool = False,
     ) -> None:
-        """Run batched ML1 inference for queued rows and emit final tokens.
-
-        ML1 signatures now contain comma-separated rotation-quantized values
-        (produced inside ML1OnnxSignatureProvider); no separate ML1-R rows are emitted.
-        """
-        ml1_signatures: List = [None] * len(pending_rows)
-
-        inference_provider = TokenGenerator.get_inference_provider()
-        inference_was_invoked = inference_provider is not None and inference_provider.is_enabled()
-        if inference_was_invoked:
-            rows = [pending_row.row for pending_row in pending_rows]
-            batch_result = inference_provider.generate_batch(rows)
-            ml1_signatures = batch_result.signatures
-
+        """Apply ML1 results, update statistics, and write pending rows."""
         for i, pending_row in enumerate(pending_rows):
-            # Only store ML1 when inference was actually invoked; if the provider is unavailable,
-            # it produces no output rather than recording a spurious blank.
-            if inference_was_invoked:
-                ml1_signature = ml1_signatures[i] if i < len(ml1_signatures) else None
-                if ml1_signature:
-                    # ML1 is already HMAC-hashed internally; bypass the tokenizer/transformer chain.
-                    token_generator.store_raw_token(pending_row.token_generator_result, "ML1", ml1_signature)
+            ml1_signature = ml1_signatures[i] if i < len(ml1_signatures) else None
+            if ml1_signature:
+                token_generator.store_raw_token(
+                    pending_row.token_generator_result,
+                    "ML1",
+                    ml1_signature,
+                )
 
             PersonAttributesProcessor._keep_track_of_invalid_attributes(
                 pending_row.token_generator_result,
