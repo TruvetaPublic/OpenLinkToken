@@ -435,9 +435,7 @@ class PersonAttributesProcessor:
 
         for row in reader:
             row_counter += 1
-            token_generator_result = token_generator.get_all_tokens_via_field_id(row)
-            token_generator_result.tokens.pop("ML1", None)
-            token_generator_result.blank_tokens_by_rule.discard("ML1")
+            token_generator_result = token_generator.generate_tokens_excluding_via_field_id(row, {"ML1"})
             pending_rows.append(
                 _PendingRow(
                     row=row,

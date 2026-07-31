@@ -2,8 +2,12 @@
 
 from unittest.mock import Mock
 
+import openlinktoken.tokens.token_generator as token_generator_module
 from openlinktoken.metadata import Metadata
+from openlinktoken.tokens.inference_signature_provider import InferenceBatchResult
 from openlinktoken.tokens.token_definition import TokenDefinition
+from openlinktoken.tokens.token_generator import TokenGenerator
+from openlinktoken.tokens.tokenizer.passthrough_tokenizer import PassthroughTokenizer
 from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 from openlinktoken.tokentransformer.token_transformer import TokenTransformer
 from openlinktoken_cli.io.person_attributes_reader import PersonAttributesReader
@@ -20,6 +24,51 @@ from openlinktoken_cli.tokens.config.tokenization_config import (
 
 class TestPersonAttributesProcessor:
     """Test cases for PersonAttributesProcessor."""
+
+    def test_batched_ml1_does_not_run_single_row_inference(self, monkeypatch):
+        """Batched ML1 processing invokes only the provider batch API."""
+
+        class CountingProvider:
+            def __init__(self):
+                self.single_calls = 0
+                self.batch_calls = 0
+
+            def get_token_id(self):
+                return "ML1"
+
+            def is_enabled(self):
+                return True
+
+            def generate_signature(self, row):
+                self.single_calls += 1
+                return "single"
+
+            def generate_batch(self, rows):
+                self.batch_calls += 1
+                return InferenceBatchResult(["batch"] * len(rows))
+
+        provider = CountingProvider()
+        monkeypatch.setattr(token_generator_module, "_inference_provider", provider)
+        monkeypatch.setattr(token_generator_module, "_provider_discovered", True)
+
+        definition = Mock()
+        definition.get_token_identifiers.return_value = {"ML1"}
+        definition.get_token_definition.return_value = []
+        token_generator = TokenGenerator(definition, PassthroughTokenizer([]))
+
+        PersonAttributesProcessor._process_rows_with_batched_ml1(
+            [{"LastName": "Smith"}],
+            Mock(spec=PersonAttributesWriter),
+            token_generator,
+            {},
+            {},
+            None,
+            None,
+            {},
+        )
+
+        assert provider.single_calls == 0
+        assert provider.batch_calls == 1
 
     def test_process_happy_path(self):
         """Test process happy path."""

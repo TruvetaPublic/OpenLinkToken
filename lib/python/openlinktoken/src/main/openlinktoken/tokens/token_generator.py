@@ -401,9 +401,27 @@ class TokenGenerator:
         Returns:
             A TokenGeneratorResult object containing the tokens and invalid attributes.
         """
+        return self.generate_tokens_excluding_via_field_id(person_attributes, set())
+
+    def generate_tokens_excluding_via_field_id(
+        self,
+        person_attributes: Dict[str, str],
+        excluded_token_ids: Set[str],
+    ) -> TokenGeneratorResult:
+        """Get field-ID tokens while skipping the requested token identifiers.
+
+        Args:
+            person_attributes: Person attributes keyed by field ID.
+            excluded_token_ids: Token identifiers to omit before signature generation.
+
+        Returns:
+            A TokenGeneratorResult object containing the generated tokens and invalid attributes.
+        """
         result = TokenGeneratorResult()
 
         for token_id in self.token_definition.get_token_identifiers():
+            if token_id in excluded_token_ids:
+                continue
             try:
                 definition = self.token_definition.get_token_definition(token_id)
                 if not definition and not self._has_active_inference_provider(token_id):

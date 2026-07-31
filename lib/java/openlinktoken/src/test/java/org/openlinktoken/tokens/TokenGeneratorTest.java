@@ -128,6 +128,21 @@ class TokenGeneratorTest {
     }
 
     @Test
+    void testFieldIdExclusionSkipsInferenceProvider() throws Exception {
+        when(tokenDefinition.getTokenIdentifiers()).thenReturn(Set.of("ML1", "token1"));
+        when(tokenDefinition.getTokenDefinition("ML1")).thenReturn(List.of());
+        when(tokenDefinition.getTokenDefinition("token1"))
+                .thenReturn(List.of(new AttributeExpression(FirstNameAttribute.class, "U")));
+        when(tokenizer.tokenize(anyString())).thenReturn("ordinary-token");
+
+        var result = tokenGenerator.generateTokensExcludingViaFieldId(
+                Map.of("FirstName", "John"),
+                Set.of("ML1"));
+
+        assertEquals(Map.of("token1", "ordinary-token"), result.getTokens());
+    }
+
+    @Test
     void testFieldIdInferenceProviderTracksBlank() throws Exception {
         when(tokenDefinition.getTokenIdentifiers()).thenReturn(Set.of("ML1"));
         when(tokenDefinition.getTokenDefinition("ML1")).thenReturn(List.of());

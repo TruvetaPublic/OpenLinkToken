@@ -495,9 +495,26 @@ public class TokenGenerator implements Serializable {
      * @return A {@link TokenGeneratorResult} object containing the tokens and invalid attributes.
      */
     public TokenGeneratorResult getAllTokensViaFieldId(Map<String, String> personAttributes) {
+        return generateTokensExcludingViaFieldId(personAttributes, Set.of());
+    }
+
+    /**
+     * Get field-ID-based tokens while excluding selected token/rule identifiers.
+     *
+     * @param personAttributes  person attributes keyed by field ID (e.g., "LastName" → "Smith").
+     * @param excludedTokenIds  token identifiers to skip before signature generation.
+     *
+     * @return a {@link TokenGeneratorResult} containing generated tokens and invalid attributes.
+     */
+    public TokenGeneratorResult generateTokensExcludingViaFieldId(
+            Map<String, String> personAttributes,
+            Set<String> excludedTokenIds) {
         TokenGeneratorResult result = new TokenGeneratorResult();
 
         for (String tokenId : tokenDefinition.getTokenIdentifiers()) {
+            if (excludedTokenIds.contains(tokenId)) {
+                continue;
+            }
             try {
                 var definition = tokenDefinition.getTokenDefinition(tokenId);
                 if ((definition == null || definition.isEmpty()) && !hasActiveInferenceProvider(tokenId)) {

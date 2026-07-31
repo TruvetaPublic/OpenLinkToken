@@ -404,6 +404,34 @@ class TestTokenGenerator:
         assert result.tokens == {"ML1": "Smith-provider"}
         assert result.blank_tokens_by_rule == set()
 
+    def test_generate_tokens_excluding_via_field_id_skips_inference_token(self):
+        """Field-ID exclusion skips provider dispatch while retaining ordinary tokens."""
+
+        class Provider:
+            def get_token_id(self):
+                return "ML1"
+
+            def is_enabled(self):
+                return True
+
+            def generate_signature(self, person_attributes):
+                raise AssertionError("excluded provider must not be called")
+
+        token_generator_module._inference_provider = Provider()
+        token_generator_module._provider_discovered = True
+        self.token_definition.get_token_identifiers.return_value = {"token1", "ML1"}
+        self.token_definition.get_token_definition.side_effect = lambda token_id: (
+            [AttributeExpression(FirstNameAttribute, "U")] if token_id == "token1" else []
+        )
+        self.tokenizer.tokenize.return_value = "ordinary-token"
+
+        result = self.token_generator.generate_tokens_excluding_via_field_id(
+            {"FirstName": "John"},
+            {"ML1"},
+        )
+
+        assert result.tokens == {"token1": "ordinary-token"}
+
     def test_inference_provider_skips_hashing_and_tracks_blank(self):
         """Provider signatures bypass hashing while missing values become tracked blanks."""
 
