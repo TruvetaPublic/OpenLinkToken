@@ -11,7 +11,7 @@ THIS_DIR = os.path.abspath(os.path.dirname(__file__))
 
 # Shared inferencing assets live here (single source of truth alongside the Java resources)
 INFERENCING_ASSETS_SRC = os.path.abspath(os.path.join(THIS_DIR, "../../../resources/inferencing/ml1"))
-INFERENCING_ASSETS = ["model.onnx", "model.onnx.data", "tokenizer.json", "vocab.txt"]
+INFERENCING_ASSETS = ["model.onnx", "model.onnx.data", "tokenizer.json"]
 
 # Target: openlinktoken/core/ai/tokens inside the built package tree
 INFERENCING_ASSETS_PKG = os.path.join("openlinktoken", "core", "ai", "tokens")
