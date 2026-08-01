@@ -102,6 +102,69 @@ space-separated string such as:
 99 100 100 101
 ```
 
+## Generating an Embedding Bias
+
+The embedding bias is the component-wise median of a sample of valid model
+embeddings. ML1 subtracts this vector before rotation, so its length must match
+the model embedding dimension (1024 for the bundled model).
+
+The repository provides separate scripts for generating the unrotated model
+embeddings and calculating the bias:
+
+- [`tools/ml1/generate_embeddings.py`](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/tools/ml1/generate_embeddings.py)
+  loads `model.onnx` and `tokenizer.json` directly, normalizes the required
+  person fields, and writes raw CLS embeddings to a NumPy `.npy` file.
+- [`tools/ml1/calculate_embedding_bias.py`](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/tools/ml1/calculate_embedding_bias.py)
+  calculates the component-wise median and writes a flat JSON bias file.
+
+The embedding generator accepts one JSON object per line with the fields
+required by ML1:
+
+```json
+{
+  "PostalCode": "90210",
+  "BirthDate": "1988-03-22",
+  "FirstName": "Maria",
+  "LastName": "Garcia",
+  "Sex": "F"
+}
+```
+
+Generate the raw embeddings using the bundled model and tokenizer:
+
+```bash
+python tools/ml1/generate_embeddings.py \
+  --input records.jsonl \
+  --output embeddings.npy
+```
+
+The script defaults to
+`resources/inferencing/ml1/model.onnx` and
+`resources/inferencing/ml1/tokenizer.json`. Use `--model` and `--tokenizer` to
+reference another matched model/tokenizer pair. The output contains raw,
+unrotated, unquantized 1024-dimensional CLS embeddings.
+
+Calculate the bias from those embeddings:
+
+```bash
+python tools/ml1/calculate_embedding_bias.py \
+  --input embeddings.npy \
+  --output bias.json
+```
+
+The bias script validates the embedding dimension, samples up to 100,000
+vectors by default, and writes a flat JSON array. Use `--sample-size` and
+`--seed` to control sampling. The resulting `bias.json` can be supplied with
+[`--rotation-embedding-bias`](../reference/cli.md#initiate-exchange).
+
+PersonMatching's `generate_rotation_matrices` mode performs the same
+calculation from the `PersonMatch-Embeddings` table: it keeps non-null vectors
+with the expected dimension, samples up to 100,000 rows by default, computes
+the component-wise median, and writes `dimension_bias.json` alongside the
+rotation artifacts. A bias is not a secret and does not provide
+de-identification by itself; it is a centering parameter used by the rotation
+pipeline.
+
 ### Deterministic Rotation Matrices
 
 For each proper rotation, the matrix generator performs the following steps:

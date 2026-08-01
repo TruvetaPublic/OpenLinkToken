@@ -163,29 +163,6 @@ class TokenizeCommand:
         )
 
         parser.add_argument(
-            "--ml1-model-path",
-            dest="ml1_model_path",
-            default=ML1InferenceConfig.DEFAULT_MODEL_PATH,
-            help=f"Path to ML1 ONNX model (default: {ML1InferenceConfig.DEFAULT_MODEL_PATH})",
-        )
-
-        parser.add_argument(
-            "--ml1-tokenizer-path",
-            dest="ml1_tokenizer_path",
-            default=ML1InferenceConfig.DEFAULT_TOKENIZER_PATH,
-            help=f"Path to ML1 tokenizer JSON (default: {ML1InferenceConfig.DEFAULT_TOKENIZER_PATH})",
-        )
-
-        parser.add_argument(
-            "--ml1-max-seq-length",
-            "--ml1-max-sequence-length",
-            dest="ml1_max_sequence_length",
-            type=int,
-            default=ML1InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH,
-            help="Maximum ML1 tokenizer sequence length (default: 128)",
-        )
-
-        parser.add_argument(
             "--inferencing-batch-size",
             dest="inferencing_batch_size",
             type=int,
@@ -201,13 +178,6 @@ class TokenizeCommand:
             help="ORT intra/inter-op thread count for ML1 inference (default: auto-detect)",
         )
 
-        parser.add_argument(
-            "--rotation-iv",
-            dest="rotation_iv",
-            default=None,
-            metavar="STRING",
-            help="Initialization vector for rotation-based ML1-R* token generation.",
-        )
         # --no-progress / -q: suppress interactive progress indicator
         parser.add_argument(
             "--no-progress",
@@ -246,17 +216,13 @@ class TokenizeCommand:
             configured_num_threads = ML1InferenceConfig.DEFAULT_NUM_THREADS
         ML1InferenceConfig.configure(
             enable_ml1=ml1_enabled,
-            configured_model_path=getattr(args, "ml1_model_path", ML1InferenceConfig.DEFAULT_MODEL_PATH),
-            configured_tokenizer_path=getattr(args, "ml1_tokenizer_path", ML1InferenceConfig.DEFAULT_TOKENIZER_PATH),
-            configured_max_sequence_length=getattr(
-                args, "ml1_max_sequence_length", ML1InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH
-            ),
+            configured_model_path=ML1InferenceConfig.DEFAULT_MODEL_PATH,
+            configured_tokenizer_path=ML1InferenceConfig.DEFAULT_TOKENIZER_PATH,
+            configured_max_sequence_length=ML1InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH,
             configured_batch_size=getattr(args, "inferencing_batch_size", ML1InferenceConfig.DEFAULT_BATCH_SIZE),
             configured_num_threads=configured_num_threads,
         )
         num_threads = getattr(args, "inferencing_num_threads", None)
-
-        rotation_iv = getattr(args, "rotation_iv", None)
 
         if mode == TokenizeCommand._MODE_DEMO and hash_record_ids:
             logger.error("--mode demo cannot be combined with --hash-record-ids.")
@@ -299,9 +265,9 @@ class TokenizeCommand:
                         "ML1 ONNX inference: enabled=%s, modelPath=%s, tokenizerPath=%s, "
                         "maxSequenceLength=%s, batchSize=%s, numThreads=%s",
                         ml1_enabled,
-                        getattr(args, "ml1_model_path", ML1InferenceConfig.DEFAULT_MODEL_PATH),
-                        getattr(args, "ml1_tokenizer_path", ML1InferenceConfig.DEFAULT_TOKENIZER_PATH),
-                        getattr(args, "ml1_max_sequence_length", ML1InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH),
+                        ML1InferenceConfig.get_model_path(),
+                        ML1InferenceConfig.get_tokenizer_path(),
+                        ML1InferenceConfig.get_max_sequence_length(),
                         getattr(args, "inferencing_batch_size", ML1InferenceConfig.DEFAULT_BATCH_SIZE),
                         num_threads if num_threads and num_threads > 0 else "auto",
                     )
@@ -327,9 +293,7 @@ class TokenizeCommand:
                                 private_key_env=args.private_key_env,
                             )
                             logger.info(f"Exchange config: {exchange.path}")
-                            TokenizeCommand._configure_rotation(exchange, rotation_iv)
-                        elif rotation_iv is not None:
-                            RotationConfig.configure(enable=True, rotation_iv=rotation_iv)
+                            TokenizeCommand._configure_rotation(exchange)
                         logger.info(
                             "Rotation token generation: enabled=%s, iv=%s, count=%s, hashDimension=%s, binWidth=%s",
                             RotationConfig.is_enabled(),
@@ -356,7 +320,7 @@ class TokenizeCommand:
                                 private_key_env=args.private_key_env,
                             )
                             logger.info(f"Exchange config: {exchange.path}")
-                            TokenizeCommand._configure_rotation(exchange, rotation_iv)
+                            TokenizeCommand._configure_rotation(exchange)
                         reporter.update_status("Tokenizing records")
                         summary, metadata_path = TokenizeCommand._process_tokens_hash_only(
                             args.input_path,
@@ -376,7 +340,7 @@ class TokenizeCommand:
                         )
                         logger.info(f"Exchange config: {exchange.path}")
 
-                        TokenizeCommand._configure_rotation(exchange, rotation_iv)
+                        TokenizeCommand._configure_rotation(exchange)
 
                         logger.info(
                             "Rotation token generation: enabled=%s, iv=%s, count=%s, hashDimension=%s, binWidth=%s",
@@ -421,18 +385,14 @@ class TokenizeCommand:
             return 1
 
     @staticmethod
-    def _configure_rotation(exchange, rotation_iv: str | None) -> None:
-        """Apply an exchange's rotation settings, allowing an explicit IV override."""
-        effective_iv = rotation_iv
-        if exchange.rotation_iv and effective_iv is None:
-            effective_iv = rotation_iv_to_text(exchange.rotation_iv)
-
-        if effective_iv is None:
+    def _configure_rotation(exchange) -> None:
+        """Apply an exchange's rotation settings."""
+        if not exchange.rotation_iv:
             return
 
         RotationConfig.configure(
             enable=True,
-            rotation_iv=effective_iv,
+            rotation_iv=rotation_iv_to_text(exchange.rotation_iv),
             rotation_count=(
                 exchange.rotation_count if exchange.rotation_count > 0 else RotationConfig.DEFAULT_ROTATION_COUNT
             ),

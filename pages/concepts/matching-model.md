@@ -83,7 +83,7 @@ quantization, signature format, and security limitations.
 ML1 is enabled by default and is more compute-intensive than T1-T5. Its
 matching quality and precision/recall balance depend on the input population;
 validate it against your own matching data. To omit ML1, use
-`package --disable-ml1` or `tokenize --disable-inferencing`; see the
+`package --disable-inferencing` or `tokenize --disable-inferencing`; see the
 [CLI reference](../reference/cli.md) for the full set of ML1 options.
 
 ---

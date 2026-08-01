@@ -187,7 +187,7 @@ Token Signature: "SMITH|JON|M"
 | T5     | Last, First[0:3], Sex                                                                                                                                              | Lower             | Highest         |
 | ML1\*  | ONNX embedding from PostalCode, BirthDate, GivenName, Surname, Gender; rotation-based, quantized projections, hashed with a T1-derived blocking key when available | Model-dependent   | Model-dependent |
 
-\* ML1 is enabled by default. It is more compute-intensive and slower than T1-T5, but produces significantly better matching outcomes than T1-T5 alone. The improvement and its precision/recall balance depend on the input population, so validate it with your own matching data. To omit it, use `package --disable-ml1` or `tokenize --disable-inferencing`. See the [CLI reference](../reference/cli.md) for ML1 options.
+\* ML1 is enabled by default. It is more compute-intensive and slower than T1-T5, but produces significantly better matching outcomes than T1-T5 alone. The improvement and its precision/recall balance depend on the input population, so validate it with your own matching data. To omit it, use `package --disable-inferencing` or `tokenize --disable-inferencing`. See the [CLI reference](../reference/cli.md) for ML1 options.
 
 ---
 

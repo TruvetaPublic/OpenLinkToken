@@ -128,56 +128,26 @@ class PackageCommand:
         )
 
         parser.add_argument(
-            "--disable-ml1",
+            "--disable-inferencing",
             action="store_true",
-            dest="disable_ml1",
+            dest="disable_inferencing",
             help="Disable ML1 ONNX inference token generation",
         )
 
         parser.add_argument(
-            "--ml1-model-path",
-            dest="ml1_model_path",
-            default=ML1InferenceConfig.DEFAULT_MODEL_PATH,
-            help=f"Path to ML1 ONNX model (default: {ML1InferenceConfig.DEFAULT_MODEL_PATH})",
-        )
-
-        parser.add_argument(
-            "--ml1-tokenizer-path",
-            dest="ml1_tokenizer_path",
-            default=ML1InferenceConfig.DEFAULT_TOKENIZER_PATH,
-            help=f"Path to ML1 tokenizer JSON (default: {ML1InferenceConfig.DEFAULT_TOKENIZER_PATH})",
-        )
-
-        parser.add_argument(
-            "--ml1-max-seq-length",
-            "--ml1-max-sequence-length",
-            dest="ml1_max_sequence_length",
-            type=int,
-            default=ML1InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH,
-            help="Maximum ML1 tokenizer sequence length (default: 128)",
-        )
-
-        parser.add_argument(
-            "--ml1-batch-size",
-            dest="ml1_batch_size",
+            "--inferencing-batch-size",
+            dest="inferencing_batch_size",
             type=int,
             default=ML1InferenceConfig.DEFAULT_BATCH_SIZE,
             help="ML1 ONNX inference batch size (default: 64)",
         )
 
         parser.add_argument(
-            "--ml1-num-threads",
-            dest="ml1_num_threads",
+            "--inferencing-num-threads",
+            dest="inferencing_num_threads",
             type=int,
             default=None,
             help="ORT intra/inter-op thread count for ML1 inference (default: auto-detect)",
-        )
-        parser.add_argument(
-            "--rotation-iv",
-            dest="rotation_iv",
-            default=None,
-            metavar="STRING",
-            help="Initialization vector for rotation-based ML1 token generation.",
         )
         # --no-progress / -q: suppress interactive progress indicator
         parser.add_argument(
@@ -211,21 +181,19 @@ class PackageCommand:
         tokenization_config_path = getattr(args, "tokenization_config", None)
         reporter = CliRunReporter("package", no_progress=args.no_progress)
 
-        ml1_enabled = not getattr(args, "disable_ml1", False)
-        configured_num_threads = getattr(args, "ml1_num_threads", None)
+        ml1_enabled = not getattr(args, "disable_inferencing", False)
+        configured_num_threads = getattr(args, "inferencing_num_threads", None)
         if configured_num_threads is None:
             configured_num_threads = ML1InferenceConfig.DEFAULT_NUM_THREADS
         ML1InferenceConfig.configure(
             enable_ml1=ml1_enabled,
-            configured_model_path=getattr(args, "ml1_model_path", ML1InferenceConfig.DEFAULT_MODEL_PATH),
-            configured_tokenizer_path=getattr(args, "ml1_tokenizer_path", ML1InferenceConfig.DEFAULT_TOKENIZER_PATH),
-            configured_max_sequence_length=getattr(
-                args, "ml1_max_sequence_length", ML1InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH
-            ),
-            configured_batch_size=getattr(args, "ml1_batch_size", ML1InferenceConfig.DEFAULT_BATCH_SIZE),
+            configured_model_path=ML1InferenceConfig.DEFAULT_MODEL_PATH,
+            configured_tokenizer_path=ML1InferenceConfig.DEFAULT_TOKENIZER_PATH,
+            configured_max_sequence_length=ML1InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH,
+            configured_batch_size=getattr(args, "inferencing_batch_size", ML1InferenceConfig.DEFAULT_BATCH_SIZE),
             configured_num_threads=configured_num_threads,
         )
-        num_threads = getattr(args, "ml1_num_threads", None)
+        num_threads = getattr(args, "inferencing_num_threads", None)
 
         try:
             with reporter:
@@ -240,10 +208,10 @@ class PackageCommand:
                         "ML1 ONNX inference: enabled=%s, modelPath=%s, tokenizerPath=%s, "
                         "maxSequenceLength=%s, batchSize=%s, numThreads=%s",
                         ml1_enabled,
-                        getattr(args, "ml1_model_path", ML1InferenceConfig.DEFAULT_MODEL_PATH),
-                        getattr(args, "ml1_tokenizer_path", ML1InferenceConfig.DEFAULT_TOKENIZER_PATH),
-                        getattr(args, "ml1_max_sequence_length", ML1InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH),
-                        getattr(args, "ml1_batch_size", ML1InferenceConfig.DEFAULT_BATCH_SIZE),
+                        ML1InferenceConfig.get_model_path(),
+                        ML1InferenceConfig.get_tokenizer_path(),
+                        ML1InferenceConfig.get_max_sequence_length(),
+                        getattr(args, "inferencing_batch_size", ML1InferenceConfig.DEFAULT_BATCH_SIZE),
                         num_threads if num_threads and num_threads > 0 else "auto",
                     )
 
@@ -256,14 +224,10 @@ class PackageCommand:
                     encryption_key = derive_transport_encryption_key(exchange)
                     logger.info(f"Exchange config: {exchange.path}")
 
-                    effective_iv = getattr(args, "rotation_iv", None)
-                    if exchange.rotation_iv and effective_iv is None:
-                        effective_iv = rotation_iv_to_text(exchange.rotation_iv)
-
-                    if effective_iv is not None:
+                    if exchange.rotation_iv:
                         RotationConfig.configure(
                             enable=True,
-                            rotation_iv=effective_iv,
+                            rotation_iv=rotation_iv_to_text(exchange.rotation_iv),
                             rotation_count=(
                                 exchange.rotation_count
                                 if exchange.rotation_count > 0

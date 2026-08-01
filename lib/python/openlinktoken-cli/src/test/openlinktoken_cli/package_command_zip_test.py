@@ -37,6 +37,48 @@ EXPECTED_METADATA_KEYS = {
 class TestPackageCommandZipOutput:
     """Integration tests for ``olt package -o output.zip``."""
 
+    def test_package_does_not_accept_rotation_iv_override(self):
+        """Package must use the rotation IV from the exchange config."""
+        parser = OpenLinkTokenCommand.create_parser()
+
+        with pytest.raises(SystemExit):
+            parser.parse_args(["package", "-i", "input.csv", "--rotation-iv", "cli-iv"])
+
+    def test_tokenize_does_not_accept_rotation_iv_override(self):
+        """Tokenize must use the rotation IV from the exchange config."""
+        parser = OpenLinkTokenCommand.create_parser()
+
+        with pytest.raises(SystemExit):
+            parser.parse_args(["tokenize", "-i", "input.csv", "--rotation-iv", "cli-iv"])
+
+    def test_package_uses_inferencing_option_names(self):
+        """Package exposes the same inferencing option names as tokenize."""
+        parser = OpenLinkTokenCommand.create_parser()
+
+        args = parser.parse_args(
+            [
+                "package",
+                "-i",
+                "input.csv",
+                "--disable-inferencing",
+                "--inferencing-batch-size",
+                "32",
+                "--inferencing-num-threads",
+                "2",
+            ]
+        )
+
+        assert args.disable_inferencing is True
+        assert args.inferencing_batch_size == 32
+        assert args.inferencing_num_threads == 2
+
+        for option in ("--disable-ml1", "--ml1-batch-size", "--ml1-num-threads"):
+            option_args = ["package", "-i", "input.csv", option]
+            if option != "--disable-ml1":
+                option_args.append("2")
+            with pytest.raises(SystemExit):
+                parser.parse_args(option_args)
+
     @pytest.fixture
     def temp_dir(self, tmp_path: Path) -> Path:
         """Create a temporary directory with a two-row CSV input."""
@@ -94,12 +136,18 @@ class TestPackageCommandZipOutput:
                     str(exchange_config),
                     "--private-key",
                     str(private_key),
-                    "--disable-ml1",
+                    "--disable-inferencing",
                 ]
             )
 
         assert exit_code == 0
         assert zip_path.exists()
+        assert configure.call_args.kwargs["configured_model_path"] == ML1InferenceConfig.DEFAULT_MODEL_PATH
+        assert configure.call_args.kwargs["configured_tokenizer_path"] == ML1InferenceConfig.DEFAULT_TOKENIZER_PATH
+        assert (
+            configure.call_args.kwargs["configured_max_sequence_length"]
+            == ML1InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH
+        )
         assert configure.call_args.kwargs["configured_num_threads"] == ML1InferenceConfig.DEFAULT_NUM_THREADS
 
     def test_zip_contains_parquet_and_metadata(self, temp_dir: Path):
@@ -118,7 +166,7 @@ class TestPackageCommandZipOutput:
                 str(exchange_config),
                 "--private-key",
                 str(private_key),
-                "--disable-ml1",
+                "--disable-inferencing",
             ]
         )
 
@@ -144,7 +192,7 @@ class TestPackageCommandZipOutput:
                 str(exchange_config),
                 "--private-key",
                 str(private_key),
-                "--disable-ml1",
+                "--disable-inferencing",
             ]
         )
 
@@ -173,7 +221,7 @@ class TestPackageCommandZipOutput:
                 str(exchange_config),
                 "--private-key",
                 str(private_key),
-                "--disable-ml1",
+                "--disable-inferencing",
             ]
         )
 
@@ -198,7 +246,7 @@ class TestPackageCommandZipOutput:
                 str(exchange_config),
                 "--private-key",
                 str(private_key),
-                "--disable-ml1",
+                "--disable-inferencing",
             ]
         )
 
@@ -221,7 +269,7 @@ class TestPackageCommandZipOutput:
                 str(exchange_config),
                 "--private-key",
                 str(private_key),
-                "--disable-ml1",
+                "--disable-inferencing",
             ]
         )
 
@@ -306,7 +354,7 @@ class TestPackageCommandZipOutput:
             dimension_bias=[0.1, 0.2, 0.3],
         )
 
-        TokenizeCommand._configure_rotation(exchange, None)
+        TokenizeCommand._configure_rotation(exchange)
 
         assert RotationConfig.get_rotation_iv() == expected_iv
 
@@ -331,7 +379,7 @@ class TestPackageCommandZipOutput:
                 str(exchange_config),
                 "--private-key",
                 str(private_key),
-                "--disable-ml1",
+                "--disable-inferencing",
             ]
         )
 

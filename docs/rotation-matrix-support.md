@@ -132,10 +132,8 @@ encrypted exchange payload. Its defaults are a randomly generated IV,
 `--rotation-embedding-bias` supplies an explicit JSON bias array.
 
 `tokenize` and `package` apply the exchange rotation settings when an IV is
-present. Their `--rotation-iv` option overrides only the IV; the count, bin
-width, and bias still come from the exchange payload. If neither an exchange
-IV nor an explicit override is supplied, those commands leave the existing
-runtime rotation configuration unchanged.
+present. If the exchange has no IV, those commands leave the existing runtime
+rotation configuration unchanged.
 
 The configured bias must have the same length as the ML1 embedding. No command
 adjusts a supplied or generated bias to the model output dimension. The Java
@@ -143,7 +141,7 @@ transformer rejects a mismatched bias length; Python's array operation also
 requires compatible lengths.
 
 There is no CLI option for hash dimension or for disabling rotation alone.
-`tokenize --disable-inferencing` and `package --disable-ml1` disable ML1
+`tokenize --disable-inferencing` and `package --disable-inferencing` disable ML1
 inference, rather than only the rotation stage.
 
 For the encrypted payload field definitions, see

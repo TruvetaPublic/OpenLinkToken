@@ -106,6 +106,12 @@ class TestTokenizeCommandDemoMode:
             exit_code = OpenLinkTokenCommand.execute(args)
 
         assert exit_code == 0
+        assert configure.call_args.kwargs["configured_model_path"] == ML1InferenceConfig.DEFAULT_MODEL_PATH
+        assert configure.call_args.kwargs["configured_tokenizer_path"] == ML1InferenceConfig.DEFAULT_TOKENIZER_PATH
+        assert (
+            configure.call_args.kwargs["configured_max_sequence_length"]
+            == ML1InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH
+        )
         assert configure.call_args.kwargs["configured_num_threads"] == ML1InferenceConfig.DEFAULT_NUM_THREADS
 
     def test_demo_mode_accepts_bare_csv_paths_from_working_directory(
