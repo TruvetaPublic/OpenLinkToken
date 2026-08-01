@@ -57,7 +57,7 @@ setup(
         # Spark 3.5.x - For Java 8-17 (NOT compatible with Java 21)
         "spark35": [
             "pyspark==3.5.5",
-            "pyarrow==25.0.0",
+            "pyarrow==19.0.0",
             "pandas==2.2.3; python_version < '3.11'",
             "pandas==3.0.3; python_version >= '3.11'",
             "setuptools==83.0.0; python_version >= '3.12'",
@@ -65,7 +65,7 @@ setup(
         # Spark 3.4.x - Legacy support
         "spark34": [
             "pyspark==3.4.4",
-            "pyarrow==25.0.0",
+            "pyarrow==22.0.0",
             "pandas==2.1.4; python_version < '3.11'",
             "pandas==3.0.3; python_version >= '3.11'",
             "setuptools==83.0.0; python_version >= '3.12'",
