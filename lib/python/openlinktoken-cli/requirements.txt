@@ -12,7 +12,7 @@ cryptography==49.0.0
     #   openlinktoken-cli
 csv2parquet==0.0.9
     # via openlinktoken-cli
-jwcrypto==1.5.7
+jwcrypto==1.5.8
     # via
     #   openlinktoken
     #   openlinktoken-cli
@@ -20,13 +20,13 @@ numpy==1.26.4 ; python_full_version < '3.11'
     # via pandas
 numpy==2.4.4 ; python_full_version >= '3.11'
     # via pandas
-packaging==26.1
+packaging==26.2
     # via openlinktoken-cli
 pandas==2.2.3 ; python_full_version < '3.11'
     # via openlinktoken-cli
 pandas==3.0.3 ; python_full_version >= '3.11'
     # via openlinktoken-cli
-pyarrow==24.0.0
+pyarrow==25.0.0
     # via openlinktoken-cli
 pycparser==3.0 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'
     # via cffi
