@@ -393,3 +393,33 @@ class TestPersonAttributesProcessor:
 
         assert summary.total_rows == 1
         assert summary.total_rows_with_invalid_attributes == 1
+
+    def test_process_counts_invalid_rows_separately_from_invalid_attributes(self):
+        """Counts one invalid row when multiple attributes in that row are invalid."""
+        data = {
+            "RecordId": "TestRecordId",
+            "FirstName": "John",
+            "LastName": "Spencer",
+            "SocialSecurityNumber": "234-56-7890",
+            "BirthDate": "",
+            "Sex": "Unknown",
+            "PostalCode": "98052",
+        }
+
+        reader = Mock(spec=PersonAttributesReader)
+        writer = Mock(spec=PersonAttributesWriter)
+        reader.__iter__ = Mock(return_value=iter([data]))
+        metadata_map = Metadata().initialize()
+
+        summary = PersonAttributesProcessor.process(
+            reader,
+            writer,
+            [],
+            metadata_map,
+            token_definition=TokenDefinition(),
+        )
+
+        assert summary.total_rows_with_invalid_attributes == 1
+        assert metadata_map[PersonAttributesProcessor.TOTAL_ROWS_WITH_INVALID_ATTRIBUTES] == 1
+        assert summary.invalid_attributes_by_type["BirthDate"] == 1
+        assert summary.invalid_attributes_by_type["Sex"] == 1

@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import uuid
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Set, Type
+from typing import Any, Dict, List, Optional, Set, Tuple, Type
 
 from openlinktoken.attributes.attribute import Attribute
 from openlinktoken.attributes.general.record_id_attribute import RecordIdAttribute
@@ -179,7 +179,7 @@ class PersonAttributesProcessor:
         )
 
         try:
-            row_counter = PersonAttributesProcessor._process_rows(
+            row_counter, total_invalid_rows = PersonAttributesProcessor._process_rows(
                 reader,
                 writer,
                 token_generator,
@@ -202,8 +202,7 @@ class PersonAttributesProcessor:
         for attribute_name, count in sorted(invalid_attribute_count.items()):
             logger.info(f"Total invalid Attribute count for [{attribute_name}]: {count:,}")
 
-        total_invalid_records = sum(invalid_attribute_count.values())
-        logger.info(f"Total number of records with invalid attributes: {total_invalid_records:,}")
+        logger.info(f"Total number of rows with invalid attributes: {total_invalid_rows:,}")
 
         # Log blank token statistics in alphabetical order
         for rule_id, count in sorted(blank_tokens_by_rule_count.items()):
@@ -215,7 +214,7 @@ class PersonAttributesProcessor:
         # Update metadata if provided
         if metadata_map is not None:
             metadata_map[PersonAttributesProcessor.TOTAL_ROWS] = row_counter
-            metadata_map[PersonAttributesProcessor.TOTAL_ROWS_WITH_INVALID_ATTRIBUTES] = total_invalid_records
+            metadata_map[PersonAttributesProcessor.TOTAL_ROWS_WITH_INVALID_ATTRIBUTES] = total_invalid_rows
             # Alphabetize attribute and token rule keys for deterministic metadata output
             metadata_map[PersonAttributesProcessor.INVALID_ATTRIBUTES_BY_TYPE] = dict(
                 sorted(invalid_attribute_count.items())
@@ -226,7 +225,7 @@ class PersonAttributesProcessor:
 
         return PersonAttributesProcessingSummary(
             total_rows=row_counter,
-            total_rows_with_invalid_attributes=total_invalid_records,
+            total_rows_with_invalid_attributes=total_invalid_rows,
             invalid_attributes_by_type=dict(sorted(invalid_attribute_count.items())),
             blank_tokens_by_rule=dict(sorted(blank_tokens_by_rule_count.items())),
         )
@@ -337,7 +336,7 @@ class PersonAttributesProcessor:
         jwe_formatters: Dict[str, JweMatchTokenFormatter],
         hash_record_ids: bool = False,
         progress_callback=None,
-    ) -> int:
+    ) -> Tuple[int, int]:
         """Process rows with either batched or standard token generation based on ML1 configuration."""
         if ML1InferenceConfig.is_enabled():
             return PersonAttributesProcessor._process_rows_with_batched_ml1(
@@ -377,18 +376,20 @@ class PersonAttributesProcessor:
         jwe_formatters: Dict[str, JweMatchTokenFormatter],
         hash_record_ids: bool = False,
         progress_callback=None,
-    ) -> int:
+    ) -> Tuple[int, int]:
         """Process rows in standard per-row token generation mode."""
         row_counter = 0
+        invalid_row_count = 0
         last_reported_count = 0
         for row in reader:
             row_counter += 1
             token_generator_result = token_generator.get_all_tokens_via_field_id(row)
-            PersonAttributesProcessor._keep_track_of_invalid_attributes(
+            if PersonAttributesProcessor._keep_track_of_invalid_attributes(
                 token_generator_result,
                 row_counter,
                 invalid_attribute_count,
-            )
+            ):
+                invalid_row_count += 1
             PersonAttributesProcessor._keep_track_of_blank_tokens(
                 token_generator_result,
                 row_counter,
@@ -412,7 +413,7 @@ class PersonAttributesProcessor:
                     progress_callback(row_counter)
         if progress_callback is not None and row_counter != last_reported_count:
             progress_callback(row_counter)
-        return row_counter
+        return row_counter, invalid_row_count
 
     @staticmethod
     def _process_rows_with_batched_ml1(
@@ -426,9 +427,10 @@ class PersonAttributesProcessor:
         jwe_formatters: Dict[str, JweMatchTokenFormatter],
         hash_record_ids: bool = False,
         progress_callback=None,
-    ) -> int:
+    ) -> Tuple[int, int]:
         """Process rows using batched ML1 ONNX inference while retaining streaming output behavior."""
         row_counter = 0
+        invalid_row_count = 0
         last_reported_count = 0
         ml1_batch_size = ML1InferenceConfig.get_batch_size()
         pending_rows: List[_PendingRow] = []
@@ -446,7 +448,7 @@ class PersonAttributesProcessor:
 
             if len(pending_rows) >= ml1_batch_size:
                 ml1_signatures = PersonAttributesProcessor._infer_ml1_batch(pending_rows)
-                PersonAttributesProcessor._flush_pending_rows(
+                invalid_row_count += PersonAttributesProcessor._flush_pending_rows(
                     writer,
                     token_generator,
                     invalid_attribute_count,
@@ -467,7 +469,7 @@ class PersonAttributesProcessor:
 
         if pending_rows:
             ml1_signatures = PersonAttributesProcessor._infer_ml1_batch(pending_rows)
-            PersonAttributesProcessor._flush_pending_rows(
+            invalid_row_count += PersonAttributesProcessor._flush_pending_rows(
                 writer,
                 token_generator,
                 invalid_attribute_count,
@@ -483,7 +485,7 @@ class PersonAttributesProcessor:
         if progress_callback is not None and row_counter != last_reported_count:
             progress_callback(row_counter)
 
-        return row_counter
+        return row_counter, invalid_row_count
 
     @staticmethod
     def _infer_ml1_batch(pending_rows: List[_PendingRow]) -> List[Optional[str]]:
@@ -511,8 +513,9 @@ class PersonAttributesProcessor:
         pending_rows: List[_PendingRow],
         ml1_signatures: List[Optional[str]],
         hash_record_ids: bool = False,
-    ) -> None:
+    ) -> int:
         """Apply ML1 results, update statistics, and write pending rows."""
+        invalid_row_count = 0
         for i, pending_row in enumerate(pending_rows):
             ml1_signature = ml1_signatures[i] if i < len(ml1_signatures) else None
             if ml1_signature:
@@ -522,11 +525,12 @@ class PersonAttributesProcessor:
                     ml1_signature,
                 )
 
-            PersonAttributesProcessor._keep_track_of_invalid_attributes(
+            if PersonAttributesProcessor._keep_track_of_invalid_attributes(
                 pending_row.token_generator_result,
                 pending_row.row_counter,
                 invalid_attribute_count,
-            )
+            ):
+                invalid_row_count += 1
             PersonAttributesProcessor._keep_track_of_blank_tokens(
                 pending_row.token_generator_result,
                 pending_row.row_counter,
@@ -544,13 +548,14 @@ class PersonAttributesProcessor:
             )
 
         pending_rows.clear()
+        return invalid_row_count
 
     @staticmethod
     def _keep_track_of_invalid_attributes(
         token_generator_result: TokenGeneratorResult,
         row_counter: int,
         invalid_attribute_count: Dict[str, int],
-    ) -> None:
+    ) -> bool:
         """
         Keep track of invalid attributes for logging purposes.
 
@@ -558,6 +563,9 @@ class PersonAttributesProcessor:
             token_generator_result: The result from token generation.
             row_counter: The current row number.
             invalid_attribute_count: Dictionary to track invalid attribute counts.
+
+        Returns:
+            True when the row contains one or more invalid attributes.
         """
         if token_generator_result.invalid_attributes:
             logger.info(f"Invalid Attributes for row {row_counter:,}: {token_generator_result.invalid_attributes}")
@@ -565,6 +573,8 @@ class PersonAttributesProcessor:
             for invalid_attribute in token_generator_result.invalid_attributes:
                 invalid_attribute_count.setdefault(invalid_attribute, 0)
                 invalid_attribute_count[invalid_attribute] += 1
+            return True
+        return False
 
     @staticmethod
     def _keep_track_of_blank_tokens(

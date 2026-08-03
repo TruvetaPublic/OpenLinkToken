@@ -171,28 +171,8 @@ Calculate valid records:
 Valid Records = TotalRows - TotalRowsWithInvalidAttributes
 ```
 
-**Example:**
-
-```json
-{
-  "TotalRows": 100,
-  "TotalRowsWithInvalidAttributes": 5
-}
-```
-
-- 100 records processed
-- 5 records had errors
-- 95 records were fully valid
-
-### Invalid Attribute Counts
-
-Count totals:
-
-```
-Sum of InvalidAttributesByType values ≥ TotalRowsWithInvalidAttributes
-```
-
-**Why ≥?** A single record can have multiple invalid attributes.
+`TotalRowsWithInvalidAttributes` counts distinct records. A single record with
+multiple invalid attributes contributes once to this field.
 
 **Example:**
 
@@ -208,9 +188,22 @@ Sum of InvalidAttributesByType values ≥ TotalRowsWithInvalidAttributes
 }
 ```
 
+- 100 records processed
+- 5 records had one or more invalid attributes
+- 95 records were fully valid
 - Total invalid attribute instances: 2 + 3 + 1 = 6
-- Records with errors: 5
-- At least one record had 2+ invalid attributes
+- At least one record had multiple invalid attributes
+
+### Invalid Attribute Counts
+
+Count totals:
+
+```
+Sum of InvalidAttributesByType values ≥ TotalRowsWithInvalidAttributes
+```
+
+The sum can be greater because a single record can have multiple invalid
+attributes.
 
 ### Blank Token Analysis
 

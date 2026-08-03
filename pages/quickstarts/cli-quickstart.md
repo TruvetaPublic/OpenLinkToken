@@ -259,7 +259,7 @@ create metadata files.
 {
   "Platform": "Python",
   "PythonVersion": "3.11.0",
-  "Version": "2.0.0",
+  "Version": "2.1.0",
   "TotalRows": 2,
   "TotalRowsWithInvalidAttributes": 0,
   "InvalidAttributesByType": {},
