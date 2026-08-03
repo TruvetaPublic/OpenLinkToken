@@ -263,7 +263,7 @@ CLI usage (from project root):
 
 ```shell
 # After installing openlinktoken-cli
-python -m openlinktoken_cli.main package [OPTIONS]
+olt package [OPTIONS]
 ```
 
 Arguments are consistent with the Java core library's tokenization logic.
@@ -272,7 +272,7 @@ Example:
 
 ```shell
 # After installing openlinktoken-cli
-python -m openlinktoken_cli.main package \
+olt package \
   -i resources/sample.csv -o resources/output.csv \
   --exchange-config ./openlinktoken-YYYY-MM-DD.exchange.json
 ```
@@ -699,12 +699,14 @@ docker build . -t openlinktoken
 ## Running the Tool (CLI)
 
 The CLI is provided by the Python `openlinktoken-cli` package.
+After installation, use the `olt` console script. If it is unavailable, use
+`python -m openlinktoken_cli.main` as the equivalent fallback.
 
 Minimum required arguments:
 
 ```shell
-# Python
-python -m openlinktoken_cli.main package -i input.csv -o output.csv --exchange-config ./openlinktoken-YYYY-MM-DD.exchange.json
+# Python console script
+olt package -i input.csv -o output.csv --exchange-config ./openlinktoken-YYYY-MM-DD.exchange.json
 ```
 
 Arguments:

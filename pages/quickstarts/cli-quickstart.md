@@ -312,7 +312,7 @@ The check never blocks or delays the primary command and is cached for 24 hours.
 
 ```bash
 # Disable for a single run
-openlinktoken --no-update-check package ...
+olt --no-update-check package ...
 
 # Disable permanently (add to your shell profile)
 export OLT_DISABLE_UPDATE_CHECK=1

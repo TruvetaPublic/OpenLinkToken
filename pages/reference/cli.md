@@ -21,7 +21,7 @@ No dependencies required. Extract and run.
 ### Other Options
 
 - **Docker**: Use `run-olt.sh` (Linux/Mac) or `run-olt.ps1` (Windows)
-- **Python**: Install with `uv pip install openlinktoken-cli`, then run `openlinktoken` or `python -m openlinktoken_cli.main`
+- **Python**: Install with `uv pip install openlinktoken-cli`, then run `olt`
 
 For installation details, see the [CLI Quickstart](../quickstarts/cli-quickstart.md).
 
@@ -537,7 +537,7 @@ For long-running processing commands (`package`, `tokenize`, `encrypt`, and `dec
 
 ## Extensions
 
-The `extension` subcommand manages CLI extensions. Extensions add top-level subcommands to `openlinktoken` without requiring a CLI upgrade. See [Extension Author Reference](extensions.md) for how to build extensions, and [Managing Extensions](../operations/managing-extensions.md) for operator workflows.
+The `extension` subcommand manages CLI extensions. Extensions add top-level subcommands to `olt` without requiring a CLI upgrade. See [Extension Author Reference](extensions.md) for how to build extensions, and [Managing Extensions](../operations/managing-extensions.md) for operator workflows.
 
 ### `extension install`
 

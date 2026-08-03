@@ -183,7 +183,7 @@ olt extension install <url>
 
 The extension package or one of its dependencies is not importable. Common causes:
 
-- The extension was installed under a different Python environment than the one running `openlinktoken`.
+- The extension was installed under a different Python environment than the one running `olt`.
 - The extension directory is missing or was moved after install.
 - The extension depends on a Tier-3 package that is not installed in the current environment.
 

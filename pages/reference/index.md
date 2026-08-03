@@ -153,7 +153,6 @@ python -m openlinktoken_cli.main package \
 | `-c` / `--exchange-config`            | Exchange config JSON path                            |
 | `--private-key` / `--private-key-env` | Private key used to decrypt the exchange config      |
 
-
 **Full reference:** [CLI Reference](cli.md)
 
 ---
