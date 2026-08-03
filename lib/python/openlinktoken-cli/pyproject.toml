@@ -13,12 +13,12 @@ dependencies = [
   "openlinktoken==2.1.0",
   "pandas==2.2.3; python_version < '3.11'",
   "pandas==3.0.3; python_version >= '3.11'",
-  "pyarrow==24.0.0",
+  "pyarrow==25.0.0",
   "csv2parquet==0.0.9",
   "cryptography==49.0.0",
   "urllib3==2.7.0",
-  "jwcrypto==1.5.7",
-  "packaging==26.1",
+  "jwcrypto==1.5.8",
+  "packaging==26.2",
 ]
 
 [project.scripts]
