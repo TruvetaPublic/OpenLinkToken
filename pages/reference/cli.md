@@ -419,22 +419,25 @@ ID001,T5,DOE|JOH|MALE
 ### CSV Input
 
 ```csv
-RecordId,FirstName,LastName,BirthDate,Sex,PostalCode,SSN
+RecordId,FirstName,LastName,BirthDate,Sex,PostalCode,SocialSecurityNumber
 patient_001,John,Doe,1980-01-15,Male,98004,123-45-6789
 patient_002,Jane,Smith,1975-03-22,Female,90210,987-65-4321
 ```
 
 **Column Aliases Accepted:**
 
-| Standard Name | Accepted Aliases                                   |
-| ------------- | -------------------------------------------------- |
-| RecordId      | Id                                                 |
-| FirstName     | GivenName                                          |
-| LastName      | Surname                                            |
-| BirthDate     | DateOfBirth                                        |
-| Sex           | Gender                                             |
-| PostalCode    | ZipCode, ZIP3, ZIP4, ZIP5                          |
-| SSN           | SocialSecurityNumber, NationalIdentificationNumber |
+| Standard Name        | Accepted Aliases                  |
+| -------------------- | --------------------------------- |
+| RecordId             | Id                                |
+| FirstName            | GivenName                         |
+| LastName             | Surname                           |
+| BirthDate            | DateOfBirth                       |
+| Sex                  | Gender                            |
+| PostalCode           | ZipCode, ZIP3, ZIP4, ZIP5         |
+| SocialSecurityNumber | NationalIdentificationNumber, SSN |
+
+These mappings describe the Python CLI. Column names are matched
+case-insensitively.
 
 ### CSV Output
 
@@ -463,7 +466,7 @@ LastName: string
 BirthDate: string (YYYY-MM-DD)
 Sex: string
 PostalCode: string
-SSN: string
+SocialSecurityNumber: string
 ```
 
 **Output:**
@@ -489,7 +492,7 @@ archive. `encrypt` and `decrypt` do not generate metadata:
   "TotalRowsWithInvalidAttributes": 3,
   "InvalidAttributesByType": {
     "BirthDate": 2,
-    "SSN": 1
+    "SocialSecurityNumber": 1
   },
   "BlankTokensByRule": {
     "T1": 2,

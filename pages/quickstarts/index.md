@@ -64,19 +64,21 @@ python data_generator.py 100 0.05 test_data.csv
 
 ## Input File Requirements
 
-Your CSV must have these columns (any of the listed aliases work):
+For the Python CLI, your CSV must have these columns (any of the listed aliases work):
 
-| Column     | Aliases                      | Required | Example                                         |
-| ---------- | ---------------------------- | -------- | ----------------------------------------------- |
-| FirstName  | GivenName                    | Yes      | John                                            |
-| LastName   | Surname                      | Yes      | Doe                                             |
-| BirthDate  | DateOfBirth                  | Yes      | 1975-03-15 or 03/15/1975                        |
-| Sex        | Gender                       | Yes      | Male, Female, M, F                              |
-| PostalCode | ZipCode, ZIP3, ZIP4, ZIP5    | Yes      | 98004                                           |
-| SSN        | NationalIdentificationNumber | Yes      | 123-45-6789 (digits-only values are normalized) |
-| RecordId   | Id                           | Optional | patient_id_123                                  |
+| Column               | Aliases                           | Required | Example                                         |
+| -------------------- | --------------------------------- | -------- | ----------------------------------------------- |
+| FirstName            | GivenName                         | Yes      | John                                            |
+| LastName             | Surname                           | Yes      | Doe                                             |
+| BirthDate            | DateOfBirth                       | Yes      | 1975-03-15 or 03/15/1975                        |
+| Sex                  | Gender                            | Yes      | Male, Female, M, F                              |
+| PostalCode           | ZipCode, ZIP3, ZIP4, ZIP5         | Yes      | 98004                                           |
+| SocialSecurityNumber | NationalIdentificationNumber, SSN | Yes      | 123-45-6789 (digits-only values are normalized) |
+| RecordId             | Id                                | Optional | patient_id_123                                  |
 
 **Note**: RecordId is optional. If omitted, a unique UUID is auto-generated for each record.
+
+For the Python CLI, column names are matched case-insensitively.
 
 See [Configuration](../config/configuration.md) for detailed column mapping and format options.
 

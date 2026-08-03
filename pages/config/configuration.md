@@ -68,15 +68,18 @@ docker run --rm \
 
 Input columns are **case-insensitive** and support common aliases:
 
-| Attribute       | Accepted Column Names                                  | Required | Type   |
-| --------------- | ------------------------------------------------------ | -------- | ------ |
-| **Record ID**   | `RecordId`, `Id`                                       | Optional | String |
-| **First Name**  | `FirstName`, `GivenName`                               | Yes      | String |
-| **Last Name**   | `LastName`, `Surname`                                  | Yes      | String |
-| **Birth Date**  | `BirthDate`, `DateOfBirth`                             | Yes      | Date   |
-| **Sex**         | `Sex`, `Gender`                                        | Yes      | String |
-| **Postal Code** | `PostalCode`, `ZipCode`, `ZIP3`, `ZIP4`, `ZIP5`        | Yes      | String |
-| **SSN**         | `SocialSecurityNumber`, `NationalIdentificationNumber` | Yes      | String |
+| Attribute                  | Accepted Column Names                                         | Required | Type   |
+| -------------------------- | ------------------------------------------------------------- | -------- | ------ |
+| **Record ID**              | `RecordId`, `Id`                                              | Optional | String |
+| **First Name**             | `FirstName`, `GivenName`                                      | Yes      | String |
+| **Last Name**              | `LastName`, `Surname`                                         | Yes      | String |
+| **Birth Date**             | `BirthDate`, `DateOfBirth`                                    | Yes      | Date   |
+| **Sex**                    | `Sex`, `Gender`                                               | Yes      | String |
+| **Postal Code**            | `PostalCode`, `ZipCode`, `ZIP3`, `ZIP4`, `ZIP5`               | Yes      | String |
+| **Social Security Number** | `SocialSecurityNumber`, `NationalIdentificationNumber`, `SSN` | Yes      | String |
+
+These mappings describe the Python CLI. Column names are matched
+case-insensitively.
 
 ### Date Formats Accepted
 

@@ -67,11 +67,6 @@ class OpenLinkTokenProcessor:
             for alias in attribute.get_aliases():
                 mappings[alias] = attribute_class
 
-        # Add DateOfBirth as an alias for BirthDate for backward compatibility
-        # (documented in README but not in BirthDateAttribute.ALIASES)
-        if "BirthDate" in mappings:
-            mappings["DateOfBirth"] = mappings["BirthDate"]
-
         cls.COLUMN_MAPPINGS = mappings
         return mappings
 
@@ -451,10 +446,6 @@ class OpenLinkTokenProcessor:
             attr_instance = attr_class()
             attr_name = attr_instance.get_name()
             aliases = attr_instance.get_aliases()
-
-            # Add DateOfBirth for BirthDate if not already present
-            if attr_name == "BirthDate" and "DateOfBirth" not in aliases:
-                aliases = aliases + ["DateOfBirth"]
 
             groups[attr_name] = aliases
 

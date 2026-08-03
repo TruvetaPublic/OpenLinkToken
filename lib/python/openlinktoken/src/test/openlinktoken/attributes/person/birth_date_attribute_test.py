@@ -20,9 +20,9 @@ class TestBirthDateAttribute:
         """Test that get_name returns 'BirthDate'."""
         assert self.birth_date_attribute.get_name() == "BirthDate"
 
-    def test_get_aliases_should_return_birth_date_alias(self):
-        """Test that get_aliases returns BirthDate alias."""
-        expected_aliases = ["BirthDate"]
+    def test_get_aliases_should_return_birth_date_aliases(self):
+        """Test that get_aliases returns BirthDate and DateOfBirth aliases."""
+        expected_aliases = ["BirthDate", "DateOfBirth"]
         assert self.birth_date_attribute.get_aliases() == expected_aliases
 
     def test_normalize_valid_date_formats_should_normalize_to_yyyy_mm_dd(self):

@@ -14,15 +14,18 @@ Open Link Token processes CSV and Parquet files. Both formats support the same a
 
 Input columns are case-insensitive and support common aliases:
 
-| Attribute                  | Accepted Column Names                                  | Required | Type   | Example                                       |
-| -------------------------- | ------------------------------------------------------ | -------- | ------ | --------------------------------------------- |
-| **Record ID**              | `RecordId`, `Id`                                       | Optional | String | `patient_123`, `uuid-abc...`                  |
-| **First Name**             | `FirstName`, `GivenName`                               | Yes      | String | `John`                                        |
-| **Last Name**              | `LastName`, `Surname`                                  | Yes      | String | `Doe`                                         |
-| **Birth Date**             | `BirthDate`, `DateOfBirth`                             | Yes      | Date   | `1980-01-15`                                  |
-| **Sex**                    | `Sex`, `Gender`                                        | Yes      | String | `Male`, `M`, `Female`, `F`                    |
-| **Postal Code**            | `PostalCode`, `ZipCode`, `ZIP3`, `ZIP4`, `ZIP5`        | Yes      | String | `98004`, `K1A 1A1`                            |
-| **Social Security Number** | `SocialSecurityNumber`, `NationalIdentificationNumber` | Yes      | String | `123-45-6789` (digits-only values normalized) |
+| Attribute                  | Accepted Column Names                                         | Required | Type   | Example                                       |
+| -------------------------- | ------------------------------------------------------------- | -------- | ------ | --------------------------------------------- |
+| **Record ID**              | `RecordId`, `Id`                                              | Optional | String | `patient_123`, `uuid-abc...`                  |
+| **First Name**             | `FirstName`, `GivenName`                                      | Yes      | String | `John`                                        |
+| **Last Name**              | `LastName`, `Surname`                                         | Yes      | String | `Doe`                                         |
+| **Birth Date**             | `BirthDate`, `DateOfBirth`                                    | Yes      | Date   | `1980-01-15`                                  |
+| **Sex**                    | `Sex`, `Gender`                                               | Yes      | String | `Male`, `M`, `Female`, `F`                    |
+| **Postal Code**            | `PostalCode`, `ZipCode`, `ZIP3`, `ZIP4`, `ZIP5`               | Yes      | String | `98004`, `K1A 1A1`                            |
+| **Social Security Number** | `SocialSecurityNumber`, `NationalIdentificationNumber`, `SSN` | Yes      | String | `123-45-6789` (digits-only values normalized) |
+
+These mappings describe the Python CLI. Column names are matched
+case-insensitively.
 
 ### CSV Format
 
