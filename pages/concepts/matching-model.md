@@ -231,12 +231,12 @@ Consider four fictional person records from two different systems:
 
 Open Link Token normalizes each field before token generation. For full rules, see [Normalization and Validation](normalization-and-validation.md).
 
-| RecordId | FirstName | LastName | BirthDate  | Sex | PostalCode | SSN         |
-| -------- | --------- | -------- | ---------- | --- | ---------- | ----------- |
-| HOS-101  | MARIA     | GARCIA   | 1988-03-22 | F   | 90210      | 452-38-7291 |
-| HOS-102  | TOM       | OREILLY  | 1995-11-03 | M   | 30301      | 671-82-9134 |
-| CLN-201  | MARIA     | GARCIA   | 1988-03-22 | F   | 90210      | 452-38-7291 |
-| CLN-202  | THOMAS    | OREILLY  | 1995-11-03 | M   | 30301      | —           |
+| RecordId | FirstName | LastName | BirthDate  | Sex    | PostalCode | SSN         |
+| -------- | --------- | -------- | ---------- | ------ | ---------- | ----------- |
+| HOS-101  | MARIA     | GARCIA   | 1988-03-22 | Female | 90210      | 452-38-7291 |
+| HOS-102  | TOM       | OREILLY  | 1995-11-03 | Male   | 30301      | 671-82-9134 |
+| CLN-201  | MARIA     | GARCIA   | 1988-03-22 | Female | 90210      | 452-38-7291 |
+| CLN-202  | THOMAS    | OREILLY  | 1995-11-03 | Male   | 30301      | —           |
 
 **What changed:**
 
@@ -256,45 +256,45 @@ For detailed rule compositions, see [Token Rules](token-rules.md).
 
 **HOS-101 (María García, 1988-03-22):**
 
-| Rule | Token Signature                  | Illustrative Token       |
-| ---- | -------------------------------- | ------------------------ |
-| T1   | `GARCIA\|M\|F\|1988-03-22`       | `Xk9mT2pLc1VhR3dNZUZ...` |
-| T2   | `GARCIA\|MARIA\|1988-03-22\|902` | `bHdRa0VuWXBCdkxhTnI...` |
-| T3   | `GARCIA\|MARIA\|F\|1988-03-22`   | `cTdYc1pNdkpUa2JQeHo...` |
-| T4   | `452387291\|F\|1988-03-22`       | `ZnBOdFdtS2haQWdWcko...` |
-| T5   | `GARCIA\|MAR\|F`                 | `RWtqVXhMY0dTcldmbVk...` |
+| Rule | Token Signature                     | Illustrative Token       |
+| ---- | ----------------------------------- | ------------------------ |
+| T1   | `GARCIA\|M\|FEMALE\|1988-03-22`     | `Xk9mT2pLc1VhR3dNZUZ...` |
+| T2   | `GARCIA\|MARIA\|1988-03-22\|902`    | `bHdRa0VuWXBCdkxhTnI...` |
+| T3   | `GARCIA\|MARIA\|FEMALE\|1988-03-22` | `cTdYc1pNdkpUa2JQeHo...` |
+| T4   | `452387291\|FEMALE\|1988-03-22`     | `ZnBOdFdtS2haQWdWcko...` |
+| T5   | `GARCIA\|MAR\|FEMALE`               | `RWtqVXhMY0dTcldmbVk...` |
 
 **CLN-201 (Maria Garcia, 1988-03-22):**
 
-| Rule | Token Signature                  | Illustrative Token       |
-| ---- | -------------------------------- | ------------------------ |
-| T1   | `GARCIA\|M\|F\|1988-03-22`       | `Xk9mT2pLc1VhR3dNZUZ...` |
-| T2   | `GARCIA\|MARIA\|1988-03-22\|902` | `bHdRa0VuWXBCdkxhTnI...` |
-| T3   | `GARCIA\|MARIA\|F\|1988-03-22`   | `cTdYc1pNdkpUa2JQeHo...` |
-| T4   | `452387291\|F\|1988-03-22`       | `ZnBOdFdtS2haQWdWcko...` |
-| T5   | `GARCIA\|MAR\|F`                 | `RWtqVXhMY0dTcldmbVk...` |
+| Rule | Token Signature                     | Illustrative Token       |
+| ---- | ----------------------------------- | ------------------------ |
+| T1   | `GARCIA\|M\|FEMALE\|1988-03-22`     | `Xk9mT2pLc1VhR3dNZUZ...` |
+| T2   | `GARCIA\|MARIA\|1988-03-22\|902`    | `bHdRa0VuWXBCdkxhTnI...` |
+| T3   | `GARCIA\|MARIA\|FEMALE\|1988-03-22` | `cTdYc1pNdkpUa2JQeHo...` |
+| T4   | `452387291\|FEMALE\|1988-03-22`     | `ZnBOdFdtS2haQWdWcko...` |
+| T5   | `GARCIA\|MAR\|FEMALE`               | `RWtqVXhMY0dTcldmbVk...` |
 
 **Observation:** HOS-101 and CLN-201 produce **identical token signatures** for all five rules because their normalized attributes are identical. Their normal `tokenize` values (or decrypted values) match exactly; encrypted `olt.V1` token strings can differ because encryption uses random IVs.
 
 **HOS-102 (tom O'Reilly, 1995-11-03):**
 
-| Rule | Token Signature                 | Illustrative Token       |
-| ---- | ------------------------------- | ------------------------ |
-| T1   | `OREILLY\|T\|M\|1995-11-03`     | `UXdlcnR5VWlPcEFzRGZ...` |
-| T2   | `OREILLY\|TOM\|1995-11-03\|303` | `WnhjdmJubUtMbUpIR2d...` |
-| T3   | `OREILLY\|TOM\|M\|1995-11-03`   | `QWxza2RqZmhHa0xQb1p...` |
-| T4   | `671829134\|M\|1995-11-03`      | `TW5iVmN4WmFRd0VyVHl...` |
-| T5   | `OREILLY\|TOM\|M`               | `SWp1aHlHdEZyRGVTd1d...` |
+| Rule | Token Signature                  | Illustrative Token       |
+| ---- | -------------------------------- | ------------------------ |
+| T1   | `OREILLY\|T\|MALE\|1995-11-03`   | `UXdlcnR5VWlPcEFzRGZ...` |
+| T2   | `OREILLY\|TOM\|1995-11-03\|303`  | `WnhjdmJubUtMbUpIR2d...` |
+| T3   | `OREILLY\|TOM\|MALE\|1995-11-03` | `QWxza2RqZmhHa0xQb1p...` |
+| T4   | `671829134\|MALE\|1995-11-03`    | `TW5iVmN4WmFRd0VyVHl...` |
+| T5   | `OREILLY\|TOM\|MALE`             | `SWp1aHlHdEZyRGVTd1d...` |
 
 **CLN-202 (Thomas O'Reilly, 1995-11-03, no SSN):**
 
-| Rule | Token Signature                    | Illustrative Token       |
-| ---- | ---------------------------------- | ------------------------ |
-| T1   | `OREILLY\|T\|M\|1995-11-03`        | `RHZiTmNYemFRd0VyWnR...` |
-| T2   | `OREILLY\|THOMAS\|1995-11-03\|303` | `S2p1aHlHdEZyRGVWd1h...` |
-| T3   | `OREILLY\|THOMAS\|M\|1995-11-03`   | `VXl0ckVXcUFzRGZHaEp...` |
-| T4   | — (SSN missing)                    | _Not generated_          |
-| T5   | `OREILLY\|THO\|M`                  | `QmFzZTY0UExhY2Vob2w...` |
+| Rule | Token Signature                     | Illustrative Token       |
+| ---- | ----------------------------------- | ------------------------ |
+| T1   | `OREILLY\|T\|MALE\|1995-11-03`      | `RHZiTmNYemFRd0VyWnR...` |
+| T2   | `OREILLY\|THOMAS\|1995-11-03\|303`  | `S2p1aHlHdEZyRGVWd1h...` |
+| T3   | `OREILLY\|THOMAS\|MALE\|1995-11-03` | `VXl0ckVXcUFzRGZHaEp...` |
+| T4   | — (SSN missing)                     | _Not generated_          |
+| T5   | `OREILLY\|THO\|MALE`                | `QmFzZTY0UExhY2Vob2w...` |
 
 **Observation:** HOS-102 and CLN-202 can match on **T1** (first initial) even though the full first name differs (TOM vs THOMAS). They do **not** match on rules that require the full first name, and they cannot generate T4 because the SSN is missing.
 

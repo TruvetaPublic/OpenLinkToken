@@ -77,7 +77,7 @@ All of the following must be provided per record:
 | **FirstName**  | String | Non-empty after normalization                | "John", "José", "JoAnn"                       | Remove titles/suffixes; remove diacritics and transliterate supported Latin Extended letters to ASCII; uppercase |
 | **LastName**   | String | Non-empty after normalization                | "Smith", "O'Brien", "García"                  | Remove suffixes; remove diacritics and transliterate supported Latin Extended letters to ASCII; uppercase        |
 | **BirthDate**  | Date   | 1910-01-01 to today                          | "1980-01-15", "01/15/1980", "15.01.1980"      | ISO 8601 YYYY-MM-DD                                                                                              |
-| **Sex**        | String | "Male" or "Female" (case-insensitive)        | "M", "F", "male", "FEMALE"                    | Uppercase; normalize M→MALE, F→FEMALE                                                                            |
+| **Sex**        | String | "Male" or "Female" (case-insensitive)        | "M", "F", "male", "FEMALE"                    | Normalize M/male → Male and F/female → Female; token expressions uppercase these values                          |
 | **PostalCode** | String | Valid US ZIP or Canadian postal code         | "98004", "K1A 1A1", "98004-1234"              | Remove dashes; pad ZIP to 5 digits                                                                               |
 | **SSN**        | String | 9 numeric digits (US Social Security Number) | "123-45-6789" (digits-only inputs normalized) | Remove dashes                                                                                                    |
 
@@ -91,7 +91,7 @@ Attributes are validated **after normalization**. See [Concepts: Normalization a
 
 - **FirstName/LastName**: At least one alphabetic character after diacritic removal and supported Latin Extended transliteration
 - **BirthDate**: Valid date within allowed range
-- **Sex**: Exactly "MALE" or "FEMALE" after normalization
+- **Sex**: Exactly "Male" or "Female" after normalization
 - **PostalCode**: Valid US ZIP-5 or Canadian postal code format
 - **SSN**: Area code ≠ 000/666/900–999; group ≠ 00; serial ≠ 0000; reject common placeholders
 
@@ -113,7 +113,7 @@ Each attribute is normalized according to its type:
 
 - **Names** (FirstName, LastName): Remove titles/suffixes, remove diacritics and transliterate supported Latin Extended letters to ASCII, then uppercase
 - **BirthDate**: Parse input format (multiple formats supported) → ISO 8601 YYYY-MM-DD
-- **Sex**: Parse variants (M/male/Male → MALE; F/female/Female → FEMALE)
+- **Sex**: Parse variants (M/male/Male → Male; F/female/Female → Female)
 - **PostalCode**: Remove dashes, zero-pad ZIP codes to 5 digits, uppercase Canadian postal codes
 - **SSN**: Remove dashes, validate 9-digit format
 

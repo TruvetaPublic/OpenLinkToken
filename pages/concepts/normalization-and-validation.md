@@ -138,20 +138,20 @@ XXX-XX-0000  (Invalid serial)
 
 **Normalization:**
 
-- Convert to uppercase
-- Map to single character
+- Normalize accepted values to `Male` or `Female`.
 
 **Accepted Values:**
 
-| Input                     | Normalized |
-| ------------------------- | ---------- |
-| `"M"`, `"Male"`, `"m"`    | `"M"`      |
-| `"F"`, `"Female"`, `"f"`  | `"F"`      |
-| `"U"`, `"Unknown"`, `"u"` | `"U"`      |
+| Input                    | Normalized |
+| ------------------------ | ---------- |
+| `"M"`, `"Male"`, `"m"`   | `"Male"`   |
+| `"F"`, `"Female"`, `"f"` | `"Female"` |
 
 **Validation:**
 
-- Must be M, F, or U after normalization
+- Must be `Male` or `Female` after normalization.
+
+Token expressions that apply `U(Sex)` produce `MALE` or `FEMALE`.
 
 ---
 

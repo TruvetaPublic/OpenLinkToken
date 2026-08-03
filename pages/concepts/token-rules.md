@@ -22,6 +22,9 @@ Each token rule defines:
 - `[0]` = first character
 - `[0:3]` = first 3 characters
 
+Sex values normalize to `Male` or `Female`; applying `U(Sex)` produces
+`MALE` or `FEMALE`.
+
 ---
 
 ## T1: Last Name + First Initial + Sex + Birth Date
@@ -53,9 +56,9 @@ Normalized:
   FirstName: THOMAS
   LastName: OREILLY
   BirthDate: 1995-11-03
-  Sex: M
+  Sex: Male
 
-Token Signature: "OREILLY|T|M|1995-11-03"
+Token Signature: "OREILLY|T|MALE|1995-11-03"
 ```
 
 ---
@@ -115,7 +118,7 @@ T3 = U(LastName) | U(FirstName) | U(Sex) | BirthDate
 ### T3 Example
 
 ```text
-Token Signature: "GARCIA|MARIA|F|1988-03-22"
+Token Signature: "GARCIA|MARIA|FEMALE|1988-03-22"
 ```
 
 ---
@@ -146,7 +149,7 @@ Notes:
 Input SSN: 452-38-7291
 SSN_digits: 452387291
 
-Token Signature: "452387291|F|1988-03-22"
+Token Signature: "452387291|FEMALE|1988-03-22"
 ```
 
 ---
@@ -171,7 +174,7 @@ T5 = U(LastName) | U(FirstName[0:3]) | U(Sex)
 
 ```text
 FirstName: Jonathan -> FirstName[0:3] = JON
-Token Signature: "SMITH|JON|M"
+Token Signature: "SMITH|JON|MALE"
 ```
 
 ---
