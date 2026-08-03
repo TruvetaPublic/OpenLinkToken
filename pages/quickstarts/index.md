@@ -16,7 +16,7 @@ This page is the single “Start here” hub for getting Open Link Token running
 
 1. Prepare an input file with person attributes (CSV or Parquet)
 2. Run Open Link Token to generate tokens (encrypted or tokenized)
-3. Inspect the token output and the `.metadata.json` audit artifact
+3. Inspect the token output and, for `package` or `tokenize`, the `.metadata.json` audit artifact
 
 ## Choose Your Path
 
@@ -32,8 +32,9 @@ Open Link Token reads person attributes (for example: first/last name, birthdate
 
 After you run a quickstart:
 
-- `output.csv` contains 5 tokens (T1–T5) per input record
-- `output.metadata.json` captures processing stats and runtime context
+- The Python CLI enables ML1 by default, so a valid input record can produce six rows: T1–T5 plus one `ML1` row. ML1 requires valid FirstName, LastName, BirthDate, Sex, and PostalCode values.
+- Add `--disable-inferencing` to `package` or default `tokenize` when you need only the five T1–T5 rows.
+- `package` and `tokenize` write processing metadata; a `.metadata.json` sidecar is written for CSV/Parquet output (or embedded in a ZIP). `encrypt` and `decrypt` do not emit metadata.
 
 ## Quickstart Pages
 

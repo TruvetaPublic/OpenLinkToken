@@ -270,7 +270,7 @@ The `rlid` field identifies which token signature rule was used:
 | MAC algorithm  | HS256 (HMAC-SHA256)   | HS512 (HMAC-SHA512)       |
 | Key wrapping   | A256GCMKW (symmetric) | RSA-OAEP-256 (asymmetric) |
 
-### Example 3: Vector Embedding (T8)
+### Example 3: Vector Embedding (M1)
 
 For ML-based matching with vector embeddings, the `ppid` contains base64-encoded binary:
 
@@ -278,14 +278,14 @@ For ML-based matching with vector embeddings, the `ppid` contains base64-encoded
 
 ```json
 {
-  "rlid": "T8",
+  "rlid": "ML1",
   "hash_alg": "SHA-256",
   "mac_alg": "HS256",
   "ppid": [
     "SGVsbG8gV29ybGQhIFRoaXMgaXMgYSBiYXNlNjQgZW5jb2RlZCBmbG9hdDMyIGFycmF5..."
   ],
   "ppid_dtype": "float32",
-  "ppid_dims": 768,
+  "ppid_dims": 1024,
   "rid": "ring-2026-q1",
   "iss": "org.openlinktoken",
   "iat": 1738339200

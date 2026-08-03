@@ -71,7 +71,7 @@ olt initiate-exchange --public-key ~/.openlinktoken/recipient.public.pem
 
 ### Package Command (Tokenize + Encrypt)
 
-By default, `package` writes a self-contained `<input>_packaged.zip` bundle (tokens + metadata + exchange config), ready to share. Pass `-o tokens.csv` if you want a plain CSV instead:
+By default, `package` writes a self-contained `<input>_packaged.zip` bundle (tokens + metadata + exchange config), ready to share. For valid records, the Python CLI includes T1–T5 plus one ML1 row by default; add `--disable-inferencing` for T1–T5 only. Pass `-o tokens.csv` if you want a plain CSV instead:
 
 ```bash
 olt package -i ./resources/sample.csv -o tokens.csv
@@ -161,7 +161,7 @@ person_attributes = {
 token_definition = TokenDefinition()
 tokenizer = SHA256Tokenizer([
   HashTokenTransformer("HashingSecret"),
-  EncryptTokenTransformer("Secret-Encryption-Key-Goes-Here."),
+  EncryptTokenTransformer("0123456789abcdef0123456789abcdef"),
 ])
 
 generator = TokenGenerator(token_definition, tokenizer)
@@ -172,6 +172,10 @@ if result.invalid_attributes:
 for rule_id, token in result.tokens.items():
   print(f"{record_id},{rule_id},{token}")
 ```
+
+The direct library transformer returns a base64-encoded AES-GCM payload. The
+CLI `package` workflow applies the `olt.V1.<JWE>` wrapper to encrypted package
+output.
 
 ## Cross-Language Parity
 

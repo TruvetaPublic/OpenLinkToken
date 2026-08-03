@@ -15,7 +15,7 @@ The matching model generates cryptographically secure tokens from personal ident
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                    Person Record (PII)                          │
-│  Name, DOB, SSN, Sex, Postal Code                              │
+│  Name, DOB, SSN, Sex, Postal Code                               │
 └───────────────────────┬─────────────────────────────────────────┘
                         │
                         ▼
@@ -58,7 +58,9 @@ Real-world data is messy:
 
 Using **five deterministic rules** allows matching at different confidence levels:
 
-Open Link Token emits tokens with a `RuleId` of `T1`–`T5`. These identifiers are **rule names**, not “tiers” (they don’t imply an ordering). In practice, different rules tend to trade off precision vs. recall based on which attributes they include.
+Open Link Token emits tokens with a `RuleId` of `T1`–`T5`. These identifiers are **rule names**, not “tiers” (they don’t imply an
+ordering). In practice, different deterministic rules tend to trade off
+precision vs. recall based on which attributes they include.
 
 | RuleId | Attributes (normalized signature)      | Typical use                                             |
 | :----- | :------------------------------------- | :------------------------------------------------------ |

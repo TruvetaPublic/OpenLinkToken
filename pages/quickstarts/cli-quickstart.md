@@ -84,6 +84,14 @@ The fastest way to get started. No Python installation required.
 ```bash
 cd /path/to/OpenLinkToken
 
+# Create a local recipient key pair and an exchange config for this example.
+# In a real exchange, the partner supplies the recipient public key.
+./run-olt.sh generate-key-pair --name quickstart-recipient
+./run-olt.sh initiate-exchange \
+  --name quickstart-sender \
+  --public-key "$HOME/.openlinktoken/quickstart-recipient.public.pem" \
+  --output ./resources/quickstart.exchange.json
+
 ./run-olt.sh package \
   -i ./resources/sample.csv \
   -o ./resources/output.csv \
@@ -95,6 +103,12 @@ cd /path/to/OpenLinkToken
 ```powershell
 cd C:\path\to\OpenLinkToken
 
+.\run-olt.ps1 generate-key-pair --name quickstart-recipient
+.\run-olt.ps1 initiate-exchange `
+  --name quickstart-sender `
+  --public-key "$HOME/.openlinktoken/quickstart-recipient.public.pem" `
+  --output .\resources\quickstart.exchange.json
+
 .\run-olt.ps1 package `
   -i .\resources\sample.csv `
   -o .\resources\output.csv `
@@ -105,17 +119,17 @@ cd C:\path\to\OpenLinkToken
 
 The CLI is organized into subcommands. Choose the one that matches your workflow:
 
-| Subcommand                  | Description                                             | Requires                      |
-| --------------------------- | ------------------------------------------------------- | ----------------------------- |
-| `decrypt`                   | Decrypt encrypted tokens back to hashed form            | exchange config + private key |
-| `encrypt`                   | Encrypt previously tokenized (hashed) output            | exchange config + private key |
-| `generate-key-pair`         | Generate an ECDH public/private key pair                | none                          |
-| `initiate-exchange`         | Create the exchange config used by later commands       | recipient public key          |
-| `package`                   | Tokenize and encrypt in one step — use for data sharing | exchange config + private key |
-| `tokenize`                  | Tokenize without encryption — use for internal analysis | exchange config + private key |
-| `tokenize --mode hash-only` | Output deterministic SHA-256 tokens without HMAC        | none                          |
-| `tokenize --mode demo`      | Output plain attribute signatures — use for exploration | none                          |
-| `update`                    | Upgrade the CLI to the latest (or a specific) release   | none                          |
+| Subcommand                  | Description                                             | Requires                                                    |
+| --------------------------- | ------------------------------------------------------- | ----------------------------------------------------------- |
+| `decrypt`                   | Decrypt encrypted tokens back to hashed form            | exchange config + private key                               |
+| `encrypt`                   | Encrypt previously tokenized (hashed) output            | exchange config + private key                               |
+| `generate-key-pair`         | Generate an ECDH public/private key pair                | none                                                        |
+| `initiate-exchange`         | Create the exchange config used by later commands       | recipient public key                                        |
+| `package`                   | Tokenize and encrypt in one step — use for data sharing | exchange config + private key                               |
+| `tokenize`                  | Tokenize without encryption — use for internal analysis | exchange config + private key                               |
+| `tokenize --mode hash-only` | Output deterministic SHA-256 tokens without HMAC        | none for base output; optional exchange config for rotation |
+| `tokenize --mode demo`      | Output plain attribute signatures — use for exploration | none for base output; optional exchange config for rotation |
+| `update`                    | Upgrade the CLI to the latest (or a specific) release   | none                                                        |
 
 For most use cases, `package` is the right starting point.
 Use `tokenize --mode hash-only` when you need deterministic SHA-256 output without creating an exchange config first.
@@ -125,15 +139,15 @@ Use `tokenize --mode demo` to explore token output without managing secrets.
 
 These arguments are shared across all subcommands:
 
-| Argument            | Short               | Description                                                                                                                                                                                |
-| ------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `--input`           | `-i`                | Input file path (CSV or Parquet)                                                                                                                                                           |
-| `--output`          | `-o`                | Output file path                                                                                                                                                                           |
-| `-c`                | `--exchange-config` | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted on consumer commands.                                                                       |
-| `--private-key`     |                     | Private key PEM used to decrypt the exchange config and derive later transport keys                                                                                                        |
-| `--private-key-env` |                     | Environment variable containing the private key PEM                                                                                                                                        |
-| `--mode`            |                     | Tokenize mode selector: `default`, `hash-only`, or `demo` (`hash-only` cannot be combined with exchange-config or private-key options; `demo` cannot be combined with `--exchange-config`) |
-| `--hash-record-ids` |                     | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability; default `tokenize` mode and `package` only)                                                         |
+| Argument            | Short               | Description                                                                                                                                                 |
+| ------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--input`           | `-i`                | Input file path (CSV or Parquet)                                                                                                                            |
+| `--output`          | `-o`                | Output file path                                                                                                                                            |
+| `-c`                | `--exchange-config` | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted on consumer commands.                                        |
+| `--private-key`     |                     | Private key PEM used to decrypt the exchange config and derive later transport keys                                                                         |
+| `--private-key-env` |                     | Environment variable containing the private key PEM                                                                                                         |
+| `--mode`            |                     | Tokenize mode selector: `default`, `hash-only`, or `demo`; hash-only/demo do not need secrets, but an exchange config may be supplied for rotation settings |
+| `--hash-record-ids` |                     | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability; default `tokenize` mode and `package` only)                          |
 
 ## `package` Command
 
@@ -166,13 +180,20 @@ olt package -i sample.csv -o tokens.csv
 
 ```csv
 RecordId,RuleId,Token
-patient_001,T1,Gn7t1Zj16E5Qy+z9iINtcz...
-patient_001,T2,pUxPgYL9+cMxkA+8928Pi...
-patient_001,T3,rwjfwIo5OcJUItTx8KCo...
-patient_001,T4,9o7HIYZkhizczFzJL1HFy...
-patient_001,T5,QpBpGBqaMhagfcHGZhVa...
+patient_001,T1,olt.V1.<JWE compact serialization>
+patient_001,T2,olt.V1.<JWE compact serialization>
+patient_001,T3,olt.V1.<JWE compact serialization>
+patient_001,T4,olt.V1.<JWE compact serialization>
+patient_001,T5,olt.V1.<JWE compact serialization>
+patient_001,ML1,olt.V1.<JWE compact serialization>
 patient_002,T1,...
 ```
+
+For valid records, `package` emits T1–T5 plus one `ML1` row by default. ML1 is
+omitted when its required attributes are invalid or when
+`--disable-inferencing` is supplied. The `olt.V1.<JWE compact serialization>`
+values above are encrypted package output; `tokenize` and `decrypt` instead
+write unwrapped values.
 
 ### Example: Parquet Input
 
@@ -214,17 +235,25 @@ This creates:
 
 ### Token File
 
-Each input record produces 5 tokens (T1–T5):
+Each input record can produce up to 6 tokens: T1–T5 plus one ML1 row when ML1's
+required attributes are valid. Use `--disable-inferencing` for T1–T5 only:
 
-| Column     | Description                                                                                                                                     |
-| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `RecordId` | Original record identifier                                                                                                                      |
-| `RuleId`   | Token rule (T1, T2, T3, T4, or T5)                                                                                                              |
-| `Token`    | Encrypted match token (`olt.V1`), base64-encoded HMAC (default `tokenize`/decrypted), or 64-character SHA-256 hex (`tokenize --mode hash-only`) |
+```bash
+olt package -i sample.csv -o tokens.csv --disable-inferencing
+```
+
+| Column     | Description                                                                                                                                             |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `RecordId` | Original record identifier                                                                                                                              |
+| `RuleId`   | Token rule (`T1`–`T5` or `ML1`)                                                                                                                         |
+| `Token`    | Encrypted package token (`olt.V1.<JWE>`), base64-encoded HMAC (default `tokenize`/decrypted), or 64-character SHA-256 hex (`tokenize --mode hash-only`) |
 
 ### Metadata File
 
-A `.metadata.json` file is created alongside the output:
+`package` and `tokenize` create metadata. For CSV or Parquet output, a
+`.metadata.json` file is created alongside the output; for ZIP output,
+`package` embeds the metadata in the archive. `encrypt` and `decrypt` do not
+create metadata files.
 
 ```json
 {
@@ -234,7 +263,14 @@ A `.metadata.json` file is created alongside the output:
   "TotalRows": 2,
   "TotalRowsWithInvalidAttributes": 0,
   "InvalidAttributesByType": {},
-  "BlankTokensByRule": {}
+  "BlankTokensByRule": {
+    "T1": 0,
+    "T2": 0,
+    "T3": 0,
+    "T4": 0,
+    "T5": 0,
+    "ML1": 0
+  }
 }
 ```
 

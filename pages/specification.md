@@ -50,12 +50,16 @@ Open Link Token is a privacy-preserving token generation system for deterministi
 
 ### Size and Processing Model
 
-Open Link Token is designed for **streaming-style** processing: it reads records, normalizes/validates, emits up to 5 tokens, and writes output without needing to hold the full dataset in memory.
+Open Link Token is designed for **streaming-style** processing: it reads
+records, normalizes/validates, emits up to 6 tokens (T1–T5 plus ML1 when
+enabled and valid), and writes output without needing to hold the full dataset
+in memory.
 
 **Practical constraints:**
 
 - There is **no fixed maximum file size** imposed by Open Link Token itself; limits are driven by your machine/cluster resources (CPU, memory, disk) and the underlying CSV/Parquet libraries.
-- Output size is roughly **5× the number of input rows** (one row per rule per record) plus metadata.
+- Output size is roughly **up to 6× the number of input rows** (T1–T5 plus
+  ML1 when enabled and valid) plus metadata.
 - For Parquet, performance and memory usage depend on row group sizing and the reader implementation.
 
 **Recommendations:**
@@ -162,10 +166,16 @@ Signature → SHA-256 → HMAC-SHA256 → JWE (AES-256-GCM) → Prefix `olt.V1.`
 
 Encrypted `olt.V1` token strings are intentionally non-deterministic due to randomized IVs.
 
-**Hash-only mode (optional):**
+**Default `tokenize` mode (optional encryption):**
 
 ```
 Signature → SHA-256 → HMAC-SHA256 → Base64
+```
+
+**`tokenize --mode hash-only`:**
+
+```
+Signature → SHA-256 → Lowercase hex
 ```
 
 **Parameters required:**
@@ -180,12 +190,12 @@ Signature → SHA-256 → HMAC-SHA256 → Base64
 During processing, Open Link Token tracks:
 
 - **Counts**: Total rows, invalid attributes per type, blank tokens per rule
-- **System Info**: Platform (Java/Python), language version, library version
-- **Secrets**: SHA-256 hashes of hashing secret and encryption key (not the secrets themselves)
-- **Timestamps**: Processing start, completion, all in UTC
-- **Paths**: Input/output file paths
+- **System Info**: Platform, Python version, and library version in the Python CLI
 
-Metadata is written to `.metadata.json` alongside output files.
+The CLI writes metadata for `package` and `tokenize` only. CSV and Parquet
+outputs receive a `.metadata.json` sidecar; ZIP package output embeds the
+metadata file. `encrypt` and `decrypt` do not write metadata. Current CLI
+metadata does not contain secret hashes, timestamps, or input/output paths.
 
 **Details:** See [Reference: Metadata Format](reference/metadata-format.md)
 
@@ -210,15 +220,16 @@ RecordId,RuleId,Token
 **Rows per input record:** 6 by default (T1–T5 plus ML1), 5 when ML1 is
 disabled, and fewer when required attributes are invalid
 
-**Example:**
+**Example (`package` encrypted output):**
 
 ```csv
 RecordId,RuleId,Token
-ID001,T1,aB7c9Dz1e4...
-ID001,T2,fG3h5kL2m9...
-ID001,T3,nP6q8sT1u0...
-ID001,T4,vW9xY2zAbC...
-ID001,T5,DeF3gHi6jK...
+ID001,T1,olt.V1.<JWE compact serialization>
+ID001,T2,olt.V1.<JWE compact serialization>
+ID001,T3,olt.V1.<JWE compact serialization>
+ID001,T4,olt.V1.<JWE compact serialization>
+ID001,T5,olt.V1.<JWE compact serialization>
+ID001,ML1,olt.V1.<JWE compact serialization>
 ```
 
 ### Token Output (Parquet)
@@ -240,17 +251,17 @@ Parquet format includes compression and is suitable for large datasets.
 **Contents:**
 
 - Processing statistics (record counts, invalid attributes, blank tokens)
-- System information (platform, versions, timestamps)
-- Secret hashes (SHA-256 of hashing secret and encryption key)
-- File paths (input, output, metadata)
+- System information (platform, Python version, and library version in the
+  current Python CLI)
+- No secret hashes, timestamps, or input/output paths in current CLI metadata
 
 **Example:**
 
 ```json
 {
-  "Platform": "Java",
-  "JavaVersion": "21.0.0",
-  "Version": "1.7.0",
+  "Platform": "Python",
+  "PythonVersion": "3.11.5",
+  "Version": "2.1.0",
   "TotalRows": 100,
   "TotalRowsWithInvalidAttributes": 3,
   "InvalidAttributesByType": {
@@ -259,7 +270,8 @@ Parquet format includes compression and is suitable for large datasets.
   },
   "BlankTokensByRule": {
     "T1": 2,
-    "T2": 1
+    "T2": 1,
+    "ML1": 0
   }
 }
 ```

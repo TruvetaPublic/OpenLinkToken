@@ -1,0 +1,13 @@
+instructions: |-
+  - Perform all repository work inside the configured DevContainer. Do not
+  run commands or modify repository files from outside the DevContainer.
+  - Use the repository's pull request template for every pull request, and complete
+    all required sections before submitting it for review.
+  - Do not invoke Superpowers planning skills automatically. Use them only when the
+    user explicitly requests planning assistance.
+  - Use the GH_TOKEN environment variable for authenticated GitHub operations,
+    including creating commits and interacting with the remote repository. Never
+    hard-code, expose, or replace this credential with another authentication method.
+automation:
+  auto_issue_session: true
+  remote_control: true

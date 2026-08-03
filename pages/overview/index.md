@@ -34,15 +34,18 @@ Matching is performed on deterministic tokenized values (or decrypted token payl
 
 1. **Input**: Person records with attributes (name, birthdate, SSN, postal code, sex)
 2. **Validation & Normalization**: Attributes are validated and normalized (uppercase, diacritic removal, supported Latin Extended transliteration, title stripping)
-3. **Token Generation**: Multiple token rules (T1–T5) combine different attributes
+3. **Token Generation**: Five deterministic token rules (T1–T5) combine different attributes; ML1 can add one model-based rule by default
 4. **Transformation**: Deterministic HMAC-SHA256 hashes are produced; encrypted mode wraps them as `olt.V1` JWE match tokens
-5. **Output**: Encrypted `olt.V1` tokens (default), deterministic tokenized values, or `tokenize --mode hash-only` SHA-256 output, plus metadata
+5. **Output**: Encrypted `olt.V1` tokens (default), deterministic tokenized values, or `tokenize --mode hash-only` SHA-256 output. `package` and `tokenize` also write metadata.
 
 ## Key Concepts
 
 ### Token Generation Rules
 
-Open Link Token uses **5 distinct token rules (T1–T5)** that define which attributes combine to form each token. Each rule targets different matching scenarios:
+Open Link Token uses **5 distinct deterministic token rules (T1–T5)** that
+define which attributes combine to form each token. When the optional AI module
+is available, `package` and default `tokenize` also emit one `ML1` row for
+records with valid ML1 inputs:
 
 | Rule | Definition                                      | Use Case                 |
 | ---- | ----------------------------------------------- | ------------------------ |
@@ -51,6 +54,9 @@ Open Link Token uses **5 distinct token rules (T1–T5)** that define which attr
 | T3   | Last name + full first name + sex + birthdate   | Higher precision         |
 | T4   | SSN + sex + birthdate                           | Authoritative identifier |
 | T5   | Last name + first 3 letters + sex               | Quick search             |
+
+ML1 uses an ONNX model over PostalCode, BirthDate, FirstName, LastName, and
+Sex. Use `--disable-inferencing` to emit only T1–T5.
 
 ### Validation & Normalization
 
@@ -69,13 +75,13 @@ Invalid records are tracked and reported in metadata.
 The token is transformed through a secure pipeline:
 
 ```
-Token Signature → SHA-256 Hash → HMAC-SHA256 → AES-256 Encrypt → Base64 Encode
+Token Signature → SHA-256 Hash → HMAC-SHA256 → JWE (AES-256-GCM) → Prefix `olt.V1.`
 ```
 
 Or using the `tokenize` subcommand (no encryption):
 
 ```
-Token Signature → SHA-256 Hash → HMAC-SHA256 → Base64 Encode
+Token Signature → SHA-256 Hash → HMAC-SHA256 → Base64-encoded HMAC value
 ```
 
 ## Data Flow
@@ -85,11 +91,11 @@ Input CSV/Parquet
        ↓
 Validate & Normalize
        ↓
-Generate Token Signatures (T1-T5)
+Generate Token Signatures (T1-T5 plus ML1 when enabled)
        ↓
 Hash & Encrypt
        ↓
-Output CSV/Parquet + Metadata
+Output CSV/Parquet (plus metadata for `package`/`tokenize`)
 ```
 
 ## Multi-Language Parity

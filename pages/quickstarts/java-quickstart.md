@@ -69,7 +69,7 @@ personAttributes.put(SocialSecurityNumberAttribute.class, "123-45-6789");
 
 List<TokenTransformer> transformers = List.of(
   new HashTokenTransformer("HashingSecret"),
-  new EncryptTokenTransformer("Secret-Encryption-Key-Goes-Here.")
+  new EncryptTokenTransformer("0123456789abcdef0123456789abcdef")
 );
 
 TokenGenerator generator = new TokenGenerator(
@@ -86,6 +86,15 @@ result.getTokens().forEach((ruleId, token) ->
   System.out.println(recordId + "," + ruleId + "," + token)
 );
 ```
+
+The library transformer returns a base64-encoded AES-GCM payload. This direct
+Java API output is not the CLI `package` wrapper; the CLI formats encrypted
+package tokens as `olt.V1.<JWE>`.
+
+The core Java dependency shown here provides the deterministic T1–T5 rules.
+ML1 is available when the optional AI module and its provider are on the
+runtime classpath; the Python CLI quickstarts include that module and enable
+ML1 by default.
 
 ### Hash-Only (No Encryption)
 

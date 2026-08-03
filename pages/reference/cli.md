@@ -68,6 +68,11 @@ The automatic version check can also be disabled permanently by setting the envi
 
 ### `package` (Default Encrypted Mode)
 
+`package` enables ML1 by default when the AI module is available. A valid input
+record can produce T1–T5 plus one `ML1` row; use `--disable-inferencing` for
+only the five standard rules. ML1 requires valid FirstName, LastName,
+BirthDate, Sex, and PostalCode values.
+
 | Argument                    | Short | Required | Default                                    | Description                                                                                                                                                                         |
 | --------------------------- | ----- | -------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--input`                   | `-i`  | Yes      |                                            | Path to input file (CSV or Parquet)                                                                                                                                                 |
@@ -85,20 +90,20 @@ The automatic version check can also be disabled permanently by setting the envi
 
 ### `tokenize` (Hashed Tokens Only)
 
-| Argument                    | Short | Required          | Default                                    | Description                                                                                                                                                                                                                    |
-| --------------------------- | ----- | ----------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `--input`                   | `-i`  | Yes               |                                            | Path to input file (CSV or Parquet)                                                                                                                                                                                            |
-| `--output`                  | `-o`  | No                | `<input_basename>_<token_json>`            | Path to output file. Appends `_tokenized` suffix based on input filename when omitted.                                                                                                                                         |
-| `--exchange-config`         | `-c`  | Default mode only | `./openlinktoken-YYYY-MM-DD.exchange.json` | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted.                                                                                                                                |
-| `--private-key`             |       | No\*              |                                            | Private key PEM used to decrypt the exchange config                                                                                                                                                                            |
-| `--private-key-env`         |       | No\*              |                                            | Environment variable containing the private key PEM                                                                                                                                                                            |
-| `--config`                  |       | No                |                                            | YAML config file for custom input field mapping and token-rule definitions. See [Tokenization Configuration Reference](tokenization-config.md). Supported for CSV and Parquet input.                                           |
-| `--mode`                    |       | No                | `default`                                  | Mode selector: `default`, `hash-only`, or `demo`. `hash-only` cannot be combined with exchange-config, private-key options, or `--hash-record-ids`; `demo` cannot be combined with `--exchange-config` or `--hash-record-ids`. |
-| `--hash-record-ids`         |       | No                |                                            | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability; default tokenize mode only)                                                                                                             |
-| `--disable-inferencing`     |       | No                | ML1 enabled                                | Disable ML1 ONNX inference token generation.                                                                                                                                                                                   |
-| `--inferencing-batch-size`  |       | No                | `64`                                       | ML1 ONNX inference batch size.                                                                                                                                                                                                 |
-| `--inferencing-num-threads` |       | No                | `0` (auto-detect)                          | ONNX Runtime intra/inter-op thread count for ML1 inference.                                                                                                                                                                    |
-| `--no-progress`             | `-q`  | No                |                                            | Suppress the interactive progress indicator.                                                                                                                                                                                   |
+| Argument                    | Short | Required | Default                                    | Description                                                                                                                                                                                                                              |
+| --------------------------- | ----- | -------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--input`                   | `-i`  | Yes      |                                            | Path to input file (CSV or Parquet)                                                                                                                                                                                                      |
+| `--output`                  | `-o`  | No       | `<input_basename>_<token_json>`            | Path to output file. Appends `_tokenized` suffix based on input filename when omitted.                                                                                                                                                   |
+| `--exchange-config`         | `-c`  | No       | `./openlinktoken-YYYY-MM-DD.exchange.json` | Exchange config JSON path. Default `tokenize` mode uses it to resolve the hashing secret; hash-only/demo may use it with a matching private key for optional rotation settings.                                                          |
+| `--private-key`             |       | No\*     |                                            | Private key PEM used to decrypt the exchange config                                                                                                                                                                                      |
+| `--private-key-env`         |       | No\*     |                                            | Environment variable containing the private key PEM                                                                                                                                                                                      |
+| `--config`                  |       | No       |                                            | YAML config file for custom input field mapping and token-rule definitions. See [Tokenization Configuration Reference](tokenization-config.md). Supported for CSV and Parquet input.                                                     |
+| `--mode`                    |       | No       | `default`                                  | Mode selector: `default`, `hash-only`, or `demo`. Hash-only/demo do not need secrets; an exchange config and matching private key may be supplied for optional rotation settings. `--hash-record-ids` is supported only in default mode. |
+| `--hash-record-ids`         |       | No       |                                            | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability; default tokenize mode only)                                                                                                                       |
+| `--disable-inferencing`     |       | No       | ML1 enabled                                | Disable ML1 ONNX inference token generation.                                                                                                                                                                                             |
+| `--inferencing-batch-size`  |       | No       | `64`                                       | ML1 ONNX inference batch size.                                                                                                                                                                                                           |
+| `--inferencing-num-threads` |       | No       | `0` (auto-detect)                          | ONNX Runtime intra/inter-op thread count for ML1 inference.                                                                                                                                                                              |
+| `--no-progress`             | `-q`  | No       |                                            | Suppress the interactive progress indicator.                                                                                                                                                                                             |
 
 ### `encrypt` (Encrypt Input Tokens)
 
@@ -310,7 +315,7 @@ olt package \
 **Token Pipeline:**
 
 ```
-Signature → SHA-256 → HMAC-SHA256 → AES-256-GCM → Base64
+Signature → SHA-256 → HMAC-SHA256 → JWE (AES-256-GCM) → Prefix `olt.V1.`
 ```
 
 ### `tokenize` Subcommand
@@ -343,7 +348,9 @@ For complete details, see [Tokenization Configuration Reference](tokenization-co
 
 ### Hash-only Mode (`tokenize --mode hash-only`)
 
-Generates deterministic SHA-256 output without HMAC, an exchange config, or a private key.
+Generates deterministic SHA-256 output without HMAC, a secret, or a private
+key. An exchange config is optional when you want to apply its rotation
+settings; supply the matching private key with it.
 
 > ⚠️ **Hash-only output must not be used for production or cross-organisation exchange.** It is deterministic and keyless by design.
 
@@ -361,9 +368,11 @@ Signature → SHA-256 → Lowercase hex
 
 ### Demo Mode (`tokenize --mode demo`)
 
-Outputs raw attribute signature strings without any hashing. Both the SHA-256 and HMAC
-steps are skipped. No exchange config or private key is required, making it easy to inspect which
-attribute values compose each token for development, testing, or demos.
+Outputs raw attribute signature strings without any hashing. Both the SHA-256 and
+HMAC steps are skipped. No exchange config or private key is required for the
+base output, making it easy to inspect which attribute values compose each
+token for development, testing, or demos. An exchange config may be supplied
+with a matching private key to apply optional rotation settings.
 
 > ⚠️ **Demo-mode output must not be used in production or shared externally.** The raw
 > signatures expose the normalised attribute values directly and provide no privacy
@@ -372,7 +381,8 @@ attribute values compose each token for development, testing, or demos.
 ```bash
 olt tokenize \
   -i input.csv -o output.csv \
-  --mode demo
+  --mode demo \
+  --disable-inferencing
 ```
 
 **Token Pipeline:**
@@ -381,17 +391,25 @@ olt tokenize \
 Signature → (passthrough) → Raw pipe-separated string
 ```
 
-**Example demo token** (T1 rule, first name + last name + birth date):
+The command disables ML1 so the example shows the current five standard rules.
+Without `--disable-inferencing`, valid input can also produce one `ML1` row.
+For a record with John Doe, `Male`, `1980-01-15`, postal code `98004`, and
+valid SSN `452-38-7291`:
 
-```text
-JOHN|DOE|19800115
+```csv
+RecordId,RuleId,Token
+ID001,T1,DOE|J|MALE|1980-01-15
+ID001,T2,DOE|JOHN|1980-01-15|980
+ID001,T3,DOE|JOHN|MALE|1980-01-15
+ID001,T4,452387291|MALE|1980-01-15
+ID001,T5,DOE|JOH|MALE
 ```
 
 **Differences from normal `tokenize`:**
 
 | Aspect                        | Default mode                   | Hash-only mode                   | Demo mode                                  |
 | ----------------------------- | ------------------------------ | -------------------------------- | ------------------------------------------ |
-| Exchange config / private key | Required in normal mode        | Not required                     | Not required                               |
+| Exchange config / private key | Required in normal mode        | Optional for rotation settings   | Optional for rotation settings             |
 | Token pipeline                | SHA-256 → HMAC-SHA256 → Base64 | SHA-256 → lowercase hex          | Passthrough → raw signature string         |
 | Token format                  | Base64-encoded HMAC-SHA256     | 64-character lowercase hex       | Pipe-separated normalised attribute values |
 | Safe to share                 | No (internal only)             | No (never suitable for exchange) | No (never suitable for exchange)           |
@@ -420,13 +438,18 @@ patient_002,Jane,Smith,1975-03-22,Female,90210,987-65-4321
 
 ### CSV Output
 
+The following is an encrypted `package` output example. Encrypted values use
+the `olt.V1.<JWE compact serialization>` format. Default `tokenize` and
+`decrypt` output unwrapped base64 HMAC values instead.
+
 ```csv
 RecordId,RuleId,Token
-patient_001,T1,Gn7t1Zj16E5Qy+z9iINtczP6fRDYta6C0XFr...
-patient_001,T2,pUxPgYL9+cMxkA+8928Pil+9W+dm9kISwHYP...
-patient_001,T3,rwjfwIo5OcJUItTx8KCoSZMtr7tVGSyXsWv/...
-patient_001,T4,9o7HIYZkhizczFzJL1HFyanlllzSa8hlgQWQ...
-patient_001,T5,QpBpGBqaMhagfcHGZhVavn23ko03jkyS9Vo4...
+patient_001,T1,olt.V1.<JWE compact serialization>
+patient_001,T2,olt.V1.<JWE compact serialization>
+patient_001,T3,olt.V1.<JWE compact serialization>
+patient_001,T4,olt.V1.<JWE compact serialization>
+patient_001,T5,olt.V1.<JWE compact serialization>
+patient_001,ML1,olt.V1.<JWE compact serialization>
 ```
 
 ### Parquet Schema
@@ -453,7 +476,9 @@ Token: string
 
 ## Metadata Output
 
-Every run generates a `.metadata.json` file:
+`package` and `tokenize` generate metadata. For CSV or Parquet output, it is a
+`.metadata.json` sidecar; for ZIP output, `package` embeds metadata in the
+archive. `encrypt` and `decrypt` do not generate metadata:
 
 ```json
 {
@@ -468,7 +493,8 @@ Every run generates a `.metadata.json` file:
   },
   "BlankTokensByRule": {
     "T1": 2,
-    "T4": 1
+    "T4": 1,
+    "ML1": 0
   }
 }
 ```

@@ -62,7 +62,7 @@ TokenDefinition tokenDefinition = new TokenDefinition();
 ```java
 List<TokenTransformer> transformers = List.of(
     new HashTokenTransformer("HashingSecret"),
-    new EncryptTokenTransformer("Secret-Encryption-Key-Goes-Here.")
+    new EncryptTokenTransformer("0123456789abcdef0123456789abcdef")
 );
 
 TokenGenerator generator = new TokenGenerator(
@@ -96,12 +96,13 @@ Full encryption with AES-256-GCM.
 
 ```java
 EncryptTokenTransformer encryptor = new EncryptTokenTransformer(
-    "Secret-Encryption-Key-Goes-Here."  // Exactly 32 chars
+    "0123456789abcdef0123456789abcdef"  // Exactly 32 ASCII bytes
 );
 
 String signature = "DOE|J|MALE|1980-01-15";
 String encryptedToken = encryptor.transform(signature);
-// Returns: Open Link Token encrypted match token string (olt.V1.<JWE compact serialization>)
+// Returns: Base64-encoded AES-GCM payload from the library transformer.
+// The CLI `package` workflow wraps its encrypted output as `olt.V1.<JWE>`.
 ```
 
 ## Complete Example
@@ -119,7 +120,7 @@ import org.openlinktoken.tokentransformer.EncryptTokenTransformer;
 import org.openlinktoken.tokentransformer.HashTokenTransformer;
 import org.openlinktoken.tokentransformer.TokenTransformer;
 
-public class TokenGenerator {
+public class TokenGeneratorExample {
     public static void main(String[] args) {
         String recordId = "patient_001";
 
@@ -133,7 +134,7 @@ public class TokenGenerator {
 
         List<TokenTransformer> transformers = List.of(
             new HashTokenTransformer("HashingSecret"),
-            new EncryptTokenTransformer("Secret-Encryption-Key-Goes-Here.")
+            new EncryptTokenTransformer("0123456789abcdef0123456789abcdef")
         );
 
         TokenGenerator generator = new TokenGenerator(

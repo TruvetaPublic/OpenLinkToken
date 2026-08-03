@@ -10,7 +10,7 @@ Open Link Token is a privacy-preserving tokenization and matching library for se
 
 Open Link Token is a library and CLI tool for generating cryptographically secure matching tokens from person attributes. It enables privacy-preserving record linkage by comparing tokens across datasets instead of directly comparing names, birthdates, SSNs, and other sensitive identifiers. It’s designed for any domain that needs deterministic, auditable linkage while minimizing exposure of raw PII.
 
-Matching is foundational for analytics, operations, and research, but traditional record linkage relies on handling raw identifiers that are both highly sensitive and frequently messy (typos, nicknames, missing values, inconsistent formats). Open Link Token provides a deterministic, standards-driven tokenization pipeline (normalize → validate → generate T1–T5 signatures → hash/encrypt) so matching can be performed with minimized identifier exposure and with predictable behavior across environments.
+Matching is foundational for analytics, operations, and research, but traditional record linkage relies on handling raw identifiers that are both highly sensitive and frequently messy (typos, nicknames, missing values, inconsistent formats). Open Link Token provides a deterministic, standards-driven tokenization pipeline (normalize → validate → generate T1–T5 signatures, plus ML1 when enabled → hash/encrypt) so matching can be performed with minimized identifier exposure and with predictable behavior across environments.
 
 Why it matters:
 

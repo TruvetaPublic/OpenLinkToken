@@ -74,7 +74,7 @@ df = spark.read.csv("data.csv", header=True)
 # Initialize processor with your secrets
 processor = OpenLinkTokenProcessor(
     hashing_secret="your-hashing-secret",
-    encryption_key="your-encryption-key-32-chars!!"
+    encryption_key="0123456789abcdef0123456789abcdef"
 )
 
 # Generate tokens
@@ -146,7 +146,7 @@ Find matching records between two tokenized datasets:
 from openlinktoken_pyspark import OpenLinkTokenOverlapAnalyzer
 
 # Initialize with encryption key (same key used for token generation)
-analyzer = OpenLinkTokenOverlapAnalyzer("encryption-key-32-characters!!")
+analyzer = OpenLinkTokenOverlapAnalyzer("0123456789abcdef0123456789abcdef")
 
 # Analyze overlap - match on T1 and T2 (both must match)
 results = analyzer.analyze_overlap(
@@ -209,7 +209,7 @@ custom_definition = CustomTokenDefinition().add_token(custom_token)
 # Create processor with custom definition
 processor = OpenLinkTokenProcessor(
     hashing_secret="your-hashing-secret",
-    encryption_key="your-encryption-key-32-chars!!",
+    encryption_key="0123456789abcdef0123456789abcdef",
     token_definition=custom_definition
 )
 

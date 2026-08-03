@@ -4,7 +4,12 @@ layout: default
 
 # Reference: API Overview
 
-Open Link Token provides three interfaces for generating privacy-preserving tokens: a Java library, a Python library, and a command-line interface (CLI). All three produce identical tokens for the same input, enabling cross-language and cross-platform workflows.
+Open Link Token provides three interfaces for generating privacy-preserving
+tokens: a Java library, a Python library, and a command-line interface (CLI).
+The Java and Python libraries share token rules and transformer behavior. The
+CLI `package` workflow additionally wraps encrypted output in the
+`olt.V1.<JWE>` package format, enabling controlled cross-language and
+cross-platform workflows.
 
 ---
 
@@ -141,13 +146,13 @@ python -m openlinktoken_cli.main package \
 
 **Key options:**
 
-| Flag                                  | Purpose                                                |
-| ------------------------------------- | ------------------------------------------------------ |
-| `-i` / `--input`                      | Input file path                                        |
-| `-o` / `--output`                     | Output file path (optional — auto-generated default)   |
-| `-c` / `--exchange-config`            | Exchange config JSON path                              |
-| `--private-key` / `--private-key-env` | Private key used to decrypt the exchange config        |
-| `tokenize`                            | Hash-only mode using the same exchange-config workflow |
+| Flag                                  | Purpose                                              |
+| ------------------------------------- | ---------------------------------------------------- |
+| `-i` / `--input`                      | Input file path                                      |
+| `-o` / `--output`                     | Output file path (optional — auto-generated default) |
+| `-c` / `--exchange-config`            | Exchange config JSON path                            |
+| `--private-key` / `--private-key-env` | Private key used to decrypt the exchange config      |
+
 
 **Full reference:** [CLI Reference](cli.md)
 
@@ -155,10 +160,14 @@ python -m openlinktoken_cli.main package \
 
 ## Metadata Output
 
-Every token generation run produces a `.metadata.json` file alongside the token output. This file contains:
+The `package` and `tokenize` commands produce metadata: a
+`<output>.metadata.json` sidecar for CSV/Parquet output or an embedded metadata
+file for ZIP output. `encrypt` and `decrypt` produce token files without
+metadata. Metadata contains:
 
-- Processing statistics (total rows, invalid records)
+- Processing statistics (total rows, invalid attributes, and blank tokens)
 - Runtime and platform information
+- Rule counters that can include `ML1` when inferencing is enabled
 
 **Full reference:** [Metadata Format](metadata-format.md)
 
