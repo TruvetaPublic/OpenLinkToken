@@ -56,6 +56,24 @@ Input → Normalize → Validate → Token Generation
 
 - Must not be empty after normalization
 - No numeric characters allowed
+- Reject common placeholders before and after normalization: `Unknown`, `N/A`,
+  `None`, `Test`, `Sample`, `Donor`, `Patient`, `Automation Test`,
+  `Automationtest`, `patient not found`, `patientnotfound`, `<masked>`,
+  `Anonymous`, `zzztrash`, `Missing`, `Unavailable`, `Not Available`, and
+  `NotAvailable`
+- First names have no minimum length beyond being non-empty
+- Last names cannot be a single character. Two-character last names are
+  accepted when they are consonant-vowel, vowel-consonant, or two vowels;
+  `Ng` is also accepted as a special case.
+
+**Short-name examples:**
+
+| Input  | Attribute | Valid | Reason                                     |
+| ------ | --------- | ----- | ------------------------------------------ |
+| `"A"`  | LastName  | ✗     | Single-character last name                 |
+| `"Ng"` | LastName  | ✓     | Explicit two-character exception           |
+| `"Li"` | LastName  | ✓     | Two-character consonant-vowel name         |
+| `"A"`  | FirstName | ✓     | First names only require a non-empty value |
 
 ---
 

@@ -321,4 +321,4 @@ olt tokenize -i data.csv -o out.csv --private-key-env OLT_PRIVATE_KEY_PEM
 - **`package` (encrypt) mode**: [Decrypting Tokens](decrypting-tokens.md)
 - **Batch processing**: [Running Batch Jobs](running-batch-jobs.md)
 - **Security guidance**: [Security](../security.md)
-- **Full flag reference**: [CLI Reference — tokenize](../reference/cli.md#tokenize)
+- **Full flag reference**: [CLI Reference — tokenize](../reference/cli.md#tokenize-subcommand)

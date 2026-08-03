@@ -1,6 +1,6 @@
-# Publishing OpenLinkToken to Maven Central and PyPI
+# Publishing Open Link Token to Maven Central and PyPI
 
-This guide documents the configuration required to publish OpenLinkToken artifacts to Maven Central (via the Sonatype Central Publisher Portal) and PyPI. It covers prerequisite accounts, repository secrets, Maven settings, and the automated GitHub Actions workflows that perform the actual publishing.
+This guide documents the configuration required to publish Open Link Token artifacts to Maven Central (via the Sonatype Central Publisher Portal) and PyPI. It covers prerequisite accounts, repository secrets, Maven settings, and the automated GitHub Actions workflows that perform the actual publishing.
 
 ---
 
@@ -17,7 +17,7 @@ This guide documents the configuration required to publish OpenLinkToken artifac
 
 ## Publishing Overview
 
-OpenLinkToken artifacts are published to two primary registries via GitHub Actions:
+Open Link Token artifacts are published to two primary registries via GitHub Actions:
 
 | Artifact                                     | Registry                                                   | Workflow                                                        |
 | -------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------- |
@@ -145,7 +145,7 @@ Note that Maven Central **releases** are not deployed via `distributionManagemen
 
 ## PyPI — Python Package Index
 
-OpenLinkToken publishes to PyPI using **Trusted Publishing (OIDC)** — there is no PyPI API token stored anywhere in this repository. GitHub Actions presents a short-lived OIDC identity token scoped to this repository and workflow, and PyPI exchanges it for a temporary upload credential.
+Open Link Token publishes to PyPI using **Trusted Publishing (OIDC)** — there is no PyPI API token stored anywhere in this repository. GitHub Actions presents a short-lived OIDC identity token scoped to this repository and workflow, and PyPI exchanges it for a temporary upload credential.
 
 ### 1. Register a Trusted Publisher on PyPI
 
@@ -274,7 +274,7 @@ The workflow will:
 ### PyPI upload returns `403 Forbidden`
 
 - This is expected if a Trusted Publisher has not been registered for the project yet, or was registered with mismatched repository/workflow/environment values — see above.
-- OpenLinkToken does not use a `PYPI_TOKEN` secret; if you see references to one, treat it as stale/incorrect documentation.
+- Open Link Token does not use a `PYPI_TOKEN` secret; if you see references to one, treat it as stale/incorrect documentation.
 
 ### Artifacts not appearing in Maven Central after `mvn deploy -Pcentral-release`
 

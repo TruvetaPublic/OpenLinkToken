@@ -249,7 +249,6 @@ Blank tokens occur when a rule requires an invalid attribute.
 Metadata provides an audit record of:
 
 - What was processed (record counts and attribute-level statistics)
-- When it was processed (inferred from surrounding system logs or job metadata)
 - How it was processed (platform, version)
 - What errors occurred (invalid attributes)
 

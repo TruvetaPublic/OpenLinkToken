@@ -64,6 +64,10 @@ These options are accepted by the root command and apply to every invocation:
 
 The automatic version check can also be disabled permanently by setting the environment variable `OLT_DISABLE_UPDATE_CHECK=1`.
 
+**Terminology:** **Open Link Token** is the product name. `olt` is the
+command-line executable or console script; `openlinktoken-cli` is the Python
+package name.
+
 ## Arguments by Subcommand
 
 ### `package` (Default Encrypted Mode)
@@ -93,7 +97,7 @@ BirthDate, Sex, and PostalCode values.
 | Argument                    | Short | Required | Default                                    | Description                                                                                                                                                                                                                              |
 | --------------------------- | ----- | -------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--input`                   | `-i`  | Yes      |                                            | Path to input file (CSV or Parquet)                                                                                                                                                                                                      |
-| `--output`                  | `-o`  | No       | `<input_basename>_<token_json>`            | Path to output file. Appends `_tokenized` suffix based on input filename when omitted.                                                                                                                                                   |
+| `--output`                  | `-o`  | No       | `<input_basename>_tokenized.<ext>`         | Path to output file. Appends `_tokenized` suffix based on input filename when omitted.                                                                                                                                                   |
 | `--exchange-config`         | `-c`  | No       | `./openlinktoken-YYYY-MM-DD.exchange.json` | Exchange config JSON path. Default `tokenize` mode uses it to resolve the hashing secret; hash-only/demo may use it with a matching private key for optional rotation settings.                                                          |
 | `--private-key`             |       | No\*     |                                            | Private key PEM used to decrypt the exchange config                                                                                                                                                                                      |
 | `--private-key-env`         |       | No\*     |                                            | Environment variable containing the private key PEM                                                                                                                                                                                      |

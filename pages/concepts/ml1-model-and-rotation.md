@@ -31,7 +31,10 @@ field before inference, then serializes the fields in this order:
 
 The exact JSON field order is part of the cross-language contract. Java and
 Python produce the same JSON representation for the same normalized values.
-For example:
+The provider boundary accepts raw `Sex` values such as `M`, `F`, `Male`, or
+`Female` (case-insensitive), normalizes them to `Male` or `Female`, and then
+serializes the normalized value under the model field `Gender`. For example,
+the normalized provider payload is:
 
 ```json
 {
@@ -39,7 +42,7 @@ For example:
   "Birthdate": "1988-03-22",
   "GivenName": "MARIA",
   "Surname": "GARCIA",
-  "Gender": "F"
+  "Gender": "Female"
 }
 ```
 
@@ -118,7 +121,8 @@ embeddings and calculating the bias:
   calculates the component-wise median and writes a flat JSON bias file.
 
 The embedding generator accepts one JSON object per line with the fields
-required by ML1:
+required by ML1. This is raw JSONL input; its `Sex` value is normalized before
+the model payload is serialized:
 
 ```json
 {
@@ -155,7 +159,7 @@ python tools/ml1/calculate_embedding_bias.py \
 The bias script validates the embedding dimension, samples up to 100,000
 vectors by default, and writes a flat JSON array. Use `--sample-size` and
 `--seed` to control sampling. The resulting `bias.json` can be supplied with
-[`--rotation-embedding-bias`](../reference/cli.md#initiate-exchange).
+[`--rotation-embedding-bias`](../reference/cli.md#initiate-exchange-ecdh-key-exchange-bootstrap).
 
 PersonMatching's `generate_rotation_matrices` mode performs the same
 calculation from the `PersonMatch-Embeddings` table: it keeps non-null vectors
