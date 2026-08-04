@@ -23,6 +23,10 @@ packaging
 
 **Exception:** Use a minimum-version bound (`>=X.Y`) only when a strict pin would create a cross-package conflict within the same uv workspace (e.g., a shared transitive dependency like `packaging` that is also constrained by a dev tool). Document the reason inline when you do.
 
+## Generate requirements exports from project metadata
+
+When a project uses `pyproject.toml`, keep it as the dependency source of truth. Update dependencies there, run `uv lock`, and regenerate `requirements.txt` with `uv export`; do not hand-edit generated requirements files. If an export loses required Python or platform markers, fix the project metadata or export configuration and regenerate the file instead of patching the output.
+
 After changing any dependency file, run `uv lock` to verify the full workspace resolves without conflicts across all supported Python versions.
 
 ## Run prek after edits
