@@ -30,6 +30,29 @@ Download the appropriate executable for your platform from the [latest release](
 
 Each downloadable ZIP is also published with a matching `.sha256` sidecar for manual verification.
 
+### One-Line Installers
+
+Install the latest release without manually downloading or extracting an archive:
+
+```bash
+# macOS/Linux - installs to ~/.local/bin
+curl -fsSL https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.sh | bash
+
+# macOS/Linux - install a specific version
+curl -fsSL https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.sh | \
+  bash -s -- --version v2.1.0
+```
+
+```powershell
+# Windows - installs to ~/.openlinktoken/bin
+irm https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.ps1 | iex
+
+# Windows - install a specific version
+& ([scriptblock]::Create((irm https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.ps1))) -Version v2.1.0
+```
+
+Both installers detect the platform, install to a user-writable directory, and verify the downloaded ZIP against its SHA-256 release sidecar.
+
 ### Extract and Run
 
 **Linux/macOS:**
