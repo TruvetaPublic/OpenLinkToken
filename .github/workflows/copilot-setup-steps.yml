@@ -32,6 +32,7 @@ jobs:
         with:
           enable-java: "true"
           enable-python: "true"
+          python-version: "3.11"
 
       - name: Install prek
         run: |
@@ -42,4 +43,4 @@ jobs:
       - name: Install and run apm
         run: |
           python -m pip install apm-cli
-          apm install
+          apm install --target copilot

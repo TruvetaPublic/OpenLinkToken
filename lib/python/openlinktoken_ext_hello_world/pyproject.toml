@@ -9,7 +9,7 @@ dependencies = []
 hello-world = "openlinktoken_ext_hello_world.extension:HelloWorldExtension"
 
 [build-system]
-requires = ["setuptools==82.0.1", "wheel"]
+requires = ["setuptools==83.0.0", "wheel==0.47.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]

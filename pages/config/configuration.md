@@ -16,9 +16,13 @@ At a high level you must always specify:
 
 - the input path and type (CSV or Parquet)
 - an output path for tokens
-- an exchange config for consumer commands (`package`, `tokenize`, `encrypt`, `decrypt`)
-- either a matching private key, a private-key environment variable, or a locally discoverable key under `~/.openlinktoken/`
-- optionally the `decrypt` subcommand when reading previously encrypted tokens
+- an exchange config for `package`, default `tokenize`, `encrypt`, and `decrypt`
+- either a matching private key, a private-key environment variable, or a locally discoverable key under `~/.openlinktoken/` for those exchange-config workflows
+
+`tokenize --mode hash-only` and `tokenize --mode demo` do not need an exchange
+config, secret, or private key for their base output. You may supply an
+exchange config and matching private key to either mode when you want to apply
+the exchange's optional rotation settings.
 
 For the complete, authoritative list of flags, short options, and defaults, see the [CLI Reference](../reference/cli.md).
 
@@ -64,15 +68,18 @@ docker run --rm \
 
 Input columns are **case-insensitive** and support common aliases:
 
-| Attribute       | Accepted Column Names                                  | Required | Type   |
-| --------------- | ------------------------------------------------------ | -------- | ------ |
-| **Record ID**   | `RecordId`, `Id`                                       | Optional | String |
-| **First Name**  | `FirstName`, `GivenName`                               | Yes      | String |
-| **Last Name**   | `LastName`, `Surname`                                  | Yes      | String |
-| **Birth Date**  | `BirthDate`, `DateOfBirth`                             | Yes      | Date   |
-| **Sex**         | `Sex`, `Gender`                                        | Yes      | String |
-| **Postal Code** | `PostalCode`, `ZipCode`, `ZIP3`, `ZIP4`, `ZIP5`        | Yes      | String |
-| **SSN**         | `SocialSecurityNumber`, `NationalIdentificationNumber` | Yes      | String |
+| Attribute                  | Accepted Column Names                                         | Required | Type   |
+| -------------------------- | ------------------------------------------------------------- | -------- | ------ |
+| **Record ID**              | `RecordId`, `Id`                                              | Optional | String |
+| **First Name**             | `FirstName`, `GivenName`                                      | Yes      | String |
+| **Last Name**              | `LastName`, `Surname`                                         | Yes      | String |
+| **Birth Date**             | `BirthDate`, `DateOfBirth`                                    | Yes      | Date   |
+| **Sex**                    | `Sex`, `Gender`                                               | Yes      | String |
+| **Postal Code**            | `PostalCode`, `ZipCode`, `ZIP3`, `ZIP4`, `ZIP5`               | Yes      | String |
+| **Social Security Number** | `SocialSecurityNumber`, `NationalIdentificationNumber`, `SSN` | Yes      | String |
+
+These mappings describe the Python CLI. Column names are matched
+case-insensitively.
 
 ### Date Formats Accepted
 
@@ -123,10 +130,13 @@ Supported extensions: `.csv`, `.parquet`. The `package` and `encrypt` subcommand
 
 ### Output Files Generated
 
-For CSV or Parquet output, each run produces two files:
+For CSV or Parquet output, `package` and `tokenize` produce:
 
 1. **Tokens file**: `<output_path>` (CSV or Parquet)
 2. **Metadata file**: `<output_path>.metadata.json` (always JSON)
+
+`encrypt` and `decrypt` produce only the requested token file; neither command
+writes a metadata sidecar.
 
 When the output path ends in `.zip`, the `package` command bundles all three files into a single archive:
 
@@ -143,10 +153,11 @@ The `encrypt` command also supports `.zip` output, bundling two files (no metada
 
 ## Processing Modes
 
-Open Link Token supports three processing modes that control how token signatures are transformed:
+Open Link Token supports processing modes that control how token signatures are transformed:
 
-- **Encryption (default)** – produces encrypted tokens suitable for external exchange; resolves the hashing secret and transport key from an exchange config plus a matching private key.
-- **Tokenize** – produces one-way hashed tokens for internal matching and overlap analysis; resolves the hashing secret from the same exchange-config workflow.
+- **Encryption (`package`)** – produces encrypted `olt.V1.<JWE>` tokens suitable for external exchange; resolves the hashing secret and transport key from an exchange config plus a matching private key. ML1 is enabled by default when the AI module is available.
+- **Tokenize** – produces one-way hashed tokens for internal matching and overlap analysis; default mode resolves the hashing secret from the same exchange-config workflow and includes ML1 by default when available.
+- **Hash-only/demo tokenize** – does not require secret resolution. If an exchange config is supplied, it is used only to configure optional rotation settings; use `--disable-inferencing` to omit ML1.
 - **Decrypt** – takes previously encrypted tokens and decrypts them back to their hashed form (equivalent to `tokenize` output) using the exchange config and a matching private key.
 
 For the exact CLI flags that enable each mode, see the [CLI Reference](../reference/cli.md).

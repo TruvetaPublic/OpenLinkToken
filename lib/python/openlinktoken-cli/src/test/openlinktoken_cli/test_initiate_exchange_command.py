@@ -1105,3 +1105,491 @@ class TestInitiateExchangeCommandIntegration:
         assert "private" in captured.out.lower()
         assert "public" in captured.out.lower()
         assert "exchange" in captured.out.lower()
+
+
+# ---------------------------------------------------------------------------
+# Unit tests for _resolve_rotation_iv
+# ---------------------------------------------------------------------------
+
+
+class TestResolveRotationIv:
+    """Unit tests for InitiateExchangeCommand._resolve_rotation_iv."""
+
+    def test_auto_generates_random_bytes_when_no_input_given(self):
+        """A None input generates 32 random bytes."""
+        iv = InitiateExchangeCommand._resolve_rotation_iv(None)
+        assert isinstance(iv, bytes)
+        assert len(iv) == 32
+
+    def test_encodes_provided_string_as_bytes(self):
+        """A provided string is returned as UTF-8 bytes."""
+        iv = InitiateExchangeCommand._resolve_rotation_iv("my-custom-rotation-iv")
+        assert iv == b"my-custom-rotation-iv"
+
+    def test_auto_generates_different_value_on_each_call(self):
+        """Two auto-generated IVs must not be identical."""
+        iv1 = InitiateExchangeCommand._resolve_rotation_iv(None)
+        iv2 = InitiateExchangeCommand._resolve_rotation_iv(None)
+        assert iv1 != iv2, "Each call must produce a unique IV"
+
+    def test_reads_rotation_iv_from_env_var(self, monkeypatch):
+        """A named environment variable supplies the rotation IV as bytes."""
+        monkeypatch.setenv("OT_ROTATION_IV", "env-rotation-iv-value")
+        iv = InitiateExchangeCommand._resolve_rotation_iv(None, rotation_iv_env_name="OT_ROTATION_IV")
+        assert iv == b"env-rotation-iv-value"
+
+    def test_reads_rotation_iv_from_stdin(self, monkeypatch):
+        """--rotation-iv-stdin reads and strips a trailing newline."""
+        monkeypatch.setattr("sys.stdin", io.TextIOWrapper(io.BytesIO(b"stdin-rotation-iv\n"), encoding="utf-8"))
+        iv = InitiateExchangeCommand._resolve_rotation_iv(None, rotation_iv_stdin=True)
+        assert iv == b"stdin-rotation-iv"
+
+
+# ---------------------------------------------------------------------------
+# Integration tests: rotation-iv and rotation-count
+# ---------------------------------------------------------------------------
+
+
+class TestRotationIvAndCount:
+    """Integration tests for --rotation-iv and --rotation-count flags."""
+
+    def test_exchange_config_payload_includes_rotation_iv_and_count_by_default(self, tmp_path):
+        """Generated exchange config payload includes rotationIv and rotationCount=50 by default."""
+        partner_private_pem, partner_public_pem = generate_key_pair("P-256")
+        partner_pem_path = tmp_path / "partner.public.pem"
+        partner_pem_path.write_bytes(partner_public_pem)
+        output_path = tmp_path / "rotation-defaults.exchange.json"
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "rotation-defaults",
+                    "--public-key",
+                    str(partner_pem_path),
+                    "--output",
+                    str(output_path),
+                ]
+            )
+
+        assert exit_code == 0
+        config = json.loads(output_path.read_text())
+        payload = json.loads(decrypt_exchange_envelope(config, partner_private_pem))
+        assert isinstance(payload["rotationIv"], str)
+        assert payload["rotationIvEncoding"] == "base64url"
+        assert len(base64.urlsafe_b64decode(payload["rotationIv"] + "==")) == 32
+        assert payload["rotationCount"] == 50
+
+    def test_exchange_config_accepts_explicit_rotation_iv(self, tmp_path):
+        """--rotation-iv stores the provided value base64url-encoded in the encrypted payload."""
+        partner_private_pem, partner_public_pem = generate_key_pair("P-256")
+        partner_pem_path = tmp_path / "partner.public.pem"
+        partner_pem_path.write_bytes(partner_public_pem)
+        output_path = tmp_path / "custom-rotation-iv.exchange.json"
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "custom-rotation-iv",
+                    "--public-key",
+                    str(partner_pem_path),
+                    "--output",
+                    str(output_path),
+                    "--rotation-iv",
+                    "my-fixed-rotation-iv",
+                ]
+            )
+
+        assert exit_code == 0
+        config = json.loads(output_path.read_text())
+        payload = json.loads(decrypt_exchange_envelope(config, partner_private_pem))
+        assert payload["rotationIvEncoding"] == "base64url"
+        decoded = base64.urlsafe_b64decode(payload["rotationIv"] + "==")
+        assert decoded == b"my-fixed-rotation-iv"
+
+    def test_exchange_config_accepts_explicit_rotation_count(self, tmp_path):
+        """--rotation-count stores the provided integer in the encrypted payload."""
+        partner_private_pem, partner_public_pem = generate_key_pair("P-256")
+        partner_pem_path = tmp_path / "partner.public.pem"
+        partner_pem_path.write_bytes(partner_public_pem)
+        output_path = tmp_path / "custom-count.exchange.json"
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "custom-count",
+                    "--public-key",
+                    str(partner_pem_path),
+                    "--output",
+                    str(output_path),
+                    "--rotation-count",
+                    "5",
+                ]
+            )
+
+        assert exit_code == 0
+        config = json.loads(output_path.read_text())
+        payload = json.loads(decrypt_exchange_envelope(config, partner_private_pem))
+        assert payload["rotationCount"] == 5
+
+    def test_exchange_config_accepts_rotation_iv_from_env(self, tmp_path, monkeypatch):
+        """--rotation-iv-env reads the rotation IV from a named environment variable."""
+        partner_private_pem, partner_public_pem = generate_key_pair("P-256")
+        partner_pem_path = tmp_path / "partner.public.pem"
+        partner_pem_path.write_bytes(partner_public_pem)
+        output_path = tmp_path / "rotation-iv-env.exchange.json"
+        monkeypatch.setenv("OT_ROTATION_IV", "rotation-iv-from-env")
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "rotation-iv-env",
+                    "--public-key",
+                    str(partner_pem_path),
+                    "--output",
+                    str(output_path),
+                    "--rotation-iv-env",
+                    "OT_ROTATION_IV",
+                ]
+            )
+
+        assert exit_code == 0
+        config = json.loads(output_path.read_text())
+        payload = json.loads(decrypt_exchange_envelope(config, partner_private_pem))
+        assert payload["rotationIvEncoding"] == "base64url"
+        assert base64.urlsafe_b64decode(payload["rotationIv"] + "==") == b"rotation-iv-from-env"
+
+    def test_exchange_config_accepts_rotation_iv_from_stdin(self, tmp_path, monkeypatch):
+        """--rotation-iv-stdin reads the rotation IV from stdin and stores it base64url-encoded."""
+        partner_private_pem, partner_public_pem = generate_key_pair("P-256")
+        partner_pem_path = tmp_path / "partner.public.pem"
+        partner_pem_path.write_bytes(partner_public_pem)
+        output_path = tmp_path / "rotation-iv-stdin.exchange.json"
+        monkeypatch.setattr(
+            sys,
+            "stdin",
+            io.TextIOWrapper(io.BytesIO(b"rotation-iv-from-stdin\n"), encoding="utf-8"),
+        )
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "rotation-iv-stdin",
+                    "--public-key",
+                    str(partner_pem_path),
+                    "--output",
+                    str(output_path),
+                    "--rotation-iv-stdin",
+                ]
+            )
+
+        assert exit_code == 0
+        config = json.loads(output_path.read_text())
+        payload = json.loads(decrypt_exchange_envelope(config, partner_private_pem))
+        assert payload["rotationIvEncoding"] == "base64url"
+        assert base64.urlsafe_b64decode(payload["rotationIv"] + "==") == b"rotation-iv-from-stdin"
+
+    def test_exchange_config_rejects_zero_rotation_count(self, tmp_path, caplog):
+        """--rotation-count 0 should fail with a clear error."""
+        partner_pem = _partner_key_pem(tmp_path)
+        output_path = tmp_path / "zero-count.exchange.json"
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "zero-count",
+                    "--public-key",
+                    str(partner_pem),
+                    "--output",
+                    str(output_path),
+                    "--rotation-count",
+                    "0",
+                ]
+            )
+
+        assert exit_code == 1
+        assert "rotation-count" in caplog.text.lower()
+        assert not output_path.exists()
+
+    def test_exchange_config_rejects_rotation_iv_stdin_combined_with_public_key_stdin(
+        self, tmp_path, monkeypatch, caplog
+    ):
+        """--rotation-iv-stdin and --public-key-stdin cannot both consume stdin."""
+        output_path = tmp_path / "double-stdin.exchange.json"
+        monkeypatch.setattr(
+            sys,
+            "stdin",
+            io.TextIOWrapper(io.BytesIO(b"some-iv"), encoding="utf-8"),
+        )
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "double-stdin",
+                    "--public-key-stdin",
+                    "--rotation-iv-stdin",
+                    "--output",
+                    str(output_path),
+                ]
+            )
+
+        assert exit_code == 1
+        assert "stdin" in caplog.text.lower()
+        assert not output_path.exists()
+
+
+# ---------------------------------------------------------------------------
+# Integration tests: rotation-bin-width and rotation-embedding-bias
+# ---------------------------------------------------------------------------
+
+
+class TestBinWidthAndDimensionBias:
+    """Integration tests for --rotation-bin-width and --rotation-embedding-* flags."""
+
+    def test_payload_includes_default_bin_width_and_dimension_bias(self, tmp_path):
+        """Generated payload includes binWidth=0.05 and 1024 zero-valued bias entries by default."""
+        partner_private_pem, partner_public_pem = generate_key_pair("P-256")
+        partner_pem_path = tmp_path / "partner.public.pem"
+        partner_pem_path.write_bytes(partner_public_pem)
+        output_path = tmp_path / "bias-defaults.exchange.json"
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "bias-defaults",
+                    "--public-key",
+                    str(partner_pem_path),
+                    "--output",
+                    str(output_path),
+                ]
+            )
+
+        assert exit_code == 0
+        config = json.loads(output_path.read_text())
+        payload = json.loads(decrypt_exchange_envelope(config, partner_private_pem))
+        assert payload["binWidth"] == pytest.approx(0.05)
+        assert len(payload["dimensionBias"]) == 1024
+        assert all(v == 0.0 for v in payload["dimensionBias"])
+
+    def test_payload_accepts_explicit_bin_width(self, tmp_path):
+        """--rotation-bin-width stores the provided float in the encrypted payload."""
+        partner_private_pem, partner_public_pem = generate_key_pair("P-256")
+        partner_pem_path = tmp_path / "partner.public.pem"
+        partner_pem_path.write_bytes(partner_public_pem)
+        output_path = tmp_path / "custom-binwidth.exchange.json"
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "custom-binwidth",
+                    "--public-key",
+                    str(partner_pem_path),
+                    "--output",
+                    str(output_path),
+                    "--rotation-bin-width",
+                    "0.1",
+                ]
+            )
+
+        assert exit_code == 0
+        config = json.loads(output_path.read_text())
+        payload = json.loads(decrypt_exchange_envelope(config, partner_private_pem))
+        assert payload["binWidth"] == pytest.approx(0.1)
+
+    def test_payload_accepts_explicit_embedding_dimension(self, tmp_path):
+        """--rotation-embedding-dimension sets the length of the zero-filled dimensionBias."""
+        partner_private_pem, partner_public_pem = generate_key_pair("P-256")
+        partner_pem_path = tmp_path / "partner.public.pem"
+        partner_pem_path.write_bytes(partner_public_pem)
+        output_path = tmp_path / "custom-dim.exchange.json"
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "custom-dim",
+                    "--public-key",
+                    str(partner_pem_path),
+                    "--output",
+                    str(output_path),
+                    "--rotation-embedding-dimension",
+                    "32",
+                ]
+            )
+
+        assert exit_code == 0
+        config = json.loads(output_path.read_text())
+        payload = json.loads(decrypt_exchange_envelope(config, partner_private_pem))
+        assert len(payload["dimensionBias"]) == 32
+        assert all(v == 0.0 for v in payload["dimensionBias"])
+
+    def test_payload_accepts_embedding_bias_from_file(self, tmp_path):
+        """--rotation-embedding-bias loads a JSON float array from a file into dimensionBias."""
+        bias_file = tmp_path / "bias.json"
+        bias_file.write_text("[0.1, 0.2, 0.3]", encoding="utf-8")
+        partner_private_pem, partner_public_pem = generate_key_pair("P-256")
+        partner_pem_path = tmp_path / "partner.public.pem"
+        partner_pem_path.write_bytes(partner_public_pem)
+        output_path = tmp_path / "custom-bias-file.exchange.json"
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "custom-bias-file",
+                    "--public-key",
+                    str(partner_pem_path),
+                    "--output",
+                    str(output_path),
+                    "--rotation-embedding-bias",
+                    str(bias_file),
+                ]
+            )
+
+        assert exit_code == 0
+        config = json.loads(output_path.read_text())
+        payload = json.loads(decrypt_exchange_envelope(config, partner_private_pem))
+        assert payload["dimensionBias"] == pytest.approx([0.1, 0.2, 0.3])
+
+    def test_rejects_nonpositive_bin_width(self, tmp_path, caplog):
+        """--rotation-bin-width 0 should fail with a clear error."""
+        partner_pem = _partner_key_pem(tmp_path)
+        output_path = tmp_path / "zero-binwidth.exchange.json"
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "zero-binwidth",
+                    "--public-key",
+                    str(partner_pem),
+                    "--output",
+                    str(output_path),
+                    "--rotation-bin-width",
+                    "0",
+                ]
+            )
+
+        assert exit_code == 1
+        assert "rotation-bin-width" in caplog.text.lower()
+        assert not output_path.exists()
+
+    def test_rejects_embedding_dimension_below_2(self, tmp_path, caplog):
+        """--rotation-embedding-dimension 1 should fail with a clear error."""
+        partner_pem = _partner_key_pem(tmp_path)
+        output_path = tmp_path / "small-dim.exchange.json"
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "small-dim",
+                    "--public-key",
+                    str(partner_pem),
+                    "--output",
+                    str(output_path),
+                    "--rotation-embedding-dimension",
+                    "1",
+                ]
+            )
+
+        assert exit_code == 1
+        assert "rotation-embedding-dimension" in caplog.text.lower()
+        assert not output_path.exists()
+
+    def test_rejects_missing_embedding_bias_file(self, tmp_path, caplog):
+        """--rotation-embedding-bias pointing to a nonexistent file should fail."""
+        partner_pem = _partner_key_pem(tmp_path)
+        output_path = tmp_path / "missing-bias.exchange.json"
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "missing-bias",
+                    "--public-key",
+                    str(partner_pem),
+                    "--output",
+                    str(output_path),
+                    "--rotation-embedding-bias",
+                    str(tmp_path / "nonexistent.json"),
+                ]
+            )
+
+        assert exit_code == 1
+        assert "rotation-embedding-bias" in caplog.text.lower()
+        assert not output_path.exists()
+
+    def test_rejects_invalid_json_in_embedding_bias_file(self, tmp_path, caplog):
+        """--rotation-embedding-bias with non-JSON file content should fail."""
+        bias_file = tmp_path / "bad-bias.json"
+        bias_file.write_text("not valid json", encoding="utf-8")
+        partner_pem = _partner_key_pem(tmp_path)
+        output_path = tmp_path / "bad-json.exchange.json"
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "bad-json",
+                    "--public-key",
+                    str(partner_pem),
+                    "--output",
+                    str(output_path),
+                    "--rotation-embedding-bias",
+                    str(bias_file),
+                ]
+            )
+
+        assert exit_code == 1
+        assert "rotation-embedding-bias" in caplog.text.lower()
+        assert not output_path.exists()
+
+    def test_rejects_embedding_bias_with_fewer_than_2_values(self, tmp_path, caplog):
+        """--rotation-embedding-bias JSON array with only 1 value should fail."""
+        bias_file = tmp_path / "one-value.json"
+        bias_file.write_text("[0.5]", encoding="utf-8")
+        partner_pem = _partner_key_pem(tmp_path)
+        output_path = tmp_path / "one-value.exchange.json"
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--name",
+                    "one-value",
+                    "--public-key",
+                    str(partner_pem),
+                    "--output",
+                    str(output_path),
+                    "--rotation-embedding-bias",
+                    str(bias_file),
+                ]
+            )
+
+        assert exit_code == 1
+        assert "rotation-embedding-bias" in caplog.text.lower()
+        assert not output_path.exists()

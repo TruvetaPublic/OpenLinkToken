@@ -35,6 +35,7 @@
     </scm>
     <modules>
         <module>openlinktoken</module>
+        <module>openlinktoken-core-ai</module>
     </modules>
 
     <distributionManagement>

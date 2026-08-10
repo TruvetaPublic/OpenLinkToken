@@ -10,8 +10,8 @@ class BirthDateAttribute(DateAttribute):
     """Represents the birth date attribute.
 
     This class extends DateAttribute and provides functionality for working with
-    birth date fields. It recognizes "BirthDate" as a valid alias for this
-    attribute type.
+    birth date fields. It recognizes "BirthDate" and "DateOfBirth" as valid
+    aliases for this attribute type.
 
     The attribute performs normalization on input values, converting them to a
     standard format (yyyy-MM-dd).
@@ -25,7 +25,7 @@ class BirthDateAttribute(DateAttribute):
     """
 
     NAME = "BirthDate"
-    ALIASES = [NAME]
+    ALIASES = [NAME, "DateOfBirth"]
 
     def __init__(self):
         # Birth dates must be between 1910-01-01 and today

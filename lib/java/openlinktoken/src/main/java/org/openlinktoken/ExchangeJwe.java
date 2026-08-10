@@ -6,7 +6,7 @@ package org.openlinktoken;
  *
  * <p>The full implementation lives in the Python package under
  * {@code openlinktoken.exchange_jwe} and handles building and decrypting multi-recipient
- * JWE envelopes for the {@code openlinktoken initiate-exchange} command. A Java equivalent
+ * JWE envelopes for the {@code olt initiate-exchange} command. A Java equivalent
  * has not yet been implemented because the exchange-config workflow is currently
  * Python-CLI only.
  *

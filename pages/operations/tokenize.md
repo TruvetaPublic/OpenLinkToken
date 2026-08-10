@@ -33,7 +33,7 @@ Token Signature → (passthrough) → Raw attribute signature string
 For reference, the full encryption pipeline used by `package` is:
 
 ```text
-Token Signature → SHA-256 Hash → HMAC-SHA256(hash, secret) → AES-256-GCM Encrypt → Base64 Encode
+Token Signature → SHA-256 Hash → HMAC-SHA256(hash, secret) → JWE (AES-256-GCM) → Prefix `olt.V1.`
 ```
 
 ---
@@ -77,7 +77,10 @@ The `tokenize` subcommand is primarily used to support **overlap analysis workfl
 
 ### Normal Mode
 
-Use the `tokenize` subcommand with an exchange config. The CLI resolves the hashing secret from the exchange config and auto-discovers the matching private key by default.
+Use the `tokenize` subcommand with an exchange config. In default mode, the
+CLI resolves the hashing secret from the exchange config and auto-discovers the
+matching private key by default. ML1 is enabled by default when the AI module
+is available; use `--disable-inferencing` to emit only T1–T5.
 
 ```bash
 olt tokenize -i resources/sample.csv -o hashed-output.csv
@@ -102,7 +105,10 @@ docker run --rm \
 
 ### Hash-only Mode (`--mode hash-only`)
 
-In hash-only mode the CLI skips exchange-config resolution and applies SHA-256 only. `--exchange-config`, `--private-key`, and `--private-key-env` are not allowed in this mode.
+In hash-only mode the CLI applies SHA-256 only and does not need a secret.
+`--exchange-config` is optional; when supplied with a matching private key, it
+is used only to load rotation settings. The base hash-only output does not
+depend on the exchange config.
 
 ```bash
 olt tokenize -i resources/sample.csv -o hash-only-output.csv --mode hash-only
@@ -142,10 +148,12 @@ Each `RecordId` is replaced with a 64-character lowercase SHA-256 hex digest. Th
 
 ### Demo Mode (`--mode demo`)
 
-In demo mode the full hashing pipeline is skipped. No exchange config or private key is required.
+In demo mode the full hashing pipeline is skipped. No exchange config or
+private key is required for the base output. If an exchange config and matching
+private key are supplied, they configure optional rotation settings.
 
 ```bash
-olt tokenize -i resources/sample.csv -o demo-output.csv --mode demo
+olt tokenize -i resources/sample.csv -o demo-output.csv --mode demo --disable-inferencing
 ```
 
 #### Demo Mode — Docker
@@ -155,32 +163,43 @@ docker run --rm -v $(pwd)/resources:/app/resources \
   openlinktoken:latest tokenize \
   -i /app/resources/sample.csv \
   -o /app/resources/demo-output.csv \
-  --mode demo
+  --mode demo \
+  --disable-inferencing
 ```
 
 #### Demo Output Example
 
-For a record with first name `John`, last name `Doe`, and birth date `1980-01-15`:
+The example disables ML1 so it shows the current T1–T5 output. For a record
+with first name `John`, last name `Doe`, birth date `1980-01-15`, sex `Male`,
+postal code `98004`, and valid SSN `452-38-7291`:
 
 ```csv
 RecordId,RuleId,Token
-ID001,T1,JOHN|DOE|19800115
-ID001,T2,JOHN|DOE|19800115|M
-ID001,T5,123456789
+ID001,T1,DOE|J|MALE|1980-01-15
+ID001,T2,DOE|JOHN|1980-01-15|980
+ID001,T3,DOE|JOHN|MALE|1980-01-15
+ID001,T4,452387291|MALE|1980-01-15
+ID001,T5,DOE|JOH|MALE
 ```
 
-Each token is the raw pipe-separated list of normalised attribute values that compose that token rule — making it easy to see exactly which attributes contributed to each rule.
+Each token is the raw pipe-separated list of normalized attribute values that
+compose that token rule — making it easy to see exactly which attributes
+contributed to each rule. Without `--disable-inferencing`, valid input can add
+one `ML1` row.
 
 ---
 
 ## Output Comparison
 
-### Encrypted Tokens (~80-100 characters)
+### Encrypted/package Tokens (`olt.V1.<JWE>`)
 
 ```csv
 RecordId,RuleId,Token
-ID001,T1,Gn7t1Zj16E5Qy+z9iINtczP6fRDYta6C0XFrQtpjnVQSEZ5pQXAzo02Aa9LS9oNMOog6Ssw9GZE6fvJrX2sQ/cThSkB6m91L
+ID001,T1,olt.V1.<JWE compact serialization>
 ```
+
+`package` emits the encrypted `olt.V1` form. `decrypt` produces the
+unwrapped value shown below.
 
 ### Tokenized (Unencrypted) Tokens (~44 characters)
 
@@ -204,58 +223,40 @@ ID001,T1,8d0f7f0d30f4b9e2e31e9d7fdc7f1c7f0d0fb6b246bd27d4f91f4fbad0b8e2c4
 
 ## Metadata Differences
 
-### Encryption Mode Metadata
+All `tokenize` variants emit the same core metadata fields. Metadata is written
+by `tokenize` (and by `package`), not by `encrypt` or `decrypt`:
 
 ```json
 {
-  "HashingSecretHash": "abc123...",
-  "EncryptionSecretHash": "def456..."
+  "TotalRows": 10,
+  "TotalRowsWithInvalidAttributes": 0,
+  "InvalidAttributesByType": {},
+  "BlankTokensByRule": {
+    "T1": 0,
+    "T2": 0,
+    "T3": 0,
+    "T4": 0,
+    "T5": 0,
+    "ML1": 0
+  }
 }
 ```
 
-### `tokenize` Metadata
-
-```json
-{
-  "HashingSecretHash": "abc123..."
-}
-```
-
-No `EncryptionSecretHash` field is present when using `tokenize`.
-
-### `tokenize --mode hash-only` Metadata
-
-```json
-{
-  "TotalRows": 10
-}
-```
-
-Neither `HashingSecretHash` nor `EncryptionSecretHash` appears in hash-only metadata because no secret is used.
-
-### `tokenize --mode demo` Metadata
-
-```json
-{
-  "TotalRows": 10
-}
-```
-
-Neither `HashingSecretHash` nor `EncryptionSecretHash` appears in demo-mode metadata — no secret is used.
+The token-processing mode changes the token output, not the metadata field names.
 
 ---
 
 ## Security Trade-offs
 
-| Aspect                  | `package`                     | `tokenize`                    | `tokenize --mode hash-only`        | `tokenize --mode demo`         |
-| ----------------------- | ----------------------------- | ----------------------------- | ---------------------------------- | ------------------------------ |
-| **Token length**        | ~80-100 chars                 | ~44 chars (base64)            | 64 chars (lowercase hex)           | Varies (plain text)            |
-| **Processing speed**    | Slower                        | Faster                        | Fastest keyed-free hashed mode     | Fastest overall                |
-| **CLI inputs required** | Exchange config + private key | Exchange config + private key | None                               | None                           |
-| **Reversibility**       | Decryptable (to HMAC hash)    | Not decryptable               | Not decryptable                    | Directly readable (plain text) |
-| **External sharing**    | Recommended                   | Not recommended               | Never recommended                  | Never — contains raw PII       |
-| **Defense in depth**    | Yes                           | No                            | No                                 | No                             |
-| **Use case**            | Production / sharing          | Internal analysis             | Local deterministic SHA-256 output | Exploration / debugging only   |
+| Aspect                  | `package`                     | `tokenize`                    | `tokenize --mode hash-only`                 | `tokenize --mode demo`                      |
+| ----------------------- | ----------------------------- | ----------------------------- | ------------------------------------------- | ------------------------------------------- |
+| **Token length**        | ~80-100 chars                 | ~44 chars (base64)            | 64 chars (lowercase hex)                    | Varies (plain text)                         |
+| **Processing speed**    | Slower                        | Faster                        | Fastest keyed-free hashed mode              | Fastest overall                             |
+| **CLI inputs required** | Exchange config + private key | Exchange config + private key | None for base output; optional for rotation | None for base output; optional for rotation |
+| **Reversibility**       | Decryptable (to HMAC hash)    | Not decryptable               | Not decryptable                             | Directly readable (plain text)              |
+| **External sharing**    | Recommended                   | Not recommended               | Never recommended                           | Never — contains raw PII                    |
+| **Defense in depth**    | Yes                           | No                            | No                                          | No                                          |
+| **Use case**            | Production / sharing          | Internal analysis             | Local deterministic SHA-256 output          | Exploration / debugging only                |
 
 ### Security Notes
 
@@ -292,14 +293,9 @@ For encrypted tokens, decrypt them to their hashed form first and then match on 
 
 **Cause:** Different exchange configs resolved different hashing secrets.
 
-**Solution:** Compare the `HashingSecretHash` in each run's metadata — identical hashes mean both runs used the same secret:
-
-```bash
-# From each run's directory
-jq '.HashingSecretHash' output.metadata.json
-```
-
-If the hashes differ, both sides must use the same exchange config (or one that resolves to the same hashing secret).
+**Solution:** Verify both runs used the same exchange config and hashing
+secret source through your secure operational process. Compare the resolved exchange configuration
+and token output.
 
 ### "No private key matching this exchange config was found" Error
 
@@ -325,4 +321,4 @@ olt tokenize -i data.csv -o out.csv --private-key-env OLT_PRIVATE_KEY_PEM
 - **`package` (encrypt) mode**: [Decrypting Tokens](decrypting-tokens.md)
 - **Batch processing**: [Running Batch Jobs](running-batch-jobs.md)
 - **Security guidance**: [Security](../security.md)
-- **Full flag reference**: [CLI Reference — tokenize](../reference/cli.md#tokenize)
+- **Full flag reference**: [CLI Reference — tokenize](../reference/cli.md#tokenize-subcommand)

@@ -4,7 +4,7 @@ layout: default
 
 # Token Rules
 
-Open Link Token generates five distinct token types (T1-T5). Each rule defines a **token signature** (a deterministic, normalized string) which is then transformed into the output token via hashing (and optionally encryption).
+Open Link Token generates five deterministic token types (T1-T5) and, by default, ML1. T1-T5 rules define a **token signature** (a deterministic, normalized string) that is transformed into the output token via hashing (and optionally encryption). ML1 uses an ONNX matching model to generate an embedding, then derives rotation-based, quantized token projections.
 
 ---
 
@@ -21,6 +21,9 @@ Each token rule defines:
 - `U(X)` = uppercase(X)
 - `[0]` = first character
 - `[0:3]` = first 3 characters
+
+Sex values normalize to `Male` or `Female`; applying `U(Sex)` produces
+`MALE` or `FEMALE`.
 
 ---
 
@@ -53,9 +56,9 @@ Normalized:
   FirstName: THOMAS
   LastName: OREILLY
   BirthDate: 1995-11-03
-  Sex: M
+  Sex: Male
 
-Token Signature: "OREILLY|T|M|1995-11-03"
+Token Signature: "OREILLY|T|MALE|1995-11-03"
 ```
 
 ---
@@ -115,7 +118,7 @@ T3 = U(LastName) | U(FirstName) | U(Sex) | BirthDate
 ### T3 Example
 
 ```text
-Token Signature: "GARCIA|MARIA|F|1988-03-22"
+Token Signature: "GARCIA|MARIA|FEMALE|1988-03-22"
 ```
 
 ---
@@ -146,7 +149,7 @@ Notes:
 Input SSN: 452-38-7291
 SSN_digits: 452387291
 
-Token Signature: "452387291|F|1988-03-22"
+Token Signature: "452387291|FEMALE|1988-03-22"
 ```
 
 ---
@@ -171,20 +174,23 @@ T5 = U(LastName) | U(FirstName[0:3]) | U(Sex)
 
 ```text
 FirstName: Jonathan -> FirstName[0:3] = JON
-Token Signature: "SMITH|JON|M"
+Token Signature: "SMITH|JON|MALE"
 ```
 
 ---
 
 ## Token Rule Summary
 
-| RuleId | Signature attributes           | Typical precision | Typical recall |
-| ------ | ------------------------------ | ----------------- | -------------- |
-| T1     | Last, First[0], Sex, BirthDate | Medium-high       | High           |
-| T2     | Last, First, BirthDate, ZIP3   | High              | Good           |
-| T3     | Last, First, Sex, BirthDate    | High              | Medium-high    |
-| T4     | SSN(digits), Sex, BirthDate    | Very high         | Low            |
-| T5     | Last, First[0:3], Sex          | Lower             | Highest        |
+| RuleId | Signature attributes                                                                                                                                               | Typical precision | Typical recall  |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------- | --------------- |
+| T1     | Last, First[0], Sex, BirthDate                                                                                                                                     | Medium-high       | High            |
+| T2     | Last, First, BirthDate, ZIP3                                                                                                                                       | High              | Good            |
+| T3     | Last, First, Sex, BirthDate                                                                                                                                        | High              | Medium-high     |
+| T4     | SSN(digits), Sex, BirthDate                                                                                                                                        | Very high         | Low             |
+| T5     | Last, First[0:3], Sex                                                                                                                                              | Lower             | Highest         |
+| ML1\*  | ONNX embedding from PostalCode, BirthDate, GivenName, Surname, Gender; rotation-based, quantized projections, hashed with a T1-derived blocking key when available | Model-dependent   | Model-dependent |
+
+\* ML1 is enabled by default. It is more compute-intensive and slower than T1-T5, but produces significantly better matching outcomes than T1-T5 alone. The improvement and its precision/recall balance depend on the input population, so validate it with your own matching data. To omit it, use `package --disable-inferencing` or `tokenize --disable-inferencing`. See the [CLI reference](../reference/cli.md) for ML1 options.
 
 ---
 
@@ -266,7 +272,7 @@ import org.openlinktoken.tokens.Token;
 
 public class CustomToken implements Token {
   private static final long serialVersionUID = 1L;
-  private static final String ID = "T6";
+  private static final String ID = "CUSTOM1";
 
   private final ArrayList<AttributeExpression> definition = new ArrayList<>();
 
@@ -299,7 +305,7 @@ from openlinktoken.attributes.person.last_name_attribute import LastNameAttribut
 from openlinktoken.tokens.token import Token
 
 class CustomToken(Token):
-  ID = "T6"
+  ID = "CUSTOM1"
 
   def __init__(self):
     # Example signature: U(LastName)|BirthDate

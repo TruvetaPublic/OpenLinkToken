@@ -26,6 +26,9 @@ from openlinktoken_cli.util.stdin_utils import read_required_env_bytes, read_req
 logger = logging.getLogger(__name__)
 
 EXCHANGE_CONFIG_VERSION = EXCHANGE_JWE_VERSION
+DEFAULT_ROTATION_COUNT = 50
+DEFAULT_BIN_WIDTH = 0.05
+DEFAULT_EMBEDDING_DIMENSION = 1024
 
 
 class InitiateExchangeCommand:
@@ -116,6 +119,74 @@ class InitiateExchangeCommand:
             help="Read the hashing secret from the named environment variable",
         )
 
+        rotation_iv_group = parser.add_mutually_exclusive_group(required=False)
+        rotation_iv_group.add_argument(
+            "--rotation-iv",
+            dest="rotation_iv",
+            default=None,
+            metavar="IV",
+            help="Rotation IV string for the rotation matrix generator (default: randomly generated)",
+        )
+        rotation_iv_group.add_argument(
+            "--rotation-iv-stdin",
+            dest="rotation_iv_stdin",
+            action="store_true",
+            default=False,
+            help="Read the rotation IV from stdin instead of passing it on the command line",
+        )
+        rotation_iv_group.add_argument(
+            "--rotation-iv-env",
+            dest="rotation_iv_env",
+            default=None,
+            metavar="ENV_VAR",
+            help="Read the rotation IV from the named environment variable",
+        )
+
+        parser.add_argument(
+            "--rotation-count",
+            dest="rotation_count",
+            type=int,
+            default=DEFAULT_ROTATION_COUNT,
+            metavar="N",
+            help=f"Number of rotation matrices to generate (default: {DEFAULT_ROTATION_COUNT})",
+        )
+
+        parser.add_argument(
+            "--rotation-bin-width",
+            dest="bin_width",
+            type=float,
+            default=DEFAULT_BIN_WIDTH,
+            metavar="WIDTH",
+            help=f"Quantization bin width for rotation-based token generation (default: {DEFAULT_BIN_WIDTH})",
+        )
+
+        parser.add_argument(
+            "--rotation-embedding-dimension",
+            dest="embedding_dimension",
+            type=int,
+            default=DEFAULT_EMBEDDING_DIMENSION,
+            metavar="N",
+            help=(
+                f"Embedding vector size of the model (default: {DEFAULT_EMBEDDING_DIMENSION}).\n"
+                "Sets the length of the dimension bias array written into the exchange config.\n"
+                "Ignored when --rotation-embedding-bias is provided."
+            ),
+        )
+
+        parser.add_argument(
+            "--rotation-embedding-bias",
+            dest="embedding_bias",
+            type=str,
+            default=None,
+            metavar="PATH",
+            help=(
+                "Path to a JSON file containing a flat array of floats used as the\n"
+                "dimension bias subtracted from each embedding before rotation\n"
+                "(e.g. '[0.12, -0.05, 0.33]'). Overrides --rotation-embedding-dimension.\n"
+                "When omitted, defaults to zeros of length --rotation-embedding-dimension."
+            ),
+        )
+
         parser.add_argument(
             "-c",
             "--curve",
@@ -170,8 +241,15 @@ class InitiateExchangeCommand:
         hashing_secret: Optional[str] = getattr(args, "hashing_secret", None)
         hashing_secret_stdin: bool = getattr(args, "hashing_secret_stdin", False)
         hashing_secret_env_name: Optional[str] = getattr(args, "hashing_secret_env", None)
+        rotation_iv: Optional[str] = getattr(args, "rotation_iv", None)
+        rotation_iv_stdin: bool = getattr(args, "rotation_iv_stdin", False)
+        rotation_iv_env_name: Optional[str] = getattr(args, "rotation_iv_env", None)
+        rotation_count: int = getattr(args, "rotation_count", DEFAULT_ROTATION_COUNT)
         curve: Optional[str] = getattr(args, "curve", None)
         force: bool = getattr(args, "force", False)
+        bin_width: float = getattr(args, "bin_width", DEFAULT_BIN_WIDTH)
+        embedding_dimension: int = getattr(args, "embedding_dimension", DEFAULT_EMBEDDING_DIMENSION)
+        embedding_bias: Optional[list] = getattr(args, "embedding_bias", None)
         local_private_key_path_str: Optional[str] = getattr(args, "local_private_key", None)
         sender_private_key_env_name: Optional[str] = getattr(args, "sender_private_key_env", None)
 
@@ -192,6 +270,53 @@ class InitiateExchangeCommand:
                     "Use an environment-variable or file-based input for one of them."
                 )
                 return 1
+
+            stdin_flags = {
+                "--public-key-stdin": public_key_stdin,
+                "--hashingsecret-stdin": hashing_secret_stdin,
+                "--rotation-iv-stdin": rotation_iv_stdin,
+            }
+            active_stdin_flags = [flag for flag, active in stdin_flags.items() if active]
+            if len(active_stdin_flags) > 1:
+                logger.error(
+                    "Cannot combine %s because they all consume stdin. "
+                    "Use an environment-variable or file-based input for all but one of them.",
+                    " and ".join(active_stdin_flags),
+                )
+                return 1
+
+            if rotation_count < 1:
+                logger.error("--rotation-count must be a positive integer, got %d.", rotation_count)
+                return 1
+
+            if bin_width <= 0:
+                logger.error("--rotation-bin-width must be a positive number, got %s.", bin_width)
+                return 1
+
+            if embedding_bias is not None:
+                bias_path = Path(embedding_bias)
+                if not bias_path.exists():
+                    logger.error("--rotation-embedding-bias file not found: %s", bias_path)
+                    return 1
+                try:
+                    parsed = json.loads(bias_path.read_text(encoding="utf-8"))
+                    if not isinstance(parsed, list) or not all(isinstance(v, (int, float)) for v in parsed):
+                        raise ValueError("Expected a flat JSON array of numbers.")
+                    dimension_bias = [float(v) for v in parsed]
+                except (json.JSONDecodeError, ValueError) as e:
+                    logger.error("--rotation-embedding-bias: invalid JSON in '%s': %s", bias_path, e)
+                    return 1
+                if len(dimension_bias) < 2:
+                    logger.error(
+                        "--rotation-embedding-bias must contain at least 2 values, got %d.",
+                        len(dimension_bias),
+                    )
+                    return 1
+            else:
+                if embedding_dimension < 2:
+                    logger.error("--rotation-embedding-dimension must be at least 2, got %d.", embedding_dimension)
+                    return 1
+                dimension_bias = [0.0] * embedding_dimension
 
             openlinktoken_dir = Path.home() / ".openlinktoken"
             private_key_path = openlinktoken_dir / f"{name}.private.pem"
@@ -262,6 +387,12 @@ class InitiateExchangeCommand:
                 hashing_secret_env_name=hashing_secret_env_name,
             )
 
+            resolved_rotation_iv = InitiateExchangeCommand._resolve_rotation_iv(
+                rotation_iv,
+                rotation_iv_stdin=rotation_iv_stdin,
+                rotation_iv_env_name=rotation_iv_env_name,
+            )
+
             if persist_local_key_files:
                 if not force and (private_key_path.exists() or public_key_path_local.exists()):
                     logger.error(
@@ -283,6 +414,10 @@ class InitiateExchangeCommand:
                 curve=resolved_curve,
                 created_at=InitiateExchangeCommand._created_at(),
                 exchange_id=InitiateExchangeCommand._exchange_id(),
+                rotation_iv=resolved_rotation_iv,
+                rotation_count=rotation_count,
+                bin_width=bin_width,
+                dimension_bias=dimension_bias,
             )
 
             InitiateExchangeCommand._write_config(output_path, config, overwrite=force)
@@ -334,6 +469,39 @@ class InitiateExchangeCommand:
             )
         if hashing_secret:
             return hashing_secret.encode()
+        return secrets.token_bytes(32)
+
+    @staticmethod
+    def _resolve_rotation_iv(
+        rotation_iv: Optional[str],
+        rotation_iv_stdin: bool = False,
+        rotation_iv_env_name: Optional[str] = None,
+    ) -> bytes:
+        """Return the provided rotation IV as bytes, or generate a secure random one.
+
+        Args:
+            rotation_iv: Caller-supplied IV string, or ``None`` to auto-generate.
+            rotation_iv_stdin: When true, read the rotation IV from stdin.
+            rotation_iv_env_name: Environment variable name containing the rotation IV.
+
+        Returns:
+            The rotation IV as raw bytes.
+        """
+        if rotation_iv_stdin:
+            iv_bytes = read_required_stdin_bytes("--rotation-iv-stdin", "rotation IV")
+            if iv_bytes.endswith(b"\r\n"):
+                return iv_bytes[:-2]
+            if iv_bytes.endswith(b"\n"):
+                return iv_bytes[:-1]
+            return iv_bytes
+        if rotation_iv_env_name:
+            return read_required_env_bytes(
+                "--rotation-iv-env",
+                rotation_iv_env_name,
+                "rotation IV",
+            )
+        if rotation_iv:
+            return rotation_iv.encode()
         return secrets.token_bytes(32)
 
     @staticmethod

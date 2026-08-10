@@ -35,7 +35,7 @@ HMAC-SHA256 (authenticated hash with hashing secret)
   ↓
 AES-256-GCM Encrypt (symmetric encryption with encryption key)
   ↓
-Base64 Encode (storable format)
+JWE compact serialization with `olt.V1.` prefix
 ```
 
 **`tokenize` subcommand (alternative):**
@@ -111,12 +111,19 @@ This section consolidates practical guidance for managing the cryptographic mate
 
 ### Types of Secrets
 
-Open Link Token still relies on a hashing secret and a transport encryption key internally, but the consumer commands no longer take those values directly on the command line. Instead, they resolve them from an exchange config plus a matching private key:
+Open Link Token uses a hashing secret for default `tokenize` and `package`
+processing, and a transport encryption key for encrypted token processing. The
+CLI does not take those values directly on the command line. Instead, commands
+use an exchange config and, when needed, a matching private key:
 
-| Material            | CLI Input                             | Purpose                                                                                  | Used by subcommands                         | Requirements                                                                       |
-| ------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------- |
-| **Exchange config** | `--exchange-config`                   | Carries the encrypted hashing secret and the metadata needed to derive the transport key | `package`, `tokenize`, `encrypt`, `decrypt` | Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted                |
-| **Private key**     | `--private-key` / `--private-key-env` | Decrypts the exchange config so the CLI can recover the hashing secret and transport key | `package`, `tokenize`, `encrypt`, `decrypt` | Optional only when a matching key can be auto-discovered under `~/.openlinktoken/` |
+| Material            | CLI Input                             | Purpose                                                                                                                            | Used by subcommands                                                                                                 | Requirements                                                                  |
+| ------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| **Exchange config** | `-c` / `--exchange-config`            | Carries the encrypted hashing secret and optional rotation settings; also supplies the material needed to derive the transport key | `package`, default `tokenize`, `encrypt`, `decrypt`; optional for hash-only/demo `tokenize`                         | Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted           |
+| **Private key**     | `--private-key` / `--private-key-env` | Decrypts the exchange config when a command needs its protected values                                                             | `package`, default `tokenize`, `encrypt`, `decrypt`; only with an exchange config for hash-only/demo rotation setup | Optional when a matching key can be auto-discovered under `~/.openlinktoken/` |
+
+Hash-only and demo `tokenize` modes do not need a secret or exchange config for
+their base output. They may accept an exchange config, with a matching private
+key, only to configure optional rotation settings.
 
 ### Handling Secrets in Practice
 
@@ -179,13 +186,14 @@ olt package \
 **Example (Databricks):**
 
 ```python
-from openlinktoken_pyspark import SparkPersonTokenProcessor
+from openlinktoken_pyspark import OpenLinkTokenProcessor
 
-processor = SparkPersonTokenProcessor(
-    spark=spark,
+processor = OpenLinkTokenProcessor(
     hashing_secret=dbutils.secrets.get("openlinktoken", "hashing_secret"),
     encryption_key=dbutils.secrets.get("openlinktoken", "encryption_key")
 )
+
+tokens_df = processor.process_dataframe(df)
 ```
 
 ### Secret Rotation
@@ -198,28 +206,15 @@ processor = SparkPersonTokenProcessor(
 ### What NOT to Do
 
 - **Never commit secrets to source control.** Add `.env` and similar files to `.gitignore`.
-- **Never log secrets.** CLI output and metadata files contain hashes of secrets, not the secrets themselves.
+- **Never log secrets.** CLI output and metadata files should exclude secret material.
 - **Never hard-code secrets in scripts checked into git.** Use environment variables or secret-store references.
 
-### Secret Verification via Metadata
+### Secret Verification
 
-Each run produces a `.metadata.json` with SHA-256 hashes of secrets:
-
-```json
-{
-  "HashingSecretHash": "e0b4e60b...",
-  "EncryptionSecretHash": "a1b2c3d4..."
-}
-```
-
-Use [tools/hash/hash_calculator.py](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/tools/hash/hash_calculator.py) to verify:
-
-```bash
-python tools/hash/hash_calculator.py \
-  --hashing-secret "YourSecret" \
-  --encryption-key "YourEncryptionKey"
-# Compare output hashes to metadata file
-```
+Current CLI metadata does not emit `HashingSecretHash` or
+`EncryptionSecretHash`. Verify that both sides use the intended exchange
+configuration through your secure operational process; do not expect a
+secret-hash field or a `tools/hash/hash_calculator.py` workflow.
 
 ### Cross-References
 
@@ -227,7 +222,7 @@ python tools/hash/hash_calculator.py \
 - **Environment variable usage**: [Configuration](config/configuration.md#environment-variables)
 - **Databricks / Spark secrets**: [Spark or Databricks](operations/spark-or-databricks.md)
 - **Running the CLI**: [Running Open Link Token](running-openlinktoken/index.md)
-- **Metadata format (hash fields)**: [Reference: Metadata Format](reference/metadata-format.md)
+- **Metadata format**: [Reference: Metadata Format](reference/metadata-format.md)
 
 ---
 

@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -21,13 +23,18 @@ import org.openlinktoken.attributes.Attribute;
 import org.openlinktoken.attributes.AttributeExpression;
 import org.openlinktoken.attributes.AttributeLoader;
 import org.openlinktoken.attributes.FieldRegistry;
+import org.openlinktoken.tokens.tokenizer.PassthroughTokenizer;
 import org.openlinktoken.tokens.tokenizer.SHA256Tokenizer;
 import org.openlinktoken.tokens.tokenizer.Tokenizer;
-import org.openlinktoken.tokens.tokenizer.PassthroughTokenizer;
+import org.openlinktoken.tokentransformer.HashTokenTransformer;
 import org.openlinktoken.tokentransformer.TokenTransformer;
 
 /**
- * Generates both the token signature and the token itself.
+ * Generates token signatures and transforms them into tokens.
+ *
+ * <p>The generator supports the legacy attribute-class API and the preferred field-ID API.
+ * Inference providers may supply pre-hashed signatures; those signatures bypass the hash
+ * transformer while still receiving any remaining transformations.
  */
 @Getter
 @Setter
@@ -40,6 +47,16 @@ public class TokenGenerator implements Serializable {
 
     private Map<Class<? extends Attribute>, Attribute> attributeInstanceMap;
     private FieldRegistry fieldRegistry;
+
+    private static final Optional<InferenceSignatureProvider> PROVIDER =
+            ServiceLoader.load(InferenceSignatureProvider.class).findFirst();
+
+    /**
+     * Returns the service-loaded inference provider, if one was discovered at class initialization.
+     */
+    private static Optional<InferenceSignatureProvider> findProvider() {
+        return PROVIDER;
+    }
 
     /**
      * Initializes the token generator.
@@ -84,27 +101,33 @@ public class TokenGenerator implements Serializable {
         this.fieldRegistry = fieldRegistry;
     }
 
-    /*
-     * Get the token signature for a given token identifier. Populates the
-     * invalidAttributes list in the result object with the attributes that are
-     * invalid.
+    /**
+     * Gets a token signature for a token identifier using attribute classes.
      *
-     * @param tokenId the token identifier.
+     * <p>If an enabled inference provider owns the identifier, the provider generates the
+     * signature. Otherwise, the configured token definition resolves and normalizes each
+     * required attribute, recording invalid attributes in {@code result}.
      *
-     * @param personAttributes The person attributes. It is a map of the person
-     * attributes.
+     * @param tokenId          the token identifier
+     * @param personAttributes the person attributes keyed by attribute class
+     * @param result           the result object that receives invalid attribute names
      *
-     * @param result the token generator result.
-     *
-     * @return the token signature using the token definition for the given token
-     * identifier.
+     * @return the normalized token signature, or {@code null} when required data is missing
+     *         or invalid
      */
     @Deprecated(since = "2.1.0", forRemoval = false)
     protected String getTokenSignature(String tokenId, Map<Class<? extends Attribute>, String> personAttributes,
             TokenGeneratorResult result) {
-        var definition = tokenDefinition.getTokenDefinition(tokenId);
         if (personAttributes == null) {
             throw new IllegalArgumentException("Person attributes cannot be null.");
+        }
+        if (hasActiveInferenceProvider(tokenId)) {
+            return getInferenceSignature(tokenId, toFieldIdMap(personAttributes));
+        }
+
+        var definition = tokenDefinition.getTokenDefinition(tokenId);
+        if (definition == null) {
+            return null;
         }
 
         var values = new ArrayList<String>(definition.size());
@@ -135,6 +158,75 @@ public class TokenGenerator implements Serializable {
 
         return Stream.of(values.toArray(new String[0])).filter(s -> null != s && !s.isBlank())
                 .collect(Collectors.joining("|"));
+    }
+
+    /**
+     * Generates tokens for every configured identifier except the supplied exclusions.
+     *
+     * @param personAttributes the person attributes keyed by attribute class
+     * @param excludedTokenIds token identifiers to skip
+     * @return generated tokens and any invalid attributes encountered
+     */
+    public TokenGeneratorResult generateTokensExcluding(
+            Map<Class<? extends Attribute>, String> personAttributes,
+            Set<String> excludedTokenIds) {
+        TokenGeneratorResult result = new TokenGeneratorResult();
+
+        for (String tokenId : tokenDefinition.getTokenIdentifiers()) {
+            if (excludedTokenIds.contains(tokenId)) {
+                continue;
+            }
+            try {
+                var token = getToken(tokenId, personAttributes, result);
+                if (token != null) {
+                    result.getTokens().put(tokenId, token);
+                }
+            } catch (Exception e) {
+                logger.error("Error generating token for token id: " + tokenId, e);
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Apply pre-computed embedding-derived tokens to the result.
+     *
+     * <p>Stores each token string under the key {@code tokenIdPrefix + i}, e.g.
+     * {@code "ML1-R0"}, {@code "ML1-R1"}, …
+     *
+     * @param result         the result to update
+     * @param tokenIdPrefix  prefix for the derived token keys
+     * @param tokenStrings   pre-computed token strings from the embedding transformer
+     */
+    public void applyEmbeddingDerivedTokens(
+            TokenGeneratorResult result,
+            String tokenIdPrefix,
+            List<String> tokenStrings) {
+        for (int i = 0; i < tokenStrings.size(); i++) {
+            result.getTokens().put(tokenIdPrefix + i, tokenStrings.get(i));
+        }
+    }
+
+    /**
+     * Apply a pre-computed inference signature as a token in the result.
+     *
+     * @param result    the token generator result to update
+     * @param tokenId   the token identifier (e.g. {@code "ML1"})
+     * @param signature the pre-computed hex-encoded signature string
+     */
+    public void applyPrecomputedSignature(TokenGeneratorResult result, String tokenId, String signature) {
+        try {
+            String token = tokenizer.tokenize(signature);
+            result.getTokens().put(tokenId, token);
+            if (Token.BLANK.equals(token)) {
+                result.getBlankTokensByRule().add(tokenId);
+            }
+        } catch (Exception e) {
+            logger.error("Error generating token for token id: " + tokenId, e);
+            result.getTokens().put(tokenId, Token.BLANK);
+            result.getBlankTokensByRule().add(tokenId);
+        }
     }
 
     /**
@@ -181,9 +273,85 @@ public class TokenGenerator implements Serializable {
             throws TokenGenerationException {
         var signature = getTokenSignature(tokenId, personAttributes, result);
         logger.debug("Token signature for token id {}: {}", tokenId, signature);
+
+        return tokenizeSignature(tokenId, signature, result);
+    }
+
+    /**
+     * Store a pre-hashed token value, applying only non-hash transformers (e.g. encryption).
+     *
+     * <p>Use for tokens that are already hashed (e.g. ML1 HMAC rotation values).
+     * {@link HashTokenTransformer} is skipped to avoid re-hashing; all other
+     * transformers (e.g. {@code EncryptTokenTransformer}) are still applied via
+     * {@link PassthroughTokenizer}.
+     *
+     * @param result     the token generator result to update
+     * @param tokenId    the token identifier key to store the result under
+     * @param tokenValue the pre-hashed token value, or {@code null}/blank to record blank
+     */
+    public void storeRawToken(TokenGeneratorResult result, String tokenId, String tokenValue) {
+        if (tokenValue == null || Token.BLANK.equals(tokenValue)) {
+            result.getTokens().put(tokenId, Token.BLANK);
+            result.getBlankTokensByRule().add(tokenId);
+            return;
+        }
         try {
-            String token = tokenizer.tokenize(signature);
-            // Track blank tokens by rule
+            String token = new PassthroughTokenizer(encryptOnlyTransformers()).tokenize(tokenValue);
+            result.getTokens().put(tokenId, token);
+            if (Token.BLANK.equals(token)) {
+                result.getBlankTokensByRule().add(tokenId);
+            }
+        } catch (Exception e) {
+            logger.error("Error storing raw token for token id: " + tokenId, e);
+            result.getTokens().put(tokenId, Token.BLANK);
+            result.getBlankTokensByRule().add(tokenId);
+        }
+    }
+
+    /**
+     * Keeps encryption and other post-hash transformations while preventing a pre-hashed value
+     * from being hashed again.
+     */
+    private List<TokenTransformer> encryptOnlyTransformers() {
+        return tokenizer.getTokenTransformerList().stream()
+                .filter(t -> !(t instanceof HashTokenTransformer))
+                .toList();
+    }
+
+    /**
+     * Checks whether the discovered provider owns this token and is enabled for use.
+     */
+    private boolean hasActiveInferenceProvider(String tokenId) {
+        Optional<InferenceSignatureProvider> provider = findProvider();
+        return provider.isPresent() && provider.get().getTokenId().equals(tokenId) && provider.get().isEnabled();
+    }
+
+    /**
+     * Delegates signature generation to the active provider while converting provider failures
+     * into a missing signature so normal token generation can continue.
+     */
+    private String getInferenceSignature(String tokenId, Map<String, String> personAttributes) {
+        Optional<InferenceSignatureProvider> provider = findProvider();
+        if (!provider.isPresent() || !provider.get().getTokenId().equals(tokenId) || !provider.get().isEnabled()) {
+            return null;
+        }
+        try {
+            return provider.get().generateSignature(personAttributes);
+        } catch (Exception e) {
+            logger.error("Error generating token signature for token id: {}", tokenId, e);
+            return null;
+        }
+    }
+
+    /**
+     * Applies the appropriate tokenizer and records blank output for the originating token rule.
+     */
+    private String tokenizeSignature(String tokenId, String signature, TokenGeneratorResult result)
+            throws TokenGenerationException {
+        try {
+            String token = hasActiveInferenceProvider(tokenId)
+                    ? new PassthroughTokenizer(encryptOnlyTransformers()).tokenize(signature)
+                    : tokenizer.tokenize(signature);
             if (Token.BLANK.equals(token)) {
                 result.getBlankTokensByRule().add(tokenId);
             }
@@ -192,6 +360,20 @@ public class TokenGenerator implements Serializable {
             logger.error("Error generating token for token id: " + tokenId, e);
             throw new TokenGenerationException("Error generating token", e);
         }
+    }
+
+    /**
+     * Adapts the legacy class-keyed input to the field-keyed form used by inference providers.
+     */
+    private Map<String, String> toFieldIdMap(Map<Class<? extends Attribute>, String> personAttributes) {
+        var fields = new HashMap<String, String>();
+        for (Map.Entry<Class<? extends Attribute>, String> entry : personAttributes.entrySet()) {
+            var attribute = attributeInstanceMap.get(entry.getKey());
+            if (attribute != null) {
+                fields.put(attribute.getName(), entry.getValue());
+            }
+        }
+        return fields;
     }
 
     /**
@@ -255,9 +437,16 @@ public class TokenGenerator implements Serializable {
      */
     protected String getTokenSignatureViaFieldId(String tokenId, Map<String, String> personAttributes,
             TokenGeneratorResult result) {
-        var definition = tokenDefinition.getTokenDefinition(tokenId);
         if (personAttributes == null) {
             throw new IllegalArgumentException("Person attributes cannot be null.");
+        }
+        if (hasActiveInferenceProvider(tokenId)) {
+            return getInferenceSignature(tokenId, personAttributes);
+        }
+
+        var definition = tokenDefinition.getTokenDefinition(tokenId);
+        if (definition == null || definition.isEmpty()) {
+            return null;
         }
 
         var values = new ArrayList<String>(definition.size());
@@ -306,22 +495,36 @@ public class TokenGenerator implements Serializable {
      * @return A {@link TokenGeneratorResult} object containing the tokens and invalid attributes.
      */
     public TokenGeneratorResult getAllTokensViaFieldId(Map<String, String> personAttributes) {
+        return generateTokensExcludingViaFieldId(personAttributes, Set.of());
+    }
+
+    /**
+     * Get field-ID-based tokens while excluding selected token/rule identifiers.
+     *
+     * @param personAttributes  person attributes keyed by field ID (e.g., "LastName" → "Smith").
+     * @param excludedTokenIds  token identifiers to skip before signature generation.
+     *
+     * @return a {@link TokenGeneratorResult} containing generated tokens and invalid attributes.
+     */
+    public TokenGeneratorResult generateTokensExcludingViaFieldId(
+            Map<String, String> personAttributes,
+            Set<String> excludedTokenIds) {
         TokenGeneratorResult result = new TokenGeneratorResult();
 
         for (String tokenId : tokenDefinition.getTokenIdentifiers()) {
+            if (excludedTokenIds.contains(tokenId)) {
+                continue;
+            }
             try {
+                var definition = tokenDefinition.getTokenDefinition(tokenId);
+                if ((definition == null || definition.isEmpty()) && !hasActiveInferenceProvider(tokenId)) {
+                    continue;
+                }
                 var signature = getTokenSignatureViaFieldId(tokenId, personAttributes, result);
                 logger.debug("Token signature for token id {}: {}", tokenId, signature);
-                try {
-                    String token = tokenizer.tokenize(signature);
-                    if (Token.BLANK.equals(token)) {
-                        result.getBlankTokensByRule().add(tokenId);
-                    }
-                    if (token != null) {
-                        result.getTokens().put(tokenId, token);
-                    }
-                } catch (Exception e) {
-                    logger.error("Error generating token for token id: " + tokenId, e);
+                String token = tokenizeSignature(tokenId, signature, result);
+                if (token != null) {
+                    result.getTokens().put(tokenId, token);
                 }
             } catch (Exception e) {
                 logger.error("Error generating token for token id: " + tokenId, e);
@@ -353,6 +556,10 @@ public class TokenGenerator implements Serializable {
         return signatures;
     }
 
+    /**
+     * Resolves an expression's explicit field ID, retaining the attribute-name fallback for
+     * definitions created through the legacy class-based API.
+     */
     private String resolveFieldId(AttributeExpression expression) {
         if (expression.getFieldId() != null) {
             return expression.getFieldId();
@@ -362,6 +569,10 @@ public class TokenGenerator implements Serializable {
         return attribute != null ? attribute.getName() : null;
     }
 
+    /**
+     * Resolves the attribute registered for a field, falling back to the expression's class
+     * when the custom field registry has no entry.
+     */
     private Attribute resolveAttribute(AttributeExpression expression, String resolvedFieldId) {
         // Try field registry first
         var fromRegistry = fieldRegistry.getAttribute(resolvedFieldId);

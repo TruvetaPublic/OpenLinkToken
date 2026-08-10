@@ -21,7 +21,7 @@ No dependencies required. Extract and run.
 ### Other Options
 
 - **Docker**: Use `run-olt.sh` (Linux/Mac) or `run-olt.ps1` (Windows)
-- **Python**: Install with `uv pip install openlinktoken-cli`, then run `openlinktoken` or `python -m openlinktoken_cli.main`
+- **Python**: Install with `uv pip install openlinktoken-cli`, then run `olt`
 
 For installation details, see the [CLI Quickstart](../quickstarts/cli-quickstart.md).
 
@@ -37,7 +37,7 @@ The `tokenize` subcommand is primarily used to build **internal overlap-analysis
 
 ```bash
 # Self-contained executable
-./openlinktoken [OPTIONS]
+./olt [OPTIONS]
 
 # Python
 python -m openlinktoken_cli.main <subcommand> [OPTIONS]
@@ -59,35 +59,55 @@ These options are accepted by the root command and apply to every invocation:
 
 | Option              | Description                                                 |
 | ------------------- | ----------------------------------------------------------- |
+| `--version`         | Display the CLI version and exit                            |
 | `--no-update-check` | Disable the automatic background version check for this run |
 
 The automatic version check can also be disabled permanently by setting the environment variable `OLT_DISABLE_UPDATE_CHECK=1`.
+
+**Terminology:** **Open Link Token** is the product name. `olt` is the
+command-line executable or console script; `openlinktoken-cli` is the Python
+package name.
 
 ## Arguments by Subcommand
 
 ### `package` (Default Encrypted Mode)
 
-| Argument            | Short | Required | Default                                    | Description                                                                                                                                                                         |
-| ------------------- | ----- | -------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--input`           | `-i`  | Yes      |                                            | Path to input file (CSV or Parquet)                                                                                                                                                 |
-| `--output`          | `-o`  | No       | `<input_basename>_packaged.zip`            | Path to output file. Supported extensions: `.csv`, `.parquet`, `.zip`. A `.zip` path bundles the tokens (always in Parquet format), metadata, and exchange config into one archive. |
-| `--exchange-config` |       | No       | `./openlinktoken-YYYY-MM-DD.exchange.json` | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted.                                                                                     |
-| `--private-key`     |       | No\*     |                                            | Private key PEM used to decrypt the exchange config and derive the transport encryption key                                                                                         |
-| `--private-key-env` |       | No\*     |                                            | Environment variable containing the private key PEM                                                                                                                                 |
-| `--hash-record-ids` |       | No       |                                            | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability)                                                                                              |
+`package` enables ML1 by default when the AI module is available. A valid input
+record can produce T1–T5 plus one `ML1` row; use `--disable-inferencing` for
+only the five standard rules. ML1 requires valid FirstName, LastName,
+BirthDate, Sex, and PostalCode values.
+
+| Argument                    | Short | Required | Default                                    | Description                                                                                                                                                                         |
+| --------------------------- | ----- | -------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--input`                   | `-i`  | Yes      |                                            | Path to input file (CSV or Parquet)                                                                                                                                                 |
+| `--output`                  | `-o`  | No       | `<input_basename>_packaged.zip`            | Path to output file. Supported extensions: `.csv`, `.parquet`, `.zip`. A `.zip` path bundles the tokens (always in Parquet format), metadata, and exchange config into one archive. |
+| `--exchange-config`         | `-c`  | No       | `./openlinktoken-YYYY-MM-DD.exchange.json` | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted.                                                                                     |
+| `--config`                  |       | No       |                                            | YAML config file for custom input field mapping and token-rule definitions. Supported for CSV and Parquet input.                                                                    |
+| `--private-key`             |       | No\*     |                                            | Private key PEM used to decrypt the exchange config and derive the transport encryption key                                                                                         |
+| `--private-key-env`         |       | No\*     |                                            | Environment variable containing the private key PEM                                                                                                                                 |
+| `--ring-id`                 |       | No       | Random UUID                                | Ring identifier for key management. A random UUID is generated when omitted.                                                                                                        |
+| `--hash-record-ids`         |       | No       |                                            | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability)                                                                                              |
+| `--disable-inferencing`     |       | No       | ML1 enabled                                | Disable ML1 ONNX inference token generation.                                                                                                                                        |
+| `--inferencing-batch-size`  |       | No       | `64`                                       | ML1 ONNX inference batch size.                                                                                                                                                      |
+| `--inferencing-num-threads` |       | No       | `0` (auto-detect)                          | ONNX Runtime intra/inter-op thread count for ML1 inference.                                                                                                                         |
+| `--no-progress`             | `-q`  | No       |                                            | Suppress the interactive progress indicator.                                                                                                                                        |
 
 ### `tokenize` (Hashed Tokens Only)
 
-| Argument            | Short | Required          | Default                                    | Description                                                                                                                                                                                                                    |
-| ------------------- | ----- | ----------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `--input`           | `-i`  | Yes               |                                            | Path to input file (CSV or Parquet)                                                                                                                                                                                            |
-| `--output`          | `-o`  | No                | `<input_basename>_<token_json>`            | Path to output file. Appends `_tokenized` suffix based on input filename when omitted.                                                                                                                                         |
-| `--exchange-config` |       | Default mode only | `./openlinktoken-YYYY-MM-DD.exchange.json` | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted.                                                                                                                                |
-| `--private-key`     |       | No\*              |                                            | Private key PEM used to decrypt the exchange config                                                                                                                                                                            |
-| `--private-key-env` |       | No\*              |                                            | Environment variable containing the private key PEM                                                                                                                                                                            |
-| `--config`          |       | No                |                                            | YAML config file for custom input field mapping and token-rule definitions. See [Tokenization Configuration Reference](tokenization-config.md). Supported for CSV and Parquet input.                                           |
-| `--mode`            |       | No                | `default`                                  | Mode selector: `default`, `hash-only`, or `demo`. `hash-only` cannot be combined with exchange-config, private-key options, or `--hash-record-ids`; `demo` cannot be combined with `--exchange-config` or `--hash-record-ids`. |
-| `--hash-record-ids` |       | No                |                                            | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability; default tokenize mode only)                                                                                                             |
+| Argument                    | Short | Required | Default                                    | Description                                                                                                                                                                                                                              |
+| --------------------------- | ----- | -------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--input`                   | `-i`  | Yes      |                                            | Path to input file (CSV or Parquet)                                                                                                                                                                                                      |
+| `--output`                  | `-o`  | No       | `<input_basename>_tokenized.<ext>`         | Path to output file. Appends `_tokenized` suffix based on input filename when omitted.                                                                                                                                                   |
+| `--exchange-config`         | `-c`  | No       | `./openlinktoken-YYYY-MM-DD.exchange.json` | Exchange config JSON path. Default `tokenize` mode uses it to resolve the hashing secret; hash-only/demo may use it with a matching private key for optional rotation settings.                                                          |
+| `--private-key`             |       | No\*     |                                            | Private key PEM used to decrypt the exchange config                                                                                                                                                                                      |
+| `--private-key-env`         |       | No\*     |                                            | Environment variable containing the private key PEM                                                                                                                                                                                      |
+| `--config`                  |       | No       |                                            | YAML config file for custom input field mapping and token-rule definitions. See [Tokenization Configuration Reference](tokenization-config.md). Supported for CSV and Parquet input.                                                     |
+| `--mode`                    |       | No       | `default`                                  | Mode selector: `default`, `hash-only`, or `demo`. Hash-only/demo do not need secrets; an exchange config and matching private key may be supplied for optional rotation settings. `--hash-record-ids` is supported only in default mode. |
+| `--hash-record-ids`         |       | No       |                                            | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability; default tokenize mode only)                                                                                                                       |
+| `--disable-inferencing`     |       | No       | ML1 enabled                                | Disable ML1 ONNX inference token generation.                                                                                                                                                                                             |
+| `--inferencing-batch-size`  |       | No       | `64`                                       | ML1 ONNX inference batch size.                                                                                                                                                                                                           |
+| `--inferencing-num-threads` |       | No       | `0` (auto-detect)                          | ONNX Runtime intra/inter-op thread count for ML1 inference.                                                                                                                                                                              |
+| `--no-progress`             | `-q`  | No       |                                            | Suppress the interactive progress indicator.                                                                                                                                                                                             |
 
 ### `encrypt` (Encrypt Input Tokens)
 
@@ -95,9 +115,11 @@ The automatic version check can also be disabled permanently by setting the envi
 | ------------------- | ----- | -------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--input`           | `-i`  | Yes      |                                            | Path to input file (CSV or Parquet)                                                                                                                                                                                       |
 | `--output`          | `-o`  | No       | `<input_basename>_encrypted{ext}`          | Path to output file. Supported extensions: `.csv`, `.parquet`, `.zip`. Appends `_encrypted` suffix based on input filename when omitted. A `.zip` path bundles the encrypted tokens and exchange config into one archive. |
-| `--exchange-config` |       | No       | `./openlinktoken-YYYY-MM-DD.exchange.json` | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted.                                                                                                                           |
+| `--exchange-config` | `-c`  | No       | `./openlinktoken-YYYY-MM-DD.exchange.json` | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted.                                                                                                                           |
 | `--private-key`     |       | No\*     |                                            | Private key PEM used to decrypt the exchange config and derive the transport encryption key                                                                                                                               |
 | `--private-key-env` |       | No\*     |                                            | Environment variable containing the private key PEM                                                                                                                                                                       |
+| `--ring-id`         |       | No       | Random UUID                                | Ring identifier for key management. A random UUID is generated when omitted.                                                                                                                                              |
+| `--no-progress`     | `-q`  | No       |                                            | Suppress the interactive progress indicator.                                                                                                                                                                              |
 
 ### `decrypt` (Decrypt Encrypted Tokens)
 
@@ -105,9 +127,10 @@ The automatic version check can also be disabled permanently by setting the envi
 | ------------------- | ----- | -------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------- |
 | `--input`           | `-i`  | Yes      |                                            | Path to input file (must be encrypted)                                                          |
 | `--output`          | `-o`  | No       | `<input_basename>_decrypted{ext}`          | Path to output file. Appends `_decrypted` suffix based on input filename when omitted.          |
-| `--exchange-config` |       | No       | `./openlinktoken-YYYY-MM-DD.exchange.json` | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted. |
+| `--exchange-config` | `-c`  | No       | `./openlinktoken-YYYY-MM-DD.exchange.json` | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted. |
 | `--private-key`     |       | No\*     |                                            | Private key PEM used to decrypt the exchange config and derive the transport encryption key     |
 | `--private-key-env` |       | No\*     |                                            | Environment variable containing the private key PEM                                             |
+| `--no-progress`     | `-q`  | No       |                                            | Suppress the interactive progress indicator.                                                    |
 
 ### `generate-key-pair` (ECDH Key Generation)
 
@@ -131,20 +154,27 @@ Available in the Python CLI.
 
 Generates, reuses, or derives a sender key pair, encrypts a hashing secret into a versioned multi-recipient JWE JSON exchange artifact, and writes recipient entries for both the sender and the partner. The artifact does **not** embed any private keys.
 
-| Argument                   | Short | Required | Default                        | Description                                                                                                       |
-| -------------------------- | ----- | -------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| `--public-key`             |       | Yes\*    |                                | Path to the partner's public key (PEM/SPKI format)                                                                |
-| `--public-key-stdin`       |       | Yes\*    | `false`                        | Read the partner's public key PEM from stdin instead of `--public-key`                                            |
-| `--public-key-env`         |       | Yes\*    |                                | Read the partner's public key PEM from the named environment variable                                             |
-| `--name`                   | `-n`  | No       | `openlinktoken-<ISO8601-date>` | Base name for local key files                                                                                     |
-| `--output`                 | `-o`  | No       | `./<name>.exchange.json`       | Output path for the exchange config JSON                                                                          |
-| `--hashingsecret`          |       | No\*\*   | randomly generated             | Hashing secret to encrypt when you intentionally pass it on the command line                                      |
-| `--hashingsecret-stdin`    |       | No\*\*   | `false`                        | Read the hashing secret from stdin instead of passing it on the command line                                      |
-| `--hashingsecret-env`      |       | No\*\*   |                                | Read the hashing secret from the named environment variable                                                       |
-| `--curve`                  | `-c`  | No       | `P-256`                        | Elliptic curve for generated keys: `P-256`, `P-384`, or `P-521`                                                   |
-| `--force`                  |       | No       | `false`                        | Overwrite existing key files and exchange config                                                                  |
-| `--sender-private-key`     |       | No       |                                | Reuse an existing sender private key PEM for the sender-side recipient entry instead of generating a new key pair |
-| `--sender-private-key-env` |       | No       |                                | Read the sender private key PEM from the named environment variable without writing local sender key files        |
+| Argument                         | Short   | Required | Default                        | Description                                                                                                                                                      |
+| -------------------------------- | ------- | -------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--public-key`                   |         | Yes\*    |                                | Path to the partner's public key (PEM/SPKI format)                                                                                                               |
+| `--public-key-stdin`             |         | Yes\*    | `false`                        | Read the partner's public key PEM from stdin instead of `--public-key`                                                                                           |
+| `--public-key-env`               |         | Yes\*    |                                | Read the partner's public key PEM from the named environment variable                                                                                            |
+| `--name`                         | `-n`    | No       | `openlinktoken-<ISO8601-date>` | Base name for local key files                                                                                                                                    |
+| `--output`                       | `-o`    | No       | `./<name>.exchange.json`       | Output path for the exchange config JSON                                                                                                                         |
+| `--hashingsecret`                |         | No\*\*   | randomly generated             | Hashing secret to encrypt when you intentionally pass it on the command line                                                                                     |
+| `--hashingsecret-stdin`          |         | No\*\*   | `false`                        | Read the hashing secret from stdin instead of passing it on the command line                                                                                     |
+| `--hashingsecret-env`            |         | No\*\*   |                                | Read the hashing secret from the named environment variable                                                                                                      |
+| `--rotation-iv`                  |         | No\*\*\* | randomly generated             | Rotation IV string for the rotation matrix generator                                                                                                             |
+| `--rotation-iv-stdin`            |         | No\*\*\* | `false`                        | Read the rotation IV from stdin instead of passing it on the command line                                                                                        |
+| `--rotation-iv-env`              |         | No\*\*\* |                                | Read the rotation IV from the named environment variable                                                                                                         |
+| `--rotation-count`               |         | No       | `50`                           | Number of rotation matrices to generate                                                                                                                          |
+| `--rotation-bin-width`           | `WIDTH` | No       | `0.05`                         | Quantization bin width for rotation-based token generation                                                                                                       |
+| `--rotation-embedding-dimension` | `N`     | No       | `1024`                         | Embedding vector size. Sets the length of the zero-filled dimension bias written into the exchange config. Ignored when `--rotation-embedding-bias` is provided. |
+| `--rotation-embedding-bias`      | `PATH`  | No       |                                | Path to a JSON file containing a flat array of floats used as the dimension bias (e.g. `[0.12, -0.05, 0.33]`). Overrides `--rotation-embedding-dimension`.       |
+| `--curve`                        | `-c`    | No       | `P-256`                        | Elliptic curve for generated keys: `P-256`, `P-384`, or `P-521`                                                                                                  |
+| `--force`                        |         | No       | `false`                        | Overwrite existing key files and exchange config                                                                                                                 |
+| `--sender-private-key`           |         | No       |                                | Reuse an existing sender private key PEM for the sender-side recipient entry instead of generating a new key pair                                                |
+| `--sender-private-key-env`       |         | No       |                                | Read the sender private key PEM from the named environment variable without writing local sender key files                                                       |
 
 **Outputs:**
 
@@ -157,6 +187,8 @@ Generates, reuses, or derives a sender key pair, encrypts a hashing secret into 
 \* Provide one of `--public-key`, `--public-key-stdin`, or `--public-key-env`.
 
 \*\* Provide at most one of `--hashingsecret`, `--hashingsecret-stdin`, or `--hashingsecret-env`. If you omit all three, Open Link Token generates a secure random hashing secret. For pre-existing secrets, prefer `--hashingsecret-env` or `--hashingsecret-stdin` so the secret does not appear in shell history or process arguments. Because stdin can only be consumed once per command, `--hashingsecret-stdin` cannot be combined with `--public-key-stdin`.
+
+\*\*\* Provide at most one of `--rotation-iv`, `--rotation-iv-stdin`, or `--rotation-iv-env`. If you omit all three, Open Link Token generates a secure random rotation IV. Prefer `--rotation-iv-env` or `--rotation-iv-stdin` over `--rotation-iv` to avoid the value appearing in shell history. The rotation IV, count, and bin width are encrypted into the exchange payload so both parties use identical rotation parameters.
 
 **Example:**
 
@@ -218,6 +250,27 @@ olt initiate-exchange \
 When `--sender-private-key-env` is used, Open Link Token derives the sender public key
 in memory and does not write local sender key files under `~/.openlinktoken/`.
 
+To provide an explicit dimension bias computed from a sample population, write
+the values to a JSON file and pass its path:
+
+```bash
+# bias.json contains a flat array: [0.12, -0.05, 0.33, 0.01, -0.22, 0.44]
+olt initiate-exchange \
+  --name sender-q2 \
+  --public-key ./recipient-org.public.pem \
+  --rotation-embedding-bias ./bias.json \
+  --output ./sender-q2.exchange.json
+```
+
+To use a bias exported from numpy:
+
+```python
+import json, numpy as np
+np.save("bias.npy", my_bias_array)
+with open("bias.json", "w") as f:
+    json.dump(my_bias_array.tolist(), f)
+```
+
 For `tokenize`, `package`, `encrypt`, and `decrypt`, Open Link Token resolves the exchange config from `--exchange-config` or from the date-based default path `./openlinktoken-YYYY-MM-DD.exchange.json`. When neither `--private-key` nor `--private-key-env` is supplied, the CLI falls back to `~/.openlinktoken/` fingerprint-based key lookup.
 
 \* Provide at most one of `--private-key` or `--private-key-env`.
@@ -266,7 +319,7 @@ olt package \
 **Token Pipeline:**
 
 ```
-Signature → SHA-256 → HMAC-SHA256 → AES-256-GCM → Base64
+Signature → SHA-256 → HMAC-SHA256 → JWE (AES-256-GCM) → Prefix `olt.V1.`
 ```
 
 ### `tokenize` Subcommand
@@ -299,7 +352,9 @@ For complete details, see [Tokenization Configuration Reference](tokenization-co
 
 ### Hash-only Mode (`tokenize --mode hash-only`)
 
-Generates deterministic SHA-256 output without HMAC, an exchange config, or a private key.
+Generates deterministic SHA-256 output without HMAC, a secret, or a private
+key. An exchange config is optional when you want to apply its rotation
+settings; supply the matching private key with it.
 
 > ⚠️ **Hash-only output must not be used for production or cross-organisation exchange.** It is deterministic and keyless by design.
 
@@ -317,9 +372,11 @@ Signature → SHA-256 → Lowercase hex
 
 ### Demo Mode (`tokenize --mode demo`)
 
-Outputs raw attribute signature strings without any hashing. Both the SHA-256 and HMAC
-steps are skipped. No exchange config or private key is required, making it easy to inspect which
-attribute values compose each token for development, testing, or demos.
+Outputs raw attribute signature strings without any hashing. Both the SHA-256 and
+HMAC steps are skipped. No exchange config or private key is required for the
+base output, making it easy to inspect which attribute values compose each
+token for development, testing, or demos. An exchange config may be supplied
+with a matching private key to apply optional rotation settings.
 
 > ⚠️ **Demo-mode output must not be used in production or shared externally.** The raw
 > signatures expose the normalised attribute values directly and provide no privacy
@@ -328,7 +385,8 @@ attribute values compose each token for development, testing, or demos.
 ```bash
 olt tokenize \
   -i input.csv -o output.csv \
-  --mode demo
+  --mode demo \
+  --disable-inferencing
 ```
 
 **Token Pipeline:**
@@ -337,53 +395,68 @@ olt tokenize \
 Signature → (passthrough) → Raw pipe-separated string
 ```
 
-**Example demo token** (T1 rule, first name + last name + birth date):
+The command disables ML1 so the example shows the current five standard rules.
+Without `--disable-inferencing`, valid input can also produce one `ML1` row.
+For a record with John Doe, `Male`, `1980-01-15`, postal code `98004`, and
+valid SSN `452-38-7291`:
 
-```text
-JOHN|DOE|19800115
+```csv
+RecordId,RuleId,Token
+ID001,T1,DOE|J|MALE|1980-01-15
+ID001,T2,DOE|JOHN|1980-01-15|980
+ID001,T3,DOE|JOHN|MALE|1980-01-15
+ID001,T4,452387291|MALE|1980-01-15
+ID001,T5,DOE|JOH|MALE
 ```
 
 **Differences from normal `tokenize`:**
 
-| Aspect                          | Default mode                   | Hash-only mode                   | Demo mode                                  |
-| ------------------------------- | ------------------------------ | -------------------------------- | ------------------------------------------ |
-| Exchange config / private key   | Required in normal mode        | Not required                     | Not required                               |
-| Token pipeline                  | SHA-256 → HMAC-SHA256 → Base64 | SHA-256 → lowercase hex          | Passthrough → raw signature string         |
-| Token format                    | Base64-encoded HMAC-SHA256     | 64-character lowercase hex       | Pipe-separated normalised attribute values |
-| `HashingSecretHash` in metadata | Present                        | Absent                           | Absent                                     |
-| Safe to share                   | No (internal only)             | No (never suitable for exchange) | No (never suitable for exchange)           |
+| Aspect                        | Default mode                   | Hash-only mode                   | Demo mode                                  |
+| ----------------------------- | ------------------------------ | -------------------------------- | ------------------------------------------ |
+| Exchange config / private key | Required in normal mode        | Optional for rotation settings   | Optional for rotation settings             |
+| Token pipeline                | SHA-256 → HMAC-SHA256 → Base64 | SHA-256 → lowercase hex          | Passthrough → raw signature string         |
+| Token format                  | Base64-encoded HMAC-SHA256     | 64-character lowercase hex       | Pipe-separated normalised attribute values |
+| Safe to share                 | No (internal only)             | No (never suitable for exchange) | No (never suitable for exchange)           |
 
 ## File Format Examples
 
 ### CSV Input
 
 ```csv
-RecordId,FirstName,LastName,BirthDate,Sex,PostalCode,SSN
+RecordId,FirstName,LastName,BirthDate,Sex,PostalCode,SocialSecurityNumber
 patient_001,John,Doe,1980-01-15,Male,98004,123-45-6789
 patient_002,Jane,Smith,1975-03-22,Female,90210,987-65-4321
 ```
 
 **Column Aliases Accepted:**
 
-| Standard Name | Accepted Aliases                                   |
-| ------------- | -------------------------------------------------- |
-| RecordId      | Id                                                 |
-| FirstName     | GivenName                                          |
-| LastName      | Surname                                            |
-| BirthDate     | DateOfBirth                                        |
-| Sex           | Gender                                             |
-| PostalCode    | ZipCode, ZIP3, ZIP4, ZIP5                          |
-| SSN           | SocialSecurityNumber, NationalIdentificationNumber |
+| Standard Name        | Accepted Aliases                  |
+| -------------------- | --------------------------------- |
+| RecordId             | Id                                |
+| FirstName            | GivenName                         |
+| LastName             | Surname                           |
+| BirthDate            | DateOfBirth                       |
+| Sex                  | Gender                            |
+| PostalCode           | ZipCode, ZIP3, ZIP4, ZIP5         |
+| SocialSecurityNumber | NationalIdentificationNumber, SSN |
+
+These mappings describe the Python CLI. Column names are matched
+case-insensitively.
 
 ### CSV Output
 
+The following is an encrypted `package` output example. Encrypted values use
+the `olt.V1.<JWE compact serialization>` format. Default `tokenize` and
+`decrypt` output unwrapped base64 HMAC values instead.
+
 ```csv
 RecordId,RuleId,Token
-patient_001,T1,Gn7t1Zj16E5Qy+z9iINtczP6fRDYta6C0XFr...
-patient_001,T2,pUxPgYL9+cMxkA+8928Pil+9W+dm9kISwHYP...
-patient_001,T3,rwjfwIo5OcJUItTx8KCoSZMtr7tVGSyXsWv/...
-patient_001,T4,9o7HIYZkhizczFzJL1HFyanlllzSa8hlgQWQ...
-patient_001,T5,QpBpGBqaMhagfcHGZhVavn23ko03jkyS9Vo4...
+patient_001,T1,olt.V1.<JWE compact serialization>
+patient_001,T2,olt.V1.<JWE compact serialization>
+patient_001,T3,olt.V1.<JWE compact serialization>
+patient_001,T4,olt.V1.<JWE compact serialization>
+patient_001,T5,olt.V1.<JWE compact serialization>
+patient_001,ML1,olt.V1.<JWE compact serialization>
 ```
 
 ### Parquet Schema
@@ -397,7 +470,7 @@ LastName: string
 BirthDate: string (YYYY-MM-DD)
 Sex: string
 PostalCode: string
-SSN: string
+SocialSecurityNumber: string
 ```
 
 **Output:**
@@ -410,7 +483,9 @@ Token: string
 
 ## Metadata Output
 
-Every run generates a `.metadata.json` file:
+`package` and `tokenize` generate metadata. For CSV or Parquet output, it is a
+`.metadata.json` sidecar; for ZIP output, `package` embeds metadata in the
+archive. `encrypt` and `decrypt` do not generate metadata:
 
 ```json
 {
@@ -421,14 +496,13 @@ Every run generates a `.metadata.json` file:
   "TotalRowsWithInvalidAttributes": 3,
   "InvalidAttributesByType": {
     "BirthDate": 2,
-    "SSN": 1
+    "SocialSecurityNumber": 1
   },
   "BlankTokensByRule": {
     "T1": 2,
-    "T4": 1
-  },
-  "HashingSecretHash": "e0b4e60b...",
-  "EncryptionSecretHash": "a1b2c3d4..."
+    "T4": 1,
+    "ML1": 0
+  }
 }
 ```
 
@@ -470,7 +544,7 @@ For long-running processing commands (`package`, `tokenize`, `encrypt`, and `dec
 
 ## Extensions
 
-The `extension` subcommand manages CLI extensions. Extensions add top-level subcommands to `openlinktoken` without requiring a CLI upgrade. See [Extension Author Reference](extensions.md) for how to build extensions, and [Managing Extensions](../operations/managing-extensions.md) for operator workflows.
+The `extension` subcommand manages CLI extensions. Extensions add top-level subcommands to `olt` without requiring a CLI upgrade. See [Extension Author Reference](extensions.md) for how to build extensions, and [Managing Extensions](../operations/managing-extensions.md) for operator workflows.
 
 ### `extension install`
 

@@ -10,7 +10,8 @@ Complete reference for `tokenize --config`: field mapping, token-rule definition
 
 `tokenize --config` lets you map non-standard input column names to Open Link Token attribute types and define token rules explicitly.
 
-Use this when source data does not use built-in aliases (for example `given_nm` instead of `FirstName`) or when custom token rules are required.
+Use this when source data does not use built-in aliases (for example `given name`
+instead of `FirstName`) or when custom token rules are required.
 
 ## Example Command
 
@@ -24,7 +25,7 @@ olt tokenize \
 ## Example Input (Unusual Fields)
 
 ```csv
-member_id,given_nm,surname_txt,dob_iso,gender_code,zip_5,national_id
+member_id,given name,surname_txt,dob_iso,gender_code,zip_5,national_id
 A-1001,Ana,Lopez,1988-03-12,F,98052,123-45-6789
 A-1002,Marcus,Nguyen,1979-11-05,M,10001,234-56-7890
 ```
@@ -37,7 +38,7 @@ column_mappings:
     column_name: "member_id"
     type: RecordId
   GivenName:
-    column_name: "given nm"
+    column_name: "given name"
     type: FirstName
   FamilyName:
     column_name: "surname_txt"
@@ -81,7 +82,7 @@ Top-level keys:
 | Field         | Required | Type    | Description                                                                                                                                                                                                                                      |
 | ------------- | -------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `<field_id>`  | Yes      | Mapping | Logical field identifier used by token rules (for example `GivenName`).                                                                                                                                                                          |
-| `column_name` | Yes      | String  | Source column name in the CSV or Parquet file (for example `"given_nm"`).                                                                                                                                                                        |
+| `column_name` | Yes      | String  | Source column name in the CSV or Parquet file (for example `"given name"`).                                                                                                                                                                      |
 | `type`        | Yes      | String  | Open Link Token attribute type. See [Attribute Types](#attribute-types) for all accepted values. Each type applies its own normalization and validation rules — see [Normalization and Validation](../concepts/normalization-and-validation.md). |
 
 `token_rules` entry schema:

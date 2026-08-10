@@ -2,13 +2,21 @@
 
 from unittest.mock import Mock
 
+import openlinktoken.tokens.token_generator as token_generator_module
 from openlinktoken.metadata import Metadata
+from openlinktoken.tokens.inference_signature_provider import InferenceBatchResult
 from openlinktoken.tokens.token_definition import TokenDefinition
+from openlinktoken.tokens.token_generator import TokenGenerator
+from openlinktoken.tokens.token_generator_result import TokenGeneratorResult
+from openlinktoken.tokens.tokenizer.passthrough_tokenizer import PassthroughTokenizer
 from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 from openlinktoken.tokentransformer.token_transformer import TokenTransformer
 from openlinktoken_cli.io.person_attributes_reader import PersonAttributesReader
 from openlinktoken_cli.io.person_attributes_writer import PersonAttributesWriter
-from openlinktoken_cli.processor.person_attributes_processor import PersonAttributesProcessor
+from openlinktoken_cli.processor.person_attributes_processor import (
+    PersonAttributesProcessor,
+    _PendingRow,
+)
 from openlinktoken_cli.tokens.config.configured_attribute_resolver import ConfiguredAttributeResolver
 from openlinktoken_cli.tokens.config.dynamic_token_definition import DynamicTokenDefinition
 from openlinktoken_cli.tokens.config.tokenization_config import (
@@ -20,6 +28,87 @@ from openlinktoken_cli.tokens.config.tokenization_config import (
 
 class TestPersonAttributesProcessor:
     """Test cases for PersonAttributesProcessor."""
+
+    def test_batched_ml1_does_not_run_single_row_inference(self, monkeypatch):
+        """Batched ML1 processing invokes only the provider batch API."""
+
+        class CountingProvider:
+            def __init__(self):
+                self.single_calls = 0
+                self.batch_calls = 0
+
+            def get_token_id(self):
+                return "ML1"
+
+            def is_enabled(self):
+                return True
+
+            def generate_signature(self, row):
+                self.single_calls += 1
+                return "single"
+
+            def generate_batch(self, rows):
+                self.batch_calls += 1
+                return InferenceBatchResult(["batch"] * len(rows))
+
+        provider = CountingProvider()
+        monkeypatch.setattr(token_generator_module, "_inference_provider", provider)
+        monkeypatch.setattr(token_generator_module, "_provider_discovered", True)
+
+        definition = Mock()
+        definition.get_token_identifiers.return_value = {"ML1"}
+        definition.get_token_definition.return_value = []
+        token_generator = TokenGenerator(definition, PassthroughTokenizer([]))
+
+        PersonAttributesProcessor._process_rows_with_batched_ml1(
+            [{"LastName": "Smith"}],
+            Mock(spec=PersonAttributesWriter),
+            token_generator,
+            {},
+            {},
+            None,
+            None,
+            {},
+        )
+
+        assert provider.single_calls == 0
+        assert provider.batch_calls == 1
+
+    def test_flush_pending_rows_uses_precomputed_ml1_signatures(self, monkeypatch):
+        """Flushing applies supplied ML1 signatures without performing inference."""
+
+        def fail_provider_lookup():
+            raise AssertionError("flush must not discover or invoke the inference provider")
+
+        monkeypatch.setattr(TokenGenerator, "get_inference_provider", fail_provider_lookup)
+
+        token_generator = Mock(spec=TokenGenerator)
+        token_generator_result = TokenGeneratorResult()
+        pending_rows = [
+            _PendingRow(
+                row={"RecordId": "row-1"},
+                row_counter=1,
+                token_generator_result=token_generator_result,
+            )
+        ]
+
+        PersonAttributesProcessor._flush_pending_rows(
+            writer=Mock(spec=PersonAttributesWriter),
+            token_generator=token_generator,
+            invalid_attribute_count={},
+            blank_tokens_by_rule_count={},
+            encryption_key=None,
+            ring_id=None,
+            jwe_formatters={},
+            pending_rows=pending_rows,
+            ml1_signatures=["precomputed-signature"],
+        )
+
+        token_generator.store_raw_token.assert_called_once_with(
+            token_generator_result,
+            "ML1",
+            "precomputed-signature",
+        )
 
     def test_process_happy_path(self):
         """Test process happy path."""
@@ -33,8 +122,8 @@ class TestPersonAttributesProcessor:
         metadata_map = Metadata().initialize()
         PersonAttributesProcessor.process(reader, writer, token_transformer_list, metadata_map)
 
-        # Verify writer was called 5 times (5 tokens generated)
-        assert writer.write_attributes.call_count == 5
+        # Verify writer was called at least 5 times (T1-T5; ML1 may also fire if openlinktoken-core-ai is installed)
+        assert writer.write_attributes.call_count >= 5
 
         # Verify metadata was populated
         assert len(metadata_map) > 0, "Metadata map should not be empty after processing"
@@ -90,7 +179,7 @@ class TestPersonAttributesProcessor:
         assert metadata_map[PersonAttributesProcessor.TOTAL_ROWS_WITH_INVALID_ATTRIBUTES] == 0, (
             "Total rows with invalid attributes should be 0"
         )
-        assert PersonAttributesProcessor.BLANK_TOKENS_BY_RULE in metadata_map, (
+        assert PersonAttributesProcessor.BLANK_TOKENS_BY_RULE_KEY in metadata_map, (
             "Metadata should contain blankTokensByRule key"
         )
 
@@ -103,7 +192,7 @@ class TestPersonAttributesProcessor:
             assert count == 0, "All attribute counts should be 0 with valid data"
 
         # Verify blank tokens map contains all token rules
-        blank_tokens_map = metadata_map[PersonAttributesProcessor.BLANK_TOKENS_BY_RULE]
+        blank_tokens_map = metadata_map[PersonAttributesProcessor.BLANK_TOKENS_BY_RULE_KEY]
         assert len(blank_tokens_map) > 0, "Blank tokens map should contain all token rules initialized to 0"
 
         # Note: This test data (FirstName, LastName only) will generate blank tokens
@@ -142,7 +231,7 @@ class TestPersonAttributesProcessor:
             assert count == 0, "All attribute counts should be 0 in happy path"
 
         # Verify blank tokens map contains all token rules with zero counts (happy path)
-        blank_tokens_map = metadata_map[PersonAttributesProcessor.BLANK_TOKENS_BY_RULE]
+        blank_tokens_map = metadata_map[PersonAttributesProcessor.BLANK_TOKENS_BY_RULE_KEY]
         assert len(blank_tokens_map) > 0, "Blank tokens map should contain all token rules initialized to 0"
 
         # Verify all blank token counts are 0 in the happy path (all required attributes present)
@@ -304,3 +393,33 @@ class TestPersonAttributesProcessor:
 
         assert summary.total_rows == 1
         assert summary.total_rows_with_invalid_attributes == 1
+
+    def test_process_counts_invalid_rows_separately_from_invalid_attributes(self):
+        """Counts one invalid row when multiple attributes in that row are invalid."""
+        data = {
+            "RecordId": "TestRecordId",
+            "FirstName": "John",
+            "LastName": "Spencer",
+            "SocialSecurityNumber": "234-56-7890",
+            "BirthDate": "",
+            "Sex": "Unknown",
+            "PostalCode": "98052",
+        }
+
+        reader = Mock(spec=PersonAttributesReader)
+        writer = Mock(spec=PersonAttributesWriter)
+        reader.__iter__ = Mock(return_value=iter([data]))
+        metadata_map = Metadata().initialize()
+
+        summary = PersonAttributesProcessor.process(
+            reader,
+            writer,
+            [],
+            metadata_map,
+            token_definition=TokenDefinition(),
+        )
+
+        assert summary.total_rows_with_invalid_attributes == 1
+        assert metadata_map[PersonAttributesProcessor.TOTAL_ROWS_WITH_INVALID_ATTRIBUTES] == 1
+        assert summary.invalid_attributes_by_type["BirthDate"] == 1
+        assert summary.invalid_attributes_by_type["Sex"] == 1

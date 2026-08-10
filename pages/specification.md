@@ -12,7 +12,7 @@ Open Link Token is a privacy-preserving token generation system for deterministi
 
 - Identical inputs always produce identical deterministic matching values (normal `tokenize`, `tokenize --mode hash-only`, or decrypted)
 - Tokens reveal nothing about the underlying data (one-way)
-- Matching can occur on different attribute combinations via 5 distinct token rules (T1–T5)
+- Matching can occur on different attribute combinations via default token rules (T1–T5) and the default-enabled ONNX-backed ML1 rule
 
 **Applicability:** This specification applies to both Java and Python implementations. Cross-language deterministic outputs (tokenized, `--mode hash-only`, and decrypted values where supported) must be byte-identical for the same normalized inputs and secrets.
 
@@ -23,9 +23,9 @@ Open Link Token is a privacy-preserving token generation system for deterministi
 ### In Scope
 
 1. **Person attribute normalization**: Transformation of raw input data into canonical forms
-2. **Token rule definitions**: Five rules (T1–T5) combining attributes in distinct ways
+2. **Token rule definitions**: Five default rules (T1–T5) combining attributes in distinct ways, plus ML1 enabled by default and disableable through the CLI
 3. **Token generation pipeline**: Deterministic transformation of normalized attributes → final tokens
-4. **Metadata tracking**: Processing statistics, system info, and secret hashes for audit
+4. **Metadata tracking**: Processing statistics and system info for audit
 5. **Error handling**: Behavior when attributes fail validation
 6. **Output formats**: CSV and Parquet serialization
 
@@ -50,12 +50,16 @@ Open Link Token is a privacy-preserving token generation system for deterministi
 
 ### Size and Processing Model
 
-Open Link Token is designed for **streaming-style** processing: it reads records, normalizes/validates, emits up to 5 tokens, and writes output without needing to hold the full dataset in memory.
+Open Link Token is designed for **streaming-style** processing: it reads
+records, normalizes/validates, emits up to 6 tokens (T1–T5 plus ML1 when
+enabled and valid), and writes output without needing to hold the full dataset
+in memory.
 
 **Practical constraints:**
 
 - There is **no fixed maximum file size** imposed by Open Link Token itself; limits are driven by your machine/cluster resources (CPU, memory, disk) and the underlying CSV/Parquet libraries.
-- Output size is roughly **5× the number of input rows** (one row per rule per record) plus metadata.
+- Output size is roughly **up to 6× the number of input rows** (T1–T5 plus
+  ML1 when enabled and valid) plus metadata.
 - For Parquet, performance and memory usage depend on row group sizing and the reader implementation.
 
 **Recommendations:**
@@ -73,7 +77,7 @@ All of the following must be provided per record:
 | **FirstName**  | String | Non-empty after normalization                | "John", "José", "JoAnn"                       | Remove titles/suffixes; remove diacritics and transliterate supported Latin Extended letters to ASCII; uppercase |
 | **LastName**   | String | Non-empty after normalization                | "Smith", "O'Brien", "García"                  | Remove suffixes; remove diacritics and transliterate supported Latin Extended letters to ASCII; uppercase        |
 | **BirthDate**  | Date   | 1910-01-01 to today                          | "1980-01-15", "01/15/1980", "15.01.1980"      | ISO 8601 YYYY-MM-DD                                                                                              |
-| **Sex**        | String | "Male" or "Female" (case-insensitive)        | "M", "F", "male", "FEMALE"                    | Uppercase; normalize M→MALE, F→FEMALE                                                                            |
+| **Sex**        | String | "Male" or "Female" (case-insensitive)        | "M", "F", "male", "FEMALE"                    | Normalize M/male → Male and F/female → Female; token expressions uppercase these values                          |
 | **PostalCode** | String | Valid US ZIP or Canadian postal code         | "98004", "K1A 1A1", "98004-1234"              | Remove dashes; pad ZIP to 5 digits                                                                               |
 | **SSN**        | String | 9 numeric digits (US Social Security Number) | "123-45-6789" (digits-only inputs normalized) | Remove dashes                                                                                                    |
 
@@ -87,7 +91,7 @@ Attributes are validated **after normalization**. See [Concepts: Normalization a
 
 - **FirstName/LastName**: At least one alphabetic character after diacritic removal and supported Latin Extended transliteration
 - **BirthDate**: Valid date within allowed range
-- **Sex**: Exactly "MALE" or "FEMALE" after normalization
+- **Sex**: Exactly "Male" or "Female" after normalization
 - **PostalCode**: Valid US ZIP-5 or Canadian postal code format
 - **SSN**: Area code ≠ 000/666/900–999; group ≠ 00; serial ≠ 0000; reject common placeholders
 
@@ -109,7 +113,7 @@ Each attribute is normalized according to its type:
 
 - **Names** (FirstName, LastName): Remove titles/suffixes, remove diacritics and transliterate supported Latin Extended letters to ASCII, then uppercase
 - **BirthDate**: Parse input format (multiple formats supported) → ISO 8601 YYYY-MM-DD
-- **Sex**: Parse variants (M/male/Male → MALE; F/female/Female → FEMALE)
+- **Sex**: Parse variants (M/male/Male → Male; F/female/Female → Female)
 - **PostalCode**: Remove dashes, zero-pad ZIP codes to 5 digits, uppercase Canadian postal codes
 - **SSN**: Remove dashes, validate 9-digit format
 
@@ -128,23 +132,31 @@ Invalid records are flagged and tracked in metadata; blank tokens are generated 
 
 ### 4. Token Rule Application
 
-Apply each of the 5 token rules independently:
+Apply each enabled token rule independently:
 
-| Rule   | Attributes                                                  | Notes                                   |
-| ------ | ----------------------------------------------------------- | --------------------------------------- |
-| **T1** | U(LastName) \| U(FirstName[0]) \| U(Sex) \| BirthDate       | Standard match; higher recall           |
-| **T2** | U(LastName) \| U(FirstName) \| BirthDate \| PostalCode[0:3] | Geographic variation; uses ZIP-3        |
-| **T3** | U(LastName) \| U(FirstName) \| U(Sex) \| BirthDate          | Higher precision match; full name + sex |
-| **T4** | SocialSecurityNumber \| U(Sex) \| BirthDate                 | Authoritative; uses SSN                 |
-| **T5** | U(LastName) \| U(FirstName[0:3]) \| U(Sex)                  | Quick search; no birth date             |
+| Rule    | Attributes                                                            | Notes                                     |
+| ------- | --------------------------------------------------------------------- | ----------------------------------------- |
+| **T1**  | U(LastName) \| U(FirstName[0]) \| U(Sex) \| BirthDate                 | Standard match; higher recall             |
+| **T2**  | U(LastName) \| U(FirstName) \| BirthDate \| PostalCode[0:3]           | Geographic variation; uses ZIP-3          |
+| **T3**  | U(LastName) \| U(FirstName) \| U(Sex) \| BirthDate                    | Higher precision match; full name + sex   |
+| **T4**  | SocialSecurityNumber \| U(Sex) \| BirthDate                           | Authoritative; uses SSN                   |
+| **T5**  | U(LastName) \| U(FirstName[0:3]) \| U(Sex)                            | Quick search; no birth date               |
+| **ML1** | ONNX CLS embedding from PostalCode/Birthdate/GivenName/Surname/Gender | Default model-based rule; can be disabled |
 
 (U = Uppercase, [0] = first char, [0:3] = first 3 chars)
 
-**Details:** See [Concepts: Token Rules](concepts/token-rules.md)
+**Details:** See [Concepts: Token Rules](concepts/token-rules.md) and
+[ML1 Model and Rotation](concepts/ml1-model-and-rotation.md).
 
 ### 5. Token Encryption / Hash Transformation
 
 Each token rule signature is transformed through the cryptographic pipeline.
+
+ML1 is a special case: with rotation enabled, its provider hashes each
+quantized projection with a T1-derived blocking value before returning the
+single `ML1` signature. It does not use the standard T1-T5 HMAC pipeline.
+See [ML1 Model and Rotation](concepts/ml1-model-and-rotation.md) for the exact
+formula and the behavior when T1 cannot be computed.
 
 **Default mode (encrypted):**
 
@@ -154,10 +166,16 @@ Signature → SHA-256 → HMAC-SHA256 → JWE (AES-256-GCM) → Prefix `olt.V1.`
 
 Encrypted `olt.V1` token strings are intentionally non-deterministic due to randomized IVs.
 
-**Hash-only mode (optional):**
+**Default `tokenize` mode (optional encryption):**
 
 ```
 Signature → SHA-256 → HMAC-SHA256 → Base64
+```
+
+**`tokenize --mode hash-only`:**
+
+```
+Signature → SHA-256 → Lowercase hex
 ```
 
 **Parameters required:**
@@ -172,12 +190,12 @@ Signature → SHA-256 → HMAC-SHA256 → Base64
 During processing, Open Link Token tracks:
 
 - **Counts**: Total rows, invalid attributes per type, blank tokens per rule
-- **System Info**: Platform (Java/Python), language version, library version
-- **Secrets**: SHA-256 hashes of hashing secret and encryption key (not the secrets themselves)
-- **Timestamps**: Processing start, completion, all in UTC
-- **Paths**: Input/output file paths
+- **System Info**: Platform, Python version, and library version in the Python CLI
 
-Metadata is written to `.metadata.json` alongside output files.
+The CLI writes metadata for `package` and `tokenize` only. CSV and Parquet
+outputs receive a `.metadata.json` sidecar; ZIP package output embeds the
+metadata file. `encrypt` and `decrypt` do not write metadata. Current CLI
+metadata does not contain secret hashes, timestamps, or input/output paths.
 
 **Details:** See [Reference: Metadata Format](reference/metadata-format.md)
 
@@ -196,20 +214,22 @@ RecordId,RuleId,Token
 **Columns:**
 
 - `RecordId`: From input (or auto-generated if omitted)
-- `RuleId`: T1, T2, T3, T4, or T5
+- `RuleId`: T1, T2, T3, T4, T5, or ML1
 - `Token`: Encrypted `olt.V1.<JWE>` token in encrypted mode, a base64 HMAC token in default `tokenize`/decrypted mode, or a 64-character SHA-256 hex token in `tokenize --mode hash-only` mode (or empty string if validation failed)
 
-**Rows per input record:** 5 (one per rule); may be fewer if errors occur
+**Rows per input record:** 6 by default (T1–T5 plus ML1), 5 when ML1 is
+disabled, and fewer when required attributes are invalid
 
-**Example:**
+**Example (`package` encrypted output):**
 
 ```csv
 RecordId,RuleId,Token
-ID001,T1,aB7c9Dz1e4...
-ID001,T2,fG3h5kL2m9...
-ID001,T3,nP6q8sT1u0...
-ID001,T4,vW9xY2zAbC...
-ID001,T5,DeF3gHi6jK...
+ID001,T1,olt.V1.<JWE compact serialization>
+ID001,T2,olt.V1.<JWE compact serialization>
+ID001,T3,olt.V1.<JWE compact serialization>
+ID001,T4,olt.V1.<JWE compact serialization>
+ID001,T5,olt.V1.<JWE compact serialization>
+ID001,ML1,olt.V1.<JWE compact serialization>
 ```
 
 ### Token Output (Parquet)
@@ -231,17 +251,17 @@ Parquet format includes compression and is suitable for large datasets.
 **Contents:**
 
 - Processing statistics (record counts, invalid attributes, blank tokens)
-- System information (platform, versions, timestamps)
-- Secret hashes (SHA-256 of hashing secret and encryption key)
-- File paths (input, output, metadata)
+- System information (platform, Python version, and library version in the
+  current Python CLI)
+- No secret hashes, timestamps, or input/output paths in current CLI metadata
 
 **Example:**
 
 ```json
 {
-  "Platform": "Java",
-  "JavaVersion": "21.0.0",
-  "Version": "1.7.0",
+  "Platform": "Python",
+  "PythonVersion": "3.11.5",
+  "Version": "2.1.0",
   "TotalRows": 100,
   "TotalRowsWithInvalidAttributes": 3,
   "InvalidAttributesByType": {
@@ -250,10 +270,9 @@ Parquet format includes compression and is suitable for large datasets.
   },
   "BlankTokensByRule": {
     "T1": 2,
-    "T2": 1
-  },
-  "HashingSecretHash": "abc123...",
-  "EncryptionSecretHash": "def456..."
+    "T2": 1,
+    "ML1": 0
+  }
 }
 ```
 
@@ -282,7 +301,7 @@ Parquet format includes compression and is suitable for large datasets.
 
 This section is **non-normative** (informational) and describes likely evolution areas:
 
-- Extension mechanism for new token rules (T6+) with explicit cross-language parity requirements
+- Extension mechanism for new token rules (ML1+) with explicit cross-language parity requirements
 - Support for additional attribute types (e.g., middle name, phone, email) behind versioned schemas
 - Metadata schema versioning for forward compatibility
 - Formal specification versioning and migration guidance

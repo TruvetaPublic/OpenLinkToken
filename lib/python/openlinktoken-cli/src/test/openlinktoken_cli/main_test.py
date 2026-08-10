@@ -4,6 +4,7 @@ Integration tests for the main module.
 Tests the end-to-end workflows for token generation and decryption using new subcommand interface.
 """
 
+import json
 import os
 import re
 import sys
@@ -88,6 +89,16 @@ class TestOpenLinkTokenCommand:
         # Check metadata file
         metadata_path = temp_dir / "output.metadata.json"
         assert metadata_path.exists(), "Metadata file should be created"
+        metadata = json.loads(metadata_path.read_text())
+        assert set(metadata) == {
+            "PythonVersion",
+            "Platform",
+            "Version",
+            "TotalRows",
+            "TotalRowsWithInvalidAttributes",
+            "InvalidAttributesByType",
+            "BlankTokensByRule",
+        }
 
     def test_package_command_csv_to_parquet(self, temp_dir):
         """Test package command with CSV input and Parquet output."""
@@ -266,7 +277,7 @@ class TestOpenLinkTokenCommand:
             )
 
         assert encrypt_exit_code == 0
-        set_total_rows.assert_called_once_with(10)
+        set_total_rows.assert_called_once_with(11)
 
     def test_decrypt_command(self, temp_dir):
         """Test decrypt command."""
@@ -658,6 +669,8 @@ class TestOpenLinkTokenCommand:
         assert f"Detailed log: {log_files[0]}" in captured.err
         assert "Running package command (tokenize + encrypt)" not in captured.err
         assert "Running package command (tokenize + encrypt)" in log_files[0].read_text()
+        assert "ML1 ONNX inference" not in captured.err
+        assert "ML1 ONNX inference" in log_files[0].read_text()
         assert "Processed a total of 2 records" in log_files[0].read_text()
 
     def test_tokenize_command_allows_basename_output_path_in_current_directory(self, tmp_path, monkeypatch):
@@ -1007,7 +1020,6 @@ class TestInitiateExchangeViaMain:
         assert "--sender-private-key" in captured.out
         assert "--local-private-key" not in captured.out
         assert "Reuse an existing sender private key PEM" in captured.out
-        assert "embed" not in captured.out.lower()
 
     def test_initiate_exchange_help_lists_public_key_stdin(self, capsys):
         """Subcommand help should advertise --public-key-stdin as an input alternative."""

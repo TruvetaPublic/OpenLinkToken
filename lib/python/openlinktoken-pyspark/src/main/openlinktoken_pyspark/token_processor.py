@@ -67,11 +67,6 @@ class OpenLinkTokenProcessor:
             for alias in attribute.get_aliases():
                 mappings[alias] = attribute_class
 
-        # Add DateOfBirth as an alias for BirthDate for backward compatibility
-        # (documented in README but not in BirthDateAttribute.ALIASES)
-        if "BirthDate" in mappings:
-            mappings["DateOfBirth"] = mappings["BirthDate"]
-
         cls.COLUMN_MAPPINGS = mappings
         return mappings
 
@@ -110,7 +105,7 @@ class OpenLinkTokenProcessor:
             >>>
             >>> # Using custom token definition
             >>> from openlinktoken_pyspark.notebook_helpers import TokenBuilder, CustomTokenDefinition
-            >>> custom_token = TokenBuilder("T6").add("last_name", "T|U").add("first_name", "T|U").build()
+            >>> custom_token = TokenBuilder("ML1").add("last_name", "T|U").add("first_name", "T|U").build()
             >>> custom_def = CustomTokenDefinition().add_token(custom_token)
             >>> processor = OpenLinkTokenProcessor("hash-secret", "encryption-key-32-chars!!", custom_def)
         """
@@ -451,10 +446,6 @@ class OpenLinkTokenProcessor:
             attr_instance = attr_class()
             attr_name = attr_instance.get_name()
             aliases = attr_instance.get_aliases()
-
-            # Add DateOfBirth for BirthDate if not already present
-            if attr_name == "BirthDate" and "DateOfBirth" not in aliases:
-                aliases = aliases + ["DateOfBirth"]
 
             groups[attr_name] = aliases
 

@@ -2,6 +2,9 @@
 package org.openlinktoken.tokens.tokenizer;
 
 import java.io.Serializable;
+import java.util.List;
+
+import org.openlinktoken.tokentransformer.TokenTransformer;
 
 /**
  * Interface for tokenizing values into tokens.
@@ -26,4 +29,14 @@ public interface Tokenizer extends Serializable {
      *                   unsupported encoding or cryptographic algorithm issues.
      */
     String tokenize(String value) throws Exception;
+
+    /**
+     * Returns transformers configured after tokenization.
+     *
+     * @return unmodifiable view of the transformer list, or an empty list when
+     *         the tokenizer does not expose transformers
+     */
+    default List<TokenTransformer> getTokenTransformerList() {
+        return List.of();
+    }
 }

@@ -3,6 +3,7 @@
 import importlib
 import pkgutil
 from importlib import resources
+from importlib.metadata import entry_points
 from typing import Dict, List
 
 from openlinktoken.attributes.attribute_expression import AttributeExpression
@@ -42,5 +43,15 @@ class TokenRegistry:
                 if isinstance(obj, type) and issubclass(obj, Token) and obj is not Token:
                     token = obj()
                     definitions[token.get_identifier()] = token.get_definition()
+
+        # Discover tokens registered by external packages (e.g. openlinktoken-core-ai)
+        for ep in entry_points(group="openlinktoken.tokens.definitions"):
+            try:
+                obj = ep.load()
+                if isinstance(obj, type) and issubclass(obj, Token) and obj is not Token:
+                    token = obj()
+                    definitions[token.get_identifier()] = token.get_definition()
+            except Exception:
+                pass
 
         return definitions

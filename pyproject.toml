@@ -1,7 +1,7 @@
 [project]
 name = "openlinktoken-workspace"
 version = "0.0.0"
-requires-python = ">=3.10,<3.14"
+requires-python = ">=3.10"
 dependencies = []
 
 [tool.uv]
@@ -9,13 +9,15 @@ package = false
 
 [tool.uv.workspace]
 members = [
-   "lib/python/openlinktoken",
-   "lib/python/openlinktoken-cli",
-   "lib/python/openlinktoken-pyspark",
+  "lib/python/openlinktoken",
+  "lib/python/openlinktoken-core-ai",
+  "lib/python/openlinktoken-cli",
+  "lib/python/openlinktoken-pyspark",
 ]
 
 [tool.uv.sources]
 openlinktoken = { workspace = true }
+openlinktoken-core-ai = { workspace = true }
 
 [dependency-groups]
 dev = [
