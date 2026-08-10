@@ -1,6 +1,6 @@
 [project]
 name = "openlinktoken-cli"
-version = "2.1.0"
+version = "2.1.1"
 requires-python = ">=3.10"
 dynamic = [
   "authors",
@@ -10,22 +10,22 @@ dynamic = [
   "urls",
 ]
 dependencies = [
-  "openlinktoken==2.1.0",
+  "openlinktoken==2.1.1",
   "pandas==2.2.3; python_version < '3.11'",
   "pandas==3.0.3; python_version >= '3.11'",
-  "pyarrow==24.0.0",
+  "pyarrow==25.0.0",
   "csv2parquet==0.0.9",
-  "cryptography==49.0.0",
+  "cryptography==50.0.0",
   "urllib3==2.7.0",
-  "jwcrypto==1.5.7",
-  "packaging==26.1",
+  "jwcrypto==1.5.8",
+  "packaging==26.2",
 ]
 
 [project.scripts]
 olt = "openlinktoken_cli.main:main"
 
 [build-system]
-requires = ["setuptools==82.0.1", "wheel"]
+requires = ["setuptools==83.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
