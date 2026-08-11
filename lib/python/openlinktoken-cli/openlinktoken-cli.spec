@@ -24,6 +24,12 @@ for package_name in ("openlinktoken", "pyarrow", "pandas", "csv2parquet", "crypt
     binaries += package_binaries
     hiddenimports += package_hiddenimports
 
+# Standalone CLI binaries include ML1 assets so ML1 works without network access.
+ml1_assets_dir = os.path.abspath(os.path.join(base_dir, "..", "..", "..", "resources", "inferencing", "ml1"))
+ml1_package_dir = os.path.join("openlinktoken", "core", "ai", "tokens")
+for asset_name in ("asset-manifest.json", "model.onnx", "model.onnx.data", "tokenizer.json"):
+    datas.append((os.path.join(ml1_assets_dir, asset_name), ml1_package_dir))
+
 a = Analysis(
     [os.path.join(base_dir, "src", "main", "openlinktoken_cli", "main.py")],
     pathex=[

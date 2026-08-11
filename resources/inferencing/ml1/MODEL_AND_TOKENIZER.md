@@ -1,7 +1,9 @@
 # ML1 model and tokenizer
 
 This directory contains the runtime assets for ML1 inference. The model and
-tokenizer are a matched pair and must be deployed together.
+tokenizer are a matched pair and must be deployed together. The
+`asset-manifest.json` file records the expected SHA-256 digest and size for
+each asset.
 
 ## `model.onnx`
 
@@ -42,6 +44,20 @@ Both implementations use the same bundled defaults:
 | Tokenizer               | `classpath:/inferencing/ml1/tokenizer.json` |
 | Maximum sequence length | `128`                                       |
 | Batch size              | `64`                                        |
+
+The published core-ai packages do not bundle the large model files. When the
+default paths are used, the first ML1 request downloads the assets from the
+matching `release/<version>` branch and caches them locally. Set
+`OPENLINKTOKEN_ML1_CACHE_DIR` to choose the cache directory or
+`OPENLINKTOKEN_ML1_ASSET_REF` to select a compatible Git ref. Set
+`OPENLINKTOKEN_ML1_OFFLINE=1` to forbid remote fallback. Explicit local paths
+remain available for offline use.
+
+The ONNX files are fetched through GitHub's LFS media endpoint. The regular
+GitHub raw-content endpoint serves `tokenizer.json`.
+
+Standalone CLI release bundles include the three model assets and the
+manifest. They use the bundled files directly and do not download them.
 
 The runtime serializes an ML1 payload to JSON, tokenizes that JSON with
 `tokenizer.json`, runs the resulting arrays through `model.onnx`, and converts

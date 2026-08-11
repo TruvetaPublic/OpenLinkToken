@@ -50,6 +50,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           lfs: true
+          ref: ${{ needs.release-info.outputs.tag || github.ref }}
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -72,6 +73,8 @@ jobs:
 
       - name: Smoke test (macOS/Linux)
         if: runner.os != 'Windows'
+        env:
+          OPENLINKTOKEN_ML1_OFFLINE: "1"
         run: |
           mkdir -p smoke
           cp resources/sample.csv smoke/input.csv
@@ -81,6 +84,8 @@ jobs:
 
       - name: Smoke test (Windows)
         if: runner.os == 'Windows'
+        env:
+          OPENLINKTOKEN_ML1_OFFLINE: "1"
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path smoke | Out-Null
