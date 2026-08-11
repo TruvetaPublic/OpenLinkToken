@@ -13,6 +13,9 @@ The script exports:
 
 The command lines below are the exact CLI invocations that the script executes.
 `<WORKSPACE>` is the temporary directory that the script creates at runtime.
+The harness runs the equivalent `python -m openlinktoken_cli.main` form directly
+from the source tree; installed users should use the supported `olt` console
+script instead.
 
 ## Default command order
 

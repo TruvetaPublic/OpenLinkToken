@@ -1,8 +1,11 @@
 # SPDX-License-Identifier: MIT
 
+from __future__ import annotations
+
 import base64
 import json
 import logging
+import time
 from typing import Callable
 
 from jwcrypto import jwe, jwk
@@ -70,6 +73,7 @@ class TokenDecryptionProcessor:
         decrypted_counter = 0
         error_counter = 0
         last_reported_count = 0
+        _last_progress_time = time.monotonic()
 
         for row in reader:
             row_counter += 1
@@ -94,9 +98,13 @@ class TokenDecryptionProcessor:
 
             if row_counter % 10000 == 0:
                 logger.info(f'Processed "{row_counter:,}" tokens')
-                last_reported_count = row_counter
-                if progress_callback is not None:
+
+            if progress_callback is not None:
+                _now = time.monotonic()
+                if _now - _last_progress_time >= 1.0:
                     progress_callback(row_counter)
+                    last_reported_count = row_counter
+                    _last_progress_time = _now
 
         logger.info(f"Processed a total of {row_counter:,} tokens")
         logger.info(f"Successfully decrypted {decrypted_counter:,} tokens")

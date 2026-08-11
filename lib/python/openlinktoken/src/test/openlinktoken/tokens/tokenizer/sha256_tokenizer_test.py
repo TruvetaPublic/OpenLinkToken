@@ -36,6 +36,13 @@ class TestSHA256Tokenizer:
         result_blank = self.tokenizer.tokenize("   ")  # Test for input with only whitespace
         assert result_blank == SHA256Tokenizer.EMPTY
 
+    def test_get_token_transformer_list_returns_configured_transformers(self):
+        """Configured transformers should be available to callers that bypass hashing."""
+        assert self.tokenizer.get_token_transformer_list() == [
+            self.hash_transformer_mock,
+            self.encrypt_transformer_mock,
+        ]
+
     def test_tokenize_valid_input_returns_hashed_token(self):
         """Test that valid input returns a hashed token after transformations."""
         input_value = "test-input"

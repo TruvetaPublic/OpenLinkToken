@@ -14,8 +14,6 @@ public class Metadata {
     public static final String JAVA_VERSION = "JavaVersion";
     public static final String VERSION = "Version";
     public static final String OUTPUT_FORMAT = "OutputFormat";
-    public static final String ENCRYPTION_SECRET_HASH = "EncryptionSecretHash";
-    public static final String HASHING_SECRET_HASH = "HashingSecretHash";
     public static final String BLANK_TOKENS_BY_RULE = "BlankTokensByRule";
 
     // Metadata values
@@ -38,7 +36,6 @@ public class Metadata {
 
     /**
      * Initializes metadata with system information only.
-     * Secret hashes must be set separately using setHashingSecret() and setEncryptionKey().
      *
      * @return the initialized metadata map
      */

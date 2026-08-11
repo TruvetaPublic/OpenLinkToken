@@ -147,6 +147,7 @@ See <a href="https://truvetapublic.github.io/OpenLinkToken/quickstarts/" target=
 ## Key Matching Ideas
 
 - **Token rules**: Five rules (T1–T5) combine attributes in different ways — see <a href="https://truvetapublic.github.io/OpenLinkToken/concepts/token-rules.html" target="_blank" rel="noopener noreferrer">Token Rules</a>
+- **ML1 matching**: The default ONNX matching model generates embeddings from which ML1 derives rotation-based, quantized token projections. When a T1 signature is available, each projection is SHA-256 hashed with a T1-derived blocking key. ML1 is more compute-intensive and slower than T1–T5 alone, but delivers significantly better matching outcomes. Disable it with `package --disable-inferencing` or `tokenize --disable-inferencing`; see the <a href="https://truvetapublic.github.io/OpenLinkToken/reference/cli.html" target="_blank" rel="noopener noreferrer">CLI Reference</a> for options.
 - **Normalization**: Names, dates, postal codes normalized before tokenization — see <a href="https://truvetapublic.github.io/OpenLinkToken/concepts/normalization-and-validation.html" target="_blank" rel="noopener noreferrer">Normalization and Validation</a>
 - **Metadata**: Processing statistics and audit trail — see <a href="https://truvetapublic.github.io/OpenLinkToken/reference/metadata-format.html" target="_blank" rel="noopener noreferrer">Metadata Format</a>
 

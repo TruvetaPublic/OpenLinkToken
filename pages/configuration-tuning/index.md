@@ -14,15 +14,18 @@ Open Link Token processes CSV and Parquet files. Both formats support the same a
 
 Input columns are case-insensitive and support common aliases:
 
-| Attribute                  | Accepted Column Names                                  | Required | Type   | Example                                       |
-| -------------------------- | ------------------------------------------------------ | -------- | ------ | --------------------------------------------- |
-| **Record ID**              | `RecordId`, `Id`                                       | Optional | String | `patient_123`, `uuid-abc...`                  |
-| **First Name**             | `FirstName`, `GivenName`                               | Yes      | String | `John`                                        |
-| **Last Name**              | `LastName`, `Surname`                                  | Yes      | String | `Doe`                                         |
-| **Birth Date**             | `BirthDate`, `DateOfBirth`                             | Yes      | Date   | `1980-01-15`                                  |
-| **Sex**                    | `Sex`, `Gender`                                        | Yes      | String | `Male`, `M`, `Female`, `F`                    |
-| **Postal Code**            | `PostalCode`, `ZipCode`, `ZIP3`, `ZIP4`, `ZIP5`        | Yes      | String | `98004`, `K1A 1A1`                            |
-| **Social Security Number** | `SocialSecurityNumber`, `NationalIdentificationNumber` | Yes      | String | `123-45-6789` (digits-only values normalized) |
+| Attribute                  | Accepted Column Names                                         | Required | Type   | Example                                       |
+| -------------------------- | ------------------------------------------------------------- | -------- | ------ | --------------------------------------------- |
+| **Record ID**              | `RecordId`, `Id`                                              | Optional | String | `patient_123`, `uuid-abc...`                  |
+| **First Name**             | `FirstName`, `GivenName`                                      | Yes      | String | `John`                                        |
+| **Last Name**              | `LastName`, `Surname`                                         | Yes      | String | `Doe`                                         |
+| **Birth Date**             | `BirthDate`, `DateOfBirth`                                    | Yes      | Date   | `1980-01-15`                                  |
+| **Sex**                    | `Sex`, `Gender`                                               | Yes      | String | `Male`, `M`, `Female`, `F`                    |
+| **Postal Code**            | `PostalCode`, `ZipCode`, `ZIP3`, `ZIP4`, `ZIP5`               | Yes      | String | `98004`, `K1A 1A1`                            |
+| **Social Security Number** | `SocialSecurityNumber`, `NationalIdentificationNumber`, `SSN` | Yes      | String | `123-45-6789` (digits-only values normalized) |
+
+These mappings describe the Python CLI. Column names are matched
+case-insensitively.
 
 ### CSV Format
 
@@ -90,15 +93,17 @@ When writing Parquet output, use standard Parquet compression (Snappy or Gzip).
 | **Required column missing** | Processing fails; column name mismatch error                       |
 | **NULL/empty value**        | Record marked invalid; counted in `TotalRowsWithInvalidAttributes` |
 | **Invalid attribute**       | Record marked invalid; counted in `InvalidAttributesByType`        |
-| **All attributes valid**    | Record processed; 5 tokens generated (T1–T5)                       |
+| **All attributes valid**    | Record processed; up to 6 tokens generated (T1–T5 plus ML1)        |
 
-Records with invalid attributes are still output (with blank tokens for that rule), but flagged in metadata.
+Records with invalid attributes are still output (with blank tokens for that rule), but flagged in metadata. ML1 is
+generated only when its five required attributes are valid; pass `--disable-inferencing` to omit it.
 
 ---
 
 ## Output File Format
 
-Open Link Token generates two output files: tokens and metadata.
+`package` and `tokenize` generate tokens plus metadata. `encrypt` and `decrypt`
+write token files only and do not emit metadata.
 
 ### Tokens Output
 
@@ -106,34 +111,38 @@ CSV or Parquet file (same format as input; when packaged via the `package` comma
 
 ```csv
 RecordId,RuleId,Token
-ID001,T1,Gn7t1Zj16E5Qy+z9iINtczP6fRDYta6C0XFrQtpjnVQSEZ5pQXAzo02Aa9LS9oNMOog6Ssw9GZE6fvJrX2sQ/cThSkB6m91L
-ID001,T2,pUxPgYL9+cMxkA+8928Pil+9W+dm9kISwHYPdkZS+I2nQ/bQ/8HyL3FOVf3NYPW5NKZZO1OZfsz7LfKYpTlaxyzMLqMF2Wk7
-ID001,T3,rwjfwIo5OcJUItTx8KCoSZMtr7tVGSyXsWv/hhCWmD2pBO5JyfmujsosvwYbYeeQ4Vl1Z3eq0cTwzkvfzJVS/EKaRhtjMZz5
-ID001,T4,9o7HIYZkhizczFzJL1HFyanlllzSa8hlgQWQ5gHp3Niuo2AvEGcUwtKZXChzHmAa8Jm3183XVoacbL/bFEJyOYYS4EQDppev
-ID001,T5,QpBpGBqaMhagfcHGZhVavn23ko03jkyS9Vo4qe78E4sKw+Zq2CIw4MMWG8VXVwInnsFBVk6NSDUI79wECf5DchV5CXQ9AFqR
+ID001,T1,olt.V1.<JWE compact serialization>
+ID001,T2,olt.V1.<JWE compact serialization>
+ID001,T3,olt.V1.<JWE compact serialization>
+ID001,T4,olt.V1.<JWE compact serialization>
+ID001,T5,olt.V1.<JWE compact serialization>
+ID001,ML1,olt.V1.<JWE compact serialization>
 ID002,T1,...
 ```
 
 **Columns:**
 
 - `RecordId`: From input (or auto-generated UUID)
-- `RuleId`: Token rule identifier (T1–T5)
+- `RuleId`: Token rule identifier (`T1`–`T5` or `ML1`)
 - `Token`: Encrypted `olt.V1.<JWE compact serialization>` token (or base64 HMAC token when generated via `olt tokenize`)
 
 **Notes:**
 
-- **One row per rule per record**: 5 rows for each valid record
+- **One row per rule per record**: up to 6 rows for each valid record (T1–T5 plus ML1)
 - **Blank tokens**: If a record is invalid, tokens may be blank (logged in metadata)
 - **Token length**: Varies by mode and payload size (encrypted `olt.V1` tokens are longer than normal `tokenize` or `tokenize --mode hash-only` outputs)
 
 ### Metadata Output
 
-Always JSON format, suffixed `.metadata.json` (e.g., `output.metadata.json`):
+For `package` and `tokenize` CSV/Parquet output, metadata is JSON with the
+`.metadata.json` suffix (for example, `output.metadata.json`). For ZIP output,
+`package` embeds metadata in the archive. `encrypt` and `decrypt` do not emit
+metadata:
 
 ```json
 {
   "PythonVersion": "3.11.0",
-  "Version": "1.0.0",
+  "Version": "2.1.0",
   "Platform": "Python",
   "TotalRows": 3,
   "TotalRowsWithInvalidAttributes": 1,
@@ -146,10 +155,9 @@ Always JSON format, suffixed `.metadata.json` (e.g., `output.metadata.json`):
     "T2": 1,
     "T3": 1,
     "T4": 1,
-    "T5": 1
-  },
-  "HashingSecretHash": "abc123def456...",
-  "EncryptionSecretHash": "fed456abc123..."
+    "T5": 1,
+    "ML1": 0
+  }
 }
 ```
 
@@ -179,9 +187,10 @@ Token Signature → SHA-256 Hash → HMAC-SHA256(hash, key) → JWE (AES-256-GCM
 
 Encrypted `olt.V1` tokens include randomized IVs, so ciphertext values are not deterministic across runs.
 
-### Hash-Only Mode
+### Tokenize Mode (HMAC, No Encryption)
 
-Generates hashed tokens without encryption. Useful for token matching scenarios where encryption overhead is unnecessary.
+Generates HMAC-SHA256 tokens without transport encryption. Useful for token
+matching scenarios where encryption overhead is unnecessary.
 
 ```bash
 olt tokenize \
@@ -195,7 +204,9 @@ olt tokenize \
 Token Signature → SHA-256 Hash → HMAC-SHA256(hash, key) → Base64 Encode
 ```
 
-**Requires:** Exchange config plus a matching private key that the CLI can auto-discover (or an explicit override)
+**Requires:** An exchange config plus a matching private key in default mode.
+`--mode hash-only` and `--mode demo` do not require secrets; an exchange config
+may still be supplied to configure optional rotation settings.
 
 **Benefits:**
 
@@ -203,6 +214,9 @@ Token Signature → SHA-256 Hash → HMAC-SHA256(hash, key) → Base64 Encode
 - Smaller output (shorter tokens)
 - Suitable for internal matching where raw data is already protected
 - Cross-language compatibility guaranteed
+
+ML1 is enabled by default for `package` and default `tokenize` and can add one
+`ML1` row per valid record. Use `--disable-inferencing` to produce only T1–T5.
 
 ### Decryption Mode
 

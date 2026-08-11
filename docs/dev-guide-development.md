@@ -46,6 +46,7 @@ This guide centralizes contributor-facing information. It covers local setup, la
     - [Full Multi-language Build](#full-multi-language-build)
     - [Docker Image](#docker-image)
   - [Running the Tool (CLI)](#running-the-tool-cli)
+    - [Progress display environment variables](#progress-display-environment-variables)
     - [Key Pair Generation](#key-pair-generation)
   - [Local Extension Development](#local-extension-development)
     - [Setup](#setup)
@@ -53,6 +54,7 @@ This guide centralizes contributor-facing information. It covers local setup, la
     - [Manual testing: wheel install (full pipeline)](#manual-testing-wheel-install-full-pipeline)
     - [Run the extension tests](#run-the-extension-tests)
     - [Developing your own extension](#developing-your-own-extension)
+      - [Reporting custom progress metrics](#reporting-custom-progress-metrics)
     - [Extension tests in `openlinktoken-cli`](#extension-tests-in-openlinktoken-cli)
   - [Development Container](#development-container)
   - [Version Bumping Policy](#version-bumping-policy)
@@ -261,7 +263,7 @@ CLI usage (from project root):
 
 ```shell
 # After installing openlinktoken-cli
-python -m openlinktoken_cli.main package [OPTIONS]
+olt package [OPTIONS]
 ```
 
 Arguments are consistent with the Java core library's tokenization logic.
@@ -270,7 +272,7 @@ Example:
 
 ```shell
 # After installing openlinktoken-cli
-python -m openlinktoken_cli.main package \
+olt package \
   -i resources/sample.csv -o resources/output.csv \
   --exchange-config ./openlinktoken-YYYY-MM-DD.exchange.json
 ```
@@ -558,7 +560,7 @@ counter++; // Increment counter by one
 
 - Hashing and encryption keys must only appear in test files with dummy values
 - SSN validation logic is public, but never log actual SSN values
-- Metadata files contain SHA-256 hashes of secrets (for audit), not the secrets themselves
+- Metadata files contain processing stats and runtime context, not secrets
 
 **See:** [`.github/instructions/security-and-owasp.instructions.md`](../.github/instructions/security-and-owasp.instructions.md) for comprehensive security guidelines.
 
@@ -697,24 +699,26 @@ docker build . -t openlinktoken
 ## Running the Tool (CLI)
 
 The CLI is provided by the Python `openlinktoken-cli` package.
+After installation, use the `olt` console script. If it is unavailable, use
+`python -m openlinktoken_cli.main` as the equivalent fallback.
 
 Minimum required arguments:
 
 ```shell
-# Python
-python -m openlinktoken_cli.main package -i input.csv -o output.csv --exchange-config ./openlinktoken-YYYY-MM-DD.exchange.json
+# Python console script
+olt package -i input.csv -o output.csv --exchange-config ./openlinktoken-YYYY-MM-DD.exchange.json
 ```
 
 Arguments:
 
-| Flag                | Description                                                        |
-| ------------------- | ------------------------------------------------------------------ |
-| `-i, --input`       | Input file path                                                    |
-| `-o, --output`      | Output file path (optional — auto-generated when omitted)          |
-| `--exchange-config` | Exchange config JSON path                                          |
-| `--private-key`     | Private key PEM used to decrypt the config                         |
-| `--private-key-env` | Environment variable containing the private key                    |
-| `--no-progress, -q` | Suppress interactive progress indicator (for CI / non-interactive) |
+| Flag                    | Description                                                        |
+| ----------------------- | ------------------------------------------------------------------ |
+| `-i, --input`           | Input file path                                                    |
+| `-o, --output`          | Output file path (optional — auto-generated when omitted)          |
+| `-c, --exchange-config` | Exchange config JSON path                                          |
+| `--private-key`         | Private key PEM used to decrypt the config                         |
+| `--private-key-env`     | Environment variable containing the private key                    |
+| `--no-progress, -q`     | Suppress interactive progress indicator (for CI / non-interactive) |
 
 The `--no-progress` / `-q` flag is available on all four processing commands: `package`, `tokenize`, `encrypt`, and `decrypt`.
 

@@ -19,9 +19,9 @@ class TestSocialSecurityNumberAttribute:
         """Test that get_name returns 'SocialSecurityNumber'."""
         assert self.ssn_attribute.get_name() == "SocialSecurityNumber"
 
-    def test_get_aliases_should_return_social_security_number_and_national_identification_number(self):
-        """Test that get_aliases returns SocialSecurityNumber and NationalIdentificationNumber."""
-        expected_aliases = ["SocialSecurityNumber", "NationalIdentificationNumber"]
+    def test_get_aliases_should_return_social_security_number_aliases(self):
+        """Test that get_aliases returns all supported social security number aliases."""
+        expected_aliases = ["SocialSecurityNumber", "NationalIdentificationNumber", "SSN"]
         actual_aliases = self.ssn_attribute.get_aliases()
         assert actual_aliases == expected_aliases
 

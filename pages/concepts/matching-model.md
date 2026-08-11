@@ -4,7 +4,7 @@ layout: default
 
 # Matching Model
 
-Open Link Token uses a multi-rule tokenization strategy to enable privacy-preserving record linkage across datasets that contain PII.
+Open Link Token uses a multi-rule tokenization strategy to enable privacy-preserving record linkage across datasets that contain PII. Alongside the five deterministic token rules (T1-T5), ML1 is enabled by default. ML1 uses an ONNX matching model to generate an embedding, then derives rotation-based, quantized token projections.
 
 ---
 
@@ -15,7 +15,7 @@ The matching model generates cryptographically secure tokens from personal ident
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                    Person Record (PII)                          │
-│  Name, DOB, SSN, Sex, Postal Code                              │
+│  Name, DOB, SSN, Sex, Postal Code                               │
 └───────────────────────┬─────────────────────────────────────────┘
                         │
                         ▼
@@ -37,10 +37,11 @@ The matching model generates cryptographically secure tokens from personal ident
                         │
                         ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                Token Generation (T1-T5)                         │
-│  - Concatenate attributes per rule                              │
-│  - HMAC-SHA256 hash                                             │
-│  - Optional AES-256 encryption                                  │
+│             Token and Embedding Generation                      │
+│  - T1-T5: concatenate attributes per rule                       │
+│  - ML1: ONNX matching model generates an embedding              │
+│  - ML1: rotation-based, quantized token projections             │
+│  - T1-T5: HMAC-SHA256 hash; optional AES-256 encryption         │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -55,9 +56,11 @@ Real-world data is messy:
 - SSNs may be missing or partially known
 - Addresses change over time
 
-Using **five distinct rules** allows matching at different confidence levels:
+Using **five deterministic rules** allows matching at different confidence levels:
 
-Open Link Token emits tokens with a `RuleId` of `T1`–`T5`. These identifiers are **rule names**, not “tiers” (they don’t imply an ordering). In practice, different rules tend to trade off precision vs. recall based on which attributes they include.
+Open Link Token emits tokens with a `RuleId` of `T1`–`T5`. These identifiers are **rule names**, not “tiers” (they don’t imply an
+ordering). In practice, different deterministic rules tend to trade off
+precision vs. recall based on which attributes they include.
 
 | RuleId | Attributes (normalized signature)      | Typical use                                             |
 | :----- | :------------------------------------- | :------------------------------------------------------ |
@@ -66,6 +69,24 @@ Open Link Token emits tokens with a `RuleId` of `T1`–`T5`. These identifiers a
 | T3     | Last + First + Sex + BirthDate         | Higher precision; stricter than T1                      |
 | T4     | SSN (digits) + Sex + BirthDate         | Very high precision when SSN is present                 |
 | T5     | Last + First[0:3] + Sex                | Highest recall / lowest precision; use cautiously       |
+
+---
+
+## ML1: ONNX Matching Model
+
+ML1 complements T1-T5 by using an ONNX matching model to generate an
+embedding from PostalCode, BirthDate, GivenName, Surname, and Gender. It
+derives rotation-based, quantized token projections and hashes them with a
+T1-derived blocking value when the T1 signature is available. Rotation alone
+is not de-identification. See [ML1 Model and Rotation](ml1-model-and-rotation.md)
+for the model tensor contract, 1024-dimensional embedding, rotation math,
+quantization, signature format, and security limitations.
+
+ML1 is enabled by default and is more compute-intensive than T1-T5. Its
+matching quality and precision/recall balance depend on the input population;
+validate it against your own matching data. To omit ML1, use
+`package --disable-inferencing` or `tokenize --disable-inferencing`; see the
+[CLI reference](../reference/cli.md) for the full set of ML1 options.
 
 ---
 
@@ -210,12 +231,12 @@ Consider four fictional person records from two different systems:
 
 Open Link Token normalizes each field before token generation. For full rules, see [Normalization and Validation](normalization-and-validation.md).
 
-| RecordId | FirstName | LastName | BirthDate  | Sex | PostalCode | SSN         |
-| -------- | --------- | -------- | ---------- | --- | ---------- | ----------- |
-| HOS-101  | MARIA     | GARCIA   | 1988-03-22 | F   | 90210      | 452-38-7291 |
-| HOS-102  | TOM       | OREILLY  | 1995-11-03 | M   | 30301      | 671-82-9134 |
-| CLN-201  | MARIA     | GARCIA   | 1988-03-22 | F   | 90210      | 452-38-7291 |
-| CLN-202  | THOMAS    | OREILLY  | 1995-11-03 | M   | 30301      | —           |
+| RecordId | FirstName | LastName | BirthDate  | Sex    | PostalCode | SSN         |
+| -------- | --------- | -------- | ---------- | ------ | ---------- | ----------- |
+| HOS-101  | MARIA     | GARCIA   | 1988-03-22 | Female | 90210      | 452-38-7291 |
+| HOS-102  | TOM       | OREILLY  | 1995-11-03 | Male   | 30301      | 671-82-9134 |
+| CLN-201  | MARIA     | GARCIA   | 1988-03-22 | Female | 90210      | 452-38-7291 |
+| CLN-202  | THOMAS    | OREILLY  | 1995-11-03 | Male   | 30301      | —           |
 
 **What changed:**
 
@@ -229,51 +250,51 @@ Open Link Token normalizes each field before token generation. For full rules, s
 
 ### Step 2: Token Generation
 
-Each record produces up to five tokens (T1–T5). In encrypted mode, tokens are emitted as `olt.V1` JWE strings. In normal `tokenize` mode (or after decryption), tokens are base64-encoded HMAC values used for deterministic equality checks. The separate CLI option `tokenize --mode hash-only` instead emits 64-character SHA-256 hex values when you intentionally skip HMAC.
+Each record produces up to five deterministic token values (T1–T5) plus ML1 by default. ML1 is a token signature derived from rotation-based, quantized projections; the examples below illustrate the deterministic T1-T5 tokens. In encrypted mode, tokens are emitted as `olt.V1` JWE strings. In normal `tokenize` mode (or after decryption), tokens are base64-encoded HMAC values used for deterministic equality checks. The separate CLI option `tokenize --mode hash-only` instead emits 64-character SHA-256 hex values when you intentionally skip HMAC.
 
 For detailed rule compositions, see [Token Rules](token-rules.md).
 
 **HOS-101 (María García, 1988-03-22):**
 
-| Rule | Token Signature                  | Illustrative Token       |
-| ---- | -------------------------------- | ------------------------ |
-| T1   | `GARCIA\|M\|F\|1988-03-22`       | `Xk9mT2pLc1VhR3dNZUZ...` |
-| T2   | `GARCIA\|MARIA\|1988-03-22\|902` | `bHdRa0VuWXBCdkxhTnI...` |
-| T3   | `GARCIA\|MARIA\|F\|1988-03-22`   | `cTdYc1pNdkpUa2JQeHo...` |
-| T4   | `452387291\|F\|1988-03-22`       | `ZnBOdFdtS2haQWdWcko...` |
-| T5   | `GARCIA\|MAR\|F`                 | `RWtqVXhMY0dTcldmbVk...` |
+| Rule | Token Signature                     | Illustrative Token       |
+| ---- | ----------------------------------- | ------------------------ |
+| T1   | `GARCIA\|M\|FEMALE\|1988-03-22`     | `Xk9mT2pLc1VhR3dNZUZ...` |
+| T2   | `GARCIA\|MARIA\|1988-03-22\|902`    | `bHdRa0VuWXBCdkxhTnI...` |
+| T3   | `GARCIA\|MARIA\|FEMALE\|1988-03-22` | `cTdYc1pNdkpUa2JQeHo...` |
+| T4   | `452387291\|FEMALE\|1988-03-22`     | `ZnBOdFdtS2haQWdWcko...` |
+| T5   | `GARCIA\|MAR\|FEMALE`               | `RWtqVXhMY0dTcldmbVk...` |
 
 **CLN-201 (Maria Garcia, 1988-03-22):**
 
-| Rule | Token Signature                  | Illustrative Token       |
-| ---- | -------------------------------- | ------------------------ |
-| T1   | `GARCIA\|M\|F\|1988-03-22`       | `Xk9mT2pLc1VhR3dNZUZ...` |
-| T2   | `GARCIA\|MARIA\|1988-03-22\|902` | `bHdRa0VuWXBCdkxhTnI...` |
-| T3   | `GARCIA\|MARIA\|F\|1988-03-22`   | `cTdYc1pNdkpUa2JQeHo...` |
-| T4   | `452387291\|F\|1988-03-22`       | `ZnBOdFdtS2haQWdWcko...` |
-| T5   | `GARCIA\|MAR\|F`                 | `RWtqVXhMY0dTcldmbVk...` |
+| Rule | Token Signature                     | Illustrative Token       |
+| ---- | ----------------------------------- | ------------------------ |
+| T1   | `GARCIA\|M\|FEMALE\|1988-03-22`     | `Xk9mT2pLc1VhR3dNZUZ...` |
+| T2   | `GARCIA\|MARIA\|1988-03-22\|902`    | `bHdRa0VuWXBCdkxhTnI...` |
+| T3   | `GARCIA\|MARIA\|FEMALE\|1988-03-22` | `cTdYc1pNdkpUa2JQeHo...` |
+| T4   | `452387291\|FEMALE\|1988-03-22`     | `ZnBOdFdtS2haQWdWcko...` |
+| T5   | `GARCIA\|MAR\|FEMALE`               | `RWtqVXhMY0dTcldmbVk...` |
 
 **Observation:** HOS-101 and CLN-201 produce **identical token signatures** for all five rules because their normalized attributes are identical. Their normal `tokenize` values (or decrypted values) match exactly; encrypted `olt.V1` token strings can differ because encryption uses random IVs.
 
 **HOS-102 (tom O'Reilly, 1995-11-03):**
 
-| Rule | Token Signature                 | Illustrative Token       |
-| ---- | ------------------------------- | ------------------------ |
-| T1   | `OREILLY\|T\|M\|1995-11-03`     | `UXdlcnR5VWlPcEFzRGZ...` |
-| T2   | `OREILLY\|TOM\|1995-11-03\|303` | `WnhjdmJubUtMbUpIR2d...` |
-| T3   | `OREILLY\|TOM\|M\|1995-11-03`   | `QWxza2RqZmhHa0xQb1p...` |
-| T4   | `671829134\|M\|1995-11-03`      | `TW5iVmN4WmFRd0VyVHl...` |
-| T5   | `OREILLY\|TOM\|M`               | `SWp1aHlHdEZyRGVTd1d...` |
+| Rule | Token Signature                  | Illustrative Token       |
+| ---- | -------------------------------- | ------------------------ |
+| T1   | `OREILLY\|T\|MALE\|1995-11-03`   | `UXdlcnR5VWlPcEFzRGZ...` |
+| T2   | `OREILLY\|TOM\|1995-11-03\|303`  | `WnhjdmJubUtMbUpIR2d...` |
+| T3   | `OREILLY\|TOM\|MALE\|1995-11-03` | `QWxza2RqZmhHa0xQb1p...` |
+| T4   | `671829134\|MALE\|1995-11-03`    | `TW5iVmN4WmFRd0VyVHl...` |
+| T5   | `OREILLY\|TOM\|MALE`             | `SWp1aHlHdEZyRGVTd1d...` |
 
 **CLN-202 (Thomas O'Reilly, 1995-11-03, no SSN):**
 
-| Rule | Token Signature                    | Illustrative Token       |
-| ---- | ---------------------------------- | ------------------------ |
-| T1   | `OREILLY\|T\|M\|1995-11-03`        | `RHZiTmNYemFRd0VyWnR...` |
-| T2   | `OREILLY\|THOMAS\|1995-11-03\|303` | `S2p1aHlHdEZyRGVWd1h...` |
-| T3   | `OREILLY\|THOMAS\|M\|1995-11-03`   | `VXl0ckVXcUFzRGZHaEp...` |
-| T4   | — (SSN missing)                    | _Not generated_          |
-| T5   | `OREILLY\|THO\|M`                  | `QmFzZTY0UExhY2Vob2w...` |
+| Rule | Token Signature                     | Illustrative Token       |
+| ---- | ----------------------------------- | ------------------------ |
+| T1   | `OREILLY\|T\|MALE\|1995-11-03`      | `RHZiTmNYemFRd0VyWnR...` |
+| T2   | `OREILLY\|THOMAS\|1995-11-03\|303`  | `S2p1aHlHdEZyRGVWd1h...` |
+| T3   | `OREILLY\|THOMAS\|MALE\|1995-11-03` | `VXl0ckVXcUFzRGZHaEp...` |
+| T4   | — (SSN missing)                     | _Not generated_          |
+| T5   | `OREILLY\|THO\|MALE`                | `QmFzZTY0UExhY2Vob2w...` |
 
 **Observation:** HOS-102 and CLN-202 can match on **T1** (first initial) even though the full first name differs (TOM vs THOMAS). They do **not** match on rules that require the full first name, and they cannot generate T4 because the SSN is missing.
 

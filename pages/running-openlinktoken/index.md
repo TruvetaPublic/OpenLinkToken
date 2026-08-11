@@ -27,14 +27,23 @@ olt <subcommand> [OPTIONS]
 
 #### Optional Arguments by Subcommand
 
-| Argument            | Alias | `package` | `tokenize` | `encrypt` | `decrypt` | Description                                               | Default                       | Example                                                 |
-| ------------------- | ----- | --------- | ---------- | --------- | --------- | --------------------------------------------------------- | ----------------------------- | ------------------------------------------------------- |
-| `--exchange-config` |       | ✓         | ✓          | ✓         | ✓         | Exchange config JSON path                                 | Date-based default path       | `--exchange-config ./quickstart.exchange.json`          |
-| `--private-key`     |       | ✓         | ✓          | ✓         | ✓         | Private key PEM used to decrypt the exchange config       | Auto-discovered when possible | `--private-key ~/.openlinktoken/quickstart.private.pem` |
-| `--private-key-env` |       | ✓         | ✓          | ✓         | ✓         | Environment variable containing the private key PEM       |                               | `--private-key-env OLT_PRIVATE_KEY_PEM`                 |
-| `--mode`            |       |           | ✓          |           |           | Tokenize mode selector: `default`, `hash-only`, or `demo` | `default`                     | `tokenize --mode hash-only`                             |
+| Argument            | Alias               | `package` | `tokenize` | `encrypt` | `decrypt` | Description                                               | Default                       | Example                                                 |
+| ------------------- | ------------------- | --------- | ---------- | --------- | --------- | --------------------------------------------------------- | ----------------------------- | ------------------------------------------------------- |
+| `-c`                | `--exchange-config` | ✓         | ✓          | ✓         | ✓         | Exchange config JSON path                                 | Date-based default path       | `-c ./quickstart.exchange.json`                         |
+| `--private-key`     |                     | ✓         | ✓          | ✓         | ✓         | Private key PEM used to decrypt the exchange config       | Auto-discovered when possible | `--private-key ~/.openlinktoken/quickstart.private.pem` |
+| `--private-key-env` |                     | ✓         | ✓          | ✓         | ✓         | Environment variable containing the private key PEM       |                               | `--private-key-env OLT_PRIVATE_KEY_PEM`                 |
+| `--mode`            |                     |           | ✓          |           |           | Tokenize mode selector: `default`, `hash-only`, or `demo` | `default`                     | `tokenize --mode hash-only`                             |
 
-If a matching key already exists under `~/.openlinktoken/`, you can omit `--private-key` and `--private-key-env` for the commands that use an exchange config. `tokenize --mode hash-only` and `tokenize --mode demo` do not use exchange-config or private-key inputs.
+If a matching key already exists under `~/.openlinktoken/`, you can omit
+`--private-key` and `--private-key-env` for the commands that use an exchange
+config. `tokenize --mode hash-only` and `tokenize --mode demo` do not need an
+exchange config, secret, or private key for their base output. Supplying an
+exchange config and matching private key to either mode is optional and applies
+the exchange's rotation settings.
+
+`package` and default `tokenize` enable ML1 by default when the AI module is
+available. A valid record can therefore produce T1–T5 plus one `ML1` row. Use
+`--disable-inferencing` to emit only T1–T5.
 
 ### Usage Examples
 
@@ -118,34 +127,52 @@ Supported curves (`--curve` / `-c`):
 
 ### Output Files
 
-Token generation produces two files:
+`package` and `tokenize` produce a token file plus metadata. `encrypt` and
+`decrypt` produce only the token file.
 
 **Tokens File** (CSV or Parquet):
 
 ```
 RecordId,RuleId,Token
-record1,T1,Gn7t1Zj16E5Qy+z9iINtczP6fRDYta6C0XFrQtpjnVQSEZ5pQXAzo02Aa9LS9oNMOog6Ssw9GZE6fvJrX2sQ/cThSkB6m91L
-record1,T2,pUxPgYL9+cMxkA+8928Pil+9W+dm9kISwHYPdkZS+I2nQ/bQ/8HyL3FOVf3NYPW5NKZZO1OZfsz7LfKYpTlaxyzMLqMF2Wk7
+record1,T1,olt.V1.<JWE compact serialization>
+record1,T2,olt.V1.<JWE compact serialization>
+record1,T3,olt.V1.<JWE compact serialization>
+record1,T4,olt.V1.<JWE compact serialization>
+record1,T5,olt.V1.<JWE compact serialization>
+record1,ML1,olt.V1.<JWE compact serialization>
 ...
 ```
 
-**Metadata File** (always JSON, suffixed `.metadata.json`):
+The example above is `package` output. `olt.V1.<JWE compact serialization>`
+identifies encrypted package tokens. `tokenize` and `decrypt` output unwrapped
+base64 HMAC values (or lowercase SHA-256 hex for hash-only mode), not
+`olt.V1` strings.
+
+**Metadata File** (`package` and `tokenize` only; always JSON, suffixed
+`.metadata.json` for CSV/Parquet output):
 
 ```json
 {
-  "JavaVersion": "21.0.0",
+  "PythonVersion": "3.11.0",
   "Version": "2.1.1",
-  "Platform": "Java",
+  "Platform": "Python",
   "TotalRows": 1,
   "TotalRowsWithInvalidAttributes": 0,
   "InvalidAttributesByType": {},
-  "BlankTokensByRule": {},
-  "HashingSecretHash": "abc123...",
-  "EncryptionSecretHash": "def456..."
+  "BlankTokensByRule": {
+    "T1": 0,
+    "T2": 0,
+    "T3": 0,
+    "T4": 0,
+    "T5": 0,
+    "ML1": 0
+  }
 }
 ```
 
-See [Reference: Metadata Format](../reference/metadata-format.md) for detailed field descriptions.
+For ZIP output, `package` embeds metadata in the archive. `encrypt` and
+`decrypt` do not emit metadata. See [Reference: Metadata
+Format](../reference/metadata-format.md) for detailed field descriptions.
 
 ### Console Output and Detailed Logs
 
@@ -174,6 +201,14 @@ Scripts automatically build and run the container.
 ```bash
 cd /path/to/OpenLinkToken
 
+# Create a local partner key and exchange config for this example.
+# In a real exchange, the partner supplies the public key.
+./run-olt.sh generate-key-pair --name quickstart-recipient
+./run-olt.sh initiate-exchange \
+  --name quickstart-sender \
+  --public-key "$HOME/.openlinktoken/quickstart-recipient.public.pem" \
+  --output ./resources/quickstart.exchange.json
+
 ./run-olt.sh package \
   -i ./resources/sample.csv \
   -o ./resources/output.csv \
@@ -184,6 +219,12 @@ cd /path/to/OpenLinkToken
 
 ```powershell
 cd C:\path\to\Open Link Token
+
+.\run-olt.ps1 generate-key-pair --name quickstart-recipient
+.\run-olt.ps1 initiate-exchange `
+  --name quickstart-sender `
+  --public-key "$HOME/.openlinktoken/quickstart-recipient.public.pem" `
+  --output .\resources\quickstart.exchange.json
 
 .\run-olt.ps1 package `
   -i .\resources\sample.csv `
@@ -208,8 +249,24 @@ Build and run the image manually from the repository root.
 # Build the image
 docker build -t openlinktoken:latest .
 
+# Persist the local key directory and create a partner key pair.
+docker run --rm -e HOME=/app \
+  -v "$HOME/.openlinktoken:/app/.openlinktoken" \
+  openlinktoken:latest generate-key-pair --name quickstart-recipient
+
+# Create the exchange config. This command also creates the sender key pair.
+docker run --rm -e HOME=/app \
+  -v "$HOME/.openlinktoken:/app/.openlinktoken" \
+  -v "$(pwd)/resources:/app/resources" \
+  openlinktoken:latest initiate-exchange \
+  --name quickstart-sender \
+  --public-key /app/.openlinktoken/quickstart-recipient.public.pem \
+  --output /app/resources/quickstart.exchange.json
+
 # Run with sample data
-docker run --rm -v $(pwd)/resources:/app/resources \
+docker run --rm -e HOME=/app \
+  -v "$HOME/.openlinktoken:/app/.openlinktoken" \
+  -v "$(pwd)/resources:/app/resources" \
   openlinktoken:latest package \
   -i /app/resources/sample.csv \
   -o /app/resources/output.csv \
@@ -255,25 +312,25 @@ uv pip install -r requirements.txt -e .
 ### Basic Usage
 
 ```python
-from openlinktoken_pyspark import SparkPersonTokenProcessor
+from pyspark.sql import SparkSession
+from openlinktoken_pyspark import OpenLinkTokenProcessor
 
 # Initialize Spark session
 spark = SparkSession.builder \
     .appName("Open Link Token") \
     .getOrCreate()
 
+# Load input data
+df = spark.read.csv("data.csv", header=True)
+
 # Create processor
-processor = SparkPersonTokenProcessor(
-    spark=spark,
+processor = OpenLinkTokenProcessor(
     hashing_secret="HashingKey",
-    encryption_key="Secret-Encryption-Key"
+    encryption_key="0123456789abcdef0123456789abcdef"
 )
 
 # Process dataset
-tokens_df = processor.process_dataframe(
-    input_df=input_spark_df,
-    input_type="csv"  # or "parquet"
-)
+tokens_df = processor.process_dataframe(df)
 
 # Write output
 tokens_df.coalesce(1).write \

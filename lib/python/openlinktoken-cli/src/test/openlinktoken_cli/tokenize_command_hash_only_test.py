@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 
+import csv
 import json
 import logging
 from pathlib import Path
@@ -15,6 +16,16 @@ HASH_ONLY_TOKEN_LENGTH = 64
 
 # HMAC-SHA256 over 32 bytes → base64 → always exactly 44 characters
 NORMAL_MODE_TOKEN_LENGTH = 44
+
+EXPECTED_METADATA_KEYS = {
+    "PythonVersion",
+    "Platform",
+    "Version",
+    "TotalRows",
+    "TotalRowsWithInvalidAttributes",
+    "InvalidAttributesByType",
+    "BlankTokensByRule",
+}
 
 # Token.BLANK sentinel written when a rule cannot produce a valid token
 BLANK_TOKEN = "0" * 64
@@ -103,7 +114,7 @@ class TestTokenizeCommandHashOnly:
         assert (temp_dir / "output.metadata.json").exists()
 
     def test_hash_only_mode_rejects_exchange_config(self, temp_dir: Path):
-        """Hash-only mode should reject --exchange-config."""
+        """Hash-only mode requires a private key when given an exchange config."""
         exchange_config, _ = self._create_exchange_config(temp_dir, "hash-with-config")
         exit_code = OpenLinkTokenCommand.execute(
             [
@@ -119,6 +130,31 @@ class TestTokenizeCommandHashOnly:
             ]
         )
         assert exit_code != 0
+
+    def test_hash_only_mode_accepts_exchange_config_for_rotation(self, temp_dir: Path):
+        """Hash-only mode may load an exchange's rotation configuration without HMAC hashing."""
+        exchange_config, private_key = self._create_exchange_config(temp_dir, "hash-with-config")
+        output_csv = temp_dir / "output.csv"
+
+        exit_code = OpenLinkTokenCommand.execute(
+            [
+                "tokenize",
+                "-i",
+                str(temp_dir / "input.csv"),
+                "-o",
+                str(output_csv),
+                "--mode",
+                "hash-only",
+                "--exchange-config",
+                str(exchange_config),
+                "--private-key",
+                str(private_key),
+                "--disable-inferencing",
+            ]
+        )
+
+        assert exit_code == 0
+        assert output_csv.exists()
 
     def test_hash_only_mode_rejects_private_key(self, temp_dir: Path):
         """Hash-only mode should reject --private-key."""
@@ -193,10 +229,13 @@ class TestTokenizeCommandHashOnly:
         assert tokens, "Expected at least one non-blank token in hash-only mode"
 
         for token in tokens:
-            assert len(token) == HASH_ONLY_TOKEN_LENGTH, (
-                f"Hash-only token must be a 64-char hex string, got {len(token)} chars: {token!r}"
-            )
-            assert all(c in "0123456789abcdef" for c in token), f"Hash-only token must be lowercase hex, got: {token!r}"
+            for hash_value in token.split(","):
+                assert len(hash_value) == HASH_ONLY_TOKEN_LENGTH, (
+                    f"Hash-only token must be a 64-char hex string, got {len(hash_value)} chars: {hash_value!r}"
+                )
+                assert all(c in "0123456789abcdef" for c in hash_value), (
+                    f"Hash-only token must be lowercase hex, got: {hash_value!r}"
+                )
 
     def test_hash_only_and_normal_mode_produce_different_tokens(self, temp_dir: Path):
         """Hash-only and normal-mode outputs must differ for the same input."""
@@ -304,8 +343,8 @@ class TestTokenizeCommandHashOnly:
     # Metadata
     # ------------------------------------------------------------------
 
-    def test_hash_only_metadata_omits_hashing_secret_hash(self, temp_dir: Path):
-        """Hash-only mode must not write HashingSecretHash to the metadata file."""
+    def test_hash_only_metadata_contains_only_core_fields(self, temp_dir: Path):
+        """Hash-only mode metadata should contain only the shared metadata fields and counters."""
         OpenLinkTokenCommand.execute(
             [
                 "tokenize",
@@ -319,7 +358,7 @@ class TestTokenizeCommandHashOnly:
         )
 
         metadata = _read_metadata(temp_dir / "output.metadata.json")
-        assert "HashingSecretHash" not in metadata, "Hash-only mode must not include HashingSecretHash in metadata"
+        assert set(metadata) == EXPECTED_METADATA_KEYS
 
     def test_hash_only_metadata_contains_processing_counters(self, temp_dir: Path):
         """Hash-only mode metadata must still record row and attribute statistics."""
@@ -364,26 +403,18 @@ class TestTokenizeCommandHashOnly:
 # ---------------------------------------------------------------------------
 
 
-def _extract_tokens(csv_path: Path) -> list[str]:
+def _extract_tokens(
+    csv_path: Path,
+    exclude_rule_ids: set[str] | None = None,
+) -> list[str]:
     """Return non-blank, non-sentinel token values from the Token column of a CSV."""
-    lines = csv_path.read_text().splitlines()
-    if not lines:
-        return []
-
-    headers = [h.strip() for h in lines[0].split(",")]
-    try:
-        token_col = headers.index("Token")
-    except ValueError:
-        return []
-
-    tokens = []
-    for line in lines[1:]:
-        cols = line.split(",")
-        if len(cols) > token_col:
-            token = cols[token_col].strip()
-            if token and token != BLANK_TOKEN:
-                tokens.append(token)
-    return tokens
+    exclude_rule_ids = exclude_rule_ids or set()
+    with csv_path.open(newline="") as csv_file:
+        return [
+            row["Token"]
+            for row in csv.DictReader(csv_file)
+            if row["RuleId"] not in exclude_rule_ids and row["Token"] and row["Token"] != BLANK_TOKEN
+        ]
 
 
 def _read_metadata(path: Path) -> dict:

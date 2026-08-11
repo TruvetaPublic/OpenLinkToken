@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 
+import csv as csv_module
 import json
 import os
 from pathlib import Path
@@ -7,11 +8,22 @@ from unittest.mock import patch
 
 import pytest
 
+from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig
 from openlinktoken_cli.commands.open_link_token_command import OpenLinkTokenCommand
 from openlinktoken_cli.util.ec_key_utils import generate_key_pair
 
 # HMAC-SHA256 over 32 bytes → base64 → always exactly 44 characters
 NORMAL_MODE_TOKEN_LENGTH = 44
+
+EXPECTED_METADATA_KEYS = {
+    "PythonVersion",
+    "Platform",
+    "Version",
+    "TotalRows",
+    "TotalRowsWithInvalidAttributes",
+    "InvalidAttributesByType",
+    "BlankTokensByRule",
+}
 
 # Token.BLANK sentinel written when a rule cannot produce a valid token
 BLANK_TOKEN = "0" * 64
@@ -72,9 +84,35 @@ class TestTokenizeCommandDemoMode:
             str(temp_dir / "output.csv"),
             "--mode",
             "demo",
+            "--disable-inferencing",
         ]
         exit_code = OpenLinkTokenCommand.execute(args)
         assert exit_code == 0
+
+    def test_demo_mode_uses_default_ml1_thread_count_when_omitted(self, temp_dir: Path):
+        """Omitting the ML1 thread option should configure the detected default."""
+        args = [
+            "tokenize",
+            "-i",
+            str(temp_dir / "input.csv"),
+            "-o",
+            str(temp_dir / "output.csv"),
+            "--mode",
+            "demo",
+            "--disable-inferencing",
+        ]
+
+        with patch.object(ML1InferenceConfig, "configure", wraps=ML1InferenceConfig.configure) as configure:
+            exit_code = OpenLinkTokenCommand.execute(args)
+
+        assert exit_code == 0
+        assert configure.call_args.kwargs["configured_model_path"] == ML1InferenceConfig.DEFAULT_MODEL_PATH
+        assert configure.call_args.kwargs["configured_tokenizer_path"] == ML1InferenceConfig.DEFAULT_TOKENIZER_PATH
+        assert (
+            configure.call_args.kwargs["configured_max_sequence_length"]
+            == ML1InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH
+        )
+        assert configure.call_args.kwargs["configured_num_threads"] == ML1InferenceConfig.DEFAULT_NUM_THREADS
 
     def test_demo_mode_accepts_bare_csv_paths_from_working_directory(
         self, temp_dir: Path, monkeypatch: pytest.MonkeyPatch
@@ -91,6 +129,7 @@ class TestTokenizeCommandDemoMode:
                 "output.csv",
                 "--mode",
                 "demo",
+                "--disable-inferencing",
             ]
         )
 
@@ -113,6 +152,7 @@ class TestTokenizeCommandDemoMode:
                 "output.parquet",
                 "--mode",
                 "demo",
+                "--disable-inferencing",
             ]
         )
 
@@ -139,9 +179,9 @@ class TestTokenizeCommandDemoMode:
             os.chdir(original_cwd)
         assert exit_code != 0
 
-    def test_demo_mode_rejects_exchange_config(self, temp_dir: Path):
-        """Demo mode should reject --exchange-config to keep the contract explicit."""
-        exchange_config, _ = self._create_exchange_config(temp_dir, "demo-with-config")
+    def test_demo_mode_accepts_exchange_config(self, temp_dir: Path):
+        """Demo mode should accept --exchange-config for optional rotation settings."""
+        exchange_config, private_key = self._create_exchange_config(temp_dir, "demo-with-config")
         args = [
             "tokenize",
             "-i",
@@ -152,9 +192,12 @@ class TestTokenizeCommandDemoMode:
             "demo",
             "--exchange-config",
             str(exchange_config),
+            "--private-key",
+            str(private_key),
+            "--disable-inferencing",
         ]
         exit_code = OpenLinkTokenCommand.execute(args)
-        assert exit_code != 0
+        assert exit_code == 0
 
     def test_demo_mode_rejects_hash_record_ids(self, temp_dir: Path):
         """Demo mode should reject --hash-record-ids."""
@@ -188,6 +231,7 @@ class TestTokenizeCommandDemoMode:
             str(exchange_config),
             "--private-key",
             str(private_key),
+            "--disable-inferencing",
         ]
         exit_code = OpenLinkTokenCommand.execute(args)
         assert exit_code == 0
@@ -251,6 +295,7 @@ class TestTokenizeCommandDemoMode:
                 str(output_csv),
                 "--mode",
                 "demo",
+                "--disable-inferencing",
             ]
         )
 
@@ -283,10 +328,11 @@ class TestTokenizeCommandDemoMode:
                 str(exchange_config),
                 "--private-key",
                 str(private_key),
+                "--disable-inferencing",
             ]
         )
 
-        tokens = _extract_tokens(output_csv)
+        tokens = _extract_tokens(output_csv, exclude_rule_ids={"ML1"})
         assert tokens, "Expected at least one non-blank token in normal mode"
 
         for token in tokens:
@@ -309,6 +355,7 @@ class TestTokenizeCommandDemoMode:
                 str(demo_output),
                 "--mode",
                 "demo",
+                "--disable-inferencing",
             ]
         )
         OpenLinkTokenCommand.execute(
@@ -324,6 +371,7 @@ class TestTokenizeCommandDemoMode:
                 str(exchange_config),
                 "--private-key",
                 str(private_key),
+                "--disable-inferencing",
             ]
         )
 
@@ -333,8 +381,8 @@ class TestTokenizeCommandDemoMode:
     # Metadata
     # ------------------------------------------------------------------
 
-    def test_demo_mode_metadata_omits_hashing_secret_hash(self, temp_dir: Path):
-        """Demo mode must not write HashingSecretHash to the metadata file."""
+    def test_demo_mode_metadata_contains_only_core_fields(self, temp_dir: Path):
+        """Demo mode metadata should contain only the shared metadata fields and counters."""
         OpenLinkTokenCommand.execute(
             [
                 "tokenize",
@@ -344,14 +392,15 @@ class TestTokenizeCommandDemoMode:
                 str(temp_dir / "output.csv"),
                 "--mode",
                 "demo",
+                "--disable-inferencing",
             ]
         )
 
         metadata = _read_metadata(temp_dir / "output.metadata.json")
-        assert "HashingSecretHash" not in metadata, "Demo mode must not include HashingSecretHash in metadata"
+        assert set(metadata) == EXPECTED_METADATA_KEYS
 
-    def test_default_mode_metadata_contains_hashing_secret_hash(self, temp_dir: Path):
-        """Default mode must write HashingSecretHash to the metadata file."""
+    def test_default_mode_metadata_contains_only_core_fields(self, temp_dir: Path):
+        """Default mode metadata should contain only the shared metadata fields and counters."""
         exchange_config, private_key = self._create_exchange_config(temp_dir, "metadata-normal")
         OpenLinkTokenCommand.execute(
             [
@@ -366,11 +415,12 @@ class TestTokenizeCommandDemoMode:
                 str(exchange_config),
                 "--private-key",
                 str(private_key),
+                "--disable-inferencing",
             ]
         )
 
         metadata = _read_metadata(temp_dir / "output.metadata.json")
-        assert "HashingSecretHash" in metadata, "Normal mode must include HashingSecretHash in metadata"
+        assert set(metadata) == EXPECTED_METADATA_KEYS
 
     def test_demo_mode_metadata_contains_processing_counters(self, temp_dir: Path):
         """Demo mode metadata must still record row and attribute statistics."""
@@ -383,6 +433,7 @@ class TestTokenizeCommandDemoMode:
                 str(temp_dir / "output.csv"),
                 "--mode",
                 "demo",
+                "--disable-inferencing",
             ]
         )
 
@@ -395,25 +446,36 @@ class TestTokenizeCommandDemoMode:
 # ---------------------------------------------------------------------------
 
 
-def _extract_tokens(csv_path: Path) -> list[str]:
-    """Return non-blank, non-sentinel token values from the Token column of a CSV."""
+def _extract_tokens(csv_path: Path, exclude_rule_ids: set[str] | None = None) -> list[str]:
+    """Return non-blank, non-sentinel token values from the Token column of a CSV.
+
+    Args:
+        csv_path: Path to the CSV file to read.
+        exclude_rule_ids: Optional set of RuleId values to skip (e.g. ``{"ML1"}``).
+    """
     lines = csv_path.read_text().splitlines()
     if not lines:
         return []
 
-    headers = [h.strip() for h in lines[0].split(",")]
+    headers = next(csv_module.reader([lines[0]]))
+    headers = [h.strip() for h in headers]
     try:
         token_col = headers.index("Token")
     except ValueError:
         return []
 
+    rule_col = headers.index("RuleId") if "RuleId" in headers else -1
+
     tokens = []
-    for line in lines[1:]:
-        cols = line.split(",")
-        if len(cols) > token_col:
-            token = cols[token_col].strip()
-            if token and token != BLANK_TOKEN:
-                tokens.append(token)
+    for row in csv_module.reader(lines[1:]):
+        if len(row) <= token_col:
+            continue
+        if exclude_rule_ids and rule_col >= 0 and len(row) > rule_col:
+            if row[rule_col].strip() in exclude_rule_ids:
+                continue
+        token = row[token_col].strip()
+        if token and token != BLANK_TOKEN:
+            tokens.append(token)
     return tokens
 
 

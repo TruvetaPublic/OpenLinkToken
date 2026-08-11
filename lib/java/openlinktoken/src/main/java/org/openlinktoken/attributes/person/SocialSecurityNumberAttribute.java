@@ -18,8 +18,9 @@ import org.openlinktoken.attributes.validation.RegexValidator;
  * Represents the social security number attribute.
  *
  * This class extends BaseAttribute and provides functionality for working with
- * social security number fields. It recognizes "SocialSecurityNumber" and
- * "NationalIdentificationNumber" as valid aliases for this attribute type.
+ * social security number fields. It recognizes "SocialSecurityNumber",
+ * "NationalIdentificationNumber", and "SSN" as valid aliases for this
+ * attribute type.
  *
  * The attribute performs normalization on input values, converting them to a
  * standard format (xxx-xx-xxxx).
@@ -32,7 +33,7 @@ import org.openlinktoken.attributes.validation.RegexValidator;
 public class SocialSecurityNumberAttribute extends BaseAttribute {
 
     private static final String NAME = "SocialSecurityNumber";
-    private static final String[] ALIASES = new String[] { NAME, "NationalIdentificationNumber" };
+    private static final String[] ALIASES = new String[] { NAME, "NationalIdentificationNumber", "SSN" };
     private static final String DASH = "-";
     private static final String SSN_FORMAT = "%09d";
 

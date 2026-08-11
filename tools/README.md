@@ -3,7 +3,6 @@
 - [Development Tools](#development-tools)
   - [Decryptor Tools](#decryptor-tools)
   - [Exchange Tools](#exchange-tools)
-  - [Hash Tools](#hash-tools)
   - [Mock Data Tools](#mock-data-tools)
   - [Interoperability Tools](#interoperability-tools)
   - [Multi-Language Sync Tool](#multi-language-sync-tool)
@@ -118,23 +117,37 @@ private key whose fingerprint-derived `kid` matches one of the JWE recipients.
 `--private-key-stdin` is an alternative to `--private-key PATH`, so both the
 existing file-based option and stdin-based secret handling remain supported.
 
-## Hash Tools
+### Exchange Config Inspection
 
-### Secret Hash Calculator
-
-Use `tools/hash/hash_calculator.py` to compute the SHA-256 secret hashes that
-Open Link Token includes in metadata output.
+Use `tools/exchange/inspect_exchange_config.py` to decrypt and print the full
+contents of an exchange config file. This is useful for debugging, verifying
+rotation parameters, and confirming which keys are embedded.
 
 ```bash
-python tools/hash/hash_calculator.py \
-  --hashing-secret "$HASHING_SECRET" \
-  --encryption-key "$ENCRYPTION_KEY" \
-  --output-format json
+# Print a human-readable summary (auto-resolves key from ~/.openlinktoken/)
+python tools/exchange/inspect_exchange_config.py \
+  --exchange-config sender-q2.exchange.json
+
+# Print with an explicit private key
+python tools/exchange/inspect_exchange_config.py \
+  --exchange-config sender-q2.exchange.json \
+  --private-key ~/.openlinktoken/sender-q2.private.pem
+
+# Read the private key from an environment variable
+python tools/exchange/inspect_exchange_config.py \
+  --exchange-config sender-q2.exchange.json \
+  --private-key-env OT_PRIVATE_KEY
+
+# Output the raw decrypted JSON payload
+python tools/exchange/inspect_exchange_config.py \
+  --exchange-config sender-q2.exchange.json \
+  --json
 ```
 
-Supported output formats are `table`, `json`, and `simple`. The companion
-`tools/hash/test_hash_calculator.py` script exercises the calculator against
-known values and command-line execution behavior.
+The summary view shows the exchange name, exchange ID, creation timestamp,
+curve, private key role (sender or recipient), hashing secret length and hex
+preview, rotation parameters (`rotationIv`, `rotationCount`, `binWidth`,
+`dimensionBias`), and both key fingerprints.
 
 ## Mock Data Tools
 
@@ -174,13 +187,26 @@ python tools/interoperability/cli_parity_test.py
 
 Use `tools/interoperability/multi_language_interoperability_test.py` to compare
 Python tokenization output against the Java core-library harness and verify
-known deterministic fixture values.
+known deterministic fixture values. The same script also performs full
+Java/Python ML1 signature parity, including invalid-row handling, in addition
+to the T1-T5 and metadata checks.
 
 ```bash
 cd lib/java
 mvn -pl openlinktoken -DskipTests test-compile
 cd ..
 python tools/interoperability/multi_language_interoperability_test.py
+```
+
+### Rotation Matrix Interoperability Test
+
+Use `tools/interoperability/rotation_matrix_interop_test.py` to verify that the
+Java and Python `RotationMatrixGenerator` implementations produce bit-exact
+results for the same inputs. This is the parity gate for ML1 inferencing tokens.
+
+```bash
+source /home/vscode/.local/share/openlinktoken/.venv/bin/activate
+python tools/interoperability/rotation_matrix_interop_test.py
 ```
 
 For more detail on these checks, see `tools/interoperability/README.md`.

@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.security.MessageDigest;
@@ -15,6 +16,9 @@ import org.junit.jupiter.api.Test;
 
 class MetadataTest {
 
+    private static final String PRIMARY_SECRET_DIGEST = "PrimarySecretDigest";
+    private static final String SECONDARY_SECRET_DIGEST = "SecondarySecretDigest";
+
     @Test
     void testInitializeOnly() {
         Metadata metadata = new Metadata();
@@ -23,83 +27,10 @@ class MetadataTest {
         assertTrue(result.containsKey(Metadata.JAVA_VERSION));
         assertTrue(result.containsKey(Metadata.PLATFORM));
         assertTrue(result.containsKey(Metadata.VERSION));
-
-        assertFalse(result.containsKey(Metadata.HASHING_SECRET_HASH));
-        assertFalse(result.containsKey(Metadata.ENCRYPTION_SECRET_HASH));
+        assertEquals(3, result.size());
 
         assertEquals(Metadata.PLATFORM_JAVA, result.get(Metadata.PLATFORM));
         assertEquals(Metadata.DEFAULT_VERSION, result.get(Metadata.VERSION));
-    }
-
-    @Test
-    void testAddHashedSecretWithHashingSecret() {
-        Metadata metadata = new Metadata();
-        metadata.initialize();
-
-        String hashingSecret = "test-hashing-secret";
-        Map<String, Object> result = metadata.addHashedSecret(Metadata.HASHING_SECRET_HASH, hashingSecret);
-
-        assertTrue(result.containsKey(Metadata.HASHING_SECRET_HASH));
-        assertFalse(result.containsKey(Metadata.ENCRYPTION_SECRET_HASH));
-        assertNotNull(result.get(Metadata.HASHING_SECRET_HASH));
-    }
-
-    @Test
-    void testAddHashedSecretWithEncryptionKey() {
-        Metadata metadata = new Metadata();
-        metadata.initialize();
-
-        String encryptionKey = "test-encryption-key";
-        Map<String, Object> result = metadata.addHashedSecret(Metadata.ENCRYPTION_SECRET_HASH, encryptionKey);
-
-        assertFalse(result.containsKey(Metadata.HASHING_SECRET_HASH));
-        assertTrue(result.containsKey(Metadata.ENCRYPTION_SECRET_HASH));
-        assertNotNull(result.get(Metadata.ENCRYPTION_SECRET_HASH));
-    }
-
-    @Test
-    void testAddHashedSecretWithBothSecrets() {
-        Metadata metadata = new Metadata();
-        metadata.initialize();
-
-        String hashingSecret = "test-hashing-secret";
-        String encryptionKey = "test-encryption-key";
-
-        metadata.addHashedSecret(Metadata.HASHING_SECRET_HASH, hashingSecret);
-        Map<String, Object> result = metadata.addHashedSecret(Metadata.ENCRYPTION_SECRET_HASH, encryptionKey);
-
-        assertTrue(result.containsKey(Metadata.HASHING_SECRET_HASH));
-        assertTrue(result.containsKey(Metadata.ENCRYPTION_SECRET_HASH));
-        assertNotNull(result.get(Metadata.HASHING_SECRET_HASH));
-        assertNotNull(result.get(Metadata.ENCRYPTION_SECRET_HASH));
-
-        // Verify hashes are different for different inputs
-        assertNotEquals(result.get(Metadata.HASHING_SECRET_HASH),
-                result.get(Metadata.ENCRYPTION_SECRET_HASH));
-    }
-
-    @Test
-    void testAddHashedSecretWithNullSecrets() {
-        Metadata metadata = new Metadata();
-        metadata.initialize();
-
-        metadata.addHashedSecret(Metadata.HASHING_SECRET_HASH, (String) null);
-        Map<String, Object> result = metadata.addHashedSecret(Metadata.ENCRYPTION_SECRET_HASH, (String) null);
-
-        assertFalse(result.containsKey(Metadata.HASHING_SECRET_HASH));
-        assertFalse(result.containsKey(Metadata.ENCRYPTION_SECRET_HASH));
-    }
-
-    @Test
-    void testAddHashedSecretWithEmptySecrets() {
-        Metadata metadata = new Metadata();
-        metadata.initialize();
-
-        metadata.addHashedSecret(Metadata.HASHING_SECRET_HASH, "");
-        Map<String, Object> result = metadata.addHashedSecret(Metadata.ENCRYPTION_SECRET_HASH, "");
-
-        assertFalse(result.containsKey(Metadata.HASHING_SECRET_HASH));
-        assertFalse(result.containsKey(Metadata.ENCRYPTION_SECRET_HASH));
     }
 
     @Test
@@ -107,13 +38,63 @@ class MetadataTest {
         Metadata metadata = new Metadata();
         metadata.initialize();
 
-        String customKey = "CustomSecretHash";
-        String customSecret = "my-custom-secret";
-        Map<String, Object> result = metadata.addHashedSecret(customKey, customSecret);
+        String customSecret = "test-hashing-secret";
+        Map<String, Object> result = metadata.addHashedSecret(PRIMARY_SECRET_DIGEST, customSecret);
 
-        assertTrue(result.containsKey(customKey));
-        assertNotNull(result.get(customKey));
-        assertEquals(Metadata.calculateSecureHash(customSecret), result.get(customKey));
+        assertTrue(result.containsKey(PRIMARY_SECRET_DIGEST));
+        assertNotNull(result.get(PRIMARY_SECRET_DIGEST));
+    }
+
+    @Test
+    void testAddHashedSecretWithSecondCustomKey() {
+        Metadata metadata = new Metadata();
+        metadata.initialize();
+
+        String customSecret = "test-encryption-key";
+        Map<String, Object> result = metadata.addHashedSecret(SECONDARY_SECRET_DIGEST, customSecret);
+
+        assertFalse(result.containsKey(PRIMARY_SECRET_DIGEST));
+        assertTrue(result.containsKey(SECONDARY_SECRET_DIGEST));
+        assertNotNull(result.get(SECONDARY_SECRET_DIGEST));
+    }
+
+    @Test
+    void testAddHashedSecretWithBothCustomKeys() {
+        Metadata metadata = new Metadata();
+        metadata.initialize();
+
+        metadata.addHashedSecret(PRIMARY_SECRET_DIGEST, "test-hashing-secret");
+        Map<String, Object> result = metadata.addHashedSecret(SECONDARY_SECRET_DIGEST, "test-encryption-key");
+
+        assertTrue(result.containsKey(PRIMARY_SECRET_DIGEST));
+        assertTrue(result.containsKey(SECONDARY_SECRET_DIGEST));
+        assertNotNull(result.get(PRIMARY_SECRET_DIGEST));
+        assertNotNull(result.get(SECONDARY_SECRET_DIGEST));
+        assertNotEquals(result.get(PRIMARY_SECRET_DIGEST), result.get(SECONDARY_SECRET_DIGEST));
+    }
+
+    @Test
+    void testAddHashedSecretWithNullSecrets() {
+        Metadata metadata = new Metadata();
+        metadata.initialize();
+
+        metadata.addHashedSecret(PRIMARY_SECRET_DIGEST, (String) null);
+        Map<String, Object> result = metadata.addHashedSecret(SECONDARY_SECRET_DIGEST, (String) null);
+
+        assertFalse(result.containsKey(PRIMARY_SECRET_DIGEST));
+        assertFalse(result.containsKey(SECONDARY_SECRET_DIGEST));
+    }
+
+    @Test
+    void testAddHashedSecretWithEmptySecrets() {
+        Metadata metadata = new Metadata();
+        metadata.initialize();
+
+        metadata.addHashedSecret(PRIMARY_SECRET_DIGEST, "");
+        Map<String, Object> result = metadata.addHashedSecret(SECONDARY_SECRET_DIGEST, "");
+
+        assertFalse(result.containsKey(PRIMARY_SECRET_DIGEST));
+        assertFalse(result.containsKey(SECONDARY_SECRET_DIGEST));
     }
 
     @Test
@@ -123,16 +104,14 @@ class MetadataTest {
 
         assertNotNull(hash);
         assertFalse(hash.isEmpty());
-        assertEquals(64, hash.length()); // SHA-256 produces 64 character hex string
+        assertEquals(64, hash.length());
 
-        // Verify the hash is consistent
         String hash2 = Metadata.calculateSecureHash(input);
         assertEquals(hash, hash2);
     }
 
     @Test
     void testCalculateSecureHashWithKnownValue() {
-        // Test with a known SHA-256 value to ensure compatibility
         String input = "hello";
         String expectedHash = "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824";
 
@@ -165,13 +144,12 @@ class MetadataTest {
 
     @Test
     void testCalculateSecureHashWithUnicodeInput() {
-        String input = "こんにちは"; // Japanese "hello"
+        String input = "こんにちは";
         String hash = Metadata.calculateSecureHash(input);
 
         assertNotNull(hash);
         assertEquals(64, hash.length());
 
-        // Verify UTF-8 encoding produces consistent results
         String hash2 = Metadata.calculateSecureHash(input);
         assertEquals(hash, hash2);
     }
@@ -182,10 +160,10 @@ class MetadataTest {
         metadata.initialize();
 
         byte[] rawSecret = new byte[] { (byte) 0xff, 0x00, 0x01, 0x02 };
-        Map<String, Object> result = metadata.addHashedSecret(Metadata.HASHING_SECRET_HASH, rawSecret);
+        Map<String, Object> result = metadata.addHashedSecret(PRIMARY_SECRET_DIGEST, rawSecret);
 
-        assertTrue(result.containsKey(Metadata.HASHING_SECRET_HASH));
-        assertEquals(Metadata.calculateSecureHash(rawSecret), result.get(Metadata.HASHING_SECRET_HASH));
+        assertTrue(result.containsKey(PRIMARY_SECRET_DIGEST));
+        assertEquals(Metadata.calculateSecureHash(rawSecret), result.get(PRIMARY_SECRET_DIGEST));
     }
 
     @Test
@@ -207,13 +185,9 @@ class MetadataTest {
     }
 
     @Test
-    void testMetadataConstants() {
-        // Verify that the new constants are properly defined
-        assertNotNull(Metadata.ENCRYPTION_SECRET_HASH);
-        assertNotNull(Metadata.HASHING_SECRET_HASH);
-
-        assertEquals("EncryptionSecretHash", Metadata.ENCRYPTION_SECRET_HASH);
-        assertEquals("HashingSecretHash", Metadata.HASHING_SECRET_HASH);
+    void testMetadataNoLongerDefinesSecretHashConstants() {
+        assertThrows(NoSuchFieldException.class, () -> Metadata.class.getDeclaredField("HASHING_SECRET_HASH"));
+        assertThrows(NoSuchFieldException.class, () -> Metadata.class.getDeclaredField("ENCRYPTION_SECRET_HASH"));
     }
 
     @Test

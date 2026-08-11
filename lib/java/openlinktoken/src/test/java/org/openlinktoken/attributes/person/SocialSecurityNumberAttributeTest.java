@@ -34,8 +34,8 @@ class SocialSecurityNumberAttributeTest {
     }
 
     @Test
-    void getAliases_ShouldReturnSocialSecurityNumberAndNationalIdentificationNumber() {
-        String[] expectedAliases = { "SocialSecurityNumber", "NationalIdentificationNumber" };
+    void getAliases_ShouldReturnSocialSecurityNumberAliases() {
+        String[] expectedAliases = { "SocialSecurityNumber", "NationalIdentificationNumber", "SSN" };
         assertArrayEquals(expectedAliases, ssnAttribute.getAliases());
     }
 

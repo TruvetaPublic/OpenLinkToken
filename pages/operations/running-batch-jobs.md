@@ -10,10 +10,11 @@ How to run Open Link Token in batch mode across CSV or Parquet files at scale us
 
 ## Overview
 
-Open Link Token processes input files (CSV or Parquet) and produces two outputs:
-
-1. **Tokens file** (CSV or Parquet): Contains `RecordId`, `RuleId`, `Token` columns
-2. **Metadata file** (JSON): Processing statistics, secret hashes, and validation counts
+Open Link Token processes input files (CSV or Parquet). `package` and
+`tokenize` produce a tokens file plus metadata; `encrypt` and `decrypt`
+produce only a tokens file. Token files contain `RecordId`, `RuleId`, and
+`Token` columns. Metadata contains processing statistics, runtime context, and
+validation counts.
 
 When the output path ends in `.zip`, the `package` and `encrypt` commands bundle the output tokens file and exchange config JSON (plus metadata JSON for `package`) into a single zip archive for upload.
 
@@ -29,11 +30,11 @@ olt <subcommand> [OPTIONS]
 
 ### Arguments
 
-| Argument            | Alias      | Required | Default                                    | Description                      | Example                                   |
-| ------------------- | ---------- | -------- | ------------------------------------------ | -------------------------------- | ----------------------------------------- |
-| `-i`                | `--input`  | Yes      |                                            | Input file path (CSV or Parquet) | `-i data.csv`                             |
-| `-o`                | `--output` | No       | Auto-generated below                       | Output file path                 | `-o tokens.csv`                           |
-| `--exchange-config` |            | No       | `./openlinktoken-YYYY-MM-DD.exchange.json` | Exchange config JSON path        | `--exchange-config ./batch.exchange.json` |
+| Argument | Alias               | Required | Default                                    | Description                      | Example                                   |
+| -------- | ------------------- | -------- | ------------------------------------------ | -------------------------------- | ----------------------------------------- |
+| `-i`     | `--input`           | Yes      |                                            | Input file path (CSV or Parquet) | `-i data.csv`                             |
+| `-o`     | `--output`          | No       | Auto-generated below                       | Output file path                 | `-o tokens.csv`                           |
+| `-c`     | `--exchange-config` | No       | `./openlinktoken-YYYY-MM-DD.exchange.json` | Exchange config JSON path        | `--exchange-config ./batch.exchange.json` |
 
 **Output filename defaults when `-o` is omitted:**
 
@@ -174,12 +175,19 @@ cat resources/output.metadata.json
 
 ```csv
 RecordId,RuleId,Token
-ID001,T1,Gn7t1Zj16E5Qy+z9iINtczP6fRDYta6C0XFrQtpjnVQSEZ5pQXAzo02Aa9LS9oNMOog6Ssw9GZE6fvJrX2sQ/cThSkB6m91L
-ID001,T2,pUxPgYL9+cMxkA+8928Pil+9W+dm9kISwHYPdkZS+I2nQ/bQ/8HyL3FOVf3NYPW5NKZZO1OZfsz7LfKYpTlaxyzMLqMF2Wk7
+ID001,T1,olt.V1.<JWE compact serialization>
+ID001,T2,olt.V1.<JWE compact serialization>
+ID001,T3,olt.V1.<JWE compact serialization>
+ID001,T4,olt.V1.<JWE compact serialization>
+ID001,T5,olt.V1.<JWE compact serialization>
+ID001,ML1,olt.V1.<JWE compact serialization>
 ...
 ```
 
-**Rows per input record:** 5 (one per rule T1–T5)
+The example shows `package` output. A valid record can produce up to six rows
+(T1–T5 plus ML1) when the optional AI module is available; use
+`--disable-inferencing` for only T1–T5. `tokenize` and `decrypt` output
+unwrapped values rather than `olt.V1` strings.
 
 ### Metadata File (JSON)
 
@@ -187,17 +195,16 @@ ID001,T2,pUxPgYL9+cMxkA+8928Pil+9W+dm9kISwHYPdkZS+I2nQ/bQ/8HyL3FOVf3NYPW5NKZZO1O
 {
   "Platform": "Java",
   "JavaVersion": "21.0.0",
-  "Version": "1.0.0",
+  "Version": "2.1.0",
   "TotalRows": 100,
   "TotalRowsWithInvalidAttributes": 3,
   "InvalidAttributesByType": { "BirthDate": 2, "PostalCode": 1 },
-  "BlankTokensByRule": { "T1": 2, "T2": 1 },
-  "HashingSecretHash": "abc123...",
-  "EncryptionSecretHash": "def456..."
+  "BlankTokensByRule": { "T1": 2, "T2": 1, "ML1": 0 }
 }
 ```
 
-See [Reference: Metadata Format](../reference/metadata-format.md) for complete field descriptions.
+Current CLI metadata does not contain secret hashes. See [Reference: Metadata
+Format](../reference/metadata-format.md) for complete field descriptions.
 
 ---
 

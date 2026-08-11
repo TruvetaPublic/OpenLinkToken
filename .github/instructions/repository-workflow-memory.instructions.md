@@ -23,8 +23,27 @@ packaging
 
 **Exception:** Use a minimum-version bound (`>=X.Y`) only when a strict pin would create a cross-package conflict within the same uv workspace (e.g., a shared transitive dependency like `packaging` that is also constrained by a dev tool). Document the reason inline when you do.
 
+## Generate requirements exports from project metadata
+
+When a project uses `pyproject.toml`, keep it as the dependency source of truth. Update dependencies there, run `uv lock`, and regenerate `requirements.txt` with `uv export`; do not hand-edit generated requirements files. If an export loses required Python or platform markers, fix the project metadata or export configuration and regenerate the file instead of patching the output.
+
 After changing any dependency file, run `uv lock` to verify the full workspace resolves without conflicts across all supported Python versions.
 
 ## Run prek after edits
 
 After finishing changes to files in this repository, run `prek run --files <changed-files>` from the repository root before considering the task complete. Use the exact files changed for the current task rather than running prek across the whole repository. If it reports problems, address them or clearly report the blocker.
+
+## Superpowers specs
+
+Keep Superpowers design specifications as local working artifacts; never commit files under `docs/superpowers/`.
+
+## launch.json coverage for CLI commands
+
+Every CLI command must have a corresponding entry in `.vscode/launch.json`. When adding or updating any command in `lib/python/openlinktoken-cli/src/main/openlinktoken_cli/commands/`, add or update the matching debug configuration.
+
+Requirements for each configuration:
+
+- `PYTHONPATH` must include all three source roots: `lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main`
+- Use `${input:*}` variables for runtime-variable values (file paths, exchange config paths)
+- For commands with potentially destructive side effects, prefer safe defaults (e.g., `--dry-run`, `--demo-mode`)
+- Add any new required `inputs` entries to the shared `inputs` array at the bottom of the file

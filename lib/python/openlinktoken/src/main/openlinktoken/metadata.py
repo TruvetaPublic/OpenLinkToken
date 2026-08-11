@@ -13,8 +13,6 @@ class Metadata:
     PYTHON_VERSION = "PythonVersion"
     VERSION = "Version"
     OUTPUT_FORMAT = "OutputFormat"
-    ENCRYPTION_SECRET_HASH = "EncryptionSecretHash"
-    HASHING_SECRET_HASH = "HashingSecretHash"
     BLANK_TOKENS_BY_RULE = "BlankTokensByRule"
 
     # Metadata values
@@ -36,7 +34,6 @@ class Metadata:
     def initialize(self) -> Dict[str, Any]:
         """
         Initialize metadata with system information only.
-        Secret hashes must be set separately using add_hashed_secret().
 
         Returns:
             The initialized metadata map

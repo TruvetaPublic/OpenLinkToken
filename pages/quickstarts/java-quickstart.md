@@ -41,13 +41,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.openlinktoken.attributes.Attribute;
-import org.openlinktoken.attributes.person.BirthDateAttribute;
-import org.openlinktoken.attributes.person.FirstNameAttribute;
-import org.openlinktoken.attributes.person.LastNameAttribute;
-import org.openlinktoken.attributes.person.PostalCodeAttribute;
-import org.openlinktoken.attributes.person.SexAttribute;
-import org.openlinktoken.attributes.person.SocialSecurityNumberAttribute;
 import org.openlinktoken.tokens.TokenDefinition;
 import org.openlinktoken.tokens.TokenGenerator;
 import org.openlinktoken.tokens.TokenGeneratorResult;
@@ -58,18 +51,18 @@ import org.openlinktoken.tokentransformer.TokenTransformer;
 
 String recordId = "patient_123";
 
-// Person attributes are represented as a map keyed by Attribute class.
-Map<Class<? extends Attribute>, String> personAttributes = new HashMap<>();
-personAttributes.put(FirstNameAttribute.class, "John");
-personAttributes.put(LastNameAttribute.class, "Doe");
-personAttributes.put(BirthDateAttribute.class, "1980-01-15");
-personAttributes.put(SexAttribute.class, "Male");
-personAttributes.put(PostalCodeAttribute.class, "98004");
-personAttributes.put(SocialSecurityNumberAttribute.class, "123-45-6789");
+// Person attributes are represented as a map keyed by field ID.
+Map<String, String> personAttributes = new HashMap<>();
+personAttributes.put("FirstName", "John");
+personAttributes.put("LastName", "Doe");
+personAttributes.put("BirthDate", "1980-01-15");
+personAttributes.put("Sex", "Male");
+personAttributes.put("PostalCode", "98004");
+personAttributes.put("SocialSecurityNumber", "123-45-6789");
 
 List<TokenTransformer> transformers = List.of(
   new HashTokenTransformer("HashingSecret"),
-  new EncryptTokenTransformer("Secret-Encryption-Key-Goes-Here.")
+  new EncryptTokenTransformer("0123456789abcdef0123456789abcdef")
 );
 
 TokenGenerator generator = new TokenGenerator(
@@ -77,7 +70,7 @@ TokenGenerator generator = new TokenGenerator(
   new SHA256Tokenizer(transformers)
 );
 
-TokenGeneratorResult result = generator.getAllTokens(personAttributes);
+TokenGeneratorResult result = generator.getAllTokensViaFieldId(personAttributes);
 if (!result.getInvalidAttributes().isEmpty()) {
   System.out.println("Invalid attributes: " + result.getInvalidAttributes());
 }
@@ -86,6 +79,15 @@ result.getTokens().forEach((ruleId, token) ->
   System.out.println(recordId + "," + ruleId + "," + token)
 );
 ```
+
+The library transformer returns a base64-encoded AES-GCM payload. This direct
+Java API output is not the CLI `package` wrapper; the CLI formats encrypted
+package tokens as `olt.V1.<JWE>`.
+
+The core Java dependency shown here provides the deterministic T1–T5 rules.
+ML1 is available when the optional AI module and its provider are on the
+runtime classpath; the Python CLI quickstarts include that module and enable
+ML1 by default.
 
 ### Hash-Only (No Encryption)
 

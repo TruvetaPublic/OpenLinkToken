@@ -1,0 +1,36 @@
+[project]
+name = "openlinktoken-core-ai"
+version = "2.1.1"
+requires-python = ">=3.10"
+dynamic = [
+  "authors",
+  "description",
+  "optional-dependencies",
+  "readme",
+  "urls",
+]
+dependencies = [
+  "openlinktoken==2.1.1",
+  "numpy==1.26.4; python_version < '3.14'",
+  "numpy==2.3.3; python_version >= '3.14'",
+  "onnxruntime==1.23.2; python_version < '3.11'",
+  "onnxruntime==1.25.1; python_version >= '3.11'",
+  "tokenizers==0.23.1",
+]
+
+[project.entry-points."openlinktoken.inference_providers"]
+ml1 = "openlinktoken.core.ai.tokens.ml1_onnx_signature_provider:ML1OnnxSignatureProvider"
+
+[project.entry-points."openlinktoken.tokens.definitions"]
+ml1_token = "openlinktoken.core.ai.tokens.ml1_token:ML1Token"
+
+[build-system]
+requires = ["setuptools==83.0.0", "wheel==0.47.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src/main"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src/main", "src/test", "../../openlinktoken/src/main"]
+testpaths = ["src/test"]

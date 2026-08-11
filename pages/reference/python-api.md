@@ -57,7 +57,7 @@ token_definition = TokenDefinition()
 ```python
 tokenizer = SHA256Tokenizer([
     HashTokenTransformer("HashingSecret"),
-    EncryptTokenTransformer("Secret-Encryption-Key-Goes-Here."),
+    EncryptTokenTransformer("0123456789abcdef0123456789abcdef"),
 ])
 
 generator = TokenGenerator(TokenDefinition(), tokenizer)
@@ -89,12 +89,13 @@ Full encryption with AES-256-GCM.
 
 ```python
 encryptor = EncryptTokenTransformer(
-    encryption_key="Secret-Encryption-Key-Goes-Here."  # Exactly 32 chars
+    encryption_key="0123456789abcdef0123456789abcdef"  # Exactly 32 ASCII bytes
 )
 
 signature = "DOE|J|MALE|1980-01-15"
 encrypted_token = encryptor.transform(signature)
-# Returns: Open Link Token encrypted match token string (olt.V1.<JWE compact serialization>)
+# Returns: Base64-encoded AES-GCM payload from the library transformer.
+# The CLI `package` workflow wraps its encrypted output as `olt.V1.<JWE>`.
 ```
 
 ## Complete Example
@@ -120,7 +121,7 @@ def generate_tokens():
 
     tokenizer = SHA256Tokenizer([
         HashTokenTransformer("HashingSecret"),
-        EncryptTokenTransformer("Secret-Encryption-Key-Goes-Here."),
+        EncryptTokenTransformer("0123456789abcdef0123456789abcdef"),
     ])
     generator = TokenGenerator(TokenDefinition(), tokenizer)
 
@@ -182,7 +183,7 @@ from openlinktoken_pyspark import OpenLinkTokenProcessor
 
 processor = OpenLinkTokenProcessor(
     hashing_secret="HashingSecret",
-    encryption_key="EncryptionKey-32Characters-Here",
+    encryption_key="0123456789abcdef0123456789abcdef",
 )
 
 # df must include the standard person columns (or aliases), e.g.:
@@ -197,7 +198,7 @@ For overlap analysis between two tokenized datasets, use:
 ```python
 from openlinktoken_pyspark import OpenLinkTokenOverlapAnalyzer
 
-analyzer = OpenLinkTokenOverlapAnalyzer("EncryptionKey-32Characters-Here")
+analyzer = OpenLinkTokenOverlapAnalyzer("0123456789abcdef0123456789abcdef")
 results = analyzer.analyze_overlap(tokens_df1, tokens_df2, ["T1", "T2"])
 analyzer.print_summary(results)
 ```
@@ -233,7 +234,7 @@ python multi_language_interoperability_test.py
 try:
     tokenizer = SHA256Tokenizer([
         HashTokenTransformer("HashingSecret"),
-        EncryptTokenTransformer("Secret-Encryption-Key-Goes-Here."),
+        EncryptTokenTransformer("0123456789abcdef0123456789abcdef"),
     ])
     generator = TokenGenerator(TokenDefinition(), tokenizer)
 

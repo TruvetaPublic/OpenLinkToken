@@ -11,11 +11,12 @@ dynamic = [
 ]
 dependencies = [
   "openlinktoken==2.1.1",
+  "openlinktoken-core-ai==2.1.1",
   "pandas==2.2.3; python_version < '3.11'",
   "pandas==3.0.3; python_version >= '3.11'",
   "pyarrow==25.0.0",
   "csv2parquet==0.0.9",
-  "cryptography==49.0.0",
+  "cryptography==50.0.0",
   "urllib3==2.7.0",
   "jwcrypto==1.5.8",
   "packaging==26.2",
@@ -25,7 +26,7 @@ dependencies = [
 olt = "openlinktoken_cli.main:main"
 
 [build-system]
-requires = ["setuptools==83.0.0", "wheel"]
+requires = ["setuptools==83.0.0", "wheel==0.47.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
@@ -34,4 +35,5 @@ build-backend = "setuptools.build_meta"
 pythonpath = [
   "src/main",
   "../openlinktoken/src/main",
+  "../openlinktoken-core-ai/src/main",
 ]

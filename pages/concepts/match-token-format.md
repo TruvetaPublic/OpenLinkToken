@@ -143,13 +143,13 @@ The encrypted payload contains the actual token data:
 
 ### Required Fields
 
-| Field      | Type   | Description                              |
-| ---------- | ------ | ---------------------------------------- |
-| `rlid`     | string | Token rule (T1–T8)                       |
-| `hash_alg` | string | Hash algorithm (SHA-256, SHA3-512, etc.) |
-| `mac_alg`  | string | HMAC algorithm (HS256, HS512, etc.)      |
-| `ppid`     | array  | Privacy-protected identifier(s)          |
-| `rid`      | string | Ring identifier                          |
+| Field      | Type   | Description                                                       |
+| ---------- | ------ | ----------------------------------------------------------------- |
+| `rlid`     | string | Token rule (T1–T8)                                                |
+| `hash_alg` | string | Hash algorithm identifier; current implementations emit `SHA-256` |
+| `mac_alg`  | string | MAC algorithm identifier; current implementations emit `HS256`    |
+| `ppid`     | array  | Privacy-protected identifier(s)                                   |
+| `rid`      | string | Ring identifier                                                   |
 
 ### Optional Fields
 
@@ -182,25 +182,25 @@ The `rlid` field identifies which token signature rule was used:
 
 ### Hash Algorithms (`hash_alg`)
 
-| Identifier | Output Size | Notes                  |
-| ---------- | ----------- | ---------------------- |
-| `SHA-256`  | 32 bytes    | Default, FIPS approved |
-| `SHA-384`  | 48 bytes    | FIPS approved          |
-| `SHA-512`  | 64 bytes    | FIPS approved          |
-| `SHA3-256` | 32 bytes    | NIST standard          |
-| `SHA3-384` | 48 bytes    | NIST standard          |
-| `SHA3-512` | 64 bytes    | NIST standard          |
+The Java and Python implementations currently emit `SHA-256` and do not
+expose a hash-algorithm selection option. The other identifiers are reserved
+for future extensions.
+
+| Identifier                                               | Output Size | Status                                      |
+| -------------------------------------------------------- | ----------- | ------------------------------------------- |
+| `SHA-256`                                                | 32 bytes    | Implemented and emitted                     |
+| `SHA-384`, `SHA-512`, `SHA3-256`, `SHA3-384`, `SHA3-512` | Varies      | Future extension; not currently implemented |
 
 ### MAC Algorithms (`mac_alg`)
 
-| Identifier | Algorithm     | Output Size |
-| ---------- | ------------- | ----------- |
-| `HS256`    | HMAC-SHA256   | 32 bytes    |
-| `HS384`    | HMAC-SHA384   | 48 bytes    |
-| `HS512`    | HMAC-SHA512   | 64 bytes    |
-| `HS3-256`  | HMAC-SHA3-256 | 32 bytes    |
-| `HS3-384`  | HMAC-SHA3-384 | 48 bytes    |
-| `HS3-512`  | HMAC-SHA3-512 | 64 bytes    |
+The Java and Python implementations currently emit `HS256` (HMAC-SHA256)
+after SHA-256 hashing. Other MAC identifiers are reserved for future
+extensions.
+
+| Identifier                                        | Algorithm   | Output Size | Status                                      |
+| ------------------------------------------------- | ----------- | ----------- | ------------------------------------------- |
+| `HS256`                                           | HMAC-SHA256 | 32 bytes    | Implemented and emitted                     |
+| `HS384`, `HS512`, `HS3-256`, `HS3-384`, `HS3-512` | Varies      | Varies      | Future extension; not currently implemented |
 
 ---
 
@@ -233,44 +233,7 @@ The `rlid` field identifies which token signature rule was used:
 }
 ```
 
-### Example 2: High-Security Configuration (SHA3-512 + HMAC-SHA512 + RSA-OAEP-256)
-
-**Protected Header:**
-
-```json
-{
-  "alg": "RSA-OAEP-256",
-  "enc": "A256GCM",
-  "typ": "match-token",
-  "kid": "ring-2026-q1-highsec"
-}
-```
-
-**Payload:**
-
-```json
-{
-  "rlid": "T1",
-  "hash_alg": "SHA3-512",
-  "mac_alg": "HS512",
-  "ppid": [
-    "dGhpcyBpcyBhIDY0IGJ5dGUgaGFzaCBvdXRwdXQgZnJvbSBTSEEzLTUxMiBhbmQgSE1BQy1TSEE1MTI"
-  ],
-  "rid": "ring-2026-q1-highsec",
-  "iss": "org.openlinktoken",
-  "iat": 1738339200
-}
-```
-
-**Differences from Standard:**
-
-| Component      | Standard              | High-Security             |
-| -------------- | --------------------- | ------------------------- |
-| Hash algorithm | SHA-256 (32 bytes)    | SHA3-512 (64 bytes)       |
-| MAC algorithm  | HS256 (HMAC-SHA256)   | HS512 (HMAC-SHA512)       |
-| Key wrapping   | A256GCMKW (symmetric) | RSA-OAEP-256 (asymmetric) |
-
-### Example 3: Vector Embedding (T8)
+### Example 2: Vector Embedding (ML1)
 
 For ML-based matching with vector embeddings, the `ppid` contains base64-encoded binary:
 
@@ -278,14 +241,14 @@ For ML-based matching with vector embeddings, the `ppid` contains base64-encoded
 
 ```json
 {
-  "rlid": "T8",
+  "rlid": "ML1",
   "hash_alg": "SHA-256",
   "mac_alg": "HS256",
   "ppid": [
     "SGVsbG8gV29ybGQhIFRoaXMgaXMgYSBiYXNlNjQgZW5jb2RlZCBmbG9hdDMyIGFycmF5..."
   ],
   "ppid_dtype": "float32",
-  "ppid_dims": 768,
+  "ppid_dims": 1024,
   "rid": "ring-2026-q1",
   "iss": "org.openlinktoken",
   "iat": 1738339200

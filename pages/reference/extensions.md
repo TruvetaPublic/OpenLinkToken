@@ -10,7 +10,7 @@ Complete reference for building Open Link Token CLI extensions. This page docume
 
 ## Overview
 
-Open Link Token extensions are self-contained Python packages that add top-level subcommands to the `openlinktoken` CLI. Each extension registers exactly one top-level subcommand (for example, `olt hello-world`) by implementing the `OpenLinkTokenExtension` abstract base class and declaring an entry point in the `openlinktoken.extensions` group.
+Open Link Token extensions are self-contained Python packages that add top-level subcommands to the `olt` CLI. Each extension registers exactly one top-level subcommand (for example, `olt hello-world`) by implementing the `OpenLinkTokenExtension` abstract base class and declaring an entry point in the `openlinktoken.extensions` group.
 
 Extensions are installed to a user-local directory and loaded at CLI startup, so they appear alongside built-in commands in `olt --help`.
 
@@ -151,7 +151,7 @@ install → discover → load → register → invoke → uninstall
 | **discover**  | At startup the CLI scans the `openlinktoken.extensions` entry-point group (Python package installs) and/or `registry.json` (binary installs).                                                |
 | **load**      | Each discovered entry point is imported and instantiated. Load errors print a warning and skip the extension; they do not abort the CLI.                                                     |
 | **register**  | `register_subcommand(subparsers)` is called for each successfully loaded extension.                                                                                                          |
-| **invoke**    | The user runs `openlinktoken <command_name> [args]`. The CLI dispatches to the `func` set by `set_defaults`.                                                                                 |
+| **invoke**    | The user runs `olt <command_name> [args]`. The CLI dispatches to the `func` set by `set_defaults`.                                                                                           |
 | **uninstall** | `olt extension uninstall <name>` removes the package and its registry entry.                                                                                                                 |
 
 ---
@@ -193,7 +193,7 @@ Do you want to continue? [y/N]
 
 ### Implications for use
 
-Extensions run with the same privileges as the CLI process. A malicious or tampered extension has full access to the system, credentials, and data available to the user running `openlinktoken`.
+Extensions run with the same privileges as the CLI process. A malicious or tampered extension has full access to the system, credentials, and data available to the user running `olt`.
 
 Before installing an extension:
 
