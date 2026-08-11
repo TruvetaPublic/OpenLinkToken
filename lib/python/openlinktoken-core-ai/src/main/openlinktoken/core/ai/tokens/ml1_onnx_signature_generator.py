@@ -3,14 +3,21 @@
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import importlib.resources
 import json
 import logging
 import mmap
 import os
 import platform
+import re
+import shutil
 import struct
+import tempfile
+import urllib.error
+import urllib.request
 from pathlib import Path
+from threading import Lock
 from typing import Dict, List, Optional
 
 import numpy as np
@@ -90,6 +97,9 @@ class ML1OnnxSignatureGenerator:
     _active_model_path: Optional[str] = None
     _active_tokenizer_path: Optional[str] = None
     _pad_input_json = "{}"
+    _initialization_lock = Lock()
+    # ponytail: process-wide locks keep first-use setup simple; split per-asset only if needed.
+    _asset_lock = Lock()
 
     @classmethod
     def generate_signature(cls, input_json: str) -> str:
@@ -241,72 +251,78 @@ class ML1OnnxSignatureGenerator:
     @classmethod
     def _initialize_if_needed(cls) -> None:
         """Initialize ONNX session and tokenizer if configuration changed or not yet initialized."""
-        with _suppress_ort_stderr():
-            import onnxruntime as ort
-
-        model_path = ML1InferenceConfig.get_model_path()
-        tokenizer_path = ML1InferenceConfig.get_tokenizer_path()
-
-        already_initialized = (
-            cls._session is not None
-            and cls._tokenizer is not None
-            and model_path == cls._active_model_path
-            and tokenizer_path == cls._active_tokenizer_path
-        )
-        if already_initialized:
-            return
-
-        cls._close_session()
-
-        resolved_model_path = cls._resolve_path(model_path)
-        resolved_tokenizer_path = cls._resolve_path(tokenizer_path)
-
-        session_options = ort.SessionOptions()
-        session_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
-        session_options.execution_mode = ort.ExecutionMode.ORT_PARALLEL
-        session_options.enable_mem_pattern = True
-        session_options.enable_cpu_mem_arena = True
-        num_threads = ML1InferenceConfig.get_num_threads()
-        session_options.intra_op_num_threads = num_threads
-        session_options.inter_op_num_threads = num_threads
-
-        with _suppress_ort_stderr():
-            providers = _resolve_providers()
-        try:
+        with cls._initialization_lock:
             with _suppress_ort_stderr():
-                cls._session = cls._create_session(
-                    ort,
-                    session_options,
-                    resolved_model_path,
-                    providers,
-                )
-        except Exception as e:
-            logger.warning("ML1 ONNX: provider init failed (%s), retrying with CPUExecutionProvider only", e)
+                import onnxruntime as ort
+
+            model_path = ML1InferenceConfig.get_model_path()
+            tokenizer_path = ML1InferenceConfig.get_tokenizer_path()
+
+            already_initialized = (
+                cls._session is not None
+                and cls._tokenizer is not None
+                and model_path == cls._active_model_path
+                and tokenizer_path == cls._active_tokenizer_path
+            )
+            if already_initialized:
+                return
+
+            cls._close_session()
+
+            resolved_model_path = cls._resolve_path(model_path)
+            if (
+                model_path.startswith("classpath:")
+                and resolved_model_path.name == "model.onnx"
+                and not resolved_model_path.with_name(f"{resolved_model_path.name}.data").is_file()
+            ):
+                resolved_model_path = cls._download_asset("model.onnx")
+                cls._download_asset("model.onnx.data")
+            resolved_tokenizer_path = cls._resolve_path(tokenizer_path)
+
+            session_options = ort.SessionOptions()
+            session_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+            session_options.execution_mode = ort.ExecutionMode.ORT_PARALLEL
+            session_options.enable_mem_pattern = True
+            session_options.enable_cpu_mem_arena = True
+            num_threads = ML1InferenceConfig.get_num_threads()
+            session_options.intra_op_num_threads = num_threads
             with _suppress_ort_stderr():
-                cls._session = ort.InferenceSession(
-                    str(resolved_model_path),
-                    sess_options=session_options,
-                    providers=["CPUExecutionProvider"],
-                )
-        active = cls._session.get_providers()
-        if "CoreMLExecutionProvider" in active:
-            # Probe with a minimal input to detect runtime failures early
+                providers = _resolve_providers()
             try:
                 with _suppress_ort_stderr():
-                    cls._probe_coreml()
-            except Exception:
-                logger.warning("ML1 ONNX: CoreML probe failed; falling back to CPU.")
-                cls._reinitialize_with_cpu_only()
+                    cls._session = cls._create_session(
+                        ort,
+                        session_options,
+                        resolved_model_path,
+                        providers,
+                    )
+            except Exception as e:
+                logger.warning("ML1 ONNX: provider init failed (%s), retrying with CPUExecutionProvider only", e)
+                with _suppress_ort_stderr():
+                    cls._session = ort.InferenceSession(
+                        str(resolved_model_path),
+                        sess_options=session_options,
+                        providers=["CPUExecutionProvider"],
+                    )
+            active = cls._session.get_providers()
+            if "CoreMLExecutionProvider" in active:
+                # Probe with a minimal input to detect runtime failures early
+                try:
+                    with _suppress_ort_stderr():
+                        cls._probe_coreml()
+                except Exception:
+                    logger.warning("ML1 ONNX: CoreML probe failed; falling back to CPU.")
+                    cls._reinitialize_with_cpu_only()
+                else:
+                    logger.info("ML1 ONNX: CoreML active with all compute units enabled")
+            elif "CUDAExecutionProvider" in active:
+                logger.info("ML1 ONNX: CUDA execution provider active")
             else:
-                logger.info("ML1 ONNX: CoreML active with all compute units enabled")
-        elif "CUDAExecutionProvider" in active:
-            logger.info("ML1 ONNX: CUDA execution provider active")
-        else:
-            logger.info("ML1 ONNX: running on CPUExecutionProvider")
+                logger.info("ML1 ONNX: running on CPUExecutionProvider")
 
-        cls._tokenizer = Tokenizer.from_file(str(resolved_tokenizer_path))
-        cls._active_model_path = model_path
-        cls._active_tokenizer_path = tokenizer_path
+            cls._tokenizer = Tokenizer.from_file(str(resolved_tokenizer_path))
+            cls._active_model_path = model_path
+            cls._active_tokenizer_path = tokenizer_path
 
     @classmethod
     def _probe_coreml(cls) -> None:
@@ -402,34 +418,196 @@ class ML1OnnxSignatureGenerator:
         """Resolve classpath-style paths and regular filesystem paths.
 
         Resolution order:
-        1. Bundled package data via importlib.resources (installed wheel).
+        1. Bundled package data via importlib.resources (installed wheel or CLI).
         2. Filesystem walk up from the source file (source checkout / development).
+        3. A verified per-ref cache, populated from public GitHub LFS.
         """
-        if configured_path.startswith("classpath:"):
-            resource_path = configured_path[len("classpath:") :]
-            filename = Path(resource_path).name
+        if not configured_path or not configured_path.strip():
+            raise ValueError("ML1 asset path must not be blank.")
+        if not configured_path.startswith("classpath:"):
+            return Path(configured_path)
 
-            # Installed package: assets are bundled inside openlinktoken.core.ai.tokens
-            try:
-                ref = importlib.resources.files("openlinktoken.core.ai.tokens") / filename
-                with importlib.resources.as_file(ref) as p:
-                    if p.exists():
-                        return p
-            except Exception:
-                pass
+        resource_path = configured_path[len("classpath:") :]
+        filename = Path(resource_path).name
+        local_path = cls._find_local_asset(filename, resource_path)
+        if local_path is not None:
+            return local_path
+        if filename in {"model.onnx", "tokenizer.json"}:
+            return cls._download_asset(filename)
+        normalized = resource_path.lstrip("/")
+        raise FileNotFoundError(
+            f"ML1 resource not found. Configure an explicit path or place the file at: resources/{normalized}"
+        )
 
-            # Source checkout: walk up from this file looking for resources/<normalized>
-            normalized = resource_path.lstrip("/")
-            this_file = Path(__file__).resolve()
-            for parent in this_file.parents:
-                candidate = parent / "resources" / normalized
-                if candidate.exists():
-                    return candidate
+    @staticmethod
+    def build_asset_url(asset_ref: str, asset_name: str) -> str:
+        """Build the public GitHub LFS media URL for one ML1 asset."""
+        from urllib.parse import quote
 
+        ML1OnnxSignatureGenerator._validate_asset_name(asset_name)
+        ML1OnnxSignatureGenerator._validate_asset_ref(asset_ref)
+        encoded_ref = quote(asset_ref, safe="/")
+        base_url = (
+            ML1InferenceConfig.DEFAULT_ASSET_RAW_BASE_URL
+            if asset_name == "tokenizer.json"
+            else ML1InferenceConfig.DEFAULT_ASSET_BASE_URL
+        )
+        return f"{base_url}/{encoded_ref}/resources/inferencing/ml1/{quote(asset_name)}"
+
+    @staticmethod
+    def _asset_url(filename: str, asset_ref: str) -> str:
+        """Build an asset URL using the historical private helper argument order."""
+        return ML1OnnxSignatureGenerator.build_asset_url(asset_ref, filename)
+
+    @classmethod
+    def _find_local_asset(cls, filename: str, resource_path: str) -> Optional[Path]:
+        """Find an asset in an installed package or source checkout."""
+        try:
+            ref = importlib.resources.files("openlinktoken.core.ai.tokens") / filename
+            if ref.is_file():
+                return Path(ref)
+        except (FileNotFoundError, TypeError, AttributeError):
+            pass
+
+        normalized = resource_path.lstrip("/")
+        this_file = Path(__file__).resolve()
+        for parent in this_file.parents:
+            candidate = parent / "resources" / normalized
+            if candidate.is_file():
+                return candidate
+        return None
+
+    @classmethod
+    def _load_asset_manifest(cls) -> Dict[str, Dict[str, Dict[str, object]]]:
+        """Load the ML1 asset manifest from package data or a source checkout."""
+        manifest_path = cls._find_local_asset(
+            ML1InferenceConfig.ASSET_MANIFEST_FILENAME,
+            f"/inferencing/ml1/{ML1InferenceConfig.ASSET_MANIFEST_FILENAME}",
+        )
+        if manifest_path is None:
             raise FileNotFoundError(
-                f"ML1 resource not found. Configure an explicit path or place the file at: resources/{normalized}"
+                "ML1 asset manifest is not packaged or available in the source checkout; "
+                "configure explicit model and tokenizer filesystem paths."
             )
-        return Path(configured_path)
+        try:
+            with manifest_path.open(encoding="utf-8") as manifest_file:
+                manifest = json.load(manifest_file)
+        except (OSError, json.JSONDecodeError) as error:
+            raise RuntimeError(f"Unable to read ML1 asset manifest at {manifest_path}.") from error
+        if not isinstance(manifest, dict) or not isinstance(manifest.get("assets"), dict):
+            raise RuntimeError(f"ML1 asset manifest at {manifest_path} has no valid 'assets' object.")
+        return manifest
+
+    @classmethod
+    def read_asset_manifest(cls) -> Dict[str, Dict[str, Dict[str, object]]]:
+        """Read the small packaged or source-checkout ML1 manifest."""
+        return cls._load_asset_manifest()
+
+    @classmethod
+    def asset_cache_path(cls, asset_name: str) -> Path:
+        """Return the absolute cache path for one manifest-listed asset."""
+        cls._validate_asset_name(asset_name)
+        cls._validate_asset_ref(ML1InferenceConfig.get_asset_ref())
+        return (ML1InferenceConfig.get_cache_dir() / ML1InferenceConfig.get_asset_ref() / asset_name).absolute()
+
+    @staticmethod
+    def _validate_asset_name(asset_name: str) -> None:
+        """Reject asset names that could escape the configured cache directory."""
+        if not asset_name or Path(asset_name).name != asset_name or ".." in asset_name:
+            raise ValueError(f"Invalid ML1 asset name: {asset_name}")
+
+    @staticmethod
+    def _validate_asset_ref(asset_ref: str) -> None:
+        """Reject refs that could escape the configured cache directory or URL path."""
+        if (
+            not asset_ref
+            or Path(asset_ref).is_absolute()
+            or ".." in Path(asset_ref).parts
+            or re.fullmatch(r"[A-Za-z0-9._/-]+", asset_ref) is None
+        ):
+            raise ValueError(f"Invalid ML1 asset ref: {asset_ref}")
+
+    @classmethod
+    def _cache_path(cls, filename: str) -> Path:
+        """Return the cache path for an asset and configured Git ref."""
+        return cls.asset_cache_path(filename)
+
+    @classmethod
+    def _download_asset(cls, filename: str) -> Path:
+        """Download and atomically cache one manifest-verified ML1 asset."""
+        with cls._asset_lock:
+            cls._validate_asset_name(filename)
+            cache_path = cls._cache_path(filename)
+            offline = os.environ.get("OPENLINKTOKEN_ML1_OFFLINE", "").strip() == "1"
+            try:
+                manifest = cls._load_asset_manifest()
+            except FileNotFoundError as error:
+                if offline:
+                    raise RuntimeError(
+                        f"ML1 asset '{filename}' is unavailable in offline mode. "
+                        "Provide a bundled package asset or a verified cache file, "
+                        "or unset OPENLINKTOKEN_ML1_OFFLINE to allow download."
+                    ) from error
+                raise
+            asset = manifest.get("assets", {}).get(filename)
+            expected_sha256 = asset.get("sha256") if isinstance(asset, dict) else None
+            if (
+                not isinstance(expected_sha256, str)
+                or len(expected_sha256) != 64
+                or any(character not in "0123456789abcdefABCDEF" for character in expected_sha256)
+            ):
+                raise RuntimeError(f"ML1 asset manifest has no SHA-256 entry for {filename}.")
+
+            if cache_path.is_file() and cls._is_verified(cache_path, expected_sha256, asset.get("size")):
+                return cache_path
+
+            if offline:
+                raise RuntimeError(
+                    f"ML1 asset '{filename}' is unavailable in offline mode. "
+                    "Provide a bundled package asset or a verified cache file, "
+                    "or unset OPENLINKTOKEN_ML1_OFFLINE to allow download."
+                )
+
+            cache_path.parent.mkdir(parents=True, exist_ok=True)
+            temporary_path: Optional[Path] = None
+            url = cls.build_asset_url(ML1InferenceConfig.get_asset_ref(), filename)
+            try:
+                with tempfile.NamedTemporaryFile(
+                    mode="wb",
+                    prefix=f".{filename}.",
+                    suffix=".tmp",
+                    dir=cache_path.parent,
+                    delete=False,
+                ) as temporary_file:
+                    temporary_path = Path(temporary_file.name)
+                    try:
+                        with urllib.request.urlopen(url, timeout=60) as response:
+                            shutil.copyfileobj(response, temporary_file)
+                        temporary_file.flush()
+                        os.fsync(temporary_file.fileno())
+                    except (OSError, urllib.error.URLError) as error:
+                        raise RuntimeError(f"Failed to download ML1 asset '{filename}' from {url}.") from error
+
+                if not cls._is_verified(temporary_path, expected_sha256, asset.get("size")):
+                    raise RuntimeError(f"Downloaded ML1 asset '{filename}' failed SHA-256 or size verification.")
+                os.replace(temporary_path, cache_path)
+                return cache_path
+            finally:
+                if temporary_path is not None and temporary_path.exists():
+                    temporary_path.unlink()
+
+    @staticmethod
+    def _is_verified(path: Path, expected_sha256: str, expected_size: object) -> bool:
+        """Return whether a local asset matches its manifest hash and optional size."""
+        if not path.is_file():
+            return False
+        if isinstance(expected_size, int) and path.stat().st_size != expected_size:
+            return False
+        digest = hashlib.sha256()
+        with path.open("rb") as asset_file:
+            for chunk in iter(lambda: asset_file.read(1024 * 1024), b""):
+                digest.update(chunk)
+        return digest.hexdigest() == expected_sha256
 
     @staticmethod
     def _serialize_embedding(embedding: np.ndarray) -> str:

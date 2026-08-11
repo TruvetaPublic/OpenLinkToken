@@ -6,34 +6,57 @@ import shutil
 
 from setuptools import find_namespace_packages, setup
 from setuptools.command.build_py import build_py
+from setuptools.command.sdist import sdist
 
 THIS_DIR = os.path.abspath(os.path.dirname(__file__))
 
-# Shared inferencing assets live here (single source of truth alongside the Java resources)
+# The small manifest lives alongside the shared inferencing assets. Large model
+# files are resolved lazily at runtime instead of being copied into Python wheels.
 INFERENCING_ASSETS_SRC = os.path.abspath(os.path.join(THIS_DIR, "../../../resources/inferencing/ml1"))
-INFERENCING_ASSETS = ["model.onnx", "model.onnx.data", "tokenizer.json"]
+INFERENCING_ASSETS = ["asset-manifest.json"]
 
 # Target: openlinktoken/core/ai/tokens inside the built package tree
 INFERENCING_ASSETS_PKG = os.path.join("openlinktoken", "core", "ai", "tokens")
+INFERENCING_ASSETS_SOURCE_PKG = os.path.join("src", "main", INFERENCING_ASSETS_PKG)
+
+
+def _find_manifest_source():
+    """Find the manifest in the checkout or in an sdist's package source tree."""
+    candidates = [
+        os.path.join(INFERENCING_ASSETS_SRC, "asset-manifest.json"),
+        os.path.join(THIS_DIR, INFERENCING_ASSETS_SOURCE_PKG, "asset-manifest.json"),
+    ]
+    for candidate in candidates:
+        if os.path.isfile(candidate):
+            return candidate
+    raise FileNotFoundError("ML1 asset-manifest.json is missing from resources and package source data.")
 
 
 class BuildWithInferencingAssets(build_py):
-    """Copy shared ML1 inferencing assets into the package at wheel-build time.
+    """Copy the small ML1 asset manifest into the package at wheel-build time.
 
-    Mirrors what the Maven <resources> block does for the Java JAR — the files
-    live once in resources/inferencing/ml1/ and are included in both artifacts
-    during their respective build processes without duplicating them in source.
+    The model and tokenizer are intentionally not bundled in Python artifacts;
+    the runtime downloads them on first use or resolves local CLI assets.
     """
 
     def run(self):
-        """Build Python modules and copy shared ML1 assets into the package."""
+        """Build Python modules and copy the ML1 manifest into the package."""
         super().run()
         dst = os.path.join(self.build_lib, INFERENCING_ASSETS_PKG)
         os.makedirs(dst, exist_ok=True)
         for filename in INFERENCING_ASSETS:
-            src_file = os.path.join(INFERENCING_ASSETS_SRC, filename)
-            if os.path.exists(src_file):
-                shutil.copy2(src_file, dst)
+            shutil.copy2(_find_manifest_source(), os.path.join(dst, filename))
+
+
+class SdistWithInferencingManifest(sdist):
+    """Stage the ML1 manifest inside source distributions for source installs."""
+
+    def make_release_tree(self, base_dir, files):
+        """Copy the manifest into the package source tree in the sdist."""
+        super().make_release_tree(base_dir, files)
+        dst = os.path.join(base_dir, INFERENCING_ASSETS_SOURCE_PKG)
+        os.makedirs(dst, exist_ok=True)
+        shutil.copy2(_find_manifest_source(), os.path.join(dst, "asset-manifest.json"))
 
 
 # Read the contents of the project README file.
@@ -68,7 +91,7 @@ setup(
     },
     python_requires=">=3.10",
     install_requires=requirements,
-    cmdclass={"build_py": BuildWithInferencingAssets},
+    cmdclass={"build_py": BuildWithInferencingAssets, "sdist": SdistWithInferencingManifest},
     entry_points={
         "openlinktoken.inference_providers": [
             "ml1 = openlinktoken.core.ai.tokens.ml1_onnx_signature_provider:ML1OnnxSignatureProvider",

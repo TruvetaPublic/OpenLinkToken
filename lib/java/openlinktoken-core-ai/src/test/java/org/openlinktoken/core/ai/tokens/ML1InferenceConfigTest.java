@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.file.Path;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -22,6 +24,9 @@ class ML1InferenceConfigTest {
                 ML1InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH,
                 ML1InferenceConfig.DEFAULT_BATCH_SIZE,
                 ML1InferenceConfig.DEFAULT_NUM_THREADS);
+        ML1InferenceConfig.configureAssetStorage(
+                ML1InferenceConfig.DEFAULT_ASSET_REF,
+                ML1InferenceConfig.DEFAULT_ASSET_CACHE_DIRECTORY);
     }
 
     @Test
@@ -84,5 +89,31 @@ class ML1InferenceConfigTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> ML1InferenceConfig.configure(true, "", "", 1, 1, -1));
+    }
+
+    @Test
+    void assetStorageDefaultsAreExplicitAndConfigurable() {
+        assertEquals("TruvetaPublic/OpenLinkToken", ML1InferenceConfig.DEFAULT_ASSET_REPOSITORY);
+        assertEquals("release/2.1.1", ML1InferenceConfig.DEFAULT_ASSET_REF);
+        assertEquals("OPENLINKTOKEN_ML1_CACHE_DIR", ML1InferenceConfig.ASSET_CACHE_DIR_ENVIRONMENT_VARIABLE);
+        assertEquals("OPENLINKTOKEN_ML1_ASSET_REF", ML1InferenceConfig.ASSET_REF_ENVIRONMENT_VARIABLE);
+        assertEquals("OPENLINKTOKEN_ML1_OFFLINE", ML1InferenceConfig.OFFLINE_ENVIRONMENT_VARIABLE);
+        assertTrue(Path.of(ML1InferenceConfig.DEFAULT_ASSET_CACHE_DIRECTORY).isAbsolute());
+
+        ML1InferenceConfig.configureAssetStorage("refs/test", "/tmp/ml1-assets");
+
+        assertEquals("refs/test", ML1InferenceConfig.getAssetRef());
+        assertEquals("/tmp/ml1-assets", ML1InferenceConfig.getAssetCacheDirectory());
+    }
+
+    @Test
+    void blankAssetStorageUsesDefaults() {
+        ML1InferenceConfig.configureAssetStorage(" ", null);
+
+        assertTrue(ML1InferenceConfig.getAssetRef().equals(
+                System.getenv().getOrDefault(
+                        ML1InferenceConfig.ASSET_REF_ENVIRONMENT_VARIABLE,
+                        ML1InferenceConfig.DEFAULT_ASSET_REF)));
+        assertTrue(Path.of(ML1InferenceConfig.getAssetCacheDirectory()).isAbsolute());
     }
 }

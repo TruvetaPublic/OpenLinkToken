@@ -22,13 +22,36 @@ Open Link Token artifacts are published to two primary registries via GitHub Act
 | Artifact                                     | Registry                                                   | Workflow                                                        |
 | -------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------- |
 | `openlinktoken` Java JAR + POM               | Maven Central (Central Publisher Portal) + GitHub Packages | [`maven-publish.yml`](../.github/workflows/maven-publish.yml)   |
+| `openlinktoken-core-ai` Java JAR + POM       | Maven Central (Central Publisher Portal) + GitHub Packages | [`maven-publish.yml`](../.github/workflows/maven-publish.yml)   |
 | `openlinktoken` Python wheel + sdist         | PyPI                                                       | [`python-publish.yml`](../.github/workflows/python-publish.yml) |
+| `openlinktoken-core-ai` Python wheel + sdist | PyPI                                                       | [`python-publish.yml`](../.github/workflows/python-publish.yml) |
 | `openlinktoken-pyspark` Python wheel + sdist | PyPI                                                       | [`python-publish.yml`](../.github/workflows/python-publish.yml) |
 
 Both registries use **short-lived, workload-identity-based authentication** rather than long-lived static API tokens wherever the platform supports it:
 
 - **PyPI** uses [Trusted Publishing](https://docs.pypi.org/trusted-publishers/) — GitHub Actions authenticates via OpenID Connect (OIDC); there is no PyPI API token stored as a secret.
 - **Maven Central** (via the Central Publisher Portal) still requires a Portal **user token** (username/password pair) plus a **GPG signing key**, since the Portal does not yet support OIDC. These are stored as repository secrets.
+
+### ML1 model assets
+
+The core-ai JAR and wheel do not contain the large ML1 model files. The first
+ML1 request downloads the matched `model.onnx`, `model.onnx.data`, and
+`tokenizer.json` files from the `release/<version>` branch and verifies them
+against `asset-manifest.json`. Files are cached locally for later runs.
+
+Set `OPENLINKTOKEN_ML1_CACHE_DIR` to change the cache location or
+`OPENLINKTOKEN_ML1_ASSET_REF` to select a compatible Git ref. Explicit local
+model and tokenizer paths are supported for offline deployments.
+`OPENLINKTOKEN_ML1_OFFLINE=1` prevents a remote fallback and reports a clear
+error when the local assets are unavailable.
+
+Standalone `olt` CLI release bundles include the model assets and do not need a
+network connection for ML1. The normal core-ai packages and Python CLI package
+remain small and use lazy loading.
+
+The matching `release/<version>` branch must contain the model assets before
+that version is published and must remain available for users who have not
+cached them.
 
 ### Prerequisites Checklist
 

@@ -1,6 +1,8 @@
 """Runtime configuration for optional ONNX-backed ML1 token generation."""
 
 import os
+from pathlib import Path
+from typing import Optional, Union
 
 
 class ML1InferenceConfig:
@@ -8,6 +10,13 @@ class ML1InferenceConfig:
 
     DEFAULT_MODEL_PATH = "classpath:/inferencing/ml1/model.onnx"
     DEFAULT_TOKENIZER_PATH = "classpath:/inferencing/ml1/tokenizer.json"
+    DEFAULT_ASSET_REPOSITORY = "TruvetaPublic/OpenLinkToken"
+    DEFAULT_ASSET_REF = "release/2.1.1"
+    DEFAULT_ASSET_BASE_URL = f"https://media.githubusercontent.com/media/{DEFAULT_ASSET_REPOSITORY}"
+    DEFAULT_ASSET_RAW_BASE_URL = f"https://raw.githubusercontent.com/{DEFAULT_ASSET_REPOSITORY}"
+    DEFAULT_ASSET_CACHE_DIRECTORY = str((Path.home() / ".openlinktoken" / "ml1").absolute())
+    DEFAULT_CACHE_DIR = Path(DEFAULT_ASSET_CACHE_DIRECTORY)
+    ASSET_MANIFEST_FILENAME = "asset-manifest.json"
     DEFAULT_MAX_SEQUENCE_LENGTH = 128
     DEFAULT_BATCH_SIZE = 64
     DEFAULT_NUM_THREADS = os.cpu_count() or 1
@@ -15,6 +24,12 @@ class ML1InferenceConfig:
     _enabled = True
     _model_path = DEFAULT_MODEL_PATH
     _tokenizer_path = DEFAULT_TOKENIZER_PATH
+    _asset_ref = os.environ.get("OPENLINKTOKEN_ML1_ASSET_REF", DEFAULT_ASSET_REF).strip() or DEFAULT_ASSET_REF
+    _cache_dir = (
+        Path(os.environ.get("OPENLINKTOKEN_ML1_CACHE_DIR", "").strip() or DEFAULT_ASSET_CACHE_DIRECTORY)
+        .expanduser()
+        .absolute()
+    )
     _max_sequence_length = DEFAULT_MAX_SEQUENCE_LENGTH
     _batch_size = DEFAULT_BATCH_SIZE
     _num_threads = DEFAULT_NUM_THREADS
@@ -28,6 +43,8 @@ class ML1InferenceConfig:
         configured_max_sequence_length: int,
         configured_batch_size: int = DEFAULT_BATCH_SIZE,
         configured_num_threads: int = DEFAULT_NUM_THREADS,
+        configured_asset_ref: Optional[str] = None,
+        configured_cache_dir: Optional[Union[str, os.PathLike[str]]] = None,
     ) -> None:
         """Apply ML1 runtime configuration."""
         if configured_max_sequence_length <= 0:
@@ -48,6 +65,7 @@ class ML1InferenceConfig:
             if configured_tokenizer_path and configured_tokenizer_path.strip()
             else cls.DEFAULT_TOKENIZER_PATH
         )
+        cls.configure_asset_storage(configured_asset_ref, configured_cache_dir)
         cls._max_sequence_length = configured_max_sequence_length
         cls._batch_size = configured_batch_size
         cls._num_threads = configured_num_threads
@@ -66,6 +84,42 @@ class ML1InferenceConfig:
     def get_tokenizer_path(cls) -> str:
         """Return configured tokenizer path."""
         return cls._tokenizer_path
+
+    @classmethod
+    def get_asset_ref(cls) -> str:
+        """Return the Git ref used for lazy ML1 asset downloads."""
+        return cls._asset_ref
+
+    @classmethod
+    def configure_asset_storage(
+        cls,
+        configured_asset_ref: Optional[str],
+        configured_cache_dir: Optional[Union[str, os.PathLike[str]]],
+    ) -> None:
+        """Configure the Git ref and local cache directory for ML1 assets."""
+        environment_asset_ref = os.environ.get("OPENLINKTOKEN_ML1_ASSET_REF", "").strip()
+        cls._asset_ref = (
+            configured_asset_ref.strip()
+            if configured_asset_ref and configured_asset_ref.strip()
+            else environment_asset_ref or cls.DEFAULT_ASSET_REF
+        )
+        environment_cache_dir = os.environ.get("OPENLINKTOKEN_ML1_CACHE_DIR", "").strip()
+        cache_dir = (
+            str(configured_cache_dir).strip()
+            if configured_cache_dir
+            else environment_cache_dir or cls.DEFAULT_ASSET_CACHE_DIRECTORY
+        )
+        cls._cache_dir = Path(cache_dir).expanduser().absolute()
+
+    @classmethod
+    def get_cache_dir(cls) -> Path:
+        """Return the root directory used for cached ML1 assets."""
+        return cls._cache_dir
+
+    @classmethod
+    def get_asset_cache_directory(cls) -> str:
+        """Return the absolute directory used for cached ML1 assets."""
+        return str(cls._cache_dir)
 
     @classmethod
     def get_max_sequence_length(cls) -> int:

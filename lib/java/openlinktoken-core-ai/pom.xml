@@ -99,11 +99,6 @@
             <resource>
                 <directory>src/main/resources</directory>
             </resource>
-            <resource>
-                <!-- Bundle all ML1 inferencing assets from the shared resources directory -->
-                <directory>../../../resources/inferencing/ml1</directory>
-                <targetPath>inferencing/ml1</targetPath>
-            </resource>
         </resources>
         <plugins>
             <plugin>
