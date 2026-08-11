@@ -73,7 +73,7 @@ curl -fsSL https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/downlo
 
 # macOS/Linux - install a specific version
 curl -fsSL https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.sh | \
-  bash -s -- --version v2.1.0
+  bash -s -- --version v2.1.1
 ```
 
 ```powershell
@@ -81,7 +81,7 @@ curl -fsSL https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/downlo
 irm https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.ps1 | iex
 
 # Windows - install a specific version
-& ([scriptblock]::Create((irm https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.ps1))) -Version v2.1.0
+& ([scriptblock]::Create((irm https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.ps1))) -Version v2.1.1
 ```
 
 ```bash
