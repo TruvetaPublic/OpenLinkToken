@@ -238,7 +238,7 @@ pluggy==1.6.0
     #   pytest
     #   pytest-cov
 prek==0.4.4
-prometheus-client==0.25.0
+prometheus-client==0.26.0
     # via jupyter-server
 prompt-toolkit==3.0.52
     # via
