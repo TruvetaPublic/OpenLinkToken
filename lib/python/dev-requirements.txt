@@ -79,7 +79,7 @@ httpcore==1.0.9
     # via httpx
 httpx==0.28.1
     # via jupyterlab
-idna==3.13
+idna==3.18
     # via
     #   anyio
     #   httpx
