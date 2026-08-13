@@ -24,6 +24,11 @@ You can find more information using these resources:
 
 **Note 3:** The first time you run this it will take a few minutes to build the container.
 
+### GitHub authentication
+
+Export `PUBLIC_GH_TOKEN` in the host environment before starting the
+dev container. Docker Compose passes it through with the same name.
+
 ### Zscaler SSL Inspection Support
 
 If your organization uses Zscaler for SSL inspection, you'll need to configure the development container to trust Zscaler's root certificate:
