@@ -83,11 +83,15 @@ public class SocialSecurityNumberAttribute extends BaseAttribute {
             "098-76-5432",
             "099-99-9999",
             "100-10-1000",
+            "111-11-1112",
             "111-22-3333",
             "121-21-2121",
+            "123-12-1234",
             "123-12-3123",
             "123-45-6789",
-            "123-45-9999");
+            "123-45-9999",
+            "199-99-9999",
+            "899-99-9999");
 
     public SocialSecurityNumberAttribute() {
         super(List.of(
