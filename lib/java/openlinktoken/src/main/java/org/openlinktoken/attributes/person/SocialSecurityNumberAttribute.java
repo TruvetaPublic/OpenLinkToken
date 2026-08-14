@@ -107,8 +107,13 @@ public class SocialSecurityNumberAttribute extends BaseAttribute {
             "123-45-9999",
             "199-99-9999",
             "222-33-4444",
+            "299-99-9999",
+            "399-99-9999",
             "454-54-5454",
+            "499-99-9999",
+            "599-99-9999",
             "699-99-9999",
+            "799-99-9999",
             "899-99-9999");
 
     public SocialSecurityNumberAttribute() {
