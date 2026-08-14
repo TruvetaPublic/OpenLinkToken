@@ -35,6 +35,10 @@ dev = [
    "autoflake==2.3.3",
    "pyinstaller==6.22.0",
 ]
+tools = [
+    "faker==40.36.0",
+    "pycryptodome==3.23.0",
+]
 [tool.ruff]
 line-length = 120
 fix = true
