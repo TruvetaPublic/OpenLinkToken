@@ -156,6 +156,10 @@ class SocialSecurityNumberAttributeTest {
         assertFalse(ssnAttribute.validate("111-22-1111"), "Invalid SSN 111-22-1111 should not be allowed");
         assertFalse(ssnAttribute.validate("111-22-2333"), "Invalid SSN 111-22-2333 should not be allowed");
         assertFalse(ssnAttribute.validate("111-11-9999"), "Invalid SSN 111-11-9999 should not be allowed");
+        assertFalse(ssnAttribute.validate("454-54-5454"), "Invalid SSN 454-54-5454 should not be allowed");
+        assertFalse(ssnAttribute.validate("123-45-6879"), "Invalid SSN 123-45-6879 should not be allowed");
+        assertFalse(ssnAttribute.validate("055-55-5555"), "Invalid SSN 055-55-5555 should not be allowed");
+        assertFalse(ssnAttribute.validate("123-45-6798"), "Invalid SSN 123-45-6798 should not be allowed");
         assertFalse(ssnAttribute.validate("111-22-3333"), "Invalid SSN 111-22-3333 should not be allowed");
         assertFalse(ssnAttribute.validate("111223333"), "Invalid SSN 111223333 (without dashes) should not be allowed");
     }
