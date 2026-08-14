@@ -67,7 +67,7 @@ public class SocialSecurityNumberAttribute extends BaseAttribute {
             "777-77-7777",
             "888-88-8888",
 
-            // Common placeholder SSNs sorted
+            // SSNs excluded based on real-life data patterns, sorted
             "001-01-0001",
             "001-01-0101",
             "001-01-9999",

@@ -46,6 +46,7 @@ class SocialSecurityNumberAttribute(BaseAttribute):
 
     DIGITS_ONLY_PATTERN = re.compile(r"\d+")
 
+    # SSNs excluded based on real-life data patterns.
     INVALID_SSNS = {
         "111-11-1111",
         "222-22-2222",
