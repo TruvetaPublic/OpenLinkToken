@@ -103,6 +103,9 @@ class TestSocialSecurityNumberAttribute:
         assert self.ssn_attribute.validate("001-10-0110") is False
         assert self.ssn_attribute.validate("001-11-1111") is False
         assert self.ssn_attribute.validate("001-12-2334") is False
+        assert self.ssn_attribute.validate("011-11-1111") is False
+        assert self.ssn_attribute.validate("100-10-1000") is False
+        assert self.ssn_attribute.validate("123-12-3123") is False
 
     def test_normalize_thread_safety(self):
         """Test thread safety of normalize method."""
