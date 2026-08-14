@@ -3,7 +3,7 @@
 -e ./lib/python/openlinktoken
     # via openlinktoken-pyspark
 -e ./lib/python/openlinktoken-pyspark
-cffi==2.0.0 ; platform_python_implementation != 'PyPy'
+cffi==2.1.1 ; platform_python_implementation != 'PyPy'
     # via cryptography
 cryptography==50.0.0
     # via
@@ -19,7 +19,7 @@ pycryptodome==3.23.0
     # via openlinktoken-pyspark
 pyyaml==6.0.3
     # via openlinktoken
-typing-extensions==4.15.0
+typing-extensions==4.16.0
     # via
     #   cryptography
     #   jwcrypto
