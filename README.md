@@ -65,6 +65,25 @@ Download the binary for your platform from the [latest release](https://github.c
 
 Each asset has a matching `.sha256` file you can use to verify the download.
 
+**One-line installers:**
+
+```bash
+# macOS/Linux - installs to ~/.local/bin
+curl -fsSL https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.sh | bash
+
+# macOS/Linux - install a specific version
+curl -fsSL https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.sh | \
+  bash -s -- --version v2.1.1
+```
+
+```powershell
+# Windows - installs to ~/.openlinktoken/bin
+irm https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.ps1 | iex
+
+# Windows - install a specific version
+& ([scriptblock]::Create((irm https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.ps1))) -Version v2.1.1
+```
+
 ```bash
 # Linux
 chmod +x olt-v*-linux-x86_64
