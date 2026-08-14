@@ -52,7 +52,7 @@ huggingface-hub==1.13.0
     # via tokenizers
 humanfriendly==10.0 ; python_full_version < '3.11'
     # via coloredlogs
-idna==3.13
+idna==3.18
     # via
     #   anyio
     #   httpx

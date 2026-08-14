@@ -79,7 +79,7 @@ httpcore==1.0.9
     # via httpx
 httpx==0.28.1
     # via jupyterlab
-idna==3.13
+idna==3.18
     # via
     #   anyio
     #   httpx
@@ -238,7 +238,7 @@ pluggy==1.6.0
     #   pytest
     #   pytest-cov
 prek==0.4.4
-prometheus-client==0.25.0
+prometheus-client==0.26.0
     # via jupyter-server
 prompt-toolkit==3.0.52
     # via
@@ -266,7 +266,7 @@ pygments==2.20.0
     #   jupyter-console
     #   nbconvert
     #   pytest
-pyinstaller==6.21.0
+pyinstaller==6.22.0
 pyinstaller-hooks-contrib==2026.6
     # via pyinstaller
 pytest==9.1.1
