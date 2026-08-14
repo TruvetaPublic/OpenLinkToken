@@ -68,6 +68,12 @@ public class SocialSecurityNumberAttribute extends BaseAttribute {
             "888-88-8888",
 
             // Common placeholder SSNs sorted
+            "001-01-0001",
+            "001-01-0101",
+            "001-01-9999",
+            "001-10-0110",
+            "001-11-1111",
+            "001-12-2334",
             "001-23-4567",
             "009-99-9999",
             "010-10-1010",

@@ -129,6 +129,12 @@ class SocialSecurityNumberAttributeTest {
 
     @Test
     void validate_ShouldReturnFalseForSpecificInvalidSSNs() {
+        assertFalse(ssnAttribute.validate("001-01-0001"), "Invalid SSN 001-01-0001 should not be allowed");
+        assertFalse(ssnAttribute.validate("001-01-0101"), "Invalid SSN 001-01-0101 should not be allowed");
+        assertFalse(ssnAttribute.validate("001-01-9999"), "Invalid SSN 001-01-9999 should not be allowed");
+        assertFalse(ssnAttribute.validate("001-10-0110"), "Invalid SSN 001-10-0110 should not be allowed");
+        assertFalse(ssnAttribute.validate("001-11-1111"), "Invalid SSN 001-11-1111 should not be allowed");
+        assertFalse(ssnAttribute.validate("001-12-2334"), "Invalid SSN 001-12-2334 should not be allowed");
         assertFalse(ssnAttribute.validate("111-22-3333"), "Invalid SSN 111-22-3333 should not be allowed");
         assertFalse(ssnAttribute.validate("111223333"), "Invalid SSN 111223333 (without dashes) should not be allowed");
     }
