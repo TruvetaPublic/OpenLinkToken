@@ -416,7 +416,7 @@ Every run generates a `.metadata.json` file:
 {
   "Platform": "Python",
   "PythonVersion": "3.11.0",
-  "Version": "2.1.1",
+  "Version": "2.1.2",
   "TotalRows": 100,
   "TotalRowsWithInvalidAttributes": 3,
   "InvalidAttributesByType": {
