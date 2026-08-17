@@ -1,923 +1,202 @@
-# Open Link Token Development Guide
+# Development guide
 
-This guide centralizes contributor-facing information. It covers local setup, language-specific build instructions, development environment, versioning, and key contribution workflows.
+This guide covers local setup, builds, tests, and cross-language changes.
+Repository rules live in
+[`.github/instructions/`](../.github/instructions/); the
+[branch workflow](./branch-workflow-and-release-process.md) and
+[publishing guide](./publishing-guide.md) cover releases.
 
-> **For AI Coding Agents**: See the [Copilot Instructions](../.github/copilot-instructions.md) for comprehensive guidance on working with this codebase, including security guidelines, PR standards, and debugging tips.
+## Development environment
 
-## At a Glance
+The Dev Container is the supported setup. In VS Code, open the repository and
+select **Dev Containers: Reopen in Container**. It provides:
 
-- Three packages: Java core (Maven), Python core, Python CLI, plus PySpark bridge
-- Java uses multi-module Maven structure with parent POM at `lib/java/pom.xml`
-- Core packages (`openlinktoken`) contain pure tokenization logic with minimal dependencies
-- Python CLI package (`openlinktoken-cli`) contains I/O implementations (CSV, Parquet, JSON) and command-line interface
-- Deterministic token generation logic is equivalent across languages
-- PySpark bridge enables large-scale distributed token generation & overlap analysis
-- Use this guide for environment setup & day-to-day development
-- Use the Token & Attribute Registration guide for extending functionality
+- JDK 21 and Maven 3.8.8
+- Python 3.11 and `uv`
+- Node.js, Docker, Git LFS, and GitHub CLI
 
-## Contents
+The project supports Python 3.10 or newer. The container stores the shared
+Python environment at `/home/vscode/.local/share/openlinktoken/.venv`.
+Do not create a nested virtual environment inside a package directory.
 
-- [Open Link Token Development Guide](#open-link-token-development-guide)
-  - [At a Glance](#at-a-glance)
-  - [Contents](#contents)
-  - [Prerequisites](#prerequisites)
-  - [Project Layout](#project-layout)
-  - [Language Development (Java, Python \& PySpark)](#language-development-java-python--pyspark)
-    - [Java](#java)
-    - [Python](#python)
-      - [Build a Self-Contained CLI Locally](#build-a-self-contained-cli-locally)
-    - [PySpark Bridge](#pyspark-bridge)
-    - [Multi-Language Sync Tool](#multi-language-sync-tool)
-    - [Cross-language Tips](#cross-language-tips)
-  - [Coding Standards](#coding-standards)
-    - [Java Style Guidelines](#java-style-guidelines)
-    - [Python Style Guidelines](#python-style-guidelines)
-    - [Self-Explanatory Code \& Comments](#self-explanatory-code--comments)
-    - [Security Best Practices](#security-best-practices)
-  - [Token Processing Modes](#token-processing-modes)
-  - [Token \& Attribute Registration](#token--attribute-registration)
-    - [When to Use](#when-to-use)
-    - [Java Registration (ServiceLoader SPI)](#java-registration-serviceloader-spi)
-    - [Python Registration](#python-registration)
-    - [Cross-language Parity Checklist](#cross-language-parity-checklist)
-    - [Quick Reference](#quick-reference)
-      - [Common Generic Attributes (ready to reuse)](#common-generic-attributes-ready-to-reuse)
-  - [Building \& Testing](#building--testing)
-    - [Full Multi-language Build](#full-multi-language-build)
-    - [Docker Image](#docker-image)
-  - [Running the Tool (CLI)](#running-the-tool-cli)
-    - [Progress display environment variables](#progress-display-environment-variables)
-    - [Key Pair Generation](#key-pair-generation)
-  - [Local Extension Development](#local-extension-development)
-    - [Setup](#setup)
-    - [Manual testing: editable install (fast path)](#manual-testing-editable-install-fast-path)
-    - [Manual testing: wheel install (full pipeline)](#manual-testing-wheel-install-full-pipeline)
-    - [Run the extension tests](#run-the-extension-tests)
-    - [Developing your own extension](#developing-your-own-extension)
-      - [Reporting custom progress metrics](#reporting-custom-progress-metrics)
-    - [Extension tests in `openlinktoken-cli`](#extension-tests-in-openlinktoken-cli)
-  - [Development Container](#development-container)
-  - [Version Bumping Policy](#version-bumping-policy)
-  - [Contributing Checklist](#contributing-checklist)
-  - [Troubleshooting](#troubleshooting)
+From the repository root, install the workspace dependencies:
 
----
+```bash
+uv sync --all-packages --dev
+```
 
-## Prerequisites
-
-| Tool              | Recommended Version | Notes                                                                                                |
-| ----------------- | ------------------- | ---------------------------------------------------------------------------------------------------- |
-| Java JDK          | 21.x                | Required for Java core library builds (outputs Java 17 compatible bytecode); the CLI is Python-based |
-| Maven             | 3.8+                | Build Java artifacts (`mvn clean install`)                                                           |
-| Python            | 3.10+               | For Python implementation & scripts                                                                  |
-| uv                | Latest              | Manage Python dependencies (install: `curl -LsSf https://astral.sh/uv/install.sh \| sh`)             |
-| Docker (optional) | Latest              | Build container image                                                                                |
-
-## Project Layout
+The workspace contains the following packages:
 
 ```text
-lib/
-  java/
-    pom.xml            # Parent POM (multi-module Maven build)
-    openlinktoken/         # Core tokenization library (pure logic, minimal dependencies)
-  python/
-    openlinktoken/         # Core tokenization library
-    openlinktoken-cli/     # CLI application with I/O support
-    openlinktoken-pyspark/ # PySpark bridge for distributed processing
-resources/             # Sample and test data
-tools/                 # Utility scripts (hash calculator, mock data, etc.)
-docs/                  # All developer documentation (this file!)
+lib/java/
+  pom.xml
+  openlinktoken/
+  openlinktoken-core-ai/
+lib/python/
+  openlinktoken/
+  openlinktoken-core-ai/
+  openlinktoken-cli/
+  openlinktoken-pyspark/
+lib/python/openlinktoken_ext_hello_world/
+resources/
+tools/
+docs/
+pages/
 ```
 
-Key Docs:
+## Build and test
 
-- Development processes below
+Build the Java modules:
 
-## Language Development (Java, Python & PySpark)
-
-This section combines the previous standalone Java and Python development sections for easier cross-language parity review.
-
-### Java
-
-Prerequisites:
-
-- Java 21 SDK or higher (core library JAR output is Java 17 compatible)
-- Maven 3.8.8 or higher
-
-Build all modules (from `lib/java`):
-
-```shell
-cd lib/java && mvn clean install
+```bash
+(cd lib/java && mvn clean install)
 ```
 
-Build individual modules:
+Run Java tests:
 
-```shell
-# Core library only
-cd lib/java/openlinktoken && mvn clean install
+```bash
+(cd lib/java && mvn test)
 ```
 
-Resulting JARs:
+Run Python tests for the packages changed by your work:
 
-- Core library: `lib/java/openlinktoken/target/openlinktoken-*.jar`
-
-Using as Maven dependencies:
-
-```xml
-<!-- Core library (tokenization logic only) -->
-<dependency>
-  <groupId>org.openlinktoken</groupId>
-  <artifactId>openlinktoken</artifactId>
-  <version>${openlinktoken.version}</version>
-</dependency>
+```bash
+(cd lib/python/openlinktoken && PYTHONPATH=src/main uv run pytest src/test)
+(cd lib/python/openlinktoken-core-ai && PYTHONPATH=src/main:../openlinktoken/src/main uv run pytest src/test)
+(cd lib/python/openlinktoken-cli && PYTHONPATH=src/main:../openlinktoken/src/main:../openlinktoken-core-ai/src/main uv run pytest src/test)
+(cd lib/python/openlinktoken-pyspark && PYTHONPATH=src/main:../openlinktoken/src/main uv run pytest src/test)
 ```
 
-Programmatic API (simplified):
+The PySpark tests require a compatible Spark installation. Use the package
+extras in `lib/python/openlinktoken-pyspark/pyproject.toml`.
 
-```java
-List<TokenTransformer> transformers = Arrays.asList(
-  new HashTokenTransformer("your-hashing-secret"),
-  new EncryptTokenTransformer("your-encryption-key")
-);
-TokenGenerator generator = new TokenGenerator(new TokenDefinition(), new SHA256Tokenizer(transformers));
-TokenGeneratorResult result = generator.getAllTokens(personAttributes);
+Run the repository formatter and linter through the tools already configured in
+the workspace:
+
+```bash
+uv run ruff check .
+uv run ruff format --check .
 ```
 
-Testing:
+After changing files, run the pre-commit hooks for those files:
 
-```shell
-# Test all modules
-cd lib/java && mvn test
-
-# Test with coverage report
-cd lib/java && mvn clean test jacoco:report
-# Coverage report: openlinktoken/target/site/jacoco/index.html
+```bash
+prek run --files <changed-file>...
 ```
 
-Style & docs:
+Build the Docker image when the Docker surface changes:
 
-```shell
-mvn checkstyle:check
-mvn clean javadoc:javadoc
+```bash
+docker build . -t openlinktoken
 ```
 
-Notes:
+## CLI smoke test
 
-- Unicode normalized to ASCII equivalents.
+The CLI package provides the `olt` command. After `uv sync`:
 
-### Python
-
-Prerequisites:
-
-- Python 3.10+
-- [uv](https://docs.astral.sh/uv/) (install: `curl -LsSf https://astral.sh/uv/install.sh | sh`)
-
-Create & activate virtual environment (at repository root):
-
-```shell
-uv venv .venv
-source .venv/bin/activate
+```bash
+uv run olt --help
+uv run olt tokenize \
+  -i resources/sample.csv \
+  -o /tmp/openlinktoken-output.csv \
+  --mode demo \
+  --disable-inferencing
 ```
 
-Install dependencies:
+Use `package` with an exchange configuration for encrypted output. See the
+[CLI quickstart](../pages/quickstarts/cli-quickstart.md) for the complete
+key-exchange flow.
 
-```shell
-# Core library
-cd lib/python/openlinktoken
-uv pip install -r requirements.txt -r dev-requirements.txt
+To build the self-contained CLI used by the release workflow:
 
-# For CLI support, also install openlinktoken-cli
-cd ../openlinktoken-cli
-uv pip install -r requirements.txt -r dev-requirements.txt
+```bash
+uv run pyinstaller --clean --noconfirm lib/python/openlinktoken-cli/openlinktoken-cli.spec
 ```
 
-Editable install for local development:
+The executable is written to `dist/olt` or `dist/olt.exe`. To create the
+release archive and checksum for one platform:
 
-```shell
-# Install core library
-cd lib/python/openlinktoken && uv pip install -e .
-
-# Install CLI (includes core as dependency)
-cd lib/python/openlinktoken-cli && uv pip install -e .
-```
-
-#### Build a Self-Contained CLI Locally
-
-For parity with the release artifacts, build the PyInstaller executable with Python 3.11. PyInstaller bundles the
-interpreter used at build time, and `.github/workflows/build-openlinktoken-cli.yml` currently builds the published
-artifacts with Python 3.11.
-
-From the repository root, activate your virtual environment (`.\.venv\Scripts\Activate.ps1` on Windows PowerShell)
-and install the build dependencies:
-
-```shell
-uv pip install -e lib/python/openlinktoken
-uv pip install -r lib/python/openlinktoken-cli/pyinstaller-requirements.txt
-uv pip install -r lib/python/openlinktoken-cli/requirements.txt
-uv pip install -e lib/python/openlinktoken-cli --no-deps
-```
-
-Build the executable:
-
-```shell
-# Linux / Windows
-pyinstaller --clean --noconfirm lib/python/openlinktoken-cli/openlinktoken-cli.spec
-
-# macOS universal2 (Intel + Apple Silicon)
-pyinstaller --clean --noconfirm --target-arch universal2 lib/python/openlinktoken-cli/openlinktoken-cli.spec
-```
-
-The built executable is written to `dist/olt` (`dist/olt.exe` on Windows). Intermediate files are written
-to `build/`.
-
-Smoke-test the local build before packaging it:
-
-```shell
-mkdir -p smoke
-cp resources/sample.csv smoke/input.csv
-./dist/olt tokenize -i smoke/input.csv -o smoke/out.csv -h secret
-```
-
-On Windows PowerShell:
-
-```powershell
-New-Item -ItemType Directory -Force -Path smoke | Out-Null
-Copy-Item resources\sample.csv smoke\input.csv
-.\dist\olt.exe tokenize -i smoke\input.csv -o smoke\out.csv -h secret
-```
-
-If you also want the same ZIP and checksum bundle produced by the release workflow, run:
-
-```shell
-python -m openlinktoken_cli.util.release_assets \
+```bash
+uv run python -m openlinktoken_cli.util.release_assets \
   --version 2.1.1 \
   --runner-os Linux \
   --dist-dir dist \
   --output-dir release-assets
 ```
 
-Use `--runner-os macOS` or `--runner-os Windows` for those platforms. The helper writes the updater-ready raw binary,
-the downloadable ZIP, and `.sha256` sidecars to `release-assets/`.
+## Cross-language changes
 
-CLI usage (from project root):
+Open Link Token has Java and Python implementations. Shared behavior must stay
+equivalent, including normalization, validation, token composition, and
+cryptographic stages.
 
-```shell
-# After installing openlinktoken-cli
-olt package [OPTIONS]
-```
+When adding a token or attribute:
 
-Arguments are consistent with the Java core library's tokenization logic.
+1. Update the Java implementation and its ServiceLoader file:
+   `lib/java/openlinktoken/src/main/resources/META-INF/services/`.
+2. Update the matching Python implementation and loader or registry.
+3. Add tests for both implementations.
+4. Run the interoperability checks when the change affects token output:
+   `tools/multi_language_syncer.py` and
+   `tools/interoperability/`.
 
-Example:
+The Python CLI discovers token definitions from
+`openlinktoken/tokens/definitions` and loads attributes through
+`attribute_loader.py`. Custom token rules can also use
+[`tokenize --config`](./tokenization-config-format.md).
 
-```shell
-# After installing openlinktoken-cli
-olt package \
-  -i resources/sample.csv -o resources/output.csv \
-  --exchange-config ./openlinktoken-YYYY-MM-DD.exchange.json
-```
+## Extensions
 
-Programmatic API (simplified):
+The reference extension is
+`lib/python/openlinktoken_ext_hello_world/`. For the extension interface,
+entry-point registration, installation, and frozen-binary compatibility, see
+its [README](../lib/python/openlinktoken_ext_hello_world/README.md) and the
+[extension quickstart](../pages/quickstarts/extension-quickstart.md).
 
-```python
-transformers = [
-    HashTokenTransformer("your-hashing-secret"),
-    EncryptTokenTransformer("your-encryption-key")
-]
-with PersonAttributesCSVReader("input.csv") as reader, \
-     PersonAttributesCSVWriter("output.csv") as writer:
-    PersonAttributesProcessor.process(reader, writer, transformers, metadata)
-```
-
-Testing:
-
-```shell
-# Core library tests
-cd lib/python/openlinktoken
-PYTHONPATH=src/main pytest src/test
-
-# CLI tests
-cd lib/python/openlinktoken-cli
-PYTHONPATH=src/main pytest src/test
-```
-
-Key dependencies:
-
-- Core: cryptography
-- CLI: pandas, pyarrow (for Parquet)
-
-Parity notes:
-
-- Outputs identical tokens to Java for the same normalized input & secrets.
-- `FirstName` and `LastName` remove diacritics and transliterate supported Latin Extended letters before ASCII-only filtering (`Ł` → `L`, `Ø` → `O`, `Æ` → `AE`).
-- Maintain consistency when adding new token or attribute logic.
-
-Contributing notes:
-
-- Follow PEP 8, add type hints.
-- Keep normalization and token logic in sync with Java core library.
-
-### PySpark Bridge
-
-The PySpark bridge (`lib/python/openlinktoken-pyspark`) provides a distributed processing interface for generating tokens and performing dataset overlap analysis using Spark DataFrames.
-
-Purpose:
-
-- Efficient token generation on large datasets (partitioned execution)
-- Supports custom token definitions in Spark pipelines
-- Provides overlap analysis utilities (`OverlapAnalyzer`) for measuring cohort intersection
-
-Prerequisites:
-
-- Python 3.10+
-
-**Version Compatibility (choose based on your Java version):**
-
-| Java Version | PySpark Version | PyArrow Version | Notes                                           |
-| ------------ | --------------- | --------------- | ----------------------------------------------- |
-| **Java 21**  | **4.0.1+**      | **17.0.0+**     | **Recommended** - Native Java 21 support        |
-| Java 8-17    | 3.5.x           | <20             | Legacy support - use if you cannot upgrade Java |
-
-Install (from repo root):
-
-```shell
-uv pip install -r lib/python/openlinktoken-pyspark/requirements.txt -r lib/python/openlinktoken-pyspark/dev-requirements.txt
-uv pip install -e lib/python/openlinktoken-pyspark
-```
-
-Basic Usage:
-
-```python
-from pyspark.sql import SparkSession
-from openlinktoken_pyspark import OpenLinkTokenProcessor
-
-spark = SparkSession.builder.master("local[2]").appName("OpenLinkTokenExample").getOrCreate()
-df = spark.read.csv("people.csv", header=True)
-processor = OpenLinkTokenProcessor("HashingKey", "Secret-Encryption-Key-Goes-Here.")
-token_df = processor.process_dataframe(df)
-token_df.show()
-```
-
-Custom Token Definitions (example adding T6):
-
-```python
-from openlinktoken_pyspark import OpenLinkTokenProcessor
-from openlinktoken_pyspark.notebook_helpers import TokenBuilder, CustomTokenDefinition
-
-t6 = TokenBuilder("T6") \
-  .add("last_name", "T|U") \
-  .add("first_name", "T|U") \
-  .add("birth_date", "T|D") \
-  .build()
-
-definition = CustomTokenDefinition().add_token(t6)
-processor = OpenLinkTokenProcessor(
-  hashing_secret="HashingKey",
-  encryption_key="Secret-Encryption-Key-Goes-Here.",
-  token_definition=definition
-)
-token_df = processor.process_dataframe(df)
-```
-
-Testing:
-
-```shell
-cd lib/python/openlinktoken-pyspark
-pytest src/test
-```
-
-Notebook Guides:
-
-- See `lib/python/openlinktoken-pyspark/notebooks/` for example workflows (custom tokens & overlap analysis).
-
-### Multi-Language Sync Tool
-
-The sync tool ([tools/multi_language_syncer.py](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/tools/multi_language_syncer.py)) detects changes across all supported languages (Java, Python, Node.js) and produces a cross-language checklist showing which corresponding files need updating. It is bidirectional — changes originating in any language trigger sync items for the others.
-
-Key concepts:
-
-- Language paths are configured directly in `multi_language_syncer.py` under the `LANGUAGES` dict.
-- An optional [tools/multi-language-mapping.json](https://github.com/TruvetaPublic/OpenLinkToken/blob/main/tools/multi-language-mapping.json) supplies `ignore_patterns`.
-- Sync status logic: A target file is considered up-to-date if it was modified after the source file within the same PR (commit timestamp comparison).
-- Progress is tracked across all commits in a PR so the checklist reflects incremental work.
-
-Usage examples:
+Editable local install:
 
 ```bash
-python3 tools/multi_language_syncer.py --format console
-python3 tools/multi_language_syncer.py --format github-checklist --since origin/main
-python3 tools/multi_language_syncer.py --health-check
+uv pip install -e lib/python/openlinktoken_ext_hello_world
+uv run olt extension list
 ```
 
-CI integration: The GitHub Actions workflow (`.github/workflows/multi-language-sync.yml`) posts an informational checklist comment on PRs. It does not hard-fail; it tracks progress.
+## Code and security guidance
 
-When adding attributes/tokens: update all applicable language implementations, run the sync tool to verify, and ensure the checklist shows complete before merging.
+Use the scoped repository instructions instead of copying their full rules
+into this guide:
 
-### Cross-language Tips
+- [Java instructions](../.github/instructions/java.instructions.md)
+- [Python instructions](../.github/instructions/python.instructions.md)
+- [Architecture and parity](../.github/instructions/openlinktoken-architecture.instructions.md)
+- [Security guidance](../.github/instructions/security-and-owasp.instructions.md)
+- [Commenting guidance](../.github/instructions/self-explanatory-code-commenting.instructions.md)
 
-| Task            | Java Command                       | Python Command                     |
-| --------------- | ---------------------------------- | ---------------------------------- |
-| Build / Package | `cd lib/java && mvn clean install` | `uv pip install -e .`              |
-| Run Tests       | `mvn test`                         | `pytest src/test`                  |
-| Lint / Style    | `mvn checkstyle:check`             | (pep8 / flake8 if configured)      |
-| Run CLI         | N/A (use Python CLI)               | `olt package ...`                  |
-| Add Token       | SPI entry & class                  | new module in `tokens/definitions` |
-| Add Attribute   | SPI entry & class                  | class + loader import              |
+Keep code self-explanatory. Comments should explain a non-obvious reason, not
+repeat the statement next to them. Never place real secrets in examples,
+tests, logs, or metadata.
 
-Maintain the same functional behavior and normalization between languages. For `FirstName` and `LastName`, keep diacritic removal and supported Latin Extended transliteration ahead of ASCII-only filtering.
+## Versioning and contribution checklist
 
-## Coding Standards
+Normal development pull requests do not need a manual version change. Create a
+release branch when preparing a release; `auto-version-bump.yml` updates the
+configured version files.
 
-This project follows established coding conventions to ensure consistency, maintainability, and security across the
-codebase. Detailed guidelines are maintained in `.github/instructions/` and automatically applied by AI coding
-assistants.
+Before opening a pull request:
 
-### Java Style Guidelines
+- run the tests for the changed package;
+- run Java and Python parity checks for shared behavior;
+- update user-facing documentation when behavior changes;
+- run `prek` for the changed files;
+- use a `dev/<github-username>/<feature>` branch and target `develop`.
 
-**Core Principles:**
-
-- **Always use direct imports**: Never use fully qualified class names in code (e.g., `new SHA256Tokenizer()` instead
-  of `new org.openlinktoken.tokens.tokenizer.SHA256Tokenizer()`). Add import statements at the top of the file.
-- **Follow Google's Java Style Guide**: Use `UpperCamelCase` for classes, `lowerCamelCase` for methods/variables,
-  `UPPER_SNAKE_CASE` for constants, `lowercase` for packages.
-- **Leverage Lombok**: Use `@Builder`, `@NonNull`, `@Data`, `@Value`, `@Slf4j` to reduce boilerplate.
-- **Prefer immutability**: Make classes and fields `final` where possible. Use `List.of()`, `Map.of()`,
-  `Stream.toList()` for immutable collections.
-- **Use modern Java features**: Pattern matching for `instanceof`, `var` for local variables (when type is clear),
-  `Optional<T>` instead of null.
-
-**Verification:**
-
-```bash
-# Run Checkstyle checks
-cd lib/java && mvn checkstyle:check
-
-# Generate Javadoc
-mvn clean javadoc:javadoc
-```
-
-**Common Issues:**
-
-- Resource management: Always use try-with-resources for closeable resources
-- Equality checks: Use `.equals()` or `Objects.equals()` for object comparison (not `==`)
-- Avoid magic numbers: Extract repeated values to named constants
-
-**See:** [`.github/instructions/java.instructions.md`](../.github/instructions/java.instructions.md) for complete
-guidelines.
-
-### Python Style Guidelines
-
-**Core Principles:**
-
-- **Follow PEP 8**: Maximum line length 120 characters (extended for PySpark chains), 4-space indentation.
-- **Type hints required**: Use `typing` module for all function signatures (e.g., `List[str]`, `Dict[str, int]`,
-  `Optional[T]`).
-- **Docstrings required**: Follow PEP 257 conventions with Args, Returns, and Raises sections.
-- **Clean imports**: Remove unused imports/variables, organize in groups (standard library → third-party → local).
-- **PySpark-specific**: Always use direct imports (`from pyspark.sql.functions import col, lit, when`) instead of
-  `import pyspark.sql.functions as F`.
-
-**PySpark Method Chaining:**
-
-```python
-# CORRECT - additional indentation for chained methods
-result_df = (
-    source_df
-        .select(USER_ID, ORDER_ID, PRODUCT_ID)
-        .withColumn(STATUS_CODE, lit(DEFAULT_STATUS))
-        .filter(col(IS_ACTIVE) == True)
-)
-```
-
-**Verification:**
-
-```bash
-# Run tests with coverage
-cd lib/python/openlinktoken && pytest --cov=openlinktoken --cov-report=term
-
-# Auto-remove unused imports (if needed)
-autoflake --remove-all-unused-imports --remove-unused-variables --in-place file.py
-```
-
-**See:** [`.github/instructions/python.instructions.md`](../.github/instructions/python.instructions.md) for complete
-guidelines.
-
-### Self-Explanatory Code & Comments
-
-**Core Principle:** Write code that speaks for itself. Comment only when necessary to explain WHY, not WHAT.
-
-**When to comment:**
-
-- ✅ **Complex business logic** — Explain the reasoning behind non-obvious calculations or algorithms
-- ✅ **Regex patterns** — Describe what the pattern matches
-- ✅ **API constraints** — Document external limitations or gotchas
-- ✅ **Public APIs** — Use JavaDoc/docstrings for all public methods
-- ✅ **Annotations** — Use `TODO`, `FIXME`, `SECURITY`, `WARNING`, etc. for important notes
-
-**When NOT to comment:**
-
-- ❌ **Obvious statements** — Don't repeat what the code clearly does
-- ❌ **Redundant explanations** — If a good variable/method name makes it clear, no comment needed
-- ❌ **Outdated information** — Remove comments that no longer match the code
-- ❌ **Dead code** — Delete commented-out code instead of leaving it in
-- ❌ **Changelog entries** — Use git history, not inline comments
-
-**Examples:**
-
-```java
-// GOOD: Explains WHY this specific calculation
-// Apply progressive tax brackets: 10% up to 10k, 20% above
-final tax = calculateProgressiveTax(income, List.of(0.1, 0.2), List.of(10000));
-
-// BAD: States the obvious
-counter++; // Increment counter by one
-```
-
-**See:** [`.github/instructions/self-explanatory-code-commenting.instructions.md`](../.github/instructions/self-explanatory-code-commenting.instructions.md) for detailed examples.
-
-### Security Best Practices
-
-**Based on OWASP Top 10:**
-
-1. **Access Control (A01):** Deny by default, enforce least privilege, validate all access checks
-2. **Cryptographic Failures (A02):**
-   - Use Argon2/bcrypt for password hashing (never MD5/SHA-1)
-   - Always use HTTPS for network requests
-   - Encrypt data at rest with AES-256
-   - **Never hardcode secrets** — Use environment variables or secrets management services
-3. **Injection (A03):**
-   - Use parameterized queries for SQL (never string concatenation)
-   - Sanitize command-line input
-   - Context-aware output encoding for XSS prevention (prefer `.textContent` over `.innerHTML`)
-4. **Security Misconfiguration (A05-A06):**
-   - Disable verbose error messages in production
-   - Set security headers: `Content-Security-Policy`, `Strict-Transport-Security`, `X-Content-Type-Options`
-   - Keep dependencies up-to-date, run vulnerability scanners (`npm audit`, `pip-audit`, Snyk)
-5. **Authentication Failures (A07):** Secure session management, rate limiting, account lockout
-6. **Data Integrity (A08):** Avoid insecure deserialization, validate untrusted data
-
-**Open Link Token-specific:**
-
-- Hashing and encryption keys must only appear in test files with dummy values
-- SSN validation logic is public, but never log actual SSN values
-- Metadata files contain processing stats and runtime context, not secrets
-
-**See:** [`.github/instructions/security-and-owasp.instructions.md`](../.github/instructions/security-and-owasp.instructions.md) for comprehensive security guidelines.
-
-## Token Processing Modes
-
-Open Link Token supports three core processing modes across Java, Python, and the PySpark bridge. The Python CLI also exposes `tokenize --mode hash-only` for SHA-256-only output without an exchange config. These modes determine how raw token signatures are transformed:
-
-| Mode      | Availability          | Secrets Required                   | Transform Pipeline                                        | Output Example (T1)                  | Deterministic Across Runs | Recommended Use                                                                 |
-| --------- | --------------------- | ---------------------------------- | --------------------------------------------------------- | ------------------------------------ | ------------------------- | ------------------------------------------------------------------------------- |
-| Plain     | Java, Python, PySpark | None (`tokenize --mode demo`)      | Concatenate normalized attribute expressions only         | `DOE\|JOHN\|1990-01-15\|MALE\|98101` | Yes (given same input)    | Debugging, rule design, docs demos                                              |
-| Hash-only | Python CLI only       | None (`tokenize --mode hash-only`) | SHA-256(signature)                                        | 64-character lowercase hex digest    | Yes                       | Local exploration/testing without an exchange config; never exchange externally |
-| Tokenize  | Java, Python, PySpark | Hashing secret only                | SHA-256 → HMAC-SHA256 → Base64                            | 44-character base64 HMAC             | Yes                       | Internal overlap analysis against decrypted partner token outputs               |
-| Encrypted | Java, Python, PySpark | Hashing secret + encryption key    | SHA-256 → HMAC-SHA256 → AES-256-GCM (random IV per token) | Base64 blob (length varies)          | Yes (post-decrypt hash)   | Production / privacy-preserving use and external token exchange                 |
-
-Notes:
-
-- The underlying signature (before hashing) is produced by ordered attribute expressions for each token rule (e.g., T1→T5 or custom T6+). Plain mode exposes this directly for inspection.
-- Encryption uses AES-256-GCM with a random IV; identical hashed inputs yield different encrypted outputs each run. Matching encrypted tokens across datasets therefore requires either: (a) decryption with the shared key (to reach the tokenized representation) or (b) using the `tokenize` subcommand specifically for overlap workflows. Do NOT attempt to match encrypted blobs directly.
-- Tokenizer polymorphism: Java & Python `TokenGenerator` accept an injectable tokenizer. Defaults to SHA-256; when plain mode is active a `PassthroughTokenizer` is used so downstream transformers (if any) receive the raw signature.
-- Security: Plain, hash-only, and tokenized modes reduce protection. Never use plain mode for sharing PHI. `tokenize --mode hash-only` is deterministic SHA-256 with no secret and is not suitable for production or cross-organisation exchange. Normal tokenized output may still leak structural frequency information, so encrypted mode remains the required format for external distribution.
-
-## Token & Attribute Registration
-
-This section unifies Java and Python guidance for adding new Tokens and Attributes.
-
-### When to Use
-
-- Adding a new token generation rule (Token)
-- Adding a new source person attribute (Attribute)
-- Refactoring or renaming existing implementations
-
-### Java Registration (ServiceLoader SPI)
-
-Java uses the standard `ServiceLoader` discovery mechanism.
-
-Steps (Token example):
-
-1. Create class in `org.openlinktoken.tokens.definitions` extending `Token`.
-2. Implement required abstract methods (identifier, definition, etc.).
-3. Add fully qualified class name to: `lib/java/openlinktoken/src/main/resources/META-INF/services/org.openlinktoken.tokens.Token` (one per line).
-4. Run `mvn clean install` and add/adjust tests.
-
-Attribute steps are identical except:
-
-- Class extends `org.openlinktoken.attributes.Attribute` (e.g., in `attributes.person`).
-- Register in: `lib/java/openlinktoken/src/main/resources/META-INF/services/org.openlinktoken.attributes.Attribute`.
-
-Guidelines:
-
-- No blank lines or comments in service files.
-- Keep entries sorted alphabetically (recommended for diffs).
-- Update service file if class is renamed/moved.
-
-Troubleshooting:
-
-- Not loading? Check for: typo in service file, missing no-arg constructor, class not public, duplicate class names.
-
-### Python Registration
-
-Python uses two mechanisms:
-
-1. Dynamic discovery for Tokens in `openlinktoken/tokens/definitions`.
-2. Explicit inclusion for Attributes via `attribute_loader.py`.
-
-Add a Token:
-
-1. Create `lib/python/openlinktoken/src/main/openlinktoken/tokens/definitions/t6_token.py` (example).
-2. Define a class inheriting `Token` with `get_identifier()` & `get_definition()`.
-3. Ensure file and class names are unique and public.
-4. Run `pytest src/test` to verify auto-discovery.
-
-Add an Attribute:
-
-1. Create module, e.g., `openlinktoken/attributes/person/middle_name_attribute.py`.
-2. Implement subclass of `Attribute`.
-3. In `attribute_loader.py`, import the class and add an instance inside `AttributeLoader.load()`.
-
-Python Troubleshooting:
-
-- If a Token isn’t picked up: ensure directory has `__init__.py` and class file matches naming conventions.
-- If an Attribute isn’t loaded: confirm it’s imported and added to the returned set.
-
-### Cross-language Parity Checklist
-
-- Same `FirstName`/`LastName` normalization logic, including diacritic removal and supported Latin Extended transliteration before ASCII-only filtering.
-- Matching token definitions (order & components) across Java & Python.
-- Tests confirming identical hash/encryption output for shared fixtures.
-
-### Quick Reference
-
-| Operation             | Java File(s)                     | Python File(s)                                              |
-| --------------------- | -------------------------------- | ----------------------------------------------------------- |
-| Add Token             | `META-INF/services/...Token`     | `tokens/definitions/<new>_token.py`                         |
-| Add Attribute         | `META-INF/services/...Attribute` | `attributes/.../<new>_attribute.py` + `attribute_loader.py` |
-| Rename Implementation | Update service file entries      | Rename file & ensure loader/discovery still finds it        |
-
-Maintain tests to guard consistency between languages.
-
-#### Common Generic Attributes (ready to reuse)
-
-Available in both Java and Python for custom rules:
-
-- `Integer` – signed integers; trims whitespace; parse/stringify normalization.
-- `Decimal` – floating point with optional scientific notation; trims then parses.
-- `Year` – 4-digit calendar year; enforces regex then delegates to integer base.
-- `Date` – normalizes to `yyyy-MM-dd` from common date inputs.
-- `String` – trimmed non-empty strings.
-- `RecordId` – identifier passthrough.
-
-## Building & Testing
-
-### Full Multi-language Build
-
-(Useful in CI or before PR submission.)
-
-```shell
-# Java (builds core module)
-(cd lib/java && mvn clean install)
-
-# Python core
-(cd lib/python/openlinktoken && pytest src/test)
-
-# Python CLI
-(cd lib/python/openlinktoken-cli && pytest src/test)
-
-# PySpark Bridge
-(cd lib/python/openlinktoken-pyspark && pytest src/test)
-```
-
-### Docker Image
-
-```shell
-docker build . -t openlinktoken
-```
-
-## Running the Tool (CLI)
-
-The CLI is provided by the Python `openlinktoken-cli` package.
-After installation, use the `olt` console script. If it is unavailable, use
-`python -m openlinktoken_cli.main` as the equivalent fallback.
-
-Minimum required arguments:
-
-```shell
-# Python console script
-olt package -i input.csv -o output.csv --exchange-config ./openlinktoken-YYYY-MM-DD.exchange.json
-```
-
-Arguments:
-
-| Flag                    | Description                                                        |
-| ----------------------- | ------------------------------------------------------------------ |
-| `-i, --input`           | Input file path                                                    |
-| `-o, --output`          | Output file path (optional — auto-generated when omitted)          |
-| `-c, --exchange-config` | Exchange config JSON path                                          |
-| `--private-key`         | Private key PEM used to decrypt the config                         |
-| `--private-key-env`     | Environment variable containing the private key                    |
-| `--no-progress, -q`     | Suppress interactive progress indicator (for CI / non-interactive) |
-
-The `--no-progress` / `-q` flag is available on all four processing commands: `package`, `tokenize`, `encrypt`, and `decrypt`.
-
-#### Progress display environment variables
-
-Two environment variables suppress the interactive progress display without requiring a CLI flag — useful in CI pipelines and shell scripts:
-
-| Variable               | Effect                                                 |
-| ---------------------- | ------------------------------------------------------ |
-| `OPENLINK_NO_PROGRESS` | Suppresses the progress indicator (OLT-specific)       |
-| `NO_PROGRESS`          | Suppresses the progress indicator (generic convention) |
-
-Setting `NO_COLOR=1` (the cross-tool standard) retains the progress display but strips all ANSI colour codes from it, producing plain-text output suitable for log capture.
-
-### Key Pair Generation
-
-The `generate-key-pair` subcommand generates an ECDH public/private key pair:
-
-```shell
-olt generate-key-pair --curve P-256 --name my-key
-```
-
-Writes:
-
-- `~/.openlinktoken/<name>.private.pem` — PKCS#8 PEM (permissions `600`)
-- `~/.openlinktoken/<name>.public.pem` — SubjectPublicKeyInfo PEM (permissions `644`)
-
-`--curve` options: `P-256` (default), `P-384`, `P-521`. Use `--force` to overwrite existing keys.
-
-## Local Extension Development
-
-The `openlinktoken-ext-hello-world` package in `lib/python/openlinktoken_ext_hello_world/` is the canonical reference extension. Use it as your starting point when developing a new extension locally.
-
-### Setup
-
-Install the hello-world extension in editable mode so the CLI discovers it via the `openlinktoken.extensions` entry-point group:
-
-```shell
-source /home/vscode/.local/share/openlinktoken/.venv/bin/activate
-
-# Install the CLI in editable mode (if not already)
-cd lib/python/openlinktoken-cli && uv pip install -e .
-
-# Install the reference extension in editable mode
-cd lib/python/openlinktoken_ext_hello_world && uv pip install -e .
-```
-
-After the editable install, the entry point is registered in the active Python environment. The CLI discovers it at startup with no further configuration.
-
-### Manual testing: editable install (fast path)
-
-The editable install registers the entry point immediately — no build step required.
-
-```shell
-cd lib/python/openlinktoken_ext_hello_world
-uv pip install -e .
-
-# Verify it appears in help and the extension list
-olt --help
-olt extension list
-
-# Run it
-olt hello-world hello --name Alice
-# → Hello, Alice
-olt hello-world bye --name Bob
-# → Bye, Bob
-```
-
-### Manual testing: wheel install (full pipeline)
-
-Use this to test the complete `extension install` flow, including download, unpacking, and registry write.
-
-```shell
-cd lib/python/openlinktoken_ext_hello_world
-
-# Build the wheel
-pip install build && python -m build
-
-# Install via the extension command (--yes skips the security prompt; use an absolute path)
-olt extension install file://$(pwd)/dist/openlinktoken_ext_hello_world-1.0.0-py3-none-any.whl --yes
-
-# Confirm it appears in the registry
-olt extension list
-
-# Run it
-olt hello-world hello --name Alice
-# → Hello, Alice
-olt hello-world bye --name Bob
-# → Bye, Bob
-```
-
-### Run the extension tests
-
-```shell
-cd lib/python/openlinktoken_ext_hello_world && pytest src/test
-```
-
-### Developing your own extension
-
-1. Create a new directory for your extension package (mirror the `openlinktoken-hello-world` structure).
-2. Implement `OpenLinkTokenExtension` from `openlinktoken_cli.extension`:
-   ```python
-   from openlinktoken_cli.extension import OpenLinkTokenExtension
-   ```
-3. Declare the `openlinktoken.extensions` entry point in your `pyproject.toml`:
-   ```toml
-   [project.entry-points."openlinktoken.extensions"]
-   my-ext = "my_package.extension:MyExtension"
-   ```
-4. Install in editable mode (`uv pip install -e .`) — the CLI picks it up on next invocation.
-5. Package with `python -m build` and distribute as a `.whl`.
-6. End users install via `olt extension install <url-or-file://path>`.
-
-#### Reporting custom progress metrics
-
-Extensions that process large datasets can contribute custom metrics to the CLI progress display. Implement the `StatsProvider` protocol and register it with the reporter:
-
-```python
-from openlinktoken_cli.extension import StatsProvider
-
-class MyExtensionStats:
-    """Thread-safe custom metrics for the progress display."""
-
-    def __init__(self):
-        self._matched = 0
-
-    def increment_matched(self) -> None:
-        self._matched += 1
-
-    def get_metrics(self) -> list[tuple[str, str, str]]:
-        return [("matched", f"{self._matched:,}", "rows")]
-
-# In your command handler (receives reporter as CliRunReporter):
-stats = MyExtensionStats()
-reporter.add_stats_provider(stats)
-```
-
-The reporter calls `get_metrics()` on each render tick (~1 Hz). Metrics appear below a divider in the same multiline progress block, aligned to the same columns as the built-in metrics. Return `(label, number_string, unit_string)` triples — use an empty string for unit when not applicable.
-
-See `lib/python/openlinktoken_ext_hello_world/README.md` for the full lifecycle walkthrough and `pages/quickstarts/extension-quickstart.md` for a step-by-step guide.
-
-### Extension tests in `openlinktoken-cli`
-
-The loader, registry, and command tests live in:
-
-```
-lib/python/openlinktoken-cli/src/test/openlinktoken_cli/extension/
-lib/python/openlinktoken-cli/src/test/openlinktoken_cli/commands/test_extension_command.py
-```
-
-Run them with:
-
-```shell
-cd lib/python/openlinktoken-cli && pytest src/test/openlinktoken_cli/extension src/test/openlinktoken_cli/commands/test_extension_command.py -v
-```
-
-## Development Container
-
-A Dev Container configuration provides a reproducible environment with:
-
-- JDK 21
-- Maven
-- Python & tooling
-
-Open the repository in VS Code and select: "Reopen in Container".
-
-## Version Bumping Policy
-
-All PRs MUST bump the version via `bump2version` (never edit versions manually):
-
-- Bug fix / docs tweak: `bump2version patch`
-- Backward-compatible feature: `bump2version minor`
-- Breaking change: `bump2version major`
-
-Ensure the working tree is clean before running the command.
-
-## Contributing Checklist
-
-Before opening a PR:
-
-- [ ] Code compiles (`mvn clean install` for Java)
-- [ ] Tests pass (Java & Python where changes apply)
-- [ ] Added/updated docs if behavior changed
-- [ ] Followed [Coding Standards](#coding-standards) (see also [PR Guidelines](../.github/instructions/pull-request.instructions.md))
-  - [ ] Java: Direct imports, Checkstyle passing, Javadoc for public APIs
-  - [ ] Python: PEP 8, type hints, docstrings, no unused imports
-- [ ] Added registration entries (Java SPI files) or loader entries (Python) if new Token/Attribute
-- [ ] Bumped version with `bump2version`
+For release branches, use the process in
+[Branch and release workflow](./branch-workflow-and-release-process.md).
 
 ## Troubleshooting
 
-| Issue                            | Hint                                                                                                                                                                                                |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Java class not discovered        | Confirm fully qualified name in `META-INF/services/*` file & no trailing spaces                                                                                                                     |
-| Python attribute not loaded      | Ensure it is imported & added in `attribute_loader.py`                                                                                                                                              |
-| Token mismatch between languages | Verify hashing & encryption secrets are identical and `FirstName`/`LastName` normalization still removes diacritics and transliterates supported Latin Extended letters before ASCII-only filtering |
-| Build fails on Checkstyle        | Run `mvn -q checkstyle:check` locally & fix warnings                                                                                                                                                |
-| Import errors or style issues    | See [Coding Standards](#coding-standards) for language-specific guidelines                                                                                                                          |
-
----
-
-Maintainers: Keep this guide updated when changing build, versioning, or extension workflows.
+| Problem                        | Check                                                                                       |
+| ------------------------------ | ------------------------------------------------------------------------------------------- |
+| Java class is not discovered   | Check the matching ServiceLoader file and class name.                                       |
+| Python attribute is not loaded | Check `attribute_loader.py` and its registration entry.                                     |
+| Java and Python tokens differ  | Compare normalization, rule order, secrets, and the interoperability fixtures.              |
+| Python import fails            | Run `uv sync --all-packages --dev` from the repository root and use the shared environment. |

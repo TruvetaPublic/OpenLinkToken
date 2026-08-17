@@ -4,7 +4,12 @@ layout: default
 
 # Matching Model
 
-Open Link Token uses a multi-rule tokenization strategy to enable privacy-preserving record linkage across datasets that contain PII. Alongside the five deterministic token rules (T1-T5), ML1 is enabled by default. ML1 uses an ONNX matching model to generate an embedding, then derives rotation-based, quantized token projections.
+Open Link Token uses a multi-rule tokenization strategy to enable
+privacy-preserving record linkage across datasets that contain PII. The core
+library provides five deterministic token rules (T1–T5). The Python CLI can
+also load ML1 from the optional AI provider and enables inference by default
+when that provider is available. ML1 uses an ONNX matching model to generate an
+embedding, then derives rotation-based, quantized token projections.
 
 ---
 
@@ -82,9 +87,10 @@ is not de-identification. See [ML1 Model and Rotation](ml1-model-and-rotation.md
 for the model tensor contract, 1024-dimensional embedding, rotation math,
 quantization, signature format, and security limitations.
 
-ML1 is enabled by default and is more compute-intensive than T1-T5. Its
-matching quality and precision/recall balance depend on the input population;
-validate it against your own matching data. To omit ML1, use
+The CLI enables ML1 by default when its provider is available, and ML1 is more
+compute-intensive than T1–T5. Its matching quality and precision/recall
+balance depend on the input population; validate it against your own matching
+data. To omit ML1, use
 `package --disable-inferencing` or `tokenize --disable-inferencing`; see the
 [CLI reference](../reference/cli.md) for the full set of ML1 options.
 
@@ -250,7 +256,13 @@ Open Link Token normalizes each field before token generation. For full rules, s
 
 ### Step 2: Token Generation
 
-Each record produces up to five deterministic token values (T1–T5) plus ML1 by default. ML1 is a token signature derived from rotation-based, quantized projections; the examples below illustrate the deterministic T1-T5 tokens. In encrypted mode, tokens are emitted as `olt.V1` JWE strings. In normal `tokenize` mode (or after decryption), tokens are base64-encoded HMAC values used for deterministic equality checks. The separate CLI option `tokenize --mode hash-only` instead emits 64-character SHA-256 hex values when you intentionally skip HMAC.
+Each record can produce five deterministic token values (T1–T5) plus ML1
+when the CLI's provider is enabled. ML1 uses the provider-specific signature
+format; the examples below illustrate the deterministic T1–T5 tokens. In
+encrypted mode, token values are wrapped as `olt.V1` JWE strings. In normal
+`tokenize` mode (or after decrypting T1–T5), the standard rules produce
+Base64-encoded HMAC values. The separate `tokenize --mode hash-only` option
+instead emits 64-character lowercase SHA-256 hex values.
 
 For detailed rule compositions, see [Token Rules](token-rules.md).
 

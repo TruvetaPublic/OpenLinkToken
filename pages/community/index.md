@@ -9,7 +9,7 @@ Join the Open Link Token community.
 
 - [Contributing](contributing.md) — How to contribute code and documentation
 - [Code of Conduct](code-of-conduct.md) — Community standards
-- [Branch Workflow and Release Process](../branch-workflow-and-release-process.md) — Release and branching conventions
+- [Branch Workflow and Release Process](../branch-workflow-and-release-process.md) — Branching, pull-request routing, and release automation
 
 ## Contribution and Development
 
@@ -61,12 +61,14 @@ uv pip install -r requirements.txt -e .
 ### Branch Workflow (Gitflow)
 
 ```text
-dev/* (feature work) → develop → release/x.y.z → main → develop (auto-sync)
+dev/* (feature work) → develop → release/x.y.z → main
 ```
 
 - Feature branches start from `develop`.
 - Release branches (`release/x.y.z`) open PRs to `main`.
-- After release, an automated PR syncs `main` back into `develop`.
+- Merged release PRs create the version tag and GitHub release automatically.
+- Keep `develop` current through the normal pull-request process; the release
+  workflow does not create an automatic back-sync PR.
 
 ### Versioning
 

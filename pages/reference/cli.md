@@ -319,7 +319,8 @@ olt package \
 **Token Pipeline:**
 
 ```
-Signature → SHA-256 → HMAC-SHA256 → JWE (AES-256-GCM) → Prefix `olt.V1.`
+Signature → SHA-256 → HMAC-SHA256 → AES-256-GCM transform
+           → JWE (AES-256-GCM) → Prefix `olt.V1.`
 ```
 
 ### `tokenize` Subcommand
@@ -339,9 +340,10 @@ olt tokenize \
 Signature → SHA-256 → HMAC-SHA256 → Base64
 ```
 
-## Custom Tokenization Configuration (`tokenize --config`)
+## Custom Tokenization Configuration (`package --config` or `tokenize --config`)
 
-Use `--config` to decouple tokenization from built-in column aliases.
+Use `--config` with `package` or `tokenize` to decouple tokenization from
+built-in column aliases.
 
 For complete details, see [Tokenization Configuration Reference](tokenization-config.md), including:
 

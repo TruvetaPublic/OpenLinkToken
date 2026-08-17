@@ -4,69 +4,40 @@ layout: default
 
 # Metadata and Audit
 
-Overview of the metadata produced alongside tokens and how to use it for auditing and verification.
+The CLI writes a small metadata summary alongside token outputs. It is useful
+for checking data quality and reproducing a run, but it is not a complete audit
+log: current CLI metadata does not record timestamps, user identity, paths, or
+secret hashes.
 
-## Overview
+## Where it appears
 
-The CLI `package` and `tokenize` commands generate metadata. For CSV and
-Parquet output, metadata is written as a `<output>.metadata.json` sidecar; for
-ZIP output, it is embedded in the archive. `encrypt` and `decrypt` do not
-generate metadata. The metadata provides:
+`package` and `tokenize` write metadata for CSV and Parquet outputs as a
+`<output-stem>.metadata.json` sidecar. ZIP output embeds the metadata file.
+`encrypt` and `decrypt` do not generate metadata.
 
-- Processing statistics (records processed, validation failures, blank tokens)
-- System information (platform and version)
-- Audit trail (platform, library version, and validation statistics)
+## What it contains
 
-## Key Concepts
+The summary combines:
 
-### Processing Statistics
+- runtime and library information (`Platform`, `Version`, and
+  `PythonVersion` or `JavaVersion`);
+- total processed rows (`TotalRows`);
+- distinct rows with invalid attributes
+  (`TotalRowsWithInvalidAttributes`);
+- invalid-attribute counts (`InvalidAttributesByType`); and
+- blank-token counts by rule (`BlankTokensByRule`).
 
-Metadata tracks:
+Use the [Metadata Format reference](../reference/metadata-format.md) for the
+schema, file naming, and interpretation details.
 
-- **Total records processed** (`TotalRows`)
-- **Records with errors** (`TotalRowsWithInvalidAttributes`)
-- **Invalid attributes by type** (`InvalidAttributesByType`)
-- **Blank tokens by rule** (`BlankTokensByRule`)
+## Practical use
 
-**Why this matters:**
+Store the metadata with its token output when investigating validation failures
+or comparing runs. The default CLI metadata contains no raw person values or
+secret bytes, but counts and runtime information may still be operationally
+sensitive.
 
-- Understand data quality issues
-- Track which attributes fail validation most often
-- Identify patterns in invalid data
+## Related concepts
 
-### Runtime Context
-
-Metadata captures the processing environment alongside the row-level counters:
-
-- `Platform`, `Version`, and `JavaVersion`/`PythonVersion` identify the runtime
-- Processing statistics show how the run behaved without exposing secret material
-- `BlankTokensByRule` can include `T1`–`T5` and, when ML1 is enabled, `ML1`
-
-**Purpose:**
-
-- Audit trail for compliance
-- Detect data-quality and processing errors
-
-### Audit Trail
-
-Metadata provides:
-
-- What platform and version (`Platform`, `Version`, and `JavaVersion`/`PythonVersion`)
-- What data quality outcomes (record counts and attribute-level statistics)
-
-**Use cases:**
-
-- Compliance audits (who/when/where)
-- Troubleshooting historic runs
-- Version tracking for reproducibility
-
-## Complete Reference
-
-For full field descriptions, JSON schema, examples, and interpretation guidance:
-
-→ **See [Reference: Metadata Format](../reference/metadata-format.md)**
-
-## Next Steps
-
-- **View metadata structure**: [Reference: Metadata Format](../reference/metadata-format.md)
-- **Understand validation rules**: [Normalization & Validation](normalization-and-validation.md)
+- [Normalization and Validation](normalization-and-validation.md)
+- [Token Rules](token-rules.md)

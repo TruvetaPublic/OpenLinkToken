@@ -1,53 +1,26 @@
-# Open Link Token Exchange Config Format
+# Exchange configuration format
 
-## Overview
+`olt initiate-exchange` writes a version `1` JSON artifact. The Python CLI
+currently creates and consumes this format. It contains one encrypted payload
+and one JWE recipient entry for each party:
 
-`olt initiate-exchange` writes a single JSON exchange artifact that contains:
+- the sender's key
+- the partner's public key
 
-- a top-level `version` field with value `1`
-- a JSON JWE envelope with shared ciphertext fields
-- two JWE recipients: one for the sender's local key and one for the partner's key
+The artifact contains no private key material.
 
-Both sides can decrypt the same file because both public keys are included as JWE
-recipients when the artifact is created. The file does **not** embed any private
-key material.
+## Envelope
 
-## Roles
+| Field        | Type    | Description                             |
+| ------------ | ------- | --------------------------------------- |
+| `version`    | integer | Current format version: `1`             |
+| `protected`  | string  | Base64url-encoded shared JOSE header    |
+| `iv`         | string  | Base64url AES-GCM initialization vector |
+| `ciphertext` | string  | Base64url encrypted payload             |
+| `tag`        | string  | Base64url AES-GCM authentication tag    |
+| `recipients` | array   | Per-party wrapped-key entries           |
 
-- `sender`: the party that runs `olt initiate-exchange`, creates the
-  exchange artifact, and contributes the local sender key entry written into
-  `recipients`
-- `recipient`: the counterparty whose public key is supplied to
-  `olt initiate-exchange` and whose matching private key can decrypt the
-  recipient entry in `recipients`
-
-## Top-Level Structure
-
-The exchange config is a JSON object with these fields:
-
-| Field        | Type    | Description                                                                               |
-| ------------ | ------- | ----------------------------------------------------------------------------------------- |
-| `version`    | integer | Artifact format marker. Current value: `1`.                                               |
-| `protected`  | string  | Base64url-encoded protected JOSE header shared by all recipients.                         |
-| `iv`         | string  | Base64url AES-GCM initialization vector for the ciphertext.                               |
-| `ciphertext` | string  | Base64url ciphertext for the encrypted payload.                                           |
-| `tag`        | string  | Base64url AES-GCM authentication tag.                                                     |
-| `recipients` | array   | Per-recipient JWE entries. Open Link Token writes one sender entry and one partner entry. |
-
-This is a JWE JSON serialization with shared ciphertext fields and per-recipient
-key-wrapping metadata.
-
-## Protected Header
-
-The `protected` value decodes to a JSON object shared by all recipients:
-
-| Field | Type   | Description                                                                     |
-| ----- | ------ | ------------------------------------------------------------------------------- |
-| `typ` | string | JWE type marker. Current value: `openlinktoken-exchange+jwe`.                   |
-| `cty` | string | Payload content type. Current value: `application/openlinktoken-exchange+json`. |
-| `enc` | string | Content-encryption algorithm. Current value: `A256GCM`.                         |
-
-Example decoded protected header:
+The decoded protected header is:
 
 ```json
 {
@@ -57,36 +30,14 @@ Example decoded protected header:
 }
 ```
 
-## Recipient Entries
-
-Each item in `recipients` contains the wrapped key for one decrypting party.
-
-| Field           | Type   | Description                                                  |
-| --------------- | ------ | ------------------------------------------------------------ |
-| `encrypted_key` | string | Base64url wrapped content-encryption key for this recipient. |
-| `header`        | object | Recipient-specific JOSE header.                              |
-
-### Recipient Header
-
-| Field | Type   | Description                                                                      |
-| ----- | ------ | -------------------------------------------------------------------------------- |
-| `alg` | string | Key management algorithm. Current value: `ECDH-ES+A256KW`.                       |
-| `kid` | string | Portable recipient identifier derived from the recipient public-key fingerprint. |
-| `epk` | object | Ephemeral EC public key used for this recipient's JWE key agreement.             |
-
-`kid` is not a friendly key name. Open Link Token derives it from the public-key
-fingerprint and writes it in `sha256:<lowercase-hyphenated-hex>` form.
-Friendly names such as `sender-q2` remain local operator-facing names for files in
-`~/.openlinktoken/`; they are not the portable identifiers embedded in the artifact.
-
-Example recipient entry:
+Each recipient has an `encrypted_key` and a `header`:
 
 ```json
 {
-  "encrypted_key": "Base64UrlWrappedKeyHere",
+  "encrypted_key": "Base64UrlWrappedKey",
   "header": {
     "alg": "ECDH-ES+A256KW",
-    "kid": "sha256:11-22-33-44-55-66-77-88-99-aa-bb-cc-dd-ee-ff-00",
+    "kid": "sha256:11-22-33-44-55-66-77-88",
     "epk": {
       "kty": "EC",
       "crv": "P-256",
@@ -97,97 +48,69 @@ Example recipient entry:
 }
 ```
 
-## Encrypted Payload
+`kid` is derived from the public-key SHA-256 fingerprint in
+`sha256:<lowercase-hyphenated-hex>` form. A local friendly key name such as
+`sender-q2` is not stored in the artifact.
 
-After decryption, the payload is JSON with these fields:
+## Decrypted payload
 
-| Field                     | Type    | Description                                                                             |
-| ------------------------- | ------- | --------------------------------------------------------------------------------------- |
-| `exchangeName`            | string  | Logical exchange name recorded in the payload.                                          |
-| `hashingSecret`           | string  | Hashing secret encoded as unpadded base64url text.                                      |
-| `hashingSecretEncoding`   | string  | Encoding marker. Current value: `base64url`.                                            |
-| `senderKeyFingerprint`    | string  | SHA-256 fingerprint of the sender public key.                                           |
-| `recipientKeyFingerprint` | string  | SHA-256 fingerprint of the partner public key.                                          |
-| `curve`                   | string  | Open Link Token curve name for the exchange keys, such as `P-256`.                      |
-| `createdAt`               | string  | UTC creation timestamp in ISO 8601 `Z` form.                                            |
-| `exchangeId`              | string  | Random UUID used to identify the exchange artifact.                                     |
-| `rotationIv`              | string  | Initialization vector for the rotation matrix generator, encoded as unpadded base64url. |
-| `rotationIvEncoding`      | string  | Encoding marker. Current value: `base64url`.                                            |
-| `rotationCount`           | integer | Number of rotation matrices to generate. Default: `50`.                                 |
-| `binWidth`                | number  | Quantization bin width for rotation-based token generation. Default: `0.05`.            |
-| `dimensionBias`           | array   | Per-dimension bias vector subtracted before rotation. Default: `[]` (all zeros).        |
+| Field                     | Type    | Description                                   |
+| ------------------------- | ------- | --------------------------------------------- |
+| `exchangeName`            | string  | Logical exchange name                         |
+| `hashingSecret`           | string  | Unpadded base64url-encoded hashing secret     |
+| `hashingSecretEncoding`   | string  | `base64url`                                   |
+| `senderKeyFingerprint`    | string  | SHA-256 fingerprint of the sender public key  |
+| `recipientKeyFingerprint` | string  | SHA-256 fingerprint of the partner public key |
+| `senderPublicKey`         | string  | Sender public key PEM                         |
+| `recipientPublicKey`      | string  | Partner public key PEM                        |
+| `curve`                   | string  | Exchange key curve, such as `P-256`           |
+| `createdAt`               | string  | UTC timestamp in ISO 8601 `Z` form            |
+| `exchangeId`              | string  | Random UUID for the exchange                  |
+| `rotationIv`              | string  | Unpadded base64url rotation IV                |
+| `rotationIvEncoding`      | string  | `base64url`                                   |
+| `rotationCount`           | integer | Rotation count; CLI default is `50`           |
+| `binWidth`                | number  | Quantization bin width; CLI default is `0.05` |
+| `dimensionBias`           | array   | Bias vector; CLI default is 1,024 zero values |
 
-Example decrypted payload:
+The hashing secret and rotation IV are generated randomly when the caller does
+not provide them. Use the CLI's stdin or environment-variable options to avoid
+putting secret values in shell history.
+
+Example:
 
 ```json
 {
   "exchangeName": "sender-q2",
-  "hashingSecret": "R2VuZXJhdGVkU2VjcmV0Qnl0ZXMwMTIzNDU2Nzg5MDE",
+  "hashingSecret": "R2VuZXJhdGVkU2VjcmV0",
   "hashingSecretEncoding": "base64url",
-  "senderKeyFingerprint": "AA:BB:CC:DD:EE:FF",
-  "recipientKeyFingerprint": "11:22:33:44:55:66",
+  "senderKeyFingerprint": "AA:BB:CC:DD",
+  "recipientKeyFingerprint": "11:22:33:44",
+  "senderPublicKey": "-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----\n",
+  "recipientPublicKey": "-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----\n",
   "curve": "P-256",
   "createdAt": "2026-03-11T21:00:00Z",
   "exchangeId": "0f3d5f8a-3f2a-4c2f-b69d-cb1f9d08d4ab",
-  "rotationIv": "R2VuZXJhdGVkUm90YXRpb25JVkJ5dGVzMDEyMzQ1Njc",
+  "rotationIv": "Um90YXRpb25JVg",
   "rotationIvEncoding": "base64url",
   "rotationCount": 50,
   "binWidth": 0.05,
-  "dimensionBias": []
+  "dimensionBias": [0.0, 0.0]
 }
 ```
 
-## Example Serialized Artifact
+The example bias is shortened. A real default payload contains 1,024 entries,
+or the length of the supplied `--rotation-embedding-bias` array.
 
-```json
-{
-  "version": 1,
-  "protected": "eyJ0eXAiOiJvcGVudG9rZW4tZXhjaGFuZ2UrandlIiwiY3R5IjoiYXBwbGljYXRpb24vb3BlbnRva2VuLWV4Y2hhbmdlK2pzb24iLCJlbmMiOiJBMjU2R0NNIn0",
-  "iv": "Base64UrlIvHere",
-  "ciphertext": "Base64UrlCiphertextHere",
-  "tag": "Base64UrlTagHere",
-  "recipients": [
-    {
-      "encrypted_key": "Base64UrlWrappedKeyForSenderHere",
-      "header": {
-        "alg": "ECDH-ES+A256KW",
-        "kid": "sha256:aa-bb-cc-dd-ee-ff",
-        "epk": {
-          "kty": "EC",
-          "crv": "P-256",
-          "x": "...",
-          "y": "..."
-        }
-      }
-    },
-    {
-      "encrypted_key": "Base64UrlWrappedKeyForRecipientHere",
-      "header": {
-        "alg": "ECDH-ES+A256KW",
-        "kid": "sha256:11-22-33-44-55-66",
-        "epk": {
-          "kty": "EC",
-          "crv": "P-256",
-          "x": "...",
-          "y": "..."
-        }
-      }
-    }
-  ]
-}
-```
+## Key resolution and inspection
 
-## Decryption and Validation Notes
+Both parties can decrypt the artifact with the matching private key. The CLI
+can receive that key through `--private-key`, `--private-key-env`, or the local
+`~/.openlinktoken/` key directory, where it resolves `kid` from the public-key
+fingerprint.
 
-- The sender and recipient can both decrypt the artifact because each side appears in
-  `recipients`.
-- The artifact alone is not enough to recover the hashing secret; the matching private
-  key must be available locally.
-- A validator or other tool can resolve a private key by the fingerprint-derived
-  `kid`, even when operators primarily know the key by a friendly local filename.
-- `tools/exchange/print_exchange_envelope.py` prints the raw serialized envelope,
-  adds a `protectedDecoded` object for the shared JOSE header, and decrypts the inner
-  payload into `decryptedPayload` when a matching private key is available.
-- `tools/exchange/validate_exchange_secret.py` decrypts the payload, checks that a
-  supplied private key matches one of the recipient `kid` values, or otherwise tries to
-  resolve a matching private key from `~/.openlinktoken/`.
+Useful inspection tools:
+
+- `tools/exchange/print_exchange_envelope.py` prints the envelope, decoded
+  protected header, and decrypted payload when a matching key is available.
+- `tools/exchange/validate_exchange_secret.py` validates the recipient key and
+  reads the decrypted hashing secret.

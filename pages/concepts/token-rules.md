@@ -4,7 +4,13 @@ layout: default
 
 # Token Rules
 
-Open Link Token generates five deterministic token types (T1-T5) and, by default, ML1. T1-T5 rules define a **token signature** (a deterministic, normalized string) that is transformed into the output token via hashing (and optionally encryption). ML1 uses an ONNX matching model to generate an embedding, then derives rotation-based, quantized token projections.
+Open Link Token provides five built-in deterministic token rules (T1–T5).
+The Python CLI can also load the optional AI provider for ML1; CLI inference is
+enabled by default when that provider is available and can be disabled with
+`--disable-inferencing`. T1–T5 define a **token signature** (a deterministic,
+normalized string) that is transformed into the output token via hashing and,
+when requested, encryption. See [ML1 Model and Rotation](ml1-model-and-rotation.md)
+for the provider-specific ML1 contract.
 
 ---
 
@@ -181,16 +187,19 @@ Token Signature: "SMITH|JON|MALE"
 
 ## Token Rule Summary
 
-| RuleId | Signature attributes                                                                                                                                               | Typical precision | Typical recall  |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------- | --------------- |
-| T1     | Last, First[0], Sex, BirthDate                                                                                                                                     | Medium-high       | High            |
-| T2     | Last, First, BirthDate, ZIP3                                                                                                                                       | High              | Good            |
-| T3     | Last, First, Sex, BirthDate                                                                                                                                        | High              | Medium-high     |
-| T4     | SSN(digits), Sex, BirthDate                                                                                                                                        | Very high         | Low             |
-| T5     | Last, First[0:3], Sex                                                                                                                                              | Lower             | Highest         |
-| ML1\*  | ONNX embedding from PostalCode, BirthDate, GivenName, Surname, Gender; rotation-based, quantized projections, hashed with a T1-derived blocking key when available | Model-dependent   | Model-dependent |
+| RuleId | Signature attributes                                                                          | Typical precision | Typical recall |
+| ------ | --------------------------------------------------------------------------------------------- | ----------------- | -------------- |
+| T1     | Last, First[0], Sex, BirthDate                                                                | Medium-high       | High           |
+| T2     | Last, First, BirthDate, ZIP3                                                                  | High              | Good           |
+| T3     | Last, First, Sex, BirthDate                                                                   | High              | Medium-high    |
+| T4     | SSN(digits), Sex, BirthDate                                                                   | Very high         | Low            |
+| T5     | Last, First[0:3], Sex                                                                         | Lower             | Highest        |
+| ML1\*  | Optional provider-backed model token; see [ML1 Model and Rotation](ml1-model-and-rotation.md) | —                 | —              |
 
-\* ML1 is enabled by default. It is more compute-intensive and slower than T1-T5, but produces significantly better matching outcomes than T1-T5 alone. The improvement and its precision/recall balance depend on the input population, so validate it with your own matching data. To omit it, use `package --disable-inferencing` or `tokenize --disable-inferencing`. See the [CLI reference](../reference/cli.md) for ML1 options.
+\* The CLI enables ML1 inference by default when its provider is available. To
+omit ML1 generation, use `package --disable-inferencing` or
+`tokenize --disable-inferencing`. See the [CLI reference](../reference/cli.md)
+for ML1 options.
 
 ---
 
@@ -235,21 +244,21 @@ Notes:
 
 Each `AttributeExpression` takes an expression string — a `|`-separated pipeline of operators applied to the attribute value before token generation:
 
-| Operator       | Description                                             |
-| -------------- | ------------------------------------------------------- |
-| `T`            | Trim whitespace                                         |
-| `U`            | Convert to upper case                                   |
-| `S(start,end)` | Substring from `start` (inclusive) to `end` (exclusive) |
-| `D`            | Parse as a date in `yyyy-MM-dd` format                  |
-| `M(regex)`     | Assert value matches the regular expression             |
-| `R(old,new)`   | Replace all occurrences of `old` with `new`             |
+| Operator       | Description                                                   |
+| -------------- | ------------------------------------------------------------- |
+| `T`            | Trim whitespace                                               |
+| `U`            | Convert to upper case                                         |
+| `S(start,end)` | Substring from `start` (inclusive) to `end` (exclusive)       |
+| `D`            | Parse as a date in `yyyy-MM-dd` format                        |
+| `M(regex)`     | Concatenate the regular-expression matches found in the value |
+| `R(old,new)`   | Replace all occurrences of `old` with `new`                   |
 
 Examples:
 
 ```
 T|S(0,3)|U      # trim, take first 3 chars, uppercase
 T|D             # trim, treat as date
-T|M("\\d+")    # trim, assert all digits
+T|M("\\d+")    # trim, retain the matching digits
 ```
 
 ---
