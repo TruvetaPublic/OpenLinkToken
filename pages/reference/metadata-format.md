@@ -111,7 +111,7 @@ For `package -o output.zip`, the archive contains the token output and
 {
   "Platform": "Python",
   "PythonVersion": "3.11.5",
-  "Version": "2.1.1",
+  "Version": "2.1.2",
   "TotalRows": 101,
   "TotalRowsWithInvalidAttributes": 9,
   "InvalidAttributesByType": {
@@ -138,7 +138,7 @@ For `package -o output.zip`, the archive contains the token output and
 {
   "Platform": "Python",
   "PythonVersion": "3.11.5",
-  "Version": "2.1.1",
+  "Version": "2.1.2",
   "TotalRows": 50,
   "TotalRowsWithInvalidAttributes": 2,
   "InvalidAttributesByType": {

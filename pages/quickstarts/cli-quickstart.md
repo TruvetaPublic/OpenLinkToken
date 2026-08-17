@@ -59,8 +59,8 @@ Both installers detect the platform, install to a user-writable directory, and v
 
 ```bash
 # Extract the zip file
-unzip openlinktoken-cli-2.1.1-macos-universal.zip
-cd openlinktoken-cli-2.1.1-macos-universal
+unzip openlinktoken-cli-2.1.2-macos-universal.zip
+cd openlinktoken-cli-2.1.2-macos-universal
 
 # Make executable (if needed)
 chmod +x openlinktoken
@@ -77,8 +77,8 @@ chmod +x openlinktoken
 
 ```powershell
 # Extract the zip file
-Expand-Archive openlinktoken-cli-2.1.1-windows-x64.zip
-cd openlinktoken-cli-2.1.1-windows-x64
+Expand-Archive openlinktoken-cli-2.1.2-windows-x64.zip
+cd openlinktoken-cli-2.1.2-windows-x64
 
 # Simulate receiving the recipient's public key (in practice, your partner provides this)
 .\olt.exe generate-key-pair --name recipient

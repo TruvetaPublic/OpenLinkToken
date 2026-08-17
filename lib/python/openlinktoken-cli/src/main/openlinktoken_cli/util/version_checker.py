@@ -36,7 +36,7 @@ class VersionChecker:
         Initialize the VersionChecker.
 
         Args:
-            current_version: The currently running version string (e.g. "2.1.1").
+            current_version: The currently running version string (e.g. "2.1.2").
             no_update_check: When True the checker is disabled entirely.
         """
         self._current_version = current_version
