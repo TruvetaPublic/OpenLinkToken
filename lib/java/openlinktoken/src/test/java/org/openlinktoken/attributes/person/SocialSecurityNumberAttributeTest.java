@@ -129,6 +129,42 @@ class SocialSecurityNumberAttributeTest {
 
     @Test
     void validate_ShouldReturnFalseForSpecificInvalidSSNs() {
+        assertFalse(ssnAttribute.validate("001-01-0001"), "Invalid SSN 001-01-0001 should not be allowed");
+        assertFalse(ssnAttribute.validate("001-01-0101"), "Invalid SSN 001-01-0101 should not be allowed");
+        assertFalse(ssnAttribute.validate("001-01-9999"), "Invalid SSN 001-01-9999 should not be allowed");
+        assertFalse(ssnAttribute.validate("001-10-0110"), "Invalid SSN 001-10-0110 should not be allowed");
+        assertFalse(ssnAttribute.validate("001-11-1111"), "Invalid SSN 001-11-1111 should not be allowed");
+        assertFalse(ssnAttribute.validate("001-12-2334"), "Invalid SSN 001-12-2334 should not be allowed");
+        assertFalse(ssnAttribute.validate("011-11-1111"), "Invalid SSN 011-11-1111 should not be allowed");
+        assertFalse(ssnAttribute.validate("100-10-1000"), "Invalid SSN 100-10-1000 should not be allowed");
+        assertFalse(ssnAttribute.validate("123-12-3123"), "Invalid SSN 123-12-3123 should not be allowed");
+        assertFalse(ssnAttribute.validate("111-11-1112"), "Invalid SSN 111-11-1112 should not be allowed");
+        assertFalse(ssnAttribute.validate("123-12-1234"), "Invalid SSN 123-12-1234 should not be allowed");
+        assertFalse(ssnAttribute.validate("199-99-9999"), "Invalid SSN 199-99-9999 should not be allowed");
+        assertFalse(ssnAttribute.validate("899-99-9999"), "Invalid SSN 899-99-9999 should not be allowed");
+        assertFalse(ssnAttribute.validate("022-22-2222"), "Invalid SSN 022-22-2222 should not be allowed");
+        assertFalse(ssnAttribute.validate("123-45-7896"), "Invalid SSN 123-45-7896 should not be allowed");
+        assertFalse(ssnAttribute.validate("123-45-6788"), "Invalid SSN 123-45-6788 should not be allowed");
+        assertFalse(ssnAttribute.validate("088-88-8888"), "Invalid SSN 088-88-8888 should not be allowed");
+        assertFalse(ssnAttribute.validate("007-77-7777"), "Invalid SSN 007-77-7777 should not be allowed");
+        assertFalse(ssnAttribute.validate("077-77-7777"), "Invalid SSN 077-77-7777 should not be allowed");
+        assertFalse(ssnAttribute.validate("123-45-6987"), "Invalid SSN 123-45-6987 should not be allowed");
+        assertFalse(ssnAttribute.validate("123-45-1234"), "Invalid SSN 123-45-1234 should not be allowed");
+        assertFalse(ssnAttribute.validate("699-99-9999"), "Invalid SSN 699-99-9999 should not be allowed");
+        assertFalse(ssnAttribute.validate("111-11-1234"), "Invalid SSN 111-11-1234 should not be allowed");
+        assertFalse(ssnAttribute.validate("222-33-4444"), "Invalid SSN 222-33-4444 should not be allowed");
+        assertFalse(ssnAttribute.validate("111-22-1111"), "Invalid SSN 111-22-1111 should not be allowed");
+        assertFalse(ssnAttribute.validate("111-22-2333"), "Invalid SSN 111-22-2333 should not be allowed");
+        assertFalse(ssnAttribute.validate("111-11-9999"), "Invalid SSN 111-11-9999 should not be allowed");
+        assertFalse(ssnAttribute.validate("454-54-5454"), "Invalid SSN 454-54-5454 should not be allowed");
+        assertFalse(ssnAttribute.validate("123-45-6879"), "Invalid SSN 123-45-6879 should not be allowed");
+        assertFalse(ssnAttribute.validate("055-55-5555"), "Invalid SSN 055-55-5555 should not be allowed");
+        assertFalse(ssnAttribute.validate("123-45-6798"), "Invalid SSN 123-45-6798 should not be allowed");
+        assertFalse(ssnAttribute.validate("299-99-9999"), "Invalid SSN 299-99-9999 should not be allowed");
+        assertFalse(ssnAttribute.validate("399-99-9999"), "Invalid SSN 399-99-9999 should not be allowed");
+        assertFalse(ssnAttribute.validate("499-99-9999"), "Invalid SSN 499-99-9999 should not be allowed");
+        assertFalse(ssnAttribute.validate("599-99-9999"), "Invalid SSN 599-99-9999 should not be allowed");
+        assertFalse(ssnAttribute.validate("799-99-9999"), "Invalid SSN 799-99-9999 should not be allowed");
         assertFalse(ssnAttribute.validate("111-22-3333"), "Invalid SSN 111-22-3333 should not be allowed");
         assertFalse(ssnAttribute.validate("111223333"), "Invalid SSN 111223333 (without dashes) should not be allowed");
     }
