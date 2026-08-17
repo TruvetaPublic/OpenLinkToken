@@ -64,6 +64,20 @@ These options are accepted by the root command and apply to every invocation:
 
 The automatic version check can also be disabled permanently by setting the environment variable `OLT_DISABLE_UPDATE_CHECK=1`.
 
+### Progress Display Environment Variables
+
+`--no-progress`/`-q` suppresses the interactive progress indicator for a single
+run. Two environment variables do the same without a CLI flag, useful in CI
+pipelines and scripts:
+
+| Variable               | Effect                                                       |
+| ---------------------- | ------------------------------------------------------------ |
+| `OPENLINK_NO_PROGRESS` | Suppresses the progress indicator (Open Link Token-specific) |
+| `NO_PROGRESS`          | Suppresses the progress indicator (generic convention)       |
+
+Setting `NO_COLOR=1` (the cross-tool standard) keeps the progress display but
+strips ANSI color codes, producing plain-text output suitable for log capture.
+
 **Terminology:** **Open Link Token** is the product name. `olt` is the
 command-line executable or console script; `openlinktoken-cli` is the Python
 package name.

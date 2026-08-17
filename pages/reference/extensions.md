@@ -156,6 +156,36 @@ install → discover → load → register → invoke → uninstall
 
 ---
 
+## Reporting Custom Progress Metrics
+
+Extensions that process large datasets can contribute custom metrics to the CLI's interactive progress display. Implement the `StatsProvider` protocol from `openlinktoken_cli.extension` and register an instance with the reporter your command handler receives:
+
+```python
+from openlinktoken_cli.extension import StatsProvider
+
+
+class MyExtensionStats:
+    """Thread-safe custom metrics for the progress display."""
+
+    def __init__(self):
+        self._matched = 0
+
+    def increment_matched(self) -> None:
+        self._matched += 1
+
+    def get_metrics(self) -> list[tuple[str, str, str]]:
+        return [("matched", f"{self._matched:,}", "rows")]
+
+
+# In your command handler (receives reporter as CliRunReporter):
+stats = MyExtensionStats()
+reporter.add_stats_provider(stats)
+```
+
+The reporter calls `get_metrics()` on each render tick (~1 Hz). Metrics appear below a divider in the same multiline progress block, aligned to the same columns as the built-in metrics. Return `(label, number_string, unit_string)` triples — use an empty string for the unit when it does not apply.
+
+---
+
 ## Conflict Rules
 
 - **Command name uniqueness**: `command_name` must not duplicate a built-in subcommand name or another installed extension's `command_name`.

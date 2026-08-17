@@ -87,6 +87,10 @@ the token rule definition; see [Token rules](../pages/concepts/token-rules.md).
 
 ## Key and compatibility notes
 
+- The `olt.V1.` prefix is a deliberate scanner-safe marker: it does not match
+  the shape of a JWT access token (`eyJ...`), a provider API key, or an AWS
+  credential (`AKIA...`), reducing accidental flags in automated secret
+  scanners.
 - The encryption key is not stored in the token.
 - The protected header can be inspected without decryption, but the PPID and
   rule metadata require the encryption key.
@@ -94,6 +98,9 @@ the token rule definition; see [Token rules](../pages/concepts/token-rules.md).
   fields, and algorithms.
 - `olt.V1` tokens are distinct from legacy non-JWE token values. Consumers that
   support both formats should detect the prefix before choosing a parser.
+
+This envelope uses [RFC 7516](https://datatracker.ietf.org/doc/html/rfc7516)
+JWE compact serialization.
 
 For exchange-key derivation and key-file handling, see
 [Exchange configuration format](exchange-config-format.md).

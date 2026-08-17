@@ -58,6 +58,9 @@ Run Java tests:
 (cd lib/java && mvn test)
 ```
 
+Checkstyle runs as part of the Java build; run it standalone with
+`(cd lib/java && mvn checkstyle:check)`.
+
 Run Python tests for the packages changed by your work:
 
 ```bash
@@ -68,7 +71,9 @@ Run Python tests for the packages changed by your work:
 ```
 
 The PySpark tests require a compatible Spark installation. Use the package
-extras in `lib/python/openlinktoken-pyspark/pyproject.toml`.
+extras in `lib/python/openlinktoken-pyspark/pyproject.toml`. See
+[Spark or Databricks](../pages/operations/spark-or-databricks.md) for
+distributed-processing setup and usage.
 
 Run the repository formatter and linter through the tools already configured in
 the workspace:
@@ -105,7 +110,10 @@ uv run olt tokenize \
 
 Use `package` with an exchange configuration for encrypted output. See the
 [CLI quickstart](../pages/quickstarts/cli-quickstart.md) for the complete
-key-exchange flow.
+key-exchange flow, including `generate-key-pair`. For programmatic use of the
+core library instead of the CLI, see the
+[Java API reference](../pages/reference/java-api.md) and
+[Python API reference](../pages/reference/python-api.md).
 
 To build the self-contained CLI used by the release workflow:
 
@@ -149,8 +157,10 @@ The Python CLI discovers token definitions from
 
 The reference extension is
 `lib/python/openlinktoken_ext_hello_world/`. For the extension interface,
-entry-point registration, installation, and frozen-binary compatibility, see
-its [README](../lib/python/openlinktoken_ext_hello_world/README.md) and the
+entry-point registration, installation, frozen-binary compatibility, and
+reporting custom progress metrics, see the
+[Extension Author Reference](../pages/reference/extensions.md), its
+[README](../lib/python/openlinktoken_ext_hello_world/README.md), and the
 [extension quickstart](../pages/quickstarts/extension-quickstart.md).
 
 Editable local install:
@@ -200,3 +210,4 @@ For release branches, use the process in
 | Python attribute is not loaded | Check `attribute_loader.py` and its registration entry.                                     |
 | Java and Python tokens differ  | Compare normalization, rule order, secrets, and the interoperability fixtures.              |
 | Python import fails            | Run `uv sync --all-packages --dev` from the repository root and use the shared environment. |
+| Java build fails on Checkstyle | Run `mvn -q checkstyle:check` locally and fix the reported warnings.                        |

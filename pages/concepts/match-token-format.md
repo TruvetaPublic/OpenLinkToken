@@ -103,6 +103,9 @@ outputs raw signatures.
 
 - AES-256-GCM provides payload confidentiality and authenticated integrity.
 - The `kid` value remains visible so a recipient can select a key ring.
+- The `olt.V1.` prefix is a deliberate scanner-safe marker, distinct from a JWT
+  access token (`eyJ...`), a provider API key, or an AWS credential
+  (`AKIA...`), reducing accidental flags in automated secret scanners.
 - A token is still sensitive data; the envelope does not remove the need to
   protect token files and encryption keys.
 
