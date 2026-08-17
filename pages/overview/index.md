@@ -34,8 +34,8 @@ Matching is performed on deterministic tokenized values (or decrypted token payl
 
 1. **Input**: Person records with attributes (name, birthdate, SSN, postal code, sex)
 2. **Validation & Normalization**: Attributes are validated and normalized (uppercase, diacritic removal, supported Latin Extended transliteration, title stripping)
-3. **Token Generation**: Five deterministic token rules (T1–T5) combine different attributes; ML1 can add one model-based rule by default
-4. **Transformation**: Deterministic HMAC-SHA256 hashes are produced; encrypted mode wraps them as `olt.V1` JWE match tokens
+3. **Token Generation**: Five deterministic token rules (T1–T5) combine different attributes; the CLI can add ML1 when its AI provider is available
+4. **Transformation**: Deterministic HMAC-SHA256 values are produced; encrypted mode applies an AES-GCM transform and wraps the result as an `olt.V1` JWE match token
 5. **Output**: Encrypted `olt.V1` tokens (default), deterministic tokenized values, or `tokenize --mode hash-only` SHA-256 output. `package` and `tokenize` also write metadata.
 
 ## Key Concepts
@@ -75,7 +75,8 @@ Invalid records are tracked and reported in metadata.
 The token is transformed through a secure pipeline:
 
 ```
-Token Signature → SHA-256 Hash → HMAC-SHA256 → JWE (AES-256-GCM) → Prefix `olt.V1.`
+Token Signature → SHA-256 Hash → HMAC-SHA256 → AES-256-GCM transform
+               → JWE (AES-256-GCM) → Prefix `olt.V1.`
 ```
 
 Or using the `tokenize` subcommand (no encryption):

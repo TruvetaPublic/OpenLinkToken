@@ -11,8 +11,11 @@ Open Link Token is a privacy-preserving token generation system for deterministi
 **Purpose:** Generate cryptographically secure tokens from person attributes such that:
 
 - Identical inputs always produce identical deterministic matching values (normal `tokenize`, `tokenize --mode hash-only`, or decrypted)
-- Tokens reveal nothing about the underlying data (one-way)
-- Matching can occur on different attribute combinations via default token rules (T1–T5) and the default-enabled ONNX-backed ML1 rule
+- One-way tokenized values do not expose the source attributes; encrypted
+  package values can be opened only by a holder of the transport key
+- Matching can occur on different attribute combinations via default token rules
+  (T1–T5) and an optional ONNX-backed ML1 rule; the CLI enables ML1 by default
+  when its AI provider is available
 
 **Applicability:** This specification applies to both Java and Python implementations. Cross-language deterministic outputs (tokenized, `--mode hash-only`, and decrypted values where supported) must be byte-identical for the same normalized inputs and secrets.
 
@@ -23,9 +26,12 @@ Open Link Token is a privacy-preserving token generation system for deterministi
 ### In Scope
 
 1. **Person attribute normalization**: Transformation of raw input data into canonical forms
-2. **Token rule definitions**: Five default rules (T1–T5) combining attributes in distinct ways, plus ML1 enabled by default and disableable through the CLI
+2. **Token rule definitions**: Five default rules (T1–T5) combining attributes
+   in distinct ways, plus optional ML1 inference (enabled by default by the CLI
+   when its provider is available)
 3. **Token generation pipeline**: Deterministic transformation of normalized attributes → final tokens
-4. **Metadata tracking**: Processing statistics and system info for audit
+4. **Metadata tracking**: Processing statistics and system info for
+   troubleshooting and reproducibility
 5. **Error handling**: Behavior when attributes fail validation
 6. **Output formats**: CSV and Parquet serialization
 
@@ -134,14 +140,14 @@ Invalid records are flagged and tracked in metadata; blank tokens are generated 
 
 Apply each enabled token rule independently:
 
-| Rule    | Attributes                                                            | Notes                                     |
-| ------- | --------------------------------------------------------------------- | ----------------------------------------- |
-| **T1**  | U(LastName) \| U(FirstName[0]) \| U(Sex) \| BirthDate                 | Standard match; higher recall             |
-| **T2**  | U(LastName) \| U(FirstName) \| BirthDate \| PostalCode[0:3]           | Geographic variation; uses ZIP-3          |
-| **T3**  | U(LastName) \| U(FirstName) \| U(Sex) \| BirthDate                    | Higher precision match; full name + sex   |
-| **T4**  | SocialSecurityNumber \| U(Sex) \| BirthDate                           | Authoritative; uses SSN                   |
-| **T5**  | U(LastName) \| U(FirstName[0:3]) \| U(Sex)                            | Quick search; no birth date               |
-| **ML1** | ONNX CLS embedding from PostalCode/Birthdate/GivenName/Surname/Gender | Default model-based rule; can be disabled |
+| Rule    | Attributes                                                            | Notes                                                                   |
+| ------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| **T1**  | U(LastName) \| U(FirstName[0]) \| U(Sex) \| BirthDate                 | Standard match; higher recall                                           |
+| **T2**  | U(LastName) \| U(FirstName) \| BirthDate \| PostalCode[0:3]           | Geographic variation; uses ZIP-3                                        |
+| **T3**  | U(LastName) \| U(FirstName) \| U(Sex) \| BirthDate                    | Higher precision match; full name + sex                                 |
+| **T4**  | SocialSecurityNumber \| U(Sex) \| BirthDate                           | Authoritative; uses SSN                                                 |
+| **T5**  | U(LastName) \| U(FirstName[0:3]) \| U(Sex)                            | Quick search; no birth date                                             |
+| **ML1** | ONNX CLS embedding from PostalCode/Birthdate/GivenName/Surname/Gender | Optional model-based rule; the CLI enables it by default when available |
 
 (U = Uppercase, [0] = first char, [0:3] = first 3 chars)
 
@@ -161,7 +167,8 @@ formula and the behavior when T1 cannot be computed.
 **Default mode (encrypted):**
 
 ```
-Signature → SHA-256 → HMAC-SHA256 → JWE (AES-256-GCM) → Prefix `olt.V1.`
+Signature → SHA-256 → HMAC-SHA256 → AES-256-GCM transform
+           → JWE (AES-256-GCM) → Prefix `olt.V1.`
 ```
 
 Encrypted `olt.V1` token strings are intentionally non-deterministic due to randomized IVs.
@@ -190,7 +197,7 @@ Signature → SHA-256 → Lowercase hex
 During processing, Open Link Token tracks:
 
 - **Counts**: Total rows, invalid attributes per type, blank tokens per rule
-- **System Info**: Platform, Python version, and library version in the Python CLI
+- **System Info**: Platform, producer runtime version, and library version
 
 The CLI writes metadata for `package` and `tokenize` only. CSV and Parquet
 outputs receive a `.metadata.json` sidecar; ZIP package output embeds the
@@ -214,11 +221,14 @@ RecordId,RuleId,Token
 **Columns:**
 
 - `RecordId`: From input (or auto-generated if omitted)
-- `RuleId`: T1, T2, T3, T4, T5, or ML1
-- `Token`: Encrypted `olt.V1.<JWE>` token in encrypted mode, a base64 HMAC token in default `tokenize`/decrypted mode, or a 64-character SHA-256 hex token in `tokenize --mode hash-only` mode (or empty string if validation failed)
+- `RuleId`: Built-in rules (`T1`–`T5`), optional `ML1`, or a configured custom rule
+- `Token`: Encrypted `olt.V1.<JWE>` token in encrypted mode; standard T1–T5
+  rules produce a Base64 HMAC token in default `tokenize`/decrypted mode; or
+  a 64-character lowercase SHA-256 hex token in `tokenize --mode hash-only`
+  mode (or an empty string when no token is generated)
 
-**Rows per input record:** 6 by default (T1–T5 plus ML1), 5 when ML1 is
-disabled, and fewer when required attributes are invalid
+**Rows per input record:** Up to five built-in rules plus ML1 when the provider
+is enabled and valid; configured rule sets can produce a different number.
 
 **Example (`package` encrypted output):**
 

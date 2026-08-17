@@ -64,6 +64,20 @@ These options are accepted by the root command and apply to every invocation:
 
 The automatic version check can also be disabled permanently by setting the environment variable `OLT_DISABLE_UPDATE_CHECK=1`.
 
+### Progress Display Environment Variables
+
+`--no-progress`/`-q` suppresses the interactive progress indicator for a single
+run. Two environment variables do the same without a CLI flag, useful in CI
+pipelines and scripts:
+
+| Variable               | Effect                                                       |
+| ---------------------- | ------------------------------------------------------------ |
+| `OPENLINK_NO_PROGRESS` | Suppresses the progress indicator (Open Link Token-specific) |
+| `NO_PROGRESS`          | Suppresses the progress indicator (generic convention)       |
+
+Setting `NO_COLOR=1` (the cross-tool standard) keeps the progress display but
+strips ANSI color codes, producing plain-text output suitable for log capture.
+
 **Terminology:** **Open Link Token** is the product name. `olt` is the
 command-line executable or console script; `openlinktoken-cli` is the Python
 package name.
@@ -319,7 +333,8 @@ olt package \
 **Token Pipeline:**
 
 ```
-Signature → SHA-256 → HMAC-SHA256 → JWE (AES-256-GCM) → Prefix `olt.V1.`
+Signature → SHA-256 → HMAC-SHA256 → AES-256-GCM transform
+           → JWE (AES-256-GCM) → Prefix `olt.V1.`
 ```
 
 ### `tokenize` Subcommand
@@ -339,9 +354,10 @@ olt tokenize \
 Signature → SHA-256 → HMAC-SHA256 → Base64
 ```
 
-## Custom Tokenization Configuration (`tokenize --config`)
+## Custom Tokenization Configuration (`package --config` or `tokenize --config`)
 
-Use `--config` to decouple tokenization from built-in column aliases.
+Use `--config` with `package` or `tokenize` to decouple tokenization from
+built-in column aliases.
 
 For complete details, see [Tokenization Configuration Reference](tokenization-config.md), including:
 

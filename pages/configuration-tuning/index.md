@@ -169,7 +169,8 @@ See [Reference: Metadata Format](../reference/metadata-format.md) for detailed f
 
 ### Encryption Mode (Default)
 
-Generates encrypted `olt.V1` match tokens using HMAC-SHA256 + JWE/AES-256-GCM.
+Generates encrypted `olt.V1` match tokens using HMAC-SHA256, an AES-256-GCM
+token transform, and the JWE AES-256-GCM envelope.
 
 ```bash
 olt package \

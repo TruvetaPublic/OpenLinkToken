@@ -4,16 +4,12 @@ layout: default
 
 # Tokenization Configuration Reference
 
-Complete reference for `tokenize --config`: field mapping, token-rule definitions, examples, and validation behavior.
+The Python CLI `package` and `tokenize` commands accept
+`--config <path>` for non-standard input columns and explicitly defined token
+rules. A configuration-driven run replaces the built-in T1–T5 definition with
+the rules in the file; optional CLI inferencing is a separate provider.
 
-## Overview
-
-`tokenize --config` lets you map non-standard input column names to Open Link Token attribute types and define token rules explicitly.
-
-Use this when source data does not use built-in aliases (for example `given name`
-instead of `FirstName`) or when custom token rules are required.
-
-## Example Command
+## Example command
 
 ```bash
 olt tokenize \
@@ -22,7 +18,9 @@ olt tokenize \
   --config ./tokenization-config.yaml
 ```
 
-## Example Input (Unusual Fields)
+Use the same `--config` option with `olt package`.
+
+## Example input
 
 ```csv
 member_id,given name,surname_txt,dob_iso,gender_code,zip_5,national_id
@@ -30,7 +28,7 @@ A-1001,Ana,Lopez,1988-03-12,F,98052,123-45-6789
 A-1002,Marcus,Nguyen,1979-11-05,M,10001,234-56-7890
 ```
 
-## Example Configuration File
+## Example configuration
 
 ```yaml
 column_mappings:
@@ -68,67 +66,86 @@ token_rules:
       expression: T|S(0,1)|U
 ```
 
-## File Specification
+## File specification
 
-Top-level keys:
+The top-level sections are both required and must be non-empty:
 
-| Key               | Required | Type    | Description                                                                  |
-| ----------------- | -------- | ------- | ---------------------------------------------------------------------------- |
-| `column_mappings` | Yes      | Mapping | Maps logical field IDs to source column names and attribute types.           |
-| `token_rules`     | Yes      | Mapping | Defines each token rule as an ordered list of `{field, expression}` entries. |
+| Key               | Shape   | Meaning                                                          |
+| ----------------- | ------- | ---------------------------------------------------------------- |
+| `column_mappings` | Mapping | Maps logical field IDs to source columns and attribute types     |
+| `token_rules`     | Mapping | Maps each rule ID to an ordered list of field/expression entries |
 
-`column_mappings` entry schema:
+Each `column_mappings` entry requires:
 
-| Field         | Required | Type    | Description                                                                                                                                                                                                                                      |
-| ------------- | -------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `<field_id>`  | Yes      | Mapping | Logical field identifier used by token rules (for example `GivenName`).                                                                                                                                                                          |
-| `column_name` | Yes      | String  | Source column name in the CSV or Parquet file (for example `"given name"`).                                                                                                                                                                      |
-| `type`        | Yes      | String  | Open Link Token attribute type. See [Attribute Types](#attribute-types) for all accepted values. Each type applies its own normalization and validation rules — see [Normalization and Validation](../concepts/normalization-and-validation.md). |
+| Field         | Meaning                                        |
+| ------------- | ---------------------------------------------- |
+| `<field_id>`  | Logical ID referenced by a token rule          |
+| `column_name` | Source column name in the CSV or Parquet input |
+| `type`        | Registered attribute type name or alias        |
 
-`token_rules` entry schema:
+Each entry in a `token_rules` list requires:
 
-| Field        | Required | Type   | Description                                                                                                                    |
-| ------------ | -------- | ------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| `<rule_id>`  | Yes      | List   | Token rule identifier (`T1`, `T2`, `T3`, `T4`, `T5`, or custom).                                                               |
-| `field`      | Yes      | String | Must match one of the `column_mappings` field IDs.                                                                             |
-| `expression` | Yes      | String | Attribute-expression pipeline used by token generation. See [Expression Syntax](../concepts/token-rules.md#expression-syntax). |
+| Field        | Meaning                                               |
+| ------------ | ----------------------------------------------------- | ----------------------------------------- |
+| `field`      | Must match a logical ID declared in `column_mappings` |
+| `expression` | `                                                     | `-separated attribute-expression pipeline |
 
-## Validation Rules
+Rule-entry order is preserved when the token signature is built. Rule IDs can
+be `T1`–`T5` or custom identifiers.
 
-Validation enforced by the CLI:
+## Validation and record IDs
 
-- `column_mappings` must be present and non-empty.
-- `token_rules` must be present and non-empty.
-- Every token-rule entry must contain non-empty `field` and `expression`.
-- Every token-rule `field` must reference a declared `column_mappings` field ID.
-- Every declared `type` must resolve to a known Open Link Token attribute class/alias.
-- Token-rule entry order is preserved and used as-is during token construction.
+The CLI rejects configurations when:
 
-## Expression Syntax
+- `column_mappings` or `token_rules` is missing, not a mapping, or empty;
+- a rule is not a non-empty list;
+- an entry is missing a non-empty `field` or `expression`;
+- a rule references an undeclared field ID; or
+- an attribute `type` cannot be resolved.
 
-See [Expression Syntax](../concepts/token-rules.md#expression-syntax) in the Token Rules concept page.
+If no mapping has type `RecordId`, the loader warns and output record IDs fall
+back to generated UUIDs rather than preserving source IDs.
 
-## Notes
+## Expression operators
 
-- `--config` works with `tokenize` for both CSV and Parquet input.
-- Built-in aliases continue to work when `--config` is omitted.
+Operator names are case-insensitive. The supported operators are:
 
-## Attribute Types
+| Operator         | Behavior                                                         |
+| ---------------- | ---------------------------------------------------------------- |
+| `T`              | Trim whitespace                                                  |
+| `U`              | Convert to uppercase                                             |
+| `S(start,end)`   | Take the substring from `start` (inclusive) to `end` (exclusive) |
+| `D`              | Parse a normalized `yyyy-MM-dd` date                             |
+| `M(regex)`       | Concatenate the regex matches found in the value                 |
+| `R("old","new")` | Replace occurrences of one quoted string with another            |
 
-Accepted values for the field `type`. Each type applies its own normalization and validation rules — see [Normalization and Validation](../concepts/normalization-and-validation.md). |
+For examples and the API-level expression behavior, see
+[Token Rules: Expression Syntax](../concepts/token-rules.md#expression-syntax).
 
-| `type` value           | Description                    |
-| ---------------------- | ------------------------------ |
-| `Age`                  | Age (numeric)                  |
-| `BirthDate`            | Date of birth                  |
-| `BirthYear`            | Year of birth                  |
-| `Date`                 | Generic date                   |
-| `Decimal`              | Decimal number                 |
-| `FirstName`            | Given / first name             |
-| `Integer`              | Integer number                 |
-| `LastName`             | Family / last name             |
-| `PostalCode`           | Postal or ZIP code             |
-| `Sex`                  | Biological sex                 |
-| `SocialSecurityNumber` | National identification number |
-| `String`               | Generic string                 |
-| `Year`                 | Generic year                   |
+## Attribute types
+
+`type` values are exact, case-sensitive registered names. The Python CLI
+currently accepts these canonical names and aliases:
+
+| Canonical type         | Aliases                               |
+| ---------------------- | ------------------------------------- |
+| `Age`                  | —                                     |
+| `BirthDate`            | `DateOfBirth`                         |
+| `BirthYear`            | `YearOfBirth`                         |
+| `Date`                 | —                                     |
+| `Decimal`              | —                                     |
+| `FirstName`            | `GivenName`                           |
+| `Integer`              | —                                     |
+| `LastName`             | `Surname`                             |
+| `PostalCode`           | `ZipCode`, `ZIP3`, `ZIP4`, `ZIP5`     |
+| `RecordId`             | `Id`                                  |
+| `Sex`                  | `Gender`                              |
+| `SocialSecurityNumber` | `NationalIdentificationNumber`, `SSN` |
+| `String`               | `Text`                                |
+| `Year`                 | —                                     |
+
+Each type applies its own normalization and validation rules; see
+[Normalization and Validation](../concepts/normalization-and-validation.md).
+
+When `--config` is omitted, the CLI uses its built-in input-column aliases and
+token definitions.
