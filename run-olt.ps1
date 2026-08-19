@@ -19,6 +19,10 @@ param(
     [Parameter(Mandatory=$false, HelpMessage="Skip Docker image build (use existing image)")]
     [switch]$SkipBuild,
 
+    [Parameter(Mandatory=$false, HelpMessage="GPU request: auto, all, or none (default: auto)")]
+    [ValidateSet("auto", "all", "none")]
+    [string]$Gpus = "auto",
+
     [Parameter(Mandatory=$false, HelpMessage="Show help message")]
     [switch]$Help,
 
@@ -35,7 +39,7 @@ function Show-Usage {
     Write-Host @"
 
 USAGE:
-    .\run-olt.ps1 <Subcommand> [OltOptions] [-DockerImage name] [-SkipBuild] [-Verbose]
+    .\run-olt.ps1 <Subcommand> [OltOptions] [-DockerImage name] [-SkipBuild] [-Gpus mode] [-Verbose]
 
 DESCRIPTION:
     Docker convenience wrapper for Open Link Token. Builds the Docker image when
@@ -74,6 +78,7 @@ OLT OPTIONS (forwarded to the container -- see olt help <subcommand> for full de
 SCRIPT OPTIONS:
     -DockerImage <name>     Docker image name (default: openlinktoken:latest)
     -SkipBuild              Skip Docker image build
+    -Gpus <mode>            GPU request: auto, all, or none (default: auto)
     -Verbose                Verbose output
     -Help                   Show this message
 
@@ -266,8 +271,17 @@ if ($VerbosePreference -ne 'SilentlyContinue') {
 
 Write-OltInfo "Running Open Link Token ($Subcommand)..."
 
+$UseGpu = $Gpus -eq "all"
+if ($Gpus -eq "auto" -and (Get-Command nvidia-smi -ErrorAction SilentlyContinue)) {
+    $UseGpu = $true
+}
+
 $DockerRunOpts = [System.Collections.Generic.List[string]]@("run", "--rm", "-e", "HOME=/app")
 if ($NeedsStdin) { $DockerRunOpts.Add("-i") }
+if ($UseGpu) {
+    $DockerRunOpts.Add("--gpus")
+    $DockerRunOpts.Add("all")
+}
 $DockerRunOpts.AddRange($MountArgs)
 $DockerRunOpts.AddRange($EnvPassArgs)
 $DockerRunOpts.Add($DockerImage)

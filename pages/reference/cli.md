@@ -525,11 +525,12 @@ For long-running processing commands (`package`, `tokenize`, `encrypt`, and `dec
   [--verbose]
 ```
 
-| Option         | Description               |
-| -------------- | ------------------------- |
-| `--skip-build` | Skip Docker image rebuild |
-| `--verbose`    | Show detailed output      |
-| `--help`       | Show help message         |
+| Option         | Description                                             |
+| -------------- | ------------------------------------------------------- |
+| `--skip-build` | Skip Docker image rebuild                               |
+| `--gpus`       | GPU request: `auto`, `all`, or `none` (default: `auto`) |
+| `--verbose`    | Show detailed output                                    |
+| `--help`       | Show help message                                       |
 
 ### PowerShell (run-olt.ps1)
 
@@ -539,6 +540,7 @@ For long-running processing commands (`package`, `tokenize`, `encrypt`, and `dec
   -o .\output.csv `
   --exchange-config .\partner.exchange.json `
   [-SkipBuild] `
+  [-Gpus auto|all|none] `
   [-Verbose]
 ```
 

@@ -20,6 +20,8 @@ from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig
 
 logger = logging.getLogger(__name__)
 
+_ACCELERATED_EXECUTION_PROVIDERS = {"CUDAExecutionProvider", "CoreMLExecutionProvider"}
+
 
 @contextlib.contextmanager
 def _suppress_ort_stderr():
@@ -38,13 +40,17 @@ def _suppress_ort_stderr():
 def _resolve_providers() -> List[str | tuple]:
     """Return the best available ORT execution provider list for this environment.
 
-    On macOS, attempts CoreMLExecutionProvider with all available compute units.
-    CoreML partitions unsupported operations to CPU automatically.
-    Falls back to CPU-only if CoreML is unavailable or fails.
+    Prefer CUDA on NVIDIA systems and CoreML with all available compute units on
+    macOS. Unsupported operations fall through to CPU automatically.
+    Falls back to CPU-only if an accelerator is unavailable or fails.
     """
+
     import onnxruntime as ort
 
     available = ort.get_available_providers()
+    if "CUDAExecutionProvider" in available:
+        return ["CUDAExecutionProvider", "CPUExecutionProvider"]
+
     is_macos_native = platform.system() == "Darwin"
     if is_macos_native and "CoreMLExecutionProvider" in available:
         return [
@@ -52,6 +58,21 @@ def _resolve_providers() -> List[str | tuple]:
             "CPUExecutionProvider",
         ]
     return ["CPUExecutionProvider"]
+
+
+def _preload_cuda_libraries(ort, providers: List[str | tuple]) -> None:
+    """Load CUDA libraries bundled with the GPU wheel before session creation."""
+    if "CUDAExecutionProvider" not in providers:
+        return
+
+    preload_dlls = getattr(ort, "preload_dlls", None)
+    if not callable(preload_dlls):
+        return
+
+    try:
+        preload_dlls(directory="")
+    except Exception as error:
+        logger.warning("ML1 ONNX: CUDA library preload failed; session initialization will retry: %s", error)
 
 
 class ML1OnnxSignatureGenerator:
@@ -162,9 +183,9 @@ class ML1OnnxSignatureGenerator:
         start = time.perf_counter()
         try:
             outputs = cls._session.run(None, inputs)
-        except Exception as e:
-            if "CoreML" in str(e) or "CoreMLExecutionProvider" in str(cls._session.get_providers()):
-                logger.warning("ML1 ONNX: CoreML runtime error; falling back to CPU and retrying.")
+        except Exception:
+            if any(provider in cls._session.get_providers() for provider in _ACCELERATED_EXECUTION_PROVIDERS):
+                logger.warning("ML1 ONNX: accelerated runtime error; falling back to CPU and retrying.")
                 cls._reinitialize_with_cpu_only()
                 outputs = cls._session.run(None, inputs)
             else:
@@ -271,6 +292,8 @@ class ML1OnnxSignatureGenerator:
                 cls._reinitialize_with_cpu_only()
             else:
                 logger.info("ML1 ONNX: CoreML active with all compute units enabled")
+        elif "CUDAExecutionProvider" in active:
+            logger.info("ML1 ONNX: CUDA execution provider active")
         else:
             logger.info("ML1 ONNX: running on CPUExecutionProvider")
 
@@ -299,6 +322,7 @@ class ML1OnnxSignatureGenerator:
     @classmethod
     def _create_session(cls, ort, session_options, model_path: Path, providers: List[str | tuple]):
         """Create an ONNX session, loading external weights in memory for CoreML."""
+        _preload_cuda_libraries(ort, providers)
         if cls._coreml_requested(providers):
             external_data_path = model_path.with_name(f"{model_path.name}.data")
             add_external_initializers = getattr(

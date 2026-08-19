@@ -18,6 +18,10 @@ from openlinktoken.attributes.person.first_name_attribute import FirstNameAttrib
 from openlinktoken.attributes.person.last_name_attribute import LastNameAttribute
 from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttribute
 from openlinktoken.attributes.person.sex_attribute import SexAttribute
+from openlinktoken.core.ai.tokens.ml1_onnx_signature_generator import (
+    ML1OnnxSignatureGenerator,
+    _resolve_providers,
+)
 
 MODEL_FIELDS = (
     ("PostalCode", "PostalCode", PostalCodeAttribute),
@@ -121,10 +125,11 @@ def generate_embeddings(
     session_options = ort.SessionOptions()
     session_options.intra_op_num_threads = num_threads
     session_options.inter_op_num_threads = num_threads
-    session = ort.InferenceSession(
-        str(model_path),
-        sess_options=session_options,
-        providers=["CPUExecutionProvider"],
+    session = ML1OnnxSignatureGenerator._create_session(
+        ort,
+        session_options,
+        model_path.resolve(),
+        _resolve_providers(),
     )
     tokenizer = Tokenizer.from_file(str(tokenizer_path))
 

@@ -10,6 +10,7 @@ set -e
 DOCKER_IMAGE="openlinktoken:latest"
 SKIP_BUILD=false
 VERBOSE=false
+GPU_REQUEST=auto
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; BLUE='\033[0;34m'; NC='\033[0m'
 log_info()    { echo -e "${BLUE}ℹ${NC} $1"; }
@@ -56,6 +57,7 @@ OPTIONS (forwarded to the container — see olt help <subcommand> for full detai
 SCRIPT OPTIONS:
     --image NAME        Docker image name (default: openlinktoken:latest)
     --skip-build        Skip Docker image build (use existing image)
+    --gpus MODE         GPU request: auto, all, or none (default: auto)
     -v, --verbose       Verbose output
     --help              Show this message
 
@@ -122,11 +124,17 @@ while [[ $# -gt 0 ]]; do
     case $1 in
         --skip-build)   SKIP_BUILD=true; shift ;;
         --image)        DOCKER_IMAGE="$2"; shift 2 ;;
+        --gpus)         GPU_REQUEST="$2"; shift 2 ;;
         -v|--verbose)   VERBOSE=true; shift ;;
         --help)         show_usage; exit 0 ;;
         *)              PASSTHROUGH_ARGS+=("$1"); shift ;;
     esac
 done
+
+case "$GPU_REQUEST" in
+    auto|all|none) ;;
+    *) log_error "--gpus must be auto, all, or none."; exit 1 ;;
+esac
 
 # ─── Check Docker ─────────────────────────────────────────────────────────────
 
@@ -290,6 +298,9 @@ log_info "Running Open Link Token ($SUBCOMMAND)..."
 
 DOCKER_RUN_OPTS=(--rm -e HOME=/app)
 [[ $NEEDS_STDIN == true ]] && DOCKER_RUN_OPTS+=(-i)
+if [[ "$GPU_REQUEST" == "all" || ( "$GPU_REQUEST" == "auto" && -n "$(command -v nvidia-smi 2>/dev/null || true)" ) ]]; then
+    DOCKER_RUN_OPTS+=(--gpus all)
+fi
 DOCKER_RUN_OPTS+=("${MOUNT_ARGS[@]}" "${ENV_PASS_ARGS[@]}")
 
 docker run "${DOCKER_RUN_OPTS[@]}" "$DOCKER_IMAGE" "$SUBCOMMAND" "${REMAPPED_ARGS[@]}"

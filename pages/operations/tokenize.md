@@ -38,6 +38,32 @@ Token Signature → SHA-256 Hash → HMAC-SHA256(hash, secret) → JWE (AES-256-
 
 ---
 
+## ML1 hardware acceleration
+
+On Linux x86_64, the Python and Docker installations include the CUDA-enabled
+ONNX Runtime package. ML1 selects `CUDAExecutionProvider` when an NVIDIA GPU
+is available and falls back to CPU when it is not. The Docker wrapper requests
+all GPUs automatically when `nvidia-smi` is available:
+
+```bash
+./run-olt.sh tokenize -i resources/sample.csv --gpus all
+```
+
+For a direct Docker invocation, pass the GPU device explicitly:
+
+```bash
+docker run --rm --gpus all -v "$(pwd)/resources:/app/resources" \
+  openlinktoken:latest tokenize \
+  -i /app/resources/sample.csv \
+  -o /app/resources/output.csv \
+  --mode hash-only
+```
+
+The host needs an NVIDIA driver and NVIDIA Container Toolkit. Use
+`--gpus none` to force CPU execution. macOS continues to use CoreML through
+the native Python installation; Docker Desktop cannot expose the Mac GPU as
+an NVIDIA CUDA device.
+
 ## When to Use `tokenize`
 
 The `tokenize` subcommand is primarily used to support **overlap analysis workflows** where you receive **encrypted tokens from an external partner** and want to build an internal dataset that can be joined against those tokens.

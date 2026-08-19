@@ -6,6 +6,7 @@ import onnxruntime as ort
 
 from openlinktoken.core.ai.tokens.ml1_onnx_signature_generator import (
     ML1OnnxSignatureGenerator,
+    _preload_cuda_libraries,
     _resolve_providers,
 )
 
@@ -33,6 +34,27 @@ def test_macos_resolves_coreml_with_all_compute_units(monkeypatch):
         ("CoreMLExecutionProvider", {"MLComputeUnits": "ALL"}),
         "CPUExecutionProvider",
     ]
+
+
+def test_cuda_is_preferred_when_available(monkeypatch):
+    """NVIDIA CUDA should be selected before the CPU fallback."""
+    monkeypatch.setattr(platform, "system", lambda: "Linux")
+    monkeypatch.setattr(
+        ort,
+        "get_available_providers",
+        lambda: ["CUDAExecutionProvider", "CPUExecutionProvider"],
+    )
+
+    assert _resolve_providers() == ["CUDAExecutionProvider", "CPUExecutionProvider"]
+
+
+def test_cuda_preloads_bundled_runtime_libraries():
+    """CUDA sessions should preload the runtime libraries installed with the GPU wheel."""
+    fake_ort = Mock()
+
+    _preload_cuda_libraries(fake_ort, ["CUDAExecutionProvider", "CPUExecutionProvider"])
+
+    fake_ort.preload_dlls.assert_called_once_with(directory="")
 
 
 def test_coreml_loads_external_model_data_from_memory(tmp_path):
