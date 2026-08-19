@@ -16,10 +16,6 @@ def reset_config():
             ML1InferenceConfig.DEFAULT_BATCH_SIZE,
             ML1InferenceConfig.DEFAULT_NUM_THREADS,
         )
-        ML1InferenceConfig.configure_asset_storage(
-            ML1InferenceConfig.DEFAULT_ASSET_REF,
-            ML1InferenceConfig.DEFAULT_ASSET_CACHE_DIRECTORY,
-        )
 
     restore()
     yield
@@ -27,7 +23,7 @@ def reset_config():
 
 
 def test_blank_paths_use_defaults():
-    """Blank model and tokenizer paths should use their bundled defaults."""
+    """Blank model and tokenizer paths should use their configured defaults."""
     ML1InferenceConfig.configure(True, " ", "", 32, 8, 2)
 
     assert ML1InferenceConfig.is_enabled()
@@ -46,26 +42,3 @@ def test_non_positive_numeric_values_raise(sequence_length, batch_size, thread_c
     """Non-positive ML1 numeric settings should be rejected."""
     with pytest.raises(ValueError):
         ML1InferenceConfig.configure(True, "", "", sequence_length, batch_size, thread_count)
-
-
-def test_asset_defaults_are_public_and_configurable(tmp_path):
-    """ML1 asset ref and cache directory should be configurable without changing path APIs."""
-    assert ML1InferenceConfig.DEFAULT_ASSET_REF == "release/2.1.1"
-    assert ML1InferenceConfig.DEFAULT_ASSET_REPOSITORY == "TruvetaPublic/OpenLinkToken"
-    assert ML1InferenceConfig.get_asset_cache_directory() == str(ML1InferenceConfig.get_cache_dir())
-
-    ML1InferenceConfig.configure_asset_storage("refs/test", tmp_path)
-
-    assert ML1InferenceConfig.get_asset_ref() == "refs/test"
-    assert ML1InferenceConfig.get_cache_dir() == tmp_path.absolute()
-
-
-def test_asset_storage_reads_shared_environment_variables(monkeypatch, tmp_path):
-    """Asset storage should honor the shared ML1 environment variable names."""
-    monkeypatch.setenv("OPENLINKTOKEN_ML1_ASSET_REF", "refs/environment")
-    monkeypatch.setenv("OPENLINKTOKEN_ML1_CACHE_DIR", str(tmp_path))
-
-    ML1InferenceConfig.configure_asset_storage(None, None)
-
-    assert ML1InferenceConfig.get_asset_ref() == "refs/environment"
-    assert ML1InferenceConfig.get_cache_dir() == tmp_path.absolute()

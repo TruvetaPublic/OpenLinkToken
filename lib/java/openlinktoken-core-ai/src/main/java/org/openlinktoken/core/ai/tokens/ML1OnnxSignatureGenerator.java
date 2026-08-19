@@ -3,34 +3,21 @@ package org.openlinktoken.core.ai.tokens;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.security.DigestInputStream;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -58,18 +45,6 @@ import ai.djl.translate.TranslateException;
 public final class ML1OnnxSignatureGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(ML1OnnxSignatureGenerator.class);
     private static final String ASSET_RESOURCE_PREFIX = "inferencing/ml1/";
-    private static final String ASSET_MANIFEST_RESOURCE =
-            ML1InferenceConfig.DEFAULT_ASSET_MANIFEST_PATH.substring("classpath:/".length());
-    private static final String ASSET_MEDIA_URL_PREFIX = ML1InferenceConfig.DEFAULT_ASSET_BASE_URL + "/";
-    private static final Pattern MANIFEST_ASSET_PATTERN =
-            Pattern.compile("\"([^\"]+)\"\\s*:\\s*\\{([^{}]*)\\}");
-    private static final Pattern MANIFEST_SHA_PATTERN =
-            Pattern.compile("\"sha256\"\\s*:\\s*\"([0-9a-fA-F]{64})\"");
-    private static final Pattern MANIFEST_SIZE_PATTERN =
-            Pattern.compile("\"size\"\\s*:\\s*(\\d+)");
-    private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
-            .followRedirects(HttpClient.Redirect.NORMAL)
-            .build();
     private static ZooModel<NDList, NDList> model;
     private static Predictor<NDList, NDList> predictor;
     private static HuggingFaceTokenizer tokenizer;
@@ -232,6 +207,14 @@ public final class ML1OnnxSignatureGenerator {
 
         closeModel();
         Path resolvedModelPath = resolvePath(modelPath);
+        if (resolvedModelPath.getFileName().toString().equals("model.onnx")) {
+            Path dataPath = resolvedModelPath.resolveSibling("model.onnx.data");
+            if (!Files.isRegularFile(dataPath)) {
+                throw new IllegalStateException(
+                        "ML1 model data file not found beside the model: " + dataPath
+                                + ". Place model.onnx.data beside model.onnx.");
+            }
+        }
         Path resolvedTokenizerPath = resolvePath(tokenizerPath);
 
         int numThreads = ML1InferenceConfig.getNumThreads();
@@ -464,13 +447,12 @@ public final class ML1OnnxSignatureGenerator {
             return sourceCheckoutPath;
         }
 
-        if (isDefaultAsset(normalized)) {
-            return ensureDownloadedAsset(Paths.get(normalized).getFileName().toString());
-        }
         throw new IllegalStateException(
-                "ML1 resource not found on classpath or filesystem. "
-                        + "Configure an explicit filesystem path, provide the asset in a packaged "
-                        + "classpath, or place the file at: resources/" + normalized);
+                "ML1 resource not found on the classpath or filesystem: " + normalized
+                        + ". Core-AI packages do not download ML1 assets. Add the file to "
+                        + "inferencing/ml1/ on the application classpath, place it at "
+                        + "resources/" + normalized + " in a source checkout, or configure an explicit "
+                        + "filesystem path.");
     }
 
     private static Path findSourceCheckoutPath(String normalized) {
@@ -483,224 +465,6 @@ public final class ML1OnnxSignatureGenerator {
             current = current.getParent();
         }
         return null;
-    }
-
-    private static boolean isDefaultAsset(String normalized) {
-        return normalized.equals(ASSET_RESOURCE_PREFIX + "model.onnx")
-                || normalized.equals(ASSET_RESOURCE_PREFIX + "tokenizer.json");
-    }
-
-    /**
-     * Build the public GitHub LFS media URL for one ML1 asset.
-     *
-     * @param assetRef Git ref containing the asset
-     * @param assetName asset filename from the manifest
-     * @return absolute download URL
-     */
-    static String buildAssetUrl(String assetRef, String assetName) {
-        validateAssetName(assetName);
-        validateAssetRef(assetRef);
-        String baseUrl = "tokenizer.json".equals(assetName)
-                ? ML1InferenceConfig.DEFAULT_ASSET_RAW_BASE_URL + "/"
-                : ASSET_MEDIA_URL_PREFIX;
-        return baseUrl + assetRef + "/resources/" + ASSET_RESOURCE_PREFIX + assetName;
-    }
-
-    /**
-     * Return the cache path for one configured asset.
-     *
-     * @param assetName asset filename from the manifest
-     * @return absolute local cache path
-     */
-    static Path assetCachePath(String assetName) {
-        validateAssetName(assetName);
-        validateAssetRef(ML1InferenceConfig.getAssetRef());
-        return Paths.get(ML1InferenceConfig.getAssetCacheDirectory())
-                .resolve(ML1InferenceConfig.getAssetRef())
-                .resolve(assetName)
-                .toAbsolutePath()
-                .normalize();
-    }
-
-    /**
-     * Read the small packaged/source-checkout manifest without touching large model assets.
-     *
-     * @return manifest entries keyed by filename
-     */
-    static Map<String, AssetManifestEntry> readAssetManifest() {
-        try (InputStream stream = ML1OnnxSignatureGenerator.class.getClassLoader()
-                .getResourceAsStream(ASSET_MANIFEST_RESOURCE)) {
-            if (stream != null) {
-                return parseAssetManifest(new String(stream.readAllBytes(), StandardCharsets.UTF_8));
-            }
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to read ML1 asset manifest from the classpath.", e);
-        }
-
-        Path sourceManifest = findSourceCheckoutPath(ASSET_MANIFEST_RESOURCE);
-        if (sourceManifest == null) {
-            throw new IllegalStateException(
-                    "ML1 asset manifest is missing. Configure explicit model and tokenizer filesystem paths.");
-        }
-        try {
-            return parseAssetManifest(Files.readString(sourceManifest));
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to read ML1 asset manifest: " + sourceManifest, e);
-        }
-    }
-
-    record AssetManifestEntry(String sha256, long size) {
-    }
-
-    private static Map<String, AssetManifestEntry> parseAssetManifest(String manifest) {
-        Map<String, AssetManifestEntry> entries = new HashMap<>();
-        Matcher assetMatcher = MANIFEST_ASSET_PATTERN.matcher(manifest);
-        while (assetMatcher.find()) {
-            Matcher shaMatcher = MANIFEST_SHA_PATTERN.matcher(assetMatcher.group(2));
-            Matcher sizeMatcher = MANIFEST_SIZE_PATTERN.matcher(assetMatcher.group(2));
-            if (shaMatcher.find() && sizeMatcher.find()) {
-                entries.put(
-                        assetMatcher.group(1),
-                        new AssetManifestEntry(shaMatcher.group(1).toLowerCase(Locale.ROOT),
-                                Long.parseLong(sizeMatcher.group(1))));
-            }
-        }
-        if (entries.isEmpty()) {
-            throw new IllegalStateException("ML1 asset manifest contains no valid asset entries.");
-        }
-        return Map.copyOf(entries);
-    }
-
-    static Path ensureDownloadedAsset(String assetName) {
-        Map<String, AssetManifestEntry> manifest = readAssetManifest();
-        AssetManifestEntry entry = manifest.get(assetName);
-        if (entry == null) {
-            throw new IllegalStateException("ML1 asset is not listed in the manifest: " + assetName);
-        }
-
-        Path cachedPath = assetCachePath(assetName);
-        try {
-            if (Files.isRegularFile(cachedPath) && hasExpectedDigest(cachedPath, entry)) {
-                if ("model.onnx".equals(assetName)) {
-                    AssetManifestEntry dataEntry = manifest.get("model.onnx.data");
-                    if (dataEntry == null) {
-                        throw new IllegalStateException("ML1 manifest is missing the model.onnx.data entry.");
-                    }
-                    Path dataPath = assetCachePath("model.onnx.data");
-                    if (!Files.isRegularFile(dataPath) || !hasExpectedDigest(dataPath, dataEntry)) {
-                        if (ML1InferenceConfig.isOffline()) {
-                            throw new IllegalStateException(
-                                    "ML1 asset 'model.onnx.data' is not available in the cache, and "
-                                            + ML1InferenceConfig.OFFLINE_ENVIRONMENT_VARIABLE
-                                            + "=1 forbids remote download. Configure an explicit local asset path.");
-                        }
-                        downloadAsset("model.onnx.data", dataEntry);
-                    }
-                }
-                return cachedPath;
-            }
-        } catch (IOException e) {
-            throw new IllegalStateException("Unable to verify cached ML1 asset: " + cachedPath, e);
-        }
-
-        if (ML1InferenceConfig.isOffline()) {
-            throw new IllegalStateException(
-                    "ML1 asset '" + assetName + "' is not available in package resources or the source checkout, "
-                            + "and " + ML1InferenceConfig.OFFLINE_ENVIRONMENT_VARIABLE
-                            + "=1 forbids remote download. Configure an explicit local asset path.");
-        }
-
-        Path assetPath = downloadAsset(assetName, entry);
-        if ("model.onnx".equals(assetName)) {
-            AssetManifestEntry dataEntry = manifest.get("model.onnx.data");
-            if (dataEntry == null) {
-                throw new IllegalStateException("ML1 manifest is missing the model.onnx.data entry.");
-            }
-            downloadAsset("model.onnx.data", dataEntry);
-        }
-        return assetPath;
-    }
-
-    // ponytail: one lock keeps cache initialization simple; split locks only if concurrent first use matters.
-    private static synchronized Path downloadAsset(String assetName, AssetManifestEntry entry) {
-        Path target = assetCachePath(assetName);
-        try {
-            Files.createDirectories(target.getParent());
-            if (Files.isRegularFile(target) && hasExpectedDigest(target, entry)) {
-                return target;
-            }
-
-            Path temporary = Files.createTempFile(target.getParent(), "." + assetName + ".", ".part");
-            try {
-                HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create(buildAssetUrl(ML1InferenceConfig.getAssetRef(), assetName)))
-                        .GET()
-                        .build();
-                HttpResponse<Path> response = HTTP_CLIENT.send(
-                        request,
-                        HttpResponse.BodyHandlers.ofFile(temporary));
-                if (response.statusCode() != 200) {
-                    throw new IllegalStateException(
-                            "Failed to download ML1 asset " + assetName + ": HTTP " + response.statusCode()
-                                    + " from " + request.uri());
-                }
-                if (!hasExpectedDigest(temporary, entry)) {
-                    throw new IllegalStateException(
-                            "Downloaded ML1 asset " + assetName + " failed SHA-256 or size verification.");
-                }
-                try {
-                    Files.move(temporary, target, StandardCopyOption.ATOMIC_MOVE,
-                            StandardCopyOption.REPLACE_EXISTING);
-                } catch (AtomicMoveNotSupportedException e) {
-                    Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING);
-                }
-                return target;
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new IllegalStateException("Interrupted while downloading ML1 asset: " + assetName, e);
-            } finally {
-                Files.deleteIfExists(temporary);
-            }
-        } catch (IOException e) {
-            throw new IllegalStateException(
-                    "Unable to cache ML1 asset " + assetName + " at " + target + ".", e);
-        }
-    }
-
-    private static boolean hasExpectedDigest(Path path, AssetManifestEntry entry) throws IOException {
-        if (Files.size(path) != entry.size()) {
-            return false;
-        }
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            try (InputStream input = Files.newInputStream(path);
-                    DigestInputStream digestInput = new DigestInputStream(input, digest)) {
-                digestInput.transferTo(OutputStream.nullOutputStream());
-            }
-            return HexFormat.of().formatHex(digest.digest()).equals(entry.sha256());
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 is unavailable.", e);
-        }
-    }
-
-    private static void validateAssetName(String assetName) {
-        if (assetName == null || assetName.isBlank()
-                || !assetName.equals(Paths.get(assetName).getFileName().toString())
-                || assetName.contains("..")) {
-            throw new IllegalArgumentException("Invalid ML1 asset name: " + assetName);
-        }
-    }
-
-    private static void validateAssetRef(String assetRef) {
-        if (assetRef == null || assetRef.isBlank()
-                || assetRef.contains("..")
-                || !assetRef.matches("[A-Za-z0-9._/-]+")) {
-            throw new IllegalArgumentException("Invalid ML1 asset ref: " + assetRef);
-        }
-        Path refPath = Paths.get(assetRef).normalize();
-        if (refPath.isAbsolute() || refPath.startsWith("..")) {
-            throw new IllegalArgumentException("Invalid ML1 asset ref: " + assetRef);
-        }
     }
 
     /**

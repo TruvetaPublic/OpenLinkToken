@@ -49,15 +49,6 @@ jobs:
         with:
           ref: ${{ needs.release-info.outputs.tag || github.ref }}
 
-      - name: Validate ML1 asset ref
-        run: |
-          set -euo pipefail
-          asset_ref="release/${VERSION}"
-          curl --fail --silent --show-error --head --retry 3 \
-            "https://media.githubusercontent.com/media/TruvetaPublic/OpenLinkToken/${asset_ref}/resources/inferencing/ml1/model.onnx"
-          curl --fail --silent --show-error --head --retry 3 \
-            "https://raw.githubusercontent.com/TruvetaPublic/OpenLinkToken/${asset_ref}/resources/inferencing/ml1/tokenizer.json"
-
       - name: Setup toolchain (Java)
         uses: ./.github/actions/setup-toolchain
         with:
