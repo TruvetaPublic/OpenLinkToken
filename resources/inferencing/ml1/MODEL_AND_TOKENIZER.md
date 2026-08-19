@@ -45,19 +45,20 @@ Both implementations use the same bundled defaults:
 | Maximum sequence length | `128`                                       |
 | Batch size              | `64`                                        |
 
-The published core-ai packages do not bundle the large model files. When the
-default paths are used, the first ML1 request downloads the assets from the
-matching `release/<version>` branch and caches them locally. Set
-`OPENLINKTOKEN_ML1_CACHE_DIR` to choose the cache directory or
-`OPENLINKTOKEN_ML1_ASSET_REF` to select a compatible Git ref. Set
-`OPENLINKTOKEN_ML1_OFFLINE=1` to forbid remote fallback. Explicit local paths
-remain available for offline use.
+The published core-ai packages do not bundle the large model files and never
+download them. Place the matched files before using ML1:
 
-The ONNX files are fetched through GitHub's LFS media endpoint. The regular
-GitHub raw-content endpoint serves `tokenizer.json`.
+- Java applications: `src/main/resources/inferencing/ml1/` in the application,
+  which puts the files at `inferencing/ml1/` on the runtime classpath.
+- Python applications: beside the installed
+  `openlinktoken/core/ai/tokens/` package modules.
+- Source checkouts: `resources/inferencing/ml1/`.
+
+You can also configure explicit filesystem paths for the model and tokenizer.
+The `model.onnx.data` file must always be beside `model.onnx`.
 
 Standalone CLI release bundles include the three model assets and the
-manifest. They use the bundled files directly and do not download them.
+manifest. They use the bundled files directly.
 
 The runtime serializes an ML1 payload to JSON, tokenizes that JSON with
 `tokenizer.json`, runs the resulting arrays through `model.onnx`, and converts

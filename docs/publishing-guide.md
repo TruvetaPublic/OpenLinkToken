@@ -34,24 +34,19 @@ Both registries use **short-lived, workload-identity-based authentication** rath
 
 ### ML1 model assets
 
-The core-ai JAR and wheel do not contain the large ML1 model files. The first
-ML1 request downloads the matched `model.onnx`, `model.onnx.data`, and
-`tokenizer.json` files from the `release/<version>` branch and verifies them
-against `asset-manifest.json`. Files are cached locally for later runs.
+The core-ai JAR and wheel do not contain the large ML1 model files and never
+download them. Place the matched files locally before using ML1:
 
-Set `OPENLINKTOKEN_ML1_CACHE_DIR` to change the cache location or
-`OPENLINKTOKEN_ML1_ASSET_REF` to select a compatible Git ref. Explicit local
-model and tokenizer paths are supported for offline deployments.
-`OPENLINKTOKEN_ML1_OFFLINE=1` prevents a remote fallback and reports a clear
-error when the local assets are unavailable.
+- Java applications: add `model.onnx`, `model.onnx.data`, and `tokenizer.json`
+  under `src/main/resources/inferencing/ml1/` so they are available at
+  `inferencing/ml1/` on the application classpath.
+- Python applications: place the files beside the installed
+  `openlinktoken/core/ai/tokens/` package modules, or pass explicit model and
+  tokenizer filesystem paths to the ML1 configuration.
+- Source checkouts: keep the files under `resources/inferencing/ml1/`.
 
 Standalone `olt` CLI release bundles include the model assets and do not need a
-network connection for ML1. The normal core-ai packages and Python CLI package
-remain small and use lazy loading.
-
-The matching `release/<version>` branch must contain the model assets before
-that version is published and must remain available for users who have not
-cached them.
+network connection for ML1 because the files are packaged inside the binary.
 
 ### Prerequisites Checklist
 

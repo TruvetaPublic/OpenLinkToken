@@ -11,7 +11,7 @@ from setuptools.command.sdist import sdist
 THIS_DIR = os.path.abspath(os.path.dirname(__file__))
 
 # The small manifest lives alongside the shared inferencing assets. Large model
-# files are resolved lazily at runtime instead of being copied into Python wheels.
+# files are not copied into Python wheels.
 INFERENCING_ASSETS_SRC = os.path.abspath(os.path.join(THIS_DIR, "../../../resources/inferencing/ml1"))
 INFERENCING_ASSETS = ["asset-manifest.json"]
 
@@ -35,8 +35,7 @@ def _find_manifest_source():
 class BuildWithInferencingAssets(build_py):
     """Copy the small ML1 asset manifest into the package at wheel-build time.
 
-    The model and tokenizer are intentionally not bundled in Python artifacts;
-    the runtime downloads them on first use or resolves local CLI assets.
+    The model and tokenizer are intentionally not bundled in Python artifacts.
     """
 
     def run(self):
