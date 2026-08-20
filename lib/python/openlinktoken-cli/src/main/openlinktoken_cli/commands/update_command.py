@@ -7,8 +7,10 @@ import os
 import platform
 import shutil
 import stat
+import subprocess
 import sys
 import tempfile
+import zipfile
 from pathlib import Path
 from typing import Optional
 from urllib.error import URLError
@@ -163,12 +165,13 @@ class UpdateCommand:
                         tmp_path.unlink(missing_ok=True)
                         return 1
 
-            # Replace current installation
-            # Derive a likely entrypoint name (e.g. "olt" from
-            # "olt-linux-amd64") so we are not tightly coupled to the
-            # full release asset filename.
+            # Replace the complete bundle when available. Keep the raw binary path
+            # for older releases and older installations.
             expected_entrypoint_name = asset_name.split("-", 1)[0] if asset_name else ""
-            result = UpdateCommand._replace_binary(tmp_path, expected_entrypoint_name)
+            if asset_name.lower().endswith(".zip"):
+                result = UpdateCommand._replace_bundle(tmp_path, expected_entrypoint_name)
+            else:
+                result = UpdateCommand._replace_binary(tmp_path, expected_entrypoint_name)
             if result != 0:
                 tmp_path.unlink(missing_ok=True)
                 return result
@@ -219,31 +222,54 @@ class UpdateCommand:
         system = _OS_SYSTEM_ALIASES.get(raw_system, raw_system)
         machine = platform.machine().lower()
 
-        # Normalise common machine names
-        arch_aliases = {
-            "x86_64": ["x86_64", "amd64", "x64"],
-            "aarch64": ["aarch64", "arm64"],
-            "arm64": ["aarch64", "arm64"],
+        version = str(release_info.get("tag_name", "")).lstrip("v")
+        expected_names = UpdateCommand._expected_asset_names(version, system, machine)
+        assets_by_name = {
+            asset.get("name", "").lower(): asset
+            for asset in assets
+            if not asset.get("name", "").lower().endswith((".sha256", ".sha256sum"))
         }
-        archs = arch_aliases.get(machine, [machine])
-
-        for asset in assets:
-            name_lower = asset["name"].lower()
-            # Skip checksum files
-            if name_lower.endswith(".sha256") or name_lower.endswith(".sha256sum"):
-                continue
-            if system in name_lower and any(a in name_lower for a in archs):
+        for expected_name in expected_names:
+            asset = assets_by_name.get(expected_name.lower())
+            if asset is not None:
                 return asset
 
-        # Fallback: try just system match
+        # Keep compatibility with pre-bundle releases whose versioned asset
+        # names did not match the release tag exactly.
+        legacy_suffixes = {
+            "linux": ("-linux-x86_64",),
+            "macos": ("-macos-arm64", "-macos-x86_64", "-macos-universal"),
+            "windows": ("-windows-x86_64.exe",),
+        }
         for asset in assets:
-            name_lower = asset["name"].lower()
-            if name_lower.endswith(".sha256") or name_lower.endswith(".sha256sum"):
-                continue
-            if system in name_lower:
+            name = asset.get("name", "").lower()
+            if name.startswith("openlinktoken-v") and name.endswith(legacy_suffixes.get(system, ())):
                 return asset
 
         return None
+
+    @staticmethod
+    def _expected_asset_names(version: str, system: str, machine: str) -> tuple[str, ...]:
+        """Return exact bundle-first asset names for a platform."""
+        if system == "linux" and machine in {"x86_64", "amd64"}:
+            return (
+                f"olt-cli-{version}-linux-x64.zip",
+                f"olt-v{version}-linux-x86_64",
+                f"openlinktoken-v{version}-linux-x86_64",
+            )
+        if system == "macos" and machine in {"x86_64", "amd64", "arm64", "aarch64"}:
+            return (
+                f"olt-cli-{version}-macos-universal.zip",
+                f"olt-v{version}-macos-universal",
+                f"openlinktoken-v{version}-macos-universal",
+            )
+        if system == "windows" and machine in {"x86_64", "amd64", "x64"}:
+            return (
+                f"olt-cli-{version}-windows-x64.zip",
+                f"olt-v{version}-windows-x86_64.exe",
+                f"openlinktoken-v{version}-windows-x86_64.exe",
+            )
+        return ()
 
     @staticmethod
     def _find_checksum_asset(release_info: dict, asset_name: str) -> Optional[dict]:
@@ -304,41 +330,35 @@ class UpdateCommand:
     # ------------------------------------------------------------------
 
     @staticmethod
+    def _resolve_target_binary(expected_entrypoint_name: str) -> Optional[Path]:
+        """Locate the installed CLI entry point without selecting the interpreter."""
+        python_interpreter = Path(sys.executable).resolve()
+        target = UpdateCommand._find_target_binary()
+        if target is not None:
+            return target
+
+        argv0: Optional[Path] = None
+        if sys.argv and sys.argv[0]:
+            argv0 = Path(sys.argv[0]).resolve()
+        if (
+            argv0 is not None
+            and argv0.is_file()
+            and argv0.name == expected_entrypoint_name
+            and argv0 != python_interpreter
+        ):
+            return argv0
+        return None
+
+    @staticmethod
     def _replace_binary(src: Path, expected_entrypoint_name: str) -> int:
         """
         Replace the current executable with *src*.
 
         Returns 0 on success, non-zero on failure.
         """
-        python_interpreter = Path(sys.executable).resolve()
-        # Determine target path: for a wheel-installed script the executable is
-        # the Python interpreter; we instead look for the "olt" script on PATH.
-        target = UpdateCommand._find_target_binary()
+        target = UpdateCommand._resolve_target_binary(expected_entrypoint_name)
         if target is None:
-            # Fallback: try to infer the CLI entrypoint from sys.argv[0], but only
-            # if it is a real file, matches the expected entrypoint name, and is not
-            # the Python interpreter itself.
-            argv0: Optional[Path] = None
-            if sys.argv and sys.argv[0]:
-                argv0 = Path(sys.argv[0]).resolve()
-            if (
-                argv0 is not None
-                and argv0.is_file()
-                and argv0.name == expected_entrypoint_name
-                and argv0 != python_interpreter
-            ):
-                target = argv0
-            else:
-                print(
-                    "Error: Unable to locate the olt executable to update.\n"
-                    "The updater could not find an 'olt' binary on PATH and\n"
-                    "cannot safely determine which file to overwrite.\n"
-                    "Please reinstall olt via your package manager or download\n"
-                    "the latest release from:\n"
-                    "  https://github.com/TruvetaPublic/OpenLinkToken/releases",
-                    file=sys.stderr,
-                )
-                return 1
+            return UpdateCommand._print_target_not_found_error()
 
         if not os.access(str(target.parent), os.W_OK):
             print(
@@ -360,6 +380,134 @@ class UpdateCommand:
             return 1
 
         return 0
+
+    @staticmethod
+    def _replace_bundle(src: Path, expected_entrypoint_name: str) -> int:
+        """Extract and install a complete PyInstaller bundle."""
+        target = UpdateCommand._resolve_target_binary(expected_entrypoint_name)
+        if target is None:
+            return UpdateCommand._print_target_not_found_error()
+        if not os.access(str(target.parent), os.W_OK):
+            print(f"Error: Insufficient permissions to write to {target.parent}.", file=sys.stderr)
+            return 1
+
+        entrypoint_name = "olt.exe" if platform.system().lower() == "windows" else "olt"
+        try:
+            with tempfile.TemporaryDirectory(prefix="olt-update-") as temp_dir:
+                extracted_dir = Path(temp_dir) / "extracted"
+                extracted_dir.mkdir()
+                with zipfile.ZipFile(src) as archive:
+                    UpdateCommand._extract_bundle(archive, extracted_dir)
+
+                executable = next(extracted_dir.rglob(entrypoint_name), None)
+                if executable is None or not executable.is_file():
+                    print(
+                        f"Error: Release bundle does not contain {entrypoint_name}.",
+                        file=sys.stderr,
+                    )
+                    return 1
+
+                if platform.system().lower() == "windows":
+                    return UpdateCommand._schedule_windows_bundle_replacement(executable.parent, target)
+                return UpdateCommand._replace_posix_bundle(executable.parent, target, entrypoint_name)
+        except (OSError, zipfile.BadZipFile, ValueError) as exc:
+            print(f"Error: Could not install CLI bundle: {exc}", file=sys.stderr)
+            return 1
+
+    @staticmethod
+    def _extract_bundle(archive: zipfile.ZipFile, destination: Path) -> None:
+        """Extract a bundle after rejecting unsafe archive paths."""
+        destination_root = destination.resolve()
+        for member in archive.infolist():
+            member_path = Path(member.filename)
+            if member_path.is_absolute() or ".." in member_path.parts:
+                raise ValueError(f"Unsafe path in release bundle: {member.filename}")
+            resolved_path = (destination / member_path).resolve()
+            if os.path.commonpath((str(destination_root), str(resolved_path))) != str(destination_root):
+                raise ValueError(f"Unsafe path in release bundle: {member.filename}")
+            archive.extract(member, destination)
+
+    @staticmethod
+    def _replace_posix_bundle(source_bundle: Path, target: Path, entrypoint_name: str) -> int:
+        """Atomically switch the POSIX launcher to a staged bundle."""
+        bundle_dir = target.resolve().parent if target.is_symlink() else target.parent / ".olt"
+        staged_bundle = bundle_dir.parent / f".olt-staged-{os.getpid()}"
+        old_bundle = bundle_dir.parent / f".olt-previous-{os.getpid()}"
+        launcher_tmp = target.parent / f".olt-launcher-{os.getpid()}"
+        shutil.copytree(source_bundle, staged_bundle)
+
+        try:
+            if bundle_dir.exists() or bundle_dir.is_symlink():
+                os.replace(bundle_dir, old_bundle)
+            os.replace(staged_bundle, bundle_dir)
+            launcher_tmp.symlink_to(bundle_dir / entrypoint_name)
+            os.replace(launcher_tmp, target)
+        except OSError as exc:
+            if launcher_tmp.exists() or launcher_tmp.is_symlink():
+                launcher_tmp.unlink()
+            if not bundle_dir.exists() and old_bundle.exists():
+                os.replace(old_bundle, bundle_dir)
+            print(f"Error: Could not replace CLI bundle: {exc}", file=sys.stderr)
+            return 1
+        finally:
+            if old_bundle.is_symlink():
+                old_bundle.unlink()
+            elif old_bundle.exists():
+                shutil.rmtree(old_bundle)
+            if staged_bundle.exists():
+                shutil.rmtree(staged_bundle)
+        return 0
+
+    @staticmethod
+    def _schedule_windows_bundle_replacement(source_bundle: Path, target: Path) -> int:
+        """Schedule replacement after the running Windows executable exits."""
+        stage_dir = Path(tempfile.mkdtemp(prefix="olt-update-"))
+        script = Path(tempfile.gettempdir()) / f"olt-update-{os.getpid()}.cmd"
+        backup_dir = Path(tempfile.gettempdir()) / f"olt-update-previous-{os.getpid()}"
+        try:
+            shutil.copytree(source_bundle, stage_dir, dirs_exist_ok=True)
+            target_dir = target.parent
+            script.write_text(
+                "@echo off\r\n"
+                "setlocal\r\n"
+                f'set "STAGED={stage_dir}"\r\n'
+                f'set "TARGET={target_dir}"\r\n'
+                f'set "BACKUP={backup_dir}"\r\n'
+                ":wait\r\n"
+                'move "%TARGET%" "%BACKUP%" >nul 2>&1\r\n'
+                "if errorlevel 1 (timeout /t 1 /nobreak >nul & goto wait)\r\n"
+                'move "%STAGED%" "%TARGET%" >nul 2>&1\r\n'
+                'if errorlevel 1 (move "%BACKUP%" "%TARGET%" >nul 2>&1 & goto fail)\r\n'
+                'rmdir /s /q "%BACKUP%" >nul 2>&1\r\n'
+                "goto done\r\n"
+                ":fail\r\n"
+                'rmdir /s /q "%STAGED%" >nul 2>&1\r\n'
+                ":done\r\n"
+                'del /q "%~f0" >nul 2>&1\r\n',
+                encoding="utf-8",
+            )
+            creation_flags = getattr(subprocess, "CREATE_NO_WINDOW", 0) | getattr(subprocess, "DETACHED_PROCESS", 0)
+            subprocess.Popen(["cmd.exe", "/d", "/c", str(script)], creationflags=creation_flags)
+        except (OSError, shutil.Error) as exc:
+            shutil.rmtree(stage_dir, ignore_errors=True)
+            script.unlink(missing_ok=True)
+            print(f"Error: Could not schedule Windows CLI update: {exc}", file=sys.stderr)
+            return 1
+        return 0
+
+    @staticmethod
+    def _print_target_not_found_error() -> int:
+        """Report that the active standalone executable could not be located."""
+        print(
+            "Error: Unable to locate the olt executable to update.\n"
+            "The updater could not find an 'olt' binary on PATH and\n"
+            "cannot safely determine which file to overwrite.\n"
+            "Please reinstall olt via your package manager or download\n"
+            "the latest release from:\n"
+            "  https://github.com/TruvetaPublic/OpenLinkToken/releases",
+            file=sys.stderr,
+        )
+        return 1
 
     @staticmethod
     def _find_target_binary() -> Optional[Path]:

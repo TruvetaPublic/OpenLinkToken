@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: MIT
 
+from __future__ import annotations
+
 import argparse
 import json
 import logging
@@ -11,21 +13,11 @@ from pathlib import Path
 from typing import Optional
 from uuid import uuid4
 
-from openlinktoken.exchange_jwe import EXCHANGE_JWE_VERSION, build_exchange_envelope
-from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
-from openlinktoken_cli.util.ec_key_utils import (
-    SUPPORTED_CURVES,
-    derive_public_key_from_private_pem,
-    ensure_directory,
-    generate_key_pair,
-    resolve_key_name,
-    write_key,
-)
 from openlinktoken_cli.util.stdin_utils import read_required_env_bytes, read_required_stdin_bytes
 
 logger = logging.getLogger(__name__)
 
-EXCHANGE_CONFIG_VERSION = EXCHANGE_JWE_VERSION
+EXCHANGE_CONFIG_VERSION = 1
 DEFAULT_ROTATION_COUNT = 50
 DEFAULT_BIN_WIDTH = 0.05
 DEFAULT_EMBEDDING_DIMENSION = 1024
@@ -233,6 +225,17 @@ class InitiateExchangeCommand:
         Returns:
             Exit code (0 for success, non-zero for errors).
         """
+        from openlinktoken.exchange_jwe import build_exchange_envelope
+        from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
+        from openlinktoken_cli.util.ec_key_utils import (
+            SUPPORTED_CURVES,
+            derive_public_key_from_private_pem,
+            ensure_directory,
+            generate_key_pair,
+            resolve_key_name,
+            write_key,
+        )
+
         name: Optional[str] = getattr(args, "name", None)
         public_key_path_str: str = getattr(args, "public_key", "")
         public_key_stdin: bool = getattr(args, "public_key_stdin", False)

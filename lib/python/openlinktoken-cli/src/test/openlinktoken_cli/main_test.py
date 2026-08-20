@@ -7,6 +7,7 @@ Tests the end-to-end workflows for token generation and decryption using new sub
 import json
 import os
 import re
+import subprocess
 import sys
 import zipfile
 from pathlib import Path
@@ -23,6 +24,28 @@ class TestOpenLinkTokenCommand:
 
     HASHING_SECRET = "TestHashingSecret"
     ENCRYPTION_KEY = "TestEncryptionKeyValue1234567890"  # Must be exactly 32 chars
+
+    def test_help_path_keeps_heavy_dependencies_lazy(self):
+        """Standalone help should not import data-processing or crypto dependencies."""
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                (
+                    "import sys; "
+                    "from openlinktoken_cli.commands import OpenLinkTokenCommand; "
+                    "assert OpenLinkTokenCommand.execute(['--help']) == 0; "
+                    "assert not any(name in sys.modules for name in ('pandas', 'pyarrow', 'cryptography')); "
+                    "assert 'openlinktoken_cli.extension.extension_loader' not in sys.modules"
+                ),
+            ],
+            capture_output=True,
+            text=True,
+            env=os.environ.copy(),
+            check=False,
+        )
+
+        assert result.returncode == 0, result.stderr
 
     @pytest.fixture
     def temp_dir(self, tmp_path):
