@@ -51,7 +51,7 @@ with open(os.path.join(THIS_DIR, "requirements.txt"), encoding="utf-8") as f:
 
 setup(
     name="openlinktoken-core-ai",
-    version="2.1.1",
+    version="2.1.2",
     author="Open Link Token Contributors",
     description="Open Link Token Core AI package for ML1/ONNX inference",
     long_description=long_description,
