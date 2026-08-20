@@ -1,20 +1,14 @@
 # SPDX-License-Identifier: MIT
 
+from __future__ import annotations
+
 import logging
 import sys
 from pathlib import Path
 from typing import Optional, Tuple
 
-from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
-from openlinktoken_cli.util.ec_key_utils import (
-    SUPPORTED_CURVES,
-    ensure_directory,
-    generate_key_pair,
-    resolve_key_name,
-    write_key,
-)
-
 logger = logging.getLogger(__name__)
+SUPPORTED_CURVES = ["P-256", "P-384", "P-521"]
 
 
 class GenerateKeyPairCommand:
@@ -76,6 +70,15 @@ class GenerateKeyPairCommand:
         Returns:
             Exit code (0 for success, non-zero for errors).
         """
+        from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
+        from openlinktoken_cli.util.ec_key_utils import (
+            SUPPORTED_CURVES,
+            ensure_directory,
+            generate_key_pair,
+            resolve_key_name,
+            write_key,
+        )
+
         name: Optional[str] = getattr(args, "name", None)
         curve: str = getattr(args, "curve", "P-256")
         force: bool = getattr(args, "force", False)
@@ -127,6 +130,8 @@ class GenerateKeyPairCommand:
     @staticmethod
     def _resolve_key_name(name: Optional[str]) -> str:
         """Resolve and validate the requested key basename."""
+        from openlinktoken_cli.util.ec_key_utils import resolve_key_name
+
         return resolve_key_name(name)
 
     @staticmethod
@@ -137,14 +142,20 @@ class GenerateKeyPairCommand:
             Call ``openlinktoken_cli.util.ec_key_utils.generate_key_pair`` directly.
             This shim exists only for backward compatibility.
         """
+        from openlinktoken_cli.util.ec_key_utils import generate_key_pair
+
         return generate_key_pair(curve)
 
     @staticmethod
     def _ensure_directory(directory: Path) -> None:
         """Ensure the directory exists, is not a symlink, and has 700 permissions."""
+        from openlinktoken_cli.util.ec_key_utils import ensure_directory
+
         return ensure_directory(directory)
 
     @staticmethod
     def _write_key(path: Path, pem_bytes: bytes, mode: int, overwrite: bool = True) -> None:
         """Write PEM bytes to a file using secure creation flags and set the specified permissions."""
+        from openlinktoken_cli.util.ec_key_utils import write_key
+
         return write_key(path, pem_bytes, mode, overwrite=overwrite)

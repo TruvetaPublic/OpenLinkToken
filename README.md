@@ -57,13 +57,14 @@ Perfect for understanding privacy-preserving record linkage concepts before divi
 
 Download the binary for your platform from the [latest release](https://github.com/TruvetaPublic/OpenLinkToken/releases):
 
-| Platform                      | Asset                           |
-| ----------------------------- | ------------------------------- |
-| Linux                         | `olt-vX.Y.Z-linux-x86_64`       |
-| macOS (Intel + Apple Silicon) | `olt-vX.Y.Z-macos-universal`    |
-| Windows                       | `olt-vX.Y.Z-windows-x86_64.exe` |
+| Platform                      | Asset                               |
+| ----------------------------- | ----------------------------------- |
+| Linux                         | `olt-cli-X.Y.Z-linux-x64.zip`       |
+| macOS (Intel + Apple Silicon) | `olt-cli-X.Y.Z-macos-universal.zip` |
+| Windows                       | `olt-cli-X.Y.Z-windows-x64.zip`     |
 
-Each asset has a matching `.sha256` file you can use to verify the download.
+Each ZIP contains the executable and its runtime files. Each asset has a matching
+`.sha256` file you can use to verify the download.
 
 **One-line installers:**
 
@@ -84,33 +85,24 @@ irm https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/inst
 & ([scriptblock]::Create((irm https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.ps1))) -Version v2.1.1
 ```
 
-```bash
-# Linux
-chmod +x olt-v*-linux-x86_64
-mv olt-v*-linux-x86_64 olt
-
-# macOS — make executable, clear Gatekeeper quarantine, and rename
-chmod +x olt-v*-macos-universal
-xattr -d com.apple.quarantine olt-v*-macos-universal
-mv olt-v*-macos-universal olt
-```
+Extract the ZIP, then run the executable inside its `olt` directory.
 
 Then run:
 
 ```bash
 # Linux/macOS
 # Simulate receiving the recipient's public key (in practice, your partner provides this)
-./olt generate-key-pair --name recipient
+./olt/olt generate-key-pair --name recipient
 # Create the exchange config using the recipient's public key
-./olt initiate-exchange --public-key "$HOME/.openlinktoken/recipient.public.pem"
-./olt package -i ./resources/sample.csv
+./olt/olt initiate-exchange --public-key "$HOME/.openlinktoken/recipient.public.pem"
+./olt/olt package -i ./resources/sample.csv
 
 # Windows
 # Simulate receiving the recipient's public key (in practice, your partner provides this)
-.\olt.exe generate-key-pair --name recipient
+.\olt\olt.exe generate-key-pair --name recipient
 # Create the exchange config using the recipient's public key
-.\olt.exe initiate-exchange --public-key "$HOME/.openlinktoken/recipient.public.pem"
-.\olt.exe package -i .\resources\sample.csv
+.\olt\olt.exe initiate-exchange --public-key "$HOME/.openlinktoken/recipient.public.pem"
+.\olt\olt.exe package -i .\resources\sample.csv
 ```
 
 **Docker convenience scripts (Linux/macOS and Windows):**

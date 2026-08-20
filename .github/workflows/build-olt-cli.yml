@@ -90,9 +90,9 @@ jobs:
         run: |
           mkdir -p smoke
           cp resources/sample.csv smoke/input.csv
-          ./dist/olt generate-key-pair --name recipient --force
-          ./dist/olt initiate-exchange --name smoke --public-key "$HOME/.openlinktoken/recipient.public.pem" --output smoke/smoke.exchange.json --hashingsecret secret
-          ./dist/olt tokenize -i smoke/input.csv -o smoke/out.csv --exchange-config smoke/smoke.exchange.json --private-key "$HOME/.openlinktoken/smoke.private.pem"
+          ./dist/olt/olt generate-key-pair --name recipient --force
+          ./dist/olt/olt initiate-exchange --name smoke --public-key "$HOME/.openlinktoken/recipient.public.pem" --output smoke/smoke.exchange.json --hashingsecret secret
+          ./dist/olt/olt tokenize -i smoke/input.csv -o smoke/out.csv --exchange-config smoke/smoke.exchange.json --private-key "$HOME/.openlinktoken/smoke.private.pem"
 
       - name: Smoke test (Windows)
         if: runner.os == 'Windows'
@@ -100,9 +100,25 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path smoke | Out-Null
           Copy-Item resources\sample.csv smoke\input.csv
-          .\dist\olt.exe generate-key-pair --name recipient --force
-          .\dist\olt.exe initiate-exchange --name smoke --public-key "$HOME/.openlinktoken/recipient.public.pem" --output smoke\smoke.exchange.json --hashingsecret secret
-          .\dist\olt.exe tokenize -i smoke\input.csv -o smoke\out.csv --exchange-config smoke\smoke.exchange.json --private-key "$HOME/.openlinktoken/smoke.private.pem"
+          .\dist\olt\olt.exe generate-key-pair --name recipient --force
+          .\dist\olt\olt.exe initiate-exchange --name smoke --public-key "$HOME/.openlinktoken/recipient.public.pem" --output smoke\smoke.exchange.json --hashingsecret secret
+          .\dist\olt\olt.exe tokenize -i smoke\input.csv -o smoke\out.csv --exchange-config smoke\smoke.exchange.json --private-key "$HOME/.openlinktoken/smoke.private.pem"
+
+      - name: Measure standalone startup
+        shell: bash
+        run: |
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            uv run python tools/cli/measure_startup.py --executable dist/olt/olt.exe --output startup-measurements.json
+          else
+            uv run python tools/cli/measure_startup.py --executable dist/olt/olt --output startup-measurements.json
+          fi
+
+      - name: Upload startup measurements
+        uses: actions/upload-artifact@v7
+        with:
+          name: olt-cli-startup-${{ matrix.os }}
+          path: startup-measurements.json
+          if-no-files-found: error
 
       - name: Prepare release assets
         shell: bash
@@ -148,6 +164,15 @@ jobs:
             }
 
             const files = fs.readdirSync(assetDir)
+              .sort((left, right) => {
+                const rank = (name) => {
+                  if (name.endsWith('.zip.sha256')) return 3;
+                  if (name.endsWith('.zip')) return 2;
+                  if (name.endsWith('.sha256')) return 1;
+                  return 0;
+                };
+                return rank(left) - rank(right) || left.localeCompare(right);
+              })
               .map((name) => path.join(assetDir, name))
               .filter((filePath) => fs.statSync(filePath).isFile());
 

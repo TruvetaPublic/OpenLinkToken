@@ -1,27 +1,17 @@
 # SPDX-License-Identifier: MIT
 
+from __future__ import annotations
+
 import contextlib
 import logging
 import sys
 import tempfile
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from openlinktoken.tokens.token import Token
-from openlinktoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
-from openlinktoken.tokentransformer.jwe_match_token_formatter import JweMatchTokenFormatter
-from openlinktoken_cli.io.csv.token_csv_reader import TokenCSVReader
-from openlinktoken_cli.io.csv.token_csv_writer import TokenCSVWriter
-from openlinktoken_cli.io.parquet.token_parquet_reader import TokenParquetReader
-from openlinktoken_cli.io.parquet.token_parquet_writer import TokenParquetWriter
-from openlinktoken_cli.processor.token_constants import TokenConstants
-from openlinktoken_cli.processor.token_transformation_processor import TokenTransformationSummary
-from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
-from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
-from openlinktoken_cli.util.exchange_config import derive_transport_encryption_key, resolve_exchange_config
-from openlinktoken_cli.util.file_type_detector import FileTypeDetector
-from openlinktoken_cli.util.path_utils import get_auto_output_path
-from openlinktoken_cli.util.ring_id_utils import resolve_ring_id
-from openlinktoken_cli.util.zip_utils import bundle_into_zip
+if TYPE_CHECKING:
+    from openlinktoken.tokentransformer.jwe_match_token_formatter import JweMatchTokenFormatter
+    from openlinktoken_cli.processor.token_transformation_processor import TokenTransformationSummary
 
 logger = logging.getLogger(__name__)
 
@@ -107,6 +97,14 @@ class EncryptCommand:
     @staticmethod
     def execute(args):
         """Execute the encrypt command."""
+        from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
+        from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
+        from openlinktoken_cli.util.exchange_config import derive_transport_encryption_key, resolve_exchange_config
+        from openlinktoken_cli.util.file_type_detector import FileTypeDetector
+        from openlinktoken_cli.util.path_utils import get_auto_output_path
+        from openlinktoken_cli.util.ring_id_utils import resolve_ring_id
+        from openlinktoken_cli.util.zip_utils import bundle_into_zip
+
         input_type = FileTypeDetector.detect_input_type(args.input_path)
         if not input_type:
             logger.error("Unable to auto-detect input type. Supported input formats: csv, parquet")
@@ -208,6 +206,11 @@ class EncryptCommand:
         progress_callback=None,
     ) -> TokenTransformationSummary:
         """Encrypt tokens from input file."""
+        from openlinktoken.tokens.token import Token
+        from openlinktoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
+        from openlinktoken_cli.processor.token_constants import TokenConstants
+        from openlinktoken_cli.processor.token_transformation_processor import TokenTransformationSummary
+
         try:
             encryptor = EncryptTokenTransformer(encryption_key)
             jwe_formatters: dict[str, JweMatchTokenFormatter] = {}
@@ -283,6 +286,9 @@ class EncryptCommand:
         ring_id: str,
         jwe_formatters: dict[str, JweMatchTokenFormatter],
     ) -> str:
+        from openlinktoken.tokentransformer.jwe_match_token_formatter import JweMatchTokenFormatter
+        from openlinktoken_cli.processor.token_constants import TokenConstants
+
         rule_id = row.get(TokenConstants.RULE_ID)
         if not rule_id:
             return encrypted_token
@@ -297,6 +303,10 @@ class EncryptCommand:
     @staticmethod
     def _create_token_reader(path: str, file_type: str):
         """Create a TokenReader based on file type."""
+        from openlinktoken_cli.io.csv.token_csv_reader import TokenCSVReader
+        from openlinktoken_cli.io.parquet.token_parquet_reader import TokenParquetReader
+        from openlinktoken_cli.util.file_type_detector import FileTypeDetector
+
         file_type_lower = file_type.lower()
         if file_type_lower == FileTypeDetector.TYPE_CSV:
             return TokenCSVReader(path)
@@ -308,6 +318,10 @@ class EncryptCommand:
     @staticmethod
     def _create_token_writer(path: str, file_type: str):
         """Create a TokenWriter based on file type."""
+        from openlinktoken_cli.io.csv.token_csv_writer import TokenCSVWriter
+        from openlinktoken_cli.io.parquet.token_parquet_writer import TokenParquetWriter
+        from openlinktoken_cli.util.file_type_detector import FileTypeDetector
+
         file_type_lower = file_type.lower()
         if file_type_lower == FileTypeDetector.TYPE_CSV:
             return TokenCSVWriter(path)

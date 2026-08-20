@@ -47,6 +47,10 @@ def create_release_assets(version: str, runner_os: str, dist_dir: Path, output_d
     output_dir.mkdir(parents=True, exist_ok=True)
 
     built_executable = dist_dir / spec.executable_name
+    bundle_root = dist_dir
+    if not built_executable.is_file():
+        bundle_root = dist_dir / "olt"
+        built_executable = bundle_root / spec.executable_name
     if not built_executable.is_file():
         raise FileNotFoundError(f"Expected built executable at {built_executable}")
 
@@ -54,7 +58,7 @@ def create_release_assets(version: str, runner_os: str, dist_dir: Path, output_d
     shutil.copy2(built_executable, raw_binary_path)
 
     zip_path = output_dir / f"{spec.package_name}.zip"
-    _create_zip_archive(built_executable, spec.executable_name, spec.package_name, zip_path)
+    _create_zip_archive(bundle_root, spec.package_name, zip_path)
 
     binary_checksum_path = _write_checksum_file(raw_binary_path)
     zip_checksum_path = _write_checksum_file(zip_path)
@@ -120,16 +124,22 @@ def _normalize_version(version: str) -> str:
     return normalized_version
 
 
-def _create_zip_archive(binary_path: Path, executable_name: str, package_name: str, zip_path: Path) -> None:
-    """Create the downloadable ZIP bundle for manual installation."""
+def _create_zip_archive(bundle_root: Path, package_name: str, zip_path: Path) -> None:
+    """Create a ZIP containing the complete one-folder bundle."""
     with tempfile.TemporaryDirectory() as temp_dir:
         package_root = Path(temp_dir) / package_name
         package_root.mkdir(parents=True, exist_ok=True)
-        packaged_binary = package_root / executable_name
-        shutil.copy2(binary_path, packaged_binary)
+        for source_path in bundle_root.rglob("*"):
+            if source_path.is_file():
+                relative_path = source_path.relative_to(bundle_root)
+                packaged_path = package_root / relative_path
+                packaged_path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source_path, packaged_path)
 
         with zipfile.ZipFile(zip_path, mode="w", compression=zipfile.ZIP_DEFLATED) as archive:
-            archive.write(packaged_binary, arcname=f"{package_name}/{executable_name}")
+            for packaged_path in sorted(package_root.rglob("*")):
+                if packaged_path.is_file():
+                    archive.write(packaged_path, arcname=packaged_path.relative_to(Path(temp_dir)))
 
 
 def _write_checksum_file(asset_path: Path) -> Path:
