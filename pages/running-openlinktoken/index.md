@@ -154,7 +154,7 @@ base64 HMAC values (or lowercase SHA-256 hex for hash-only mode), not
 ```json
 {
   "PythonVersion": "3.11.0",
-  "Version": "2.1.1",
+  "Version": "2.1.2",
   "Platform": "Python",
   "TotalRows": 1,
   "TotalRowsWithInvalidAttributes": 0,

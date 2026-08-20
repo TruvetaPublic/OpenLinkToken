@@ -293,7 +293,7 @@ Downloads and installs the latest (or a specific) release of the Open Link Token
 olt update
 
 # Update to a specific version
-olt update --version v2.1.0
+olt update --version v2.1.1
 
 # Preview what would change (no-op)
 olt update --dry-run
@@ -491,7 +491,7 @@ archive. `encrypt` and `decrypt` do not generate metadata:
 {
   "Platform": "Python",
   "PythonVersion": "3.11.0",
-  "Version": "2.1.1",
+  "Version": "2.1.2",
   "TotalRows": 100,
   "TotalRowsWithInvalidAttributes": 3,
   "InvalidAttributesByType": {
@@ -640,8 +640,8 @@ Every time the CLI is run, it performs a lightweight background check against th
 **Sample notice:**
 
 ```
-⚠ A new version of Open Link Token is available: v2.1.0 (you have v2.0.0)
-   Release notes: https://github.com/TruvetaPublic/OpenLinkToken/releases/tag/v2.1.0
+⚠ A new version of Open Link Token is available: v2.1.1 (you have v2.0.0)
+   Release notes: https://github.com/TruvetaPublic/OpenLinkToken/releases/tag/v2.1.1
    Run 'olt update' to upgrade, or set OLT_DISABLE_UPDATE_CHECK=1 to silence this message.
 ```
 
@@ -665,7 +665,7 @@ Use the `update` subcommand to upgrade the CLI in-place:
 olt update
 
 # Upgrade to a specific release
-olt update --version v2.1.0
+olt update --version v2.1.1
 
 # Preview what would change without applying it
 olt update --dry-run
