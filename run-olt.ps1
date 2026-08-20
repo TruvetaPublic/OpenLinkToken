@@ -19,6 +19,10 @@ param(
     [Parameter(Mandatory=$false, HelpMessage="Skip Docker image build (use existing image)")]
     [switch]$SkipBuild,
 
+    [Parameter(Mandatory=$false, HelpMessage="GPU request: auto, all, or none (default: auto)")]
+    [ValidateSet("auto", "all", "none")]
+    [string]$Gpus = "auto",
+
     [Parameter(Mandatory=$false, HelpMessage="Show help message")]
     [switch]$Help,
 
@@ -31,11 +35,16 @@ function Write-OltInfo    { param([string]$Msg) Write-Host "[INFO] $Msg" }
 function Write-OltSuccess { param([string]$Msg) Write-Host "[OK]   $Msg" }
 function Write-OltError   { param([string]$Msg) Write-Host "[ERR]  $Msg" -ForegroundColor Red }
 
+function Test-NvidiaDockerRuntime {
+    $Runtimes = docker info --format '{{json .Runtimes}}' 2>$null
+    return $LASTEXITCODE -eq 0 -and $Runtimes -match '"nvidia"'
+}
+
 function Show-Usage {
     Write-Host @"
 
 USAGE:
-    .\run-olt.ps1 <Subcommand> [OltOptions] [-DockerImage name] [-SkipBuild] [-Verbose]
+    .\run-olt.ps1 <Subcommand> [OltOptions] [-DockerImage name] [-SkipBuild] [-Gpus mode] [-Verbose]
 
 DESCRIPTION:
     Docker convenience wrapper for Open Link Token. Builds the Docker image when
@@ -74,6 +83,7 @@ OLT OPTIONS (forwarded to the container -- see olt help <subcommand> for full de
 SCRIPT OPTIONS:
     -DockerImage <name>     Docker image name (default: openlinktoken:latest)
     -SkipBuild              Skip Docker image build
+    -Gpus <mode>            GPU request: auto, all, or none (default: auto)
     -Verbose                Verbose output
     -Help                   Show this message
 
@@ -266,8 +276,27 @@ if ($VerbosePreference -ne 'SilentlyContinue') {
 
 Write-OltInfo "Running Open Link Token ($Subcommand)..."
 
+$UseGpu = $Gpus -eq "all"
+if (
+    $Gpus -eq "auto" -and
+    (Get-Command nvidia-smi -ErrorAction SilentlyContinue) -and
+    (Test-NvidiaDockerRuntime)
+) {
+    $UseGpu = $true
+} elseif (
+    $Gpus -eq "auto" -and
+    (Get-Command nvidia-smi -ErrorAction SilentlyContinue) -and
+    $VerbosePreference -ne 'SilentlyContinue'
+) {
+    Write-OltInfo "NVIDIA GPU detected, but Docker NVIDIA runtime is unavailable; using CPU"
+}
+
 $DockerRunOpts = [System.Collections.Generic.List[string]]@("run", "--rm", "-e", "HOME=/app")
 if ($NeedsStdin) { $DockerRunOpts.Add("-i") }
+if ($UseGpu) {
+    $DockerRunOpts.Add("--gpus")
+    $DockerRunOpts.Add("all")
+}
 $DockerRunOpts.AddRange($MountArgs)
 $DockerRunOpts.AddRange($EnvPassArgs)
 $DockerRunOpts.Add($DockerImage)
