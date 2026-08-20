@@ -43,7 +43,8 @@ Token Signature → SHA-256 Hash → HMAC-SHA256(hash, secret) → JWE (AES-256-
 On Linux x86_64, the Python and Docker installations include the CUDA-enabled
 ONNX Runtime package. ML1 selects `CUDAExecutionProvider` when an NVIDIA GPU
 is available and falls back to CPU when it is not. The Docker wrapper requests
-all GPUs automatically when `nvidia-smi` is available:
+all GPUs automatically when `nvidia-smi` and the Docker NVIDIA runtime are
+available:
 
 ```bash
 ./run-olt.sh tokenize -i resources/sample.csv --gpus all

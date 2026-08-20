@@ -40,12 +40,32 @@ def test_cuda_is_preferred_when_available(monkeypatch):
     """NVIDIA CUDA should be selected before the CPU fallback."""
     monkeypatch.setattr(platform, "system", lambda: "Linux")
     monkeypatch.setattr(
+        "openlinktoken.core.ai.tokens.ml1_onnx_signature_generator._nvidia_device_available",
+        lambda: True,
+    )
+    monkeypatch.setattr(
         ort,
         "get_available_providers",
         lambda: ["CUDAExecutionProvider", "CPUExecutionProvider"],
     )
 
     assert _resolve_providers() == ["CUDAExecutionProvider", "CPUExecutionProvider"]
+
+
+def test_cuda_falls_back_to_cpu_without_nvidia_device(monkeypatch):
+    """A GPU wheel without a visible NVIDIA device should use CPU directly."""
+    monkeypatch.setattr(platform, "system", lambda: "Linux")
+    monkeypatch.setattr(
+        "openlinktoken.core.ai.tokens.ml1_onnx_signature_generator._nvidia_device_available",
+        lambda: False,
+    )
+    monkeypatch.setattr(
+        ort,
+        "get_available_providers",
+        lambda: ["CUDAExecutionProvider", "CPUExecutionProvider"],
+    )
+
+    assert _resolve_providers() == ["CPUExecutionProvider"]
 
 
 def test_cuda_preloads_bundled_runtime_libraries():

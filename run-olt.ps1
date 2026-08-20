@@ -35,6 +35,11 @@ function Write-OltInfo    { param([string]$Msg) Write-Host "[INFO] $Msg" }
 function Write-OltSuccess { param([string]$Msg) Write-Host "[OK]   $Msg" }
 function Write-OltError   { param([string]$Msg) Write-Host "[ERR]  $Msg" -ForegroundColor Red }
 
+function Test-NvidiaDockerRuntime {
+    $Runtimes = docker info --format '{{json .Runtimes}}' 2>$null
+    return $LASTEXITCODE -eq 0 -and $Runtimes -match '"nvidia"'
+}
+
 function Show-Usage {
     Write-Host @"
 
@@ -272,8 +277,18 @@ if ($VerbosePreference -ne 'SilentlyContinue') {
 Write-OltInfo "Running Open Link Token ($Subcommand)..."
 
 $UseGpu = $Gpus -eq "all"
-if ($Gpus -eq "auto" -and (Get-Command nvidia-smi -ErrorAction SilentlyContinue)) {
+if (
+    $Gpus -eq "auto" -and
+    (Get-Command nvidia-smi -ErrorAction SilentlyContinue) -and
+    (Test-NvidiaDockerRuntime)
+) {
     $UseGpu = $true
+} elseif (
+    $Gpus -eq "auto" -and
+    (Get-Command nvidia-smi -ErrorAction SilentlyContinue) -and
+    $VerbosePreference -ne 'SilentlyContinue'
+) {
+    Write-OltInfo "NVIDIA GPU detected, but Docker NVIDIA runtime is unavailable; using CPU"
 }
 
 $DockerRunOpts = [System.Collections.Generic.List[string]]@("run", "--rm", "-e", "HOME=/app")

@@ -26,8 +26,9 @@ You can find more information using these resources:
 
 ### GitHub authentication
 
-Export `PUBLIC_GH_TOKEN` in the host environment before starting the
-dev container. Docker Compose passes it through with the same name.
+When container tools need authenticated GitHub access, export
+`PUBLIC_GH_TOKEN` in the host environment before starting the dev container.
+Docker Compose passes it through with the same name; it is optional.
 
 ### Zscaler SSL Inspection Support
 

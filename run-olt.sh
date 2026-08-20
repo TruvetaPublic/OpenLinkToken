@@ -180,6 +180,12 @@ _is_stdin_flag() {
     return 1
 }
 
+_docker_has_nvidia_runtime() {
+    local runtimes
+    runtimes="$(docker info --format '{{json .Runtimes}}' 2>/dev/null || true)"
+    [[ "$runtimes" == *'"nvidia"'* ]]
+}
+
 _lookup_container_dir() {
     local host_dir="$1" i
     for i in "${!DIR_HOSTS[@]}"; do
@@ -299,7 +305,11 @@ log_info "Running Open Link Token ($SUBCOMMAND)..."
 DOCKER_RUN_OPTS=(--rm -e HOME=/app)
 [[ $NEEDS_STDIN == true ]] && DOCKER_RUN_OPTS+=(-i)
 if [[ "$GPU_REQUEST" == "all" || ( "$GPU_REQUEST" == "auto" && -n "$(command -v nvidia-smi 2>/dev/null || true)" ) ]]; then
-    DOCKER_RUN_OPTS+=(--gpus all)
+    if [[ "$GPU_REQUEST" == "auto" ]] && ! _docker_has_nvidia_runtime; then
+        [[ $VERBOSE == true ]] && log_info "NVIDIA GPU detected, but Docker NVIDIA runtime is unavailable; using CPU"
+    else
+        DOCKER_RUN_OPTS+=(--gpus all)
+    fi
 fi
 DOCKER_RUN_OPTS+=("${MOUNT_ARGS[@]}" "${ENV_PASS_ARGS[@]}")
 

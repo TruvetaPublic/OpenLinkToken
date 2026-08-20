@@ -48,7 +48,7 @@ def _resolve_providers() -> List[str | tuple]:
     import onnxruntime as ort
 
     available = ort.get_available_providers()
-    if "CUDAExecutionProvider" in available:
+    if "CUDAExecutionProvider" in available and _nvidia_device_available():
         return ["CUDAExecutionProvider", "CPUExecutionProvider"]
 
     is_macos_native = platform.system() == "Darwin"
@@ -58,6 +58,13 @@ def _resolve_providers() -> List[str | tuple]:
             "CPUExecutionProvider",
         ]
     return ["CPUExecutionProvider"]
+
+
+def _nvidia_device_available() -> bool:
+    """Return whether Linux exposes an NVIDIA device to the current process."""
+    if platform.system() != "Linux":
+        return True
+    return Path("/dev/nvidia0").exists() or Path("/dev/nvidiactl").exists()
 
 
 def _preload_cuda_libraries(ort, providers: List[str | tuple]) -> None:

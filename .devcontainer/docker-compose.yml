@@ -4,7 +4,7 @@ services:
       context: ..
       dockerfile: .devcontainer/Dockerfile
     environment:
-      PUBLIC_GH_TOKEN: "${PUBLIC_GH_TOKEN:?PUBLIC_GH_TOKEN must be set on the host}"
+      PUBLIC_GH_TOKEN: "${PUBLIC_GH_TOKEN:-}"
       PYSPARK_SUBMIT_ARGS: "--driver-memory 8g --executor-memory 8g --conf spark.driver.maxResultSize=4g --conf spark.memory.fraction=0.7 pyspark-shell"
       UV_PROJECT_ENVIRONMENT: "/home/vscode/.local/share/openlinktoken/.venv"
     volumes:
