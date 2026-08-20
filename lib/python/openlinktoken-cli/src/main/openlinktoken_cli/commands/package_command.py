@@ -9,6 +9,8 @@ import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, List, Optional
 
+from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig
+
 if TYPE_CHECKING:
     from openlinktoken.tokentransformer.token_transformer import TokenTransformer
     from openlinktoken_cli.processor.person_attributes_processor import PersonAttributesProcessingSummary
@@ -139,8 +141,8 @@ class PackageCommand:
             "--inferencing-batch-size",
             dest="inferencing_batch_size",
             type=int,
-            default=64,
-            help="ML1 ONNX inference batch size (default: 64)",
+            default=ML1InferenceConfig.DEFAULT_BATCH_SIZE,
+            help=f"ML1 ONNX inference batch size (default: {ML1InferenceConfig.DEFAULT_BATCH_SIZE})",
         )
 
         parser.add_argument(
