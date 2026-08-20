@@ -17,6 +17,8 @@ COPY lib/python/openlinktoken /app/lib/python/openlinktoken
 COPY lib/python/openlinktoken-core-ai /app/lib/python/openlinktoken-core-ai
 COPY lib/python/openlinktoken-cli /app/lib/python/openlinktoken-cli
 
+# Linux x86_64 dependency markers install CUDA and cuDNN user-space libraries;
+# the host NVIDIA driver is provided at runtime with --gpus all.
 RUN python -m pip install --upgrade pip && \
     python -m pip install --prefix=/install \
     /app/lib/python/openlinktoken \
@@ -28,7 +30,9 @@ RUN python -m pip install --upgrade pip && \
 ##################################################
 FROM python:${PYTHON_VERSION}-slim AS final
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
+ENV NVIDIA_VISIBLE_DEVICES=all \
+    NVIDIA_DRIVER_CAPABILITIES=compute,utility \
+    PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 RUN mkdir /app && \
