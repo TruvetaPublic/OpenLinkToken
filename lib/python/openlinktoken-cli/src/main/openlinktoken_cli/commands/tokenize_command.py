@@ -4,13 +4,26 @@ from __future__ import annotations
 
 import logging
 import sys
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 
 if TYPE_CHECKING:
     from openlinktoken.tokentransformer.token_transformer import TokenTransformer
     from openlinktoken_cli.processor.person_attributes_processor import PersonAttributesProcessingSummary
 
+from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
+
 logger = logging.getLogger(__name__)
+
+
+def resolve_exchange_config(
+    exchange_config_path: str | None,
+    private_key_path: str | None = None,
+    private_key_env: str | None = None,
+) -> Any:
+    """Resolve exchange configuration without importing crypto dependencies at startup."""
+    from openlinktoken_cli.util.exchange_config import resolve_exchange_config as implementation
+
+    return implementation(exchange_config_path, private_key_path, private_key_env)
 
 
 class TokenizeCommand:
@@ -178,8 +191,6 @@ class TokenizeCommand:
         from openlinktoken.core.ai.tokens.rotation_config import RotationConfig
         from openlinktoken_cli.tokens.config.tokenization_config_helper import TokenizationConfigHelper
         from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
-        from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
-        from openlinktoken_cli.util.exchange_config import resolve_exchange_config
         from openlinktoken_cli.util.file_type_detector import FileTypeDetector
         from openlinktoken_cli.util.path_utils import get_auto_output_path
 

@@ -7,13 +7,26 @@ import logging
 import sys
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from openlinktoken.tokentransformer.jwe_match_token_formatter import JweMatchTokenFormatter
     from openlinktoken_cli.processor.token_transformation_processor import TokenTransformationSummary
 
+from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
+
 logger = logging.getLogger(__name__)
+
+
+def resolve_exchange_config(
+    exchange_config_path: str | None,
+    private_key_path: str | None = None,
+    private_key_env: str | None = None,
+) -> Any:
+    """Resolve exchange configuration without importing crypto dependencies at startup."""
+    from openlinktoken_cli.util.exchange_config import resolve_exchange_config as implementation
+
+    return implementation(exchange_config_path, private_key_path, private_key_env)
 
 
 class EncryptCommand:
@@ -98,8 +111,7 @@ class EncryptCommand:
     def execute(args):
         """Execute the encrypt command."""
         from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
-        from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
-        from openlinktoken_cli.util.exchange_config import derive_transport_encryption_key, resolve_exchange_config
+        from openlinktoken_cli.util.exchange_config import derive_transport_encryption_key
         from openlinktoken_cli.util.file_type_detector import FileTypeDetector
         from openlinktoken_cli.util.path_utils import get_auto_output_path
         from openlinktoken_cli.util.ring_id_utils import resolve_ring_id
