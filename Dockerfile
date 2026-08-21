@@ -23,6 +23,15 @@ RUN python -m pip install --upgrade pip && \
     /app/lib/python/openlinktoken-core-ai \
     /app/lib/python/openlinktoken-cli
 
+# The published core-ai package omits large ML1 files; the Docker CLI image keeps
+# them beside the installed modules so ML1 works without a separate download.
+RUN package_dir="$(python -c 'import sys; print(f"/install/lib/python{sys.version_info.major}.{sys.version_info.minor}/site-packages/openlinktoken/core/ai/tokens")')" && \
+    mkdir -p "$package_dir" && \
+    cp /app/resources/inferencing/ml1/asset-manifest.json "$package_dir/" && \
+    cp /app/resources/inferencing/ml1/model.onnx "$package_dir/" && \
+    cp /app/resources/inferencing/ml1/model.onnx.data "$package_dir/" && \
+    cp /app/resources/inferencing/ml1/tokenizer.json "$package_dir/"
+
 ##################################################
 # Stage 2: Create the image to run the Python CLI
 ##################################################

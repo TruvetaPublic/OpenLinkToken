@@ -47,6 +47,8 @@ download them. Place the matched files locally before using ML1:
 
 Standalone `olt` CLI release bundles include the model assets and do not need a
 network connection for ML1 because the files are packaged inside the binary.
+The published Docker image also includes the model assets beside the installed
+Python modules.
 
 ### Prerequisites Checklist
 
