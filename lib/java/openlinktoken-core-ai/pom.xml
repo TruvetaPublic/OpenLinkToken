@@ -7,13 +7,13 @@
     <parent>
         <groupId>org.openlinktoken</groupId>
         <artifactId>openlinktoken-parent</artifactId>
-        <version>2.1.1</version>
+        <version>2.1.2</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>openlinktoken-core-ai</artifactId>
     <packaging>jar</packaging>
-    <version>2.1.1</version>
+    <version>2.1.2</version>
 
     <name>openlinktoken-core-ai</name>
     <description>Open Link Token Core AI — ONNX-based ML1 inference and rotation token generation</description>
@@ -100,8 +100,10 @@
                 <directory>src/main/resources</directory>
             </resource>
             <resource>
-                <!-- Bundle all ML1 inferencing assets from the shared resources directory -->
                 <directory>../../../resources/inferencing/ml1</directory>
+                <includes>
+                    <include>asset-manifest.json</include>
+                </includes>
                 <targetPath>inferencing/ml1</targetPath>
             </resource>
         </resources>

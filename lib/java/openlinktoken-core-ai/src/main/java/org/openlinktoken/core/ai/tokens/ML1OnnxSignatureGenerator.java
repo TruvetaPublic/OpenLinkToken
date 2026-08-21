@@ -44,6 +44,7 @@ import ai.djl.translate.TranslateException;
  */
 public final class ML1OnnxSignatureGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(ML1OnnxSignatureGenerator.class);
+    private static final String ASSET_RESOURCE_PREFIX = "inferencing/ml1/";
     private static ZooModel<NDList, NDList> model;
     private static Predictor<NDList, NDList> predictor;
     private static HuggingFaceTokenizer tokenizer;
@@ -206,6 +207,14 @@ public final class ML1OnnxSignatureGenerator {
 
         closeModel();
         Path resolvedModelPath = resolvePath(modelPath);
+        if (resolvedModelPath.getFileName().toString().equals("model.onnx")) {
+            Path dataPath = resolvedModelPath.resolveSibling("model.onnx.data");
+            if (!Files.isRegularFile(dataPath)) {
+                throw new IllegalStateException(
+                        "ML1 model data file not found beside the model: " + dataPath
+                                + ". Place model.onnx.data beside model.onnx.");
+            }
+        }
         Path resolvedTokenizerPath = resolvePath(tokenizerPath);
 
         int numThreads = ML1InferenceConfig.getNumThreads();
@@ -386,11 +395,24 @@ public final class ML1OnnxSignatureGenerator {
     /**
      * Resolve a configured filesystem or classpath resource path.
      */
-    private static Path resolvePath(String configuredPath) {
+    static Path resolvePath(String configuredPath) {
+        if (configuredPath == null || configuredPath.isBlank()) {
+            throw new IllegalArgumentException("ML1 asset path must not be blank.");
+        }
         if (configuredPath != null && configuredPath.startsWith("classpath:")) {
             return extractClasspathResource(configuredPath.substring("classpath:".length()));
         }
-        return Paths.get(configuredPath);
+        String expandedPath = configuredPath.equals("~")
+                ? System.getProperty("user.home", ".")
+                : configuredPath.startsWith("~/")
+                        ? Paths.get(System.getProperty("user.home", "."))
+                                .resolve(configuredPath.substring(2)).toString()
+                        : configuredPath;
+        Path resolved = Paths.get(expandedPath).toAbsolutePath().normalize();
+        if (!Files.isRegularFile(resolved)) {
+            throw new IllegalStateException("Configured ML1 asset path does not exist: " + resolved);
+        }
+        return resolved;
     }
 
     /**
@@ -426,19 +448,29 @@ public final class ML1OnnxSignatureGenerator {
             throw new IllegalStateException("Failed to extract classpath resource: " + normalized, e);
         }
 
-        // Filesystem fallback: walk up from the working directory to find resources/<normalized>
-        Path current = Paths.get(System.getProperty("user.dir"));
+        Path sourceCheckoutPath = findSourceCheckoutPath(normalized);
+        if (sourceCheckoutPath != null) {
+            return sourceCheckoutPath;
+        }
+
+        throw new IllegalStateException(
+                "ML1 resource not found on the classpath or filesystem: " + normalized
+                        + ". Core-AI packages do not download ML1 assets. Add the file to "
+                        + "inferencing/ml1/ on the application classpath, place it at "
+                        + "resources/" + normalized + " in a source checkout, or configure an explicit "
+                        + "filesystem path.");
+    }
+
+    private static Path findSourceCheckoutPath(String normalized) {
+        Path current = Paths.get(System.getProperty("user.dir")).toAbsolutePath().normalize();
         while (current != null) {
             Path candidate = current.resolve("resources").resolve(normalized);
-            if (Files.exists(candidate)) {
+            if (Files.isRegularFile(candidate)) {
                 return candidate;
             }
             current = current.getParent();
         }
-
-        throw new IllegalStateException(
-                "ML1 resource not found on classpath or filesystem. "
-                        + "Configure an explicit path or place the file at: resources/" + normalized);
+        return null;
     }
 
     /**

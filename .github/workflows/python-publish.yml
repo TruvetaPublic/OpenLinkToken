@@ -43,7 +43,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          lfs: true
+          ref: ${{ needs.release-info.outputs.tag || github.ref }}
 
       - name: Setup toolchain (Python only)
         uses: ./.github/actions/setup-toolchain
@@ -56,6 +56,8 @@ jobs:
         run: |
           # Install core package in editable mode for testing
           uv pip install --break-system-packages --system -e lib/python/openlinktoken/
+          # Install core-ai in editable mode for its focused tests
+          uv pip install --break-system-packages --system -e lib/python/openlinktoken-core-ai/
           # Install requirements for everything including testing tools
           uv pip install --break-system-packages --system -r lib/python/openlinktoken/requirements.txt \
             pytest pytest-cov ruff
@@ -64,9 +66,14 @@ jobs:
           cd lib/python/openlinktoken
           PYTHONPATH=src/main pytest src/test --junitxml=../test-results.xml --cov=src/main --cov-report=xml:coverage.xml
 
+          # Run tests for core-ai without invoking the large model
+          cd ../openlinktoken-core-ai
+          PYTHONPATH=src/main:../openlinktoken/src/main pytest src/test
+
       - name: Build distributions
         run: |
           (cd lib/python/openlinktoken && uv build -o dist/)
+          (cd lib/python/openlinktoken-core-ai && uv build -o dist/)
           (cd lib/python/openlinktoken-pyspark && uv build -o dist/)
 
       - name: Upload Python artifacts
@@ -76,6 +83,8 @@ jobs:
           path: |
             lib/python/openlinktoken/dist/*.whl
             lib/python/openlinktoken/dist/*.tar.gz
+            lib/python/openlinktoken-core-ai/dist/*.whl
+            lib/python/openlinktoken-core-ai/dist/*.tar.gz
             lib/python/openlinktoken-pyspark/dist/*.whl
             lib/python/openlinktoken-pyspark/dist/*.tar.gz
 

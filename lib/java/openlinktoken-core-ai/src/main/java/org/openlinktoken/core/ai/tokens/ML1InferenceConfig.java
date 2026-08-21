@@ -26,8 +26,8 @@ public final class ML1InferenceConfig {
      * Configure ML1 inference with the default batch size and thread count.
      *
      * @param enableMl1 whether ML1 inference is enabled
-     * @param configuredModelPath model path, or the bundled default when blank
-     * @param configuredTokenizerPath tokenizer path, or the bundled default when blank
+     * @param configuredModelPath model path, or the configured default when blank
+     * @param configuredTokenizerPath tokenizer path, or the configured default when blank
      * @param configuredMaxSequenceLength maximum number of tokenizer positions
      */
     public static synchronized void configure(boolean enableMl1, String configuredModelPath,
@@ -40,8 +40,8 @@ public final class ML1InferenceConfig {
      * Configure ML1 inference with the default thread count.
      *
      * @param enableMl1 whether ML1 inference is enabled
-     * @param configuredModelPath model path, or the bundled default when blank
-     * @param configuredTokenizerPath tokenizer path, or the bundled default when blank
+     * @param configuredModelPath model path, or the configured default when blank
+     * @param configuredTokenizerPath tokenizer path, or the configured default when blank
      * @param configuredMaxSequenceLength maximum number of tokenizer positions
      * @param configuredBatchSize number of rows processed per inference batch
      */
@@ -55,8 +55,8 @@ public final class ML1InferenceConfig {
      * Configure all ML1 inference runtime parameters.
      *
      * @param enableMl1 whether ML1 inference is enabled
-     * @param configuredModelPath model path, or the bundled default when blank
-     * @param configuredTokenizerPath tokenizer path, or the bundled default when blank
+     * @param configuredModelPath model path, or the configured default when blank
+     * @param configuredTokenizerPath tokenizer path, or the configured default when blank
      * @param configuredMaxSequenceLength maximum number of tokenizer positions
      * @param configuredBatchSize number of rows processed per inference batch
      * @param configuredNumThreads number of ONNX runtime threads
@@ -87,6 +87,7 @@ public final class ML1InferenceConfig {
         numThreads = configuredNumThreads;
     }
 
+    /**
     /**
      * Return whether ML1 inference is enabled.
      *
@@ -140,4 +141,5 @@ public final class ML1InferenceConfig {
     public static int getNumThreads() {
         return numThreads;
     }
+
 }

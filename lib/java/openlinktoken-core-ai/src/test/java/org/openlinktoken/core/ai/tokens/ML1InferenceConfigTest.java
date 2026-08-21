@@ -85,4 +85,5 @@ class ML1InferenceConfigTest {
                 IllegalArgumentException.class,
                 () -> ML1InferenceConfig.configure(true, "", "", 1, 1, -1));
     }
+
 }

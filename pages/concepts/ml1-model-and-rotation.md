@@ -84,6 +84,74 @@ The model path, tokenizer path, maximum sequence length, batch size, and
 thread count can be configured through the ML1 runtime configuration. See the
 [CLI reference](../reference/cli.md) for command-line options.
 
+## ML1 Asset Setup
+
+The published Java and Python core-ai packages do not contain the large ML1
+files and do not download them. ML1 requires these three matched files:
+
+```text
+/opt/openlinktoken/ml1/
+  model.onnx
+  model.onnx.data
+  tokenizer.json
+```
+
+The `model.onnx.data` file is the ONNX external tensor sidecar. It must remain
+in the same directory as `model.onnx`; it is not a separate configuration
+argument.
+
+With the default classpath paths, Java applications place the files under
+`src/main/resources/inferencing/ml1/`, which makes them available at
+`inferencing/ml1/` at runtime. Python applications can place them beside the
+installed `openlinktoken/core/ai/tokens/` modules. Source checkouts use
+`resources/inferencing/ml1/`.
+
+Applications can use another directory by configuring both paths before the
+first ML1 token operation.
+
+Java:
+
+```java
+ML1InferenceConfig.configure(
+    true,
+    "/opt/openlinktoken/ml1/model.onnx",
+    "/opt/openlinktoken/ml1/tokenizer.json",
+    128);
+```
+
+Python:
+
+```python
+from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig
+
+ML1InferenceConfig.configure(
+    enable_ml1=True,
+    configured_model_path="/opt/openlinktoken/ml1/model.onnx",
+    configured_tokenizer_path="/opt/openlinktoken/ml1/tokenizer.json",
+    configured_max_sequence_length=128,
+)
+```
+
+The repository workflow can publish the matched files as a
+release-independent OCI package in GitHub Container Registry. The tag identifies
+the model version, not the library release. Install
+[ORAS](https://oras.land/docs/installation), then pull the package into the
+asset directory:
+
+```bash
+mkdir -p /opt/openlinktoken/ml1
+oras pull \
+  ghcr.io/truvetapublic/openlinktoken-ml1-assets:v1 \
+  --output /opt/openlinktoken/ml1
+```
+
+The package contains `model.onnx`, `model.onnx.data`, `tokenizer.json`, and
+`asset-manifest.json`. Public packages do not require login. For a private
+package, authenticate ORAS with a GitHub token that has `read:packages`.
+
+Standalone CLI installers and published Docker images include the ML1 files
+already. They do not need an ORAS pull or another asset download.
+
 ## Rotation and Quantization
 
 The default transformer returns 50 projections for each 1024-value embedding:

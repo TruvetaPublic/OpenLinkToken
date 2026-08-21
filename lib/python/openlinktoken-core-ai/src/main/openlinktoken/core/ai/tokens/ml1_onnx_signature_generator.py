@@ -10,6 +10,7 @@ import os
 import platform
 import struct
 from pathlib import Path
+from threading import Lock
 from typing import Dict, List, Optional
 
 import numpy as np
@@ -64,6 +65,7 @@ class ML1OnnxSignatureGenerator:
     _active_model_path: Optional[str] = None
     _active_tokenizer_path: Optional[str] = None
     _pad_input_json = "{}"
+    _initialization_lock = Lock()
 
     @classmethod
     def generate_signature(cls, input_json: str) -> str:
@@ -215,69 +217,77 @@ class ML1OnnxSignatureGenerator:
     @classmethod
     def _initialize_if_needed(cls) -> None:
         """Initialize ONNX session and tokenizer if configuration changed or not yet initialized."""
-        with _suppress_ort_stderr():
-            import onnxruntime as ort
-
-        model_path = ML1InferenceConfig.get_model_path()
-        tokenizer_path = ML1InferenceConfig.get_tokenizer_path()
-
-        already_initialized = (
-            cls._session is not None
-            and cls._tokenizer is not None
-            and model_path == cls._active_model_path
-            and tokenizer_path == cls._active_tokenizer_path
-        )
-        if already_initialized:
-            return
-
-        cls._close_session()
-
-        resolved_model_path = cls._resolve_path(model_path)
-        resolved_tokenizer_path = cls._resolve_path(tokenizer_path)
-
-        session_options = ort.SessionOptions()
-        session_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
-        session_options.execution_mode = ort.ExecutionMode.ORT_PARALLEL
-        session_options.enable_mem_pattern = True
-        session_options.enable_cpu_mem_arena = True
-        num_threads = ML1InferenceConfig.get_num_threads()
-        session_options.intra_op_num_threads = num_threads
-        session_options.inter_op_num_threads = num_threads
-
-        with _suppress_ort_stderr():
-            providers = _resolve_providers()
-        try:
+        with cls._initialization_lock:
             with _suppress_ort_stderr():
-                cls._session = ort.InferenceSession(
-                    str(resolved_model_path),
-                    sess_options=session_options,
-                    providers=providers,
-                )
-        except Exception as e:
-            logger.warning("ML1 ONNX: provider init failed (%s), retrying with CPUExecutionProvider only", e)
+                import onnxruntime as ort
+
+            model_path = ML1InferenceConfig.get_model_path()
+            tokenizer_path = ML1InferenceConfig.get_tokenizer_path()
+
+            already_initialized = (
+                cls._session is not None
+                and cls._tokenizer is not None
+                and model_path == cls._active_model_path
+                and tokenizer_path == cls._active_tokenizer_path
+            )
+            if already_initialized:
+                return
+
+            cls._close_session()
+
+            resolved_model_path = cls._resolve_path(model_path)
+            if resolved_model_path.name == "model.onnx":
+                data_path = resolved_model_path.with_name("model.onnx.data")
+                if not data_path.is_file():
+                    raise FileNotFoundError(
+                        f"ML1 model data file not found beside the model: {data_path}. "
+                        "Place model.onnx.data beside model.onnx."
+                    )
+            resolved_tokenizer_path = cls._resolve_path(tokenizer_path)
+
+            session_options = ort.SessionOptions()
+            session_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+            session_options.execution_mode = ort.ExecutionMode.ORT_PARALLEL
+            session_options.enable_mem_pattern = True
+            session_options.enable_cpu_mem_arena = True
+            num_threads = ML1InferenceConfig.get_num_threads()
+            session_options.intra_op_num_threads = num_threads
+            session_options.inter_op_num_threads = num_threads
+
             with _suppress_ort_stderr():
-                cls._session = ort.InferenceSession(
-                    str(resolved_model_path),
-                    sess_options=session_options,
-                    providers=["CPUExecutionProvider"],
-                )
-        active = cls._session.get_providers()
-        if "CoreMLExecutionProvider" in active:
-            # Probe with a minimal input to detect runtime failures early
+                providers = _resolve_providers()
             try:
                 with _suppress_ort_stderr():
-                    cls._probe_coreml()
-            except Exception:
-                logger.warning("ML1 ONNX: CoreML probe failed; falling back to CPU.")
-                cls._reinitialize_with_cpu_only()
+                    cls._session = ort.InferenceSession(
+                        str(resolved_model_path),
+                        sess_options=session_options,
+                        providers=providers,
+                    )
+            except Exception as e:
+                logger.warning("ML1 ONNX: provider init failed (%s), retrying with CPUExecutionProvider only", e)
+                with _suppress_ort_stderr():
+                    cls._session = ort.InferenceSession(
+                        str(resolved_model_path),
+                        sess_options=session_options,
+                        providers=["CPUExecutionProvider"],
+                    )
+            active = cls._session.get_providers()
+            if "CoreMLExecutionProvider" in active:
+                # Probe with a minimal input to detect runtime failures early
+                try:
+                    with _suppress_ort_stderr():
+                        cls._probe_coreml()
+                except Exception:
+                    logger.warning("ML1 ONNX: CoreML probe failed; falling back to CPU.")
+                    cls._reinitialize_with_cpu_only()
+                else:
+                    logger.info("ML1 ONNX: CoreML active (subgraph-only) — Neural Engine / GPU acceleration enabled")
             else:
-                logger.info("ML1 ONNX: CoreML active (subgraph-only) — Neural Engine / GPU acceleration enabled")
-        else:
-            logger.info("ML1 ONNX: running on CPUExecutionProvider")
+                logger.info("ML1 ONNX: running on CPUExecutionProvider")
 
-        cls._tokenizer = Tokenizer.from_file(str(resolved_tokenizer_path))
-        cls._active_model_path = model_path
-        cls._active_tokenizer_path = tokenizer_path
+            cls._tokenizer = Tokenizer.from_file(str(resolved_tokenizer_path))
+            cls._active_model_path = model_path
+            cls._active_tokenizer_path = tokenizer_path
 
     @classmethod
     def _probe_coreml(cls) -> None:
@@ -331,34 +341,47 @@ class ML1OnnxSignatureGenerator:
         """Resolve classpath-style paths and regular filesystem paths.
 
         Resolution order:
-        1. Bundled package data via importlib.resources (installed wheel).
+        1. Bundled package data via importlib.resources (installed wheel or CLI).
         2. Filesystem walk up from the source file (source checkout / development).
         """
-        if configured_path.startswith("classpath:"):
-            resource_path = configured_path[len("classpath:") :]
-            filename = Path(resource_path).name
+        if not configured_path or not configured_path.strip():
+            raise ValueError("ML1 asset path must not be blank.")
+        if not configured_path.startswith("classpath:"):
+            resolved_path = Path(configured_path).expanduser().absolute()
+            if not resolved_path.is_file():
+                raise FileNotFoundError(f"Configured ML1 asset path does not exist: {resolved_path}")
+            return resolved_path
 
-            # Installed package: assets are bundled inside openlinktoken.core.ai.tokens
-            try:
-                ref = importlib.resources.files("openlinktoken.core.ai.tokens") / filename
-                with importlib.resources.as_file(ref) as p:
-                    if p.exists():
-                        return p
-            except Exception:
-                pass
+        resource_path = configured_path[len("classpath:") :]
+        filename = Path(resource_path).name
+        local_path = cls._find_local_asset(filename, resource_path)
+        if local_path is not None:
+            return local_path
+        normalized = resource_path.lstrip("/")
+        raise FileNotFoundError(
+            f"ML1 resource not found: {filename}. Core-AI packages do not download ML1 assets. "
+            f"Place it beside the installed package module at "
+            f"openlinktoken/core/ai/tokens/{filename}, place it at resources/{normalized} "
+            "in a source checkout, or configure an explicit filesystem path."
+        )
 
-            # Source checkout: walk up from this file looking for resources/<normalized>
-            normalized = resource_path.lstrip("/")
-            this_file = Path(__file__).resolve()
-            for parent in this_file.parents:
-                candidate = parent / "resources" / normalized
-                if candidate.exists():
-                    return candidate
+    @classmethod
+    def _find_local_asset(cls, filename: str, resource_path: str) -> Optional[Path]:
+        """Find an asset in an installed package or source checkout."""
+        try:
+            ref = importlib.resources.files("openlinktoken.core.ai.tokens") / filename
+            if ref.is_file():
+                return Path(ref)
+        except (FileNotFoundError, TypeError, AttributeError):
+            pass
 
-            raise FileNotFoundError(
-                f"ML1 resource not found. Configure an explicit path or place the file at: resources/{normalized}"
-            )
-        return Path(configured_path)
+        normalized = resource_path.lstrip("/")
+        this_file = Path(__file__).resolve()
+        for parent in this_file.parents:
+            candidate = parent / "resources" / normalized
+            if candidate.is_file():
+                return candidate
+        return None
 
     @staticmethod
     def _serialize_embedding(embedding: np.ndarray) -> str:
