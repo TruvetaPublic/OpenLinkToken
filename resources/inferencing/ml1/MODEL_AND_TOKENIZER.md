@@ -118,6 +118,9 @@ printf '%s' "$GITHUB_TOKEN" | oras login ghcr.io \
   --password-stdin
 ```
 
+After the first publish, set the GHCR package visibility to **public** in the
+repository package settings if anonymous downloads are required.
+
 The publishing workflow runs manually and publishes a new model tag only when
 the model changes.
 
