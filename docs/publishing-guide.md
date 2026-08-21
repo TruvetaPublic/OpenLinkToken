@@ -45,6 +45,42 @@ download them. Place the matched files locally before using ML1:
   tokenizer filesystem paths to the ML1 configuration.
 - Source checkouts: keep the files under `resources/inferencing/ml1/`.
 
+For explicit filesystem paths, put the three files in one directory:
+
+```text
+/opt/openlinktoken/ml1/
+  model.onnx
+  model.onnx.data
+  tokenizer.json
+```
+
+Set the model path to `/opt/openlinktoken/ml1/model.onnx` and the tokenizer
+path to `/opt/openlinktoken/ml1/tokenizer.json`. Configure these paths before
+the first ML1 token operation:
+
+```java
+ML1InferenceConfig.configure(
+    true,
+    "/opt/openlinktoken/ml1/model.onnx",
+    "/opt/openlinktoken/ml1/tokenizer.json",
+    128);
+```
+
+```python
+from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig
+
+ML1InferenceConfig.configure(
+    enable_ml1=True,
+    configured_model_path="/opt/openlinktoken/ml1/model.onnx",
+    configured_tokenizer_path="/opt/openlinktoken/ml1/tokenizer.json",
+    configured_max_sequence_length=128,
+)
+```
+
+`model.onnx.data` is not a configuration argument. It is the external tensor
+data file that ONNX Runtime loads automatically from the same directory as
+`model.onnx`.
+
 Standalone `olt` CLI release bundles include the model assets and do not need a
 network connection for ML1 because the files are packaged inside the binary.
 The published Docker image also includes the model assets beside the installed
