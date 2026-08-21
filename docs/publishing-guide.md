@@ -86,6 +86,40 @@ network connection for ML1 because the files are packaged inside the binary.
 The published Docker image also includes the model assets beside the installed
 Python modules.
 
+### Downloading the ML1 OCI package
+
+The repository also publishes the ML1 files as a release-independent OCI
+artifact in GitHub Container Registry. The package tag identifies the model,
+not the Open Link Token library:
+
+```text
+ghcr.io/truvetapublic/openlinktoken-ml1-assets:ml1-v1
+```
+
+Install [ORAS](https://oras.land/docs/installation), then pull the package
+into a local directory:
+
+```bash
+mkdir -p /opt/openlinktoken/ml1
+oras pull \
+  ghcr.io/truvetapublic/openlinktoken-ml1-assets:ml1-v1 \
+  --output /opt/openlinktoken/ml1
+```
+
+The package contains `model.onnx`, `model.onnx.data`, `tokenizer.json`, and
+`asset-manifest.json`. Public packages can be pulled without login. For a
+private package, log in with a GitHub token that has `read:packages`:
+
+```bash
+printf '%s' "$GITHUB_TOKEN" | oras login ghcr.io \
+  --username "$GITHUB_USER" \
+  --password-stdin
+```
+
+After the pull, use the model and tokenizer paths from the previous section.
+The publishing workflow runs manually and creates a new package tag only when
+the model changes.
+
 ### Prerequisites Checklist
 
 | Item                                                  | Required For                                                     | How to Configure                                                                                                                                                                                                                                                                       |

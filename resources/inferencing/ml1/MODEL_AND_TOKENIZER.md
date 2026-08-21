@@ -90,6 +90,37 @@ ML1InferenceConfig.configure(
 data file that ONNX Runtime loads automatically from the same directory as
 `model.onnx`.
 
+## Downloading the OCI package
+
+The repository publishes the matched files as a release-independent OCI
+artifact. The tag identifies the model version:
+
+```text
+ghcr.io/truvetapublic/openlinktoken-ml1-assets:ml1-v1
+```
+
+Install [ORAS](https://oras.land/docs/installation), then pull the files:
+
+```bash
+mkdir -p /opt/openlinktoken/ml1
+oras pull \
+  ghcr.io/truvetapublic/openlinktoken-ml1-assets:ml1-v1 \
+  --output /opt/openlinktoken/ml1
+```
+
+The package contains `model.onnx`, `model.onnx.data`, `tokenizer.json`, and
+`asset-manifest.json`. Public packages do not require login. For a private
+package, authenticate with a GitHub token that has `read:packages`:
+
+```bash
+printf '%s' "$GITHUB_TOKEN" | oras login ghcr.io \
+  --username "$GITHUB_USER" \
+  --password-stdin
+```
+
+The publishing workflow runs manually and publishes a new model tag only when
+the model changes.
+
 Standalone CLI release bundles include the three model assets and the
 manifest. They use the bundled files directly.
 
