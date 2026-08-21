@@ -15,8 +15,8 @@ import org.openlinktoken.attributes.validation.NotInValidator;
  * first name fields. It recognizes "FirstName" and "GivenName" as valid aliases
  * for this attribute type.
  *
- * The attribute performs no normalization on input values, returning them
- * unchanged.
+ * The attribute removes titles, suffixes, initials, and non-alphabetic characters
+ * during normalization.
  */
 public class FirstNameAttribute extends BaseAttribute {
 
@@ -29,7 +29,7 @@ public class FirstNameAttribute extends BaseAttribute {
      * This pattern matches (case-insensitive):
      *  - Common titles such as "Mr", "Mrs", "Ms", "Miss", "Dr", "Prof", etc.
      *  - Optional period after the title (e.g., "Dr.")
-     *  - One or more spaces following the title
+     *  - One or more leading titles, each followed by one or more spaces
      *
      * Breakdown of the regex:
      *   (?i)                         Case-insensitive flag
@@ -42,7 +42,7 @@ public class FirstNameAttribute extends BaseAttribute {
      *   \s+                         One or more spaces after the title
      */
     private static final Pattern TITLE_PATTERN = Pattern.compile(
-            "(?i)^(mr|mrs|ms|miss|dr|prof|capt|sir|col|gen|cmdr|lt|rabbi|father|brother|sister|hon|honorable|reverend|rev|doctor)\\.?\\s+");
+            "(?i)^(?:(?:mr|mrs|ms|miss|dr|prof|capt|sir|col|gen|cmdr|lt|rabbi|father|brother|sister|hon|honorable|reverend|rev|doctor)\\.?\\s+)+");
 
     /**
      * Pattern to match trailing periods and middle initials in names.
@@ -58,6 +58,8 @@ public class FirstNameAttribute extends BaseAttribute {
      *   $            End of string
      */
     private static final Pattern TRAILING_PERIOD_AND_INITIAL_PATTERN = Pattern.compile("\\s[^\\s]\\.?$");
+    private static final Pattern FIRST_PART_NAME_PATTERN = Pattern.compile(
+            "^([A-Za-z]{3,})[\\s./]+[A-Za-z]+(?:[\\s./\\-\\u2010-\\u2015\\u2212]+[A-Za-z]+)*$");
 
     public FirstNameAttribute() {
         super(List.of(
@@ -126,6 +128,11 @@ public class FirstNameAttribute extends BaseAttribute {
         // trim trailing periods
         // remove trailing periods and middle initials
         normalizedValue = TRAILING_PERIOD_AND_INITIAL_PATTERN.matcher(normalizedValue).replaceAll("");
+
+        var firstPartNameMatcher = FIRST_PART_NAME_PATTERN.matcher(normalizedValue);
+        if (firstPartNameMatcher.matches()) {
+            normalizedValue = firstPartNameMatcher.group(1);
+        }
 
         // remove dashes, spaces and other non-alphanumeric characters
         normalizedValue = AttributeUtilities.NON_ALPHABETIC_PATTERN.matcher(normalizedValue).replaceAll("");

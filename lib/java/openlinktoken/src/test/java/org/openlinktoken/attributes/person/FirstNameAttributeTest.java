@@ -271,7 +271,7 @@ class FirstNameAttributeTest {
     void normalize_ShouldRemoveNonAlphabeticCharacters() {
         // Test removal of dashes, spaces, and other non-alphanumeric characters
         assertEquals("JohnDoe", firstNameAttribute.normalize("John-Doe"));
-        assertEquals("MaryJane", firstNameAttribute.normalize("Mary Jane"));
+        assertEquals("Mary", firstNameAttribute.normalize("Mary Jane"));
         assertEquals("AnnMarie", firstNameAttribute.normalize("Ann-Marie"));
         assertEquals("JeanLuc", firstNameAttribute.normalize("Jean-Luc"));
 
@@ -279,6 +279,26 @@ class FirstNameAttributeTest {
         assertEquals("John", firstNameAttribute.normalize("John123"));
         assertEquals("Jane", firstNameAttribute.normalize("Jane@#$"));
         assertEquals("RobertSmith", firstNameAttribute.normalize("Robert_Smith"));
+    }
+
+    @Test
+    void normalize_ShouldKeepFirstPartWithNonDashSeparators() {
+        assertEquals("Eric", firstNameAttribute.normalize("Eric Karl"));
+        assertEquals("Hans", firstNameAttribute.normalize("Hans Peter"));
+        assertEquals("Anne", firstNameAttribute.normalize("Anne Marie Julie"));
+        assertEquals("Mary", firstNameAttribute.normalize("Mary Anne"));
+        assertEquals("Eric", firstNameAttribute.normalize("Eric.Karl"));
+        assertEquals("Hans", firstNameAttribute.normalize("Hans/Peter"));
+        assertEquals("Eric", firstNameAttribute.normalize("Eric Karl Peter"));
+        assertEquals("MaryAnne", firstNameAttribute.normalize("Mary-Anne"));
+        assertEquals("MaryAnne", firstNameAttribute.normalize("Mary–Anne"));
+        assertEquals("Mary", firstNameAttribute.normalize("Mary Anne-Marie"));
+    }
+
+    @Test
+    void normalize_ShouldRequireThreeLetterFirstPart() {
+        assertEquals("JoAnne", firstNameAttribute.normalize("Jo Anne"));
+        assertEquals("Amy", firstNameAttribute.normalize("Amy Lee"));
     }
 
     void serialization_ShouldPreserveState() throws Exception {
@@ -439,7 +459,7 @@ class FirstNameAttributeTest {
 
         // Test unusual but valid combinations
         assertEquals("JohnPaul", firstNameAttribute.normalize("Dr. John-Paul Jr."));
-        assertEquals("MaryEllen", firstNameAttribute.normalize("Mrs. Mary Ellen Sr."));
+        assertEquals("Mary", firstNameAttribute.normalize("Mrs. Mary Ellen Sr."));
         assertEquals("JeanLuc", firstNameAttribute.normalize("Capt. Jean-Luc III"));
 
         // Test with numbers and special characters mixed in
@@ -450,13 +470,13 @@ class FirstNameAttributeTest {
 
     @Test
     void normalize_ShouldHandleMultipleTitlesAndSuffixes() {
-        // Test multiple titles (should only remove the first valid one)
-        assertEquals("DrJohn", firstNameAttribute.normalize("Mr. Dr. John"));
-        assertEquals("MrsJane", firstNameAttribute.normalize("Dr. Mrs. Jane"));
+        // Test multiple titles
+        assertEquals("John", firstNameAttribute.normalize("Mr. Dr. John"));
+        assertEquals("Jane", firstNameAttribute.normalize("Dr. Mrs. Jane"));
 
-        // Test multiple suffixes (should remove only first recognized suffix)
+        // Test multiple suffixes
         assertEquals("JohnJr", firstNameAttribute.normalize("John Jr. Sr.")); // This should remove both
-        assertEquals("JaneIII", firstNameAttribute.normalize("Jane III II")); // This should remove both
+        assertEquals("Jane", firstNameAttribute.normalize("Jane III II"));
 
         // Test edge case: title that looks like a name
         assertEquals("Drew", firstNameAttribute.normalize("Drew")); // Drew is not Dr.

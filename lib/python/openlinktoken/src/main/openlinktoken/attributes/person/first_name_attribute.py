@@ -13,8 +13,8 @@ class FirstNameAttribute(BaseAttribute):
     first name fields. It recognizes "FirstName" and "GivenName" as valid aliases
     for this attribute type.
 
-    The attribute performs no normalization on input values, returning them
-    unchanged.
+    The attribute removes titles, suffixes, initials, and non-alphabetic
+    characters during normalization.
     """
 
     NAME = "FirstName"
@@ -22,8 +22,8 @@ class FirstNameAttribute(BaseAttribute):
 
     # Pattern to match and remove common titles
     TITLE_PATTERN = re.compile(
-        r"(?i)^\s*(mr|mrs|ms|miss|dr|prof|capt|sir|col|gen|cmdr|lt|"
-        r"rabbi|father|brother|sister|hon|honorable|reverend|rev|doctor)\.?\s+",
+        r"(?i)^\s*(?:(?:mr|mrs|ms|miss|dr|prof|capt|sir|col|gen|cmdr|lt|"
+        r"rabbi|father|brother|sister|hon|honorable|reverend|rev|doctor)\.?\s+)+",
         re.IGNORECASE,
     )
 
@@ -39,6 +39,7 @@ class FirstNameAttribute(BaseAttribute):
     #   \.?          Optional period
     #   $            End of string
     TRAILING_PERIOD_AND_INITIAL_PATTERN = re.compile(r"\s[^\s]\.?$")
+    FIRST_PART_NAME_PATTERN = re.compile(r"^([A-Za-z]{3,})[\s./]+[A-Za-z]+(?:[\s./\-\u2010-\u2015\u2212]+[A-Za-z]+)*$")
 
     def __init__(self):
         placeholder_values = AttributeUtilities.COMMON_PLACEHOLDER_NAMES
@@ -85,7 +86,7 @@ class FirstNameAttribute(BaseAttribute):
         return self.ALIASES.copy()
 
     def normalize(self, value: str) -> str:
-        """Returns the value unchanged after removing titles."""
+        """Normalize a first name by removing titles, suffixes, and separators."""
         if not value:
             return value
 
@@ -102,6 +103,10 @@ class FirstNameAttribute(BaseAttribute):
             normalized = without_suffix
 
         normalized = re.sub(self.TRAILING_PERIOD_AND_INITIAL_PATTERN, "", normalized).strip()
+
+        first_part_name_match = re.match(self.FIRST_PART_NAME_PATTERN, normalized)
+        if first_part_name_match:
+            normalized = first_part_name_match.group(1)
 
         # Remove non-alphabetic characters
         normalized = AttributeUtilities.NON_ALPHABETIC_PATTERN.sub("", normalized)

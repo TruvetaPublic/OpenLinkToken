@@ -1,6 +1,6 @@
 [project]
 name = "openlinktoken-core-ai"
-version = "2.1.1"
+version = "2.1.2"
 requires-python = ">=3.10"
 dynamic = [
   "authors",
@@ -10,7 +10,7 @@ dynamic = [
   "urls",
 ]
 dependencies = [
-  "openlinktoken==2.1.1",
+  "openlinktoken==2.1.2",
   "numpy==1.26.4; python_version < '3.14'",
   "numpy==2.3.3; python_version >= '3.14'",
   "onnxruntime==1.23.2; python_version < '3.11'",
