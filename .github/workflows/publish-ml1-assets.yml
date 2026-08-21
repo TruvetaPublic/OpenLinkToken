@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       model_tag:
-        description: "Immutable model tag, for example ml1-v1"
+        description: "Immutable model tag, for example v1"
         required: true
         type: string
 
@@ -35,8 +35,8 @@ jobs:
           MODEL_TAG: ${{ inputs.model_tag }}
         run: |
           set -euo pipefail
-          if [[ ! "${MODEL_TAG}" =~ ^ml1-v[0-9]+$ ]]; then
-            echo "model_tag must match ml1-vN, for example ml1-v1." >&2
+          if [[ ! "${MODEL_TAG}" =~ ^v[0-9]+$ ]]; then
+            echo "model_tag must match vN, for example v1." >&2
             exit 1
           fi
 
