@@ -470,9 +470,9 @@ class FirstNameAttributeTest {
 
     @Test
     void normalize_ShouldHandleMultipleTitlesAndSuffixes() {
-        // Test multiple titles (should only remove the first valid one)
-        assertEquals("DrJohn", firstNameAttribute.normalize("Mr. Dr. John"));
-        assertEquals("Mrs", firstNameAttribute.normalize("Dr. Mrs. Jane"));
+        // Test multiple titles
+        assertEquals("John", firstNameAttribute.normalize("Mr. Dr. John"));
+        assertEquals("Jane", firstNameAttribute.normalize("Dr. Mrs. Jane"));
 
         // Test multiple suffixes
         assertEquals("JohnJr", firstNameAttribute.normalize("John Jr. Sr.")); // This should remove both

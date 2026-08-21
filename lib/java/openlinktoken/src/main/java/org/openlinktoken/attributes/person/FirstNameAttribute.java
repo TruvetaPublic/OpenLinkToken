@@ -29,7 +29,7 @@ public class FirstNameAttribute extends BaseAttribute {
      * This pattern matches (case-insensitive):
      *  - Common titles such as "Mr", "Mrs", "Ms", "Miss", "Dr", "Prof", etc.
      *  - Optional period after the title (e.g., "Dr.")
-     *  - One or more spaces following the title
+     *  - One or more leading titles, each followed by one or more spaces
      *
      * Breakdown of the regex:
      *   (?i)                         Case-insensitive flag
@@ -42,7 +42,7 @@ public class FirstNameAttribute extends BaseAttribute {
      *   \s+                         One or more spaces after the title
      */
     private static final Pattern TITLE_PATTERN = Pattern.compile(
-            "(?i)^(mr|mrs|ms|miss|dr|prof|capt|sir|col|gen|cmdr|lt|rabbi|father|brother|sister|hon|honorable|reverend|rev|doctor)\\.?\\s+");
+            "(?i)^(?:(?:mr|mrs|ms|miss|dr|prof|capt|sir|col|gen|cmdr|lt|rabbi|father|brother|sister|hon|honorable|reverend|rev|doctor)\\.?\\s+)+");
 
     /**
      * Pattern to match trailing periods and middle initials in names.

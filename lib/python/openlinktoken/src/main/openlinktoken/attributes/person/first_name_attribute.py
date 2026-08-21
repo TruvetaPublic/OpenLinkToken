@@ -22,8 +22,8 @@ class FirstNameAttribute(BaseAttribute):
 
     # Pattern to match and remove common titles
     TITLE_PATTERN = re.compile(
-        r"(?i)^\s*(mr|mrs|ms|miss|dr|prof|capt|sir|col|gen|cmdr|lt|"
-        r"rabbi|father|brother|sister|hon|honorable|reverend|rev|doctor)\.?\s+",
+        r"(?i)^\s*(?:(?:mr|mrs|ms|miss|dr|prof|capt|sir|col|gen|cmdr|lt|"
+        r"rabbi|father|brother|sister|hon|honorable|reverend|rev|doctor)\.?\s+)+",
         re.IGNORECASE,
     )
 

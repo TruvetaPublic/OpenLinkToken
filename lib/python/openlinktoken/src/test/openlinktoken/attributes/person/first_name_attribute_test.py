@@ -319,9 +319,11 @@ class TestFirstNameAttribute:
         assert self.first_name_attribute.normalize("Mr. ") == "Mr"
         assert self.first_name_attribute.normalize("    Dr.   ") == "Dr"
 
-        # Test multiple titles (should only remove the first one)
+        # Test multiple titles
         assert self.first_name_attribute.normalize("Mr. Smith") == "Smith"
         assert self.first_name_attribute.normalize("Dr. Johnson") == "Johnson"
+        assert self.first_name_attribute.normalize("Mr. Dr. John") == "John"
+        assert self.first_name_attribute.normalize("Dr. Mrs. Jane") == "Jane"
 
         # Test names that start with title-like words but aren't titles
         assert self.first_name_attribute.normalize("Drew") == "Drew"
