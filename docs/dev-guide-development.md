@@ -236,7 +236,7 @@ Smoke-test the local build before packaging it:
 ```shell
 mkdir -p smoke
 cp resources/sample.csv smoke/input.csv
-./dist/olt/olt tokenize -i smoke/input.csv -o smoke/out.csv -h secret
+./dist/olt/olt tokenize -i smoke/input.csv -o smoke/out.csv --mode hash-only --disable-inferencing
 ```
 
 On Windows PowerShell:
@@ -244,7 +244,7 @@ On Windows PowerShell:
 ```powershell
 New-Item -ItemType Directory -Force -Path smoke | Out-Null
 Copy-Item resources\sample.csv smoke\input.csv
-.\dist\olt\olt.exe tokenize -i smoke\input.csv -o smoke\out.csv -h secret
+.\dist\olt\olt.exe tokenize -i smoke\input.csv -o smoke\out.csv --mode hash-only --disable-inferencing
 ```
 
 If you also want the same ZIP and checksum bundle produced by the release workflow, run:
