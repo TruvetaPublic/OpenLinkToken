@@ -281,6 +281,18 @@ class FirstNameAttributeTest {
         assertEquals("RobertSmith", firstNameAttribute.normalize("Robert_Smith"));
     }
 
+    @Test
+    void normalize_ShouldRemoveAnneForThreeCharacterPrefixWithNonDashSeparators() {
+        assertEquals("Mary", firstNameAttribute.normalize("Mary Anne"));
+        assertEquals("Mary", firstNameAttribute.normalize("Mary anne"));
+        assertEquals("Mary", firstNameAttribute.normalize("Mary.Anne"));
+        assertEquals("Mary", firstNameAttribute.normalize("Mary/Anne"));
+        assertEquals("MaryAnne", firstNameAttribute.normalize("Mary-Anne"));
+        assertEquals("MaryAnne", firstNameAttribute.normalize("Mary–Anne"));
+        assertEquals("JoAnne", firstNameAttribute.normalize("Jo Anne"));
+        assertEquals("MaryAnneMarie", firstNameAttribute.normalize("Mary Anne-Marie"));
+    }
+
     void serialization_ShouldPreserveState() throws Exception {
         FirstNameAttribute originalAttribute = new FirstNameAttribute();
 

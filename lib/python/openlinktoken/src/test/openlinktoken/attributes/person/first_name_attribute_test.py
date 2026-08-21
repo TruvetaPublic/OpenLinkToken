@@ -242,6 +242,25 @@ class TestFirstNameAttribute:
         assert self.first_name_attribute.normalize("Jane@#$") == "Jane"
         assert self.first_name_attribute.normalize("Robert_Smith") == "RobertSmith"
 
+    @pytest.mark.parametrize(
+        ("input_name", "expected_output"),
+        [
+            ("Mary Anne", "Mary"),
+            ("Mary anne", "Mary"),
+            ("Mary.Anne", "Mary"),
+            ("Mary/Anne", "Mary"),
+            ("Mary-Anne", "MaryAnne"),
+            ("Mary–Anne", "MaryAnne"),
+            ("Jo Anne", "JoAnne"),
+            ("Mary Anne-Marie", "MaryAnneMarie"),
+        ],
+    )
+    def test_normalize_should_remove_anne_for_three_character_prefix_with_non_dash_separators(
+        self, input_name, expected_output
+    ):
+        """Remove a trailing space-separated Anne only when the prefix has at least three characters."""
+        assert self.first_name_attribute.normalize(input_name) == expected_output
+
     def test_serialization_should_preserve_state(self):
         """Test serialization and deserialization."""
         original_attribute = FirstNameAttribute()

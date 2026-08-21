@@ -15,8 +15,8 @@ import org.openlinktoken.attributes.validation.NotInValidator;
  * first name fields. It recognizes "FirstName" and "GivenName" as valid aliases
  * for this attribute type.
  *
- * The attribute performs no normalization on input values, returning them
- * unchanged.
+ * The attribute removes titles, suffixes, initials, and non-alphabetic characters
+ * during normalization.
  */
 public class FirstNameAttribute extends BaseAttribute {
 
@@ -58,6 +58,8 @@ public class FirstNameAttribute extends BaseAttribute {
      *   $            End of string
      */
     private static final Pattern TRAILING_PERIOD_AND_INITIAL_PATTERN = Pattern.compile("\\s[^\\s]\\.?$");
+    private static final Pattern SPACE_DOT_SLASH_ANNE_PATTERN = Pattern.compile(
+            "^([A-Za-z]{3,})[\\s./]+Anne$", Pattern.CASE_INSENSITIVE);
 
     public FirstNameAttribute() {
         super(List.of(
@@ -126,6 +128,11 @@ public class FirstNameAttribute extends BaseAttribute {
         // trim trailing periods
         // remove trailing periods and middle initials
         normalizedValue = TRAILING_PERIOD_AND_INITIAL_PATTERN.matcher(normalizedValue).replaceAll("");
+
+        var anneMatcher = SPACE_DOT_SLASH_ANNE_PATTERN.matcher(normalizedValue);
+        if (anneMatcher.matches()) {
+            normalizedValue = anneMatcher.group(1);
+        }
 
         // remove dashes, spaces and other non-alphanumeric characters
         normalizedValue = AttributeUtilities.NON_ALPHABETIC_PATTERN.matcher(normalizedValue).replaceAll("");
