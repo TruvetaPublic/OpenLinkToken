@@ -282,16 +282,23 @@ class FirstNameAttributeTest {
     }
 
     @Test
-    void normalize_ShouldRemoveSecondPartForThreeCharacterPrefixWithNonDashSeparators() {
+    void normalize_ShouldKeepFirstPartWithNonDashSeparators() {
         assertEquals("Eric", firstNameAttribute.normalize("Eric Karl"));
         assertEquals("Hans", firstNameAttribute.normalize("Hans Peter"));
+        assertEquals("Anne", firstNameAttribute.normalize("Anne Marie Julie"));
         assertEquals("Mary", firstNameAttribute.normalize("Mary Anne"));
         assertEquals("Eric", firstNameAttribute.normalize("Eric.Karl"));
         assertEquals("Hans", firstNameAttribute.normalize("Hans/Peter"));
+        assertEquals("Eric", firstNameAttribute.normalize("Eric Karl Peter"));
         assertEquals("MaryAnne", firstNameAttribute.normalize("Mary-Anne"));
         assertEquals("MaryAnne", firstNameAttribute.normalize("Mary–Anne"));
-        assertEquals("JoAnne", firstNameAttribute.normalize("Jo Anne"));
         assertEquals("Mary", firstNameAttribute.normalize("Mary Anne-Marie"));
+    }
+
+    @Test
+    void normalize_ShouldRequireThreeLetterFirstPart() {
+        assertEquals("JoAnne", firstNameAttribute.normalize("Jo Anne"));
+        assertEquals("Amy", firstNameAttribute.normalize("Amy Lee"));
     }
 
     void serialization_ShouldPreserveState() throws Exception {

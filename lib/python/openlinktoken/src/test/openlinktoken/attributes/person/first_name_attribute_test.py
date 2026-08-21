@@ -247,19 +247,29 @@ class TestFirstNameAttribute:
         [
             ("Eric Karl", "Eric"),
             ("Hans Peter", "Hans"),
+            ("Anne Marie Julie", "Anne"),
             ("Mary Anne", "Mary"),
             ("Eric.Karl", "Eric"),
             ("Hans/Peter", "Hans"),
+            ("Eric Karl Peter", "Eric"),
             ("Mary-Anne", "MaryAnne"),
             ("Mary–Anne", "MaryAnne"),
-            ("Jo Anne", "JoAnne"),
             ("Mary Anne-Marie", "Mary"),
         ],
     )
-    def test_normalize_should_remove_second_part_for_three_character_prefix_with_non_dash_separators(
-        self, input_name, expected_output
-    ):
-        """Remove the second part only when the prefix has at least three characters."""
+    def test_normalize_should_keep_first_part_with_non_dash_separators(self, input_name, expected_output):
+        """Keep the first part when a name has a non-dash separator."""
+        assert self.first_name_attribute.normalize(input_name) == expected_output
+
+    @pytest.mark.parametrize(
+        ("input_name", "expected_output"),
+        [
+            ("Jo Anne", "JoAnne"),
+            ("Amy Lee", "Amy"),
+        ],
+    )
+    def test_normalize_should_require_three_letter_first_part(self, input_name, expected_output):
+        """Keep two-letter first parts and reduce first parts with at least three letters."""
         assert self.first_name_attribute.normalize(input_name) == expected_output
 
     def test_serialization_should_preserve_state(self):
