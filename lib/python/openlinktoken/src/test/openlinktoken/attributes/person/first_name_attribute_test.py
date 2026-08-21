@@ -253,7 +253,7 @@ class TestFirstNameAttribute:
             ("Mary-Anne", "MaryAnne"),
             ("Mary–Anne", "MaryAnne"),
             ("Jo Anne", "JoAnne"),
-            ("Mary Anne-Marie", "MaryAnneMarie"),
+            ("Mary Anne-Marie", "Mary"),
         ],
     )
     def test_normalize_should_remove_second_part_for_three_character_prefix_with_non_dash_separators(

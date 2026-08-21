@@ -291,7 +291,7 @@ class FirstNameAttributeTest {
         assertEquals("MaryAnne", firstNameAttribute.normalize("Mary-Anne"));
         assertEquals("MaryAnne", firstNameAttribute.normalize("Mary–Anne"));
         assertEquals("JoAnne", firstNameAttribute.normalize("Jo Anne"));
-        assertEquals("MaryAnneMarie", firstNameAttribute.normalize("Mary Anne-Marie"));
+        assertEquals("Mary", firstNameAttribute.normalize("Mary Anne-Marie"));
     }
 
     void serialization_ShouldPreserveState() throws Exception {

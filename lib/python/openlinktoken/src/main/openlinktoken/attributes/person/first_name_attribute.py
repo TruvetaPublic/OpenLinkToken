@@ -39,7 +39,7 @@ class FirstNameAttribute(BaseAttribute):
     #   \.?          Optional period
     #   $            End of string
     TRAILING_PERIOD_AND_INITIAL_PATTERN = re.compile(r"\s[^\s]\.?$")
-    TWO_PART_NAME_PATTERN = re.compile(r"^([A-Za-z]{3,})[\s./]+[A-Za-z]+$")
+    TWO_PART_NAME_PATTERN = re.compile(r"^([A-Za-z]{3,})[\s./]+[A-Za-z]+(?:[-\u2010-\u2015\u2212][A-Za-z]+)*$")
 
     def __init__(self):
         placeholder_values = AttributeUtilities.COMMON_PLACEHOLDER_NAMES

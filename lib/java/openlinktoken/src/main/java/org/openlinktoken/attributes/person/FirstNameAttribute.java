@@ -59,7 +59,7 @@ public class FirstNameAttribute extends BaseAttribute {
      */
     private static final Pattern TRAILING_PERIOD_AND_INITIAL_PATTERN = Pattern.compile("\\s[^\\s]\\.?$");
     private static final Pattern TWO_PART_NAME_PATTERN = Pattern.compile(
-            "^([A-Za-z]{3,})[\\s./]+[A-Za-z]+$");
+            "^([A-Za-z]{3,})[\\s./]+[A-Za-z]+(?:[-\\u2010-\\u2015\\u2212][A-Za-z]+)*$");
 
     public FirstNameAttribute() {
         super(List.of(

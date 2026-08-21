@@ -37,7 +37,8 @@ Input → Normalize → Validate → Token Generation
 5. Remove suffixes: Jr, Sr, II, III, IV, PhD, MD
 6. For a two-part name with a prefix of at least three letters, remove the
    second part when it is separated by whitespace, a period, or a slash
-   (for example, `Eric Karl` → `Eric`; hyphenated `Mary-Anne` remains `MaryAnne`)
+   (for example, `Eric Karl` → `Eric`; `Eric Karl-Peter` → `Eric`;
+   hyphenated `Mary-Anne` remains `MaryAnne`)
 7. Remove non-alphabetic characters (spaces, apostrophes, hyphens, periods)
 
 **Examples:**
