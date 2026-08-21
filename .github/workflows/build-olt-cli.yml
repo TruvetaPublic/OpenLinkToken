@@ -52,6 +52,21 @@ jobs:
           lfs: true
           ref: ${{ needs.release-info.outputs.tag || github.ref }}
 
+      - name: Validate POSIX installer
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n install.sh
+          bash install.sh --help
+
+      - name: Validate Windows installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          & .\install.ps1 -Help
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
@@ -99,6 +114,11 @@ jobs:
             --runner-os "${{ runner.os }}" \
             --dist-dir dist \
             --output-dir release-assets
+
+      - name: Add bootstrap installers
+        if: runner.os == 'Linux'
+        shell: bash
+        run: cp install.sh install.ps1 release-assets/
 
       - name: Upload workflow artifacts
         uses: actions/upload-artifact@v7

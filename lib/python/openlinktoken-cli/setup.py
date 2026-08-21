@@ -18,7 +18,7 @@ except FileNotFoundError:
 
 setup(
     name="openlinktoken-cli",
-    version="2.1.1",
+    version="2.1.2",
     author="Open Link Token Contributors",
     description="Open Link Token CLI - Command line interface for record linkage",
     long_description=long_description,

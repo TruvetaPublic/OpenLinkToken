@@ -1,6 +1,6 @@
 [project]
 name = "openlinktoken"
-version = "2.1.1"
+version = "2.1.2"
 requires-python = ">=3.10"
 dynamic = [
   "authors",

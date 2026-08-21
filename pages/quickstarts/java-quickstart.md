@@ -28,7 +28,7 @@ Add the Open Link Token library to your project's `pom.xml`:
 <dependency>
     <groupId>org.openlinktoken</groupId>
     <artifactId>openlinktoken</artifactId>
-    <version>2.1.1</version>
+    <version>2.1.2</version>
 </dependency>
 ```
 

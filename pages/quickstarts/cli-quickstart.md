@@ -30,14 +30,37 @@ Download the appropriate executable for your platform from the [latest release](
 
 Each downloadable ZIP is also published with a matching `.sha256` sidecar for manual verification.
 
+### One-Line Installers
+
+Install the latest release without manually downloading or extracting an archive:
+
+```bash
+# macOS/Linux - installs to ~/.local/bin
+curl -fsSL https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.sh | bash
+
+# macOS/Linux - install a specific version
+curl -fsSL https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.sh | \
+  bash -s -- --version v2.1.1
+```
+
+```powershell
+# Windows - installs to ~/.openlinktoken/bin
+irm https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.ps1 | iex
+
+# Windows - install a specific version
+& ([scriptblock]::Create((irm https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.ps1))) -Version v2.1.1
+```
+
+Both installers detect the platform, install to a user-writable directory, and verify the downloaded ZIP against its SHA-256 release sidecar.
+
 ### Extract and Run
 
 **Linux/macOS:**
 
 ```bash
 # Extract the zip file
-unzip openlinktoken-cli-2.1.1-macos-universal.zip
-cd openlinktoken-cli-2.1.1-macos-universal
+unzip openlinktoken-cli-2.1.2-macos-universal.zip
+cd openlinktoken-cli-2.1.2-macos-universal
 
 # Make executable (if needed)
 chmod +x openlinktoken
@@ -54,8 +77,8 @@ chmod +x openlinktoken
 
 ```powershell
 # Extract the zip file
-Expand-Archive openlinktoken-cli-2.1.1-windows-x64.zip
-cd openlinktoken-cli-2.1.1-windows-x64
+Expand-Archive openlinktoken-cli-2.1.2-windows-x64.zip
+cd openlinktoken-cli-2.1.2-windows-x64
 
 # Simulate receiving the recipient's public key (in practice, your partner provides this)
 .\olt.exe generate-key-pair --name recipient
@@ -303,8 +326,8 @@ If a command fails unexpectedly, check the `Stack trace: <path>` line printed to
 Each time you run the CLI it silently checks (in the background) whether a newer release is available. If one is found, a notice is printed to **stderr** after the command completes:
 
 ```
-⚠ A new version of Open Link Token is available: v2.1.0 (you have v2.0.0)
-   Release notes: https://github.com/TruvetaPublic/OpenLinkToken/releases/tag/v2.1.0
+⚠ A new version of Open Link Token is available: v2.1.1 (you have v2.0.0)
+   Release notes: https://github.com/TruvetaPublic/OpenLinkToken/releases/tag/v2.1.1
    Run 'olt update' to upgrade, or set OLT_DISABLE_UPDATE_CHECK=1 to silence this message.
 ```
 
@@ -325,7 +348,7 @@ export OLT_DISABLE_UPDATE_CHECK=1
 olt update
 
 # Upgrade to a specific version
-olt update --version v2.1.0
+olt update --version v2.1.1
 
 # Preview changes without applying them
 olt update --dry-run
