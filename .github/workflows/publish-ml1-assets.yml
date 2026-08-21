@@ -81,13 +81,14 @@ jobs:
         run: |
           set -euo pipefail
           package="${REGISTRY}/${GITHUB_REPOSITORY,,}-${PACKAGE_SUFFIX}"
+          cd resources/inferencing/ml1
           oras push "${package}:${MODEL_TAG}" \
             --artifact-type application/vnd.openlinktoken.ml1.v1 \
             --annotation "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
-            "resources/inferencing/ml1/model.onnx:application/octet-stream" \
-            "resources/inferencing/ml1/model.onnx.data:application/octet-stream" \
-            "resources/inferencing/ml1/tokenizer.json:application/json" \
-            "resources/inferencing/ml1/asset-manifest.json:application/json"
+            "model.onnx:application/octet-stream" \
+            "model.onnx.data:application/octet-stream" \
+            "tokenizer.json:application/json" \
+            "asset-manifest.json:application/json"
 
           {
             echo "### ML1 OCI artifact"

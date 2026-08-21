@@ -96,7 +96,7 @@ The repository publishes the matched files as a release-independent OCI
 artifact. The tag identifies the model version:
 
 ```text
-ghcr.io/truvetapublic/openlinktoken-ml1-assets:ml1-v1
+ghcr.io/truvetapublic/openlinktoken-ml1-assets:v1
 ```
 
 Install [ORAS](https://oras.land/docs/installation), then pull the files:
@@ -104,7 +104,7 @@ Install [ORAS](https://oras.land/docs/installation), then pull the files:
 ```bash
 mkdir -p /opt/openlinktoken/ml1
 oras pull \
-  ghcr.io/truvetapublic/openlinktoken-ml1-assets:ml1-v1 \
+  ghcr.io/truvetapublic/openlinktoken-ml1-assets:v1 \
   --output /opt/openlinktoken/ml1
 ```
 

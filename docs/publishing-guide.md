@@ -93,7 +93,7 @@ artifact in GitHub Container Registry. The package tag identifies the model,
 not the Open Link Token library:
 
 ```text
-ghcr.io/truvetapublic/openlinktoken-ml1-assets:ml1-v1
+ghcr.io/truvetapublic/openlinktoken-ml1-assets:v1
 ```
 
 Install [ORAS](https://oras.land/docs/installation), then pull the package
@@ -102,7 +102,7 @@ into a local directory:
 ```bash
 mkdir -p /opt/openlinktoken/ml1
 oras pull \
-  ghcr.io/truvetapublic/openlinktoken-ml1-assets:ml1-v1 \
+  ghcr.io/truvetapublic/openlinktoken-ml1-assets:v1 \
   --output /opt/openlinktoken/ml1
 ```
 
