@@ -227,7 +227,8 @@ pyinstaller --clean --noconfirm lib/python/openlinktoken-cli/openlinktoken-cli.s
 pyinstaller --clean --noconfirm --target-arch universal2 lib/python/openlinktoken-cli/openlinktoken-cli.spec
 ```
 
-The built executable is written to `dist/olt` (`dist/olt.exe` on Windows). Intermediate files are written
+The one-folder bundle is written to `dist/olt/` with the executable at
+`dist/olt/olt` (`dist/olt/olt.exe` on Windows). Intermediate files are written
 to `build/`.
 
 Smoke-test the local build before packaging it:
@@ -235,7 +236,7 @@ Smoke-test the local build before packaging it:
 ```shell
 mkdir -p smoke
 cp resources/sample.csv smoke/input.csv
-./dist/olt tokenize -i smoke/input.csv -o smoke/out.csv -h secret
+./dist/olt/olt tokenize -i smoke/input.csv -o smoke/out.csv --mode hash-only --disable-inferencing
 ```
 
 On Windows PowerShell:
@@ -243,7 +244,7 @@ On Windows PowerShell:
 ```powershell
 New-Item -ItemType Directory -Force -Path smoke | Out-Null
 Copy-Item resources\sample.csv smoke\input.csv
-.\dist\olt.exe tokenize -i smoke\input.csv -o smoke\out.csv -h secret
+.\dist\olt\olt.exe tokenize -i smoke\input.csv -o smoke\out.csv --mode hash-only --disable-inferencing
 ```
 
 If you also want the same ZIP and checksum bundle produced by the release workflow, run:

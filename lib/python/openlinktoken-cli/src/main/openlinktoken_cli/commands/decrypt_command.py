@@ -1,22 +1,28 @@
 # SPDX-License-Identifier: MIT
 
+from __future__ import annotations
+
 import logging
 import sys
+from typing import TYPE_CHECKING, Any
 
-from openlinktoken.tokentransformer.decrypt_token_transformer import DecryptTokenTransformer
-from openlinktoken_cli.io.csv.token_csv_reader import TokenCSVReader
-from openlinktoken_cli.io.csv.token_csv_writer import TokenCSVWriter
-from openlinktoken_cli.io.parquet.token_parquet_reader import TokenParquetReader
-from openlinktoken_cli.io.parquet.token_parquet_writer import TokenParquetWriter
-from openlinktoken_cli.processor.token_decryption_processor import TokenDecryptionProcessor
-from openlinktoken_cli.processor.token_transformation_processor import TokenTransformationSummary
-from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
+if TYPE_CHECKING:
+    from openlinktoken_cli.processor.token_transformation_processor import TokenTransformationSummary
+
 from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
-from openlinktoken_cli.util.exchange_config import derive_transport_encryption_key, resolve_exchange_config
-from openlinktoken_cli.util.file_type_detector import FileTypeDetector
-from openlinktoken_cli.util.path_utils import get_auto_output_path
 
 logger = logging.getLogger(__name__)
+
+
+def resolve_exchange_config(
+    exchange_config_path: str | None,
+    private_key_path: str | None = None,
+    private_key_env: str | None = None,
+) -> Any:
+    """Resolve exchange configuration without importing crypto dependencies at startup."""
+    from openlinktoken_cli.util.exchange_config import resolve_exchange_config as implementation
+
+    return implementation(exchange_config_path, private_key_path, private_key_env)
 
 
 class DecryptCommand:
@@ -84,13 +90,18 @@ class DecryptCommand:
             action="store_true",
             default=False,
             help="Suppress interactive progress indicator (e.g. for non-interactive / CI environments)",
-            )
+        )
 
         parser.set_defaults(func=DecryptCommand.execute)
 
     @staticmethod
     def execute(args):
         """Execute the decrypt command."""
+        from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
+        from openlinktoken_cli.util.exchange_config import derive_transport_encryption_key
+        from openlinktoken_cli.util.file_type_detector import FileTypeDetector
+        from openlinktoken_cli.util.path_utils import get_auto_output_path
+
         input_type = FileTypeDetector.detect_input_type(args.input_path)
         if not input_type:
             logger.error("Unable to auto-detect input type. Supported input formats: csv, parquet")
@@ -162,6 +173,9 @@ class DecryptCommand:
         progress_callback=None,
     ) -> TokenTransformationSummary:
         """Decrypt tokens from input file."""
+        from openlinktoken.tokentransformer.decrypt_token_transformer import DecryptTokenTransformer
+        from openlinktoken_cli.processor.token_decryption_processor import TokenDecryptionProcessor
+
         try:
             decryptor = DecryptTokenTransformer(encryption_key)
 
@@ -192,6 +206,10 @@ class DecryptCommand:
     @staticmethod
     def _create_token_reader(path: str, file_type: str):
         """Create a TokenReader based on file type."""
+        from openlinktoken_cli.io.csv.token_csv_reader import TokenCSVReader
+        from openlinktoken_cli.io.parquet.token_parquet_reader import TokenParquetReader
+        from openlinktoken_cli.util.file_type_detector import FileTypeDetector
+
         file_type_lower = file_type.lower()
         if file_type_lower == FileTypeDetector.TYPE_CSV:
             return TokenCSVReader(path)
@@ -203,6 +221,10 @@ class DecryptCommand:
     @staticmethod
     def _create_token_writer(path: str, file_type: str):
         """Create a TokenWriter based on file type."""
+        from openlinktoken_cli.io.csv.token_csv_writer import TokenCSVWriter
+        from openlinktoken_cli.io.parquet.token_parquet_writer import TokenParquetWriter
+        from openlinktoken_cli.util.file_type_detector import FileTypeDetector
+
         file_type_lower = file_type.lower()
         if file_type_lower == FileTypeDetector.TYPE_CSV:
             return TokenCSVWriter(path)

@@ -6,8 +6,6 @@ import os
 import sys
 
 from openlinktoken.metadata import Metadata
-from openlinktoken_cli.util.cli_error_reporter import archive_unexpected_error, format_unexpected_error_message
-from openlinktoken_cli.util.cli_run_reporter import configure_default_logging
 from openlinktoken_cli.util.version_checker import start_version_check
 
 logger = logging.getLogger(__name__)
@@ -60,7 +58,7 @@ class OpenLinkTokenCommand:
         )
 
     @staticmethod
-    def create_parser():
+    def create_parser(load_extensions: bool = True):
         """Create the main argument parser with subcommands."""
         parser = argparse.ArgumentParser(
             prog="olt",
@@ -100,7 +98,9 @@ class OpenLinkTokenCommand:
         from openlinktoken_cli.commands.package_command import PackageCommand
         from openlinktoken_cli.commands.tokenize_command import TokenizeCommand
         from openlinktoken_cli.commands.update_command import UpdateCommand
-        from openlinktoken_cli.extension.extension_loader import BUILTIN_COMMANDS, ExtensionLoader
+
+        if load_extensions:
+            from openlinktoken_cli.extension.extension_loader import BUILTIN_COMMANDS, ExtensionLoader
 
         # Register subcommands in alphabetical order by command name
         DecryptCommand.register_subcommand(subparsers)
@@ -113,9 +113,9 @@ class OpenLinkTokenCommand:
         TokenizeCommand.register_subcommand(subparsers)
         UpdateCommand.register_subcommand(subparsers)
 
-        # Load installed extensions (entry points or registry).
-        # BUILTIN_COMMANDS is the authoritative set of reserved command names.
-        ExtensionLoader.load_extensions(subparsers, BUILTIN_COMMANDS)
+        if load_extensions:
+            # Load installed extensions only when the selected command needs them.
+            ExtensionLoader.load_extensions(subparsers, BUILTIN_COMMANDS)
 
         # Sort all subcommands (built-ins and extensions) alphabetically.
         # Uses private argparse internals that may not exist in all Python versions;
@@ -136,9 +136,12 @@ class OpenLinkTokenCommand:
     @staticmethod
     def main(args=None):
         """Main entry point for the command-line application."""
+        from openlinktoken_cli.util.cli_error_reporter import archive_unexpected_error, format_unexpected_error_message
+        from openlinktoken_cli.util.cli_run_reporter import configure_default_logging
+
         configure_default_logging()
-        parser = OpenLinkTokenCommand.create_parser()
         raw_args = list(sys.argv[1:] if args is None else args)
+        parser = OpenLinkTokenCommand.create_parser(OpenLinkTokenCommand._should_load_extensions(raw_args))
 
         # Show banner for help-oriented entry points, bare invocation, and bare subcommand.
         if OpenLinkTokenCommand._should_show_banner(raw_args):
@@ -273,3 +276,25 @@ class OpenLinkTokenCommand:
     def _should_start_version_check(parsed_args: argparse.Namespace) -> bool:
         """Return whether startup version checks should run for the parsed command."""
         return getattr(parsed_args, "command", None) != "update"
+
+    @staticmethod
+    def _should_load_extensions(args: list[str]) -> bool:
+        """Return whether parsing requires loading a non-built-in extension."""
+        built_in_commands = {
+            "help",
+            "tokenize",
+            "encrypt",
+            "decrypt",
+            "package",
+            "generate-key-pair",
+            "initiate-exchange",
+            "update",
+            "extension",
+        }
+        commands = [arg for arg in args if not arg.startswith("-")]
+        if not commands:
+            return False
+        command = commands[0]
+        if command == "help":
+            return len(commands) > 1 and commands[1] not in built_in_commands
+        return command not in built_in_commands

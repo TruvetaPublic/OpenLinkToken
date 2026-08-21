@@ -121,9 +121,27 @@ mkdir -p "$extract_dir"
 unzip -q "$archive" -d "$extract_dir"
 binary=$(find "$extract_dir" -type f -name olt -print -quit)
 [[ -n "$binary" ]] || fail "Release archive does not contain the olt executable"
+bundle_source=$(dirname "$binary")
 
 mkdir -p "$install_dir"
-install -m 0755 "$binary" "$install_dir/olt"
+bundle_dir="$install_dir/.olt"
+staged_bundle="$tmp_dir/staged-bundle"
+cp -R "$bundle_source/." "$staged_bundle"
+chmod 0755 "$staged_bundle/olt"
+
+old_bundle="$install_dir/.olt.previous.$$"
+if [[ -e "$bundle_dir" || -L "$bundle_dir" ]]; then
+    mv "$bundle_dir" "$old_bundle"
+fi
+if ! mv "$staged_bundle" "$bundle_dir"; then
+    [[ -e "$old_bundle" ]] && mv "$old_bundle" "$bundle_dir"
+    fail "Unable to install the CLI bundle into $bundle_dir"
+fi
+rm -rf "$old_bundle"
+
+launcher_tmp="$install_dir/.olt-launcher.$$"
+ln -s "$bundle_dir/olt" "$launcher_tmp"
+mv -f "$launcher_tmp" "$install_dir/olt"
 
 printf 'Installed olt %s to %s/olt\n' "$tag" "$install_dir"
 case ":${PATH:-}:" in

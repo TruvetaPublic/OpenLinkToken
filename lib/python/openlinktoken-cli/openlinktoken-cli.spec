@@ -13,16 +13,23 @@ base_dir = os.path.abspath(SPECPATH)
 # (e.g. "universal2" for macOS universal binaries) without passing --target-arch,
 # which is invalid when a .spec file is used directly.
 target_arch = os.environ.get("OLT_TARGET_ARCH") or None
+core_ai_source = os.path.join(base_dir, "..", "openlinktoken-core-ai", "src", "main")
+inferencing_assets_source = os.path.join(base_dir, "..", "..", "..", "resources", "inferencing", "ml1")
 
 datas = []
 binaries = []
 hiddenimports = []
 
-for package_name in ("openlinktoken", "pyarrow", "pandas", "csv2parquet", "cryptography"):
+for package_name in ("openlinktoken", "openlinktoken.core", "pyarrow", "pandas", "csv2parquet", "cryptography"):
     package_datas, package_binaries, package_hiddenimports = collect_all(package_name)
     datas += package_datas
     binaries += package_binaries
     hiddenimports += package_hiddenimports
+
+datas += [
+    (os.path.join(inferencing_assets_source, filename), "openlinktoken/core/ai/tokens")
+    for filename in ("model.onnx", "model.onnx.data", "tokenizer.json")
+]
 
 a = Analysis(
     [os.path.join(base_dir, "src", "main", "openlinktoken_cli", "main.py")],
@@ -30,6 +37,7 @@ a = Analysis(
         base_dir,
         os.path.join(base_dir, "src", "main"),
         os.path.join(base_dir, "..", "openlinktoken", "src", "main"),
+        core_ai_source,
     ],
     binaries=binaries,
     datas=datas,
@@ -44,9 +52,6 @@ pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 exe = EXE(
     pyz,
     a.scripts,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
     [],
     name="olt",
     debug=False,
@@ -56,4 +61,15 @@ exe = EXE(
     upx_exclude=[],
     runtime_tmpdir=None,
     console=True,
+    exclude_binaries=True,
+)
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    name="olt",
 )

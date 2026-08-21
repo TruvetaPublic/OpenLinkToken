@@ -66,6 +66,9 @@ $Archive = Join-Path $TempDir $Asset
 $ChecksumFile = "$Archive.sha256"
 $DownloadUrl = "$ReleasesUrl/download/$Tag/$Asset"
 
+$StagedDir = $null
+$PreviousDir = $null
+$MovedPrevious = $false
 try {
     New-Item -ItemType Directory -Path $TempDir -Force | Out-Null
     Write-Host "Downloading Open Link Token $Tag..."
@@ -90,8 +93,31 @@ try {
     }
 
     $InstallDir = [System.IO.Path]::GetFullPath($InstallDir)
-    New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
-    Copy-Item -LiteralPath $Binary.FullName -Destination (Join-Path $InstallDir "olt.exe") -Force
+    $InstallParent = Split-Path -Parent $InstallDir
+    New-Item -ItemType Directory -Path $InstallParent -Force | Out-Null
+    $StagedDir = Join-Path $InstallParent (".olt-staged-" + [Guid]::NewGuid().ToString("N"))
+    New-Item -ItemType Directory -Path $StagedDir -Force | Out-Null
+    Copy-Item -Path (Join-Path $Binary.Directory.FullName "*") -Destination $StagedDir -Recurse -Force
+
+    $PreviousDir = "$InstallDir.previous"
+    if (Test-Path -LiteralPath $PreviousDir) {
+        Remove-Item -LiteralPath $PreviousDir -Recurse -Force
+    }
+    if (Test-Path -LiteralPath $InstallDir) {
+        Move-Item -LiteralPath $InstallDir -Destination $PreviousDir
+        $MovedPrevious = $true
+    }
+    try {
+        Move-Item -LiteralPath $StagedDir -Destination $InstallDir
+    } catch {
+        if ($MovedPrevious -and -not (Test-Path -LiteralPath $InstallDir)) {
+            Move-Item -LiteralPath $PreviousDir -Destination $InstallDir
+        }
+        throw
+    }
+    if (Test-Path -LiteralPath $PreviousDir) {
+        Remove-Item -LiteralPath $PreviousDir -Recurse -Force
+    }
 
     $UserPath = [Environment]::GetEnvironmentVariable("Path", "User")
     $PathEntries = if ($UserPath) { @($UserPath -split ";") } else { @() }
@@ -102,6 +128,9 @@ try {
 
     Write-Host "Installed olt $Tag to $(Join-Path $InstallDir 'olt.exe')"
 } finally {
+    if ($StagedDir -and (Test-Path -LiteralPath $StagedDir)) {
+        Remove-Item -LiteralPath $StagedDir -Recurse -Force
+    }
     if (Test-Path -LiteralPath $TempDir) {
         Remove-Item -LiteralPath $TempDir -Recurse -Force
     }
