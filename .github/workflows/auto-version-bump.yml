@@ -145,10 +145,13 @@ jobs:
 
               Updated files:
               - \`.bumpversion.cfg\`
+              - \`lib/java/openlinktoken-core-ai/pom.xml\`
               - \`lib/java/openlinktoken/pom.xml\`
               - \`Dockerfile\`
               - \`lib/java/openlinktoken/src/main/java/org/openlinktoken/Metadata.java\`
               - \`lib/python/openlinktoken/setup.py\`
+              - \`lib/python/openlinktoken-core-ai/pyproject.toml\`
+              - \`lib/python/openlinktoken-core-ai/setup.py\`
               - \`lib/python/openlinktoken/src/main/openlinktoken/__init__.py\`
               - \`lib/python/openlinktoken/src/main/openlinktoken/metadata.py\`
 
