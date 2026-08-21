@@ -402,7 +402,13 @@ public final class ML1OnnxSignatureGenerator {
         if (configuredPath != null && configuredPath.startsWith("classpath:")) {
             return extractClasspathResource(configuredPath.substring("classpath:".length()));
         }
-        Path resolved = Paths.get(configuredPath).toAbsolutePath().normalize();
+        String expandedPath = configuredPath.equals("~")
+                ? System.getProperty("user.home", ".")
+                : configuredPath.startsWith("~/")
+                        ? Paths.get(System.getProperty("user.home", "."))
+                                .resolve(configuredPath.substring(2)).toString()
+                        : configuredPath;
+        Path resolved = Paths.get(expandedPath).toAbsolutePath().normalize();
         if (!Files.isRegularFile(resolved)) {
             throw new IllegalStateException("Configured ML1 asset path does not exist: " + resolved);
         }
