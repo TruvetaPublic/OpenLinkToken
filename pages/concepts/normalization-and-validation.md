@@ -35,9 +35,9 @@ Input → Normalize → Validate → Token Generation
 3. Remove diacritics and transliterate supported Latin Extended letters to ASCII (é → E, Ł → L, Æ → AE)
 4. Remove titles: Dr, Mr, Mrs, Ms, Miss, Prof
 5. Remove suffixes: Jr, Sr, II, III, IV, PhD, MD
-6. For a prefix of at least three letters, remove a trailing `Anne` when it is
-   separated by whitespace, a period, or a slash (for example, `Mary Anne` →
-   `Mary`; hyphenated `Mary-Anne` remains `MaryAnne`)
+6. For a two-part name with a prefix of at least three letters, remove the
+   second part when it is separated by whitespace, a period, or a slash
+   (for example, `Eric Karl` → `Eric`; hyphenated `Mary-Anne` remains `MaryAnne`)
 7. Remove non-alphabetic characters (spaces, apostrophes, hyphens, periods)
 
 **Examples:**

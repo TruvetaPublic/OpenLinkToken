@@ -231,9 +231,9 @@ class TestFirstNameAttribute:
         assert self.first_name_attribute.normalize("Dr. François B.") == "Francois"
 
     def test_normalize_should_remove_non_alphabetic_characters(self):
-        """Test removal of dashes, spaces, and other non-alphanumeric characters."""
+        """Test removal of dashes and other non-alphabetic characters."""
         assert self.first_name_attribute.normalize("John-Doe") == "JohnDoe"
-        assert self.first_name_attribute.normalize("Mary Jane") == "MaryJane"
+        assert self.first_name_attribute.normalize("Mary Jane") == "Mary"
         assert self.first_name_attribute.normalize("Ann-Marie") == "AnnMarie"
         assert self.first_name_attribute.normalize("Jean-Luc") == "JeanLuc"
 
@@ -245,20 +245,21 @@ class TestFirstNameAttribute:
     @pytest.mark.parametrize(
         ("input_name", "expected_output"),
         [
+            ("Eric Karl", "Eric"),
+            ("Hans Peter", "Hans"),
             ("Mary Anne", "Mary"),
-            ("Mary anne", "Mary"),
-            ("Mary.Anne", "Mary"),
-            ("Mary/Anne", "Mary"),
+            ("Eric.Karl", "Eric"),
+            ("Hans/Peter", "Hans"),
             ("Mary-Anne", "MaryAnne"),
             ("Mary–Anne", "MaryAnne"),
             ("Jo Anne", "JoAnne"),
             ("Mary Anne-Marie", "MaryAnneMarie"),
         ],
     )
-    def test_normalize_should_remove_anne_for_three_character_prefix_with_non_dash_separators(
+    def test_normalize_should_remove_second_part_for_three_character_prefix_with_non_dash_separators(
         self, input_name, expected_output
     ):
-        """Remove a trailing space-separated Anne only when the prefix has at least three characters."""
+        """Remove the second part only when the prefix has at least three characters."""
         assert self.first_name_attribute.normalize(input_name) == expected_output
 
     def test_serialization_should_preserve_state(self):
@@ -388,7 +389,7 @@ class TestFirstNameAttribute:
             ("Mr. John", "John"),
             ("Dr. Jane B.", "Jane"),
             ("John-Paul", "JohnPaul"),
-            ("Mary Jane", "MaryJane"),
+            ("Mary Jane", "Mary"),
             ("Prof. Robert C", "Robert"),
         ],
     )

@@ -58,8 +58,8 @@ public class FirstNameAttribute extends BaseAttribute {
      *   $            End of string
      */
     private static final Pattern TRAILING_PERIOD_AND_INITIAL_PATTERN = Pattern.compile("\\s[^\\s]\\.?$");
-    private static final Pattern SPACE_DOT_SLASH_ANNE_PATTERN = Pattern.compile(
-            "^([A-Za-z]{3,})[\\s./]+Anne$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern TWO_PART_NAME_PATTERN = Pattern.compile(
+            "^([A-Za-z]{3,})[\\s./]+[A-Za-z]+$");
 
     public FirstNameAttribute() {
         super(List.of(
@@ -129,9 +129,9 @@ public class FirstNameAttribute extends BaseAttribute {
         // remove trailing periods and middle initials
         normalizedValue = TRAILING_PERIOD_AND_INITIAL_PATTERN.matcher(normalizedValue).replaceAll("");
 
-        var anneMatcher = SPACE_DOT_SLASH_ANNE_PATTERN.matcher(normalizedValue);
-        if (anneMatcher.matches()) {
-            normalizedValue = anneMatcher.group(1);
+        var twoPartNameMatcher = TWO_PART_NAME_PATTERN.matcher(normalizedValue);
+        if (twoPartNameMatcher.matches()) {
+            normalizedValue = twoPartNameMatcher.group(1);
         }
 
         // remove dashes, spaces and other non-alphanumeric characters

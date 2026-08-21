@@ -39,7 +39,7 @@ class FirstNameAttribute(BaseAttribute):
     #   \.?          Optional period
     #   $            End of string
     TRAILING_PERIOD_AND_INITIAL_PATTERN = re.compile(r"\s[^\s]\.?$")
-    SPACE_DOT_SLASH_ANNE_PATTERN = re.compile(r"^([A-Za-z]{3,})[\s./]+Anne$", re.IGNORECASE)
+    TWO_PART_NAME_PATTERN = re.compile(r"^([A-Za-z]{3,})[\s./]+[A-Za-z]+$")
 
     def __init__(self):
         placeholder_values = AttributeUtilities.COMMON_PLACEHOLDER_NAMES
@@ -104,9 +104,9 @@ class FirstNameAttribute(BaseAttribute):
 
         normalized = re.sub(self.TRAILING_PERIOD_AND_INITIAL_PATTERN, "", normalized).strip()
 
-        anne_match = re.match(self.SPACE_DOT_SLASH_ANNE_PATTERN, normalized)
-        if anne_match:
-            normalized = anne_match.group(1)
+        two_part_name_match = re.match(self.TWO_PART_NAME_PATTERN, normalized)
+        if two_part_name_match:
+            normalized = two_part_name_match.group(1)
 
         # Remove non-alphabetic characters
         normalized = AttributeUtilities.NON_ALPHABETIC_PATTERN.sub("", normalized)
