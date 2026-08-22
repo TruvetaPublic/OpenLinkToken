@@ -3,7 +3,6 @@ from pathlib import Path
 from unittest.mock import Mock
 
 import onnxruntime as ort
-
 import pytest
 
 from openlinktoken.core.ai.tokens.ml1_onnx_signature_generator import (
