@@ -43,7 +43,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ needs.release-info.outputs.tag || github.ref }}
+          ref: ${{ needs.release-info.outputs['release-found'] == 'true' && needs.release-info.outputs.tag || github.sha }}
 
       - name: Setup toolchain (Python only)
         uses: ./.github/actions/setup-toolchain
