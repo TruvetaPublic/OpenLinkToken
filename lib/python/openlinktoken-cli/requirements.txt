@@ -110,7 +110,7 @@ pandas==2.2.3 ; python_full_version < '3.11'
     # via openlinktoken-cli
 pandas==3.0.3 ; python_full_version >= '3.11'
     # via openlinktoken-cli
-protobuf==7.35.1
+protobuf==7.36.0
     # via
     #   onnxruntime
     #   onnxruntime-gpu
