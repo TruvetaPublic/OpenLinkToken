@@ -475,7 +475,7 @@ class FirstNameAttributeTest {
         assertEquals("Jane", firstNameAttribute.normalize("Dr. Mrs. Jane"));
 
         // Test multiple suffixes
-        assertEquals("JohnJr", firstNameAttribute.normalize("John Jr. Sr.")); // This should remove both
+        assertEquals("John", firstNameAttribute.normalize("John Jr. Sr."));
         assertEquals("Jane", firstNameAttribute.normalize("Jane III II"));
 
         // Test edge case: title that looks like a name

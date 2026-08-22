@@ -367,6 +367,11 @@ class TestFirstNameAttribute:
         assert self.first_name_attribute.normalize("Joshua Jr") == "Joshua"
         assert self.first_name_attribute.normalize("Michelle Sr") == "Michelle"
 
+    def test_normalize_should_remove_multiple_generational_suffixes(self):
+        """Test removal of repeated generational suffixes."""
+        assert self.first_name_attribute.normalize("John Jr. Sr.") == "John"
+        assert self.first_name_attribute.normalize("Jane III II") == "Jane"
+
     def test_normalize_should_handle_titles_and_generational_suffixes_together(self):
         """Test combination of titles and generational suffixes."""
         assert self.first_name_attribute.normalize("Dr. John Jr.") == "John"

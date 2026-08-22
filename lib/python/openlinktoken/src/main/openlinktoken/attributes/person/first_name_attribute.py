@@ -97,9 +97,11 @@ class FirstNameAttribute(BaseAttribute):
         if without_title:
             normalized = without_title
 
-        without_suffix = AttributeUtilities.remove_generational_suffix(normalized)
-
-        if without_suffix:
+        # Remove repeated suffixes while preserving a standalone suffix-like name.
+        while True:
+            without_suffix = AttributeUtilities.remove_generational_suffix(normalized)
+            if not without_suffix or without_suffix == normalized:
+                break
             normalized = without_suffix
 
         normalized = re.sub(self.TRAILING_PERIOD_AND_INITIAL_PATTERN, "", normalized).strip()
