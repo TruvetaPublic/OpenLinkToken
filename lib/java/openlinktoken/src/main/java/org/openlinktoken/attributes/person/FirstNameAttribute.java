@@ -115,13 +115,13 @@ public class FirstNameAttribute extends BaseAttribute {
             normalizedValue = valueWithoutTitle;
         }
 
-        // Remove repeated suffixes while preserving a standalone suffix-like name.
-        while (true) {
-            String valueWithoutSuffix = AttributeUtilities.GENERATIONAL_SUFFIX_PATTERN.matcher(normalizedValue)
-                    .replaceAll("");
-            if (valueWithoutSuffix.isEmpty() || valueWithoutSuffix.equals(normalizedValue)) {
-                break;
-            }
+        String valueWithoutSuffix = AttributeUtilities.GENERATIONAL_SUFFIX_PATTERN.matcher(normalizedValue)
+                .replaceAll("");
+
+        // if the generational suffix removal doesn't result in an empty string,
+        // continue with the value without suffix, otherwise use the value with suffix
+        // as first name
+        if (!valueWithoutSuffix.isEmpty()) {
             normalizedValue = valueWithoutSuffix;
         }
 
