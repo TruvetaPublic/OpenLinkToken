@@ -33,9 +33,13 @@ Input → Normalize → Validate → Token Generation
 1. Trim leading/trailing whitespace
 2. Convert to uppercase
 3. Remove diacritics and transliterate supported Latin Extended letters to ASCII (é → E, Ł → L, Æ → AE)
-4. Remove titles: Dr, Mr, Mrs, Ms, Miss, Prof
+4. Remove leading titles, including repeated titles: Dr, Mr, Mrs, Ms, Miss, Prof
 5. Remove suffixes: Jr, Sr, II, III, IV, PhD, MD
-6. Remove non-alphabetic characters (spaces, apostrophes, hyphens, periods)
+6. For a name with a first part of at least three letters, remove all later
+   parts when the first separator is whitespace, a period, or a slash
+   (for example, `Eric Karl` → `Eric`; `Anne Marie Julie` → `Anne`;
+   `Eric Karl-Peter` → `Eric`; hyphenated `Mary-Anne` remains `MaryAnne`)
+7. Remove non-alphabetic characters (spaces, apostrophes, hyphens, periods)
 
 **Examples:**
 
