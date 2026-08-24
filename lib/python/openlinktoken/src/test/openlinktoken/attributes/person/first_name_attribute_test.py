@@ -231,9 +231,9 @@ class TestFirstNameAttribute:
         assert self.first_name_attribute.normalize("Dr. François B.") == "Francois"
 
     def test_normalize_should_remove_non_alphabetic_characters(self):
-        """Test removal of dashes, spaces, and other non-alphanumeric characters."""
+        """Test removal of dashes and other non-alphabetic characters."""
         assert self.first_name_attribute.normalize("John-Doe") == "JohnDoe"
-        assert self.first_name_attribute.normalize("Mary Jane") == "MaryJane"
+        assert self.first_name_attribute.normalize("Mary Jane") == "Mary"
         assert self.first_name_attribute.normalize("Ann-Marie") == "AnnMarie"
         assert self.first_name_attribute.normalize("Jean-Luc") == "JeanLuc"
 
@@ -241,6 +241,36 @@ class TestFirstNameAttribute:
         assert self.first_name_attribute.normalize("John123") == "John"
         assert self.first_name_attribute.normalize("Jane@#$") == "Jane"
         assert self.first_name_attribute.normalize("Robert_Smith") == "RobertSmith"
+
+    @pytest.mark.parametrize(
+        ("input_name", "expected_output"),
+        [
+            ("Eric Karl", "Eric"),
+            ("Hans Peter", "Hans"),
+            ("Anne Marie Julie", "Anne"),
+            ("Mary Anne", "Mary"),
+            ("Eric.Karl", "Eric"),
+            ("Hans/Peter", "Hans"),
+            ("Eric Karl Peter", "Eric"),
+            ("Mary-Anne", "MaryAnne"),
+            ("Mary–Anne", "MaryAnne"),
+            ("Mary Anne-Marie", "Mary"),
+        ],
+    )
+    def test_normalize_should_keep_first_part_with_non_dash_separators(self, input_name, expected_output):
+        """Keep the first part when a name has a non-dash separator."""
+        assert self.first_name_attribute.normalize(input_name) == expected_output
+
+    @pytest.mark.parametrize(
+        ("input_name", "expected_output"),
+        [
+            ("Jo Anne", "JoAnne"),
+            ("Amy Lee", "Amy"),
+        ],
+    )
+    def test_normalize_should_require_three_letter_first_part(self, input_name, expected_output):
+        """Keep two-letter first parts and reduce first parts with at least three letters."""
+        assert self.first_name_attribute.normalize(input_name) == expected_output
 
     def test_serialization_should_preserve_state(self):
         """Test serialization and deserialization."""
@@ -289,9 +319,11 @@ class TestFirstNameAttribute:
         assert self.first_name_attribute.normalize("Mr. ") == "Mr"
         assert self.first_name_attribute.normalize("    Dr.   ") == "Dr"
 
-        # Test multiple titles (should only remove the first one)
+        # Test multiple titles
         assert self.first_name_attribute.normalize("Mr. Smith") == "Smith"
         assert self.first_name_attribute.normalize("Dr. Johnson") == "Johnson"
+        assert self.first_name_attribute.normalize("Mr. Dr. John") == "John"
+        assert self.first_name_attribute.normalize("Dr. Mrs. Jane") == "Jane"
 
         # Test names that start with title-like words but aren't titles
         assert self.first_name_attribute.normalize("Drew") == "Drew"
@@ -335,6 +367,11 @@ class TestFirstNameAttribute:
         assert self.first_name_attribute.normalize("Joshua Jr") == "Joshua"
         assert self.first_name_attribute.normalize("Michelle Sr") == "Michelle"
 
+    def test_normalize_should_remove_multiple_generational_suffixes(self):
+        """Test removal of repeated generational suffixes."""
+        assert self.first_name_attribute.normalize("John Jr. Sr.") == "John"
+        assert self.first_name_attribute.normalize("Jane III II") == "Jane"
+
     def test_normalize_should_handle_titles_and_generational_suffixes_together(self):
         """Test combination of titles and generational suffixes."""
         assert self.first_name_attribute.normalize("Dr. John Jr.") == "John"
@@ -369,7 +406,7 @@ class TestFirstNameAttribute:
             ("Mr. John", "John"),
             ("Dr. Jane B.", "Jane"),
             ("John-Paul", "JohnPaul"),
-            ("Mary Jane", "MaryJane"),
+            ("Mary Jane", "Mary"),
             ("Prof. Robert C", "Robert"),
         ],
     )
