@@ -6,6 +6,7 @@ import contextlib
 import importlib.resources
 import json
 import logging
+import mmap
 import os
 import platform
 import struct
@@ -18,6 +19,8 @@ from tokenizers import Tokenizer
 from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig
 
 logger = logging.getLogger(__name__)
+
+_ACCELERATED_EXECUTION_PROVIDERS = {"CUDAExecutionProvider", "CoreMLExecutionProvider"}
 
 
 @contextlib.contextmanager
@@ -37,23 +40,46 @@ def _suppress_ort_stderr():
 def _resolve_providers() -> List[str | tuple]:
     """Return the best available ORT execution provider list for this environment.
 
-    On macOS, attempts CoreMLExecutionProvider in subgraph-only mode (flag 0x002),
-    which lets CoreML accelerate supported ops while CPU handles the rest.
-    Falls back to CPU-only if CoreML is unavailable or fails.
+    Prefer CUDA on NVIDIA systems and CoreML with all available compute units on
+    macOS. Unsupported operations fall through to CPU automatically.
+    Falls back to CPU-only if an accelerator is unavailable or fails.
     """
+
     import onnxruntime as ort
 
     available = ort.get_available_providers()
+    if "CUDAExecutionProvider" in available and _nvidia_device_available():
+        return ["CUDAExecutionProvider", "CPUExecutionProvider"]
+
     is_macos_native = platform.system() == "Darwin"
     if is_macos_native and "CoreMLExecutionProvider" in available:
-        # EnableOnSubgraphOnly: CoreML handles only the ops it supports;
-        # unsupported ops fall through to CPU automatically (avoids EP errors
-        # from partial graph coverage on BERT-like models).
         return [
-            ("CoreMLExecutionProvider", {"EnableOnSubgraphOnly": "1"}),
+            ("CoreMLExecutionProvider", {"MLComputeUnits": "ALL"}),
             "CPUExecutionProvider",
         ]
     return ["CPUExecutionProvider"]
+
+
+def _nvidia_device_available() -> bool:
+    """Return whether Linux exposes an NVIDIA device to the current process."""
+    if platform.system() != "Linux":
+        return True
+    return Path("/dev/nvidia0").exists() or Path("/dev/nvidiactl").exists()
+
+
+def _preload_cuda_libraries(ort, providers: List[str | tuple]) -> None:
+    """Load CUDA libraries bundled with the GPU wheel before session creation."""
+    if "CUDAExecutionProvider" not in providers:
+        return
+
+    preload_dlls = getattr(ort, "preload_dlls", None)
+    if not callable(preload_dlls):
+        return
+
+    try:
+        preload_dlls(directory="")
+    except Exception as error:
+        logger.warning("ML1 ONNX: CUDA library preload failed; session initialization will retry: %s", error)
 
 
 class ML1OnnxSignatureGenerator:
@@ -164,9 +190,9 @@ class ML1OnnxSignatureGenerator:
         start = time.perf_counter()
         try:
             outputs = cls._session.run(None, inputs)
-        except Exception as e:
-            if "CoreML" in str(e) or "CoreMLExecutionProvider" in str(cls._session.get_providers()):
-                logger.warning("ML1 ONNX: CoreML runtime error; falling back to CPU and retrying.")
+        except Exception:
+            if any(provider in cls._session.get_providers() for provider in _ACCELERATED_EXECUTION_PROVIDERS):
+                logger.warning("ML1 ONNX: accelerated runtime error; falling back to CPU and retrying.")
                 cls._reinitialize_with_cpu_only()
                 outputs = cls._session.run(None, inputs)
             else:
@@ -248,10 +274,11 @@ class ML1OnnxSignatureGenerator:
             providers = _resolve_providers()
         try:
             with _suppress_ort_stderr():
-                cls._session = ort.InferenceSession(
-                    str(resolved_model_path),
-                    sess_options=session_options,
-                    providers=providers,
+                cls._session = cls._create_session(
+                    ort,
+                    session_options,
+                    resolved_model_path,
+                    providers,
                 )
         except Exception as e:
             logger.warning("ML1 ONNX: provider init failed (%s), retrying with CPUExecutionProvider only", e)
@@ -271,7 +298,9 @@ class ML1OnnxSignatureGenerator:
                 logger.warning("ML1 ONNX: CoreML probe failed; falling back to CPU.")
                 cls._reinitialize_with_cpu_only()
             else:
-                logger.info("ML1 ONNX: CoreML active (subgraph-only) — Neural Engine / GPU acceleration enabled")
+                logger.info("ML1 ONNX: CoreML active with all compute units enabled")
+        elif "CUDAExecutionProvider" in active:
+            logger.info("ML1 ONNX: CUDA execution provider active")
         else:
             logger.info("ML1 ONNX: running on CPUExecutionProvider")
 
@@ -283,10 +312,10 @@ class ML1OnnxSignatureGenerator:
     def _probe_coreml(cls) -> None:
         """Run a minimal inference to verify CoreML works at runtime for this model.
 
-        Uses the configured batch size since CoreML may compile shape-specific
-        subgraphs and fail if the real batch size differs from the probe size.
+        Use one row so startup does not compile or allocate the full production
+        batch. Runtime inference still falls back to CPU if a later batch fails.
         """
-        batch_size = ML1InferenceConfig.get_batch_size()
+        batch_size = 1
         max_seq = ML1InferenceConfig.get_max_sequence_length()
         dummy = np.zeros((batch_size, max_seq), dtype=np.int64)
         inputs = {"input_ids": dummy, "attention_mask": dummy}
@@ -296,6 +325,48 @@ class ML1OnnxSignatureGenerator:
         if "position_ids" in input_names:
             inputs["position_ids"] = np.tile(np.arange(max_seq, dtype=np.int64), (batch_size, 1))
         cls._session.run(None, inputs)
+
+    @classmethod
+    def _create_session(cls, ort, session_options, model_path: Path, providers: List[str | tuple]):
+        """Create an ONNX session, loading external weights in memory for CoreML."""
+        _preload_cuda_libraries(ort, providers)
+        if cls._coreml_requested(providers):
+            external_data_path = model_path.with_name(f"{model_path.name}.data")
+            add_external_initializers = getattr(
+                session_options,
+                "add_external_initializers_from_files_in_memory",
+                None,
+            )
+            if external_data_path.is_file() and callable(add_external_initializers):
+                with external_data_path.open("rb") as external_file:
+                    external_data = mmap.mmap(external_file.fileno(), 0, access=mmap.ACCESS_READ)
+                    try:
+                        add_external_initializers(
+                            [external_data_path.name],
+                            [external_data],
+                            [external_data.size()],
+                        )
+                        return ort.InferenceSession(
+                            model_path.read_bytes(),
+                            sess_options=session_options,
+                            providers=providers,
+                        )
+                    finally:
+                        external_data.close()
+
+        return ort.InferenceSession(
+            str(model_path),
+            sess_options=session_options,
+            providers=providers,
+        )
+
+    @staticmethod
+    def _coreml_requested(providers: List[str | tuple]) -> bool:
+        """Return whether CoreML is included in the requested provider chain."""
+        return any(
+            (provider[0] if isinstance(provider, tuple) else provider) == "CoreMLExecutionProvider"
+            for provider in providers
+        )
 
     @classmethod
     def _close_session(cls) -> None:
