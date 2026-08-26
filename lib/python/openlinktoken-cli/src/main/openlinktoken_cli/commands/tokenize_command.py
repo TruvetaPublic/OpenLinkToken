@@ -1,35 +1,31 @@
 # SPDX-License-Identifier: MIT
 
+from __future__ import annotations
+
 import logging
 import sys
-from typing import List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 
 from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig
-from openlinktoken.core.ai.tokens.rotation_config import RotationConfig
-from openlinktoken.exchange_config import rotation_iv_to_text
-from openlinktoken.metadata import Metadata
-from openlinktoken.tokens.tokenizer.passthrough_tokenizer import PassthroughTokenizer
-from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
-from openlinktoken.tokentransformer.token_transformer import TokenTransformer
-from openlinktoken_cli.io.csv.person_attributes_csv_writer import PersonAttributesCSVWriter
-from openlinktoken_cli.io.json.metadata_json_writer import MetadataJsonWriter
-from openlinktoken_cli.io.parquet.person_attributes_parquet_writer import (
-    PersonAttributesParquetWriter,
-)
-from openlinktoken_cli.io.zip.person_attributes_zip_writer import PersonAttributesZipWriter
-from openlinktoken_cli.processor.person_attributes_processor import (
-    PersonAttributesProcessingSummary,
-    PersonAttributesProcessor,
-)
-from openlinktoken_cli.tokens.config.tokenization_config_helper import TokenizationConfigHelper
-from openlinktoken_cli.tokens.config.tokenization_config_loader import TokenizationConfigLoader
-from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
+
+if TYPE_CHECKING:
+    from openlinktoken.tokentransformer.token_transformer import TokenTransformer
+    from openlinktoken_cli.processor.person_attributes_processor import PersonAttributesProcessingSummary
+
 from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
-from openlinktoken_cli.util.exchange_config import resolve_exchange_config
-from openlinktoken_cli.util.file_type_detector import FileTypeDetector
-from openlinktoken_cli.util.path_utils import get_auto_output_path
 
 logger = logging.getLogger(__name__)
+
+
+def resolve_exchange_config(
+    exchange_config_path: str | None,
+    private_key_path: str | None = None,
+    private_key_env: str | None = None,
+) -> Any:
+    """Resolve exchange configuration without importing crypto dependencies at startup."""
+    from openlinktoken_cli.util.exchange_config import resolve_exchange_config as implementation
+
+    return implementation(exchange_config_path, private_key_path, private_key_env)
 
 
 class TokenizeCommand:
@@ -167,7 +163,7 @@ class TokenizeCommand:
             dest="inferencing_batch_size",
             type=int,
             default=ML1InferenceConfig.DEFAULT_BATCH_SIZE,
-            help="ML1 ONNX inference batch size (default: 64)",
+            help=f"ML1 ONNX inference batch size (default: {ML1InferenceConfig.DEFAULT_BATCH_SIZE})",
         )
 
         parser.add_argument(
@@ -193,6 +189,13 @@ class TokenizeCommand:
     @staticmethod
     def execute(args):
         """Execute the tokenize command."""
+        from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig
+        from openlinktoken.core.ai.tokens.rotation_config import RotationConfig
+        from openlinktoken_cli.tokens.config.tokenization_config_helper import TokenizationConfigHelper
+        from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
+        from openlinktoken_cli.util.file_type_detector import FileTypeDetector
+        from openlinktoken_cli.util.path_utils import get_auto_output_path
+
         mode = getattr(args, "mode", TokenizeCommand._MODE_DEFAULT)
         hash_record_ids = getattr(args, "hash_record_ids", False)
         tokenization_config_path = getattr(args, "tokenization_config", None)
@@ -387,6 +390,9 @@ class TokenizeCommand:
     @staticmethod
     def _configure_rotation(exchange) -> None:
         """Apply an exchange's rotation settings."""
+        from openlinktoken.core.ai.tokens.rotation_config import RotationConfig
+        from openlinktoken.exchange_config import rotation_iv_to_text
+
         if not exchange.rotation_iv:
             return
 
@@ -412,6 +418,14 @@ class TokenizeCommand:
         progress_callback=None,
     ) -> tuple[PersonAttributesProcessingSummary, str]:
         """Process tokens in normal mode using SHA-256 + HMAC-SHA256."""
+        from openlinktoken.metadata import Metadata
+        from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
+        from openlinktoken_cli.io.json.metadata_json_writer import MetadataJsonWriter
+        from openlinktoken_cli.io.zip.person_attributes_zip_writer import PersonAttributesZipWriter
+        from openlinktoken_cli.processor.person_attributes_processor import PersonAttributesProcessor
+        from openlinktoken_cli.tokens.config.tokenization_config_helper import TokenizationConfigHelper
+        from openlinktoken_cli.tokens.config.tokenization_config_loader import TokenizationConfigLoader
+
         token_transformer_list: List[TokenTransformer] = []
 
         try:
@@ -463,6 +477,13 @@ class TokenizeCommand:
         progress_callback=None,
     ) -> tuple[PersonAttributesProcessingSummary, str]:
         """Process tokens in hash-only mode using SHA-256 only (no HMAC, no secret)."""
+        from openlinktoken.metadata import Metadata
+        from openlinktoken_cli.io.json.metadata_json_writer import MetadataJsonWriter
+        from openlinktoken_cli.io.zip.person_attributes_zip_writer import PersonAttributesZipWriter
+        from openlinktoken_cli.processor.person_attributes_processor import PersonAttributesProcessor
+        from openlinktoken_cli.tokens.config.tokenization_config_helper import TokenizationConfigHelper
+        from openlinktoken_cli.tokens.config.tokenization_config_loader import TokenizationConfigLoader
+
         try:
             config, resolver, token_definition = TokenizationConfigLoader.load_runtime_components(
                 tokenization_config_path
@@ -506,6 +527,14 @@ class TokenizeCommand:
         progress_callback=None,
     ) -> tuple[PersonAttributesProcessingSummary, str]:
         """Process tokens in demo mode using PassthroughTokenizer (no hashing)."""
+        from openlinktoken.metadata import Metadata
+        from openlinktoken.tokens.tokenizer.passthrough_tokenizer import PassthroughTokenizer
+        from openlinktoken_cli.io.json.metadata_json_writer import MetadataJsonWriter
+        from openlinktoken_cli.io.zip.person_attributes_zip_writer import PersonAttributesZipWriter
+        from openlinktoken_cli.processor.person_attributes_processor import PersonAttributesProcessor
+        from openlinktoken_cli.tokens.config.tokenization_config_helper import TokenizationConfigHelper
+        from openlinktoken_cli.tokens.config.tokenization_config_loader import TokenizationConfigLoader
+
         try:
             config, resolver, token_definition = TokenizationConfigLoader.load_runtime_components(
                 tokenization_config_path
@@ -547,6 +576,8 @@ class TokenizeCommand:
         hash_record_ids: bool,
     ) -> list[str]:
         """Build the human-readable completion summary for a tokenize run."""
+        from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
+
         mode_labels = {
             TokenizeCommand._MODE_DEFAULT: "default HMAC-SHA256",
             TokenizeCommand._MODE_HASH_ONLY: "hash-only SHA-256",
@@ -570,6 +601,11 @@ class TokenizeCommand:
     @staticmethod
     def _create_writer(path: str, file_type: str):
         """Create a PersonAttributesWriter based on file type."""
+        from openlinktoken_cli.io.csv.person_attributes_csv_writer import PersonAttributesCSVWriter
+        from openlinktoken_cli.io.parquet.person_attributes_parquet_writer import PersonAttributesParquetWriter
+        from openlinktoken_cli.io.zip.person_attributes_zip_writer import PersonAttributesZipWriter
+        from openlinktoken_cli.util.file_type_detector import FileTypeDetector
+
         file_type_lower = file_type.lower()
         if file_type_lower == FileTypeDetector.TYPE_CSV:
             return PersonAttributesCSVWriter(path)

@@ -24,6 +24,22 @@ def _expected_checksum(content: bytes, file_name: str) -> str:
 class TestCreateReleaseAssets:
     """Unit tests for release asset preparation."""
 
+    def test_zips_complete_one_folder_bundle(self, tmp_path):
+        """One-folder builds should include the executable and its dependency files."""
+        bundle_dir = tmp_path / "dist" / "olt"
+        bundle_dir.mkdir(parents=True)
+        (bundle_dir / "olt").write_bytes(b"bundle executable")
+        (bundle_dir / "_internal").mkdir()
+        (bundle_dir / "_internal" / "runtime.dat").write_bytes(b"runtime")
+
+        create_release_assets("2.1.0", "Linux", tmp_path / "dist", tmp_path / "release-assets")
+
+        with zipfile.ZipFile(tmp_path / "release-assets" / "olt-cli-2.1.0-linux-x64.zip") as archive:
+            assert archive.namelist() == [
+                "olt-cli-2.1.0-linux-x64/_internal/runtime.dat",
+                "olt-cli-2.1.0-linux-x64/olt",
+            ]
+
     def test_creates_linux_release_assets_and_checksums(self, tmp_path):
         """Linux builds should emit updater binary, zip package, and checksum sidecars."""
         dist_dir = tmp_path / "dist"

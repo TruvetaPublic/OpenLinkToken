@@ -1,38 +1,41 @@
 # SPDX-License-Identifier: MIT
 
+from __future__ import annotations
+
 import contextlib
 import logging
 import sys
 import tempfile
 from pathlib import Path
-from typing import List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 
 from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig
-from openlinktoken.core.ai.tokens.rotation_config import RotationConfig
-from openlinktoken.exchange_config import rotation_iv_to_text
-from openlinktoken.metadata import Metadata
-from openlinktoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
-from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
-from openlinktoken.tokentransformer.token_transformer import TokenTransformer
-from openlinktoken_cli.io.csv.person_attributes_csv_writer import PersonAttributesCSVWriter
-from openlinktoken_cli.io.json.metadata_json_writer import MetadataJsonWriter
-from openlinktoken_cli.io.parquet.person_attributes_parquet_writer import PersonAttributesParquetWriter
-from openlinktoken_cli.io.zip.person_attributes_zip_writer import PersonAttributesZipWriter
-from openlinktoken_cli.processor.person_attributes_processor import (
-    PersonAttributesProcessingSummary,
-    PersonAttributesProcessor,
-)
-from openlinktoken_cli.tokens.config.tokenization_config_helper import TokenizationConfigHelper
-from openlinktoken_cli.tokens.config.tokenization_config_loader import TokenizationConfigLoader
-from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
+
+if TYPE_CHECKING:
+    from openlinktoken.tokentransformer.token_transformer import TokenTransformer
+    from openlinktoken_cli.processor.person_attributes_processor import PersonAttributesProcessingSummary
+
 from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
-from openlinktoken_cli.util.exchange_config import derive_transport_encryption_key, resolve_exchange_config
-from openlinktoken_cli.util.file_type_detector import FileTypeDetector
-from openlinktoken_cli.util.path_utils import get_auto_output_path
-from openlinktoken_cli.util.ring_id_utils import resolve_ring_id
-from openlinktoken_cli.util.zip_utils import bundle_into_zip
 
 logger = logging.getLogger(__name__)
+
+
+def resolve_exchange_config(
+    exchange_config_path: str | None,
+    private_key_path: str | None = None,
+    private_key_env: str | None = None,
+) -> Any:
+    """Resolve exchange configuration without importing crypto dependencies at startup."""
+    from openlinktoken_cli.util.exchange_config import resolve_exchange_config as implementation
+
+    return implementation(exchange_config_path, private_key_path, private_key_env)
+
+
+def derive_transport_encryption_key(exchange: Any) -> bytes:
+    """Derive the transport key without importing crypto dependencies at startup."""
+    from openlinktoken_cli.util.exchange_config import derive_transport_encryption_key as implementation
+
+    return implementation(exchange)
 
 
 class PackageCommand:
@@ -139,7 +142,7 @@ class PackageCommand:
             dest="inferencing_batch_size",
             type=int,
             default=ML1InferenceConfig.DEFAULT_BATCH_SIZE,
-            help="ML1 ONNX inference batch size (default: 64)",
+            help=f"ML1 ONNX inference batch size (default: {ML1InferenceConfig.DEFAULT_BATCH_SIZE})",
         )
 
         parser.add_argument(
@@ -164,6 +167,16 @@ class PackageCommand:
     @staticmethod
     def execute(args):
         """Execute the package command."""
+        from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig
+        from openlinktoken.core.ai.tokens.rotation_config import RotationConfig
+        from openlinktoken.exchange_config import rotation_iv_to_text
+        from openlinktoken_cli.tokens.config.tokenization_config_helper import TokenizationConfigHelper
+        from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
+        from openlinktoken_cli.util.file_type_detector import FileTypeDetector
+        from openlinktoken_cli.util.path_utils import get_auto_output_path
+        from openlinktoken_cli.util.ring_id_utils import resolve_ring_id
+        from openlinktoken_cli.util.zip_utils import bundle_into_zip
+
         input_type = FileTypeDetector.detect_input_type(args.input_path)
         if not input_type:
             logger.error("Unable to auto-detect input type. Supported input formats: csv, parquet")
@@ -334,6 +347,15 @@ class PackageCommand:
         progress_callback=None,
     ) -> tuple[PersonAttributesProcessingSummary, str]:
         """Process tokens from person attributes."""
+        from openlinktoken.metadata import Metadata
+        from openlinktoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
+        from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
+        from openlinktoken_cli.io.json.metadata_json_writer import MetadataJsonWriter
+        from openlinktoken_cli.io.zip.person_attributes_zip_writer import PersonAttributesZipWriter
+        from openlinktoken_cli.processor.person_attributes_processor import PersonAttributesProcessor
+        from openlinktoken_cli.tokens.config.tokenization_config_helper import TokenizationConfigHelper
+        from openlinktoken_cli.tokens.config.tokenization_config_loader import TokenizationConfigLoader
+
         token_transformer_list: List[TokenTransformer] = []
 
         try:
@@ -388,6 +410,8 @@ class PackageCommand:
         hash_record_ids: bool,
     ) -> list[str]:
         """Build the human-readable completion summary for a package run."""
+        from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
+
         lines = [
             f"Output: {output_path}",
         ]
@@ -410,6 +434,11 @@ class PackageCommand:
     @staticmethod
     def _create_writer(path: str, file_type: str):
         """Create a PersonAttributesWriter based on file type."""
+        from openlinktoken_cli.io.csv.person_attributes_csv_writer import PersonAttributesCSVWriter
+        from openlinktoken_cli.io.parquet.person_attributes_parquet_writer import PersonAttributesParquetWriter
+        from openlinktoken_cli.io.zip.person_attributes_zip_writer import PersonAttributesZipWriter
+        from openlinktoken_cli.util.file_type_detector import FileTypeDetector
+
         file_type_lower = file_type.lower()
         if file_type_lower == FileTypeDetector.TYPE_CSV:
             return PersonAttributesCSVWriter(path)
