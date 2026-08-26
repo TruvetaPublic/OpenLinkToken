@@ -91,7 +91,7 @@ packaging==26.2
     #   huggingface-hub
     #   onnxruntime
     #   onnxruntime-gpu
-protobuf==7.35.1
+protobuf==7.36.0
     # via
     #   onnxruntime
     #   onnxruntime-gpu
