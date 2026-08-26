@@ -1,7 +1,8 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 import os
-from PyInstaller.utils.hooks import collect_all, collect_submodules
+
+from PyInstaller.utils.hooks import collect_all
 
 block_cipher = None
 
@@ -28,7 +29,7 @@ for package_name in ("openlinktoken", "openlinktoken.core", "pyarrow", "pandas",
 
 datas += [
     (os.path.join(inferencing_assets_source, filename), "openlinktoken/core/ai/tokens")
-    for filename in ("model.onnx", "model.onnx.data", "tokenizer.json")
+    for filename in ("asset-manifest.json", "model.onnx", "model.onnx.data", "tokenizer.json")
 ]
 
 a = Analysis(

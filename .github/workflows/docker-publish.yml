@@ -61,6 +61,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           lfs: true
+          ref: ${{ needs.release-info.outputs['release-found'] == 'true' && needs.release-info.outputs.tag || github.sha }}
 
       # Install the cosign tool for signing images (only needed for releases)
       # https://github.com/sigstore/cosign-installer

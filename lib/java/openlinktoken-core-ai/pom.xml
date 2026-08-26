@@ -100,8 +100,10 @@
                 <directory>src/main/resources</directory>
             </resource>
             <resource>
-                <!-- Bundle all ML1 inferencing assets from the shared resources directory -->
                 <directory>../../../resources/inferencing/ml1</directory>
+                <includes>
+                    <include>asset-manifest.json</include>
+                </includes>
                 <targetPath>inferencing/ml1</targetPath>
             </resource>
         </resources>

@@ -50,6 +50,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           lfs: true
+          ref: ${{ needs.release-info.outputs['release-found'] == 'true' && needs.release-info.outputs.tag || github.sha }}
 
       - name: Validate POSIX installer
         if: runner.os != 'Windows'

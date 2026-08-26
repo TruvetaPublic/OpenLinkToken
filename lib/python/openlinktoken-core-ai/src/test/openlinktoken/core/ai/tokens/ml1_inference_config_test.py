@@ -23,7 +23,7 @@ def reset_config():
 
 
 def test_blank_paths_use_defaults():
-    """Blank model and tokenizer paths should use their bundled defaults."""
+    """Blank model and tokenizer paths should use their configured defaults."""
     ML1InferenceConfig.configure(True, " ", "", 32, 8, 2)
 
     assert ML1InferenceConfig.is_enabled()

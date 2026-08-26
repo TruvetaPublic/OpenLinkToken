@@ -1,7 +1,9 @@
 # ML1 model and tokenizer
 
 This directory contains the runtime assets for ML1 inference. The model and
-tokenizer are a matched pair and must be deployed together.
+tokenizer are a matched pair and must be deployed together. The
+`asset-manifest.json` file records the expected SHA-256 digest and size for
+each asset.
 
 ## `model.onnx`
 
@@ -42,6 +44,88 @@ Both implementations use the same bundled defaults:
 | Tokenizer               | `classpath:/inferencing/ml1/tokenizer.json` |
 | Maximum sequence length | `128`                                       |
 | Batch size              | `64`                                        |
+
+The published core-ai packages do not bundle the large model files and never
+download them. Place the matched files before using ML1:
+
+- Java applications: `src/main/resources/inferencing/ml1/` in the application,
+  which puts the files at `inferencing/ml1/` on the runtime classpath.
+- Python applications: beside the installed
+  `openlinktoken/core/ai/tokens/` package modules.
+- Source checkouts: `resources/inferencing/ml1/`.
+
+For explicit filesystem paths, put the three files in one directory:
+
+```text
+/opt/openlinktoken/ml1/
+  model.onnx
+  model.onnx.data
+  tokenizer.json
+```
+
+Set the model path to `/opt/openlinktoken/ml1/model.onnx` and the tokenizer
+path to `/opt/openlinktoken/ml1/tokenizer.json`. Configure these paths before
+the first ML1 token operation:
+
+```java
+ML1InferenceConfig.configure(
+    true,
+    "/opt/openlinktoken/ml1/model.onnx",
+    "/opt/openlinktoken/ml1/tokenizer.json",
+    128);
+```
+
+```python
+from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig
+
+ML1InferenceConfig.configure(
+    enable_ml1=True,
+    configured_model_path="/opt/openlinktoken/ml1/model.onnx",
+    configured_tokenizer_path="/opt/openlinktoken/ml1/tokenizer.json",
+    configured_max_sequence_length=128,
+)
+```
+
+`model.onnx.data` is not a configuration argument. It is the external tensor
+data file that ONNX Runtime loads automatically from the same directory as
+`model.onnx`.
+
+## Downloading the OCI package
+
+The repository publishes the matched files as a release-independent OCI
+artifact. The tag identifies the model version:
+
+```text
+ghcr.io/truvetapublic/openlinktoken-ml1-assets:v1
+```
+
+Install [ORAS](https://oras.land/docs/installation), then pull the files:
+
+```bash
+mkdir -p /opt/openlinktoken/ml1
+oras pull \
+  ghcr.io/truvetapublic/openlinktoken-ml1-assets:v1 \
+  --output /opt/openlinktoken/ml1
+```
+
+The package contains `model.onnx`, `model.onnx.data`, `tokenizer.json`, and
+`asset-manifest.json`. Public packages do not require login. For a private
+package, authenticate with a GitHub token that has `read:packages`:
+
+```bash
+printf '%s' "$GITHUB_TOKEN" | oras login ghcr.io \
+  --username "$GITHUB_USER" \
+  --password-stdin
+```
+
+After the first publish, set the GHCR package visibility to **public** in the
+repository package settings if anonymous downloads are required.
+
+The publishing workflow runs manually and publishes a new model tag only when
+the model changes.
+
+Standalone CLI release bundles include the three model assets and the
+manifest. They use the bundled files directly.
 
 The runtime serializes an ML1 payload to JSON, tokenizes that JSON with
 `tokenizer.json`, runs the resulting arrays through `model.onnx`, and converts

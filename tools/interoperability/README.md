@@ -69,10 +69,12 @@ one invalid birth date. They send both rows through the Java
 Python `tokenize` path and compares the emitted `ML1` rows with a direct
 provider run. The provider-vs-Java and CLI-vs-provider checks together compare
 the complete `RecordId`-to-signature mapping, including the expected `null` or
-missing CLI row for the invalid input. The Java side explicitly uses the
-bundled `model.onnx` and `tokenizer.json` assets with the default rotation
-configuration. The CLI harness provisions the same default rotation IV in its
-exchange config so its output uses identical rotation settings. The script installs the Java
+missing CLI row for the invalid input. The Java side uses the source-checkout ML1 assets with the default rotation
+configuration. Installed core-ai packages require the same assets on the
+application classpath or at explicit local paths; standalone CLI binaries
+include them locally. The CLI harness
+provisions the same default rotation IV in its exchange config so its output
+uses identical rotation settings. The script installs the Java
 `openlinktoken-core-ai` reactor artifacts before running the test-scope harness,
 so the comparison uses the current source tree rather than a stale local Maven
 artifact.
