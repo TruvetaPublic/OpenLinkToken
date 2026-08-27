@@ -321,7 +321,7 @@ rpds-py==2026.6.3 ; python_full_version >= '3.11'
 ruff==0.16.3
 send2trash==2.1.0
     # via jupyter-server
-setuptools==83.0.0
+setuptools==84.0.0
     # via pyinstaller
 six==1.17.0
     # via
