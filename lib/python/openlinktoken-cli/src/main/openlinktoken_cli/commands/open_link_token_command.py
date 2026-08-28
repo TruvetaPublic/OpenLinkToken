@@ -141,7 +141,12 @@ class OpenLinkTokenCommand:
 
         configure_default_logging()
         raw_args = list(sys.argv[1:] if args is None else args)
-        parser = OpenLinkTokenCommand.create_parser(OpenLinkTokenCommand._should_load_extensions(raw_args))
+        load_extensions = (
+            not raw_args
+            or OpenLinkTokenCommand._is_help_request(raw_args)
+            or OpenLinkTokenCommand._should_load_extensions(raw_args)
+        )
+        parser = OpenLinkTokenCommand.create_parser(load_extensions)
 
         # Show banner for help-oriented entry points, bare invocation, and bare subcommand.
         if OpenLinkTokenCommand._should_show_banner(raw_args):
