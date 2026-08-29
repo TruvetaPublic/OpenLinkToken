@@ -69,6 +69,13 @@ class TestOpenLinkTokenCommand:
 
         assert result.returncode == 0, result.stderr
 
+    def test_help_operand_value_is_not_a_help_request(self):
+        """An operand named help must not trigger help-oriented extension discovery."""
+        args = ["generate-key-pair", "--name", "help"]
+
+        assert not OpenLinkTokenCommand._is_help_request(args)
+        assert not OpenLinkTokenCommand._should_load_extensions(args)
+
     @pytest.fixture
     def temp_dir(self, tmp_path):
         """Create temporary directory with test input CSV."""

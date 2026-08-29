@@ -214,13 +214,12 @@ class OpenLinkTokenCommand:
 
     @staticmethod
     def _is_help_request(args):
-        """Check if the command is a help request."""
+        """Check whether a command token or option requests help."""
         if not args:
             return False
-        for arg in args:
-            if arg in ("--help", "help"):
-                return True
-        return False
+        if "--help" in args:
+            return True
+        return next((arg for arg in args if not arg.startswith("-")), None) == "help"
 
     @staticmethod
     def _should_show_banner(args):
