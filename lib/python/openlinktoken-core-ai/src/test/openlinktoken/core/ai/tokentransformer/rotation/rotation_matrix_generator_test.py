@@ -3,6 +3,7 @@
 import threading
 
 import numpy as np
+import pytest
 
 from openlinktoken.core.ai.tokentransformer.rotation.rotation_matrix_generator import generate
 
@@ -34,6 +35,13 @@ class TestRotationMatrixGenerator:
 
         assert projected_matrix.shape == (2, _DIMENSION)
         np.testing.assert_array_equal(projected_matrix, full_matrix[:2, :])
+
+    def test_row_count_must_be_within_dimension(self):
+        """Invalid projected row counts should be rejected."""
+        with pytest.raises(ValueError):
+            generate(_IV, 1, _DIMENSION, row_count=0)
+        with pytest.raises(ValueError):
+            generate(_IV, 1, _DIMENSION, row_count=_DIMENSION + 1)
 
     def test_orthogonality(self):
         """Q @ Q^T must be the identity matrix within floating-point tolerance."""

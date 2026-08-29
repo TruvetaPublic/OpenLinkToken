@@ -36,16 +36,24 @@ embedding of dimension `N`:
 
 1. Entry 0 is the `[[ -1 ]]` sentinel. It passes through the first
    `hashDimension` values of the centred embedding without rotation.
-2. The remaining `rotationCount - 1` entries are deterministic `N × N` proper
-   rotation matrices derived from the IV.
+2. The remaining `rotationCount - 1` entries are deterministic proper rotation
+   matrices derived from the IV. Each matrix is generated as `N × N`, but the
+   transformer retains only its leading `hashDimension` rows.
 3. For each entry, the transformer subtracts the per-dimension bias. For a
    proper rotation, it computes the first `hashDimension` rows of
    `R @ (embedding - bias)`.
 4. Each projected vector is quantized to a space-separated string of integer
    bin indices.
 
-Matrices are generated lazily and cached for the lifetime of a transformer.
-The ML1 provider also caches its transformer after the first use.
+Matrices are generated lazily. QR decomposition still creates each full matrix
+transiently, preserving the established numerical values, then the unused rows
+are released before the next matrix is retained. The transformer therefore
+caches only `hashDimension × N` rows per rotation for the lifetime of the
+transformer. The ML1 provider also caches its transformer after the first use.
+The three-argument `RotationMatrixGenerator.generate(iv, rotationCount,
+dimension)` API still returns full matrices; Python additionally exposes
+`row_count`, and Java exposes the equivalent four-argument overload for callers
+that only need projected rows.
 
 ### Quantization
 
@@ -99,6 +107,13 @@ Householder QR steps directly; Python uses `numpy.linalg.qr` and applies the
 same diagonal-sign and determinant corrections. Both implementations use
 HMAC-SHA256 counter-mode input, 53-bit uniform values, and Box-Muller
 transformation.
+
+The ML1 transformers use the projected-row overloads after each full `Q` is
+generated: Python calls `generate(..., row_count=hashDimension)`, while Java
+calls `generate(..., hashDimension)`. This reduces retained cache memory
+without changing any projected values or token outputs. The default
+three-argument API remains available for interoperability tools and callers
+that need complete matrices.
 
 Cross-language interoperability compares every matrix element with a tolerance
 of `1e-12`. The implementation and tests do not promise bit-for-bit equality
