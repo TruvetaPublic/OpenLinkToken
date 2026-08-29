@@ -30,14 +30,26 @@ jobs:
   build:
     needs: release-info
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
-    name: Build (${{ matrix.os }})
+    name: Build (${{ matrix.os }} / ${{ matrix.architecture }})
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            architecture: x86_64
+            python-version: "3.11"
+          - os: macos-13
+            architecture: x86_64
+            python-version: "3.10"
+          - os: macos-14
+            architecture: arm64
+            python-version: "3.11"
+          - os: windows-latest
+            architecture: x86_64
+            python-version: "3.11"
 
     env:
       VERSION: ${{ needs.release-info.outputs.version }}
@@ -70,7 +82,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
 
       - name: Set up UV
         uses: astral-sh/setup-uv@v6
@@ -81,8 +93,6 @@ jobs:
 
       - name: Build CLI binary
         shell: bash
-        env:
-          OLT_TARGET_ARCH: ${{ runner.os == 'macOS' && 'universal2' || '' }}
         run: |
           uv run pyinstaller --clean --noconfirm lib/python/openlinktoken-cli/openlinktoken-cli.spec
 
@@ -94,6 +104,20 @@ jobs:
           ./dist/olt/olt generate-key-pair --name recipient --force
           ./dist/olt/olt initiate-exchange --name smoke --public-key "$HOME/.openlinktoken/recipient.public.pem" --output smoke/smoke.exchange.json --hashingsecret secret
           ./dist/olt/olt tokenize -i smoke/input.csv -o smoke/out.csv --exchange-config smoke/smoke.exchange.json --private-key "$HOME/.openlinktoken/smoke.private.pem"
+          uv run python -c "import csv; assert any(row['RuleId'] == 'ML1' for row in csv.DictReader(open('smoke/out.csv'))), 'standalone binary did not generate ML1 tokens'"
+
+      - name: Verify CUDA provider on Linux GPU runners
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -e /dev/nvidia0 || -e /dev/nvidiactl ]]; then
+            latest_log=$(find "$HOME/.openlinktoken/logs" -type f -name '*tokenize*.log' -print | sort | tail -n 1)
+            test -n "$latest_log"
+            grep -q "ML1 ONNX: CUDA execution provider active" "$latest_log"
+          else
+            echo "No NVIDIA device is available on this runner; CUDA smoke check skipped."
+          fi
 
       - name: Smoke test (Windows)
         if: runner.os == 'Windows'
@@ -104,6 +128,7 @@ jobs:
           .\dist\olt\olt.exe generate-key-pair --name recipient --force
           .\dist\olt\olt.exe initiate-exchange --name smoke --public-key "$HOME/.openlinktoken/recipient.public.pem" --output smoke\smoke.exchange.json --hashingsecret secret
           .\dist\olt\olt.exe tokenize -i smoke\input.csv -o smoke\out.csv --exchange-config smoke\smoke.exchange.json --private-key "$HOME/.openlinktoken/smoke.private.pem"
+          uv run python -c "import csv; assert any(row['RuleId'] == 'ML1' for row in csv.DictReader(open('smoke/out.csv'))), 'standalone binary did not generate ML1 tokens'"
 
       - name: Measure standalone startup
         shell: bash
@@ -117,7 +142,7 @@ jobs:
       - name: Upload startup measurements
         uses: actions/upload-artifact@v7
         with:
-          name: olt-cli-startup-${{ matrix.os }}
+          name: olt-cli-startup-${{ matrix.os }}-${{ matrix.architecture }}
           path: startup-measurements.json
           if-no-files-found: error
 
@@ -128,6 +153,7 @@ jobs:
           uv run python -m openlinktoken_cli.util.release_assets \
             --version "${VERSION}" \
             --runner-os "${{ runner.os }}" \
+            --architecture "${{ matrix.architecture }}" \
             --dist-dir dist \
             --output-dir release-assets
 
@@ -139,7 +165,7 @@ jobs:
       - name: Upload workflow artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: olt-cli-${{ env.VERSION }}-${{ matrix.os }}
+          name: olt-cli-${{ env.VERSION }}-${{ matrix.os }}-${{ matrix.architecture }}
           path: release-assets/*
           if-no-files-found: error
 

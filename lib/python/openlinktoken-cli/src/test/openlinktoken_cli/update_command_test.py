@@ -67,11 +67,25 @@ class TestFindAsset:
 
     def test_darwin_matches_macos(self):
         """platform.system() returns 'Darwin' on macOS; should match 'macos' assets."""
-        release = _make_release(assets=[{"name": "openlinktoken-v2.1.0-macos-arm64", "browser_download_url": "u"}])
+        release = _make_release(
+            tag="v2.1.0",
+            assets=[{"name": "olt-cli-2.1.0-macos-arm64.zip", "browser_download_url": "u"}],
+        )
         with patch("platform.system", return_value="Darwin"), patch("platform.machine", return_value="arm64"):
             asset = UpdateCommand._find_asset(release)
         assert asset is not None
-        assert "macos" in asset["name"]
+        assert asset["name"] == "olt-cli-2.1.0-macos-arm64.zip"
+
+    def test_darwin_x86_64_matches_macos_intel_asset(self):
+        """Intel macOS should select the architecture-specific Intel bundle."""
+        release = _make_release(
+            tag="v2.1.0",
+            assets=[{"name": "olt-cli-2.1.0-macos-x86_64.zip", "browser_download_url": "u"}],
+        )
+        with patch("platform.system", return_value="Darwin"), patch("platform.machine", return_value="x86_64"):
+            asset = UpdateCommand._find_asset(release)
+        assert asset is not None
+        assert asset["name"] == "olt-cli-2.1.0-macos-x86_64.zip"
 
     def test_no_matching_asset_returns_none(self):
         release = _make_release(

@@ -25,7 +25,8 @@ The easiest way to get started. No Docker, Java, or Python installation required
 Download the appropriate executable for your platform from the [latest release](https://github.com/TruvetaPublic/OpenLinkToken/releases):
 
 - **Linux**: `olt-cli-{version}-linux-x64.zip`
-- **macOS**: `olt-cli-{version}-macos-universal.zip` (works on both Intel and Apple Silicon)
+- **macOS Apple Silicon**: `olt-cli-{version}-macos-arm64.zip`
+- **macOS Intel**: `olt-cli-{version}-macos-x86_64.zip`
 - **Windows**: `olt-cli-{version}-windows-x64.zip`
 
 Each downloadable ZIP is also published with a matching `.sha256` sidecar for manual verification.
@@ -59,8 +60,8 @@ Both installers detect the platform, install to a user-writable directory, and v
 
 ```bash
 # Extract the zip file
-unzip olt-cli-2.1.2-macos-universal.zip
-cd olt-cli-2.1.2-macos-universal
+unzip olt-cli-2.1.2-macos-arm64.zip
+cd olt-cli-2.1.2-macos-arm64
 cd olt
 
 # The bundle keeps the executable and its runtime files together.
