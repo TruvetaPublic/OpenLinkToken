@@ -18,7 +18,7 @@ def generate(
     iv: str,
     rotation_count: int,
     dimension: int,
-    rows: Optional[int] = None,
+    row_count: Optional[int] = None,
 ) -> List[np.ndarray]:
     """Generate a list of deterministic orthogonal rotation matrices from an IV.
 
@@ -32,24 +32,26 @@ def generate(
         iv: Initialization vector string. Same IV always produces the same matrices.
         rotation_count: Number of rotation matrices to generate.
         dimension: Number of rows and columns in each matrix.
-        rows: Optional number of leading rows to retain from each matrix.
+        row_count: Optional number of leading rows to retain from each matrix.
+            When omitted, each full matrix is returned.
 
     Returns:
         A list of ``rotation_count`` numpy float64 proper-rotation matrices.
-        When ``rows`` is provided, each matrix has shape ``(rows, dimension)``.
+        Each matrix has ``dimension`` rows when ``row_count`` is omitted,
+        otherwise ``row_count`` rows.
     """
-    if rows is not None and (rows <= 0 or rows > dimension):
-        raise ValueError("rows must be in the range [1, dimension].")
+    if row_count is not None and not 0 < row_count <= dimension:
+        raise ValueError("row_count must be greater than zero and no greater than dimension.")
 
     key_material = hashlib.sha256(iv.encode("utf-8")).digest()
-    return [_generate_one(key_material, r, dimension, rows) for r in range(rotation_count)]
+    return [_generate_one(key_material, r, dimension, row_count) for r in range(rotation_count)]
 
 
 def _generate_one(
     key_material: bytes,
     rotation_index: int,
     n: int,
-    rows: Optional[int] = None,
+    row_count: Optional[int] = None,
 ) -> np.ndarray:
     """Generate a single ``n x n`` proper-rotation matrix."""
     pairs_per_col = (n + 1) // 2
@@ -89,7 +91,7 @@ def _generate_one(
     q = q * np.sign(np.diag(r))[np.newaxis, :]
     if np.sign(np.linalg.det(q)) < 0:
         q[:, n - 1] = -q[:, n - 1]
-    return q if rows is None else q[:rows, :].copy()
+    return q if row_count is None else q[:row_count, :].copy()
 
 
 def _extract_uniform(h: bytes, offset: int) -> float:

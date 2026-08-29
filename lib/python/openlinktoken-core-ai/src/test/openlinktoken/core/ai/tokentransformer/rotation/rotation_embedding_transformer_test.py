@@ -72,8 +72,8 @@ class TestRotationEmbeddingTransformer:
             parts = token.split(" ")
             assert len(parts) == hash_dim
 
-    def test_transformer_stores_only_consumed_rotation_rows(self):
-        """The transformer should retain only the matrix rows used by the hash dimension."""
+    def test_transformer_keeps_only_projected_rotation_rows(self):
+        """The transformer should retain only the matrix rows used for projection."""
         transformer = self._make_transformer(hash_dimension=2)
 
         transformer.transform(self._sample_embedding())

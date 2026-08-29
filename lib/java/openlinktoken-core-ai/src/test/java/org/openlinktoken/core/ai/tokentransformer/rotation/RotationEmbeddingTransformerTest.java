@@ -1,10 +1,13 @@
 /* SPDX-License-Identifier: MIT */
 package org.openlinktoken.core.ai.tokentransformer.rotation;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -86,6 +89,34 @@ class RotationEmbeddingTransformerTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void testTransformerRetainsOnlyLeadingRotationRows() throws ReflectiveOperationException {
+        int rotationCount = 3;
+        int dimension = 4;
+        int hashDimension = 2;
+        RotationEmbeddingTransformer transformer =
+                RotationEmbeddingTransformer.withDefaults(IV, rotationCount, dimension, hashDimension);
+
+        transformer.transform(new float[] { 1.0f, 0.5f, -0.5f, -1.0f });
+
+        Field matricesField = RotationEmbeddingTransformer.class.getDeclaredField("matrices");
+        matricesField.setAccessible(true);
+        List<double[][]> actualMatrices = (List<double[][]>) matricesField.get(transformer);
+        List<double[][]> fullMatrices = RotationMatrixGenerator.generate(IV, rotationCount - 1, dimension);
+
+        assertEquals(rotationCount, actualMatrices.size());
+        for (int rotation = 0; rotation < fullMatrices.size(); rotation++) {
+            double[][] actual = actualMatrices.get(rotation + 1);
+            double[][] expected = fullMatrices.get(rotation);
+            assertEquals(hashDimension, actual.length);
+            for (int row = 0; row < hashDimension; row++) {
+                assertEquals(dimension, actual[row].length);
+                assertArrayEquals(expected[row], actual[row]);
+            }
+        }
+    }
+
+    @Test
     void testHashDimensionMatchesStandardFullRotationParityFixture() {
         // Token[0] is the [[-1]] sentinel pass-through; token[1] is the first actual rotation.
         // Fixture values confirmed by running the equivalent full-rotation Python path.
@@ -109,7 +140,7 @@ class RotationEmbeddingTransformerTest {
 
         @SuppressWarnings("unchecked")
         List<String>[] results = new List[threadCount];
-        List<Exception> errors = new java.util.ArrayList<>();
+        List<Exception> errors = new ArrayList<>();
         CountDownLatch latch = new CountDownLatch(threadCount);
 
         ExecutorService pool = Executors.newFixedThreadPool(threadCount);

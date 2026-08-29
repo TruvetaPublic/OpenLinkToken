@@ -27,6 +27,14 @@ class TestRotationMatrixGenerator:
             for row in matrix:
                 assert len(row) == _DIMENSION
 
+    def test_row_count_keeps_leading_rows_with_full_rotation_values(self):
+        """A projected matrix should retain the leading rows of the full matrix."""
+        full_matrix = generate(_IV, 1, _DIMENSION)[0]
+        projected_matrix = generate(_IV, 1, _DIMENSION, row_count=2)[0]
+
+        assert projected_matrix.shape == (2, _DIMENSION)
+        np.testing.assert_array_equal(projected_matrix, full_matrix[:2, :])
+
     def test_orthogonality(self):
         """Q @ Q^T must be the identity matrix within floating-point tolerance."""
         for matrix in generate(_IV, _COUNT, _DIMENSION):

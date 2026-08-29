@@ -244,7 +244,7 @@ class RotationEmbeddingTransformer:
                             self._iv,
                             self._rotation_count - 1,
                             self._dimension,
-                            rows=self._hash_dimension,
+                            row_count=self._hash_dimension,
                         )
                         _write_cached_matrices(
                             self._iv,
