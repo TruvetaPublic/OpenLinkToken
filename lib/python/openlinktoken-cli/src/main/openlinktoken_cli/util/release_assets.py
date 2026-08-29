@@ -5,6 +5,7 @@ Helpers for preparing CLI release assets in the GitHub Actions build workflow.
 
 import argparse
 import hashlib
+import platform
 import shutil
 import tempfile
 import zipfile
@@ -30,8 +31,8 @@ _RELEASE_ASSET_SPECS = {
     ),
     "macos": ReleaseAssetSpec(
         executable_name="olt",
-        package_name="olt-cli-{version}-macos-universal",
-        binary_asset_name="olt-v{version}-macos-universal",
+        package_name="olt-cli-{version}-macos-{architecture}",
+        binary_asset_name="olt-v{version}-macos-{architecture}",
     ),
     "windows": ReleaseAssetSpec(
         executable_name="olt.exe",
@@ -41,9 +42,15 @@ _RELEASE_ASSET_SPECS = {
 }
 
 
-def create_release_assets(version: str, runner_os: str, dist_dir: Path, output_dir: Path) -> list[Path]:
+def create_release_assets(
+    version: str,
+    runner_os: str,
+    dist_dir: Path,
+    output_dir: Path,
+    architecture: str | None = None,
+) -> list[Path]:
     """Create updater-ready CLI binaries, packaged ZIPs, and SHA-256 sidecars."""
-    spec = _resolve_release_asset_spec(version, runner_os)
+    spec = _resolve_release_asset_spec(version, runner_os, architecture)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     built_executable = dist_dir / spec.executable_name
@@ -80,6 +87,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="GitHub Actions runner OS name (Linux, macOS, Windows).",
     )
     parser.add_argument(
+        "--architecture",
+        default=None,
+        help="Target architecture (for example, arm64 or x86_64; defaults to the host architecture on macOS).",
+    )
+    parser.add_argument(
         "--dist-dir",
         type=Path,
         default=Path("dist"),
@@ -93,13 +105,23 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    created_paths = create_release_assets(args.version, args.runner_os, args.dist_dir, args.output_dir)
+    created_paths = create_release_assets(
+        args.version,
+        args.runner_os,
+        args.dist_dir,
+        args.output_dir,
+        args.architecture,
+    )
     for path in created_paths:
         print(path)
     return 0
 
 
-def _resolve_release_asset_spec(version: str, runner_os: str) -> ReleaseAssetSpec:
+def _resolve_release_asset_spec(
+    version: str,
+    runner_os: str,
+    architecture: str | None = None,
+) -> ReleaseAssetSpec:
     """Resolve the asset naming convention for the requested runner OS."""
     normalized_version = _normalize_version(version)
     normalized_runner = runner_os.strip().lower()
@@ -109,10 +131,16 @@ def _resolve_release_asset_spec(version: str, runner_os: str) -> ReleaseAssetSpe
     except KeyError as exc:
         raise ValueError(f"Unsupported runner OS: {runner_os}") from exc
 
+    normalized_architecture = (
+        _normalize_macos_architecture(architecture or platform.machine()) if normalized_runner == "macos" else None
+    )
     return ReleaseAssetSpec(
         executable_name=template.executable_name,
-        package_name=template.package_name.format(version=normalized_version),
-        binary_asset_name=template.binary_asset_name.format(version=normalized_version),
+        package_name=template.package_name.format(version=normalized_version, architecture=normalized_architecture),
+        binary_asset_name=template.binary_asset_name.format(
+            version=normalized_version,
+            architecture=normalized_architecture,
+        ),
     )
 
 
@@ -122,6 +150,16 @@ def _normalize_version(version: str) -> str:
     if not normalized_version:
         raise ValueError("Version cannot be empty")
     return normalized_version
+
+
+def _normalize_macos_architecture(architecture: str) -> str:
+    """Normalize supported macOS architecture names for release assets."""
+    normalized_architecture = architecture.strip().lower()
+    if normalized_architecture in {"arm64", "aarch64"}:
+        return "arm64"
+    if normalized_architecture in {"x86_64", "amd64", "x64"}:
+        return "x86_64"
+    raise ValueError(f"Unsupported macOS architecture: {architecture}")
 
 
 def _create_zip_archive(bundle_root: Path, package_name: str, zip_path: Path) -> None:

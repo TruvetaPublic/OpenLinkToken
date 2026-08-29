@@ -69,7 +69,19 @@ tag="v${version}"
 
 case "$(uname -s)" in
     Darwin)
-        asset="olt-cli-${version}-macos-universal.zip"
+        case "$(uname -m)" in
+            arm64|aarch64)
+                asset="olt-cli-${version}-macos-arm64.zip"
+                legacy_asset="olt-cli-${version}-macos-universal.zip"
+                ;;
+            x86_64|amd64)
+                asset="olt-cli-${version}-macos-x86_64.zip"
+                legacy_asset="olt-cli-${version}-macos-universal.zip"
+                ;;
+            *)
+                fail "No macOS CLI asset is available for architecture $(uname -m)"
+                ;;
+        esac
         ;;
     Linux)
         case "$(uname -m)" in
@@ -94,8 +106,19 @@ checksum_file="${archive}.sha256"
 download_url="${RELEASES_URL}/download/${tag}/${asset}"
 
 printf 'Downloading Open Link Token %s...\n' "$tag"
-curl -fL --retry 3 --output "$archive" "$download_url" ||
-    fail "Release asset not found: $asset"
+if ! curl -fL --retry 3 --output "$archive" "$download_url"; then
+    if [[ -n "${legacy_asset:-}" ]]; then
+        asset="$legacy_asset"
+        archive="$tmp_dir/$asset"
+        checksum_file="${archive}.sha256"
+        download_url="${RELEASES_URL}/download/${tag}/${asset}"
+        printf 'Architecture-specific asset unavailable; trying legacy %s...\n' "$asset"
+        curl -fL --retry 3 --output "$archive" "$download_url" ||
+            fail "Release asset not found: $asset"
+    else
+        fail "Release asset not found: $asset"
+    fi
+fi
 curl -fL --retry 3 --output "$checksum_file" "${download_url}.sha256" ||
     fail "Checksum asset not found for $asset"
 

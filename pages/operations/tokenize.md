@@ -61,9 +61,9 @@ docker run --rm --gpus all -v "$(pwd)/resources:/app/resources" \
 ```
 
 The host needs an NVIDIA driver and NVIDIA Container Toolkit. Use
-`--gpus none` to force CPU execution. macOS continues to use CoreML through
-the native Python installation; Docker Desktop cannot expose the Mac GPU as
-an NVIDIA CUDA device.
+`--gpus none` to force CPU execution. macOS uses CPU inference because CoreML
+compilation of the ML1 model can exhaust unified memory; Docker Desktop also
+cannot expose the Mac GPU as an NVIDIA CUDA device.
 
 ## When to Use `tokenize`
 

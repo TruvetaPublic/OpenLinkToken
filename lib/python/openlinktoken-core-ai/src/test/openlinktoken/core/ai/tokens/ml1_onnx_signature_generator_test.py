@@ -22,8 +22,8 @@ def test_empty_signatures_and_embeddings_are_empty():
     assert ML1OnnxSignatureGenerator._generate_signatures_with_embeddings([]) == ([], [])
 
 
-def test_macos_resolves_coreml_with_all_compute_units(monkeypatch):
-    """macOS should use CoreML with CPU, GPU, and Neural Engine availability."""
+def test_macos_uses_cpu_for_the_large_ml1_model(monkeypatch):
+    """macOS should avoid CoreML's unsafe memory growth for the ML1 model."""
     monkeypatch.setattr(platform, "system", lambda: "Darwin")
     monkeypatch.setattr(
         ort,
@@ -31,10 +31,7 @@ def test_macos_resolves_coreml_with_all_compute_units(monkeypatch):
         lambda: ["CoreMLExecutionProvider", "CPUExecutionProvider"],
     )
 
-    assert _resolve_providers() == [
-        ("CoreMLExecutionProvider", {"MLComputeUnits": "ALL"}),
-        "CPUExecutionProvider",
-    ]
+    assert _resolve_providers() == ["CPUExecutionProvider"]
 
 
 def test_cuda_is_preferred_when_available(monkeypatch):
@@ -101,6 +98,23 @@ def test_coreml_loads_external_model_data_from_memory(tmp_path):
     fake_ort.InferenceSession.assert_called_once()
     assert fake_ort.InferenceSession.call_args.args[0] == b"model"
     assert session_options.add_external_initializers_from_files_in_memory.call_args.args[0] == ["model.onnx.data"]
+
+
+def test_coreml_disables_matmul_add_fusion(tmp_path):
+    """CoreML should not inline large MatMul weights into its compiled model."""
+    model_path = tmp_path / "model.onnx"
+    model_path.touch()
+    session_options = ort.SessionOptions()
+    fake_ort = Mock()
+
+    ML1OnnxSignatureGenerator._create_session(
+        fake_ort,
+        session_options,
+        model_path,
+        [("CoreMLExecutionProvider", {"MLComputeUnits": "ALL"}), "CPUExecutionProvider"],
+    )
+
+    assert session_options.get_session_config_entry("optimization.disable_specified_optimizers") == "MatMulAddFusion"
 
 
 def test_explicit_filesystem_paths_resolve_directly(tmp_path):

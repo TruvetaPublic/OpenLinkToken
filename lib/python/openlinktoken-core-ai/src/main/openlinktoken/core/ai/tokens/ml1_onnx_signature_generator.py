@@ -41,9 +41,8 @@ def _suppress_ort_stderr():
 def _resolve_providers() -> List[str | tuple]:
     """Return the best available ORT execution provider list for this environment.
 
-    Prefer CUDA on NVIDIA systems and CoreML with all available compute units on
-    macOS. Unsupported operations fall through to CPU automatically.
-    Falls back to CPU-only if an accelerator is unavailable or fails.
+    Prefer CUDA on NVIDIA systems. macOS uses CPU because CoreML's compilation
+    of this large transformer can exhaust unified memory.
     """
 
     import onnxruntime as ort
@@ -52,12 +51,6 @@ def _resolve_providers() -> List[str | tuple]:
     if "CUDAExecutionProvider" in available and _nvidia_device_available():
         return ["CUDAExecutionProvider", "CPUExecutionProvider"]
 
-    is_macos_native = platform.system() == "Darwin"
-    if is_macos_native and "CoreMLExecutionProvider" in available:
-        return [
-            ("CoreMLExecutionProvider", {"MLComputeUnits": "ALL"}),
-            "CPUExecutionProvider",
-        ]
     return ["CPUExecutionProvider"]
 
 
@@ -217,7 +210,6 @@ class ML1OnnxSignatureGenerator:
         # Parallel Rust tokenization — encode_batch processes all rows concurrently
         encodings = cls._tokenizer.encode_batch(input_json_rows)
 
-        # Dynamic padding: use actual max token length in this batch (capped at max_sequence_length)
         dynamic_max = max((len(enc.ids) for enc in encodings), default=1)
         seq_len = min(dynamic_max, max_sequence_length)
 
@@ -339,6 +331,11 @@ class ML1OnnxSignatureGenerator:
         """Create an ONNX session, loading external weights in memory for CoreML."""
         _preload_cuda_libraries(ort, providers)
         if cls._coreml_requested(providers):
+            # CoreML otherwise inlines the model's MatMul weights and multiplies peak memory use.
+            session_options.add_session_config_entry(
+                "optimization.disable_specified_optimizers",
+                "MatMulAddFusion",
+            )
             external_data_path = model_path.with_name(f"{model_path.name}.data")
             add_external_initializers = getattr(
                 session_options,
