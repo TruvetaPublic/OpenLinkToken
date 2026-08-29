@@ -335,6 +335,62 @@ jobs:
           fi
           echo "Output CSV contains $line_count lines"
 
+  standalone-cli-smoke:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          lfs: true
+
+      - name: Setup toolchain (Python)
+        uses: ./.github/actions/setup-toolchain
+        with:
+          enable-java: false
+          enable-python: true
+          python-version: "3.11"
+
+      - name: Install build dependencies
+        run: |
+          uv sync --all-packages
+
+      - name: Build standalone CLI
+        run: |
+          uv run pyinstaller --clean --noconfirm lib/python/openlinktoken-cli/openlinktoken-cli.spec
+
+      - name: Run standalone tokenize and package smoke tests
+        run: |
+          set -euo pipefail
+          mkdir -p smoke
+          head -n 2 resources/sample.csv > smoke/input.csv
+          ./dist/olt/olt generate-key-pair --name ci-recipient --force
+          ./dist/olt/olt initiate-exchange \
+            --name ci-smoke \
+            --public-key "$HOME/.openlinktoken/ci-recipient.public.pem" \
+            --output smoke/ci.exchange.json \
+            --hashingsecret ci-secret \
+            --force
+          ./dist/olt/olt tokenize \
+            -i smoke/input.csv \
+            -o smoke/tokenized.csv \
+            --exchange-config smoke/ci.exchange.json \
+            --private-key "$HOME/.openlinktoken/ci-smoke.private.pem" \
+            --no-progress
+          ./dist/olt/olt package \
+            -i smoke/input.csv \
+            -o smoke/packaged.csv \
+            --exchange-config smoke/ci.exchange.json \
+            --private-key "$HOME/.openlinktoken/ci-smoke.private.pem" \
+            --no-progress
+
+          for output in smoke/tokenized.csv smoke/packaged.csv; do
+            if ! awk -F, 'NR > 1 && $1 == "ML1" && $2 != "" { found=1; exit } END { exit found ? 0 : 1 }' "$output"; then
+              echo "Error: Frozen CLI output does not contain a non-blank ML1 token: $output"
+              exit 1
+            fi
+          done
+
   pyspark-bridge-tests:
     runs-on: ubuntu-latest
     permissions:
@@ -447,6 +503,7 @@ jobs:
       - python-tests
       - python-core-ai-tests
       - python-cli-tests
+      - standalone-cli-smoke
       - pyspark-bridge-tests
     permissions:
       contents: read
