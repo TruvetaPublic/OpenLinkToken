@@ -188,7 +188,10 @@ class ML1OnnxSignatureProvider:
 
         signatures: List[Optional[str]] = [None] * len(rows)
         if valid_payload_list:
-            batch_sigs, batch_embs = ML1OnnxSignatureGenerator._generate_signatures_with_embeddings(valid_payload_list)
+            batch_sigs, batch_embs = ML1OnnxSignatureGenerator._generate_signatures_with_embeddings(
+                valid_payload_list,
+                include_raw_signatures=not RotationConfig.is_enabled(),
+            )
 
             # Resolve the rotation transformer once for this batch (cached across calls).
             first_emb = next((e for e in batch_embs if e is not None), None)
@@ -202,8 +205,10 @@ class ML1OnnxSignatureProvider:
                     rotation_values: List[str] = transformer.transform(list(embedding))
                     blocking_key = _compute_blocking_key(rows[original_index])
                     signatures[original_index] = _build_rotation_signature(rotation_values, blocking_key)
-                else:
+                elif batch_sigs[vi]:
                     signatures[original_index] = batch_sigs[vi]
+                elif embedding is not None:
+                    signatures[original_index] = ML1OnnxSignatureGenerator._serialize_embedding(embedding)
 
         return InferenceBatchResult(signatures=signatures)
 

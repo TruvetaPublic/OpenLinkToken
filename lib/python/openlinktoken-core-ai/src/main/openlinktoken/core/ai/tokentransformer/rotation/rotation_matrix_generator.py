@@ -1,9 +1,8 @@
 # SPDX-License-Identifier: MIT
 
 import hashlib
-import hmac
 import math
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 
@@ -15,7 +14,12 @@ _MIN_UNIFORM = _MANTISSA_SCALE
 _TWO_PI = 2.0 * math.pi
 
 
-def generate(iv: str, rotation_count: int, dimension: int) -> List[np.ndarray]:
+def generate(
+    iv: str,
+    rotation_count: int,
+    dimension: int,
+    rows: Optional[int] = None,
+) -> List[np.ndarray]:
     """Generate a list of deterministic orthogonal rotation matrices from an IV.
 
     The matrices are derived from the IV using HMAC-SHA256 in counter mode for
@@ -28,39 +32,64 @@ def generate(iv: str, rotation_count: int, dimension: int) -> List[np.ndarray]:
         iv: Initialization vector string. Same IV always produces the same matrices.
         rotation_count: Number of rotation matrices to generate.
         dimension: Number of rows and columns in each matrix.
+        rows: Optional number of leading rows to retain from each matrix.
 
     Returns:
-        A list of ``rotation_count`` full ``dimension x dimension`` numpy float64
-        proper-rotation matrices.
+        A list of ``rotation_count`` numpy float64 proper-rotation matrices.
+        When ``rows`` is provided, each matrix has shape ``(rows, dimension)``.
     """
+    if rows is not None and (rows <= 0 or rows > dimension):
+        raise ValueError("rows must be in the range [1, dimension].")
+
     key_material = hashlib.sha256(iv.encode("utf-8")).digest()
-    return [_generate_one(key_material, r, dimension) for r in range(rotation_count)]
+    return [_generate_one(key_material, r, dimension, rows) for r in range(rotation_count)]
 
 
-def _generate_one(key_material: bytes, rotation_index: int, n: int) -> np.ndarray:
+def _generate_one(
+    key_material: bytes,
+    rotation_index: int,
+    n: int,
+    rows: Optional[int] = None,
+) -> np.ndarray:
     """Generate a single ``n x n`` proper-rotation matrix."""
     pairs_per_col = (n + 1) // 2
-    raw = np.empty((n, n), dtype=np.float64)
-    for col in range(n):
-        offset = 0
-        for pair in range(pairs_per_col):
-            counter = (rotation_index * n + col) * pairs_per_col + pair
-            h = hmac.new(key_material, counter.to_bytes(8, "big"), hashlib.sha256).digest()
-            u1 = max(_extract_uniform(h, 0), _MIN_UNIFORM)
-            u2 = _extract_uniform(h, 8)
-            r_val = math.sqrt(-2.0 * math.log(u1))
-            theta = _TWO_PI * u2
-            raw[offset, col] = r_val * math.cos(theta)
-            offset += 1
-            if offset < n:
-                raw[offset, col] = r_val * math.sin(theta)
-                offset += 1
+    sample_count = n * pairs_per_col
+
+    # Reuse HMAC's padded key state and vectorize the Box-Muller transform. The
+    # resulting digest bytes and QR input remain identical to the scalar path.
+    padded_key = key_material.ljust(64, b"\x00")
+    inner_pad = bytes(value ^ 0x36 for value in padded_key)
+    outer_pad = bytes(value ^ 0x5C for value in padded_key)
+    inner_hash = hashlib.sha256(inner_pad)
+    outer_hash = hashlib.sha256(outer_pad)
+    digest_bytes = bytearray(sample_count * 16)
+    counter_base = rotation_index * sample_count
+
+    for sample_index in range(sample_count):
+        inner = inner_hash.copy()
+        inner.update((counter_base + sample_index).to_bytes(8, "big"))
+        outer = outer_hash.copy()
+        outer.update(inner.digest())
+        digest_start = sample_index * 16
+        digest_bytes[digest_start : digest_start + 16] = outer.digest()[:16]
+
+    digest_words = np.frombuffer(bytes(digest_bytes), dtype=">u8").reshape(sample_count, 2)
+    uniforms = ((digest_words >> np.uint64(11)) & np.uint64(_MANTISSA_BITS - 1)).astype(np.float64) * _MANTISSA_SCALE
+    u1 = np.maximum(uniforms[:, 0], _MIN_UNIFORM)
+    u2 = uniforms[:, 1]
+    radius = np.sqrt(-2.0 * np.log(u1))
+    theta = _TWO_PI * u2
+
+    interleaved = np.empty(sample_count * 2, dtype=np.float64)
+    interleaved[0::2] = radius * np.cos(theta)
+    interleaved[1::2] = radius * np.sin(theta)
+    raw = interleaved.reshape(n, pairs_per_col * 2)[:, :n].T.copy()
 
     q, r = np.linalg.qr(raw)
     q = q * np.sign(np.diag(r))[np.newaxis, :]
     if np.sign(np.linalg.det(q)) < 0:
         q[:, n - 1] = -q[:, n - 1]
-    return q
+    return q if rows is None else q[:rows, :].copy()
 
 
 def _extract_uniform(h: bytes, offset: int) -> float:

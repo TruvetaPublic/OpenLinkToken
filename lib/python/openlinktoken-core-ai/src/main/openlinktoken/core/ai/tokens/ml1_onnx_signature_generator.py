@@ -9,7 +9,6 @@ import logging
 import mmap
 import os
 import platform
-import struct
 from pathlib import Path
 from threading import Lock
 from typing import Dict, List, Optional
@@ -83,7 +82,6 @@ class ML1OnnxSignatureGenerator:
     _tokenizer: Optional[Tokenizer] = None
     _active_model_path: Optional[str] = None
     _active_tokenizer_path: Optional[str] = None
-    _pad_input_json = "{}"
     _initialization_lock = Lock()
 
     @classmethod
@@ -109,13 +107,19 @@ class ML1OnnxSignatureGenerator:
         return signatures
 
     @classmethod
-    def _generate_signatures_with_embeddings(cls, input_json_rows: List[str]) -> tuple[List[str], List[np.ndarray]]:
+    def _generate_signatures_with_embeddings(
+        cls,
+        input_json_rows: List[str],
+        include_raw_signatures: bool = True,
+    ) -> tuple[List[str], List[np.ndarray]]:
         """Generate ML1 hex signatures and embeddings in a single inference pass.
 
         The embeddings are retained internally for ML1 rotation.
 
         Args:
-            input_json_rows: list of JSON strings representing person records
+            input_json_rows: list of JSON strings representing person records.
+            include_raw_signatures: whether to serialize embeddings when the
+                caller does not need the rotated representation.
 
         Returns:
             (signatures, embeddings) — parallel lists with same length as input
@@ -133,15 +137,16 @@ class ML1OnnxSignatureGenerator:
         for start in range(0, len(input_json_rows), configured_batch_size):
             end = min(start + configured_batch_size, len(input_json_rows))
             real_batch = input_json_rows[start:end]
-            inference_batch = list(real_batch)
-            while len(inference_batch) < configured_batch_size:
-                inference_batch.append(cls._pad_input_json)
+            inference_batch = real_batch
 
             batch_embeddings, batch_ms = cls._run_batch_inference(inference_batch)
             total_inference_ms += batch_ms
 
             for index in range(len(real_batch)):
-                signatures.append(cls._serialize_embedding(batch_embeddings[index]))
+                if include_raw_signatures:
+                    signatures.append(cls._serialize_embedding(batch_embeddings[index]))
+                else:
+                    signatures.append("")
                 all_embeddings.append(batch_embeddings[index])
 
             if logger.isEnabledFor(logging.INFO):
@@ -165,7 +170,7 @@ class ML1OnnxSignatureGenerator:
 
     @classmethod
     def _run_batch_inference(cls, input_json_rows: List[str]) -> tuple[float, float]:
-        """Run ONNX inference for one fixed-size batch and return embeddings with elapsed ms."""
+        """Run ONNX inference for one batch and return embeddings with elapsed ms."""
         import time
 
         input_ids_batch, attention_mask_batch, token_type_ids_batch, position_ids_batch = cls._build_inputs(
@@ -452,9 +457,7 @@ class ML1OnnxSignatureGenerator:
     @staticmethod
     def _serialize_embedding(embedding: np.ndarray) -> str:
         """Serialize embedding as big-endian float32 bytes encoded to lowercase hex."""
-        return b"".join(
-            struct.pack(">I", struct.unpack(">I", struct.pack(">f", float(value)))[0]) for value in embedding
-        ).hex()
+        return np.asarray(embedding, dtype=">f4").tobytes().hex()
 
 
 def ml1_payload_to_json(payload: Dict[str, str]) -> str:
