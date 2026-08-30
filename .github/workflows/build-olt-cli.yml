@@ -104,7 +104,20 @@ jobs:
           ./dist/olt/olt generate-key-pair --name recipient --force
           ./dist/olt/olt initiate-exchange --name smoke --public-key "$HOME/.openlinktoken/recipient.public.pem" --output smoke/smoke.exchange.json --hashingsecret secret
           ./dist/olt/olt tokenize -i smoke/input.csv -o smoke/out.csv --exchange-config smoke/smoke.exchange.json --private-key "$HOME/.openlinktoken/smoke.private.pem"
-          uv run python -c "import csv; assert any(row['RuleId'] == 'ML1' and row['Token'] for row in csv.DictReader(open('smoke/out.csv'))), 'standalone binary did not generate a non-blank ML1 token'"
+          python - smoke/out.csv <<'PY'
+          import csv
+          import sys
+          from pathlib import Path
+
+          with Path(sys.argv[1]).open(newline="", encoding="utf-8") as file_handle:
+              ml1_tokens = [
+                  row["Token"]
+                  for row in csv.DictReader(file_handle)
+                  if row.get("RuleId") == "ML1" and row.get("Token")
+              ]
+          if not ml1_tokens or any(token == "0" * 64 for token in ml1_tokens):
+              raise SystemExit("Frozen CLI output does not contain a non-blank ML1 token")
+          PY
 
       - name: Verify CUDA provider on Linux GPU runners
         if: runner.os == 'Linux'
@@ -128,7 +141,7 @@ jobs:
           .\dist\olt\olt.exe generate-key-pair --name recipient --force
           .\dist\olt\olt.exe initiate-exchange --name smoke --public-key "$HOME/.openlinktoken/recipient.public.pem" --output smoke\smoke.exchange.json --hashingsecret secret
           .\dist\olt\olt.exe tokenize -i smoke\input.csv -o smoke\out.csv --exchange-config smoke\smoke.exchange.json --private-key "$HOME/.openlinktoken/smoke.private.pem"
-          $ml1Tokens = Import-Csv smoke\out.csv | Where-Object { $_.RuleId -eq "ML1" -and $_.Token }
+          $ml1Tokens = Import-Csv smoke\out.csv | Where-Object { $_.RuleId -eq "ML1" -and $_.Token -and $_.Token -ne ("0" * 64) }
           if (-not $ml1Tokens) {
             throw "Frozen CLI output does not contain a non-blank ML1 token"
           }

@@ -191,20 +191,16 @@ jobs:
 
       - name: Install Python Core-AI dependencies
         run: |
-          uv pip install --break-system-packages --system \
-            -r lib/python/openlinktoken-core-ai/requirements.txt \
-            pytest==9.1.1 pytest-cov==7.1.0 ruff==0.16.3 \
-            -e lib/python/openlinktoken/ \
-            -e lib/python/openlinktoken-core-ai/
+          uv sync --all-packages
 
       - name: Lint Core-AI with ruff
         run: |
-          ruff check lib/python/openlinktoken-core-ai/src
+          uv run ruff check lib/python/openlinktoken-core-ai/src
 
       - name: Test Core-AI with pytest
         run: |
           PYTHONPATH=lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main \
-            pytest lib/python/openlinktoken-core-ai/src/test \
+            uv run pytest lib/python/openlinktoken-core-ai/src/test \
             --junitxml=lib/python/openlinktoken-core-ai/test-results.xml \
             --cov=lib/python/openlinktoken-core-ai/src/main \
             --cov-report=xml:lib/python/openlinktoken-core-ai/coverage.xml \
@@ -304,6 +300,7 @@ jobs:
           olt generate-key-pair --name recipient --force
           olt initiate-exchange --name smoke --public-key "$HOME/.openlinktoken/recipient.public.pem" --output target/smoke.exchange.json --hashingsecret "HashingKey"
           olt package -i ../../../resources/sample.csv -o target/output.csv --exchange-config target/smoke.exchange.json --private-key "$HOME/.openlinktoken/smoke.private.pem"
+          olt decrypt -i target/output.csv -o target/decrypted.csv --exchange-config target/smoke.exchange.json --private-key "$HOME/.openlinktoken/smoke.private.pem" --no-progress
           # Test custom tokenization config with standard data
           olt package -i ../../../resources/sample.csv -o target/output-with-config.csv --exchange-config target/smoke.exchange.json --config ../../../resources/sample-custom-tokenization-config.yaml --private-key "$HOME/.openlinktoken/smoke.private.pem"
           # Test custom tokenization config with nonstandard data
@@ -320,19 +317,41 @@ jobs:
             echo "Error: metadata file not created"
             exit 1
           fi
+          if [ ! -f "target/decrypted.csv" ]; then
+            echo "Error: decrypted.csv not created"
+            exit 1
+          fi
 
       - name: Validate CLI output content
         run: |
           cd lib/python/openlinktoken-cli
+          validate_ml1_output() {
+            python - "$1" "$2" <<'PY'
+          import csv
+          import sys
+          from pathlib import Path
+
+          output_path = Path(sys.argv[1])
+          minimum_rows = int(sys.argv[2])
+          with output_path.open(newline="", encoding="utf-8") as file_handle:
+              ml1_tokens = [
+                  row["Token"]
+                  for row in csv.DictReader(file_handle)
+                  if row.get("RuleId") == "ML1" and row.get("Token")
+              ]
+
+          if len(ml1_tokens) < minimum_rows or not ml1_tokens:
+              raise SystemExit(f"Expected non-blank ML1 rows in {output_path}, found {len(ml1_tokens)}")
+          if any(token == "0" * 64 for token in ml1_tokens):
+              raise SystemExit(f"Found canonical blank ML1 token in {output_path}")
+          PY
+          }
           line_count=$(wc -l < target/output.csv)
           if [ "$line_count" -le 1 ]; then
             echo "Error: Output CSV appears to be empty or only contains headers"
             exit 1
           fi
-          if ! awk -F, 'NR > 1 && $1 == "ML1" && $2 != "" { found=1; exit } END { exit found ? 0 : 1 }' target/output.csv; then
-            echo "Error: Output CSV does not contain a non-blank ML1 token"
-            exit 1
-          fi
+          validate_ml1_output target/decrypted.csv 1
           echo "Output CSV contains $line_count lines"
 
   standalone-cli-smoke:
@@ -383,13 +402,36 @@ jobs:
             --exchange-config smoke/ci.exchange.json \
             --private-key "$HOME/.openlinktoken/ci-smoke.private.pem" \
             --no-progress
+          ./dist/olt/olt decrypt \
+            -i smoke/packaged.csv \
+            -o smoke/decrypted.csv \
+            --exchange-config smoke/ci.exchange.json \
+            --private-key "$HOME/.openlinktoken/ci-smoke.private.pem" \
+            --no-progress
 
-          for output in smoke/tokenized.csv smoke/packaged.csv; do
-            if ! awk -F, 'NR > 1 && $1 == "ML1" && $2 != "" { found=1; exit } END { exit found ? 0 : 1 }' "$output"; then
-              echo "Error: Frozen CLI output does not contain a non-blank ML1 token: $output"
-              exit 1
-            fi
-          done
+          validate_ml1_output() {
+            python - "$1" "$2" <<'PY'
+          import csv
+          import sys
+          from pathlib import Path
+
+          output_path = Path(sys.argv[1])
+          expected_rows = int(sys.argv[2])
+          with output_path.open(newline="", encoding="utf-8") as file_handle:
+              ml1_tokens = [
+                  row["Token"]
+                  for row in csv.DictReader(file_handle)
+                  if row.get("RuleId") == "ML1" and row.get("Token")
+              ]
+
+          if len(ml1_tokens) != expected_rows:
+              raise SystemExit(f"Expected {expected_rows} ML1 rows in {output_path}, found {len(ml1_tokens)}")
+          if any(token == "0" * 64 for token in ml1_tokens):
+              raise SystemExit(f"Found canonical blank ML1 token in {output_path}")
+          PY
+          }
+          validate_ml1_output smoke/tokenized.csv 1
+          validate_ml1_output smoke/decrypted.csv 1
 
   pyspark-bridge-tests:
     runs-on: ubuntu-latest
