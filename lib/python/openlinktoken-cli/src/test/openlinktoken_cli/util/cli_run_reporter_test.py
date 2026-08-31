@@ -1,8 +1,11 @@
 # SPDX-License-Identifier: MIT
 
+import logging
 import os
 import re
 from unittest.mock import patch
+
+import pytest
 
 from openlinktoken_cli.util.cli_run_reporter import (
     CliRunReporter,
@@ -424,3 +427,131 @@ class TestFormatNumber:
     def test_format_number_zero(self):
         """Zero should render as 0."""
         assert f"{0:,}" == "0"
+
+
+class TestProgressIndicatorLiveRedraw:
+    """Tests that the progress indicator redraws immediately on update, not just on the timer."""
+
+    def test_update_sets_update_event(self):
+        """update() sets _update_event so the render loop can wake without waiting 1 s."""
+        pi = _ProgressIndicator()
+        assert not pi._update_event.is_set()
+        pi.update(stage="Working", done=10)
+        assert pi._update_event.is_set()
+
+    def test_render_redraws_when_update_event_set(self):
+        """The render loop redraws immediately when _update_event is signalled."""
+        pi = _ProgressIndicator()
+        pi._start_time = 0.0
+        pi.update(stage="Flushing", done=50)
+        pi._running.set()
+
+        writes: list[str] = []
+
+        def _write(text: str) -> int:
+            writes.append(text)
+            pi._running.clear()
+            return len(text)
+
+        sleep_durations: list[float] = []
+
+        def _fake_wait(timeout: float) -> bool:
+            sleep_durations.append(timeout)
+            return True  # simulate event triggered immediately
+
+        with (
+            patch("shutil.get_terminal_size", return_value=__import__("os").terminal_size((160, 24))),
+            patch("sys.stderr.write", side_effect=_write),
+            patch("sys.stderr.flush"),
+            patch("time.perf_counter", return_value=5.0),
+        ):
+            # Patch the event's wait method to return True (event was set) without sleeping
+            pi._update_event.wait = _fake_wait
+            pi._render()
+
+        # The render should have produced output (event-driven, not blocked by sleep)
+        assert writes, "Render must write output when update event is signalled"
+        # The wait should have been called with the configured render interval
+        assert sleep_durations, "wait() should have been called"
+        assert sleep_durations[0] == _ProgressIndicator._RENDER_INTERVAL_SECONDS
+
+
+class TestCliRunReporterElapsed:
+    """Tests for elapsed-duration tracking and reporting."""
+
+    def test_elapsed_seconds_stored_after_context_exit(self, tmp_path, monkeypatch):
+        """CliRunReporter stores _elapsed_seconds after the with-block exits."""
+        monkeypatch.setattr(
+            "openlinktoken_cli.util.app_paths.get_openlinktoken_home",
+            lambda: tmp_path,
+        )
+        reporter = CliRunReporter("test", no_progress=True)
+        assert reporter._elapsed_seconds is None
+        with reporter:
+            pass
+        assert reporter._elapsed_seconds is not None
+        assert reporter._elapsed_seconds >= 0.0
+
+    def test_finish_success_includes_elapsed_duration(self, tmp_path, monkeypatch, capsys):
+        """finish_success prints elapsed duration in the completion summary."""
+        monkeypatch.setattr(
+            "openlinktoken_cli.util.app_paths.get_openlinktoken_home",
+            lambda: tmp_path,
+        )
+        reporter = CliRunReporter("test", no_progress=True)
+        with reporter:
+            pass
+        reporter.finish_success("Test complete", ["output: test.csv"])
+        captured = capsys.readouterr()
+        assert re.search(r"Duration: \d{2}:\d{2}", captured.err), (
+            f"Expected duration (MM:SS) in summary, got:\n{captured.err}"
+        )
+
+    def test_elapsed_logged_to_file_before_handler_detaches(self, tmp_path, monkeypatch):
+        """Elapsed completion message is written to the log file during __exit__."""
+        monkeypatch.setattr(
+            "openlinktoken_cli.util.app_paths.get_openlinktoken_home",
+            lambda: tmp_path,
+        )
+        reporter = CliRunReporter("test", no_progress=True)
+        with reporter:
+            pass
+        log_path = reporter.log_report.log_path
+        assert log_path.exists(), "Log file must exist after run"
+        log_text = log_path.read_text(encoding="utf-8")
+        # The log file must contain a completion/elapsed message written before handler detach
+        assert "duration" in log_text.lower(), f"Expected duration in log, got:\n{log_text}"
+
+    def test_file_logging_restores_root_logger_level(self, tmp_path, monkeypatch):
+        """Attaching per-run logging should not change the caller's root logger level."""
+        monkeypatch.setattr(
+            "openlinktoken_cli.util.app_paths.get_openlinktoken_home",
+            lambda: tmp_path,
+        )
+        root_logger = logging.getLogger()
+        original_level = root_logger.level
+        root_logger.setLevel(logging.WARNING)
+        try:
+            reporter = CliRunReporter("test", no_progress=True)
+            with reporter:
+                pass
+            assert root_logger.level == logging.WARNING
+        finally:
+            root_logger.setLevel(original_level)
+
+    def test_file_logging_restores_root_logger_level_after_exception(self, tmp_path, monkeypatch):
+        """Root logger restoration should also happen when a run raises an exception."""
+        monkeypatch.setattr(
+            "openlinktoken_cli.util.app_paths.get_openlinktoken_home",
+            lambda: tmp_path,
+        )
+        root_logger = logging.getLogger()
+        original_level = root_logger.level
+        root_logger.setLevel(logging.WARNING)
+        try:
+            with pytest.raises(RuntimeError, match="processing failed"):
+                with CliRunReporter("test", no_progress=True):
+                    raise RuntimeError("processing failed")
+            assert root_logger.level == logging.WARNING
+        finally:
+            root_logger.setLevel(original_level)

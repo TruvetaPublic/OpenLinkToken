@@ -423,3 +423,94 @@ class TestPersonAttributesProcessor:
         assert metadata_map[PersonAttributesProcessor.TOTAL_ROWS_WITH_INVALID_ATTRIBUTES] == 1
         assert summary.invalid_attributes_by_type["BirthDate"] == 1
         assert summary.invalid_attributes_by_type["Sex"] == 1
+
+    def test_batched_ml1_progress_callback_fires_after_each_batch_flush(self, monkeypatch):
+        """Progress callback fires once per flushed batch so counts reflect written records."""
+
+        class StubProvider:
+            def get_token_id(self):
+                return "ML1"
+
+            def is_enabled(self):
+                return True
+
+            def generate_batch(self, rows):
+                return InferenceBatchResult(["sig"] * len(rows))
+
+        monkeypatch.setattr(token_generator_module, "_inference_provider", StubProvider())
+        monkeypatch.setattr(token_generator_module, "_provider_discovered", True)
+
+        # Patch batch_size to 2 so two flushes occur for 4 input rows.
+        import openlinktoken.core.ai.tokens.ml1_inference_config as ml1_module
+
+        monkeypatch.setattr(ml1_module.ML1InferenceConfig, "get_batch_size", staticmethod(lambda: 2))
+
+        definition = Mock()
+        definition.get_token_identifiers.return_value = {"ML1"}
+        definition.get_token_definition.return_value = []
+        token_generator = TokenGenerator(definition, PassthroughTokenizer([]))
+
+        callback_counts: list[int] = []
+        rows = [{"RecordId": str(i)} for i in range(4)]
+
+        PersonAttributesProcessor._process_rows_with_batched_ml1(
+            rows,
+            Mock(spec=PersonAttributesWriter),
+            token_generator,
+            {},
+            {},
+            None,
+            None,
+            {},
+            progress_callback=callback_counts.append,
+        )
+
+        # Callback must fire once per flush (batch_size=2, 4 rows → 2 flushes).
+        # Each call must reflect the row count *after* the flush writes have completed.
+        assert callback_counts == [2, 4], f"Expected [2, 4] (one call per flush), got {callback_counts}"
+
+    def test_non_ml1_progress_callback_fires_every_ten_rows(self, monkeypatch):
+        """Non-ML1 progress callback continues to fire at the existing per-row interval."""
+        callback_counts: list[int] = []
+
+        reader_rows = [{"RecordId": str(i)} for i in range(25)]
+        writer = Mock(spec=PersonAttributesWriter)
+        token_generator = Mock(spec=TokenGenerator)
+        token_generator.get_all_tokens_via_field_id.return_value = TokenGeneratorResult()
+
+        PersonAttributesProcessor._process_rows_without_batched_ml1(
+            reader_rows,
+            writer,
+            token_generator,
+            {},
+            {},
+            None,
+            None,
+            {},
+            progress_callback=callback_counts.append,
+        )
+
+        # Every 10th row fires plus a final call for row 25 (25 % 10 != 0).
+        assert 10 in callback_counts
+        assert 20 in callback_counts
+        assert 25 in callback_counts  # final flush of remainder
+
+    def test_non_ml1_progress_callback_does_not_repeat_completed_interval(self):
+        """A complete final interval should not produce a duplicate callback."""
+        callback_counts: list[int] = []
+        token_generator = Mock(spec=TokenGenerator)
+        token_generator.get_all_tokens_via_field_id.return_value = TokenGeneratorResult()
+
+        PersonAttributesProcessor._process_rows_without_batched_ml1(
+            [{"RecordId": str(i)} for i in range(20)],
+            Mock(spec=PersonAttributesWriter),
+            token_generator,
+            {},
+            {},
+            None,
+            None,
+            {},
+            progress_callback=callback_counts.append,
+        )
+
+        assert callback_counts == [10, 20]

@@ -133,6 +133,7 @@ class _ProgressIndicator:
         self._frame_index = 0
         self._frame_lock = threading.Lock()
         self._running = threading.Event()
+        self._update_event = threading.Event()
         self._last_render_line_count = 0
         self._stats_providers: list[StatsProvider] = []
         if use_color:
@@ -157,6 +158,7 @@ class _ProgressIndicator:
     def stop(self) -> None:
         """Stop the spinner gracefully."""
         self._running.clear()
+        self._update_event.set()  # Wake the render thread so it exits without waiting
         if hasattr(self, "_thread") and self._thread.is_alive():
             self._thread.join(timeout=self._RENDER_INTERVAL_SECONDS + 0.5)
         self._clear_block()
@@ -172,6 +174,7 @@ class _ProgressIndicator:
         with self._lock:
             self._stage = stage
             self._done = done
+        self._update_event.set()
 
     def _format_elapsed(self, seconds: float) -> str:
         """Delegate to module-level _format_elapsed."""
@@ -284,14 +287,15 @@ class _ProgressIndicator:
         self._last_render_line_count = len(truncated_lines)
 
     def _render(self) -> None:
-        """Render the spinner and progress info on stderr at ~1 Hz."""
+        """Render the spinner and progress info on stderr at ~1 Hz or on update events."""
         try:
             while self._running.is_set():
                 with self._frame_lock:
                     frame = self._FRAMES[self._frame_index % len(self._FRAMES)]
                     self._frame_index += 1
 
-                time.sleep(self._RENDER_INTERVAL_SECONDS)
+                self._update_event.wait(timeout=self._RENDER_INTERVAL_SECONDS)
+                self._update_event.clear()
 
                 if not self._running.is_set():
                     break
@@ -372,6 +376,7 @@ class CliRunReporter:
         self._console_handler: logging.Handler | None = None
         self._console_handler_level: int | None = None
         self._file_handler: logging.Handler | None = None
+        self._root_logger_level: int | None = None
         self._interactive = bool(getattr(sys.stderr, "isatty", None) and sys.stderr.isatty())
         self._interactive = self._interactive and not os.getenv("NO_PROGRESS")
         self._interactive = self._interactive and not os.getenv("OPENLINK_NO_PROGRESS")
@@ -379,12 +384,15 @@ class CliRunReporter:
         use_color = not os.getenv("NO_COLOR")
         self._progress_indicator = _ProgressIndicator(use_color=use_color)
         self._total_rows = 0
+        self._run_start_time: float | None = None
+        self._elapsed_seconds: float | None = None
 
     def __enter__(self) -> "CliRunReporter":
         self._attach_file_logging()
         self._mute_console_logging()
         if self._interactive:
             self._progress_indicator.start()
+        self._run_start_time = time.perf_counter()
         logging.getLogger(__name__).info("Starting %s command", self.command_name)
         return self
 
@@ -392,6 +400,14 @@ class CliRunReporter:
         if self._interactive:
             self._progress_indicator.stop()
         self._restore_console_logging()
+        if self._run_start_time is not None:
+            self._elapsed_seconds = time.perf_counter() - self._run_start_time
+            status = "failed" if exc_type is not None else "completed"
+            logging.getLogger(__name__).info(
+                "Run %s. Duration: %s",
+                status,
+                _format_elapsed(self._elapsed_seconds),
+            )
         self._detach_file_logging()
 
     def update_status(self, stage: str, processed_count: int | None = None, unit_label: str | None = None) -> None:
@@ -421,10 +437,16 @@ class CliRunReporter:
 
     def finish_success(self, title: str, lines: Sequence[str]) -> None:
         detail_log_line = format_dimmed_stderr_message(f"  Detailed log: {self.log_report.log_path}")
-        summary_lines = [title, *[f"    {line}" for line in lines], detail_log_line]
+        elapsed_line = (
+            f"  Duration: {_format_elapsed(self._elapsed_seconds)}" if self._elapsed_seconds is not None else None
+        )
+        summary_parts: list[str] = [title, *[f"    {line}" for line in lines]]
+        if elapsed_line:
+            summary_parts.append(elapsed_line)
+        summary_parts.append(detail_log_line)
         if self._interactive:
             print(file=sys.stderr)
-        print("\n".join(summary_lines), file=sys.stderr)
+        print("\n".join(summary_parts), file=sys.stderr)
 
     @staticmethod
     def summarize_count_lines(label: str, counts: Mapping[str, int], limit: int | None = None) -> list[str]:
@@ -447,15 +469,25 @@ class CliRunReporter:
         file_handler = logging.FileHandler(self.log_report.log_path, encoding="utf-8")
         file_handler.setLevel(logging.INFO)
         file_handler.setFormatter(RedactingFormatter(_DEFAULT_LOG_FORMAT))
-        logging.getLogger().addHandler(file_handler)
+        root_logger = logging.getLogger()
+        self._root_logger_level = root_logger.level
+        root_logger.addHandler(file_handler)
+        if root_logger.level == logging.NOTSET or root_logger.level > logging.INFO:
+            root_logger.setLevel(logging.INFO)
         self._file_handler = file_handler
 
     def _detach_file_logging(self) -> None:
         if self._file_handler is None:
             return
-        logging.getLogger().removeHandler(self._file_handler)
-        self._file_handler.close()
-        self._file_handler = None
+        root_logger = logging.getLogger()
+        try:
+            root_logger.removeHandler(self._file_handler)
+            self._file_handler.close()
+        finally:
+            self._file_handler = None
+            if self._root_logger_level is not None:
+                root_logger.setLevel(self._root_logger_level)
+                self._root_logger_level = None
 
     def _mute_console_logging(self) -> None:
         self._console_handler = _get_default_console_handler()
