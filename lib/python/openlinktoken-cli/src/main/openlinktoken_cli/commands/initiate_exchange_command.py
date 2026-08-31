@@ -10,7 +10,7 @@ import secrets
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 from uuid import uuid4
 
 from openlinktoken_cli.util.stdin_utils import read_required_env_bytes, read_required_stdin_bytes
@@ -350,6 +350,7 @@ class InitiateExchangeCommand:
                 partner_public_pem = partner_public_key_path.read_bytes()
 
             persist_local_key_files = True
+            reused_local_key_files = False
             if local_private_key_path_str:
                 local_private_key_path = Path(local_private_key_path_str)
                 if not local_private_key_path.exists():
@@ -381,8 +382,30 @@ class InitiateExchangeCommand:
                     )
                     return 1
             else:
-                resolved_curve = curve or "P-256"
-                private_pem, local_public_pem = generate_key_pair(resolved_curve)
+                local_key_files_exist = any(
+                    path.exists() or path.is_symlink() for path in (private_key_path, public_key_path_local)
+                )
+                if not force and local_key_files_exist:
+                    try:
+                        private_pem, local_public_pem, resolved_curve = InitiateExchangeCommand._load_existing_key_pair(
+                            private_key_path,
+                            public_key_path_local,
+                            curve,
+                        )
+                    except (OSError, ValueError) as error:
+                        logger.error(
+                            "Key files for '%s' already exist at private key '%s' and public key '%s', "
+                            "but could not be reused: %s",
+                            name,
+                            private_key_path,
+                            public_key_path_local,
+                            error,
+                        )
+                        return 1
+                    reused_local_key_files = True
+                else:
+                    resolved_curve = curve or "P-256"
+                    private_pem, local_public_pem = generate_key_pair(resolved_curve)
 
             resolved_hashing_secret = InitiateExchangeCommand._resolve_hashing_secret(
                 hashing_secret,
@@ -397,17 +420,29 @@ class InitiateExchangeCommand:
             )
 
             if persist_local_key_files:
-                if not force and (private_key_path.exists() or public_key_path_local.exists()):
+                if (
+                    not force
+                    and not reused_local_key_files
+                    and (
+                        private_key_path.exists()
+                        or private_key_path.is_symlink()
+                        or public_key_path_local.exists()
+                        or public_key_path_local.is_symlink()
+                    )
+                ):
                     logger.error(
-                        "Key files for '%s' already exist in %s. Use --force to overwrite.",
+                        "Key files for '%s' already exist at private key '%s' and public key '%s'. "
+                        "Use --force to overwrite.",
                         name,
-                        openlinktoken_dir,
+                        private_key_path,
+                        public_key_path_local,
                     )
                     return 1
 
                 ensure_directory(openlinktoken_dir)
-                write_key(private_key_path, private_pem, 0o600, overwrite=force)
-                write_key(public_key_path_local, local_public_pem, 0o644, overwrite=force)
+                if not reused_local_key_files:
+                    write_key(private_key_path, private_pem, 0o600, overwrite=force)
+                    write_key(public_key_path_local, local_public_pem, 0o644, overwrite=force)
 
             config = build_exchange_envelope(
                 exchange_name=name,
@@ -516,6 +551,36 @@ class InitiateExchangeCommand:
     def _exchange_id() -> str:
         """Return a stable random exchange identifier for the envelope payload."""
         return str(uuid4())
+
+    @staticmethod
+    def _load_existing_key_pair(
+        private_key_path: Path,
+        public_key_path: Path,
+        requested_curve: Optional[str],
+    ) -> Tuple[bytes, bytes, str]:
+        """Load and validate an existing local sender key pair."""
+        from openlinktoken_cli.util.ec_key_utils import derive_public_key_from_private_pem, public_key_fingerprint
+
+        if private_key_path.is_symlink() or public_key_path.is_symlink():
+            raise OSError("Existing sender key files must not be symbolic links.")
+        if not private_key_path.is_file() or not public_key_path.is_file():
+            raise OSError("Both existing sender private and public key files are required.")
+
+        private_pem = private_key_path.read_bytes()
+        stored_public_pem = public_key_path.read_bytes()
+        try:
+            local_public_pem, resolved_curve = derive_public_key_from_private_pem(private_pem)
+            if public_key_fingerprint(local_public_pem) != public_key_fingerprint(stored_public_pem):
+                raise ValueError("Existing sender public key does not match the private key.")
+        except (AttributeError, TypeError, ValueError) as error:
+            raise ValueError(f"Existing sender key pair is invalid: {error}") from error
+
+        if requested_curve is not None and requested_curve != resolved_curve:
+            raise ValueError(
+                f"Existing sender key curve '{resolved_curve}' does not match requested --curve '{requested_curve}'."
+            )
+
+        return private_pem, local_public_pem, resolved_curve
 
     @staticmethod
     def _write_config(path: Path, config: dict, overwrite: bool = True) -> None:

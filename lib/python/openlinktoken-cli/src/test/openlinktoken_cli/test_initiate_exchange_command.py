@@ -9,6 +9,7 @@ import json
 import logging
 import os
 import sys
+from datetime import date
 from pathlib import Path
 from unittest.mock import patch
 
@@ -270,6 +271,8 @@ class TestInitiateExchangeCommandIntegration:
 
         assert exit_code == 1
         assert "Key files for 'existing-keys' already exist" in stderr_buffer.getvalue()
+        assert str(openlinktoken_dir / "existing-keys.private.pem") in stderr_buffer.getvalue()
+        assert str(openlinktoken_dir / "existing-keys.public.pem") in stderr_buffer.getvalue()
         assert " - ERROR - " not in stderr_buffer.getvalue()
         assert "openlinktoken_cli.commands" not in stderr_buffer.getvalue()
         assert not output_path.exists()
@@ -895,6 +898,33 @@ class TestInitiateExchangeCommandIntegration:
         openlinktoken_dir = tmp_path / ".openlinktoken"
         matches = list(openlinktoken_dir.glob("openlinktoken-????-??-??.private.pem"))
         assert matches, "Expected private key file matching openlinktoken-<ISO-date>.private.pem"
+
+    def test_reuses_existing_default_key_pair_when_exchange_config_is_missing(self, tmp_path, monkeypatch):
+        """A valid existing default key pair should allow a missing exchange config to be created."""
+        partner_pem = _partner_key_pem(tmp_path)
+        private_pem, public_pem = generate_key_pair("P-256")
+        openlinktoken_dir = tmp_path / ".openlinktoken"
+        openlinktoken_dir.mkdir()
+        key_name = f"openlinktoken-{date.today().isoformat()}"
+        private_key_path = openlinktoken_dir / f"{key_name}.private.pem"
+        public_key_path = openlinktoken_dir / f"{key_name}.public.pem"
+        private_key_path.write_bytes(private_pem)
+        public_key_path.write_bytes(public_pem)
+        monkeypatch.chdir(tmp_path)
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--public-key",
+                    str(partner_pem),
+                ]
+            )
+
+        assert exit_code == 0
+        assert (tmp_path / f"{key_name}.exchange.json").exists()
+        assert private_key_path.read_bytes() == private_pem
+        assert public_key_path.read_bytes() == public_pem
 
     # -------------------------------------------------------------------------
     # No silent overwrite

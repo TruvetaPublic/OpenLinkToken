@@ -184,6 +184,10 @@ Generates, reuses, or derives a sender key pair, encrypts a hashing secret into 
 - `~/.openlinktoken/<name>.public.pem` — local public key (permissions `644`) when Open Link Token generates a sender key or reuses `--sender-private-key`
 - `<output>` — versioned multi-recipient JWE JSON exchange artifact containing the encrypted hashing secret
 
+When the named local key pair already exists and the exchange config does not,
+`initiate-exchange` validates and reuses that pair. Incomplete or mismatched key
+pairs still require correction, while `--force` explicitly replaces them.
+
 `<output>` can be decrypted by either side with its own matching private key. The JSON is still sensitive, but it does **not** contain private key material.
 
 \* Provide one of `--public-key`, `--public-key-stdin`, or `--public-key-env`.
