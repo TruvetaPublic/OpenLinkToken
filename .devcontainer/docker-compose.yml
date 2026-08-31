@@ -9,6 +9,7 @@ services:
       UV_PROJECT_ENVIRONMENT: "/home/vscode/.local/share/openlinktoken/.venv"
     volumes:
       - ..:/workspaces/OpenLinkToken
+      - ~/.openlinktoken:/home/vscode/.openlinktoken
       - openlinktoken-local:/home/vscode/.local
       - openlinktoken-cache:/home/vscode/.cache
       - openlinktoken-copilot:/home/vscode/.copilot
