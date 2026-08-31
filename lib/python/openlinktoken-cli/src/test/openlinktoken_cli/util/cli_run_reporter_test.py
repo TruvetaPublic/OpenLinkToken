@@ -80,8 +80,8 @@ class TestProgressIndicator:
             assert pi._done == 1
         pi.stop()
 
-    def test_render_writes_multiline_progress_block(self):
-        """Rendered progress should show each metric on its own line with aligned columns."""
+    def test_render_writes_single_line_progress_status(self):
+        """Rendered progress should keep all core metrics on one terminal line."""
         pi = _ProgressIndicator()
         pi._start_time = 0.0
         pi.set_total_rows(200)
@@ -106,18 +106,10 @@ class TestProgressIndicator:
 
         assert writes
         rendered_lines = self._rendered_lines("".join(writes))
-        assert rendered_lines == [
-            " \u280b Working",
-            "  processed:    100 rows",
-            "  total:        200 rows",
-            "  complete:    50.0 %",
-            "  throughput:  10.0 rows/s",
-            "  elapsed:    00:10",
-            "  remaining:  00:10",
-        ]
+        assert rendered_lines == ["⠋ Working | 100/200 rows (50.0%) | remaining 00:10 | 10.0 rows/s | elapsed 00:10"]
 
     def test_render_without_total_shows_placeholders(self):
-        """When the total is unknown, the live block should keep stable placeholder lines."""
+        """When the total is unknown, the status line should show stable placeholders."""
         pi = _ProgressIndicator()
         pi._start_time = 0.0
         pi.update(stage="Working", done=25)
@@ -140,18 +132,10 @@ class TestProgressIndicator:
 
         assert writes
         rendered_lines = self._rendered_lines("".join(writes))
-        assert rendered_lines == [
-            " \u280b Working",
-            "  processed:     25 rows",
-            "  total:         --",
-            "  complete:      --",
-            "  throughput:   5.0 rows/s",
-            "  elapsed:    00:05",
-            "  remaining:     --",
-        ]
+        assert rendered_lines == ["⠋ Working | 25/-- rows (--) | remaining -- | 5.0 rows/s | elapsed 00:05"]
 
     def test_render_keeps_progress_to_terminal_width(self):
-        """The live progress block should keep every line within terminal width."""
+        """The live progress line should fit within terminal width."""
         pi = _ProgressIndicator()
         pi._start_time = 0.0
         pi.set_total_rows(200)
@@ -176,13 +160,33 @@ class TestProgressIndicator:
 
         assert writes
         rendered_lines = self._rendered_lines("".join(writes))
-        assert len(rendered_lines) == 7
-        assert rendered_lines[1] == "  processed:    100 rows"
-        assert rendered_lines[2] == "  total:        200 rows"
-        assert all(len(line.rstrip()) <= 80 for line in rendered_lines)
+        assert len(rendered_lines) == 1
+        assert "100/200 rows (50.0%)" in rendered_lines[0]
+        assert "remaining 00:10" in rendered_lines[0]
+        assert len(rendered_lines[0].rstrip()) <= 80
+
+    def test_render_uses_one_terminal_line_for_redraw(self):
+        """A redraw should use one terminal line so cursor tracking cannot drift."""
+        pi = _ProgressIndicator(use_color=False)
+        pi._last_render_line_count = 7
+        lines = ["header", "processed", "total", "complete", "throughput", "elapsed", "remaining"]
+        writes: list[str] = []
+
+        with (
+            patch("shutil.get_terminal_size", return_value=os.terminal_size((160, 24))),
+            patch("sys.stderr.write", side_effect=lambda text: writes.append(text) or len(text)),
+            patch("sys.stderr.flush"),
+        ):
+            pi._write_render_block(lines)
+
+        assert len(writes) == 1
+        assert writes[0].startswith("\r\x1b[2K")
+        assert "\x1b[6F" not in writes[0]
+        assert "\n" not in writes[0]
+        assert " | ".join(lines) in writes[0]
 
     def test_render_with_stats_provider(self):
-        """Extension stats providers should appear below a divider in the progress block."""
+        """Extension stats providers should appear after core metrics in the status line."""
         pi = _ProgressIndicator()
         pi._start_time = 0.0
         pi.set_total_rows(1000)
@@ -203,7 +207,7 @@ class TestProgressIndicator:
             return len(text)
 
         with (
-            patch("shutil.get_terminal_size", return_value=os.terminal_size((160, 24))),
+            patch("shutil.get_terminal_size", return_value=os.terminal_size((300, 24))),
             patch("sys.stderr.write", side_effect=_write),
             patch("sys.stderr.flush"),
             patch("time.sleep", return_value=None),
@@ -213,15 +217,9 @@ class TestProgressIndicator:
 
         assert writes
         rendered_lines = self._rendered_lines("".join(writes))
-        # 1 header + 6 core metrics + 1 divider + 2 extension metrics = 10 lines
-        assert len(rendered_lines) == 10
-        # Extension metrics appear after divider
-        divider_idx = next(i for i, line in enumerate(rendered_lines) if "─" in line)
-        assert "matched:" in rendered_lines[divider_idx + 1]
-        assert "1,042" in rendered_lines[divider_idx + 1]
-        assert "rows" in rendered_lines[divider_idx + 1]
-        assert "errors:" in rendered_lines[divider_idx + 2]
-        assert "3" in rendered_lines[divider_idx + 2]
+        assert len(rendered_lines) == 1
+        assert "matched: 1,042 rows" in rendered_lines[0]
+        assert "errors: 3" in rendered_lines[0]
 
     def test_stats_provider_protocol(self):
         """Objects implementing get_metrics() should satisfy StatsProvider protocol."""
@@ -276,7 +274,6 @@ class TestCliRunReporter:
             with patch.dict("os.environ", {"NO_COLOR": "1"}, clear=True):
                 reporter = CliRunReporter("test")
                 assert reporter._interactive is True
-                assert reporter._progress_indicator._DIM == ""
                 assert reporter._progress_indicator._BOLD == ""
                 assert reporter._progress_indicator._CYAN == ""
 
@@ -285,7 +282,6 @@ class TestCliRunReporter:
         with patch("sys.stderr.isatty", return_value=True):
             with patch.dict("os.environ", {}, clear=True):
                 reporter = CliRunReporter("test")
-                assert reporter._progress_indicator._DIM != ""
                 assert reporter._progress_indicator._BOLD != ""
 
     def test_set_total_rows_propagates(self):

@@ -735,8 +735,8 @@ Two environment variables suppress the interactive progress display without requ
 Setting `NO_COLOR=1` (the cross-tool standard) retains the progress display but strips all ANSI colour codes from it, producing plain-text output suitable for log capture.
 
 For `tokenize` and `package`, the progress display refreshes after each processing batch is written and shows the
-processed total, completion percentage, and estimated remainder. Successful completion summaries include the total
-duration, which is also recorded in the detailed run log.
+processed total, completion percentage, and estimated remainder on a single terminal line. Successful completion
+summaries include the total duration, which is also recorded in the detailed run log.
 
 ### Key Pair Generation
 
@@ -861,7 +861,7 @@ stats = MyExtensionStats()
 reporter.add_stats_provider(stats)
 ```
 
-The reporter calls `get_metrics()` on each render tick (~1 Hz). Metrics appear below a divider in the same multiline progress block, aligned to the same columns as the built-in metrics. Return `(label, number_string, unit_string)` triples — use an empty string for unit when not applicable.
+The reporter calls `get_metrics()` on each render tick (~1 Hz). Metrics are appended to the same single-line status display as the built-in metrics. Return `(label, number_string, unit_string)` triples — use an empty string for unit when not applicable.
 
 See `lib/python/openlinktoken_ext_hello_world/README.md` for the full lifecycle walkthrough and `pages/quickstarts/extension-quickstart.md` for a step-by-step guide.
 
