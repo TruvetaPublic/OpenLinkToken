@@ -29,12 +29,16 @@ def test_pyinstaller_spec_collects_ml1_runtime_dependencies():
         collected_packages.append(package_name)
         return [f"{package_name}:data"], [f"{package_name}:binary"], [f"{package_name}:hidden"]
 
+    def collect_dynamic_libs(package_name, search_patterns):
+        return [(f"{package_name}:{pattern}", "lib") for pattern in search_patterns]
+
     def fake_analysis(*args, **kwargs):
         analysis_kwargs.update(kwargs)
         return _FakeAnalysis()
 
     fake_hooks = types.ModuleType("PyInstaller.utils.hooks")
     fake_hooks.collect_all = collect_all
+    fake_hooks.collect_dynamic_libs = collect_dynamic_libs
     fake_utils = types.ModuleType("PyInstaller.utils")
     fake_utils.hooks = fake_hooks
     fake_pyinstaller = types.ModuleType("PyInstaller")
@@ -59,7 +63,7 @@ def test_pyinstaller_spec_collects_ml1_runtime_dependencies():
             },
         )
 
-    assert {"tokenizers", "onnxruntime"}.issubset(collected_packages)
+    assert {"pyarrow", "tokenizers", "onnxruntime"}.issubset(collected_packages)
     assert {"tokenizers:data", "onnxruntime:data"}.issubset(analysis_kwargs["datas"])
     assert {"tokenizers:binary", "onnxruntime:binary"}.issubset(analysis_kwargs["binaries"])
     assert {"tokenizers:hidden", "onnxruntime:hidden"}.issubset(analysis_kwargs["hiddenimports"])

@@ -1,7 +1,9 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 import os
-from PyInstaller.utils.hooks import collect_all
+import sys
+
+from PyInstaller.utils.hooks import collect_all, collect_dynamic_libs
 
 block_cipher = None
 
@@ -37,6 +39,19 @@ for package_name in (
     datas += package_datas
     binaries += package_binaries
     hiddenimports += package_hiddenimports
+
+if sys.platform.startswith("linux"):
+    nvidia_library_patterns = ["*.so", "*.so.*"]
+    for package_name in (
+        "nvidia.cublas",
+        "nvidia.cuda_nvrtc",
+        "nvidia.cuda_runtime",
+        "nvidia.cudnn",
+        "nvidia.cufft",
+        "nvidia.curand",
+        "nvidia.nvjitlink",
+    ):
+        binaries += collect_dynamic_libs(package_name, search_patterns=nvidia_library_patterns)
 
 datas += [
     (os.path.join(inferencing_assets_source, filename), "openlinktoken/core/ai/tokens")
