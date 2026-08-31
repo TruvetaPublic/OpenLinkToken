@@ -86,7 +86,7 @@ onnxruntime-gpu==1.23.2 ; python_full_version < '3.11' and platform_machine == '
     # via openlinktoken-core-ai
 onnxruntime-gpu==1.25.1 ; python_full_version >= '3.11' and platform_machine == 'x86_64' and sys_platform == 'linux'
     # via openlinktoken-core-ai
-packaging==26.2
+packaging==26.3
     # via
     #   huggingface-hub
     #   onnxruntime
