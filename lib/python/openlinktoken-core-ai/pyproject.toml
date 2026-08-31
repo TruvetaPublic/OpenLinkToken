@@ -27,7 +27,7 @@ ml1 = "openlinktoken.core.ai.tokens.ml1_onnx_signature_provider:ML1OnnxSignature
 ml1_token = "openlinktoken.core.ai.tokens.ml1_token:ML1Token"
 
 [build-system]
-requires = ["setuptools==83.0.0", "wheel==0.47.0"]
+requires = ["setuptools==84.0.0", "wheel==0.47.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
