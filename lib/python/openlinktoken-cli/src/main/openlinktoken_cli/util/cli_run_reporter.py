@@ -116,7 +116,7 @@ class _ProgressIndicator:
     """Internal progress indicator with spinner, percentage, ETA, and throughput."""
 
     _FRAMES = ("\u280b", "\u2819", "\u2839", "\u2838", "\u283c", "\u2834", "\u2826", "\u2827", "\u2807", "\u280f")
-    _RENDER_INTERVAL_SECONDS = 1.0
+    _RENDER_INTERVAL_SECONDS = 0.1
     _ANSI_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
 
     def __init__(self, use_color: bool = True):
@@ -125,8 +125,6 @@ class _ProgressIndicator:
         self._stage = ""
         self._start_time = time.perf_counter()
         self._lock = threading.Lock()
-        self._frame_index = 0
-        self._frame_lock = threading.Lock()
         self._running = threading.Event()
         self._update_event = threading.Event()
         self._last_render_line_count = 0
@@ -243,18 +241,31 @@ class _ProgressIndicator:
         self._last_render_line_count = 1
 
     def _render(self) -> None:
-        """Render the spinner and progress info on stderr at ~1 Hz or on update events."""
+        """Render progress on stderr with an independently timed spinner."""
+        animation_start = time.perf_counter()
+        next_frame_at = animation_start + self._RENDER_INTERVAL_SECONDS
+        frame_index = 0
+        first_render = True
+
         try:
             while self._running.is_set():
-                with self._frame_lock:
-                    frame = self._FRAMES[self._frame_index % len(self._FRAMES)]
-                    self._frame_index += 1
-
-                self._update_event.wait(timeout=self._RENDER_INTERVAL_SECONDS)
+                now = time.perf_counter()
+                wait_timeout = max(0.0, next_frame_at - now)
+                self._update_event.wait(timeout=wait_timeout)
                 self._update_event.clear()
 
                 if not self._running.is_set():
                     break
+
+                now = time.perf_counter()
+                if first_render:
+                    first_render = False
+                    next_frame_at = now + self._RENDER_INTERVAL_SECONDS
+                elif now >= next_frame_at:
+                    frames_to_advance = int((now - next_frame_at) / self._RENDER_INTERVAL_SECONDS) + 1
+                    frame_index = (frame_index + frames_to_advance) % len(self._FRAMES)
+                    next_frame_at += frames_to_advance * self._RENDER_INTERVAL_SECONDS
+                frame = self._FRAMES[frame_index]
 
                 with self._lock:
                     stage = self._stage
@@ -262,7 +273,6 @@ class _ProgressIndicator:
                     total = self._total_rows
                     start_time = self._start_time
 
-                now = time.perf_counter()
                 elapsed = now - start_time
 
                 pct_str: str | None = None
@@ -369,8 +379,8 @@ class CliRunReporter:
         """
         Register an extension stats provider for the progress display.
 
-        The provider's ``get_metrics()`` method will be called on each render tick
-        and its metrics displayed below a divider in the progress block.
+        The provider's ``get_metrics()`` method is called on each render tick
+        and its metrics are appended to the single-line status display.
 
         Args:
             provider: An object implementing the StatsProvider protocol.

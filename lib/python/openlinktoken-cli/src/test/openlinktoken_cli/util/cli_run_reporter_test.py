@@ -185,6 +185,46 @@ class TestProgressIndicator:
         assert "\n" not in writes[0]
         assert " | ".join(lines) in writes[0]
 
+    def test_render_advances_spinner_on_fixed_interval_without_progress_updates(self):
+        """The spinner should animate every 100 ms when progress remains unchanged."""
+        pi = _ProgressIndicator(use_color=False)
+        pi._start_time = 0.0
+        pi.set_total_rows(100)
+        pi.update(stage="Working", done=50)
+        pi._running.set()
+
+        clock = [0.0]
+        writes: list[str] = []
+        wait_timeouts: list[float] = []
+
+        def _wait(timeout: float) -> bool:
+            wait_timeouts.append(timeout)
+            clock[0] += timeout
+            return False
+
+        def _perf_counter() -> float:
+            return clock[0]
+
+        def _write(text: str) -> int:
+            writes.append(text)
+            if len(writes) == 3:
+                pi._running.clear()
+            return len(text)
+
+        with (
+            patch("shutil.get_terminal_size", return_value=os.terminal_size((160, 24))),
+            patch.object(pi._update_event, "wait", side_effect=_wait),
+            patch("sys.stderr.write", side_effect=_write),
+            patch("sys.stderr.flush"),
+            patch("time.perf_counter", side_effect=_perf_counter),
+        ):
+            pi._render()
+
+        assert len(writes) == 3
+        assert wait_timeouts[1:] == pytest.approx([0.1, 0.1])
+        rendered_lines = [self._rendered_lines(write)[0] for write in writes]
+        assert [line[0] for line in rendered_lines] == ["⠋", "⠙", "⠹"]
+
     def test_render_with_stats_provider(self):
         """Extension stats providers should appear after core metrics in the status line."""
         pi = _ProgressIndicator()
@@ -469,7 +509,7 @@ class TestProgressIndicatorLiveRedraw:
         assert writes, "Render must write output when update event is signalled"
         # The wait should have been called with the configured render interval
         assert sleep_durations, "wait() should have been called"
-        assert sleep_durations[0] == _ProgressIndicator._RENDER_INTERVAL_SECONDS
+        assert abs(sleep_durations[0] - _ProgressIndicator._RENDER_INTERVAL_SECONDS) < 1e-9
 
 
 class TestCliRunReporterElapsed:

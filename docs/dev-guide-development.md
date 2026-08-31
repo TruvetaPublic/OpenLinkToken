@@ -861,7 +861,7 @@ stats = MyExtensionStats()
 reporter.add_stats_provider(stats)
 ```
 
-The reporter calls `get_metrics()` on each render tick (~1 Hz). Metrics are appended to the same single-line status display as the built-in metrics. Return `(label, number_string, unit_string)` triples — use an empty string for unit when not applicable.
+The reporter calls `get_metrics()` on each render tick (~10 Hz while active). Metrics are appended to the same single-line status display as the built-in metrics. Return `(label, number_string, unit_string)` triples — use an empty string for unit when not applicable.
 
 See `lib/python/openlinktoken_ext_hello_world/README.md` for the full lifecycle walkthrough and `pages/quickstarts/extension-quickstart.md` for a step-by-step guide.
 
