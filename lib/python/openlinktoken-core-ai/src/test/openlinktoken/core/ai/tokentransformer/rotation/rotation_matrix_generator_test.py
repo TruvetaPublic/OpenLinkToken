@@ -83,10 +83,10 @@ class TestRotationMatrixGenerator:
         matrices = generate(_IV, 1, _DIMENSION)
         assert len(matrices) == 1
 
-    def test_rows_returns_only_leading_rows_without_changing_values(self):
+    def test_row_count_returns_only_leading_rows_without_changing_values(self):
         """A row limit should retain the exact leading rows of each full matrix."""
         full_matrices = generate(_IV, _COUNT, _DIMENSION)
-        leading_rows = generate(_IV, _COUNT, _DIMENSION, rows=2)
+        leading_rows = generate(_IV, _COUNT, _DIMENSION, row_count=2)
 
         for actual, expected in zip(leading_rows, full_matrices):
             assert actual.shape == (2, _DIMENSION)
