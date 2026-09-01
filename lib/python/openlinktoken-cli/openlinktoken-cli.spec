@@ -3,7 +3,7 @@
 import os
 import sys
 
-from PyInstaller.utils.hooks import collect_all, collect_dynamic_libs, copy_metadata
+from PyInstaller.utils.hooks import collect_all, collect_dynamic_libs
 
 block_cipher = None
 
@@ -11,13 +11,19 @@ block_cipher = None
 # Note: SPECPATH is provided by PyInstaller when executing the spec
 base_dir = os.path.abspath(SPECPATH)
 
+# OLT_TARGET_ARCH allows callers to request a specific target architecture
+# (e.g. "universal2" for macOS universal binaries) without passing --target-arch,
+# which is invalid when a .spec file is used directly.
+target_arch = os.environ.get("OLT_TARGET_ARCH") or None
 core_ai_source = os.path.join(base_dir, "..", "openlinktoken-core-ai", "src", "main")
 inferencing_assets_source = os.path.join(base_dir, "..", "..", "..", "resources", "inferencing", "ml1")
 
-datas = copy_metadata("openlinktoken-core-ai")
+datas = []
 binaries = []
-hiddenimports = ["onnxruntime", "tokenizers"]
+hiddenimports = []
 
+# Core-AI loads these dependencies lazily during ML1 inference, so collect them
+# explicitly for frozen binaries.
 for package_name in (
     "openlinktoken",
     "openlinktoken.core",
@@ -26,6 +32,8 @@ for package_name in (
     "pandas",
     "csv2parquet",
     "cryptography",
+    "tokenizers",
+    "onnxruntime",
 ):
     package_datas, package_binaries, package_hiddenimports = collect_all(package_name)
     datas += package_datas
@@ -65,6 +73,7 @@ a = Analysis(
     runtime_hooks=[],
     excludes=[],
     noarchive=False,
+    target_arch=target_arch,
 )
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 exe = EXE(

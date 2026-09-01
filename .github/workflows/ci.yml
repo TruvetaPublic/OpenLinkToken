@@ -169,6 +169,69 @@ jobs:
           thresholdNew: ${{ env.MIN_COVERAGE_CHANGED_FILES_RATIO }}
           thresholdModified: ${{ env.MIN_COVERAGE_CHANGED_FILES_RATIO }}
 
+  python-core-ai-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+      actions: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          lfs: true
+
+      - name: Setup toolchain (Python)
+        uses: ./.github/actions/setup-toolchain
+        with:
+          enable-java: false
+          enable-python: true
+          python-version: "3.11"
+
+      - name: Install Python Core-AI dependencies
+        run: |
+          uv sync --all-packages
+
+      - name: Lint Core-AI with ruff
+        run: |
+          uv run ruff check lib/python/openlinktoken-core-ai/src
+
+      - name: Test Core-AI with pytest
+        run: |
+          PYTHONPATH=lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main \
+            uv run pytest lib/python/openlinktoken-core-ai/src/test \
+            --junitxml=lib/python/openlinktoken-core-ai/test-results.xml \
+            --cov=lib/python/openlinktoken-core-ai/src/main \
+            --cov-report=xml:lib/python/openlinktoken-core-ai/coverage.xml \
+            --cov-report=html:lib/python/openlinktoken-core-ai/htmlcov
+
+      - name: Upload Python Core-AI coverage artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: python-core-ai-code-coverage
+          path: |
+            lib/python/openlinktoken-core-ai/coverage.xml
+            lib/python/openlinktoken-core-ai/htmlcov/*
+
+      - name: Upload Python Core-AI JUnit results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: python-junit-core-ai-3.11
+          path: |
+            lib/python/openlinktoken-core-ai/test-results.xml
+
+      - name: Publish Python Core-AI unit test results
+        if: always()
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: |
+            lib/python/openlinktoken-core-ai/test-results.xml
+          check_name: Python Core-AI Test Results
+          comment_mode: off
+          compare_to_earlier_commit: false
+
   python-cli-tests:
     runs-on: ubuntu-latest
     permissions:
@@ -237,6 +300,7 @@ jobs:
           olt generate-key-pair --name recipient --force
           olt initiate-exchange --name smoke --public-key "$HOME/.openlinktoken/recipient.public.pem" --output target/smoke.exchange.json --hashingsecret "HashingKey"
           olt package -i ../../../resources/sample.csv -o target/output.csv --exchange-config target/smoke.exchange.json --private-key "$HOME/.openlinktoken/smoke.private.pem"
+          olt decrypt -i target/output.csv -o target/decrypted.csv --exchange-config target/smoke.exchange.json --private-key "$HOME/.openlinktoken/smoke.private.pem" --no-progress
           # Test custom tokenization config with standard data
           olt package -i ../../../resources/sample.csv -o target/output-with-config.csv --exchange-config target/smoke.exchange.json --config ../../../resources/sample-custom-tokenization-config.yaml --private-key "$HOME/.openlinktoken/smoke.private.pem"
           # Test custom tokenization config with nonstandard data
@@ -253,16 +317,121 @@ jobs:
             echo "Error: metadata file not created"
             exit 1
           fi
+          if [ ! -f "target/decrypted.csv" ]; then
+            echo "Error: decrypted.csv not created"
+            exit 1
+          fi
 
       - name: Validate CLI output content
         run: |
           cd lib/python/openlinktoken-cli
+          validate_ml1_output() {
+            python - "$1" "$2" <<'PY'
+          import csv
+          import sys
+          from pathlib import Path
+
+          output_path = Path(sys.argv[1])
+          minimum_rows = int(sys.argv[2])
+          with output_path.open(newline="", encoding="utf-8") as file_handle:
+              ml1_tokens = [
+                  row["Token"]
+                  for row in csv.DictReader(file_handle)
+                  if row.get("RuleId") == "ML1" and row.get("Token")
+              ]
+
+          if len(ml1_tokens) < minimum_rows or not ml1_tokens:
+              raise SystemExit(f"Expected non-blank ML1 rows in {output_path}, found {len(ml1_tokens)}")
+          if any(token == "0" * 64 for token in ml1_tokens):
+              raise SystemExit(f"Found canonical blank ML1 token in {output_path}")
+          PY
+          }
           line_count=$(wc -l < target/output.csv)
           if [ "$line_count" -le 1 ]; then
             echo "Error: Output CSV appears to be empty or only contains headers"
             exit 1
           fi
+          validate_ml1_output target/decrypted.csv 1
           echo "Output CSV contains $line_count lines"
+
+  standalone-cli-smoke:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          lfs: true
+
+      - name: Setup toolchain (Python)
+        uses: ./.github/actions/setup-toolchain
+        with:
+          enable-java: false
+          enable-python: true
+          python-version: "3.11"
+
+      - name: Install build dependencies
+        run: |
+          uv sync --all-packages
+
+      - name: Build standalone CLI
+        run: |
+          uv run pyinstaller --clean --noconfirm lib/python/openlinktoken-cli/openlinktoken-cli.spec
+
+      - name: Run standalone tokenize and package smoke tests
+        run: |
+          set -euo pipefail
+          mkdir -p smoke
+          head -n 2 resources/sample.csv > smoke/input.csv
+          ./dist/olt/olt generate-key-pair --name ci-recipient --force
+          ./dist/olt/olt initiate-exchange \
+            --name ci-smoke \
+            --public-key "$HOME/.openlinktoken/ci-recipient.public.pem" \
+            --output smoke/ci.exchange.json \
+            --hashingsecret ci-secret \
+            --force
+          ./dist/olt/olt tokenize \
+            -i smoke/input.csv \
+            -o smoke/tokenized.csv \
+            --exchange-config smoke/ci.exchange.json \
+            --private-key "$HOME/.openlinktoken/ci-smoke.private.pem" \
+            --no-progress
+          ./dist/olt/olt package \
+            -i smoke/input.csv \
+            -o smoke/packaged.csv \
+            --exchange-config smoke/ci.exchange.json \
+            --private-key "$HOME/.openlinktoken/ci-smoke.private.pem" \
+            --no-progress
+          ./dist/olt/olt decrypt \
+            -i smoke/packaged.csv \
+            -o smoke/decrypted.csv \
+            --exchange-config smoke/ci.exchange.json \
+            --private-key "$HOME/.openlinktoken/ci-smoke.private.pem" \
+            --no-progress
+
+          validate_ml1_output() {
+            python - "$1" "$2" <<'PY'
+          import csv
+          import sys
+          from pathlib import Path
+
+          output_path = Path(sys.argv[1])
+          expected_rows = int(sys.argv[2])
+          with output_path.open(newline="", encoding="utf-8") as file_handle:
+              ml1_tokens = [
+                  row["Token"]
+                  for row in csv.DictReader(file_handle)
+                  if row.get("RuleId") == "ML1" and row.get("Token")
+              ]
+
+          if len(ml1_tokens) != expected_rows:
+              raise SystemExit(f"Expected {expected_rows} ML1 rows in {output_path}, found {len(ml1_tokens)}")
+          if any(token == "0" * 64 for token in ml1_tokens):
+              raise SystemExit(f"Found canonical blank ML1 token in {output_path}")
+          PY
+          }
+          validate_ml1_output smoke/tokenized.csv 1
+          validate_ml1_output smoke/decrypted.csv 1
 
   pyspark-bridge-tests:
     runs-on: ubuntu-latest
@@ -374,7 +543,9 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - python-tests
+      - python-core-ai-tests
       - python-cli-tests
+      - standalone-cli-smoke
       - pyspark-bridge-tests
     permissions:
       contents: read
@@ -421,16 +592,19 @@ jobs:
 
           def label_for(filename):
               artifact_name = os.path.basename(os.path.dirname(filename))
+              if artifact_name.startswith("python-junit-core-ai-"):
+                  version = artifact_name.removeprefix("python-junit-core-ai-")
+                  return f"Python Core AI {version}", (1, version, "")
               if artifact_name.startswith("python-junit-core-"):
                   version = artifact_name.removeprefix("python-junit-core-")
                   return f"Python Core {version}", (0, version, "")
               if artifact_name.startswith("python-junit-cli-"):
                   version = artifact_name.removeprefix("python-junit-cli-")
-                  return f"Python CLI {version}", (1, version, "")
+                  return f"Python CLI {version}", (2, version, "")
               if artifact_name.startswith("python-junit-pyspark-"):
                   version_spark = artifact_name.removeprefix("python-junit-pyspark-")
                   version, spark = version_spark.split("-spark", 1)
-                  return f"PySpark Bridge {version} / Spark {spark}", (2, version, spark)
+                  return f"PySpark Bridge {version} / Spark {spark}", (3, version, spark)
               return artifact_name, (9, artifact_name, "")
 
           rows = []

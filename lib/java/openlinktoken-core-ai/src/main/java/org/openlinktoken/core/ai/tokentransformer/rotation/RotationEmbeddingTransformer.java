@@ -127,7 +127,8 @@ public final class RotationEmbeddingTransformer implements EmbeddingTransformer 
             // rotationCount-1 entries are actual rotation matrices.
             List<double[][]> allMatrices = new ArrayList<>(rotationCount);
             allMatrices.add(new double[][]{{-1.0}});
-            allMatrices.addAll(RotationMatrixGenerator.generate(iv, rotationCount - 1, dimension));
+            allMatrices.addAll(
+                    RotationMatrixGenerator.generate(iv, rotationCount - 1, dimension, hashDimension));
             matrices = allMatrices;
         }
     }

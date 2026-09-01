@@ -50,12 +50,48 @@ public final class RotationMatrixGenerator {
      *         (row, col). Each matrix is an orthogonal proper-rotation matrix.
      */
     public static List<double[][]> generate(String iv, int rotationCount, int dimension) {
+        return generate(iv, rotationCount, dimension, dimension);
+    }
+
+    /**
+     * Generate deterministic rotation matrices while retaining only their leading rows.
+     *
+     * <p>Each full QR matrix is generated before its leading {@code rowCount} rows are copied
+     * into the result. This keeps the full-matrix generation and numerical values unchanged
+     * while avoiding retention of unused rows.
+     *
+     * @param iv            initialization vector string; same IV always produces the same matrices.
+     * @param rotationCount number of rotation matrices to generate.
+     * @param dimension     number of columns and rows in each full matrix (N×N).
+     * @param rowCount      number of leading rows to retain in each returned matrix.
+     * @return a list of {@code rotationCount} matrices, each a {@code rowCount × dimension}
+     *         row-major {@code double[][]}.
+     * @throws IllegalArgumentException if {@code rowCount} is not in {@code (0, dimension]}.
+     */
+    public static List<double[][]> generate(String iv, int rotationCount, int dimension, int rowCount) {
+        if (rowCount <= 0 || rowCount > dimension) {
+            throw new IllegalArgumentException(
+                    "rowCount must be greater than zero and no greater than dimension");
+        }
+
         byte[] keyMaterial = sha256(iv.getBytes(StandardCharsets.UTF_8));
         List<double[][]> matrices = new ArrayList<>(rotationCount);
         for (int r = 0; r < rotationCount; r++) {
-            matrices.add(generateOne(keyMaterial, r, dimension));
+            double[][] matrix = generateOne(keyMaterial, r, dimension);
+            matrices.add(rowCount == dimension ? matrix : copyLeadingRows(matrix, rowCount));
         }
         return matrices;
+    }
+
+    /**
+     * Copy the leading rows of a matrix without sharing row arrays.
+     */
+    private static double[][] copyLeadingRows(double[][] matrix, int rowCount) {
+        double[][] leadingRows = new double[rowCount][];
+        for (int row = 0; row < rowCount; row++) {
+            leadingRows[row] = matrix[row].clone();
+        }
+        return leadingRows;
     }
 
     /**

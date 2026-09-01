@@ -3,6 +3,7 @@
 import threading
 
 import numpy as np
+import pytest
 
 from openlinktoken.core.ai.tokentransformer.rotation.rotation_matrix_generator import generate
 
@@ -26,6 +27,21 @@ class TestRotationMatrixGenerator:
             assert len(matrix) == _DIMENSION
             for row in matrix:
                 assert len(row) == _DIMENSION
+
+    def test_row_count_keeps_leading_rows_with_full_rotation_values(self):
+        """A projected matrix should retain the leading rows of the full matrix."""
+        full_matrix = generate(_IV, 1, _DIMENSION)[0]
+        projected_matrix = generate(_IV, 1, _DIMENSION, row_count=2)[0]
+
+        assert projected_matrix.shape == (2, _DIMENSION)
+        np.testing.assert_array_equal(projected_matrix, full_matrix[:2, :])
+
+    def test_row_count_must_be_within_dimension(self):
+        """Invalid projected row counts should be rejected."""
+        with pytest.raises(ValueError):
+            generate(_IV, 1, _DIMENSION, row_count=0)
+        with pytest.raises(ValueError):
+            generate(_IV, 1, _DIMENSION, row_count=_DIMENSION + 1)
 
     def test_orthogonality(self):
         """Q @ Q^T must be the identity matrix within floating-point tolerance."""
@@ -67,10 +83,10 @@ class TestRotationMatrixGenerator:
         matrices = generate(_IV, 1, _DIMENSION)
         assert len(matrices) == 1
 
-    def test_rows_returns_only_leading_rows_without_changing_values(self):
+    def test_row_count_returns_only_leading_rows_without_changing_values(self):
         """A row limit should retain the exact leading rows of each full matrix."""
         full_matrices = generate(_IV, _COUNT, _DIMENSION)
-        leading_rows = generate(_IV, _COUNT, _DIMENSION, rows=2)
+        leading_rows = generate(_IV, _COUNT, _DIMENSION, row_count=2)
 
         for actual, expected in zip(leading_rows, full_matrices):
             assert actual.shape == (2, _DIMENSION)

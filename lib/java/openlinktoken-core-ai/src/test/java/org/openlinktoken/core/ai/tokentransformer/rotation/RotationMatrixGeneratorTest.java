@@ -1,7 +1,9 @@
 /* SPDX-License-Identifier: MIT */
 package org.openlinktoken.core.ai.tokentransformer.rotation;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -38,6 +40,43 @@ class RotationMatrixGeneratorTest {
                 assertEquals(DIMENSION, row.length);
             }
         }
+    }
+
+    @Test
+    void testRowCountKeepsLeadingRowsWithFullRotationValues() {
+        List<double[][]> fullMatrices = RotationMatrixGenerator.generate(IV, COUNT, DIMENSION);
+        List<double[][]> projectedMatrices = RotationMatrixGenerator.generate(IV, COUNT, DIMENSION, 2);
+
+        assertEquals(COUNT, projectedMatrices.size());
+        for (int rotation = 0; rotation < COUNT; rotation++) {
+            double[][] projected = projectedMatrices.get(rotation);
+            double[][] full = fullMatrices.get(rotation);
+            assertEquals(2, projected.length);
+            for (int row = 0; row < projected.length; row++) {
+                assertArrayEquals(full[row], projected[row]);
+            }
+        }
+    }
+
+    @Test
+    void testRowCountEqualsDimensionMatchesFullApi() {
+        List<double[][]> fullMatrices = RotationMatrixGenerator.generate(IV, COUNT, DIMENSION);
+        List<double[][]> explicitFullMatrices =
+                RotationMatrixGenerator.generate(IV, COUNT, DIMENSION, DIMENSION);
+
+        for (int rotation = 0; rotation < COUNT; rotation++) {
+            for (int row = 0; row < DIMENSION; row++) {
+                assertArrayEquals(fullMatrices.get(rotation)[row], explicitFullMatrices.get(rotation)[row]);
+            }
+        }
+    }
+
+    @Test
+    void testRowCountMustBeWithinDimension() {
+        assertThrows(IllegalArgumentException.class,
+                () -> RotationMatrixGenerator.generate(IV, COUNT, DIMENSION, 0));
+        assertThrows(IllegalArgumentException.class,
+                () -> RotationMatrixGenerator.generate(IV, COUNT, DIMENSION, DIMENSION + 1));
     }
 
     @Test
