@@ -97,16 +97,13 @@ class StatsProvider(Protocol):
 
     Extensions implement this interface and register with the reporter via
     ``CliRunReporter.add_stats_provider(provider)``. The reporter queries
-    ``get_metrics()`` on each render tick and displays the results below
-    a divider line.
+    ``get_metrics()`` on each render tick and appends the results to the
+    single-line status display.
     """
 
     def get_metrics(self) -> list[tuple[str, str, str]]:
         """
-        Return custom metrics as (label, number, unit) triples.
-
-        Each triple is rendered as a right-aligned number with a left-aligned
-        unit, matching the built-in metric style.
+        Return custom metrics as (label, number, unit) triples for the status line.
 
         Returns:
             List of (label, number_string, unit_string) tuples.
@@ -119,10 +116,8 @@ class _ProgressIndicator:
     """Internal progress indicator with spinner, percentage, ETA, and throughput."""
 
     _FRAMES = ("\u280b", "\u2819", "\u2839", "\u2838", "\u283c", "\u2834", "\u2826", "\u2827", "\u2807", "\u280f")
-    _RENDER_INTERVAL_SECONDS = 1.0
+    _RENDER_INTERVAL_SECONDS = 0.1
     _ANSI_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
-
-    _BOLD_METRIC_LABELS = frozenset({"processed", "total", "complete"})
 
     def __init__(self, use_color: bool = True):
         self._total_rows = 0
@@ -130,18 +125,15 @@ class _ProgressIndicator:
         self._stage = ""
         self._start_time = time.perf_counter()
         self._lock = threading.Lock()
-        self._frame_index = 0
-        self._frame_lock = threading.Lock()
         self._running = threading.Event()
+        self._update_event = threading.Event()
         self._last_render_line_count = 0
         self._stats_providers: list[StatsProvider] = []
         if use_color:
-            self._DIM = "\x1b[2m"
             self._BOLD = "\x1b[1m"
             self._CYAN = "\x1b[36m"
             self._RESET = "\x1b[0m"
         else:
-            self._DIM = ""
             self._BOLD = ""
             self._CYAN = ""
             self._RESET = ""
@@ -157,6 +149,7 @@ class _ProgressIndicator:
     def stop(self) -> None:
         """Stop the spinner gracefully."""
         self._running.clear()
+        self._update_event.set()  # Wake the render thread so it exits without waiting
         if hasattr(self, "_thread") and self._thread.is_alive():
             self._thread.join(timeout=self._RENDER_INTERVAL_SECONDS + 0.5)
         self._clear_block()
@@ -172,6 +165,7 @@ class _ProgressIndicator:
         with self._lock:
             self._stage = stage
             self._done = done
+        self._update_event.set()
 
     def _format_elapsed(self, seconds: float) -> str:
         """Delegate to module-level _format_elapsed."""
@@ -203,7 +197,7 @@ class _ProgressIndicator:
             return "." * max_width
         return plain[: max_width - 3] + "..."
 
-    def _build_render_lines(
+    def _build_render_line(
         self,
         frame: str,
         stage: str,
@@ -213,88 +207,65 @@ class _ProgressIndicator:
         remaining_str: str | None,
         speed_parts: tuple[str, str] | None,
         elapsed_str: str,
-    ) -> list[str]:
-        """Build the styled multiline progress block with aligned columns."""
-        # Core metrics as (label, number, unit) triples
-        core_metrics: list[tuple[str, str, str]] = [
-            ("processed", f"{done:,}", "rows"),
-            ("total", f"{total:,}" if total > 0 else "--", "rows" if total > 0 else ""),
-            ("complete", pct_str if pct_str else "--", "%" if pct_str else ""),
-            ("throughput", speed_parts[0] if speed_parts else "--", speed_parts[1] if speed_parts else ""),
-            ("elapsed", elapsed_str, ""),
-            ("remaining", remaining_str if remaining_str else "--", ""),
+    ) -> str:
+        """Build a compact status line containing core and extension metrics."""
+        total_text = f"{total:,}" if total > 0 else "--"
+        percentage_text = f"{pct_str}%" if pct_str else "--"
+        throughput_text = f"{speed_parts[0]} {speed_parts[1]}" if speed_parts else "--"
+        remaining_text = remaining_str if remaining_str else "--"
+
+        segments = [
+            f"{self._CYAN}{frame}{self._RESET} {self._BOLD}{stage}{self._RESET}",
+            (
+                f"{self._BOLD}{done:,}{self._RESET}/{self._BOLD}{total_text}{self._RESET} "
+                f"rows ({self._BOLD}{percentage_text}{self._RESET})"
+            ),
+            f"remaining {remaining_text}",
+            throughput_text,
+            f"elapsed {elapsed_str}",
         ]
 
-        # Collect extension metrics
-        extension_metrics: list[tuple[str, str, str]] = []
         for provider in self._stats_providers:
-            extension_metrics.extend(provider.get_metrics())
+            for label, number, unit in provider.get_metrics():
+                segments.append(f"{label}: {number}" + (f" {unit}" if unit else ""))
 
-        all_metrics = core_metrics + extension_metrics
-
-        # Compute column widths from all metrics (core + extensions)
-        label_width = max(len(label) for label, _, _ in all_metrics)
-        number_width = max(len(number) for _, number, _ in all_metrics)
-
-        # Build styled lines
-        lines: list[str] = [f" {self._CYAN}{frame}{self._RESET} {self._BOLD}{stage}{self._RESET}"]
-
-        for label, number, unit in core_metrics:
-            lines.append(self._format_metric_line(label, number, unit, label_width, number_width))
-
-        if extension_metrics:
-            divider_width = label_width + number_width + 4
-            lines.append(f"  {self._DIM}{'─' * divider_width}{self._RESET}")
-            for label, number, unit in extension_metrics:
-                lines.append(self._format_metric_line(label, number, unit, label_width, number_width))
-
-        return lines
-
-    def _format_metric_line(self, label: str, number: str, unit: str, label_width: int, number_width: int) -> str:
-        """Format a single metric line with dim label and optionally bold value."""
-        padding = " " * (label_width - len(label) + 1)
-        is_bold = label in self._BOLD_METRIC_LABELS
-
-        styled_label = f"{self._DIM}{label}:{self._RESET}"
-        if is_bold:
-            styled_number = f"{self._BOLD}{number.rjust(number_width)}{self._RESET}"
-        else:
-            styled_number = number.rjust(number_width)
-
-        if unit:
-            return f"  {styled_label}{padding}{styled_number} {unit}"
-        return f"  {styled_label}{padding}{styled_number}"
+        return " | ".join(segments)
 
     def _write_render_block(self, lines: list[str]) -> None:
-        """Draw the multiline progress block in place."""
+        """Draw the progress status in place without moving through prior lines."""
         terminal_width = max(20, shutil.get_terminal_size((80, 24)).columns)
-        truncated_lines = [self._truncate_line(line, terminal_width) for line in lines]
-
-        if self._last_render_line_count > 1:
-            sys.stderr.write(f"\x1b[{self._last_render_line_count - 1}F")
-        elif self._last_render_line_count == 1:
-            sys.stderr.write("\r")
-
-        for index, line in enumerate(truncated_lines):
-            sys.stderr.write("\x1b[2K" + line)
-            if index < len(truncated_lines) - 1:
-                sys.stderr.write("\n")
-
+        rendered_line = " | ".join(line.strip() for line in lines)
+        rendered_line = self._truncate_line(rendered_line, terminal_width)
+        sys.stderr.write("\r\x1b[2K" + rendered_line)
         sys.stderr.flush()
-        self._last_render_line_count = len(truncated_lines)
+        self._last_render_line_count = 1
 
     def _render(self) -> None:
-        """Render the spinner and progress info on stderr at ~1 Hz."""
+        """Render progress on stderr with an independently timed spinner."""
+        animation_start = time.perf_counter()
+        next_frame_at = animation_start + self._RENDER_INTERVAL_SECONDS
+        frame_index = 0
+        first_render = True
+
         try:
             while self._running.is_set():
-                with self._frame_lock:
-                    frame = self._FRAMES[self._frame_index % len(self._FRAMES)]
-                    self._frame_index += 1
-
-                time.sleep(self._RENDER_INTERVAL_SECONDS)
+                now = time.perf_counter()
+                wait_timeout = max(0.0, next_frame_at - now)
+                self._update_event.wait(timeout=wait_timeout)
+                self._update_event.clear()
 
                 if not self._running.is_set():
                     break
+
+                now = time.perf_counter()
+                if first_render:
+                    first_render = False
+                    next_frame_at = now + self._RENDER_INTERVAL_SECONDS
+                elif now >= next_frame_at:
+                    frames_to_advance = int((now - next_frame_at) / self._RENDER_INTERVAL_SECONDS) + 1
+                    frame_index = (frame_index + frames_to_advance) % len(self._FRAMES)
+                    next_frame_at += frames_to_advance * self._RENDER_INTERVAL_SECONDS
+                frame = self._FRAMES[frame_index]
 
                 with self._lock:
                     stage = self._stage
@@ -302,7 +273,6 @@ class _ProgressIndicator:
                     total = self._total_rows
                     start_time = self._start_time
 
-                now = time.perf_counter()
                 elapsed = now - start_time
 
                 pct_str: str | None = None
@@ -324,7 +294,7 @@ class _ProgressIndicator:
                             remaining_str = self._format_elapsed(eta_seconds)
 
                 elapsed_str = self._format_elapsed(elapsed)
-                lines = self._build_render_lines(
+                line = self._build_render_line(
                     frame,
                     stage,
                     done,
@@ -334,7 +304,7 @@ class _ProgressIndicator:
                     speed_parts,
                     elapsed_str,
                 )
-                self._write_render_block(lines)
+                self._write_render_block([line])
 
         except KeyboardInterrupt:
             pass
@@ -344,21 +314,7 @@ class _ProgressIndicator:
         if self._last_render_line_count <= 0:
             return
 
-        if self._last_render_line_count > 1:
-            sys.stderr.write(f"\x1b[{self._last_render_line_count - 1}F")
-        else:
-            sys.stderr.write("\r")
-
-        for index in range(self._last_render_line_count):
-            sys.stderr.write("\x1b[2K")
-            if index < self._last_render_line_count - 1:
-                sys.stderr.write("\n")
-
-        if self._last_render_line_count > 1:
-            sys.stderr.write(f"\x1b[{self._last_render_line_count - 1}F")
-        else:
-            sys.stderr.write("\r")
-
+        sys.stderr.write("\r\x1b[2K\n")
         sys.stderr.flush()
         self._last_render_line_count = 0
 
@@ -372,6 +328,7 @@ class CliRunReporter:
         self._console_handler: logging.Handler | None = None
         self._console_handler_level: int | None = None
         self._file_handler: logging.Handler | None = None
+        self._root_logger_level: int | None = None
         self._interactive = bool(getattr(sys.stderr, "isatty", None) and sys.stderr.isatty())
         self._interactive = self._interactive and not os.getenv("NO_PROGRESS")
         self._interactive = self._interactive and not os.getenv("OPENLINK_NO_PROGRESS")
@@ -379,12 +336,15 @@ class CliRunReporter:
         use_color = not os.getenv("NO_COLOR")
         self._progress_indicator = _ProgressIndicator(use_color=use_color)
         self._total_rows = 0
+        self._run_start_time: float | None = None
+        self._elapsed_seconds: float | None = None
 
     def __enter__(self) -> "CliRunReporter":
         self._attach_file_logging()
         self._mute_console_logging()
         if self._interactive:
             self._progress_indicator.start()
+        self._run_start_time = time.perf_counter()
         logging.getLogger(__name__).info("Starting %s command", self.command_name)
         return self
 
@@ -392,6 +352,14 @@ class CliRunReporter:
         if self._interactive:
             self._progress_indicator.stop()
         self._restore_console_logging()
+        if self._run_start_time is not None:
+            self._elapsed_seconds = time.perf_counter() - self._run_start_time
+            status = "failed" if exc_type is not None else "completed"
+            logging.getLogger(__name__).info(
+                "Run %s. Duration: %s",
+                status,
+                _format_elapsed(self._elapsed_seconds),
+            )
         self._detach_file_logging()
 
     def update_status(self, stage: str, processed_count: int | None = None, unit_label: str | None = None) -> None:
@@ -411,8 +379,8 @@ class CliRunReporter:
         """
         Register an extension stats provider for the progress display.
 
-        The provider's ``get_metrics()`` method will be called on each render tick
-        and its metrics displayed below a divider in the progress block.
+        The provider's ``get_metrics()`` method is called on each render tick
+        and its metrics are appended to the single-line status display.
 
         Args:
             provider: An object implementing the StatsProvider protocol.
@@ -421,10 +389,16 @@ class CliRunReporter:
 
     def finish_success(self, title: str, lines: Sequence[str]) -> None:
         detail_log_line = format_dimmed_stderr_message(f"  Detailed log: {self.log_report.log_path}")
-        summary_lines = [title, *[f"    {line}" for line in lines], detail_log_line]
+        elapsed_line = (
+            f"  Duration: {_format_elapsed(self._elapsed_seconds)}" if self._elapsed_seconds is not None else None
+        )
+        summary_parts: list[str] = [title, *[f"    {line}" for line in lines]]
+        if elapsed_line:
+            summary_parts.append(elapsed_line)
+        summary_parts.append(detail_log_line)
         if self._interactive:
             print(file=sys.stderr)
-        print("\n".join(summary_lines), file=sys.stderr)
+        print("\n".join(summary_parts), file=sys.stderr)
 
     @staticmethod
     def summarize_count_lines(label: str, counts: Mapping[str, int], limit: int | None = None) -> list[str]:
@@ -447,15 +421,25 @@ class CliRunReporter:
         file_handler = logging.FileHandler(self.log_report.log_path, encoding="utf-8")
         file_handler.setLevel(logging.INFO)
         file_handler.setFormatter(RedactingFormatter(_DEFAULT_LOG_FORMAT))
-        logging.getLogger().addHandler(file_handler)
+        root_logger = logging.getLogger()
+        self._root_logger_level = root_logger.level
+        root_logger.addHandler(file_handler)
+        if root_logger.level == logging.NOTSET or root_logger.level > logging.INFO:
+            root_logger.setLevel(logging.INFO)
         self._file_handler = file_handler
 
     def _detach_file_logging(self) -> None:
         if self._file_handler is None:
             return
-        logging.getLogger().removeHandler(self._file_handler)
-        self._file_handler.close()
-        self._file_handler = None
+        root_logger = logging.getLogger()
+        try:
+            root_logger.removeHandler(self._file_handler)
+            self._file_handler.close()
+        finally:
+            self._file_handler = None
+            if self._root_logger_level is not None:
+                root_logger.setLevel(self._root_logger_level)
+                self._root_logger_level = None
 
     def _mute_console_logging(self) -> None:
         self._console_handler = _get_default_console_handler()

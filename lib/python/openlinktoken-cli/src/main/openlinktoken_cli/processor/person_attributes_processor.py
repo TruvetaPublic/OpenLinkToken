@@ -407,10 +407,10 @@ class PersonAttributesProcessor:
             )
             if row_counter % 10000 == 0:
                 logger.info(f"Processed {row_counter:,} records")
-                last_reported_count = row_counter
             if row_counter % 10 == 0:
                 if progress_callback is not None:
                     progress_callback(row_counter)
+                    last_reported_count = row_counter
         if progress_callback is not None and row_counter != last_reported_count:
             progress_callback(row_counter)
         return row_counter, invalid_row_count
@@ -460,12 +460,13 @@ class PersonAttributesProcessor:
                     ml1_signatures,
                     hash_record_ids,
                 )
+                # Callback fires after writes have been flushed.
+                if progress_callback is not None:
+                    progress_callback(row_counter)
+                last_reported_count = row_counter
 
             if row_counter % 10000 == 0:
                 logger.info(f"Processed {row_counter:,} records")
-                last_reported_count = row_counter
-                if progress_callback is not None:
-                    progress_callback(row_counter)
 
         if pending_rows:
             ml1_signatures = PersonAttributesProcessor._infer_ml1_batch(pending_rows)
