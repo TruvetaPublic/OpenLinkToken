@@ -73,6 +73,42 @@ class TestCreateReleaseAssets:
             zip_path.read_bytes(), zip_path.name
         )
 
+    def test_creates_macos_arm64_release_assets(self, tmp_path):
+        """macOS arm64 builds should use an architecture-specific asset name."""
+        dist_dir = tmp_path / "dist"
+        output_dir = tmp_path / "release-assets"
+        binary_content = b"macOS arm64 binary"
+        _write_binary(dist_dir, "olt", binary_content)
+
+        generated_paths = create_release_assets("2.1.0", "macOS", dist_dir, output_dir, architecture="arm64")
+
+        generated_names = {path.name for path in generated_paths}
+        assert generated_names == {
+            "olt-v2.1.0-macos-arm64",
+            "olt-v2.1.0-macos-arm64.sha256",
+            "olt-cli-2.1.0-macos-arm64.zip",
+            "olt-cli-2.1.0-macos-arm64.zip.sha256",
+        }
+
+    def test_creates_macos_x86_64_release_assets(self, tmp_path):
+        """macOS Intel builds should use an architecture-specific asset name."""
+        dist_dir = tmp_path / "dist"
+        output_dir = tmp_path / "release-assets"
+        _write_binary(dist_dir, "olt", b"macOS x86_64 binary")
+
+        generated_paths = create_release_assets("2.1.0", "macOS", dist_dir, output_dir, architecture="x86_64")
+
+        assert (output_dir / "olt-cli-2.1.0-macos-x86_64.zip").exists()
+        assert (output_dir / "olt-v2.1.0-macos-x86_64").exists()
+        assert len(generated_paths) == 4
+
+    def test_rejects_unsupported_macos_architecture(self, tmp_path):
+        """Unsupported macOS architectures should fail before creating assets."""
+        with pytest.raises(ValueError, match="Unsupported macOS architecture"):
+            create_release_assets(
+                "2.1.0", "macOS", tmp_path / "dist", tmp_path / "release-assets", architecture="ppc64"
+            )
+
     def test_normalizes_v_prefixed_versions_for_windows_assets(self, tmp_path):
         """Windows builds should keep the .exe binary name while normalizing the version string."""
         dist_dir = tmp_path / "dist"

@@ -13,7 +13,8 @@ Complete reference for Open Link Token CLI arguments, modes, and examples. This 
 Download the pre-built executable from [releases](https://github.com/TruvetaPublic/OpenLinkToken/releases):
 
 - **Linux**: `olt-cli-{version}-linux-x64.zip`
-- **macOS**: `olt-cli-{version}-macos-universal.zip` (Intel + Apple Silicon)
+- **macOS Apple Silicon**: `olt-cli-{version}-macos-arm64.zip`
+- **macOS Intel**: `olt-cli-{version}-macos-x86_64.zip`
 - **Windows**: `olt-cli-{version}-windows-x64.zip`
 
 No dependencies required. Extract the ZIP and run `olt/olt` on Linux/macOS or

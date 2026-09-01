@@ -204,27 +204,19 @@ cd lib/python/openlinktoken-cli && uv pip install -e .
 #### Build a Self-Contained CLI Locally
 
 For parity with the release artifacts, build the PyInstaller executable with Python 3.11. PyInstaller bundles the
-interpreter used at build time, and `.github/workflows/build-openlinktoken-cli.yml` currently builds the published
+interpreter used at build time, and `.github/workflows/build-olt-cli.yml` currently builds the published
 artifacts with Python 3.11.
 
-From the repository root, activate your virtual environment (`.\.venv\Scripts\Activate.ps1` on Windows PowerShell)
-and install the build dependencies:
+From the repository root, install all workspace packages and build dependencies:
 
 ```shell
-uv pip install -e lib/python/openlinktoken
-uv pip install -r lib/python/openlinktoken-cli/pyinstaller-requirements.txt
-uv pip install -r lib/python/openlinktoken-cli/requirements.txt
-uv pip install -e lib/python/openlinktoken-cli --no-deps
+uv sync --all-packages
 ```
 
-Build the executable:
+Build the native executable:
 
 ```shell
-# Linux / Windows
-pyinstaller --clean --noconfirm lib/python/openlinktoken-cli/openlinktoken-cli.spec
-
-# macOS universal2 (Intel + Apple Silicon)
-pyinstaller --clean --noconfirm --target-arch universal2 lib/python/openlinktoken-cli/openlinktoken-cli.spec
+uv run pyinstaller --clean --noconfirm lib/python/openlinktoken-cli/openlinktoken-cli.spec
 ```
 
 The one-folder bundle is written to `dist/olt/` with the executable at
@@ -236,7 +228,10 @@ Smoke-test the local build before packaging it:
 ```shell
 mkdir -p smoke
 cp resources/sample.csv smoke/input.csv
-./dist/olt/olt tokenize -i smoke/input.csv -o smoke/out.csv --mode hash-only --disable-inferencing
+./dist/olt/olt generate-key-pair --name recipient --force
+./dist/olt/olt initiate-exchange --name smoke --public-key "$HOME/.openlinktoken/recipient.public.pem" --output smoke/smoke.exchange.json --hashingsecret secret
+./dist/olt/olt tokenize -i smoke/input.csv -o smoke/out.csv --exchange-config smoke/smoke.exchange.json --private-key "$HOME/.openlinktoken/smoke.private.pem"
+uv run python -c "import csv; assert any(row['RuleId'] == 'ML1' for row in csv.DictReader(open('smoke/out.csv'))), 'standalone binary did not generate ML1 tokens'"
 ```
 
 On Windows PowerShell:
@@ -244,21 +239,28 @@ On Windows PowerShell:
 ```powershell
 New-Item -ItemType Directory -Force -Path smoke | Out-Null
 Copy-Item resources\sample.csv smoke\input.csv
-.\dist\olt\olt.exe tokenize -i smoke\input.csv -o smoke\out.csv --mode hash-only --disable-inferencing
+.\dist\olt\olt.exe generate-key-pair --name recipient --force
+.\dist\olt\olt.exe initiate-exchange --name smoke --public-key "$HOME/.openlinktoken/recipient.public.pem" --output smoke\smoke.exchange.json --hashingsecret secret
+.\dist\olt\olt.exe tokenize -i smoke\input.csv -o smoke\out.csv --exchange-config smoke\smoke.exchange.json --private-key "$HOME/.openlinktoken/smoke.private.pem"
+uv run python -c "import csv; assert any(row['RuleId'] == 'ML1' for row in csv.DictReader(open('smoke/out.csv'))), 'standalone binary did not generate ML1 tokens'"
 ```
 
-If you also want the same ZIP and checksum bundle produced by the release workflow, run:
+If you also want the same ZIP and checksum bundle produced by the release workflow, run
+the following (use `arm64` or `x86_64` on macOS):
 
 ```shell
 python -m openlinktoken_cli.util.release_assets \
   --version 2.1.2 \
   --runner-os Linux \
+  --architecture x86_64 \
   --dist-dir dist \
   --output-dir release-assets
 ```
 
-Use `--runner-os macOS` or `--runner-os Windows` for those platforms. The helper writes the updater-ready raw binary,
-the downloadable ZIP, and `.sha256` sidecars to `release-assets/`.
+Use `--runner-os macOS --architecture arm64` (or `x86_64`) or
+`--runner-os Windows --architecture x86_64` for those platforms. The helper writes
+the updater-ready raw binary, the downloadable ZIP, and `.sha256` sidecars to
+`release-assets/`.
 
 CLI usage (from project root):
 

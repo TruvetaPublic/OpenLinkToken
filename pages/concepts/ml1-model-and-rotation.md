@@ -164,6 +164,14 @@ The default transformer returns 50 projections for each 1024-value embedding:
 4. Each value is clamped to `[-5.0, 5.0]` and quantized with a bin width of
    `0.05`.
 
+The Python runtime caches the leading rotation rows in
+`~/.openlinktoken/rotation-matrices/`. The cache is keyed by the rotation
+configuration, uses hashed filenames, and is written with private directory
+and file permissions. A cold process generates the matrices once; later
+processes can reuse the small cached projection rows instead of repeating that
+startup work. If the cache cannot be read or written, the runtime regenerates
+the matrices in memory.
+
 The default quantizer therefore has 200 bins. With the implementation's
 Python-compatible floor division, `-5.0` maps to bin `0`, `0.0` maps to bin
 `99`, and `5.0` maps to bin `199`. A projection is represented as a

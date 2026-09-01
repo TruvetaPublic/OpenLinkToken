@@ -238,7 +238,7 @@ class UpdateCommand:
         # names did not match the release tag exactly.
         legacy_suffixes = {
             "linux": ("-linux-x86_64",),
-            "macos": ("-macos-arm64", "-macos-x86_64", "-macos-universal"),
+            "macos": UpdateCommand._legacy_macos_suffixes(machine),
             "windows": ("-windows-x86_64.exe",),
         }
         for asset in assets:
@@ -258,7 +258,11 @@ class UpdateCommand:
                 f"openlinktoken-v{version}-linux-x86_64",
             )
         if system == "macos" and machine in {"x86_64", "amd64", "arm64", "aarch64"}:
+            architecture = "arm64" if machine in {"arm64", "aarch64"} else "x86_64"
             return (
+                f"olt-cli-{version}-macos-{architecture}.zip",
+                f"olt-v{version}-macos-{architecture}",
+                f"openlinktoken-v{version}-macos-{architecture}",
                 f"olt-cli-{version}-macos-universal.zip",
                 f"olt-v{version}-macos-universal",
                 f"openlinktoken-v{version}-macos-universal",
@@ -269,6 +273,15 @@ class UpdateCommand:
                 f"olt-v{version}-windows-x86_64.exe",
                 f"openlinktoken-v{version}-windows-x86_64.exe",
             )
+        return ()
+
+    @staticmethod
+    def _legacy_macos_suffixes(machine: str) -> tuple[str, ...]:
+        """Return legacy macOS asset suffixes compatible with the current architecture."""
+        if machine in {"arm64", "aarch64"}:
+            return ("-macos-arm64", "-macos-universal")
+        if machine in {"x86_64", "amd64", "x64"}:
+            return ("-macos-x86_64", "-macos-universal")
         return ()
 
     @staticmethod

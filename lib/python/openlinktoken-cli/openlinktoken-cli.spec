@@ -1,8 +1,9 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 import os
+import sys
 
-from PyInstaller.utils.hooks import collect_all
+from PyInstaller.utils.hooks import collect_all, collect_dynamic_libs, copy_metadata
 
 block_cipher = None
 
@@ -10,22 +11,39 @@ block_cipher = None
 # Note: SPECPATH is provided by PyInstaller when executing the spec
 base_dir = os.path.abspath(SPECPATH)
 
-# OLT_TARGET_ARCH allows callers to request a specific target architecture
-# (e.g. "universal2" for macOS universal binaries) without passing --target-arch,
-# which is invalid when a .spec file is used directly.
-target_arch = os.environ.get("OLT_TARGET_ARCH") or None
 core_ai_source = os.path.join(base_dir, "..", "openlinktoken-core-ai", "src", "main")
 inferencing_assets_source = os.path.join(base_dir, "..", "..", "..", "resources", "inferencing", "ml1")
 
-datas = []
+datas = copy_metadata("openlinktoken-core-ai")
 binaries = []
-hiddenimports = []
+hiddenimports = ["onnxruntime", "tokenizers"]
 
-for package_name in ("openlinktoken", "openlinktoken.core", "pyarrow", "pandas", "csv2parquet", "cryptography"):
+for package_name in (
+    "openlinktoken",
+    "openlinktoken.core",
+    "openlinktoken.core.ai",
+    "pyarrow",
+    "pandas",
+    "csv2parquet",
+    "cryptography",
+):
     package_datas, package_binaries, package_hiddenimports = collect_all(package_name)
     datas += package_datas
     binaries += package_binaries
     hiddenimports += package_hiddenimports
+
+if sys.platform.startswith("linux"):
+    nvidia_library_patterns = ["*.so", "*.so.*"]
+    for package_name in (
+        "nvidia.cublas",
+        "nvidia.cuda_nvrtc",
+        "nvidia.cuda_runtime",
+        "nvidia.cudnn",
+        "nvidia.cufft",
+        "nvidia.curand",
+        "nvidia.nvjitlink",
+    ):
+        binaries += collect_dynamic_libs(package_name, search_patterns=nvidia_library_patterns)
 
 datas += [
     (os.path.join(inferencing_assets_source, filename), "openlinktoken/core/ai/tokens")
@@ -47,7 +65,6 @@ a = Analysis(
     runtime_hooks=[],
     excludes=[],
     noarchive=False,
-    target_arch=target_arch,
 )
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 exe = EXE(

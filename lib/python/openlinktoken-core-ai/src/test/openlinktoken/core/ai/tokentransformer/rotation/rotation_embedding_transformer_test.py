@@ -2,9 +2,12 @@
 
 import re
 import threading
+from pathlib import Path
 
 import numpy as np
+import pytest
 
+from openlinktoken.core.ai.tokentransformer.rotation import rotation_embedding_transformer as transformer_module
 from openlinktoken.core.ai.tokentransformer.rotation.rotation_embedding_transformer import RotationEmbeddingTransformer
 from openlinktoken.core.ai.tokentransformer.rotation.rotation_matrix_generator import generate
 
@@ -12,6 +15,12 @@ _IV = "test-rotation-iv-2024"
 _DIMENSION = 4
 _HASH_DIMENSION = 2
 _ROTATION_COUNT = 3
+
+
+@pytest.fixture(autouse=True)
+def isolate_rotation_cache(tmp_path, monkeypatch):
+    """Keep matrix-cache tests and transforms isolated from the user's home."""
+    monkeypatch.setenv("OLT_ROTATION_CACHE_DIR", str(tmp_path))
 
 
 class TestRotationEmbeddingTransformer:
@@ -63,8 +72,8 @@ class TestRotationEmbeddingTransformer:
             parts = token.split(" ")
             assert len(parts) == hash_dim
 
-    def test_transformer_uses_standard_full_rotation_matrices(self):
-        """hash_dimension must not switch the CLI away from standard full rotations."""
+    def test_transformer_stores_only_consumed_rotation_rows(self):
+        """The transformer should retain only the matrix rows used by the hash dimension."""
         transformer = self._make_transformer(hash_dimension=2)
 
         transformer.transform(self._sample_embedding())
@@ -72,10 +81,10 @@ class TestRotationEmbeddingTransformer:
 
         assert len(transformer._matrices) == _ROTATION_COUNT
         for actual_matrix, expected_matrix in zip(transformer._matrices[1:], expected):
-            assert np.asarray(actual_matrix).shape == (_DIMENSION, _DIMENSION)
+            assert np.asarray(actual_matrix).shape == (_HASH_DIMENSION, _DIMENSION)
             np.testing.assert_allclose(
                 np.asarray(actual_matrix),
-                expected_matrix,
+                expected_matrix[:_HASH_DIMENSION, :],
                 rtol=0.0,
                 atol=1e-12,
             )
@@ -109,6 +118,64 @@ class TestRotationEmbeddingTransformer:
         transformer.transform(self._sample_embedding())
         matrices_after_second = transformer._matrices
         assert matrices_after_first is matrices_after_second
+
+    def test_cached_matrices_are_reused_by_new_transformer(self, tmp_path, monkeypatch):
+        """A second transformer should load the deterministic matrix cache."""
+        monkeypatch.setattr(Path, "home", lambda: tmp_path)
+        first = self._make_transformer()
+        first_tokens = first.transform(self._sample_embedding())
+
+        def fail_generate(*args, **kwargs):
+            """Fail if the second transformer regenerates an existing cache entry."""
+            raise AssertionError("rotation matrices were regenerated instead of loaded from cache")
+
+        monkeypatch.setattr(transformer_module, "generate", fail_generate)
+        second = self._make_transformer()
+
+        assert second.transform(self._sample_embedding()) == first_tokens
+
+    def test_corrupt_cached_matrices_are_regenerated(self, tmp_path):
+        """A cache with a mismatched digest should not change emitted tokens."""
+        transformer = self._make_transformer()
+        expected_tokens = transformer.transform(self._sample_embedding())
+        cache_path = next((tmp_path / "rotation-matrices").glob("*.npz"))
+
+        with np.load(cache_path, allow_pickle=False) as cache:
+            matrices = cache["matrices"].copy()
+            digest = cache["digest"].copy()
+        matrices[0, 0, 0] += 1.0
+        np.savez(cache_path, matrices=matrices, digest=digest)
+
+        regenerated = self._make_transformer()
+
+        assert regenerated.transform(self._sample_embedding()) == expected_tokens
+
+    def test_unresolvable_home_does_not_break_transform(self, monkeypatch):
+        """Matrix caching should be skipped when the home directory is unavailable."""
+        monkeypatch.delenv("OLT_ROTATION_CACHE_DIR")
+
+        def fail_home():
+            """Simulate a process without a resolvable home directory."""
+            raise RuntimeError("Could not determine home directory")
+
+        monkeypatch.setattr(Path, "home", fail_home)
+        transformer = self._make_transformer()
+
+        assert len(transformer.transform(self._sample_embedding())) == _ROTATION_COUNT
+
+    def test_single_rotation_uses_only_the_sentinel(self):
+        """A sentinel-only transformer should not attempt to cache a negative matrix count."""
+        transformer = self._make_transformer(rotation_count=1)
+
+        assert len(transformer.transform(self._sample_embedding())) == 1
+        assert len(transformer._matrices) == 1
+
+    def test_zero_rotation_count_keeps_the_sentinel_only_behavior(self):
+        """The transformer should preserve its sentinel-only behavior for zero matrices."""
+        transformer = self._make_transformer(rotation_count=0)
+
+        assert len(transformer.transform(self._sample_embedding())) == 1
+        assert len(transformer._matrices) == 1
 
     def test_thread_safety_concurrent_transforms(self):
         """Two threads calling transform() concurrently both succeed without error."""
