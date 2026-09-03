@@ -2,7 +2,7 @@
 #    uv export --package openlinktoken --no-dev --no-hashes --no-emit-project --output-file lib/python/openlinktoken/requirements.txt
 cffi==2.1.1 ; platform_python_implementation != 'PyPy'
     # via cryptography
-cryptography==50.0.0
+cryptography==50.0.1
     # via
     #   jwcrypto
     #   openlinktoken

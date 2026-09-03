@@ -53,7 +53,7 @@ comm==0.2.3
     #   ipywidgets
 coverage==7.15.4
     # via pytest-cov
-cryptography==50.0.0
+cryptography==50.0.1
     # via jwcrypto
 csv2parquet==0.0.9
 debugpy==1.8.21
