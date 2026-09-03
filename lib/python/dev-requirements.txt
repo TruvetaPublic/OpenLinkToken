@@ -24,7 +24,7 @@ attrs==26.1.0
     # via
     #   jsonschema
     #   referencing
-autoflake==2.3.3
+autoflake==2.4.0
 babel==2.18.0
     # via jupyterlab-server
 beautifulsoup4==4.15.0
