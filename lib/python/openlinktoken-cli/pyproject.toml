@@ -18,7 +18,7 @@ dependencies = [
   "csv2parquet==0.0.9",
   "cryptography==50.0.0",
   "urllib3==2.7.0",
-  "jwcrypto==1.5.8",
+  "jwcrypto==1.5.9",
   "packaging==26.3",
 ]
 
