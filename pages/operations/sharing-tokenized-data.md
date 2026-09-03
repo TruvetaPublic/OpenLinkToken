@@ -120,7 +120,7 @@ olt initiate-exchange \
 
 This:
 
-1. Generates a local ECDH key pair for the sender under `~/.openlinktoken/`, reuses one supplied with `--sender-private-key`, or derives one from `--sender-private-key-env`.
+1. Generates a local ECDH key pair for the sender under `~/.openlinktoken/`, reuses a valid existing pair for the selected name or one supplied with `--sender-private-key`, or derives one from `--sender-private-key-env`.
 2. Generates a secure random hashing secret by default, or accepts an existing one via `--hashingsecret-env`, `--hashingsecret-stdin`, or `--hashingsecret`.
 3. Encrypts the hashing secret into a multi-recipient JWE JSON envelope.
 4. Adds one JWE recipient entry for the sender's public key and one for the recipient's public key.

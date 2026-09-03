@@ -9,6 +9,8 @@ services:
       UV_PROJECT_ENVIRONMENT: "/home/vscode/.local/share/openlinktoken/.venv"
     volumes:
       - ..:/workspaces/OpenLinkToken
+      # Keep exchange keys in the shared Docker volume across container rebuilds
+      - openlinktoken-home:/home/vscode/.openlinktoken
       - openlinktoken-local:/home/vscode/.local
       - openlinktoken-cache:/home/vscode/.cache
       - openlinktoken-copilot:/home/vscode/.copilot
@@ -22,6 +24,7 @@ services:
     command: sleep infinity
 
 volumes:
+  openlinktoken-home:
   openlinktoken-local:
   openlinktoken-cache:
   openlinktoken-copilot:
