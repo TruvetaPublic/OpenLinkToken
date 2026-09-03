@@ -25,8 +25,8 @@ class TestOpenLinkTokenCommand:
     HASHING_SECRET = "TestHashingSecret"
     ENCRYPTION_KEY = "TestEncryptionKeyValue1234567890"  # Must be exactly 32 chars
 
-    def test_help_path_keeps_heavy_dependencies_lazy(self):
-        """Standalone help should not import data-processing or crypto dependencies."""
+    def test_help_path_loads_extension_discovery(self):
+        """Help should discover extensions while keeping heavy processing imports lazy."""
         result = subprocess.run(
             [
                 sys.executable,
@@ -35,8 +35,30 @@ class TestOpenLinkTokenCommand:
                     "import sys; "
                     "from openlinktoken_cli.commands import OpenLinkTokenCommand; "
                     "assert OpenLinkTokenCommand.execute(['--help']) == 0; "
-                    "assert not any(name in sys.modules for name in ('pandas', 'pyarrow', 'cryptography')); "
-                    "assert 'openlinktoken_cli.extension.extension_loader' not in sys.modules"
+                    "assert 'openlinktoken_cli.extension.extension_loader' in sys.modules; "
+                    "assert not any(name in sys.modules for name in ('pandas', 'pyarrow', 'cryptography'))"
+                ),
+            ],
+            capture_output=True,
+            text=True,
+            env=os.environ.copy(),
+            check=False,
+        )
+
+        assert result.returncode == 0, result.stderr
+
+    def test_no_args_path_loads_extension_discovery(self):
+        """Bare invocation should discover extensions while keeping heavy processing imports lazy."""
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                (
+                    "import sys; "
+                    "from openlinktoken_cli.commands import OpenLinkTokenCommand; "
+                    "assert OpenLinkTokenCommand.execute([]) == 0; "
+                    "assert 'openlinktoken_cli.extension.extension_loader' in sys.modules; "
+                    "assert not any(name in sys.modules for name in ('pandas', 'pyarrow', 'cryptography'))"
                 ),
             ],
             capture_output=True,
