@@ -21,7 +21,7 @@ openlinktoken-core-ai = { workspace = true }
 
 [dependency-groups]
 dev = [
-   "cryptography==50.0.0",
+   "cryptography==50.0.1",
    "jwcrypto==1.5.8",
    "csv2parquet==0.0.9",
    "pytest==9.1.1",

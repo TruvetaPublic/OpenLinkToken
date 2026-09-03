@@ -16,7 +16,7 @@ dependencies = [
   "pandas==3.0.3; python_version >= '3.11'",
   "pyarrow==25.0.0",
   "csv2parquet==0.0.9",
-  "cryptography==50.0.0",
+  "cryptography==50.0.1",
   "urllib3==2.7.0",
   "jwcrypto==1.5.8",
   "packaging==26.3",
