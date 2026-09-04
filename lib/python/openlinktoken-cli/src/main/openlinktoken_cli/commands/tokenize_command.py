@@ -214,6 +214,9 @@ class TokenizeCommand:
             return 1
 
         ml1_enabled = not getattr(args, "disable_inferencing", False)
+        if tokenization_config_path:
+            ml1_enabled = False
+            logger.info("ML1 ONNX inference disabled because custom tokenization configuration is active")
         configured_num_threads = getattr(args, "inferencing_num_threads", None)
         if configured_num_threads is None:
             configured_num_threads = ML1InferenceConfig.DEFAULT_NUM_THREADS

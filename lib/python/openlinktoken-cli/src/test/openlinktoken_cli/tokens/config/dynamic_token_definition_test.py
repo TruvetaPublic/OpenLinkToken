@@ -40,3 +40,20 @@ class TestDynamicTokenDefinition:
         assert t1_definition[1].attribute_class is resolver.get_class_for_field("FirstName")
         assert t1_definition[1].field_id == "FirstName"
         assert t1_definition[1].expressions == "T|S(0,1)|U"
+
+    def test_excludes_ml1_rule_from_custom_token_definitions(self):
+        config = TokenizationConfig(
+            column_mappings={
+                "FirstName": AttributeMappingEntry(column_name="given_nm", type="GivenName"),
+            },
+            token_rules={
+                "T1": [TokenRuleEntry(field="FirstName", expression="T|U")],
+                "ML1": [TokenRuleEntry(field="FirstName", expression="T|U")],
+            },
+        )
+
+        resolver = ConfiguredAttributeResolver(config)
+        definition = DynamicTokenDefinition(config, resolver)
+
+        assert definition.get_token_identifiers() == {"T1"}
+        assert definition.get_token_definition("ML1") == []

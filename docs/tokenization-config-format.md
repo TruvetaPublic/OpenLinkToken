@@ -106,6 +106,7 @@ See [Expression Syntax](../pages/concepts/token-rules.md#expression-syntax) in t
 ## Notes
 
 - `--config` works with `tokenize` for both CSV and Parquet input.
+- Custom tokenization disables ML1 ONNX inference and suppresses any configured `ML1` rule.
 - Built-in aliases continue to work when `--config` is omitted.
 
 ## Attribute Types
