@@ -32,7 +32,7 @@ dev = [
    "notebook==7.6.2",
    "ipykernel==7.3.0",
    "prek==0.4.4",
-   "autoflake==2.3.3",
+   "autoflake==2.4.0",
    "pyinstaller==6.22.2",
 ]
 tools = [

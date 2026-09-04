@@ -7,7 +7,7 @@
 -e ./lib/python/openlinktoken-cli
 -e ./lib/python/openlinktoken-core-ai
     # via openlinktoken-cli
-anyio==4.14.2
+anyio==4.15.0
     # via httpx
 certifi==2026.7.22
     # via
@@ -15,12 +15,10 @@ certifi==2026.7.22
     #   httpx
 cffi==2.1.1 ; platform_python_implementation != 'PyPy'
     # via cryptography
-click==8.4.2
+click==8.5.0
     # via huggingface-hub
 colorama==0.4.6 ; sys_platform == 'win32'
-    # via
-    #   click
-    #   tqdm
+    # via tqdm
 coloredlogs==15.0.1 ; python_full_version < '3.11'
     # via
     #   onnxruntime
@@ -34,7 +32,7 @@ csv2parquet==0.0.9
     # via openlinktoken-cli
 exceptiongroup==1.3.1 ; python_full_version < '3.11'
     # via anyio
-filelock==3.32.3
+filelock==3.32.5
     # via huggingface-hub
 flatbuffers==25.12.19
     # via
@@ -50,7 +48,7 @@ httpcore==1.0.9
     # via httpx
 httpx==0.28.1
     # via huggingface-hub
-huggingface-hub==1.28.0
+huggingface-hub==1.30.0
     # via tokenizers
 humanfriendly==10.0 ; python_full_version < '3.11'
     # via coloredlogs
@@ -84,7 +82,7 @@ nvidia-cuda-nvrtc-cu12==12.9.86 ; platform_machine == 'x86_64' and sys_platform 
     #   onnxruntime-gpu
 nvidia-cuda-runtime-cu12==12.9.79 ; platform_machine == 'x86_64' and sys_platform == 'linux'
     # via onnxruntime-gpu
-nvidia-cudnn-cu12==9.24.0.43 ; platform_machine == 'x86_64' and sys_platform == 'linux'
+nvidia-cudnn-cu12==9.25.1.1 ; platform_machine == 'x86_64' and sys_platform == 'linux'
     # via onnxruntime-gpu
 nvidia-cufft-cu12==11.4.1.4 ; platform_machine == 'x86_64' and sys_platform == 'linux'
     # via onnxruntime-gpu
@@ -110,7 +108,7 @@ pandas==2.2.3 ; python_full_version < '3.11'
     # via openlinktoken-cli
 pandas==3.0.3 ; python_full_version >= '3.11'
     # via openlinktoken-cli
-protobuf==7.36.0
+protobuf==7.36.1
     # via
     #   onnxruntime
     #   onnxruntime-gpu
