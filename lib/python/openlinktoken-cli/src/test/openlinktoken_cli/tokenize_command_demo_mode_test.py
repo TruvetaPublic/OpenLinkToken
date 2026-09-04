@@ -440,6 +440,60 @@ class TestTokenizeCommandDemoMode:
         metadata = _read_metadata(temp_dir / "output.metadata.json")
         assert metadata.get("TotalRows") == 2, f"Expected TotalRows=2 but got {metadata.get('TotalRows')}"
 
+    def test_custom_tokenization_disables_ml1_and_omits_custom_ml1_rule(self, temp_dir: Path):
+        """Custom tokenization must not produce built-in or explicitly configured ML1 output."""
+        config_path = temp_dir / "tokenization-config.yaml"
+        config_path.write_text(
+            """
+column_mappings:
+  RecordId:
+    column_name: "RecordId"
+    type: RecordId
+  FirstName:
+    column_name: "FirstName"
+    type: FirstName
+token_rules:
+  T1:
+    - field: FirstName
+      expression: "T|U"
+  ML1:
+    - field: FirstName
+      expression: "T|U"
+""".strip(),
+            encoding="utf-8",
+        )
+        output_csv = temp_dir / "custom-output.csv"
+        previous_enabled = ML1InferenceConfig.is_enabled()
+
+        try:
+            with patch.object(ML1InferenceConfig, "configure", wraps=ML1InferenceConfig.configure) as configure:
+                exit_code = OpenLinkTokenCommand.execute(
+                    [
+                        "tokenize",
+                        "-i",
+                        str(temp_dir / "input.csv"),
+                        "-o",
+                        str(output_csv),
+                        "--mode",
+                        "demo",
+                        "--config",
+                        str(config_path),
+                    ]
+                )
+
+            assert exit_code == 0
+            assert configure.call_args.kwargs["enable_ml1"] is False
+            assert "ML1" not in output_csv.read_text(encoding="utf-8")
+        finally:
+            ML1InferenceConfig.configure(
+                enable_ml1=previous_enabled,
+                configured_model_path=ML1InferenceConfig.DEFAULT_MODEL_PATH,
+                configured_tokenizer_path=ML1InferenceConfig.DEFAULT_TOKENIZER_PATH,
+                configured_max_sequence_length=ML1InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH,
+                configured_batch_size=ML1InferenceConfig.DEFAULT_BATCH_SIZE,
+                configured_num_threads=ML1InferenceConfig.DEFAULT_NUM_THREADS,
+            )
+
 
 # ---------------------------------------------------------------------------
 # Helpers

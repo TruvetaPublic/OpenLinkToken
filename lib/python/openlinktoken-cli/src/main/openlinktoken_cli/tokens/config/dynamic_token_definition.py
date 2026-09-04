@@ -4,6 +4,7 @@ from typing import Dict, List, Set
 
 from openlinktoken.attributes.attribute_expression import AttributeExpression
 from openlinktoken.attributes.field_registry import FieldRegistry
+from openlinktoken.core.ai.tokens.ml1_token import ML1Token
 from openlinktoken.tokens.base_token_definition import BaseTokenDefinition
 from openlinktoken_cli.tokens.config.configured_attribute_resolver import ConfiguredAttributeResolver
 from openlinktoken_cli.tokens.config.tokenization_config import TokenizationConfig
@@ -29,6 +30,8 @@ class DynamicTokenDefinition(BaseTokenDefinition):
         self.field_registry: FieldRegistry = resolver.build_field_registry()
 
         for token_id, rule_entries in config.token_rules.items():
+            if token_id == ML1Token.TOKEN_ID:
+                continue
             expressions = []
             for entry in rule_entries:
                 attribute_class = resolver.get_class_for_field(entry.field)
