@@ -10,8 +10,8 @@ dynamic = [
   "urls",
 ]
 dependencies = [
-  "cryptography==50.0.0",
-  "jwcrypto==1.5.8",
+  "cryptography==50.0.1",
+  "jwcrypto==1.5.9",
   "PyYAML==6.0.3",
 ]
 

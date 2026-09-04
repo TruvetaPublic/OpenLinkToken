@@ -21,8 +21,8 @@ openlinktoken-core-ai = { workspace = true }
 
 [dependency-groups]
 dev = [
-   "cryptography==50.0.0",
-   "jwcrypto==1.5.8",
+   "cryptography==50.0.1",
+   "jwcrypto==1.5.9",
    "csv2parquet==0.0.9",
    "pytest==9.1.1",
    "pytest-cov==7.1.0",
@@ -32,7 +32,7 @@ dev = [
    "notebook==7.6.2",
    "ipykernel==7.3.0",
    "prek==0.4.4",
-   "autoflake==2.3.3",
+   "autoflake==2.4.0",
    "pyinstaller==6.22.2",
 ]
 tools = [
