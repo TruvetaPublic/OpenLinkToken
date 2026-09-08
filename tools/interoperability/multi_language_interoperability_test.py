@@ -28,6 +28,7 @@ sys.path.insert(0, str(PROJECT_ROOT / "lib/python/openlinktoken-core-ai/src/main
 from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig  # noqa: E402
 from openlinktoken.core.ai.tokens.ml1_onnx_signature_provider import ML1OnnxSignatureProvider  # noqa: E402
 from openlinktoken.core.ai.tokens.rotation_config import RotationConfig  # noqa: E402
+from openlinktoken.crypto_suite import CryptoSuite  # noqa: E402
 
 # These fixture values are intentionally kept aligned with the Java
 # TokenGeneratorIntegrationTest so this interop job verifies the same
@@ -64,7 +65,7 @@ EXPECTED_SAMPLE_METADATA = {
 class InteroperabilityTooling:
     """Shared paths and test credentials for interoperability checks."""
 
-    HASHING_KEY = "TestHashingKey123"
+    HASHING_KEY = "TestHashingKey123456789012345678"
     JAVA_MAIN_CLASS = "org.openlinktoken.tools.TokenizeInteropHarness"
 
     def __init__(self):
@@ -132,23 +133,30 @@ class PythonCLI(InteroperabilityTooling):
     def _bootstrap_exchange_config(
         self,
         workspace_root: Path,
+        crypto_suite: CryptoSuite = CryptoSuite.default(),
         rotation_iv: str | None = None,
     ) -> tuple[Path, Path]:
         """Create exchange artifacts for the current CLI tokenize contract."""
-        recipient_name = "interop-recipient"
-        sender_name = "interop-sender"
-        recipient_public_key = workspace_root / ".openlinktoken" / f"{recipient_name}.public.pem"
-        sender_private_key = workspace_root / ".openlinktoken" / f"{sender_name}.private.pem"
-        exchange_config = workspace_root / "interop.exchange.json"
+        suite_suffix = crypto_suite.suite_id.replace("-", "_")
+        recipient_name = f"interop-recipient-{suite_suffix}"
+        sender_name = f"interop-sender-{suite_suffix}"
+        key_suffix = "bundle.json" if crypto_suite.exchange_config_version == 2 else "pem"
+        recipient_public_key = workspace_root / ".openlinktoken" / f"{recipient_name}.public.{key_suffix}"
+        sender_private_key = workspace_root / ".openlinktoken" / f"{sender_name}.private.{key_suffix}"
+        exchange_config = workspace_root / f"{crypto_suite.suite_id}.interop.exchange.json"
 
         self.run(
             "generate-key-pair",
             "--name",
             recipient_name,
+            "--crypto-suite",
+            crypto_suite.suite_id,
             home_dir=workspace_root,
         )
         initiate_exchange_args = [
             "initiate-exchange",
+            "--crypto-suite",
+            crypto_suite.suite_id,
             "--name",
             sender_name,
             "--public-key",
@@ -171,12 +179,14 @@ class PythonCLI(InteroperabilityTooling):
         self,
         input_file: Path,
         output_file: Path,
+        crypto_suite: CryptoSuite = CryptoSuite.default(),
         enable_inferencing: bool = False,
     ) -> subprocess.CompletedProcess:
         """Run the Python CLI `tokenize` command and write CSV output."""
         workspace_root = output_file.parent
         exchange_config, private_key = self._bootstrap_exchange_config(
             workspace_root,
+            crypto_suite=crypto_suite,
             rotation_iv=RotationConfig.DEFAULT_IV if enable_inferencing else None,
         )
         tokenize_args = [
@@ -202,7 +212,12 @@ class PythonCLI(InteroperabilityTooling):
 class JavaLibraryHarness(InteroperabilityTooling):
     """Runs a thin Java harness built on the Java core library API."""
 
-    def generate_tokenized_output(self, input_file: Path, output_file: Path) -> subprocess.CompletedProcess:
+    def generate_tokenized_output(
+        self,
+        input_file: Path,
+        output_file: Path,
+        crypto_suite: CryptoSuite = CryptoSuite.default(),
+    ) -> subprocess.CompletedProcess:
         """Run the Java harness that emits tokenize-compatible CSV output."""
         cmd = [
             "mvn",
@@ -213,7 +228,7 @@ class JavaLibraryHarness(InteroperabilityTooling):
             "org.codehaus.mojo:exec-maven-plugin:3.5.0:java",
             f"-Dexec.mainClass={self.JAVA_MAIN_CLASS}",
             "-Dexec.classpathScope=test",
-            f"-Dexec.args={input_file} {output_file} {self.HASHING_KEY}",
+            f"-Dexec.args={input_file} {output_file} {self.HASHING_KEY} {crypto_suite.suite_id}",
         ]
 
         result = subprocess.run(
@@ -429,26 +444,41 @@ class TestTokenCompatibility:
                 assert python_meta["BlankTokensByRule"][rule_id] == expected_count
 
     def test_java_library_harness_matches_python_cli_tokenize_output(self):
-        """Compare Java library output with Python CLI tokenize output for the sample CSV."""
+        """Compare Java and Python token output for every registered crypto suite."""
         print("\nTesting Java library harness against Python CLI tokenize output")
         print("-" * 30)
 
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
-            java_output = temp_path / "java_tokenize_output.csv"
-            python_output = temp_path / "python_tokenize_output.csv"
+            for crypto_suite in CryptoSuite.all():
+                java_output = temp_path / f"java_{crypto_suite.suite_id}.csv"
+                python_output = temp_path / f"python_{crypto_suite.suite_id}.csv"
 
-            self.java_harness.generate_tokenized_output(self.java_harness.sample_csv, java_output)
-            self.python_cli.generate_tokenized_output(self.python_cli.sample_csv, python_output)
+                self.java_harness.generate_tokenized_output(
+                    self.java_harness.sample_csv,
+                    java_output,
+                    crypto_suite=crypto_suite,
+                )
+                self.python_cli.generate_tokenized_output(
+                    self.python_cli.sample_csv,
+                    python_output,
+                    crypto_suite=crypto_suite,
+                )
 
-            comparison = self.validator.compare_token_files(java_output, python_output)
+                comparison = self.validator.compare_token_files(java_output, python_output)
 
-            assert not comparison["missing_in_file1"], f"Missing in Java output: {comparison['missing_in_file1']}"
-            assert not comparison["missing_in_file2"], f"Missing in Python output: {comparison['missing_in_file2']}"
-            assert not comparison["mismatched_records"], f"Token mismatches: {comparison['detailed_mismatches']}"
-            assert comparison["total_records"] == comparison["matching_records"], comparison
+                assert not comparison["missing_in_file1"], (
+                    f"{crypto_suite.suite_id}: missing in Java output: {comparison['missing_in_file1']}"
+                )
+                assert not comparison["missing_in_file2"], (
+                    f"{crypto_suite.suite_id}: missing in Python output: {comparison['missing_in_file2']}"
+                )
+                assert not comparison["mismatched_records"], (
+                    f"{crypto_suite.suite_id}: token mismatches: {comparison['detailed_mismatches']}"
+                )
+                assert comparison["total_records"] == comparison["matching_records"], comparison
 
-            print("✅ Java core library and Python CLI token outputs match!")
+                print(f"✅ {crypto_suite.suite_id}: Java and Python token outputs match!")
             print("-" * 30)
 
     def test_java_ml1_harness_matches_python_provider(self):
