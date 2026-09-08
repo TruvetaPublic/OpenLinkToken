@@ -9,7 +9,7 @@ Note: The exchange-config workflow is Python-CLI only. The Java counterpart
 import base64
 import json
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 from typing import Any, Mapping
@@ -18,10 +18,13 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
+from openlinktoken.crypto_suite import CryptoSuite
 from openlinktoken.ec_key_utils import derive_public_key_from_private_pem, public_key_fingerprint
 from openlinktoken.exchange_jwe import decrypt_exchange_envelope, resolve_private_key_by_kid
+from openlinktoken.exchange_kem import decrypt_exchange_envelope_v2
+from openlinktoken.exchange_key_bundle import ExchangeKeyBundle, resolve_private_bundle_by_kid
 
-SUPPORTED_EXCHANGE_CONFIG_VERSIONS = {1}
+SUPPORTED_EXCHANGE_CONFIG_VERSIONS = {1, 2}
 TRANSPORT_KEY_INFO = b"openlinktoken:token-encryption:v1"
 
 
@@ -49,6 +52,8 @@ class ResolvedExchangeConfig:
     rotation_count: int
     bin_width: float
     dimension_bias: list[float]
+    crypto_suite: CryptoSuite = field(default_factory=CryptoSuite.default)
+    transport_encryption_key: bytes | None = None
 
 
 def default_exchange_config_path() -> Path:
@@ -148,6 +153,8 @@ def resolve_exchange_config_private_key(
     resolved_openlinktoken_dir = openlinktoken_dir if openlinktoken_dir else Path.home() / ".openlinktoken"
     for kid in _recipient_kids(exchange_config.config):
         try:
+            if exchange_config.version == 2:
+                return resolve_private_bundle_by_kid(resolved_openlinktoken_dir, kid)
             return resolve_private_key_by_kid(resolved_openlinktoken_dir, kid)
         except FileNotFoundError:
             continue
@@ -162,17 +169,32 @@ def resolve_loaded_exchange_config(
     exchange_config: LoadedExchangeConfig, private_key_pem: bytes
 ) -> ResolvedExchangeConfig:
     """Decrypt a validated exchange-config envelope using the provided private key PEM."""
+    transport_encryption_key = None
     try:
-        payload = json.loads(decrypt_exchange_envelope(exchange_config.config, private_key_pem))
+        if exchange_config.version == 2:
+            payload_bytes, transport_encryption_key = decrypt_exchange_envelope_v2(
+                exchange_config.config,
+                private_key_pem,
+            )
+            payload = json.loads(payload_bytes)
+        else:
+            payload = json.loads(decrypt_exchange_envelope(exchange_config.config, private_key_pem))
     except Exception as error:
         raise ValueError(f"Failed to decrypt exchange config '{exchange_config.path}': {error}") from error
 
     if not isinstance(payload, dict):
         raise ValueError(f"Exchange config '{exchange_config.path}' decrypted to an invalid payload.")
 
+    crypto_suite = CryptoSuite.from_id(payload.get("cryptoSuite", CryptoSuite.default().suite_id))
+    if crypto_suite.exchange_config_version != exchange_config.version:
+        raise ValueError(
+            f"Exchange config version {exchange_config.version} does not match suite '{crypto_suite.suite_id}'."
+        )
+
     return ResolvedExchangeConfig(
         path=exchange_config.path,
         version=exchange_config.version,
+        crypto_suite=crypto_suite,
         config=exchange_config.config,
         payload=payload,
         private_key_pem=private_key_pem,
@@ -182,11 +204,15 @@ def resolve_loaded_exchange_config(
         rotation_count=_decode_rotation_count(payload),
         bin_width=_decode_bin_width(payload),
         dimension_bias=_decode_dimension_bias(payload),
+        transport_encryption_key=transport_encryption_key,
     )
 
 
 def derive_transport_encryption_key(exchange: ResolvedExchangeConfig) -> bytes:
     """Derive the shared 32-byte transport key defined by the exchange config contract."""
+    if exchange.transport_encryption_key is not None:
+        return exchange.transport_encryption_key
+
     sender_public_key = exchange.payload.get("senderPublicKey")
     recipient_public_key = exchange.payload.get("recipientPublicKey")
     exchange_id = exchange.payload.get("exchangeId")
@@ -279,6 +305,9 @@ def _recipient_kids(exchange_config: Mapping[str, Any]) -> list[str]:
     for recipient in recipients:
         if not isinstance(recipient, dict):
             continue
+        if recipient.get("kid"):
+            kids.append(recipient["kid"])
+            continue
         header = recipient.get("header")
         if isinstance(header, dict) and header.get("kid"):
             kids.append(header["kid"])
@@ -289,6 +318,14 @@ def _recipient_kids(exchange_config: Mapping[str, Any]) -> list[str]:
 
 
 def _resolve_private_key_role(private_pem: bytes, payload: Mapping[str, Any]) -> str:
+    if payload.get("senderKeyId") or payload.get("recipientKeyId"):
+        bundle = ExchangeKeyBundle.from_json(private_pem, require_private=True)
+        if bundle.kid == payload.get("senderKeyId"):
+            return "sender"
+        if bundle.kid == payload.get("recipientKeyId"):
+            return "recipient"
+        raise ValueError("Resolved private key bundle does not match the sender or recipient key identifier.")
+
     public_pem, _ = derive_public_key_from_private_pem(private_pem)
     fingerprint = public_key_fingerprint(public_pem)
     if fingerprint == payload.get("senderKeyFingerprint"):

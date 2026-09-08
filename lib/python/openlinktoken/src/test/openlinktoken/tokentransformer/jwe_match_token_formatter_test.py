@@ -3,11 +3,13 @@
 Unit tests for JweMatchTokenFormatter.
 """
 
+import base64
 import json
 import unittest
 
 from jwcrypto import jwe, jwk
 
+from openlinktoken.crypto_suite import CryptoSuite
 from openlinktoken.tokentransformer.jwe_match_token_formatter import JweMatchTokenFormatter
 
 
@@ -166,6 +168,49 @@ class TestJweMatchTokenFormatter(unittest.TestCase):
         )
 
         self.assertEqual("org.openlinktoken", formatter.issuer)
+
+    def test_sha3_suite_metadata_is_embedded_in_olt_v1(self):
+        """SHA3 metadata is profile-driven while the token prefix stays olt.V1."""
+        formatter = JweMatchTokenFormatter(
+            self.TEST_ENCRYPTION_KEY,
+            self.TEST_RING_ID,
+            self.TEST_RULE_ID,
+            self.TEST_ISSUER,
+            CryptoSuite.from_id("suite-sha3-v1"),
+        )
+
+        result = formatter.transform(self.TEST_TOKEN)
+        token = jwe.JWE()
+        token.deserialize(result[len("olt.V1.") :])
+        key_bytes = self.TEST_ENCRYPTION_KEY.encode("utf-8")
+        key_b64 = base64.urlsafe_b64encode(key_bytes).decode("utf-8").rstrip("=")
+        token.decrypt(jwk.JWK(kty="oct", k=key_b64))
+        payload = json.loads(token.payload.decode("utf-8"))
+
+        self.assertTrue(result.startswith("olt.V1."))
+        self.assertEqual("SHA3-256", payload["hash_alg"])
+        self.assertEqual("HS3-256", payload["mac_alg"])
+
+    def test_shake_suite_metadata_is_embedded_in_olt_v1(self):
+        """SHAKE metadata records the fixed digest and MAC output lengths."""
+        formatter = JweMatchTokenFormatter(
+            self.TEST_ENCRYPTION_KEY,
+            self.TEST_RING_ID,
+            self.TEST_RULE_ID,
+            self.TEST_ISSUER,
+            CryptoSuite.from_id("suite-shake-v1"),
+        )
+
+        result = formatter.transform(self.TEST_TOKEN)
+        token = jwe.JWE()
+        token.deserialize(result[len("olt.V1.") :])
+        key_bytes = self.TEST_ENCRYPTION_KEY.encode("utf-8")
+        key_b64 = base64.urlsafe_b64encode(key_bytes).decode("utf-8").rstrip("=")
+        token.decrypt(jwk.JWK(kty="oct", k=key_b64))
+        payload = json.loads(token.payload.decode("utf-8"))
+
+        self.assertEqual("SHAKE256-256", payload["hash_alg"])
+        self.assertEqual("KMAC256-256", payload["mac_alg"])
 
     def test_different_tokens_produce_different_outputs(self):
         """Test that different tokens produce different encrypted outputs."""

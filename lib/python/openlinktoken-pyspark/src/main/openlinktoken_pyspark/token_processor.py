@@ -24,6 +24,7 @@ from openlinktoken.attributes.person.last_name_attribute import LastNameAttribut
 from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttribute
 from openlinktoken.attributes.person.sex_attribute import SexAttribute
 from openlinktoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
+from openlinktoken.crypto_suite import CryptoSuite
 from openlinktoken.exchange_config import derive_transport_encryption_key, resolve_exchange_config_inputs
 from openlinktoken.tokens.base_token_definition import BaseTokenDefinition
 from openlinktoken.tokens.token_definition import TokenDefinition
@@ -76,6 +77,7 @@ class OpenLinkTokenProcessor:
         encryption_key: str | bytes | None = None,
         token_definition: BaseTokenDefinition | None = None,
         ring_id: str | None = None,
+        crypto_suite: CryptoSuite | str | None = None,
     ):
         """
         Initialize the Open Link Token processor with secrets.
@@ -124,6 +126,11 @@ class OpenLinkTokenProcessor:
         self.encryption_key = encryption_key
         self.token_definition = token_definition  # Store custom token definition
         self.ring_id = ring_id if ring_id else str(uuid.uuid4())
+        self.crypto_suite = (
+            CryptoSuite.from_id(crypto_suite)
+            if isinstance(crypto_suite, str)
+            else crypto_suite or CryptoSuite.default()
+        )
 
         # Build column mappings if not already built
         self._build_column_mappings()
@@ -131,7 +138,7 @@ class OpenLinkTokenProcessor:
         # Validate secrets can initialize transformers
         try:
             if hashing_secret is not None:
-                HashTokenTransformer(hashing_secret)
+                HashTokenTransformer(hashing_secret, crypto_suite=self.crypto_suite)
             if encryption_key is not None:
                 EncryptTokenTransformer(encryption_key)
         except ValueError as error:
@@ -147,6 +154,7 @@ class OpenLinkTokenProcessor:
         private_key_value: str | bytes | None = None,
         token_definition: BaseTokenDefinition | None = None,
         ring_id: str | None = None,
+        crypto_suite: CryptoSuite | str | None = None,
     ) -> "OpenLinkTokenProcessor":
         """
         Build a processor from an initiate-exchange config plus private key material.
@@ -171,11 +179,18 @@ class OpenLinkTokenProcessor:
             private_key_env=private_key_env,
             private_key_value=private_key_value,
         )
+        selected_suite = CryptoSuite.from_id(crypto_suite) if isinstance(crypto_suite, str) else crypto_suite
+        if selected_suite is not None and selected_suite != exchange.crypto_suite:
+            raise ValueError(
+                f"Requested crypto suite '{selected_suite.suite_id}' does not match "
+                f"exchange config suite '{exchange.crypto_suite.suite_id}'."
+            )
         return cls(
             hashing_secret=exchange.hashing_secret,
             encryption_key=derive_transport_encryption_key(exchange),
             token_definition=token_definition,
             ring_id=ring_id,
+            crypto_suite=exchange.crypto_suite,
         )
 
     def process_dataframe(self, df: DataFrame) -> DataFrame:
@@ -211,6 +226,7 @@ class OpenLinkTokenProcessor:
         encryption_key_bytes = self._resolve_secret_bytes(self.encryption_key)
         token_definition = self.token_definition
         ring_id = self.ring_id
+        crypto_suite = self.crypto_suite
 
         # Define the schema for the output (array of structs)
         token_schema = ArrayType(
@@ -245,10 +261,10 @@ class OpenLinkTokenProcessor:
 
             if hashing_secret_bytes is not None:
                 # Use SHA256 tokenizer with optional encryption
-                token_transformer_list.append(HashTokenTransformer(hashing_secret_bytes))
+                token_transformer_list.append(HashTokenTransformer(hashing_secret_bytes, crypto_suite=crypto_suite))
                 if encryption_key_bytes is not None:
                     token_transformer_list.append(EncryptTokenTransformer(encryption_key_bytes))
-                tokenizer = SHA256Tokenizer(token_transformer_list)
+                tokenizer = SHA256Tokenizer(token_transformer_list, crypto_suite=crypto_suite)
             else:
                 # Use passthrough tokenizer (plain text) with optional encryption
                 if encryption_key_bytes is not None:
@@ -266,6 +282,7 @@ class OpenLinkTokenProcessor:
                         ring_id=ring_id,
                         rule_id=token_id,
                         issuer="org.openlinktoken",
+                        crypto_suite=crypto_suite,
                     )
 
             # Initialize token generator with custom tokenizer

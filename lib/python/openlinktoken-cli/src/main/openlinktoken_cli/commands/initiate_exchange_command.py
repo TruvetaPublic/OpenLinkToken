@@ -40,13 +40,23 @@ class InitiateExchangeCommand:
         """Register the initiate-exchange subcommand with the argument parser."""
         parser = subparsers.add_parser(
             "initiate-exchange",
-            help="Initiate an ECDH key exchange and produce an encrypted exchange config JWE envelope",
+            help="Initiate a configured key exchange and produce an encrypted exchange config envelope",
             formatter_class=argparse.RawTextHelpFormatter,
             description=(
-                "Initiate an ECDH key exchange with a partner.\n\n"
-                "Generates, reuses, or derives a sender key pair, encrypts the\n"
-                "exchange payload into a multi-recipient JWE envelope, and writes a\n"
-                f"version {EXCHANGE_CONFIG_VERSION} encrypted exchange config JSON file."
+                "Initiate a configured key exchange with a partner.\n\n"
+                "The default suite uses ECDH/JWE. Post-quantum suites use JSON key\n"
+                "bundles and the generic version-2 exchange envelope."
+            ),
+        )
+
+        parser.add_argument(
+            "--crypto-suite",
+            dest="crypto_suite",
+            default="suite-sha256-v1",
+            metavar="SUITE_ID",
+            help=(
+                "Crypto suite to use (default: suite-sha256-v1). "
+                "Use suite-pq-v1 or suite-pq-hybrid-v1 with JSON key bundles."
             ),
         )
 
@@ -55,20 +65,20 @@ class InitiateExchangeCommand:
             "--public-key",
             dest="public_key",
             metavar="PATH",
-            help="Path to the partner's public key in PEM/SPKI format",
+            help="Path to the partner's public key PEM or JSON key bundle",
         )
         partner_public_key_group.add_argument(
             "--public-key-stdin",
             dest="public_key_stdin",
             action="store_true",
             default=False,
-            help="Read the partner's public key PEM/SPKI data from stdin",
+            help="Read the partner's public key PEM or JSON bundle data from stdin",
         )
         partner_public_key_group.add_argument(
             "--public-key-env",
             dest="public_key_env",
             metavar="ENV_VAR",
-            help="Read the partner's public key PEM/SPKI data from the named environment variable",
+            help="Read the partner's public key PEM or JSON bundle data from the named environment variable",
         )
 
         parser.add_argument(
@@ -225,6 +235,7 @@ class InitiateExchangeCommand:
         Returns:
             Exit code (0 for success, non-zero for errors).
         """
+        from openlinktoken.crypto_suite import CryptoSuite
         from openlinktoken.exchange_jwe import build_exchange_envelope
         from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
         from openlinktoken_cli.util.ec_key_utils import (
@@ -255,9 +266,41 @@ class InitiateExchangeCommand:
         embedding_bias: Optional[list] = getattr(args, "embedding_bias", None)
         local_private_key_path_str: Optional[str] = getattr(args, "local_private_key", None)
         sender_private_key_env_name: Optional[str] = getattr(args, "sender_private_key_env", None)
+        crypto_suite_id: str = getattr(args, "crypto_suite", CryptoSuite.default().suite_id)
 
         try:
             name = resolve_key_name(name)
+            try:
+                crypto_suite = CryptoSuite.from_id(crypto_suite_id)
+            except ValueError as error:
+                logger.error("%s", error)
+                return 1
+
+            if crypto_suite.exchange_config_version == 2:
+                if curve is not None:
+                    logger.error("--curve is only supported by the ECDH exchange suites.")
+                    return 1
+                return InitiateExchangeCommand._execute_v2(
+                    crypto_suite=crypto_suite,
+                    name=name,
+                    public_key_path_str=public_key_path_str,
+                    public_key_stdin=public_key_stdin,
+                    public_key_env_name=public_key_env_name,
+                    output_path_str=output_path_str,
+                    hashing_secret=hashing_secret,
+                    hashing_secret_stdin=hashing_secret_stdin,
+                    hashing_secret_env_name=hashing_secret_env_name,
+                    rotation_iv=rotation_iv,
+                    rotation_iv_stdin=rotation_iv_stdin,
+                    rotation_iv_env_name=rotation_iv_env_name,
+                    rotation_count=rotation_count,
+                    bin_width=bin_width,
+                    embedding_dimension=embedding_dimension,
+                    embedding_bias=embedding_bias,
+                    force=force,
+                    local_private_key_path_str=local_private_key_path_str,
+                    sender_private_key_env_name=sender_private_key_env_name,
+                )
 
             if curve is not None and curve not in SUPPORTED_CURVES:
                 logger.error(
@@ -456,6 +499,7 @@ class InitiateExchangeCommand:
                 rotation_count=rotation_count,
                 bin_width=bin_width,
                 dimension_bias=dimension_bias,
+                crypto_suite=crypto_suite,
             )
 
             InitiateExchangeCommand._write_config(output_path, config, overwrite=force)
@@ -475,6 +519,158 @@ class InitiateExchangeCommand:
             print("Sender public key:  derived from the sender private key (not written locally)")
         print(f"Exchange config: {output_path.resolve()}")
         return 0
+
+    @staticmethod
+    def _execute_v2(
+        *,
+        crypto_suite,
+        name: str,
+        public_key_path_str: str,
+        public_key_stdin: bool,
+        public_key_env_name: Optional[str],
+        output_path_str: Optional[str],
+        hashing_secret: Optional[str],
+        hashing_secret_stdin: bool,
+        hashing_secret_env_name: Optional[str],
+        rotation_iv: Optional[str],
+        rotation_iv_stdin: bool,
+        rotation_iv_env_name: Optional[str],
+        rotation_count: int,
+        bin_width: float,
+        embedding_dimension: int,
+        embedding_bias: Optional[str],
+        force: bool,
+        local_private_key_path_str: Optional[str],
+        sender_private_key_env_name: Optional[str],
+    ) -> int:
+        """Create a version-2 exchange using validated JSON key bundles."""
+        from openlinktoken.exchange_kem import build_exchange_envelope_v2
+        from openlinktoken.exchange_key_bundle import ExchangeKeyBundle, generate_exchange_key_bundle
+        from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
+        from openlinktoken_cli.util.ec_key_utils import ensure_directory, write_key
+
+        try:
+            if public_key_stdin and hashing_secret_stdin:
+                raise ValueError(
+                    "Cannot combine --public-key-stdin and --hashingsecret-stdin because both consume stdin."
+                )
+            if rotation_count < 1:
+                raise ValueError("--rotation-count must be a positive integer.")
+            if bin_width <= 0:
+                raise ValueError("--rotation-bin-width must be a positive number.")
+
+            if public_key_stdin:
+                partner_value = read_required_stdin_bytes("--public-key-stdin", "partner public key bundle")
+            elif public_key_env_name:
+                partner_value = read_required_env_bytes(
+                    "--public-key-env",
+                    public_key_env_name,
+                    "partner public key bundle",
+                )
+            else:
+                partner_path = Path(public_key_path_str)
+                if partner_path.is_symlink() or not partner_path.is_file():
+                    raise OSError(f"Partner key bundle file is not a regular file: {partner_path}")
+                partner_value = partner_path.read_bytes()
+
+            recipient_bundle = ExchangeKeyBundle.from_json(partner_value)
+            if recipient_bundle.suite != crypto_suite:
+                raise ValueError(
+                    f"Partner key bundle suite '{recipient_bundle.suite.suite_id}' does not match "
+                    f"--crypto-suite '{crypto_suite.suite_id}'."
+                )
+            if recipient_bundle.mlkem_private_seed is not None or recipient_bundle.ec_private_pem is not None:
+                raise ValueError("Partner public key bundle must not contain private key material.")
+
+            openlinktoken_dir = Path.home() / ".openlinktoken"
+            private_bundle_path = openlinktoken_dir / f"{name}.private.bundle.json"
+            public_bundle_path = openlinktoken_dir / f"{name}.public.bundle.json"
+            output_path = Path(output_path_str) if output_path_str else Path(f"{name}.exchange.json")
+            if not force and output_path.exists():
+                raise FileExistsError(f"Exchange config '{output_path}' already exists. Use --force to overwrite.")
+
+            if local_private_key_path_str:
+                private_path = Path(local_private_key_path_str)
+                if private_path.is_symlink() or not private_path.is_file():
+                    raise OSError(f"Local private key bundle is not a regular file: {private_path}")
+                sender_bundle = ExchangeKeyBundle.from_json(private_path.read_bytes(), require_private=True)
+                persist_local_key_files = False
+            elif sender_private_key_env_name:
+                sender_bundle = ExchangeKeyBundle.from_json(
+                    read_required_env_bytes(
+                        "--sender-private-key-env",
+                        sender_private_key_env_name,
+                        "sender private key bundle",
+                    ),
+                    require_private=True,
+                )
+                persist_local_key_files = False
+            elif private_bundle_path.exists() and not force:
+                sender_bundle = ExchangeKeyBundle.from_json(private_bundle_path.read_bytes(), require_private=True)
+                persist_local_key_files = True
+            else:
+                sender_bundle = generate_exchange_key_bundle(crypto_suite.suite_id)
+                persist_local_key_files = True
+
+            if sender_bundle.suite != crypto_suite:
+                raise ValueError(
+                    f"Sender key bundle suite '{sender_bundle.suite.suite_id}' does not match "
+                    f"--crypto-suite '{crypto_suite.suite_id}'."
+                )
+
+            resolved_hashing_secret = InitiateExchangeCommand._resolve_hashing_secret(
+                hashing_secret,
+                hashing_secret_stdin=hashing_secret_stdin,
+                hashing_secret_env_name=hashing_secret_env_name,
+            )
+            resolved_rotation_iv = InitiateExchangeCommand._resolve_rotation_iv(
+                rotation_iv,
+                rotation_iv_stdin=rotation_iv_stdin,
+                rotation_iv_env_name=rotation_iv_env_name,
+            )
+            if embedding_bias:
+                bias_values = json.loads(Path(embedding_bias).read_text(encoding="utf-8"))
+                if not isinstance(bias_values, list) or not all(isinstance(v, (int, float)) for v in bias_values):
+                    raise ValueError("--rotation-embedding-bias must contain a flat JSON array of numbers.")
+                dimension_bias = [float(value) for value in bias_values]
+            else:
+                if embedding_dimension < 2:
+                    raise ValueError("--rotation-embedding-dimension must be at least 2.")
+                dimension_bias = [0.0] * embedding_dimension
+
+            config = build_exchange_envelope_v2(
+                exchange_name=name,
+                hashing_secret=resolved_hashing_secret,
+                sender_bundle=sender_bundle,
+                recipient_bundle=recipient_bundle,
+                created_at=InitiateExchangeCommand._created_at(),
+                exchange_id=InitiateExchangeCommand._exchange_id(),
+                rotation_iv=resolved_rotation_iv,
+                rotation_count=rotation_count,
+                bin_width=bin_width,
+                dimension_bias=dimension_bias,
+            )
+
+            if persist_local_key_files:
+                ensure_directory(openlinktoken_dir)
+                write_key(private_bundle_path, sender_bundle.to_json(include_private=True), 0o600, overwrite=force)
+                write_key(public_bundle_path, sender_bundle.to_json(), 0o644, overwrite=force)
+            InitiateExchangeCommand._write_config(output_path, config, overwrite=force)
+
+            print(f"Crypto suite:    {crypto_suite.suite_id}")
+            if persist_local_key_files:
+                print(f"Private key:     {private_bundle_path.resolve()}")
+                print(f"Public key:      {public_bundle_path.resolve()}")
+            else:
+                print("Sender private key: supplied externally (not written locally)")
+            print(f"Exchange config: {output_path.resolve()}")
+            return 0
+        except Exception as error:
+            report = archive_cli_error(error, command_name="initiate-exchange")
+            logger.error("Error during version-2 exchange initiation: %s", error)
+            print(f"\033[31mError:\033[0m {error}", file=sys.stderr)
+            print(format_error_reference_message(report), file=sys.stderr)
+            return 1
 
     @staticmethod
     def _resolve_hashing_secret(

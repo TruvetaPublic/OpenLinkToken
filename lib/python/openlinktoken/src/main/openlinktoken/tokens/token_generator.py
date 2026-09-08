@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Set, Type
 from openlinktoken.attributes.attribute import Attribute
 from openlinktoken.attributes.attribute_loader import AttributeLoader
 from openlinktoken.attributes.field_registry import FieldRegistry
+from openlinktoken.crypto_suite import CryptoSuite
 from openlinktoken.tokens.base_token_definition import BaseTokenDefinition
 from openlinktoken.tokens.inference_batch_result import InferenceBatchResult  # noqa: F401
 from openlinktoken.tokens.inference_signature_provider import InferenceSignatureProvider
@@ -46,7 +47,10 @@ class TokenGenerator:
 
     @classmethod
     def from_transformers(
-        cls, token_definition: BaseTokenDefinition, token_transformer_list: List[TokenTransformer]
+        cls,
+        token_definition: BaseTokenDefinition,
+        token_transformer_list: List[TokenTransformer],
+        crypto_suite: CryptoSuite | None = None,
     ) -> "TokenGenerator":
         """
         Convenience constructor that creates a TokenGenerator with SHA256Tokenizer.
@@ -58,7 +62,7 @@ class TokenGenerator:
         Returns:
             A TokenGenerator instance with SHA256Tokenizer.
         """
-        return cls(token_definition, SHA256Tokenizer(token_transformer_list))
+        return cls(token_definition, SHA256Tokenizer(token_transformer_list, crypto_suite=crypto_suite))
 
     def __init__(
         self,

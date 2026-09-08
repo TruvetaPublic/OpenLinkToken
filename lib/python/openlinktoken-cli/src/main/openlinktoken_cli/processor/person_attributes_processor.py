@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Type
 from openlinktoken.attributes.attribute import Attribute
 from openlinktoken.attributes.general.record_id_attribute import RecordIdAttribute
 from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig
+from openlinktoken.crypto_suite import CryptoSuite
 from openlinktoken.tokens.base_token_definition import BaseTokenDefinition
 from openlinktoken.tokens.token_definition import TokenDefinition
 from openlinktoken.tokens.token_generator import TokenGenerator
@@ -73,6 +74,7 @@ class PersonAttributesProcessor:
         hash_record_ids: bool = False,
         token_definition: BaseTokenDefinition = None,
         progress_callback=None,
+        crypto_suite: CryptoSuite | str | None = None,
     ) -> PersonAttributesProcessingSummary:
         """
         Read person attributes from the input data source, generate tokens, and
@@ -91,16 +93,18 @@ class PersonAttributesProcessor:
                              to the output. This is a one-way operation with no traceability.
         """
         token_definition = token_definition or TokenDefinition()
+        selected_suite = CryptoSuite.from_id(crypto_suite) if isinstance(crypto_suite, str) else crypto_suite
         return PersonAttributesProcessor._process_with_tokenizer(
             reader,
             writer,
-            SHA256Tokenizer(token_transformer_list),
+            SHA256Tokenizer(token_transformer_list, crypto_suite=selected_suite),
             token_definition,
             metadata_map,
             encryption_key,
             ring_id,
             hash_record_ids,
             progress_callback,
+            selected_suite,
         )
 
     @staticmethod
@@ -146,6 +150,7 @@ class PersonAttributesProcessor:
         ring_id: str = None,
         hash_record_ids: bool = False,
         progress_callback=None,
+        crypto_suite: CryptoSuite | None = None,
     ) -> PersonAttributesProcessingSummary:
         """
         Core row-processing logic shared by all process() overloads.
@@ -176,6 +181,7 @@ class PersonAttributesProcessor:
             token_definition,
             encryption_key,
             ring_id,
+            crypto_suite,
         )
 
         try:
@@ -303,6 +309,7 @@ class PersonAttributesProcessor:
         token_definition: TokenDefinition,
         encryption_key: str,
         ring_id: str,
+        crypto_suite: CryptoSuite | None = None,
     ) -> Dict[str, JweMatchTokenFormatter]:
         """Initialize per-token JWE formatters when encryption is configured."""
         jwe_formatters: Dict[str, JweMatchTokenFormatter] = {}
@@ -316,6 +323,7 @@ class PersonAttributesProcessor:
                     ring_id,
                     token_id,
                     "org.openlinktoken",
+                    crypto_suite=crypto_suite,
                 )
             except Exception as e:
                 error_msg = f"Failed to initialize JWE formatter for token rule {token_id}"

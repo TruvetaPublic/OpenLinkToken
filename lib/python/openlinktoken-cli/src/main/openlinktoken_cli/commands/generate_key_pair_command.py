@@ -13,7 +13,7 @@ SUPPORTED_CURVES = ["P-256", "P-384", "P-521"]
 
 class GenerateKeyPairCommand:
     """
-    Generate an ECDH public/private key pair and write the keys to ~/.openlinktoken/.
+    Generate an ECDH key pair or version-2 crypto-suite key bundle.
 
     Private key:  ~/.openlinktoken/<name>.private.pem  (PEM PKCS#8, permissions 600)
     Public key:   ~/.openlinktoken/<name>.public.pem   (PEM SubjectPublicKeyInfo, permissions 644)
@@ -25,9 +25,9 @@ class GenerateKeyPairCommand:
         """Register the generate-key-pair subcommand with the argument parser."""
         parser = subparsers.add_parser(
             "generate-key-pair",
-            help="Generate an ECDH public/private key pair and write keys to ~/.openlinktoken/",
+            help="Generate an ECDH key pair or version-2 JSON key bundle in ~/.openlinktoken/",
             description=(
-                "Generate an ECDH public/private key pair and write the keys to ~/.openlinktoken/.\n\n"
+                "Generate an ECDH public/private key pair or version-2 JSON key bundle in ~/.openlinktoken/.\n\n"
                 "Private key:  ~/.openlinktoken/<name>.private.pem  (PEM PKCS#8, permissions 600)\n"
                 "Public key:   ~/.openlinktoken/<name>.public.pem   (PEM SubjectPublicKeyInfo, permissions 644)\n"
                 "Directory:    ~/.openlinktoken/                     (created with permissions 700 if absent)"
@@ -40,6 +40,14 @@ class GenerateKeyPairCommand:
             dest="curve",
             default="P-256",
             help="Elliptic curve for key generation. Supported: P-256, P-384, P-521 (default: P-256)",
+        )
+
+        parser.add_argument(
+            "--crypto-suite",
+            dest="crypto_suite",
+            default="suite-sha256-v1",
+            metavar="SUITE_ID",
+            help="Crypto suite to generate (default: suite-sha256-v1; version-2 suites create JSON bundles)",
         )
 
         parser.add_argument(
@@ -70,6 +78,7 @@ class GenerateKeyPairCommand:
         Returns:
             Exit code (0 for success, non-zero for errors).
         """
+        from openlinktoken.crypto_suite import CryptoSuite
         from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
         from openlinktoken_cli.util.ec_key_utils import (
             SUPPORTED_CURVES,
@@ -82,9 +91,34 @@ class GenerateKeyPairCommand:
         name: Optional[str] = getattr(args, "name", None)
         curve: str = getattr(args, "curve", "P-256")
         force: bool = getattr(args, "force", False)
+        crypto_suite_id: str = getattr(args, "crypto_suite", CryptoSuite.default().suite_id)
 
         try:
             name = resolve_key_name(name)
+            crypto_suite = CryptoSuite.from_id(crypto_suite_id)
+            if crypto_suite.exchange_config_version == 2:
+                if curve != "P-256":
+                    raise ValueError("--curve is only supported when generating an ECDH PEM key pair.")
+                from openlinktoken.exchange_key_bundle import generate_exchange_key_bundle
+
+                openlinktoken_dir = Path.home() / ".openlinktoken"
+                private_key_path = openlinktoken_dir / f"{name}.private.bundle.json"
+                public_key_path = openlinktoken_dir / f"{name}.public.bundle.json"
+                if not force and (private_key_path.exists() or public_key_path.exists()):
+                    logger.error(
+                        "Key bundles for '%s' already exist in %s. Use --force to overwrite.",
+                        name,
+                        openlinktoken_dir,
+                    )
+                    return 1
+                ensure_directory(openlinktoken_dir)
+                bundle = generate_exchange_key_bundle(crypto_suite.suite_id)
+                write_key(private_key_path, bundle.to_json(include_private=True), 0o600, overwrite=force)
+                write_key(public_key_path, bundle.to_json(), 0o644, overwrite=force)
+                print(f"Crypto suite: {crypto_suite.suite_id}")
+                print(f"Private key:  {private_key_path.resolve()}")
+                print(f"Public key:   {public_key_path.resolve()}")
+                return 0
 
             if curve not in SUPPORTED_CURVES:
                 logger.error(

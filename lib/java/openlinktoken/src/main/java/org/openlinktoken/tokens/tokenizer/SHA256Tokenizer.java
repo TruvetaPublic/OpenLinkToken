@@ -3,16 +3,19 @@ package org.openlinktoken.tokens.tokenizer;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.codec.binary.Hex;
+import org.bouncycastle.crypto.digests.SHAKEDigest;
 
+import org.openlinktoken.crypto.CryptoSuite;
 import org.openlinktoken.tokens.Token;
 import org.openlinktoken.tokentransformer.TokenTransformer;
 
 /**
- * Generates token using SHA256 digest.
+ * Generates token using the digest selected by a crypto suite.
  *
  * <p>
  * The token is generated using SHA256 digest and is hex encoded.
@@ -32,6 +35,7 @@ public final class SHA256Tokenizer implements Tokenizer {
      */
     public static final String EMPTY = Token.BLANK;
     private final List<TokenTransformer> tokenTransformerList;
+    private final CryptoSuite cryptoSuite;
 
     /**
      * Initializes the tokenizer.
@@ -39,7 +43,18 @@ public final class SHA256Tokenizer implements Tokenizer {
      * @param tokenTransformerList a list of token transformers.
      */
     public SHA256Tokenizer(List<TokenTransformer> tokenTransformerList) {
+        this(tokenTransformerList, CryptoSuite.defaultSuite());
+    }
+
+    /**
+     * Initializes the tokenizer with an explicit crypto suite.
+     *
+     * @param tokenTransformerList a list of token transformers
+     * @param cryptoSuite the suite selecting the token digest
+     */
+    public SHA256Tokenizer(List<TokenTransformer> tokenTransformerList, CryptoSuite cryptoSuite) {
         this.tokenTransformerList = tokenTransformerList;
+        this.cryptoSuite = cryptoSuite;
     }
 
     /**
@@ -70,8 +85,22 @@ public final class SHA256Tokenizer implements Tokenizer {
         }
         byte[] bytes = value.getBytes(StandardCharsets.UTF_8.name());
 
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        byte[] hash = digest.digest(bytes);
+        byte[] hash;
+        if ("SHAKE256-256".equals(cryptoSuite.getTokenDigestAlgorithm())) {
+            SHAKEDigest digest = new SHAKEDigest(256);
+            digest.update(bytes, 0, bytes.length);
+            hash = new byte[32];
+            digest.doFinal(hash, 0, hash.length);
+        } else {
+            String digestAlgorithm = switch (cryptoSuite.getTokenDigestAlgorithm()) {
+                case "SHA-256" -> "SHA-256";
+                case "SHA3-256" -> "SHA3-256";
+                default -> throw new NoSuchAlgorithmException(
+                        "Unsupported token digest algorithm: " + cryptoSuite.getTokenDigestAlgorithm());
+            };
+            MessageDigest digest = MessageDigest.getInstance(digestAlgorithm);
+            hash = digest.digest(bytes);
+        }
         String transformedToken = Hex.encodeHexString(hash);
 
         for (TokenTransformer tokenTransformer : tokenTransformerList) {

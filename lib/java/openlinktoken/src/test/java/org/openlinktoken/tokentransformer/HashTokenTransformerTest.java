@@ -16,6 +16,8 @@ import org.apache.commons.lang3.SerializationUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import org.openlinktoken.crypto.CryptoSuite;
+
 class HashTokenTransformerTest {
     private static final String VALID_SECRET = "sampleSecret";
     private static final String VALID_TOKEN = "sampleToken";
@@ -103,5 +105,26 @@ class HashTokenTransformerTest {
         String expectedHashedToken = Base64.getEncoder().encodeToString(expectedHash);
 
         assertEquals(expectedHashedToken, hashedToken);
+    }
+
+    @Test
+    void testTransform_Sha3Suite_ReturnsFixedVector() throws Exception {
+        HashTokenTransformer sha3Transformer =
+                new HashTokenTransformer("sampleSecret".getBytes(), CryptoSuite.fromId("suite-sha3-v1"));
+
+        assertEquals(
+                "0Y3qAZTI1zwnHdNznv7lec1sz5Uu8rpa/dYMZFWqLSg=",
+                sha3Transformer.transform("ab96273f069fc38264bf16cc2287218779c5eed6c0fee89490b990ffc35a2af5"));
+    }
+
+    @Test
+    void testTransform_ShakeSuite_ReturnsFixedVector() throws Exception {
+        HashTokenTransformer shakeTransformer = new HashTokenTransformer(
+                "0123456789abcdef0123456789abcdef".getBytes(),
+                CryptoSuite.fromId("suite-shake-v1"));
+
+        assertEquals(
+                "ylKfGg587NihC8+Sc2GSeR4g+INl76rLvAB1RYLRfA8=",
+                shakeTransformer.transform("083e2185f52946fb45e459794409b2ea56e64241ba22a29072ad25b5947c023a"));
     }
 }

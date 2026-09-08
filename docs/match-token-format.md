@@ -6,6 +6,21 @@ This document describes the self-contained match token format for Open Link Toke
 
 Match tokens are privacy-protected identifiers generated from normalized person attributes. Each token is self-contained, embedding all metadata required for proper versioning and processing without external context.
 
+The default `olt.V1` serialization remains unchanged. Crypto suites select the
+digest and MAC primitives while preserving the same token envelope:
+
+| Suite                | `hash_alg`     | `mac_alg`     |
+| -------------------- | -------------- | ------------- |
+| `suite-sha256-v1`    | `SHA-256`      | `HS256`       |
+| `suite-sha3-v1`      | `SHA3-256`     | `HS3-256`     |
+| `suite-shake-v1`     | `SHAKE256-256` | `KMAC256-256` |
+| `suite-pq-v1`        | `SHA3-256`     | `HS3-256`     |
+| `suite-pq-hybrid-v1` | `SHA3-256`     | `HS3-256`     |
+
+The suite ID is recorded in exchange metadata. The token payload records the
+exact `hash_alg` and `mac_alg`, so readers do not infer algorithms from a
+short suite label.
+
 ### Design Goals
 
 | Goal                | Description                                                      |
@@ -142,8 +157,8 @@ The encrypted payload contains the privacy-protected identifiers and metadata:
 ```json
 {
   "rlid": "T1",
-  "hash_alg": "SHA-256",
-  "mac_alg": "HS256",
+  "hash_alg": "SHA3-256",
+  "mac_alg": "HS3-256",
   "ppid": ["base64url-encoded-identifier"],
   "rid": "ring-2026-q1",
   "iss": "org.example",
@@ -184,25 +199,27 @@ The encrypted payload contains the privacy-protected identifiers and metadata:
 
 ### Hash Algorithm Identifiers (`hash_alg`)
 
-| Identifier | Output Size | Notes                  |
-| ---------- | ----------- | ---------------------- |
-| `SHA-256`  | 32 bytes    | Default, FIPS approved |
-| `SHA-384`  | 48 bytes    | FIPS approved          |
-| `SHA-512`  | 64 bytes    | FIPS approved          |
-| `SHA3-256` | 32 bytes    | NIST standard          |
-| `SHA3-384` | 48 bytes    | NIST standard          |
-| `SHA3-512` | 64 bytes    | NIST standard          |
+| Identifier     | Output Size | Notes                                |
+| -------------- | ----------- | ------------------------------------ |
+| `SHA-256`      | 32 bytes    | Default, FIPS approved               |
+| `SHA-384`      | 48 bytes    | FIPS approved                        |
+| `SHA-512`      | 64 bytes    | FIPS approved                        |
+| `SHA3-256`     | 32 bytes    | NIST standard                        |
+| `SHA3-384`     | 48 bytes    | NIST standard                        |
+| `SHA3-512`     | 64 bytes    | NIST standard                        |
+| `SHAKE256-256` | 32 bytes    | SHAKE256 with a fixed 256-bit output |
 
 ### MAC Algorithm Identifiers (`mac_alg`)
 
-| Identifier | Algorithm     | Output Size | Notes                    |
-| ---------- | ------------- | ----------- | ------------------------ |
-| `HS256`    | HMAC-SHA256   | 32 bytes    | Default, JOSE registered |
-| `HS384`    | HMAC-SHA384   | 48 bytes    | JOSE registered          |
-| `HS512`    | HMAC-SHA512   | 64 bytes    | JOSE registered          |
-| `HS3-256`  | HMAC-SHA3-256 | 32 bytes    | Custom                   |
-| `HS3-384`  | HMAC-SHA3-384 | 48 bytes    | Custom                   |
-| `HS3-512`  | HMAC-SHA3-512 | 64 bytes    | Custom                   |
+| Identifier    | Algorithm     | Output Size | Notes                               |
+| ------------- | ------------- | ----------- | ----------------------------------- |
+| `HS256`       | HMAC-SHA256   | 32 bytes    | Default, JOSE registered            |
+| `HS384`       | HMAC-SHA384   | 48 bytes    | JOSE registered                     |
+| `HS512`       | HMAC-SHA512   | 64 bytes    | JOSE registered                     |
+| `HS3-256`     | HMAC-SHA3-256 | 32 bytes    | Custom                              |
+| `HS3-384`     | HMAC-SHA3-384 | 48 bytes    | Custom                              |
+| `HS3-512`     | HMAC-SHA3-512 | 64 bytes    | Custom                              |
+| `KMAC256-256` | KMAC256       | 32 bytes    | Requires a key of at least 32 bytes |
 
 ## Examples
 

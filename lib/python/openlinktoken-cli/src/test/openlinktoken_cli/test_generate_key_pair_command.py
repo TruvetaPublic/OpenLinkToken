@@ -159,6 +159,28 @@ class TestGenerateKeyPairCommandIntegration:
         assert (openlinktoken_dir / f"{key_name}.private.pem").exists()
         assert (openlinktoken_dir / f"{key_name}.public.pem").exists()
 
+    def test_version_two_suite_generates_private_and_public_bundles(self, tmp_path):
+        """Version-2 suites use JSON bundles with private material kept separate."""
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            exit_code = OpenLinkTokenCommand.execute(
+                [
+                    "generate-key-pair",
+                    "--crypto-suite",
+                    "suite-pq-v1",
+                    "--name",
+                    "pq-key",
+                ]
+            )
+
+        from openlinktoken.exchange_key_bundle import ExchangeKeyBundle
+
+        openlinktoken_dir = tmp_path / ".openlinktoken"
+        private_path = openlinktoken_dir / "pq-key.private.bundle.json"
+        public_path = openlinktoken_dir / "pq-key.public.bundle.json"
+        assert exit_code == 0
+        assert ExchangeKeyBundle.from_json(private_path.read_bytes(), require_private=True).has_private_material
+        assert not ExchangeKeyBundle.from_json(public_path.read_bytes()).has_private_material
+
     # -------------------------------------------------------------------------
     # Default name: openlinktoken-<ISO8601-date>
     # -------------------------------------------------------------------------

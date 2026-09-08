@@ -32,9 +32,8 @@ class TokenizeCommand:
     """
     Tokenize command - generates tokens from person attributes.
 
-    Default mode (``--mode default`` or omitted): applies SHA-256 then
-    HMAC-SHA256 hashing on the token signature using the hashing secret from the
-    exchange config.
+    Default mode (``--mode default`` or omitted): applies the digest and keyed
+    MAC selected by the exchange config using its hashing secret.
 
     Hash-only mode (``--mode hash-only``): applies SHA-256 only (no HMAC). No
     exchange config or secret is required. Output tokens are 64-character hex
@@ -60,8 +59,8 @@ class TokenizeCommand:
             help="Generate tokens from person attributes (--mode default|hash-only|demo)",
             description=(
                 "Generate tokens from person attributes.\n\n"
-                "Default mode (--mode default or omitted): tokens are HMAC-SHA256 hashed "
-                "using the exchange config.\n"
+                "Default mode (--mode default or omitted): tokens use the digest and keyed MAC "
+                "selected by the exchange config.\n"
                 "Hash-only mode (--mode hash-only): tokens are SHA-256 hashed (no HMAC, no secret). "
                 "Output is deterministic and NOT suitable for production or cross-organisation exchange.\n"
                 "Demo mode (--mode demo): tokens are plain attribute signature strings; no secret needed."
@@ -98,7 +97,7 @@ class TokenizeCommand:
             default=TokenizeCommand._MODE_DEFAULT,
             dest="mode",
             help=(
-                "Tokenization mode: 'default' uses SHA-256 + HMAC-SHA256 with the exchange config; "
+                "Tokenization mode: 'default' uses the digest and keyed MAC selected by the exchange config; "
                 "'hash-only' uses deterministic SHA-256 only with no exchange config or secret; "
                 "'demo' outputs raw pipe-separated attribute signature strings."
             ),
@@ -199,6 +198,7 @@ class TokenizeCommand:
         mode = getattr(args, "mode", TokenizeCommand._MODE_DEFAULT)
         hash_record_ids = getattr(args, "hash_record_ids", False)
         tokenization_config_path = getattr(args, "tokenization_config", None)
+        crypto_suite = None
 
         input_type = FileTypeDetector.detect_input_type(args.input_path)
         if not input_type:
@@ -367,7 +367,9 @@ class TokenizeCommand:
                             hash_record_ids,
                             tokenization_config_path,
                             progress_callback=reporter.make_progress_callback("Tokenizing records", "records"),
+                            crypto_suite=getattr(exchange, "crypto_suite", None),
                         )
+                        crypto_suite = getattr(exchange, "crypto_suite", None)
                     logger.info("Token generation completed successfully")
                 except Exception as error:
                     logger.error("Error during token generation: %s", error)
@@ -381,6 +383,7 @@ class TokenizeCommand:
                     summary,
                     mode,
                     hash_record_ids,
+                    crypto_suite,
                 ),
             )
             return 0
@@ -419,8 +422,9 @@ class TokenizeCommand:
         hash_record_ids: bool = False,
         tokenization_config_path: Optional[str] = None,
         progress_callback=None,
+        crypto_suite=None,
     ) -> tuple[PersonAttributesProcessingSummary, str]:
-        """Process tokens in normal mode using SHA-256 + HMAC-SHA256."""
+        """Process tokens in normal mode using the exchange config's crypto suite."""
         from openlinktoken.metadata import Metadata
         from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
         from openlinktoken_cli.io.json.metadata_json_writer import MetadataJsonWriter
@@ -433,7 +437,7 @@ class TokenizeCommand:
 
         try:
             # Add only hash transformer (no encryption in tokenize mode)
-            token_transformer_list.append(HashTokenTransformer(hashing_secret))
+            token_transformer_list.append(HashTokenTransformer(hashing_secret, crypto_suite=crypto_suite))
         except Exception as e:
             raise RuntimeError("Failed to initialize transformer") from e
 
@@ -456,6 +460,7 @@ class TokenizeCommand:
                     hash_record_ids=hash_record_ids,
                     token_definition=token_definition,
                     progress_callback=progress_callback,
+                    crypto_suite=crypto_suite,
                 )
 
                 if isinstance(writer, PersonAttributesZipWriter):
@@ -577,6 +582,7 @@ class TokenizeCommand:
         summary: PersonAttributesProcessingSummary,
         mode: str,
         hash_record_ids: bool,
+        crypto_suite=None,
     ) -> list[str]:
         """Build the human-readable completion summary for a tokenize run."""
         from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
@@ -586,10 +592,13 @@ class TokenizeCommand:
             TokenizeCommand._MODE_HASH_ONLY: "hash-only SHA-256",
             TokenizeCommand._MODE_DEMO: "demo plain signatures",
         }
+        mode_label = mode_labels.get(mode, mode)
+        if mode == TokenizeCommand._MODE_DEFAULT and crypto_suite is not None:
+            mode_label = f"default {crypto_suite.token_digest_algorithm} + {crypto_suite.token_mac_algorithm}"
         lines = [
             f"Output: {output_path}",
             f"Metadata: {metadata_path}",
-            f"Mode: {mode_labels.get(mode, mode)}",
+            f"Mode: {mode_label}",
             f"Rows processed: {summary.total_rows:,}",
             f"Rows with invalid attributes: {summary.total_rows_with_invalid_attributes:,}",
         ]

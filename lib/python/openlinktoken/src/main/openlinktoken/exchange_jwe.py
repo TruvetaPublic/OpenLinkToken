@@ -13,6 +13,7 @@ from typing import Any, Mapping
 
 from jwcrypto import jwe, jwk
 
+from openlinktoken.crypto_suite import CryptoSuite
 from openlinktoken.ec_key_utils import fingerprint_to_kid, public_key_fingerprint
 
 EXCHANGE_JWE_VERSION = 1
@@ -34,8 +35,10 @@ def build_exchange_envelope(
     rotation_count: int = 0,
     bin_width: float = 0.05,
     dimension_bias: list[float] | None = None,
+    crypto_suite: CryptoSuite | None = None,
 ) -> dict[str, Any]:
     """Build a multi-recipient JWE exchange envelope."""
+    selected_suite = crypto_suite or CryptoSuite.default()
     payload = {
         "exchangeName": exchange_name,
         "hashingSecret": _base64url_encode(hashing_secret),
@@ -53,6 +56,8 @@ def build_exchange_envelope(
         "binWidth": bin_width,
         "dimensionBias": dimension_bias if dimension_bias is not None else [],
     }
+    if selected_suite != CryptoSuite.default():
+        payload["cryptoSuite"] = selected_suite.suite_id
     protected_header = {
         "typ": EXCHANGE_JWE_TYPE,
         "cty": EXCHANGE_JWE_CONTENT_TYPE,

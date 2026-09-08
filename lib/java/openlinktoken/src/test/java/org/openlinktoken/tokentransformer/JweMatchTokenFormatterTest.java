@@ -9,8 +9,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWEObject;
+import com.nimbusds.jose.crypto.DirectDecrypter;
+import com.nimbusds.jose.jwk.OctetSequenceKey;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.openlinktoken.crypto.CryptoSuite;
 
 /**
  * Unit tests for {@link JweMatchTokenFormatter}.
@@ -140,6 +144,25 @@ class JweMatchTokenFormatterTest {
         assertEquals("A256GCM", jweObject.getHeader().getEncryptionMethod().getName());
         assertEquals("match-token", jweObject.getHeader().getType().getType());
         assertEquals(TEST_RING_ID, jweObject.getHeader().getKeyID());
+    }
+
+    @Test
+    void testShakeSuiteMetadataIsEmbeddedInOltV1() throws Exception {
+        JweMatchTokenFormatter formatter = new JweMatchTokenFormatter(
+                TEST_ENCRYPTION_KEY.getBytes(StandardCharsets.UTF_8),
+                TEST_RING_ID,
+                TEST_RULE_ID,
+                "test.issuer",
+                CryptoSuite.fromId("suite-shake-v1"));
+
+        String result = formatter.transform(TEST_TOKEN);
+        JWEObject jweObject = JWEObject.parse(result.substring("olt.V1.".length()));
+        jweObject.decrypt(new DirectDecrypter(
+                new OctetSequenceKey.Builder(TEST_ENCRYPTION_KEY.getBytes(StandardCharsets.UTF_8)).build()));
+        Map<String, Object> payload = jweObject.getPayload().toJSONObject();
+
+        assertEquals("SHAKE256-256", payload.get("hash_alg"));
+        assertEquals("KMAC256-256", payload.get("mac_alg"));
     }
 
     @Test

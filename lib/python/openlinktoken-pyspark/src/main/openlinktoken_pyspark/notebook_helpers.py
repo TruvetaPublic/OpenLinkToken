@@ -16,6 +16,7 @@ from openlinktoken.attributes.person.last_name_attribute import LastNameAttribut
 from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttribute
 from openlinktoken.attributes.person.sex_attribute import SexAttribute
 from openlinktoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
+from openlinktoken.crypto_suite import CryptoSuite
 from openlinktoken.exchange_config import derive_transport_encryption_key, resolve_exchange_config_inputs
 from openlinktoken.tokens.base_token_definition import BaseTokenDefinition
 from openlinktoken.tokens.token import Token
@@ -158,6 +159,7 @@ def create_token_generator(
     hashing_secret: Union[str, bytes, None],
     encryption_key: Union[str, bytes],
     token_definition: Optional[BaseTokenDefinition] = None,
+    crypto_suite: CryptoSuite | str | None = None,
 ) -> TokenGenerator:
     """
     Create a token generator with the specified secrets and token definition.
@@ -183,9 +185,13 @@ def create_token_generator(
 
         token_definition = TokenDefinition()
 
-    token_transformers = [HashTokenTransformer(hashing_secret), EncryptTokenTransformer(encryption_key)]
+    selected_suite = CryptoSuite.from_id(crypto_suite) if isinstance(crypto_suite, str) else crypto_suite
+    token_transformers = [
+        HashTokenTransformer(hashing_secret, crypto_suite=selected_suite),
+        EncryptTokenTransformer(encryption_key),
+    ]
 
-    return TokenGenerator.from_transformers(token_definition, token_transformers)
+    return TokenGenerator.from_transformers(token_definition, token_transformers, crypto_suite=selected_suite)
 
 
 def create_token_generator_from_exchange_config(
@@ -195,6 +201,7 @@ def create_token_generator_from_exchange_config(
     private_key_env: Optional[str] = None,
     private_key_value: Union[str, bytes, None] = None,
     token_definition: Optional[BaseTokenDefinition] = None,
+    crypto_suite: CryptoSuite | str | None = None,
 ) -> TokenGenerator:
     """
     Create a token generator from an exchange config and private-key inputs.
@@ -217,10 +224,17 @@ def create_token_generator_from_exchange_config(
         private_key_env=private_key_env,
         private_key_value=private_key_value,
     )
+    selected_suite = CryptoSuite.from_id(crypto_suite) if isinstance(crypto_suite, str) else crypto_suite
+    if selected_suite is not None and selected_suite != exchange.crypto_suite:
+        raise ValueError(
+            f"Requested crypto suite '{selected_suite.suite_id}' does not match "
+            f"exchange config suite '{exchange.crypto_suite.suite_id}'."
+        )
     return create_token_generator(
         hashing_secret=exchange.hashing_secret,
         encryption_key=derive_transport_encryption_key(exchange),
         token_definition=token_definition,
+        crypto_suite=exchange.crypto_suite,
     )
 
 
