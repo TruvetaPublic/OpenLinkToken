@@ -19,6 +19,7 @@ import org.openlinktoken.attributes.person.LastNameAttribute;
 import org.openlinktoken.attributes.person.PostalCodeAttribute;
 import org.openlinktoken.attributes.person.SexAttribute;
 import org.openlinktoken.attributes.person.SocialSecurityNumberAttribute;
+import org.openlinktoken.crypto.CryptoSuite;
 import org.openlinktoken.tokens.TokenDefinition;
 import org.openlinktoken.tokens.TokenGenerator;
 import org.openlinktoken.tokens.TokenGeneratorResult;
@@ -47,24 +48,25 @@ public final class TokenizeInteropHarness {
     /**
      * Generates tokenize-compatible CSV output using Java library APIs.
      *
-     * @param args input CSV path, output CSV path, and hashing secret.
+     * @param args input CSV path, output CSV path, hashing secret, and optional crypto suite ID.
      * @throws Exception if the harness cannot read input or write output.
      */
     public static void main(String[] args) throws Exception {
-        if (args.length != 3) {
+        if (args.length != 3 && args.length != 4) {
             throw new IllegalArgumentException(
-                    "Expected arguments: <input.csv> <output.csv> <hashing-secret>");
+                    "Expected arguments: <input.csv> <output.csv> <hashing-secret> [crypto-suite]");
         }
 
         var inputPath = Path.of(args[0]);
         var outputPath = Path.of(args[1]);
         var hashingSecret = args[2];
+        var cryptoSuite = args.length == 4 ? CryptoSuite.fromId(args[3]) : CryptoSuite.defaultSuite();
 
         if (outputPath.getParent() != null) {
             Files.createDirectories(outputPath.getParent());
         }
 
-        var tokenGenerator = createTokenGenerator(hashingSecret);
+        var tokenGenerator = createTokenGenerator(hashingSecret, cryptoSuite);
 
         try (BufferedReader reader = Files.newBufferedReader(inputPath, StandardCharsets.UTF_8);
                 BufferedWriter writer = Files.newBufferedWriter(outputPath, StandardCharsets.UTF_8)) {
@@ -98,10 +100,10 @@ public final class TokenizeInteropHarness {
         }
     }
 
-    private static TokenGenerator createTokenGenerator(String hashingSecret) throws Exception {
+    private static TokenGenerator createTokenGenerator(String hashingSecret, CryptoSuite cryptoSuite) throws Exception {
         List<TokenTransformer> tokenTransformers = new ArrayList<>();
-        tokenTransformers.add(new HashTokenTransformer(hashingSecret));
-        return new TokenGenerator(new TokenDefinition(), new SHA256Tokenizer(tokenTransformers));
+        tokenTransformers.add(new HashTokenTransformer(hashingSecret.getBytes(StandardCharsets.UTF_8), cryptoSuite));
+        return new TokenGenerator(new TokenDefinition(), new SHA256Tokenizer(tokenTransformers, cryptoSuite));
     }
 
     private static Map<String, Integer> buildHeaderIndexes(String[] headers) {
