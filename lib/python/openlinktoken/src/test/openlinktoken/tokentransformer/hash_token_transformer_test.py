@@ -7,6 +7,7 @@ import pickle
 
 import pytest
 
+from openlinktoken.crypto_suite import CryptoSuite
 from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 
 
@@ -116,6 +117,25 @@ class TestHashTokenTransformer:
             hmac.new(raw_secret, self.VALID_TOKEN.encode("utf-8"), hashlib.sha256).digest()
         ).decode("utf-8")
         assert expected_hashed_token == hashed_token
+
+    def test_sha3_suite_matches_fixed_vector(self):
+        """The SHA3 suite produces the cross-language HS3-256 vector."""
+        transformer = HashTokenTransformer("sampleSecret", CryptoSuite.from_id("suite-sha3-v1"))
+
+        assert (
+            transformer.transform("ab96273f069fc38264bf16cc2287218779c5eed6c0fee89490b990ffc35a2af5")
+            == "0Y3qAZTI1zwnHdNznv7lec1sz5Uu8rpa/dYMZFWqLSg="
+        )
+
+    def test_shake_suite_uses_kmac256_with_32_byte_output(self):
+        """The SHAKE suite uses standardized KMAC256 output."""
+        from Crypto.Hash import KMAC256
+
+        secret = b"0123456789abcdef0123456789abcdef"
+        transformer = HashTokenTransformer(secret, CryptoSuite.from_id("suite-shake-v1"))
+        expected = KMAC256.new(key=secret, data=b"person", mac_len=32).digest()
+
+        assert base64.b64decode(transformer.transform("person")) == expected
 
     def _calculate_expected_hash(self, secret: str, token: str) -> str:
         """

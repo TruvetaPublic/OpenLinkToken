@@ -5,6 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 
+from openlinktoken.crypto_suite import CryptoSuite
 from openlinktoken.tokens.tokenizer.sha256_tokenizer import SHA256Tokenizer
 from openlinktoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
 from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
@@ -121,6 +122,18 @@ class TestSHA256Tokenizer:
         # Verify consistency with Unicode
         result2 = tokenizer.tokenize(input_value)
         assert result == result2
+
+    def test_sha3_suite_matches_fixed_vector(self):
+        """The SHA3 suite produces the cross-language digest vector."""
+        tokenizer = SHA256Tokenizer([], crypto_suite=CryptoSuite.from_id("suite-sha3-v1"))
+
+        assert tokenizer.tokenize("test-input") == "ab96273f069fc38264bf16cc2287218779c5eed6c0fee89490b990ffc35a2af5"
+
+    def test_shake_suite_uses_32_byte_shake256_digest(self):
+        """The SHAKE suite uses an explicit 32-byte output length."""
+        tokenizer = SHA256Tokenizer([], crypto_suite=CryptoSuite.from_id("suite-shake-v1"))
+
+        assert tokenizer.tokenize("test-input") == hashlib.shake_256(b"test-input").hexdigest(32)
 
     def _calculate_sha256(self, input_str: str) -> str:
         """Utility method to calculate SHA-256 hash for a given input string."""

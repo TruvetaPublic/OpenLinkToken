@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import org.openlinktoken.tokens.Token;
+import org.openlinktoken.crypto.CryptoSuite;
 import org.openlinktoken.tokentransformer.EncryptTokenTransformer;
 import org.openlinktoken.tokentransformer.HashTokenTransformer;
 import org.openlinktoken.tokentransformer.TokenTransformer;
@@ -100,6 +101,24 @@ class SHA256TokenizerTest {
         });
 
         assertEquals("Transform error", exception.getMessage());
+    }
+
+    @Test
+    void testTokenize_Sha3Suite_ReturnsFixedVector() throws Exception {
+        tokenizer = new SHA256Tokenizer(new ArrayList<>(), CryptoSuite.fromId("suite-sha3-v1"));
+
+        assertEquals(
+                "ab96273f069fc38264bf16cc2287218779c5eed6c0fee89490b990ffc35a2af5",
+                tokenizer.tokenize("test-input"));
+    }
+
+    @Test
+    void testTokenize_ShakeSuite_ReturnsFixedVector() throws Exception {
+        tokenizer = new SHA256Tokenizer(new ArrayList<>(), CryptoSuite.fromId("suite-shake-v1"));
+
+        assertEquals(
+                "083e2185f52946fb45e459794409b2ea56e64241ba22a29072ad25b5947c023a",
+                tokenizer.tokenize("test-input"));
     }
 
     // Utility method to calculate SHA-256 hash for a given input string

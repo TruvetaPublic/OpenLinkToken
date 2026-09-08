@@ -180,8 +180,8 @@ def test_derive_transport_encryption_key_matches_for_both_participants(tmp_path:
     assert len(derive_transport_encryption_key(sender_exchange)) == 32
 
 
-def test_load_exchange_config_rejects_future_v2_exchange_config(tmp_path: Path):
-    """Exchange-config version 2 should fail validation during load."""
+def test_load_exchange_config_rejects_unknown_exchange_config_version(tmp_path: Path):
+    """Exchange-config versions outside the supported v1/v2 set fail validation during load."""
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     _, recipient_public_pem = generate_key_pair("P-256")
     payload = {
@@ -219,10 +219,10 @@ def test_load_exchange_config_rejects_future_v2_exchange_config(tmp_path: Path):
 
     exchange_config_path = tmp_path / "future.exchange.json"
     serialized = json.loads(envelope.serialize(compact=False))
-    serialized["version"] = 2
+    serialized["version"] = 3
     exchange_config_path.write_text(json.dumps(serialized), encoding="utf-8")
 
-    with pytest.raises(ValueError, match="Unsupported exchange config version '2'. Supported versions: 1."):
+    with pytest.raises(ValueError, match="Unsupported exchange config version '3'. Supported versions: 1, 2."):
         load_exchange_config(exchange_config_path)
 
 

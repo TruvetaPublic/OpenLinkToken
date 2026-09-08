@@ -13,6 +13,7 @@ from typing import Any, Mapping
 
 from jwcrypto import jwe, jwk
 
+from openlinktoken.crypto_suite import CryptoSuite
 from openlinktoken.ec_key_utils import fingerprint_to_kid, public_key_fingerprint
 
 EXCHANGE_JWE_VERSION = 1
@@ -34,26 +35,29 @@ def build_exchange_envelope(
     rotation_count: int = 0,
     bin_width: float = 0.05,
     dimension_bias: list[float] | None = None,
+    crypto_suite: CryptoSuite | None = None,
 ) -> dict[str, Any]:
     """
     Build a multi-recipient JWE exchange envelope.
 
     Args:
         exchange_name: Name of the exchange.
-        hashing_secret: Secret used to build the hashing.
-        sender_public_pem: PEM-encoded sender public bytes.
-        recipient_public_pem: PEM-encoded recipient public bytes.
-        curve: Elliptic-curve name used to generate the key pair.
-        created_at: String containing the created at used to build.
-        exchange_id: Identifier for the exchange.
-        rotation_iv: Byte sequence containing the rotation iv used to build.
-        rotation_count: Number of token rotations to generate or apply.
-        bin_width: Width of the bin.
-        dimension_bias: Sequence of dimension bias values to build.
+        hashing_secret: Secret used to generate deterministic token hashes.
+        sender_public_pem: PEM-encoded sender public key.
+        recipient_public_pem: PEM-encoded recipient public key.
+        curve: Elliptic curve used to generate the key pair.
+        created_at: Timestamp when the exchange was created.
+        exchange_id: Identifier used to derive the transport key.
+        rotation_iv: Initialization vector for token rotation, if enabled.
+        rotation_count: Number of token rotations to apply.
+        bin_width: Width of the tokenization bin.
+        dimension_bias: Per-dimension bias values for token rotation.
+        crypto_suite: Suite identifier to include when it is not the default suite.
 
     Returns:
-        Built a multi-recipient JWE exchange envelope.
+        A serialized multi-recipient JWE exchange envelope.
     """
+    selected_suite = crypto_suite or CryptoSuite.default()
     payload = {
         "exchangeName": exchange_name,
         "hashingSecret": _base64url_encode(hashing_secret),
@@ -71,6 +75,8 @@ def build_exchange_envelope(
         "binWidth": bin_width,
         "dimensionBias": dimension_bias if dimension_bias is not None else [],
     }
+    if selected_suite != CryptoSuite.default():
+        payload["cryptoSuite"] = selected_suite.suite_id
     protected_header = {
         "typ": EXCHANGE_JWE_TYPE,
         "cty": EXCHANGE_JWE_CONTENT_TYPE,

@@ -4,13 +4,68 @@
 
 `olt initiate-exchange` writes a single JSON exchange artifact that contains:
 
-- a top-level `version` field with value `1`
+- a top-level `version` field with value `1` for ECDH/JWE or `2` for KEM/hybrid exchange
 - a JSON JWE envelope with shared ciphertext fields
 - two JWE recipients: one for the sender's local key and one for the partner's key
 
 Both sides can decrypt the same file because both public keys are included as JWE
 recipients when the artifact is created. The file does **not** embed any private
 key material.
+
+The `--crypto-suite` option selects the algorithms without changing the default
+behavior:
+
+| Suite                | Token primitives             | Exchange format | Key agreement             |
+| -------------------- | ---------------------------- | --------------- | ------------------------- |
+| `suite-sha256-v1`    | SHA-256 and HMAC-SHA256      | v1              | ECDH/JWE                  |
+| `suite-sha3-v1`      | SHA3-256 and HMAC-SHA3-256   | v1              | ECDH/JWE                  |
+| `suite-shake-v1`     | SHAKE256-256 and KMAC256-256 | v1              | ECDH/JWE                  |
+| `suite-pq-v1`        | SHA3-256 and HMAC-SHA3-256   | v2              | ML-KEM-768                |
+| `suite-pq-hybrid-v1` | SHA3-256 and HMAC-SHA3-256   | v2              | ECDH-P256 plus ML-KEM-768 |
+
+The short suite ID is recorded in the protected metadata and decrypted
+payload. Consumers reject a suite/version mismatch rather than silently
+falling back to another algorithm.
+
+## Version 2 Generic Envelope
+
+Version 2 is a generic envelope for future key-management components. It keeps
+the content-encryption layer separate from the ordered recipient components,
+so a future suite can add a new component without changing the outer schema.
+
+The top-level fields are:
+
+| Field                     | Type    | Description                                                |
+| ------------------------- | ------- | ---------------------------------------------------------- |
+| `version`                 | integer | Artifact format marker. Value: `2`.                        |
+| `type`                    | string  | `openlinktoken-exchange+json`.                             |
+| `cryptoSuite`             | string  | Registered suite ID.                                       |
+| `protected`               | string  | Base64url canonical JSON containing suite and exchange ID. |
+| `recipients`              | array   | One generic key-management entry per recipient.            |
+| `iv`, `ciphertext`, `tag` | string  | AES-256-GCM payload fields.                                |
+
+Each recipient contains a `kid` and a `keyManagement` object with:
+
+- `mode`: the registered key-management mode (`kem`, `agreement`, or `hybrid`)
+- `components`: ordered component records, such as `ECDH-P256` followed by
+  `ML-KEM-768`; each algorithm and payload shape is validated by the suite registry
+- `kdf`: explicit HKDF-SHA256 transcript metadata
+- `wrappedContentKey`: the recipient-specific AES-256 content-key wrap
+
+Version-2 key material is exchanged as a JSON bundle, not a PEM file. Public
+bundles contain only public material; private bundles remain local and are
+written with restrictive file permissions:
+
+```bash
+olt generate-key-pair --crypto-suite suite-pq-v1 --name partner --force
+olt initiate-exchange \
+--crypto-suite suite-pq-v1 \
+--public-key ~/.openlinktoken/partner.public.bundle.json
+```
+
+The current CLI generates local bundles automatically when
+`initiate-exchange` is run with a version-2 suite. The v1 ECDH flow and its
+PEM files remain unchanged.
 
 ## Roles
 
@@ -27,7 +82,7 @@ The exchange config is a JSON object with these fields:
 
 | Field        | Type    | Description                                                                               |
 | ------------ | ------- | ----------------------------------------------------------------------------------------- |
-| `version`    | integer | Artifact format marker. Current value: `1`.                                               |
+| `version`    | integer | Artifact format marker: `1` for ECDH/JWE or `2` for generic KEM/hybrid exchange.          |
 | `protected`  | string  | Base64url-encoded protected JOSE header shared by all recipients.                         |
 | `iv`         | string  | Base64url AES-GCM initialization vector for the ciphertext.                               |
 | `ciphertext` | string  | Base64url ciphertext for the encrypted payload.                                           |

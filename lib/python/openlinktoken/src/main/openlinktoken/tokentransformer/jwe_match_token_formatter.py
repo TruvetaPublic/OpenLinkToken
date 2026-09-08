@@ -10,6 +10,7 @@ from typing import Optional, Union
 
 from jwcrypto import jwe, jwk
 
+from openlinktoken.crypto_suite import CryptoSuite
 from openlinktoken.tokentransformer.match_token_constants import (
     HEADER_KEY_ALGORITHM,
     HEADER_KEY_ENCRYPTION,
@@ -39,7 +40,14 @@ class JweMatchTokenFormatter(TokenTransformer):
     See RFC 7516 - JSON Web Encryption (JWE)
     """
 
-    def __init__(self, encryption_key: Union[str, bytes], ring_id: str, rule_id: str, issuer: Optional[str] = None):
+    def __init__(
+        self,
+        encryption_key: Union[str, bytes],
+        ring_id: str,
+        rule_id: str,
+        issuer: Optional[str] = None,
+        crypto_suite: CryptoSuite | None = None,
+    ):
         """
         Initialize the JWE match token formatter.
 
@@ -51,6 +59,7 @@ class JweMatchTokenFormatter(TokenTransformer):
             ring_id: The ring identifier for key management.
             rule_id: The token rule identifier (e.g., "T1", "T2", etc.).
             issuer: The issuer identifier (optional, defaults to "org.openlinktoken").
+            crypto_suite: The suite whose digest and MAC metadata is embedded in the token.
 
         Raises:
             ValueError: If encryption_key, ring_id, or rule_id are invalid.
@@ -70,6 +79,7 @@ class JweMatchTokenFormatter(TokenTransformer):
         self.ring_id = ring_id
         self.rule_id = rule_id
         self.issuer = issuer if issuer else "org.openlinktoken"
+        self.crypto_suite = crypto_suite or CryptoSuite.default()
 
         # Create JWK from the encryption key - needs to be base64url-encoded
         key_b64 = base64.urlsafe_b64encode(key_bytes).decode("utf-8").rstrip("=")
@@ -99,8 +109,8 @@ class JweMatchTokenFormatter(TokenTransformer):
             # Build the JWE payload with metadata
             payload = {
                 PAYLOAD_KEY_RULE_ID: self.rule_id,
-                PAYLOAD_KEY_HASH_ALGORITHM: "SHA-256",
-                PAYLOAD_KEY_MAC_ALGORITHM: "HS256",
+                PAYLOAD_KEY_HASH_ALGORITHM: self.crypto_suite.token_digest_algorithm,
+                PAYLOAD_KEY_MAC_ALGORITHM: self.crypto_suite.token_mac_algorithm,
                 PAYLOAD_KEY_PPID: [token],  # PPID as an array (single element for hash-based tokens)
                 PAYLOAD_KEY_RING_ID: self.ring_id,
                 PAYLOAD_KEY_ISSUER: self.issuer,
