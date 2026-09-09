@@ -103,13 +103,12 @@ def test_initiate_exchange_version_two_suite_round_trips(tmp_path: Path) -> None
 
 
 def test_initiate_exchange_shake_suite_flows_through_tokenize_and_package(tmp_path: Path) -> None:
-    """The SHAKE suite keeps v1 exchange while propagating digest/MAC metadata."""
+    """The post-quantum SHAKE suite flows through v2 exchange, tokenization, and packaging."""
     input_csv = tmp_path / "input.csv"
     input_csv.write_text(
         "RecordId,FirstName,LastName,PostalCode,Sex,BirthDate,SocialSecurityNumber\n"
         "test-001,John,Doe,98004,Male,2000-01-15,123-45-6789\n"
     )
-    partner_public_key_path = _partner_key_pem(tmp_path)
     exchange_config_path = tmp_path / "shake.exchange.json"
     tokenized_csv = tmp_path / "tokenized.csv"
     packaged_csv = tmp_path / "packaged.csv"
@@ -119,9 +118,23 @@ def test_initiate_exchange_shake_suite_flows_through_tokenize_and_package(tmp_pa
         assert (
             OpenLinkTokenCommand.execute(
                 [
+                    "generate-key-pair",
+                    "--crypto-suite",
+                    "suite-pq-shake-v1",
+                    "--name",
+                    "partner",
+                ]
+            )
+            == 0
+        )
+        partner_public_key_path = tmp_path / ".openlinktoken" / "partner.public.bundle.json"
+
+        assert (
+            OpenLinkTokenCommand.execute(
+                [
                     "initiate-exchange",
                     "--crypto-suite",
-                    "suite-shake-v1",
+                    "suite-pq-shake-v1",
                     "--name",
                     "shake",
                     "--public-key",
@@ -138,13 +151,13 @@ def test_initiate_exchange_shake_suite_flows_through_tokenize_and_package(tmp_pa
             == 0
         )
 
-        private_key_path = tmp_path / ".openlinktoken" / "shake.private.pem"
+        private_key_path = tmp_path / ".openlinktoken" / "partner.private.bundle.json"
         resolved = resolve_exchange_config_inputs(
             exchange_config_path=exchange_config_path,
             private_key_path=private_key_path,
         )
-        assert resolved.version == 1
-        assert resolved.crypto_suite.suite_id == "suite-shake-v1"
+        assert resolved.version == 2
+        assert resolved.crypto_suite.suite_id == "suite-pq-shake-v1"
         transport_key = derive_transport_encryption_key(resolved)
 
         assert (

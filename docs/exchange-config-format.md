@@ -19,7 +19,7 @@ behavior:
 | -------------------- | ---------------------------- | --------------- | ------------------------- |
 | `suite-sha256-v1`    | SHA-256 and HMAC-SHA256      | v1              | ECDH/JWE                  |
 | `suite-sha3-v1`      | SHA3-256 and HMAC-SHA3-256   | v1              | ECDH/JWE                  |
-| `suite-shake-v1`     | SHAKE256-256 and KMAC256-256 | v1              | ECDH/JWE                  |
+| `suite-pq-shake-v1`  | SHAKE256-256 and KMAC256-256 | v2              | ML-KEM-768                |
 | `suite-pq-v1`        | SHA3-256 and HMAC-SHA3-256   | v2              | ML-KEM-768                |
 | `suite-pq-hybrid-v1` | SHA3-256 and HMAC-SHA3-256   | v2              | ECDH-P256 plus ML-KEM-768 |
 

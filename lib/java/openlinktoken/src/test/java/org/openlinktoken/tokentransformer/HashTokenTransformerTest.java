@@ -121,7 +121,7 @@ class HashTokenTransformerTest {
     void testTransform_ShakeSuite_ReturnsFixedVector() throws Exception {
         HashTokenTransformer shakeTransformer = new HashTokenTransformer(
                 "0123456789abcdef0123456789abcdef".getBytes(),
-                CryptoSuite.fromId("suite-shake-v1"));
+                CryptoSuite.fromId("suite-pq-shake-v1"));
 
         assertEquals(
                 "ylKfGg587NihC8+Sc2GSeR4g+INl76rLvAB1RYLRfA8=",

@@ -13,7 +13,7 @@ from openlinktoken.exchange_kem import build_exchange_envelope_v2, decrypt_excha
 from openlinktoken.exchange_key_bundle import ExchangeKeyBundle, KeyBundleError, generate_exchange_key_bundle
 
 
-@pytest.mark.parametrize("suite_id", ["suite-pq-v1", "suite-pq-hybrid-v1"])
+@pytest.mark.parametrize("suite_id", ["suite-pq-v1", "suite-pq-shake-v1", "suite-pq-hybrid-v1"])
 def test_v2_exchange_round_trips_for_both_participants(suite_id):
     """Pure and hybrid recipients recover the same payload and transport key."""
     sender = generate_exchange_key_bundle(suite_id)

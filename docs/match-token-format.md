@@ -13,7 +13,7 @@ digest and MAC primitives while preserving the same token envelope:
 | -------------------- | -------------- | ------------- |
 | `suite-sha256-v1`    | `SHA-256`      | `HS256`       |
 | `suite-sha3-v1`      | `SHA3-256`     | `HS3-256`     |
-| `suite-shake-v1`     | `SHAKE256-256` | `KMAC256-256` |
+| `suite-pq-shake-v1`  | `SHAKE256-256` | `KMAC256-256` |
 | `suite-pq-v1`        | `SHA3-256`     | `HS3-256`     |
 | `suite-pq-hybrid-v1` | `SHA3-256`     | `HS3-256`     |
 

@@ -10,7 +10,7 @@ def test_registered_suites_have_expected_contracts():
     assert [suite.suite_id for suite in CryptoSuite.all()] == [
         "suite-sha256-v1",
         "suite-sha3-v1",
-        "suite-shake-v1",
+        "suite-pq-shake-v1",
         "suite-pq-v1",
         "suite-pq-hybrid-v1",
     ]
@@ -23,12 +23,13 @@ def test_registered_suites_have_expected_contracts():
 
 def test_shake_suite_declares_fixed_output_and_kmac():
     """SHAKE suite records explicit output lengths for digest and MAC."""
-    suite = CryptoSuite.from_id("suite-shake-v1")
+    suite = CryptoSuite.from_id("suite-pq-shake-v1")
 
     assert suite.token_digest_algorithm == "SHAKE256-256"
     assert suite.token_mac_algorithm == "KMAC256-256"
-    assert suite.exchange_key_agreement == "ECDH"
-    assert suite.exchange_config_version == 1
+    assert suite.exchange_key_agreement == "ML-KEM-768"
+    assert suite.exchange_config_version == 2
+    assert suite.is_post_quantum
 
 
 def test_default_suite_preserves_legacy_contract():
