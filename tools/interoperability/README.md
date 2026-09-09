@@ -42,7 +42,7 @@ The `multi_language_interoperability_test.py` script executes four parity checks
   Java core library API and compares its T1-T5 `tokenize`-compatible CSV output
   against the Python CLI `tokenize` command with ML1 inferencing disabled for
   every registered crypto suite (`suite-sha256-v1`, `suite-sha3-v1`,
-  `suite-shake-v1`, `suite-pq-v1`, and `suite-pq-hybrid-v1`). The Python side
+  `suite-pq-shake-v1`, `suite-pq-v1`, and `suite-pq-hybrid-v1`). The Python side
   provisions the matching v1 ECDH or v2 key-bundle exchange for each suite.
 - **Java ML1 harness vs Python ML1 provider parity:** invokes
   `Ml1InteropHarness` from the Java core-AI module and compares its

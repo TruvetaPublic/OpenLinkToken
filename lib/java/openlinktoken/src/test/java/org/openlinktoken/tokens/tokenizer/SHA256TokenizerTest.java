@@ -114,7 +114,7 @@ class SHA256TokenizerTest {
 
     @Test
     void testTokenize_ShakeSuite_ReturnsFixedVector() throws Exception {
-        tokenizer = new SHA256Tokenizer(new ArrayList<>(), CryptoSuite.fromId("suite-shake-v1"));
+        tokenizer = new SHA256Tokenizer(new ArrayList<>(), CryptoSuite.fromId("suite-pq-shake-v1"));
 
         assertEquals(
                 "083e2185f52946fb45e459794409b2ea56e64241ba22a29072ad25b5947c023a",

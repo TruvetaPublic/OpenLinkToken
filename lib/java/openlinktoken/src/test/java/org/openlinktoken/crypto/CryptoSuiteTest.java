@@ -23,16 +23,18 @@ class CryptoSuiteTest {
         assertEquals("SHA3-256", hybrid.getTokenDigestAlgorithm());
         assertFalse(!hybrid.isPostQuantum());
 
-        CryptoSuite shake = CryptoSuite.fromId("suite-shake-v1");
-        assertEquals("SHAKE256-256", shake.getTokenDigestAlgorithm());
-        assertEquals("KMAC256-256", shake.getTokenMacAlgorithm());
-        assertEquals("ECDH", shake.getExchangeKeyAgreement());
-        assertEquals(1, shake.getExchangeConfigVersion());
+        CryptoSuite pqShake = CryptoSuite.fromId("suite-pq-shake-v1");
+        assertEquals("SHAKE256-256", pqShake.getTokenDigestAlgorithm());
+        assertEquals("KMAC256-256", pqShake.getTokenMacAlgorithm());
+        assertEquals("ML-KEM-768", pqShake.getExchangeKeyAgreement());
+        assertEquals(2, pqShake.getExchangeConfigVersion());
+        assertFalse(!pqShake.isPostQuantum());
     }
 
     @Test
     void unknownSuiteIdsFailClosed() {
         assertThrows(IllegalArgumentException.class, () -> CryptoSuite.fromId("unknown"));
         assertThrows(IllegalArgumentException.class, () -> CryptoSuite.fromId(""));
+        assertThrows(IllegalArgumentException.class, () -> CryptoSuite.fromId("suite-shake-v1"));
     }
 }

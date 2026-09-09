@@ -131,7 +131,7 @@ class TestSHA256Tokenizer:
 
     def test_shake_suite_uses_32_byte_shake256_digest(self):
         """The SHAKE suite uses an explicit 32-byte output length."""
-        tokenizer = SHA256Tokenizer([], crypto_suite=CryptoSuite.from_id("suite-shake-v1"))
+        tokenizer = SHA256Tokenizer([], crypto_suite=CryptoSuite.from_id("suite-pq-shake-v1"))
 
         assert tokenizer.tokenize("test-input") == hashlib.shake_256(b"test-input").hexdigest(32)
 

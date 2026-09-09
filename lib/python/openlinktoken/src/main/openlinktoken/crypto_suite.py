@@ -82,12 +82,12 @@ CryptoSuite._REGISTRY = {
             exchange_config_version=1,
         ),
         CryptoSuite(
-            suite_id="suite-shake-v1",
+            suite_id="suite-pq-shake-v1",
             token_digest_algorithm="SHAKE256-256",
             token_mac_algorithm="KMAC256-256",
             token_content_encryption="A256GCM",
-            exchange_key_agreement="ECDH",
-            exchange_config_version=1,
+            exchange_key_agreement="ML-KEM-768",
+            exchange_config_version=2,
         ),
         CryptoSuite(
             suite_id="suite-pq-v1",

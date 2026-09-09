@@ -132,7 +132,7 @@ class TestHashTokenTransformer:
         from Crypto.Hash import KMAC256
 
         secret = b"0123456789abcdef0123456789abcdef"
-        transformer = HashTokenTransformer(secret, CryptoSuite.from_id("suite-shake-v1"))
+        transformer = HashTokenTransformer(secret, CryptoSuite.from_id("suite-pq-shake-v1"))
         expected = KMAC256.new(key=secret, data=b"person", mac_len=32).digest()
 
         assert base64.b64decode(transformer.transform("person")) == expected

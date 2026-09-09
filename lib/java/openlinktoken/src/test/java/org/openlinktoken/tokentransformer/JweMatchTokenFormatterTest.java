@@ -153,7 +153,7 @@ class JweMatchTokenFormatterTest {
                 TEST_RING_ID,
                 TEST_RULE_ID,
                 "test.issuer",
-                CryptoSuite.fromId("suite-shake-v1"));
+                CryptoSuite.fromId("suite-pq-shake-v1"));
 
         String result = formatter.transform(TEST_TOKEN);
         JWEObject jweObject = JWEObject.parse(result.substring("olt.V1.".length()));
