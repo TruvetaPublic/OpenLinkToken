@@ -49,3 +49,27 @@ def test_unknown_suite_ids_fail_closed(suite_id):
     """Unknown or malformed IDs must not silently fall back to the default."""
     with pytest.raises(CryptoSuiteError):
         CryptoSuite.from_id(suite_id)
+
+
+@pytest.mark.parametrize(
+    ("overrides", "message"),
+    [
+        ({"token_content_encryption": "A128GCM"}, "content encryption"),
+        ({"exchange_config_version": 1, "exchange_key_agreement": "ML-KEM-768"}, "only supports ECDH"),
+        ({"exchange_config_version": 2, "exchange_key_agreement": "ECDH"}, "requires a non-ECDH"),
+        ({"exchange_config_version": 3, "exchange_key_agreement": "ML-KEM-768"}, "Unsupported exchange"),
+    ],
+)
+def test_invalid_suite_contracts_fail_validation(overrides, message):
+    """Invalid algorithm and exchange-version combinations fail closed."""
+    suite = CryptoSuite(
+        suite_id="test-suite",
+        token_digest_algorithm="SHA-256",
+        token_mac_algorithm="HS256",
+        token_content_encryption=overrides.get("token_content_encryption", "A256GCM"),
+        exchange_key_agreement=overrides.get("exchange_key_agreement", "ECDH"),
+        exchange_config_version=overrides.get("exchange_config_version", 1),
+    )
+
+    with pytest.raises(CryptoSuiteError, match=message):
+        suite.validate()

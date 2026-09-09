@@ -2,6 +2,7 @@
 package org.openlinktoken.tokentransformer;
 
 import java.security.InvalidKeyException;
+import java.util.Base64;
 
 import org.apache.commons.lang3.SerializationUtils;
 import org.junit.jupiter.api.Assertions;
@@ -154,5 +155,16 @@ class DecryptTokenTransformerTest {
         Assertions.assertThrows(Exception.class, () -> {
             wrongDecryptor.transform(encryptedToken);
         });
+    }
+
+    @Test
+    void testTransform_TokenWithoutIvOrTag_ThrowsIllegalArgumentException() {
+        String malformedToken = Base64.getEncoder().encodeToString(new byte[EncryptionConstants.IV_SIZE]);
+
+        IllegalArgumentException exception = Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> decryptor.transform(malformedToken));
+
+        Assertions.assertEquals("Encrypted token is missing its initialization vector or authentication tag", exception.getMessage());
     }
 }
