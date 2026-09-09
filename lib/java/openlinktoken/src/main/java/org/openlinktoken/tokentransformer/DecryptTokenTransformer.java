@@ -106,12 +106,15 @@ public class DecryptTokenTransformer implements TokenTransformer {
         // Decode the base64-encoded token
         byte[] messageBytes = Base64.getDecoder().decode(token);
 
-        // Extract IV and ciphertext
-        byte[] ivBytes = new byte[EncryptionConstants.IV_SIZE];
-        byte[] cipherBytes = new byte[messageBytes.length - EncryptionConstants.IV_SIZE];
+        int minimumMessageLength = EncryptionConstants.IV_SIZE + EncryptionConstants.TAG_LENGTH_BITS / Byte.SIZE;
+        if (messageBytes.length < minimumMessageLength) {
+            throw new IllegalArgumentException(
+                    "Encrypted token is missing its initialization vector or authentication tag");
+        }
 
-        System.arraycopy(messageBytes, 0, ivBytes, 0, EncryptionConstants.IV_SIZE);
-        System.arraycopy(messageBytes, EncryptionConstants.IV_SIZE, cipherBytes, 0, cipherBytes.length);
+        // Extract IV and ciphertext
+        byte[] ivBytes = Arrays.copyOfRange(messageBytes, 0, EncryptionConstants.IV_SIZE);
+        byte[] cipherBytes = Arrays.copyOfRange(messageBytes, EncryptionConstants.IV_SIZE, messageBytes.length);
 
         GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(EncryptionConstants.TAG_LENGTH_BITS, ivBytes);
 

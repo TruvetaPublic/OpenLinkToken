@@ -16,6 +16,7 @@ pytest.importorskip("pyspark")
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StringType, StructField, StructType
 
+from openlinktoken.crypto_suite import CryptoSuite
 from openlinktoken.ec_key_utils import fingerprint_to_kid, generate_key_pair, public_key_fingerprint
 from openlinktoken.exchange_config import derive_transport_encryption_key, resolve_exchange_config_inputs
 from openlinktoken.exchange_jwe import (
@@ -145,7 +146,11 @@ class TestOpenLinkTokenProcessor:
 
     def test_from_exchange_config_derives_transport_key_without_version_fallback(self, monkeypatch):
         """Test exchange-config factory always derives the transport key for resolved configs."""
-        resolved_exchange = SimpleNamespace(version=1, hashing_secret=b"resolved-hashing-secret")
+        resolved_exchange = SimpleNamespace(
+            version=1,
+            hashing_secret=b"resolved-hashing-secret",
+            crypto_suite=CryptoSuite.default(),
+        )
         derived_transport_key = b"12345678901234567890123456789012"
         derive_call_count = 0
 
@@ -188,10 +193,10 @@ class TestOpenLinkTokenProcessor:
         assert processor.encryption_key == derived_transport_key
 
     def test_from_exchange_config_rejects_future_exchange_config_versions(self, tmp_path):
-        """Test exchange-config factory rejects unsupported version 2 exchange configs."""
+        """Test exchange-config factory rejects unsupported future exchange config versions."""
         exchange_config_path, private_key_path = _write_future_exchange_config(tmp_path)
 
-        with pytest.raises(ValueError, match="Unsupported exchange config version '2'. Supported versions: 1."):
+        with pytest.raises(ValueError, match="Unsupported exchange config version '3'. Supported versions: 1, 2."):
             OpenLinkTokenProcessor.from_exchange_config(
                 exchange_config_path=exchange_config_path,
                 private_key_path=private_key_path,
@@ -411,7 +416,11 @@ class TestOpenLinkTokenProcessor:
         from openlinktoken_pyspark.notebook_helpers import CustomTokenDefinition, TokenBuilder
 
         # Create a custom ML1 token
-        ml1_token = TokenBuilder("ML1").add("last_name", "T|U").add("first_name", "T|U").add("birth_date", "T|D").build()
+        token_builder = TokenBuilder("ML1")
+        token_builder.add("last_name", "T|U")
+        token_builder.add("first_name", "T|U")
+        token_builder.add("birth_date", "T|D")
+        ml1_token = token_builder.build()
 
         custom_definition = CustomTokenDefinition().add_token(ml1_token)
 
@@ -561,7 +570,7 @@ def _write_exchange_config(tmp_path: Path) -> tuple[Path, Path]:
 
 
 def _write_future_exchange_config(tmp_path: Path) -> tuple[Path, Path]:
-    """Write an unsupported version 2 exchange config plus matching sender private key file."""
+    """Write an unsupported version 3 exchange config plus matching sender private key file."""
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     _, recipient_public_pem = generate_key_pair("P-256")
     payload = {
@@ -597,7 +606,7 @@ def _write_future_exchange_config(tmp_path: Path) -> tuple[Path, Path]:
 
     exchange_config_path = tmp_path / "future.exchange.json"
     serialized = json.loads(envelope.serialize(compact=False))
-    serialized["version"] = 2
+    serialized["version"] = 3
     exchange_config_path.write_text(json.dumps(serialized), encoding="utf-8")
 
     private_key_path = tmp_path / "future.private.pem"
