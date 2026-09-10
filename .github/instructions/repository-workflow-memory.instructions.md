@@ -7,13 +7,6 @@ applyTo: "**"
 
 Keep repository-specific completion steps consistent.
 
-## Session tooling preferences
-
-- Use `dev/mattwise-42/<branch-name>` for new branches in this workspace.
-- Use only `gpt-5.6-luna` for delegated agents.
-- Authenticate GitHub CLI and API commands with the `PUBLIC_GH_TOKEN` environment variable; never place token values in commands or files.
-- Prefer reusing an existing devcontainer for tool commands instead of running them on the host.
-
 ## Pin exact versions of all dependencies
 
 When adding or updating packages in `requirements.txt`, `setup.py` `install_requires`/`extras_require`, or `pyproject.toml` dependency lists, always use exact version pins (`==`) rather than ranges or unpinned names.

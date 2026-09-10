@@ -24,14 +24,16 @@ Open Link Token generates cryptographically secure tokens for privacy-preserving
 
 Open Link Token transforms person attributes through multiple layers:
 
-**Encryption mode (default):**
+**Encryption mode (default):** The digest and MAC depend on the selected
+crypto suite. `suite-sha256-v1` is shown below; the post-quantum profiles use
+SHA3-256/HMAC-SHA3-256 or SHAKE256-256/KMAC256-256 instead.
 
 ```
 Token Signature (normalized attributes)
   ↓
-SHA-256 Hash (one-way digest, 256-bit)
+Suite-selected digest (256-bit)
   ↓
-HMAC-SHA256 (authenticated hash with hashing secret)
+Suite-selected MAC with hashing secret
   ↓
 AES-256-GCM Encrypt (symmetric encryption with encryption key)
   ↓
@@ -43,12 +45,25 @@ JWE compact serialization with `olt.V1.` prefix
 ```
 Token Signature
   ↓
-SHA-256 Hash
+Suite-selected digest
   ↓
-HMAC-SHA256 (with hashing secret)
+Suite-selected MAC (with hashing secret)
   ↓
 Base64 Encode
 ```
+
+### Suite-selected token primitives
+
+The suite fixes the digest and keyed MAC used for deterministic token values:
+
+| Suite family                                         | Digest       | MAC           |
+| ---------------------------------------------------- | ------------ | ------------- |
+| `suite-sha256-v1`                                    | SHA-256      | HMAC-SHA256   |
+| `suite-sha3-v1`, `suite-pq-v1`, `suite-pq-hybrid-v1` | SHA3-256     | HMAC-SHA3-256 |
+| `suite-pq-shake-v1`                                  | SHAKE256-256 | KMAC256-256   |
+
+See [Cryptographic Suites](concepts/crypto-suites.md) for the exchange key
+agreement and selection guidance.
 
 ### SHA-256 (Secure Hash Algorithm)
 
@@ -233,12 +248,12 @@ secret-hash field or a `tools/hash/hash_calculator.py` workflow.
 **✓ Re-identification without secrets:**
 
 - Encrypted tokens cannot be reversed without encryption key
-- Hashed tokens cannot be reversed (one-way HMAC-SHA256)
+- Hashed tokens cannot be reversed (one-way suite-selected MAC)
 - Attacker with tokens alone cannot recover person data
 
 **✓ Rainbow table attacks:**
 
-- HMAC-SHA256 with secret prevents pre-computed lookup tables
+- A suite-selected keyed MAC prevents pre-computed lookup tables
 - Different secret produces different tokens for same input
 
 **✓ Data quality issues:**

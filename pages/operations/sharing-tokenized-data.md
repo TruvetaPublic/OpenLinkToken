@@ -46,9 +46,27 @@ Organizations often need to identify overlapping individuals across datasets wit
 
 ---
 
-## ECDH Bootstrap Workflow (Recommended)
+## Choose an exchange profile
 
-The two-command ECDH bootstrap workflow lets partners establish a shared hashing secret without transmitting it in plaintext. Only the JSON exchange config — containing the **encrypted** secret — needs to leave the sender's environment.
+Partners must agree on a crypto suite before generating keys. Use the
+[Cryptographic Suites](../concepts/crypto-suites.md) guide to choose between
+the backward-compatible version-1 ECDH profiles and the version-2 ML-KEM or
+hybrid profiles.
+
+- Use `suite-sha256-v1` when an existing exchange or token namespace requires
+  the default version-1 behavior.
+- Use `suite-pq-v1` or `suite-pq-shake-v1` for a new ML-KEM-only exchange.
+- Use `suite-pq-hybrid-v1` when the exchange must combine ECDH-P256 and
+  ML-KEM-768.
+
+The sender and recipient must use the same suite ID. Do not mix PEM keys with
+version-2 JSON bundles.
+
+## Version 1 ECDH Bootstrap Workflow
+
+The version-1 ECDH bootstrap workflow lets partners establish a shared hashing
+secret without transmitting it in plaintext. Only the JSON exchange config —
+containing the **encrypted** secret — needs to leave the sender's environment.
 
 For this workflow:
 
@@ -213,6 +231,29 @@ olt package \
   -o tokens_for_partner.csv \
   --exchange-config sender-q2.exchange.json
 ```
+
+## Version 2 ML-KEM or Hybrid Workflow
+
+Version-2 suites use JSON key bundles and the generic exchange envelope. The
+workflow is the same as the version-1 exchange, but both parties generate and
+share public bundles using the selected suite:
+
+```bash
+# Recipient: generate a bundle and share only the public bundle
+olt generate-key-pair \
+  --crypto-suite suite-pq-hybrid-v1 \
+  --name recipient-org
+
+# Sender: use the same suite and the recipient's public bundle
+olt initiate-exchange \
+  --crypto-suite suite-pq-hybrid-v1 \
+  --public-key ~/.openlinktoken/recipient-org.public.bundle.json \
+  --output ./sender-q2.exchange.json
+```
+
+The private bundle remains under `~/.openlinktoken/` on the machine that
+generated it. Consumer commands still use only `--exchange-config` plus the
+matching private bundle; the suite is read from the exchange artifact.
 
 ---
 
@@ -391,7 +432,9 @@ See [Decrypting Tokens](decrypting-tokens.md) for details.
 
 ### Use Encrypted Tokens for External Sharing
 
-Encrypted mode (`package` with an exchange config) adds AES-256-GCM encryption on top of HMAC-SHA256:
+Encrypted mode (`package` with an exchange config) adds AES-256-GCM encryption
+on top of the suite-selected keyed MAC. For the default
+`suite-sha256-v1`, that MAC is HMAC-SHA256:
 
 | Mode      | External Sharing    | Defense in Depth | Reversible                               |
 | --------- | ------------------- | ---------------- | ---------------------------------------- |
