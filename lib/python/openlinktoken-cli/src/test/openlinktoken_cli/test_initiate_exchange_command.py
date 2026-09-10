@@ -102,6 +102,72 @@ def test_initiate_exchange_version_two_suite_round_trips(tmp_path: Path) -> None
     assert resolved.crypto_suite.suite_id == "suite-pq-v1"
 
 
+def test_initiate_exchange_resolves_v1_public_key_from_base_path(tmp_path: Path) -> None:
+    """The selected v1 suite appends the PEM public-key suffix to the base path."""
+    with patch("pathlib.Path.home", return_value=tmp_path):
+        key_dir = tmp_path / ".openlinktoken"
+        key_dir.mkdir()
+        _, public_pem = generate_key_pair("P-256")
+        (key_dir / "partner.public.pem").write_bytes(public_pem)
+
+        assert (
+            OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--crypto-suite",
+                    "suite-sha256-v1",
+                    "--name",
+                    "sender",
+                    "--public-key-base",
+                    str(key_dir / "partner"),
+                    "--output",
+                    str(tmp_path / "exchange.json"),
+                    "--force",
+                    "--rotation-embedding-dimension",
+                    "2",
+                ]
+            )
+            == 0
+        )
+
+
+def test_initiate_exchange_resolves_v2_public_key_from_base_path(tmp_path: Path) -> None:
+    """The selected v2 suite appends the JSON bundle suffix to the base path."""
+    with patch("pathlib.Path.home", return_value=tmp_path):
+        assert (
+            OpenLinkTokenCommand.execute(
+                [
+                    "generate-key-pair",
+                    "--crypto-suite",
+                    "suite-pq-v1",
+                    "--name",
+                    "partner",
+                ]
+            )
+            == 0
+        )
+
+        assert (
+            OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--crypto-suite",
+                    "suite-pq-v1",
+                    "--name",
+                    "sender",
+                    "--public-key-base",
+                    str(tmp_path / ".openlinktoken" / "partner"),
+                    "--output",
+                    str(tmp_path / "exchange.json"),
+                    "--force",
+                    "--rotation-embedding-dimension",
+                    "2",
+                ]
+            )
+            == 0
+        )
+
+
 def test_initiate_exchange_shake_suite_flows_through_tokenize_and_package(tmp_path: Path) -> None:
     """The post-quantum SHAKE suite flows through v2 exchange, tokenization, and packaging."""
     input_csv = tmp_path / "input.csv"

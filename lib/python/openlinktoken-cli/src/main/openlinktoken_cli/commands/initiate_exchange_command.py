@@ -29,7 +29,7 @@ class InitiateExchangeCommand:
 
     Steps performed:
      1. Resolve/create a sender key pair locally, or derive it from an external reference.
-     2. Read the partner's public key from a PEM/SPKI file.
+     2. Read the partner's public key from a PEM file or JSON key bundle.
      3. Generate a random hashing secret (or accept one provided by the caller).
      4. Encrypt the exchange payload into a multi-recipient JWE envelope.
      5. Write the versioned exchange config envelope to the requested output path.
@@ -66,6 +66,14 @@ class InitiateExchangeCommand:
             dest="public_key",
             metavar="PATH",
             help="Path to the partner's public key PEM or JSON key bundle",
+        )
+        partner_public_key_group.add_argument(
+            "--public-key-base",
+            dest="public_key_base",
+            metavar="PATH",
+            help=(
+                "Base path for the partner's public key; the selected suite appends .public.pem or .public.bundle.json"
+            ),
         )
         partner_public_key_group.add_argument(
             "--public-key-stdin",
@@ -249,6 +257,7 @@ class InitiateExchangeCommand:
 
         name: Optional[str] = getattr(args, "name", None)
         public_key_path_str: str = getattr(args, "public_key", "")
+        public_key_base_path_str: Optional[str] = getattr(args, "public_key_base", None)
         public_key_stdin: bool = getattr(args, "public_key_stdin", False)
         public_key_env_name: Optional[str] = getattr(args, "public_key_env", None)
         output_path_str: Optional[str] = getattr(args, "output", None)
@@ -275,6 +284,12 @@ class InitiateExchangeCommand:
             except ValueError as error:
                 logger.error("%s", error)
                 return 1
+
+            public_key_path_str = InitiateExchangeCommand._resolve_public_key_path(
+                public_key_path_str=public_key_path_str,
+                public_key_base_path_str=public_key_base_path_str,
+                exchange_config_version=crypto_suite.exchange_config_version,
+            )
 
             if crypto_suite.exchange_config_version == 2:
                 if curve is not None:
@@ -519,6 +534,20 @@ class InitiateExchangeCommand:
             print("Sender public key:  derived from the sender private key (not written locally)")
         print(f"Exchange config: {output_path.resolve()}")
         return 0
+
+    @staticmethod
+    def _resolve_public_key_path(
+        *,
+        public_key_path_str: str,
+        public_key_base_path_str: Optional[str],
+        exchange_config_version: int,
+    ) -> str:
+        """Resolve a suite-specific public-key filename from an optional base path."""
+        if public_key_base_path_str is None:
+            return public_key_path_str
+
+        suffix = ".public.bundle.json" if exchange_config_version == 2 else ".public.pem"
+        return f"{public_key_base_path_str}{suffix}"
 
     @staticmethod
     def _execute_v2(
