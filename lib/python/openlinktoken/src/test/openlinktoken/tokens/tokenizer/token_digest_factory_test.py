@@ -14,6 +14,11 @@ from openlinktoken.tokens.tokenizer.token_digest_factory import TokenDigestFacto
 class TestTokenDigestFactory:
     """Verify suite-selected token digest implementations."""
 
+    def test_factory_rejects_non_suite_values(self):
+        """The factory requires a validated CryptoSuite instance."""
+        with pytest.raises(ValueError, match="A valid CryptoSuite is required"):
+            TokenDigestFactory.for_suite("suite-sha256-v1")
+
     def test_factory_selects_digest_implementation_for_each_suite(self):
         """Each registered suite selects its declared digest implementation."""
         assert isinstance(TokenDigestFactory.for_suite(CryptoSuite.from_id("suite-sha256-v1")), Sha256TokenDigest)
