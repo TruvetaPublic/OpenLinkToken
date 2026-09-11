@@ -8,7 +8,9 @@ package org.openlinktoken;
  * {@code openlinktoken.exchange_config} and handles loading, validating, and decrypting
  * initiate-exchange config files produced by {@code olt initiate-exchange}.
  * A Java equivalent has not yet been implemented because the exchange-config consumer
- * workflow is currently Python-CLI only.
+ * workflow is currently Python-CLI only. This marker is intentionally kept in
+ * the corresponding Java package so cross-language tooling can identify the
+ * boundary explicitly.
  *
  * @see <a href="../../../../python/openlinktoken/exchange_config.py">exchange_config.py</a>
  */

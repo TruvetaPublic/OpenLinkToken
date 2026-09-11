@@ -63,6 +63,10 @@ class DecryptTokenTransformer(TokenTransformer):
             # Decode the base64-encoded token
             message_bytes = base64.b64decode(token)
 
+            minimum_message_length = EncryptionConstants.IV_SIZE + EncryptionConstants.TAG_LENGTH_BYTES
+            if len(message_bytes) < minimum_message_length:
+                raise ValueError("Encrypted token is missing its initialization vector or authentication tag")
+
             # Extract IV, encrypted data, and tag
             iv_bytes = message_bytes[: EncryptionConstants.IV_SIZE]
             ciphertext_and_tag = message_bytes[EncryptionConstants.IV_SIZE :]
