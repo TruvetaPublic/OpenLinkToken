@@ -14,8 +14,8 @@ from openlinktoken.tokens.inference_signature_provider import InferenceSignature
 from openlinktoken.tokens.token import Token
 from openlinktoken.tokens.token_generation_exception import TokenGenerationException
 from openlinktoken.tokens.token_generator_result import TokenGeneratorResult
+from openlinktoken.tokens.tokenizer.crypto_suite_tokenizer import CryptoSuiteTokenizer
 from openlinktoken.tokens.tokenizer.passthrough_tokenizer import PassthroughTokenizer
-from openlinktoken.tokens.tokenizer.sha256_tokenizer import SHA256Tokenizer
 from openlinktoken.tokens.tokenizer.tokenizer import Tokenizer
 from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 from openlinktoken.tokentransformer.token_transformer import TokenTransformer
@@ -52,17 +52,17 @@ class TokenGenerator:
         token_transformer_list: List[TokenTransformer],
         crypto_suite: CryptoSuite | None = None,
     ) -> "TokenGenerator":
-        """Convenience constructor that creates a TokenGenerator with SHA256Tokenizer.
+        """Convenience constructor that creates a TokenGenerator with CryptoSuiteTokenizer.
 
         Args:
             token_definition: The token definition.
             token_transformer_list: A list of token transformers.
 
         Returns:
-            A TokenGenerator instance with SHA256Tokenizer.
+            A TokenGenerator instance with CryptoSuiteTokenizer.
 
         """
-        return cls(token_definition, SHA256Tokenizer(token_transformer_list, crypto_suite=crypto_suite))
+        return cls(token_definition, CryptoSuiteTokenizer(token_transformer_list, crypto_suite=crypto_suite))
 
     def __init__(
         self,
