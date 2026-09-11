@@ -24,6 +24,7 @@ import org.openlinktoken.attributes.AttributeExpression;
 import org.openlinktoken.attributes.AttributeLoader;
 import org.openlinktoken.attributes.FieldRegistry;
 import org.openlinktoken.crypto.CryptoSuite;
+import org.openlinktoken.tokens.tokenizer.CryptoSuiteTokenizer;
 import org.openlinktoken.tokens.tokenizer.PassthroughTokenizer;
 import org.openlinktoken.tokens.tokenizer.SHA256Tokenizer;
 import org.openlinktoken.tokens.tokenizer.Tokenizer;
@@ -83,7 +84,7 @@ public class TokenGenerator implements Serializable {
             BaseTokenDefinition tokenDefinition,
             List<TokenTransformer> tokenTransformerList,
             CryptoSuite cryptoSuite) {
-        this(tokenDefinition, new SHA256Tokenizer(tokenTransformerList, cryptoSuite));
+        this(tokenDefinition, new CryptoSuiteTokenizer(tokenTransformerList, cryptoSuite));
     }
 
     /**
