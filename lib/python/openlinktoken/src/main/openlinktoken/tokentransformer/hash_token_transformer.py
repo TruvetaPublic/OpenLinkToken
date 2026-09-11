@@ -14,9 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class HashTokenTransformer(TokenTransformer):
-    """
-    Transforms the token using a cryptographic hash function with
-    a secret key.
+    """Transform the token using a cryptographic hash function and secret key.
 
     See: https://datatracker.ietf.org/doc/html/rfc4868 (HMACSHA256)
     """
@@ -26,8 +24,7 @@ class HashTokenTransformer(TokenTransformer):
         hashing_secret: Union[str, bytes, None],
         crypto_suite: CryptoSuite | None = None,
     ):
-        """
-        Initializes the underlying MAC with the secret key.
+        """Initializes the underlying MAC with the secret key.
 
         Accepts a ``str`` (encoded to UTF-8), raw ``bytes``, or ``None`` / empty
         to create a no-op transformer (``transform`` will raise ``RuntimeError``).
@@ -38,6 +35,7 @@ class HashTokenTransformer(TokenTransformer):
 
         Raises:
             ValueError: If the hashing secret is None or empty.
+
         """
         self._lock = threading.Lock()
         self.crypto_suite = crypto_suite or CryptoSuite.default()
@@ -52,8 +50,7 @@ class HashTokenTransformer(TokenTransformer):
             self._mac_available = True
 
     def transform(self, token: str) -> str:
-        """
-        Hash token transformer.
+        """Hash token transformer.
 
         The token is transformed using the suite-selected HMAC algorithm.
 
@@ -66,6 +63,7 @@ class HashTokenTransformer(TokenTransformer):
         Raises:
             ValueError: If token is None or blank.
             RuntimeError: If the HMAC is not initialized properly.
+
         """
         if token is None or token.strip() == "":
             logger.error("Invalid Argument. Token can't be None or blank.")

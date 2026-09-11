@@ -39,8 +39,7 @@ def derive_transport_encryption_key(exchange: Any) -> bytes:
 
 
 class PackageCommand:
-    """
-    Package command - combines tokenize and encrypt in one command.
+    """Package command - combines tokenize and encrypt in one command.
     This is the default workflow: hash + encrypt.
     """
 

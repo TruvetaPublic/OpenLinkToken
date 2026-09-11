@@ -1,7 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""
-Tests for OpenLinkToken PySpark token processor.
-"""
+"""Tests for OpenLinkToken PySpark token processor."""
 
 import base64
 import json
@@ -155,6 +153,7 @@ class TestOpenLinkTokenProcessor:
         derive_call_count = 0
 
         def fake_resolve_exchange_config_inputs(*args, **kwargs):
+            """Return the resolved exchange fixture while asserting forwarded inputs."""
             assert kwargs == {
                 "exchange_config_path": "config.json",
                 "exchange_config_value": None,
@@ -165,6 +164,7 @@ class TestOpenLinkTokenProcessor:
             return resolved_exchange
 
         def fake_derive_transport_encryption_key(exchange):
+            """Return the fixture transport key and verify the resolved exchange."""
             nonlocal derive_call_count
             derive_call_count += 1
             assert exchange is resolved_exchange

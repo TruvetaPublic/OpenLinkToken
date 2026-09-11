@@ -12,8 +12,7 @@ SUPPORTED_CURVES = ["P-256", "P-384", "P-521"]
 
 
 class GenerateKeyPairCommand:
-    """
-    Generate an ECDH key pair or version-2 crypto-suite key bundle.
+    """Generate an ECDH key pair or version-2 crypto-suite key bundle.
 
     Private key:  ~/.openlinktoken/<name>.private.pem  (PEM PKCS#8, permissions 600)
     Public key:   ~/.openlinktoken/<name>.public.pem   (PEM SubjectPublicKeyInfo, permissions 644)
@@ -77,6 +76,7 @@ class GenerateKeyPairCommand:
 
         Returns:
             Exit code (0 for success, non-zero for errors).
+
         """
         from openlinktoken.crypto_suite import CryptoSuite
         from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message

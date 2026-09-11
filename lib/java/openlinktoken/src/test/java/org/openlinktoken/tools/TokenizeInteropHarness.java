@@ -42,6 +42,9 @@ public final class TokenizeInteropHarness {
     private static final String SOCIAL_SECURITY_NUMBER_COLUMN = "SocialSecurityNumber";
     private static final String TOKEN_COLUMN = "Token";
 
+    /**
+     * Prevents instantiation of this command-line harness.
+     */
     private TokenizeInteropHarness() {
     }
 
@@ -100,12 +103,26 @@ public final class TokenizeInteropHarness {
         }
     }
 
+    /**
+     * Creates the token generator configured for the selected crypto suite.
+     *
+     * @param hashingSecret the secret used by the keyed token transformer
+     * @param cryptoSuite the suite selecting digest and MAC algorithms
+     * @return a configured token generator
+     * @throws Exception if the selected transformer cannot be initialized
+     */
     private static TokenGenerator createTokenGenerator(String hashingSecret, CryptoSuite cryptoSuite) throws Exception {
         List<TokenTransformer> tokenTransformers = new ArrayList<>();
         tokenTransformers.add(new HashTokenTransformer(hashingSecret.getBytes(StandardCharsets.UTF_8), cryptoSuite));
         return new TokenGenerator(new TokenDefinition(), new SHA256Tokenizer(tokenTransformers, cryptoSuite));
     }
 
+    /**
+     * Maps CSV header names to their column indexes.
+     *
+     * @param headers the CSV header names
+     * @return a map from header name to column index
+     */
     private static Map<String, Integer> buildHeaderIndexes(String[] headers) {
         var indexes = new HashMap<String, Integer>();
         for (int index = 0; index < headers.length; index++) {
@@ -114,6 +131,13 @@ public final class TokenizeInteropHarness {
         return indexes;
     }
 
+    /**
+     * Extracts supported person attributes from a CSV row.
+     *
+     * @param headerIndexes the CSV header-to-index mapping
+     * @param values the row values
+     * @return the supported attributes and their values
+     */
     private static Map<Class<? extends Attribute>, String> buildPersonAttributes(
             Map<String, Integer> headerIndexes,
             String[] values) {
@@ -128,6 +152,15 @@ public final class TokenizeInteropHarness {
         return personAttributes;
     }
 
+    /**
+     * Adds a supported attribute when its CSV column is present.
+     *
+     * @param personAttributes the attribute map being populated
+     * @param headerIndexes the CSV header-to-index mapping
+     * @param values the row values
+     * @param columnName the CSV column name
+     * @param attributeClass the attribute class represented by the column
+     */
     private static void addAttribute(
             Map<Class<? extends Attribute>, String> personAttributes,
             Map<String, Integer> headerIndexes,
@@ -139,6 +172,14 @@ public final class TokenizeInteropHarness {
         }
     }
 
+    /**
+     * Returns a column value or an empty string when the column is unavailable.
+     *
+     * @param headerIndexes the CSV header-to-index mapping
+     * @param values the row values
+     * @param columnName the CSV column name
+     * @return the value for the requested column
+     */
     private static String getValue(Map<String, Integer> headerIndexes, String[] values, String columnName) {
         Integer index = headerIndexes.get(columnName);
         if (index == null || index >= values.length) {
@@ -147,6 +188,12 @@ public final class TokenizeInteropHarness {
         return values[index];
     }
 
+    /**
+     * Parses one CSV line, including quoted values and escaped quotes.
+     *
+     * @param line the CSV line
+     * @return the parsed column values
+     */
     private static List<String> parseCsvLine(String line) {
         List<String> values = new ArrayList<>();
         StringBuilder currentValue = new StringBuilder();

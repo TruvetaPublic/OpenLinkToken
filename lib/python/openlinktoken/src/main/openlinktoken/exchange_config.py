@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""
-Shared helpers for loading and consuming initiate-exchange config files.
+"""Shared helpers for loading and consuming initiate-exchange config files.
 
 Note: The exchange-config workflow is Python-CLI only. The Java counterpart
 (``ExchangeConfig.java``) is a placeholder stub that references this module.
@@ -318,6 +317,7 @@ def _recipient_kids(exchange_config: Mapping[str, Any]) -> list[str]:
 
 
 def _resolve_private_key_role(private_pem: bytes, payload: Mapping[str, Any]) -> str:
+    """Identify whether private material belongs to the sender or recipient."""
     if payload.get("senderKeyId") or payload.get("recipientKeyId"):
         bundle = ExchangeKeyBundle.from_json(private_pem, require_private=True)
         if bundle.kid == payload.get("senderKeyId"):
@@ -336,6 +336,7 @@ def _resolve_private_key_role(private_pem: bytes, payload: Mapping[str, Any]) ->
 
 
 def _decode_hashing_secret(payload: Mapping[str, Any]) -> bytes:
+    """Decode the payload's required base64url hashing secret."""
     encoding = payload.get("hashingSecretEncoding")
     value = payload.get("hashingSecret")
     if encoding != "base64url":
@@ -351,6 +352,7 @@ def _decode_hashing_secret(payload: Mapping[str, Any]) -> bytes:
 
 
 def _decode_rotation_iv(payload: Mapping[str, Any]) -> bytes:
+    """Decode the optional base64url rotation IV, defaulting to empty bytes."""
     encoding = payload.get("rotationIvEncoding")
     value = payload.get("rotationIv")
     if value is None:
@@ -380,6 +382,7 @@ def rotation_iv_to_text(rotation_iv: bytes) -> str:
 
 
 def _decode_rotation_count(payload: Mapping[str, Any]) -> int:
+    """Validate and decode the optional non-negative rotation count."""
     value = payload.get("rotationCount")
     if value is None or value == 0:
         return 0
@@ -389,6 +392,7 @@ def _decode_rotation_count(payload: Mapping[str, Any]) -> int:
 
 
 def _decode_bin_width(payload: Mapping[str, Any]) -> float:
+    """Validate and decode the positive tokenization bin width."""
     value = payload.get("binWidth")
     if value is None:
         return 0.05
@@ -398,6 +402,7 @@ def _decode_bin_width(payload: Mapping[str, Any]) -> float:
 
 
 def _decode_dimension_bias(payload: Mapping[str, Any]) -> list[float]:
+    """Validate and decode the optional numeric dimension-bias list."""
     value = payload.get("dimensionBias")
     if value is None:
         return []

@@ -176,6 +176,7 @@ class TestExchangeConfigCommands:
 
 
 def _write_input_csv(tmp_path: Path) -> Path:
+    """Create the small person-attribute CSV used by command integration tests."""
     input_csv = tmp_path / "input.csv"
     input_csv.write_text(
         "RecordId,FirstName,LastName,PostalCode,Sex,BirthDate,SocialSecurityNumber\n"
@@ -186,6 +187,7 @@ def _write_input_csv(tmp_path: Path) -> Path:
 
 
 def _write_tokenized_csv(tmp_path: Path) -> Path:
+    """Create a representative tokenized CSV for encryption tests."""
     tokenized_csv = tmp_path / "tokenized.csv"
     tokenized_csv.write_text(
         "RecordId,RuleNumber,RuleExpression,RuleWeight,RuleCount,Token\ntest-001,1,T1,1.0,1,SGVsbG9Ub2tlbg==\n",
@@ -195,6 +197,7 @@ def _write_tokenized_csv(tmp_path: Path) -> Path:
 
 
 def _write_current_exchange_config(exchange_config_path: Path, tmp_path: Path) -> Path:
+    """Write a legacy exchange config and return its matching private-key path."""
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     _, recipient_public_pem = generate_key_pair("P-256")
     config = build_exchange_envelope(
@@ -216,6 +219,7 @@ def _write_current_exchange_config(exchange_config_path: Path, tmp_path: Path) -
 
 
 def _write_future_v3_exchange_config(tmp_path: Path) -> tuple[Path, Path]:
+    """Create an unsupported v3 envelope and return its path and private key."""
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     _, recipient_public_pem = generate_key_pair("P-256")
     payload = {

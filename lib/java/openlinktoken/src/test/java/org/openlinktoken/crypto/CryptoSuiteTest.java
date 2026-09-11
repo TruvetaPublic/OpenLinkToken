@@ -7,7 +7,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 
+/**
+ * Tests the registered crypto suite contracts and lookup validation.
+ */
 class CryptoSuiteTest {
+    /**
+     * Verifies the algorithms and versions declared by the registered suites.
+     */
     @Test
     void registeredSuitesHaveExpectedContracts() {
         assertEquals("suite-sha256-v1", CryptoSuite.defaultSuite().getSuiteId());
@@ -31,6 +37,9 @@ class CryptoSuiteTest {
         assertFalse(!pqShake.isPostQuantum());
     }
 
+    /**
+     * Verifies that unknown or blank suite identifiers are rejected.
+     */
     @Test
     void unknownSuiteIdsFailClosed() {
         assertThrows(IllegalArgumentException.class, () -> CryptoSuite.fromId("unknown"));

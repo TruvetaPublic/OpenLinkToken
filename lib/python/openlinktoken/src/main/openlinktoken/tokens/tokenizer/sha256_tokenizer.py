@@ -10,8 +10,7 @@ from openlinktoken.tokentransformer.token_transformer import TokenTransformer
 
 
 class SHA256Tokenizer(Tokenizer):
-    """
-    Generates tokens using the digest selected by a crypto suite.
+    """Generates tokens using the digest selected by a crypto suite.
 
     The token is generated using a suite-selected digest and is hex encoded.
     If token transformations are specified, the token is then transformed
@@ -30,12 +29,12 @@ class SHA256Tokenizer(Tokenizer):
         token_transformer_list: List[TokenTransformer],
         crypto_suite: CryptoSuite | None = None,
     ):
-        """
-        Initialize the tokenizer.
+        """Initialize the tokenizer.
 
         Args:
             token_transformer_list: A list of token transformers.
             crypto_suite: The suite selecting the token digest. Defaults to SHA-256.
+
         """
         self.token_transformer_list = token_transformer_list
         self.crypto_suite = crypto_suite or CryptoSuite.default()
@@ -45,8 +44,7 @@ class SHA256Tokenizer(Tokenizer):
         return self.token_transformer_list
 
     def tokenize(self, value: str) -> str:
-        """
-        Generate the token for the given token signature.
+        """Generate the token for the given token signature.
 
         Token = Hex(digest(token-signature))
 
@@ -61,6 +59,7 @@ class SHA256Tokenizer(Tokenizer):
 
         Raises:
             Exception: If an error is thrown by the transformer.
+
         """
         if value is None or value.strip() == "":
             return self.EMPTY

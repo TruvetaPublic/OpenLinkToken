@@ -1,5 +1,4 @@
-"""
-Interoperability tests for Open Link Token Java core library and Python CLI.
+"""Interoperability tests for Open Link Token Java core library and Python CLI.
 
 These tests validate three parity surfaces:
 - the Python library reproduces the deterministic fixture values already asserted by
@@ -69,6 +68,7 @@ class InteroperabilityTooling:
     JAVA_MAIN_CLASS = "org.openlinktoken.tools.TokenizeInteropHarness"
 
     def __init__(self):
+        """Initialize shared repository paths used by interoperability tools."""
         self.project_root = PROJECT_ROOT
         self.sample_csv = self.project_root / "resources/interoperability_sample.csv"
 

@@ -24,8 +24,7 @@ DEFAULT_EMBEDDING_DIMENSION = 1024
 
 
 class InitiateExchangeCommand:
-    """
-    Initiate an ECDH key-exchange with a partner.
+    """Initiate an ECDH key-exchange with a partner.
 
     Steps performed:
      1. Resolve/create a sender key pair locally, or derive it from an external reference.
@@ -242,6 +241,7 @@ class InitiateExchangeCommand:
 
         Returns:
             Exit code (0 for success, non-zero for errors).
+
         """
         from openlinktoken.crypto_suite import CryptoSuite
         from openlinktoken.exchange_jwe import build_exchange_envelope
@@ -716,6 +716,7 @@ class InitiateExchangeCommand:
 
         Returns:
             The hashing secret as raw bytes.
+
         """
         if hashing_secret_stdin:
             hashing_secret_bytes = read_required_stdin_bytes("--hashingsecret-stdin", "hashing secret")
@@ -749,6 +750,7 @@ class InitiateExchangeCommand:
 
         Returns:
             The rotation IV as raw bytes.
+
         """
         if rotation_iv_stdin:
             iv_bytes = read_required_stdin_bytes("--rotation-iv-stdin", "rotation IV")
@@ -818,6 +820,7 @@ class InitiateExchangeCommand:
 
         Raises:
             FileExistsError: If the file exists and ``overwrite`` is ``False``.
+
         """
         if path.is_symlink():
             raise OSError(f"Exchange config path {path} must not be a symbolic link.")

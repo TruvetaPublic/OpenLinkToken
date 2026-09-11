@@ -25,10 +25,12 @@ TRANSPORT_KEY_LENGTH = 32
 
 
 def _encode(value: bytes) -> str:
+    """Encode bytes as unpadded base64url text for the envelope schema."""
     return base64.urlsafe_b64encode(value).decode("ascii").rstrip("=")
 
 
 def _decode(value: Any, field_name: str) -> bytes:
+    """Decode a required base64url field and raise a field-specific error."""
     if not isinstance(value, str) or not value:
         raise ValueError(f"{field_name} must be non-empty base64url data.")
     try:
@@ -39,6 +41,7 @@ def _decode(value: Any, field_name: str) -> bytes:
 
 
 def _canonical_json(value: Mapping[str, Any]) -> bytes:
+    """Serialize a mapping deterministically for authenticated transcripts."""
     return json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
@@ -187,6 +190,7 @@ def _build_recipient(
     exchange_id: str,
     content_key: bytes,
 ) -> dict[str, Any]:
+    """Build one recipient's key-management record and wrapped content key."""
     shared_secret_parts: list[bytes] = []
     components: list[dict[str, Any]] = []
 
@@ -253,6 +257,7 @@ def _unwrap_content_key(
     protected: str,
     exchange_id: str,
 ) -> bytes:
+    """Recover and authenticate the content key for a matching recipient."""
     key_management = recipient.get("keyManagement")
     if not isinstance(key_management, Mapping):
         raise ValueError("Recipient is missing keyManagement.")
@@ -341,10 +346,12 @@ def mlkem_private_key_from_seed(value: bytes):
 
 
 def _derive_key(shared_secret: bytes, salt: bytes, info: bytes) -> bytes:
+    """Derive a transport key from shared secret material and its transcript."""
     return HKDF(algorithm=hashes.SHA256(), length=TRANSPORT_KEY_LENGTH, salt=salt, info=info).derive(shared_secret)
 
 
 def _recipient_aad(protected: str, kid: str, components: list[Mapping[str, Any]]) -> bytes:
+    """Serialize recipient metadata as authenticated additional data."""
     return _canonical_json(
         {
             "protected": protected,

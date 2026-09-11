@@ -29,8 +29,7 @@ def resolve_exchange_config(
 
 
 class TokenizeCommand:
-    """
-    Tokenize command - generates tokens from person attributes.
+    """Tokenize command - generates tokens from person attributes.
 
     Default mode (``--mode default`` or omitted): applies the digest and keyed
     MAC selected by the exchange config using its hashing secret.

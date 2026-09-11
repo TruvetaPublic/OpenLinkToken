@@ -106,10 +106,23 @@ public class JweMatchTokenFormatter implements TokenTransformer {
         this.encrypter = createEncrypter(this.encryptionKey);
     }
 
+    /**
+     * Serializes the formatter's non-transient configuration.
+     *
+     * @param oos the object stream receiving the formatter state
+     * @throws IOException if the formatter state cannot be written
+     */
     private void writeObject(ObjectOutputStream oos) throws IOException {
         oos.defaultWriteObject();
     }
 
+    /**
+     * Restores the formatter and rebuilds its transient JWE encrypter.
+     *
+     * @param ois the object stream containing the formatter state
+     * @throws IOException if the formatter state or encrypter cannot be restored
+     * @throws ClassNotFoundException if a serialized class cannot be resolved
+     */
     private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
         ois.defaultReadObject();
         try {
@@ -119,6 +132,13 @@ public class JweMatchTokenFormatter implements TokenTransformer {
         }
     }
 
+    /**
+     * Validates and copies the AES-256 encryption key.
+     *
+     * @param encryptionKey the raw encryption key bytes
+     * @return a defensive copy of the validated key
+     * @throws IllegalArgumentException if the key is not exactly 32 bytes
+     */
     private static byte[] validateEncryptionKey(byte[] encryptionKey) {
         if (encryptionKey == null || encryptionKey.length != 32) {
             throw new IllegalArgumentException("Encryption key must be exactly 32 bytes (256 bits)");
@@ -126,6 +146,13 @@ public class JweMatchTokenFormatter implements TokenTransformer {
         return Arrays.copyOf(encryptionKey, encryptionKey.length);
     }
 
+    /**
+     * Creates the Nimbus direct encrypter for the supplied AES key.
+     *
+     * @param encryptionKey the raw AES-256 key bytes
+     * @return an encrypter configured for direct JWE encryption
+     * @throws JOSEException if the key cannot be converted to a JWK
+     */
     private static DirectEncrypter createEncrypter(byte[] encryptionKey) throws JOSEException {
         OctetSequenceKey jwk = new OctetSequenceKey.Builder(encryptionKey).build();
         return new DirectEncrypter(jwk);

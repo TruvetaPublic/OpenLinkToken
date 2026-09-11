@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: MIT */
 package org.openlinktoken.tokens.tokenizer;
 
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -15,12 +16,12 @@ import org.openlinktoken.tokens.Token;
 import org.openlinktoken.tokentransformer.TokenTransformer;
 
 /**
- * Generates token using the digest selected by a crypto suite.
+ * Generates tokens using the digest selected by a crypto suite.
  *
  * <p>
- * The token is generated using SHA256 digest and is hex encoded.
- * If token transformations are specified, the token is then transformed
- * by those transformers.
+ * The token is generated using the configured digest and is hex encoded. If
+ * token transformations are specified, the token is then transformed by those
+ * transformers.
  *
  */
 public final class SHA256Tokenizer implements Tokenizer {
@@ -58,10 +59,10 @@ public final class SHA256Tokenizer implements Tokenizer {
     }
 
     /**
-     * Generates the token for the given token signature.
+     * Generates a token for the given token signature.
      * <p>
      * <code>
-     *   Token = Hex(Sha256(token-signature))
+     *   Token = Hex(Digest(token-signature))
      * </code>
      * <p>
      * The token is optionally transformed with one or more transformers.
@@ -72,12 +73,9 @@ public final class SHA256Tokenizer implements Tokenizer {
      *         blank,
      *         {@link #EMPTY EMPTY} is returned.
      *
-     * @throws java.io.UnsupportedEncodingException   if the <code>utf-8</code>
-     *                                                encoding is not supported.
-     * @throws java.security.NoSuchAlgorithmException if the <code>SHA-256</code>
-     *                                                algorithm is not supported.
-     * @throws java.lang.Exception                    if an error is thrown by the
-     *                                                transformer.
+     * @throws UnsupportedEncodingException   if the UTF-8 encoding is not supported
+     * @throws NoSuchAlgorithmException       if the configured digest algorithm is not supported
+     * @throws Exception                      if an error is thrown by a transformer
      */
     public String tokenize(String value) throws Exception {
         if (value == null || value.isBlank()) {
@@ -111,7 +109,7 @@ public final class SHA256Tokenizer implements Tokenizer {
     }
 
     /**
-     * Returns the transformer list used after SHA-256 hashing.
+     * Returns the transformer list applied after digesting.
      *
      * @return unmodifiable view of the transformer list
      */

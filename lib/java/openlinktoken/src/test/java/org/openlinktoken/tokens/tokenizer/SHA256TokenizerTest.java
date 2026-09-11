@@ -24,11 +24,17 @@ import org.openlinktoken.tokentransformer.EncryptTokenTransformer;
 import org.openlinktoken.tokentransformer.HashTokenTransformer;
 import org.openlinktoken.tokentransformer.TokenTransformer;
 
+/**
+ * Tests digest selection and transformer application in {@link SHA256Tokenizer}.
+ */
 class SHA256TokenizerTest {
     private TokenTransformer hashTransformerMock;
     private TokenTransformer encryptTransformerMock;
     private SHA256Tokenizer tokenizer;
 
+    /**
+     * Creates a tokenizer with mocked transformers for each test.
+     */
     @BeforeEach
     void setUp() {
         // Mocking TokenTransformer implementations (Hash and Encrypt)
@@ -44,6 +50,9 @@ class SHA256TokenizerTest {
         tokenizer = new SHA256Tokenizer(transformers);
     }
 
+    /**
+     * Verifies that null and blank inputs return the empty token.
+     */
     @Test
     void testTokenize_NullOrEmptyInput_ReturnsEmptyString() throws Exception {
         String resultNull = tokenizer.tokenize(null); // Test for null input
@@ -56,6 +65,9 @@ class SHA256TokenizerTest {
         assertEquals(Token.BLANK, resultBlank);
     }
 
+    /**
+     * Verifies that a digest is passed through each configured transformer.
+     */
     @Test
     void testTokenize_ValidInput_ReturnsHashedToken() throws Exception {
         String inputValue = "test-input";
@@ -75,6 +87,9 @@ class SHA256TokenizerTest {
         assertEquals("encrypted-token", result); // Check the final result after applying the transformers
     }
 
+    /**
+     * Verifies that tokenization returns the raw digest when no transformers exist.
+     */
     @Test
     void testTokenize_ValidInput_NoTransformers_ReturnsRawHash() throws Exception {
         String inputValue = "test-input";
@@ -88,6 +103,9 @@ class SHA256TokenizerTest {
                                             // applied)
     }
 
+    /**
+     * Verifies that transformer failures are propagated to the caller.
+     */
     @Test
     void testTokenize_ValidInput_TransformerThrowsException() throws Exception {
         String inputValue = "test-input";
@@ -103,6 +121,9 @@ class SHA256TokenizerTest {
         assertEquals("Transform error", exception.getMessage());
     }
 
+    /**
+     * Verifies the fixed vector for the SHA-3 suite.
+     */
     @Test
     void testTokenize_Sha3Suite_ReturnsFixedVector() throws Exception {
         tokenizer = new SHA256Tokenizer(new ArrayList<>(), CryptoSuite.fromId("suite-sha3-v1"));
@@ -112,6 +133,9 @@ class SHA256TokenizerTest {
                 tokenizer.tokenize("test-input"));
     }
 
+    /**
+     * Verifies the fixed vector for the SHAKE suite.
+     */
     @Test
     void testTokenize_ShakeSuite_ReturnsFixedVector() throws Exception {
         tokenizer = new SHA256Tokenizer(new ArrayList<>(), CryptoSuite.fromId("suite-pq-shake-v1"));
@@ -121,7 +145,13 @@ class SHA256TokenizerTest {
                 tokenizer.tokenize("test-input"));
     }
 
-    // Utility method to calculate SHA-256 hash for a given input string
+    /**
+     * Calculates a SHA-256 hexadecimal digest for a test input.
+     *
+     * @param input the input string
+     * @return the hexadecimal SHA-256 digest
+     * @throws NoSuchAlgorithmException if SHA-256 is unavailable
+     */
     private String calculateSHA256(String input) throws NoSuchAlgorithmException {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
