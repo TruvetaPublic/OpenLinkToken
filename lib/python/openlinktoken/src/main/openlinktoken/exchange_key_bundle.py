@@ -28,10 +28,12 @@ class KeyBundleError(ValueError):
 
 
 def _encode(value: bytes) -> str:
+    """Encode bytes as unpadded base64url text for bundle fields."""
     return base64.urlsafe_b64encode(value).decode("ascii").rstrip("=")
 
 
 def _decode(value: Any, field_name: str) -> bytes:
+    """Decode a required base64url field and raise a bundle-specific error."""
     if not isinstance(value, str) or not value:
         raise KeyBundleError(f"{field_name} must be a non-empty base64url string.")
     try:
@@ -42,11 +44,13 @@ def _decode(value: Any, field_name: str) -> bytes:
 
 
 def _sha256_fingerprint(value: bytes) -> str:
+    """Return an uppercase, colon-delimited SHA-256 fingerprint."""
     digest = hashlib.sha256(value).hexdigest().upper()
     return ":".join(digest[index : index + 2] for index in range(0, len(digest), 2))
 
 
 def _fingerprint_to_kid(fingerprint: str) -> str:
+    """Convert a display fingerprint into the bundle's stable key identifier."""
     return f"sha256:{fingerprint.lower().replace(':', '-')}"
 
 
@@ -264,6 +268,7 @@ def resolve_private_bundle_by_kid(directory: Path, kid: str) -> bytes:
 
 
 def _validate_ec_public_key(public_pem: bytes) -> None:
+    """Validate that PEM bytes contain a P-256 public key."""
     try:
         public_key = serialization.load_pem_public_key(public_pem)
     except (ValueError, TypeError) as error:
@@ -273,6 +278,7 @@ def _validate_ec_public_key(public_pem: bytes) -> None:
 
 
 def _validate_ec_private_key(private_pem: bytes, public_pem: bytes) -> None:
+    """Validate a P-256 private key and its correspondence to the public key."""
     try:
         private_key = serialization.load_pem_private_key(private_pem, password=None)
     except (ValueError, TypeError) as error:

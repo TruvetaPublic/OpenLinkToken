@@ -138,8 +138,7 @@ class TestHashTokenTransformer:
         assert base64.b64decode(transformer.transform("person")) == expected
 
     def _calculate_expected_hash(self, secret: str, token: str) -> str:
-        """
-        Calculate the expected HMAC-SHA256 hash for validation.
+        """Calculate the expected HMAC-SHA256 hash for validation.
 
         Args:
             secret: The secret key.
@@ -147,6 +146,7 @@ class TestHashTokenTransformer:
 
         Returns:
             The base64-encoded HMAC-SHA256 hash.
+
         """
         mac = hmac.new(secret.encode("utf-8"), token.encode("utf-8"), hashlib.sha256)
         expected_hash = mac.digest()

@@ -1,7 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""
-Unit and integration tests for GenerateKeyPairCommand.
-"""
+"""Unit and integration tests for GenerateKeyPairCommand."""
 
 import os
 import stat

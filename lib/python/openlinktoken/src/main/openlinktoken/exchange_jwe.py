@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""
-Shared helpers for building and decrypting exchange-config JWE envelopes.
+"""Shared helpers for building and decrypting exchange-config JWE envelopes.
 
 Note: The exchange-config workflow is Python-CLI only. The Java counterpart
 (``ExchangeJwe.java``) is a placeholder stub that references this module.

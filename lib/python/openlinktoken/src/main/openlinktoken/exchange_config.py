@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""
-Shared helpers for loading and consuming initiate-exchange config files.
+"""Shared helpers for loading and consuming initiate-exchange config files.
 
 Note: The exchange-config workflow is Python-CLI only. The Java counterpart
 (``ExchangeConfig.java``) is a placeholder stub that references this module.
@@ -432,7 +431,7 @@ def _resolve_private_key_role(private_pem: bytes, payload: Mapping[str, Any]) ->
         payload: Decrypted exchange payload containing key identifiers or fingerprints.
 
     Returns:
-        ``"sender"`` or ``"recipient"`` according to the matching key identifier.
+        ``"sender"`` or ``"recipient"`` according to the matching key identifier or fingerprint.
 
     Raises:
         ValueError: If the private key does not match either exchange participant.
@@ -456,13 +455,13 @@ def _resolve_private_key_role(private_pem: bytes, payload: Mapping[str, Any]) ->
 
 def _decode_hashing_secret(payload: Mapping[str, Any]) -> bytes:
     """
-    Decode hashing secret.
+    Decode the payload's required base64url hashing secret.
 
     Args:
-        payload: Structured payload to parse, validate, or encrypt.
+        payload: Exchange payload containing the encoded hashing secret.
 
     Returns:
-        Decoded hashing secret.
+        The decoded hashing secret bytes.
     """
     encoding = payload.get("hashingSecretEncoding")
     value = payload.get("hashingSecret")
@@ -480,13 +479,13 @@ def _decode_hashing_secret(payload: Mapping[str, Any]) -> bytes:
 
 def _decode_rotation_iv(payload: Mapping[str, Any]) -> bytes:
     """
-    Decode rotation iv.
+    Decode the optional base64url rotation initialization vector.
 
     Args:
-        payload: Structured payload to parse, validate, or encrypt.
+        payload: Exchange payload containing the optional encoded rotation IV.
 
     Returns:
-        Decoded rotation iv.
+        The decoded rotation IV, or empty bytes when it is absent.
     """
     encoding = payload.get("rotationIvEncoding")
     value = payload.get("rotationIv")
@@ -525,13 +524,13 @@ def rotation_iv_to_text(rotation_iv: bytes) -> str:
 
 def _decode_rotation_count(payload: Mapping[str, Any]) -> int:
     """
-    Decode rotation count.
+    Validate and decode the optional non-negative rotation count.
 
     Args:
-        payload: Structured payload to parse, validate, or encrypt.
+        payload: Exchange payload containing the optional rotation count.
 
     Returns:
-        Decoded rotation count.
+        The rotation count, or zero when it is absent.
     """
     value = payload.get("rotationCount")
     if value is None or value == 0:
@@ -543,13 +542,13 @@ def _decode_rotation_count(payload: Mapping[str, Any]) -> int:
 
 def _decode_bin_width(payload: Mapping[str, Any]) -> float:
     """
-    Decode bin width.
+    Validate and decode the tokenization bin width.
 
     Args:
-        payload: Structured payload to parse, validate, or encrypt.
+        payload: Exchange payload containing the optional bin width.
 
     Returns:
-        Decoded bin width.
+        The bin width, or the default width when it is absent.
     """
     value = payload.get("binWidth")
     if value is None:
@@ -561,13 +560,13 @@ def _decode_bin_width(payload: Mapping[str, Any]) -> float:
 
 def _decode_dimension_bias(payload: Mapping[str, Any]) -> list[float]:
     """
-    Decode dimension bias.
+    Validate and decode the optional numeric dimension-bias list.
 
     Args:
-        payload: Structured payload to parse, validate, or encrypt.
+        payload: Exchange payload containing the optional dimension-bias list.
 
     Returns:
-        Decoded dimension bias.
+        The dimension-bias values, or an empty list when they are absent.
     """
     value = payload.get("dimensionBias")
     if value is None:

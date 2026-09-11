@@ -27,6 +27,16 @@ public final class CryptoSuite {
     private final String exchangeKeyAgreement;
     private final int exchangeConfigVersion;
 
+    /**
+     * Creates an immutable crypto suite definition.
+     *
+     * @param suiteId the stable suite identifier
+     * @param tokenDigestAlgorithm the digest algorithm used for tokenization
+     * @param tokenMacAlgorithm the keyed MAC algorithm used for token transformation
+     * @param tokenContentEncryption the content-encryption algorithm used for match tokens
+     * @param exchangeKeyAgreement the key-agreement mechanism used for exchanges
+     * @param exchangeConfigVersion the exchange configuration version
+     */
     private CryptoSuite(
             String suiteId,
             String tokenDigestAlgorithm,
@@ -78,30 +88,65 @@ public final class CryptoSuite {
         return List.copyOf(REGISTRY.values());
     }
 
+    /**
+     * Returns the stable identifier for this suite.
+     *
+     * @return the suite identifier
+     */
     public String getSuiteId() {
         return suiteId;
     }
 
+    /**
+     * Returns the digest algorithm used to tokenize values.
+     *
+     * @return the token digest algorithm
+     */
     public String getTokenDigestAlgorithm() {
         return tokenDigestAlgorithm;
     }
 
+    /**
+     * Returns the keyed MAC algorithm used to transform tokens.
+     *
+     * @return the token MAC algorithm
+     */
     public String getTokenMacAlgorithm() {
         return tokenMacAlgorithm;
     }
 
+    /**
+     * Returns the content-encryption algorithm used for match tokens.
+     *
+     * @return the token content-encryption algorithm
+     */
     public String getTokenContentEncryption() {
         return tokenContentEncryption;
     }
 
+    /**
+     * Returns the key-agreement mechanism used for exchanges.
+     *
+     * @return the exchange key-agreement mechanism
+     */
     public String getExchangeKeyAgreement() {
         return exchangeKeyAgreement;
     }
 
+    /**
+     * Returns the exchange configuration version required by this suite.
+     *
+     * @return the exchange configuration version
+     */
     public int getExchangeConfigVersion() {
         return exchangeConfigVersion;
     }
 
+    /**
+     * Indicates whether this suite uses a post-quantum key-agreement mechanism.
+     *
+     * @return {@code true} when the suite uses ML-KEM
+     */
     public boolean isPostQuantum() {
         return exchangeKeyAgreement.contains("ML-KEM");
     }

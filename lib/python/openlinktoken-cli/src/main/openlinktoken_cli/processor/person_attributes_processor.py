@@ -47,8 +47,7 @@ class PersonAttributesProcessingSummary:
 
 
 class PersonAttributesProcessor:
-    """
-    Process all person attributes.
+    """Process all person attributes.
 
     This class is used to read person attributes from input source,
     generate tokens for each person record and write the tokens back
@@ -76,9 +75,9 @@ class PersonAttributesProcessor:
         progress_callback=None,
         crypto_suite: CryptoSuite | str | None = None,
     ) -> PersonAttributesProcessingSummary:
-        """
-        Read person attributes from the input data source, generate tokens, and
-        write the result back to the output data source. The tokens can be optionally
+        """Read person attributes, generate tokens, and write the result.
+
+        The tokens can be optionally
         transformed before writing and wrapped in JWE format if ring ID is provided.
         Record IDs are SHA-256 hashed in the output when hash_record_ids is True.
 
@@ -93,9 +92,9 @@ class PersonAttributesProcessor:
                              to the output. This is a one-way operation with no traceability.
             token_definition: Token definition that specifies the attributes and rules for token generation.
             progress_callback: Callback invoked with updates as processing advances.
-
+            crypto_suite: Suite selecting the token digest and MAC; defaults to the default suite.
         Returns:
-            Read person attributes from the input data source, generate tokens, and.
+            Summary of processed records, invalid attributes, and blank tokens.
         """
         token_definition = token_definition or TokenDefinition()
         selected_suite = CryptoSuite.from_id(crypto_suite) if isinstance(crypto_suite, str) else crypto_suite
@@ -121,9 +120,7 @@ class PersonAttributesProcessor:
         token_definition: BaseTokenDefinition = None,
         progress_callback=None,
     ) -> PersonAttributesProcessingSummary:
-        """
-        Read person attributes from the input data source, generate tokens using
-        the provided tokenizer, and write the result to the output data source.
+        """Read person attributes, generate tokens with the provided tokenizer, and write the result.
 
         Use this overload when full control over the tokenization strategy is needed,
         for example passing a PassthroughTokenizer for demo mode.
@@ -135,9 +132,8 @@ class PersonAttributesProcessor:
             metadata_map: Optional metadata map to update with processing statistics.
             token_definition: Token definition that specifies the attributes and rules for token generation.
             progress_callback: Callback invoked with updates as processing advances.
-
         Returns:
-            Read person attributes from the input data source, generate tokens using.
+            Summary of processed records, invalid attributes, and blank tokens.
         """
         token_definition = token_definition or TokenDefinition()
         return PersonAttributesProcessor._process_with_tokenizer(
@@ -162,8 +158,7 @@ class PersonAttributesProcessor:
         progress_callback=None,
         crypto_suite: CryptoSuite | None = None,
     ) -> PersonAttributesProcessingSummary:
-        """
-        Core row-processing logic shared by all process() overloads.
+        """Core row-processing logic shared by all process() overloads.
 
         Args:
             reader: The reader initialized with the input data source.
@@ -175,9 +170,9 @@ class PersonAttributesProcessor:
             ring_id: Optional ring ID for JWE wrapping.
             hash_record_ids: When True, each record ID is SHA-256 hashed before writing.
             progress_callback: Callback invoked with updates as processing advances.
-
+            crypto_suite: Suite selecting the token digest and MAC, if supplied.
         Returns:
-            Processed with tokenizer.
+            Summary of processed records, invalid attributes, and blank tokens.
         """
         field_registry = getattr(token_definition, "field_registry", None)
         token_generator = TokenGenerator(token_definition, tokenizer, field_registry=field_registry)
@@ -261,9 +256,9 @@ class PersonAttributesProcessor:
         jwe_formatters: Dict[str, JweMatchTokenFormatter] = None,
         hash_record_ids: bool = False,
     ) -> None:
-        """
-        Write tokens to the output writer. Optionally wraps tokens in JWE format
-        and hashes record IDs when hash_record_ids is True.
+        """Write tokens to the output writer, optionally wrapping them in JWE format.
+
+        Record IDs are hashed when ``hash_record_ids`` is True.
 
         Args:
             writer: The writer to write tokens to.
@@ -274,6 +269,7 @@ class PersonAttributesProcessor:
             ring_id: Optional ring ID for JWE wrapping (None to skip JWE).
             jwe_formatters: Optional cached JWE formatters.
             hash_record_ids: When True, each record ID is SHA-256 hashed before writing.
+
         """
         # Sort token IDs for consistent output
         token_ids = sorted(token_generator_result.tokens.keys())
@@ -665,8 +661,7 @@ class PersonAttributesProcessor:
         row_counter: int,
         invalid_attribute_count: Dict[str, int],
     ) -> bool:
-        """
-        Keep track of invalid attributes for logging purposes.
+        """Keep track of invalid attributes for logging purposes.
 
         Args:
             token_generator_result: The result from token generation.
@@ -675,6 +670,7 @@ class PersonAttributesProcessor:
 
         Returns:
             True when the row contains one or more invalid attributes.
+
         """
         if token_generator_result.invalid_attributes:
             logger.info(f"Invalid Attributes for row {row_counter:,}: {token_generator_result.invalid_attributes}")
@@ -691,13 +687,13 @@ class PersonAttributesProcessor:
         row_counter: int,
         blank_token_count_by_rule: Dict[str, int],
     ) -> None:
-        """
-        Keep track of blank tokens for logging purposes.
+        """Keep track of blank tokens for logging purposes.
 
         Args:
             token_generator_result: The result from token generation.
             row_counter: The current row number.
             blank_token_count_by_rule: Dictionary to track blank token counts by rule.
+
         """
         if token_generator_result.blank_tokens_by_rule:
             logger.debug(f"Blank tokens for row {row_counter:,}: {token_generator_result.blank_tokens_by_rule}")
@@ -709,8 +705,7 @@ class PersonAttributesProcessor:
     def _initialize_invalid_attribute_count(
         token_definition: TokenDefinition,
     ) -> Dict[str, int]:
-        """
-        Initialize the invalid attribute count dictionary with attributes used in the token definition set to 0.
+        """Initialize the invalid attribute count dictionary with attributes used in the token definition set to 0.
         This ensures that all attribute types used in token generation appear in the metadata
         even in happy path scenarios.
 
@@ -719,6 +714,7 @@ class PersonAttributesProcessor:
 
         Returns:
             A dictionary with all attribute names used in token definitions initialized to 0
+
         """
         invalid_attribute_count: Dict[str, int] = {}
         attribute_classes: Set[Type[Attribute]] = set()
@@ -744,8 +740,7 @@ class PersonAttributesProcessor:
     def _initialize_blank_tokens_by_rule_count(
         token_definition: TokenDefinition,
     ) -> Dict[str, int]:
-        """
-        Initialize the blank tokens by rule count dictionary with all token identifiers set to 0.
+        """Initialize the blank tokens by rule count dictionary with all token identifiers set to 0.
         This ensures that all token rules appear in the metadata even in happy path scenarios.
 
         Args:
@@ -753,6 +748,7 @@ class PersonAttributesProcessor:
 
         Returns:
             A dictionary with all token identifiers initialized to 0
+
         """
         blank_tokens_by_rule_count: Dict[str, int] = {}
         for token_id in token_definition.get_token_identifiers():

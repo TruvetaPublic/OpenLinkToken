@@ -18,17 +18,26 @@ import org.junit.jupiter.api.Test;
 
 import org.openlinktoken.crypto.CryptoSuite;
 
+/**
+ * Tests keyed token transformation, suite selection, and serialization.
+ */
 class HashTokenTransformerTest {
     private static final String VALID_SECRET = "sampleSecret";
     private static final String VALID_TOKEN = "sampleToken";
 
     private HashTokenTransformer transformer;
 
+    /**
+     * Creates the default-suite transformer used by the baseline tests.
+     */
     @BeforeEach
     void setup() throws NoSuchAlgorithmException, InvalidKeyException {
         transformer = new HashTokenTransformer(VALID_SECRET);
     }
 
+    /**
+     * Verifies that a serialized transformer rebuilds its transient MAC state.
+     */
     @Test
     void testSerializable() throws Exception {
         TokenTransformer encryptTokenTransformer = new HashTokenTransformer(VALID_SECRET);
@@ -40,13 +49,16 @@ class HashTokenTransformerTest {
 
         // Manually calculate the expected hash for validation
         Mac mac = Mac.getInstance("HmacSHA256");
-        mac.init(new javax.crypto.spec.SecretKeySpec(VALID_SECRET.getBytes(), "HmacSHA256"));
+        mac.init(new SecretKeySpec(VALID_SECRET.getBytes(), "HmacSHA256"));
         byte[] expectedHash = mac.doFinal(VALID_TOKEN.getBytes());
         String expectedHashedToken = Base64.getEncoder().encodeToString(expectedHash);
 
         assertEquals(expectedHashedToken, hashedToken);
     }
 
+    /**
+     * Verifies hashing with the default HMAC-SHA-256 suite.
+     */
     @Test
     void testTransform_ValidToken_ReturnsHashedToken() throws Exception {
         String hashedToken = transformer.transform(VALID_TOKEN);
@@ -54,13 +66,16 @@ class HashTokenTransformerTest {
 
         // Manually calculate the expected hash for validation
         Mac mac = Mac.getInstance("HmacSHA256");
-        mac.init(new javax.crypto.spec.SecretKeySpec(VALID_SECRET.getBytes(), "HmacSHA256"));
+        mac.init(new SecretKeySpec(VALID_SECRET.getBytes(), "HmacSHA256"));
         byte[] expectedHash = mac.doFinal(VALID_TOKEN.getBytes());
         String expectedHashedToken = Base64.getEncoder().encodeToString(expectedHash);
 
         assertEquals(expectedHashedToken, hashedToken);
     }
 
+    /**
+     * Verifies that null tokens are rejected.
+     */
     @Test
     void testTransform_NullToken_ThrowsIllegalArgumentException() {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
@@ -69,6 +84,9 @@ class HashTokenTransformerTest {
         assertEquals("Invalid Argument. Token can't be Null.", exception.getMessage());
     }
 
+    /**
+     * Verifies the behavior of a transformer initialized with a null secret.
+     */
     @Test
     void testConstructor_NullSecret_InitializesWithNullMac() throws Exception {
         HashTokenTransformer nullSecretTransformer = new HashTokenTransformer((String) null);
@@ -77,6 +95,9 @@ class HashTokenTransformerTest {
         });
     }
 
+    /**
+     * Verifies the behavior of a transformer initialized with a blank secret.
+     */
     @Test
     void testConstructor_BlankSecret_InitializesWithNullMac() throws Exception {
         HashTokenTransformer blankSecretTransformer = new HashTokenTransformer("");
@@ -85,6 +106,9 @@ class HashTokenTransformerTest {
         });
     }
 
+    /**
+     * Verifies that hashing the same token repeatedly is deterministic.
+     */
     @Test
     void testTransform_ValidTokenMultipleTimes_ReturnsConsistentHash() throws Exception {
         String hash1 = transformer.transform(VALID_TOKEN);
@@ -92,6 +116,9 @@ class HashTokenTransformerTest {
         assertEquals(hash1, hash2); // The hashed value should be consistent
     }
 
+    /**
+     * Verifies hashing with raw secret bytes.
+     */
     @Test
     void testTransform_RawByteSecret_ReturnsExpectedHash() throws Exception {
         byte[] rawSecret = new byte[] {(byte) 0xff, 0x00, 's', 'e', 'c', 'r', 'e', 't'};
@@ -107,6 +134,9 @@ class HashTokenTransformerTest {
         assertEquals(expectedHashedToken, hashedToken);
     }
 
+    /**
+     * Verifies the fixed vector for the SHA-3 suite.
+     */
     @Test
     void testTransform_Sha3Suite_ReturnsFixedVector() throws Exception {
         HashTokenTransformer sha3Transformer =
@@ -117,6 +147,9 @@ class HashTokenTransformerTest {
                 sha3Transformer.transform("ab96273f069fc38264bf16cc2287218779c5eed6c0fee89490b990ffc35a2af5"));
     }
 
+    /**
+     * Verifies the fixed vector for the SHAKE and KMAC suite.
+     */
     @Test
     void testTransform_ShakeSuite_ReturnsFixedVector() throws Exception {
         HashTokenTransformer shakeTransformer = new HashTokenTransformer(

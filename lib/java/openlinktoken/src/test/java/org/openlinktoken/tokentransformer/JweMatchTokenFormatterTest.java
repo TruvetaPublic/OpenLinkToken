@@ -26,6 +26,9 @@ class JweMatchTokenFormatterTest {
     private static final String TEST_RULE_ID = "T1";
     private static final String TEST_TOKEN = "dGVzdC10b2tlbi1wcGlk"; // base64-encoded test token
 
+    /**
+     * Verifies construction with valid string-key parameters.
+     */
     @Test
     void testConstructorWithValidParameters() throws JOSEException {
         JweMatchTokenFormatter formatter = new JweMatchTokenFormatter(
@@ -36,6 +39,9 @@ class JweMatchTokenFormatterTest {
         assertNotNull(formatter);
     }
 
+    /**
+     * Verifies construction with valid raw key bytes.
+     */
     @Test
     void testConstructorWithRaw32ByteKey() throws JOSEException {
         JweMatchTokenFormatter formatter = new JweMatchTokenFormatter(
@@ -46,6 +52,9 @@ class JweMatchTokenFormatterTest {
         assertNotNull(formatter);
     }
 
+    /**
+     * Verifies that a null encryption key is rejected.
+     */
     @Test
     void testConstructorWithNullEncryptionKey() {
         assertThrows(IllegalArgumentException.class, () -> {
@@ -53,6 +62,9 @@ class JweMatchTokenFormatterTest {
         });
     }
 
+    /**
+     * Verifies that an incorrectly sized encryption key is rejected.
+     */
     @Test
     void testConstructorWithInvalidKeyLength() {
         assertThrows(IllegalArgumentException.class, () -> {
@@ -60,6 +72,9 @@ class JweMatchTokenFormatterTest {
         });
     }
 
+    /**
+     * Verifies that a non-ASCII key is validated by its byte length.
+     */
     @Test
     void testConstructorWithNonAscii32CharacterKey() {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
@@ -68,6 +83,9 @@ class JweMatchTokenFormatterTest {
         assertEquals("Encryption key must be exactly 32 bytes (256 bits)", exception.getMessage());
     }
 
+    /**
+     * Verifies that a null ring identifier is rejected.
+     */
     @Test
     void testConstructorWithNullRingId() {
         assertThrows(IllegalArgumentException.class, () -> {
@@ -75,6 +93,9 @@ class JweMatchTokenFormatterTest {
         });
     }
 
+    /**
+     * Verifies that a null rule identifier is rejected.
+     */
     @Test
     void testConstructorWithNullRuleId() {
         assertThrows(IllegalArgumentException.class, () -> {
@@ -82,6 +103,9 @@ class JweMatchTokenFormatterTest {
         });
     }
 
+    /**
+     * Verifies the prefix and compact serialization shape of a JWE token.
+     */
     @Test
     void testTransformCreatesValidJweToken() throws Exception {
         JweMatchTokenFormatter formatter = new JweMatchTokenFormatter(
@@ -101,6 +125,9 @@ class JweMatchTokenFormatterTest {
         assertEquals(5, parts.length, "JWE compact serialization should have 5 parts");
     }
 
+    /**
+     * Verifies that a null token is returned unchanged.
+     */
     @Test
     void testTransformWithNullToken() throws Exception {
         JweMatchTokenFormatter formatter = new JweMatchTokenFormatter(
@@ -113,6 +140,9 @@ class JweMatchTokenFormatterTest {
         assertNull(result);
     }
 
+    /**
+     * Verifies that an empty token is returned unchanged.
+     */
     @Test
     void testTransformWithEmptyToken() throws Exception {
         JweMatchTokenFormatter formatter = new JweMatchTokenFormatter(
@@ -125,6 +155,9 @@ class JweMatchTokenFormatterTest {
         assertEquals("", result);
     }
 
+    /**
+     * Verifies that the JWE header contains the expected metadata.
+     */
     @Test
     void testJweHeaderContainsCorrectMetadata() throws Exception {
         JweMatchTokenFormatter formatter = new JweMatchTokenFormatter(
@@ -146,6 +179,9 @@ class JweMatchTokenFormatterTest {
         assertEquals(TEST_RING_ID, jweObject.getHeader().getKeyID());
     }
 
+    /**
+     * Verifies that the selected suite metadata is embedded in the payload.
+     */
     @Test
     void testShakeSuiteMetadataIsEmbeddedInOltV1() throws Exception {
         JweMatchTokenFormatter formatter = new JweMatchTokenFormatter(
@@ -165,6 +201,9 @@ class JweMatchTokenFormatterTest {
         assertEquals("KMAC256-256", payload.get("mac_alg"));
     }
 
+    /**
+     * Verifies that a missing issuer uses the default issuer value.
+     */
     @Test
     void testDefaultIssuer() throws Exception {
         JweMatchTokenFormatter formatter = new JweMatchTokenFormatter(

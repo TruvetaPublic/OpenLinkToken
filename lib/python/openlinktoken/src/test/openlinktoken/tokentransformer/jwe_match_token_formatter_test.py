@@ -1,7 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""
-Unit tests for JweMatchTokenFormatter.
-"""
+"""Unit tests for JweMatchTokenFormatter."""
 
 import base64
 import json

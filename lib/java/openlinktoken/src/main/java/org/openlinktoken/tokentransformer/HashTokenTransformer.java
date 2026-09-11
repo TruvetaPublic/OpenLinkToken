@@ -41,10 +41,9 @@ public class HashTokenTransformer implements TokenTransformer {
      *
      * @param hashingSecret the cryptographic secret key.
      *
-     * @throws java.security.NoSuchAlgorithmException invalid HMAC algorithm.
-     * @throws java.security.InvalidKeyException      if the given key is
-     *                                                inappropriate for
-     *                                                initializing this HMAC.
+     * @throws NoSuchAlgorithmException invalid HMAC algorithm
+     * @throws InvalidKeyException      if the given key is inappropriate for
+     *                                  initializing this HMAC
      */
     public HashTokenTransformer(String hashingSecret) throws NoSuchAlgorithmException, InvalidKeyException {
         this(hashingSecret == null ? null : hashingSecret.getBytes(StandardCharsets.UTF_8), CryptoSuite.defaultSuite());
@@ -54,8 +53,9 @@ public class HashTokenTransformer implements TokenTransformer {
      * Initializes the underlying MAC with raw key bytes.
      *
      * @param hashingSecret the cryptographic secret key bytes.
-     * @throws java.security.NoSuchAlgorithmException invalid HMAC algorithm.
-     * @throws java.security.InvalidKeyException      if the given key is inappropriate for initializing this HMAC.
+     * @throws NoSuchAlgorithmException invalid HMAC algorithm
+     * @throws InvalidKeyException      if the given key is inappropriate for
+     *                                  initializing this HMAC
      */
     public HashTokenTransformer(byte[] hashingSecret) throws NoSuchAlgorithmException, InvalidKeyException {
         this(hashingSecret, CryptoSuite.defaultSuite());
@@ -79,14 +79,14 @@ public class HashTokenTransformer implements TokenTransformer {
     /**
      * Hash token transformer.
      * <p>
-     * The token is transformed using HMAC SHA256 algorithm.
+     * The token is transformed using the MAC selected by the configured crypto
+     * suite.
      *
      * @return hashed token in <code>base64</code> format.
      *
-     * @throws java.lang.IllegalArgumentException <code>null</code> or blank token
-     *                                            provided.
-     * @throws java.lang.IllegalStateException    if the HMAC is not initialized
-     *                                            properly.
+     * @throws IllegalArgumentException if a {@code null} or blank token is
+     *                                  provided
+     * @throws IllegalStateException    if the HMAC is not initialized properly
      */
     @Override
     public String transform(String token) throws IllegalArgumentException, IllegalStateException {
@@ -113,7 +113,7 @@ public class HashTokenTransformer implements TokenTransformer {
     }
 
     /**
-     * Writes the persistent hashing secret used to rebuild the transient MAC after deserialization.
+     * Serializes the hashing secret and suite needed to rebuild transient MAC state.
      *
      * @param oos the object output stream
      * @throws IOException if serialization fails
@@ -122,12 +122,11 @@ public class HashTokenTransformer implements TokenTransformer {
         oos.defaultWriteObject(); // Serializes hashingSecret
     }
 
-    // Custom deserialization
     /**
-     * Restores the hashing secret and reconstructs the transient MAC state.
+     * Restores the serialized configuration and reconstructs suite-selected MAC state.
      *
      * @param ois the object input stream
-     * @throws IOException if deserialization or MAC reconstruction fails
+     * @throws IOException if the state cannot be read or the MAC cannot be rebuilt
      * @throws ClassNotFoundException if a serialized class cannot be found
      */
     private void readObject(ObjectInputStream ois)
@@ -141,10 +140,11 @@ public class HashTokenTransformer implements TokenTransformer {
     }
 
     /**
-     * Initializes the HMAC and Base64 encoder, or clears them when no secret is configured.
+     * Initializes the suite-selected MAC and Base64 encoder, or clears them when
+     * no secret is configured.
      *
-     * @throws NoSuchAlgorithmException if HMAC-SHA256 is unavailable
-     * @throws InvalidKeyException if the configured secret cannot initialize the MAC
+     * @throws NoSuchAlgorithmException if the suite-selected MAC is unavailable
+     * @throws InvalidKeyException if the hashing secret is invalid
      */
     private void rebuildMac() throws NoSuchAlgorithmException, InvalidKeyException {
         if (this.hashingSecret == null || this.hashingSecret.length == 0) {
@@ -164,6 +164,13 @@ public class HashTokenTransformer implements TokenTransformer {
         this.encoder = Base64.getEncoder();
     }
 
+    /**
+     * Maps the suite-level MAC name to the JCA or provider-specific name.
+     *
+     * @param cryptoSuite the suite whose MAC is selected
+     * @return the implementation-specific MAC algorithm name
+     * @throws NoSuchAlgorithmException if the suite declares an unsupported MAC
+     */
     private static String macAlgorithm(CryptoSuite cryptoSuite) throws NoSuchAlgorithmException {
         return switch (cryptoSuite.getTokenMacAlgorithm()) {
             case "HS256" -> "HmacSHA256";

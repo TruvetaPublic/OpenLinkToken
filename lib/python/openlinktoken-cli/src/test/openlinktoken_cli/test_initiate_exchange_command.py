@@ -1,7 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""
-Unit and integration tests for InitiateExchangeCommand.
-"""
+"""Unit and integration tests for InitiateExchangeCommand."""
 
 import base64
 import csv
@@ -45,6 +43,7 @@ def _reset_rotation_config():
     from openlinktoken.core.ai.tokens.rotation_config import RotationConfig
 
     def reset() -> None:
+        """Restore process-wide rotation settings to their test defaults."""
         RotationConfig.configure(
             enable=True,
             rotation_iv=RotationConfig.DEFAULT_IV,

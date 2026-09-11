@@ -1,7 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""
-JWE Match Token Formatter for Open Link Token V1 format.
-"""
+"""JWE Match Token Formatter for Open Link Token V1 format."""
 
 import base64
 import json
@@ -30,8 +28,7 @@ from openlinktoken.tokentransformer.token_transformer import TokenTransformer
 
 
 class JweMatchTokenFormatter(TokenTransformer):
-    """
-    Formats tokens in the JWE-based match token format (olt.V1.<JWE>).
+    """Formats tokens in the JWE-based match token format (olt.V1.<JWE>).
 
     This formatter wraps the privacy-protected identifier (PPID) in a
     self-contained JWE structure with all necessary metadata for versioning
@@ -48,8 +45,7 @@ class JweMatchTokenFormatter(TokenTransformer):
         issuer: Optional[str] = None,
         crypto_suite: CryptoSuite | None = None,
     ):
-        """
-        Initialize the JWE match token formatter.
+        """Initialize the JWE match token formatter.
 
         Accepts either a ``str`` (UTF-8 encoded; must encode to exactly 32 bytes) or
         raw ``bytes`` (must be exactly 32 bytes) for the encryption key.
@@ -63,6 +59,7 @@ class JweMatchTokenFormatter(TokenTransformer):
 
         Raises:
             ValueError: If encryption_key, ring_id, or rule_id are invalid.
+
         """
         if isinstance(encryption_key, bytes):
             key_bytes = encryption_key
@@ -86,8 +83,7 @@ class JweMatchTokenFormatter(TokenTransformer):
         self.jwk_key = jwk.JWK(kty="oct", k=key_b64)
 
     def transform(self, token: str) -> str:
-        """
-        Transform a token (PPID) into the JWE match token format.
+        """Transform a token (PPID) into the JWE match token format.
 
         The input token should be the base64-encoded HMAC output from previous transformers.
         This method wraps it in a JWE structure with metadata and prepends the "olt.V1." prefix.
@@ -100,6 +96,7 @@ class JweMatchTokenFormatter(TokenTransformer):
 
         Raises:
             Exception: If JWE encryption or serialization fails
+
         """
         if not token:
             # Return as-is for blank tokens
