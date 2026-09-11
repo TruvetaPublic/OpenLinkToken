@@ -71,6 +71,11 @@ class TestDecryptTokenTransformer:
 
         assert original_token == decrypted_token
 
+    def test_transform_rejects_missing_iv_or_authentication_tag(self):
+        """Test that malformed ciphertext fails before AES-GCM processing."""
+        with pytest.raises(ValueError, match="missing its initialization vector or authentication tag"):
+            self.decryptor.transform("AA==")
+
     def test_transform_multiple_tokens_decrypts_correctly(self):
         """Test that multiple tokens can be encrypted and decrypted correctly."""
         token1 = "firstToken"

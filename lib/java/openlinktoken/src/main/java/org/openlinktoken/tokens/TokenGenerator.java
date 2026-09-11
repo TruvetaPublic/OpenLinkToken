@@ -23,6 +23,7 @@ import org.openlinktoken.attributes.Attribute;
 import org.openlinktoken.attributes.AttributeExpression;
 import org.openlinktoken.attributes.AttributeLoader;
 import org.openlinktoken.attributes.FieldRegistry;
+import org.openlinktoken.crypto.CryptoSuite;
 import org.openlinktoken.tokens.tokenizer.PassthroughTokenizer;
 import org.openlinktoken.tokens.tokenizer.SHA256Tokenizer;
 import org.openlinktoken.tokens.tokenizer.Tokenizer;
@@ -69,6 +70,20 @@ public class TokenGenerator implements Serializable {
     @Deprecated(since = "1.12.0", forRemoval = true)
     public TokenGenerator(BaseTokenDefinition tokenDefinition, List<TokenTransformer> tokenTransformerList) {
         this(tokenDefinition, new SHA256Tokenizer(tokenTransformerList));
+    }
+
+    /**
+     * Initializes the token generator with a configured crypto suite.
+     *
+     * @param tokenDefinition      the token definition.
+     * @param tokenTransformerList a list of token transformers.
+     * @param cryptoSuite          the suite selecting the token digest and MAC algorithms.
+     */
+    public TokenGenerator(
+            BaseTokenDefinition tokenDefinition,
+            List<TokenTransformer> tokenTransformerList,
+            CryptoSuite cryptoSuite) {
+        this(tokenDefinition, new SHA256Tokenizer(tokenTransformerList, cryptoSuite));
     }
 
     /**
