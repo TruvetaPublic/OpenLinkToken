@@ -14,11 +14,11 @@ dependencies = [
   "openlinktoken-core-ai==2.2.0",
   "pandas==2.2.3; python_version < '3.11'",
   "pandas==3.0.3; python_version >= '3.11'",
-  "pyarrow==25.0.0",
+  "pyarrow==25.0.1",
   "csv2parquet==0.0.9",
   "cryptography==50.0.1",
   "urllib3==2.7.0",
-  "jwcrypto==1.5.9",
+  "jwcrypto==1.6.0",
   "packaging==26.3",
 ]
 
