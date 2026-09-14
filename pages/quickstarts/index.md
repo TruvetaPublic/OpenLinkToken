@@ -16,7 +16,7 @@ This page is the single “Start here” hub for getting Open Link Token running
 
 1. Prepare an input file with person attributes (CSV or Parquet)
 2. Run Open Link Token to generate tokens (encrypted or tokenized)
-3. Inspect the token output and the `.metadata.json` audit artifact
+3. Inspect the token output and, for `package` or `tokenize`, the `.metadata.json` audit artifact
 
 ## Choose Your Path
 
@@ -32,8 +32,9 @@ Open Link Token reads person attributes (for example: first/last name, birthdate
 
 After you run a quickstart:
 
-- `output.csv` contains 5 tokens (T1–T5) per input record
-- `output.metadata.json` captures processing stats and SHA-256 hashes of secrets (not the secrets)
+- The Python CLI enables ML1 by default, so a valid input record can produce six rows: T1–T5 plus one `ML1` row. ML1 requires valid FirstName, LastName, BirthDate, Sex, and PostalCode values.
+- Add `--disable-inferencing` to `package` or default `tokenize` when you need only the five T1–T5 rows.
+- `package` and `tokenize` write processing metadata; a `.metadata.json` sidecar is written for CSV/Parquet output (or embedded in a ZIP). `encrypt` and `decrypt` do not emit metadata.
 
 ## Quickstart Pages
 
@@ -63,19 +64,21 @@ python data_generator.py 100 0.05 test_data.csv
 
 ## Input File Requirements
 
-Your CSV must have these columns (any of the listed aliases work):
+For the Python CLI, your CSV must have these columns (any of the listed aliases work):
 
-| Column     | Aliases                      | Required | Example                                         |
-| ---------- | ---------------------------- | -------- | ----------------------------------------------- |
-| FirstName  | GivenName                    | Yes      | John                                            |
-| LastName   | Surname                      | Yes      | Doe                                             |
-| BirthDate  | DateOfBirth                  | Yes      | 1975-03-15 or 03/15/1975                        |
-| Sex        | Gender                       | Yes      | Male, Female, M, F                              |
-| PostalCode | ZipCode, ZIP3, ZIP4, ZIP5    | Yes      | 98004                                           |
-| SSN        | NationalIdentificationNumber | Yes      | 123-45-6789 (digits-only values are normalized) |
-| RecordId   | Id                           | Optional | patient_id_123                                  |
+| Column               | Aliases                           | Required | Example                                         |
+| -------------------- | --------------------------------- | -------- | ----------------------------------------------- |
+| FirstName            | GivenName                         | Yes      | John                                            |
+| LastName             | Surname                           | Yes      | Doe                                             |
+| BirthDate            | DateOfBirth                       | Yes      | 1975-03-15 or 03/15/1975                        |
+| Sex                  | Gender                            | Yes      | Male, Female, M, F                              |
+| PostalCode           | ZipCode, ZIP3, ZIP4, ZIP5         | Yes      | 98004                                           |
+| SocialSecurityNumber | NationalIdentificationNumber, SSN | Yes      | 123-45-6789 (digits-only values are normalized) |
+| RecordId             | Id                                | Optional | patient_id_123                                  |
 
 **Note**: RecordId is optional. If omitted, a unique UUID is auto-generated for each record.
+
+For the Python CLI, column names are matched case-insensitively.
 
 See [Configuration](../config/configuration.md) for detailed column mapping and format options.
 

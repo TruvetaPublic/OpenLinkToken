@@ -4,7 +4,13 @@ layout: default
 
 # Token Rules
 
-Open Link Token generates five distinct token types (T1-T5). Each rule defines a **token signature** (a deterministic, normalized string) which is then transformed into the output token via hashing (and optionally encryption).
+Open Link Token provides five built-in deterministic token rules (T1–T5).
+The Python CLI can also load the optional AI provider for ML1; CLI inference is
+enabled by default when that provider is available and can be disabled with
+`--disable-inferencing`. T1–T5 define a **token signature** (a deterministic,
+normalized string) that is transformed into the output token via hashing and,
+when requested, encryption. See [ML1 Model and Rotation](ml1-model-and-rotation.md)
+for the provider-specific ML1 contract.
 
 ---
 
@@ -21,6 +27,9 @@ Each token rule defines:
 - `U(X)` = uppercase(X)
 - `[0]` = first character
 - `[0:3]` = first 3 characters
+
+Sex values normalize to `Male` or `Female`; applying `U(Sex)` produces
+`MALE` or `FEMALE`.
 
 ---
 
@@ -53,9 +62,9 @@ Normalized:
   FirstName: THOMAS
   LastName: OREILLY
   BirthDate: 1995-11-03
-  Sex: M
+  Sex: Male
 
-Token Signature: "OREILLY|T|M|1995-11-03"
+Token Signature: "OREILLY|T|MALE|1995-11-03"
 ```
 
 ---
@@ -115,7 +124,7 @@ T3 = U(LastName) | U(FirstName) | U(Sex) | BirthDate
 ### T3 Example
 
 ```text
-Token Signature: "GARCIA|MARIA|F|1988-03-22"
+Token Signature: "GARCIA|MARIA|FEMALE|1988-03-22"
 ```
 
 ---
@@ -146,7 +155,7 @@ Notes:
 Input SSN: 452-38-7291
 SSN_digits: 452387291
 
-Token Signature: "452387291|F|1988-03-22"
+Token Signature: "452387291|FEMALE|1988-03-22"
 ```
 
 ---
@@ -171,20 +180,26 @@ T5 = U(LastName) | U(FirstName[0:3]) | U(Sex)
 
 ```text
 FirstName: Jonathan -> FirstName[0:3] = JON
-Token Signature: "SMITH|JON|M"
+Token Signature: "SMITH|JON|MALE"
 ```
 
 ---
 
 ## Token Rule Summary
 
-| RuleId | Signature attributes           | Typical precision | Typical recall |
-| ------ | ------------------------------ | ----------------- | -------------- |
-| T1     | Last, First[0], Sex, BirthDate | Medium-high       | High           |
-| T2     | Last, First, BirthDate, ZIP3   | High              | Good           |
-| T3     | Last, First, Sex, BirthDate    | High              | Medium-high    |
-| T4     | SSN(digits), Sex, BirthDate    | Very high         | Low            |
-| T5     | Last, First[0:3], Sex          | Lower             | Highest        |
+| RuleId | Signature attributes                                                                          | Typical precision | Typical recall |
+| ------ | --------------------------------------------------------------------------------------------- | ----------------- | -------------- |
+| T1     | Last, First[0], Sex, BirthDate                                                                | Medium-high       | High           |
+| T2     | Last, First, BirthDate, ZIP3                                                                  | High              | Good           |
+| T3     | Last, First, Sex, BirthDate                                                                   | High              | Medium-high    |
+| T4     | SSN(digits), Sex, BirthDate                                                                   | Very high         | Low            |
+| T5     | Last, First[0:3], Sex                                                                         | Lower             | Highest        |
+| ML1\*  | Optional provider-backed model token; see [ML1 Model and Rotation](ml1-model-and-rotation.md) | —                 | —              |
+
+\* The CLI enables ML1 inference by default when its provider is available. To
+omit ML1 generation, use `package --disable-inferencing` or
+`tokenize --disable-inferencing`. See the [CLI reference](../reference/cli.md)
+for ML1 options.
 
 ---
 
@@ -229,21 +244,21 @@ Notes:
 
 Each `AttributeExpression` takes an expression string — a `|`-separated pipeline of operators applied to the attribute value before token generation:
 
-| Operator       | Description                                             |
-| -------------- | ------------------------------------------------------- |
-| `T`            | Trim whitespace                                         |
-| `U`            | Convert to upper case                                   |
-| `S(start,end)` | Substring from `start` (inclusive) to `end` (exclusive) |
-| `D`            | Parse as a date in `yyyy-MM-dd` format                  |
-| `M(regex)`     | Assert value matches the regular expression             |
-| `R(old,new)`   | Replace all occurrences of `old` with `new`             |
+| Operator       | Description                                                   |
+| -------------- | ------------------------------------------------------------- |
+| `T`            | Trim whitespace                                               |
+| `U`            | Convert to upper case                                         |
+| `S(start,end)` | Substring from `start` (inclusive) to `end` (exclusive)       |
+| `D`            | Parse as a date in `yyyy-MM-dd` format                        |
+| `M(regex)`     | Concatenate the regular-expression matches found in the value |
+| `R(old,new)`   | Replace all occurrences of `old` with `new`                   |
 
 Examples:
 
 ```
 T|S(0,3)|U      # trim, take first 3 chars, uppercase
 T|D             # trim, treat as date
-T|M("\\d+")    # trim, assert all digits
+T|M("\\d+")    # trim, retain the matching digits
 ```
 
 ---
@@ -266,7 +281,7 @@ import org.openlinktoken.tokens.Token;
 
 public class CustomToken implements Token {
   private static final long serialVersionUID = 1L;
-  private static final String ID = "T6";
+  private static final String ID = "CUSTOM1";
 
   private final ArrayList<AttributeExpression> definition = new ArrayList<>();
 
@@ -299,7 +314,7 @@ from openlinktoken.attributes.person.last_name_attribute import LastNameAttribut
 from openlinktoken.tokens.token import Token
 
 class CustomToken(Token):
-  ID = "T6"
+  ID = "CUSTOM1"
 
   def __init__(self):
     # Example signature: U(LastName)|BirthDate

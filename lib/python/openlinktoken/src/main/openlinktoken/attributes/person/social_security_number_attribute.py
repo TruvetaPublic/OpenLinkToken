@@ -16,15 +16,16 @@ class SocialSecurityNumberAttribute(BaseAttribute):
     Represents the social security number attribute.
 
     This class extends BaseAttribute and provides functionality for working with
-    social security number fields. It recognizes "SocialSecurityNumber" and
-    "NationalIdentificationNumber" as valid aliases for this attribute type.
+    social security number fields. It recognizes "SocialSecurityNumber",
+    "NationalIdentificationNumber", and "SSN" as valid aliases for this
+    attribute type.
 
     The attribute performs normalization on input values, converting them to a
     standard format (xxx-xx-xxxx).
     """
 
     NAME = "SocialSecurityNumber"
-    ALIASES = [NAME, "NationalIdentificationNumber"]
+    ALIASES = [NAME, "NationalIdentificationNumber", "SSN"]
     DASH = "-"
     SSN_FORMAT = "{:09d}"
 

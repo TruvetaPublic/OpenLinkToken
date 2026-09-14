@@ -35,9 +35,9 @@ class TestTokenBuilder:
 
     def test_build_simple_token(self):
         """Test building a simple custom token."""
-        token = TokenBuilder("T6").add("last_name", "T|U").add("first_name", "T|U").build()
+        token = TokenBuilder("ML1").add("last_name", "T|U").add("first_name", "T|U").build()
 
-        assert token.get_identifier() == "T6"
+        assert token.get_identifier() == "ML1"
         assert len(token.get_definition()) == 2
 
     def test_add_attribute_by_string(self):
@@ -69,20 +69,20 @@ class TestCustomTokenDefinition:
 
     def test_add_single_token(self):
         """Test adding a single token to definition."""
-        token = TokenBuilder("T6").add("last_name", "T|U").build()
+        token = TokenBuilder("ML1").add("last_name", "T|U").build()
         definition = CustomTokenDefinition().add_token(token)
 
-        assert "T6" in definition.get_token_identifiers()
-        assert definition.get_token_definition("T6") is not None
+        assert "ML1" in definition.get_token_identifiers()
+        assert definition.get_token_definition("ML1") is not None
 
     def test_add_multiple_tokens(self):
         """Test adding multiple tokens to definition."""
-        t6 = TokenBuilder("T6").add("last_name", "T|U").build()
+        ml1 = TokenBuilder("ML1").add("last_name", "T|U").build()
         t7 = TokenBuilder("T7").add("first_name", "T|U").build()
 
-        definition = CustomTokenDefinition().add_token(t6).add_token(t7)
+        definition = CustomTokenDefinition().add_token(ml1).add_token(t7)
 
-        assert "T6" in definition.get_token_identifiers()
+        assert "ML1" in definition.get_token_identifiers()
         assert "T7" in definition.get_token_identifiers()
         assert len(definition.get_token_identifiers()) == 2
 
@@ -108,7 +108,7 @@ class TestCreateTokenGenerator:
 
     def test_create_with_custom_definition(self):
         """Test creating a generator with custom token definition."""
-        token = TokenBuilder("T6").add("last_name", "T|U").build()
+        token = TokenBuilder("ML1").add("last_name", "T|U").build()
         definition = CustomTokenDefinition().add_token(token)
 
         generator = create_token_generator("test-hash-secret", "12345678901234567890123456789012", definition)

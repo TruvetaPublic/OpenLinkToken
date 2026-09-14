@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Multi-Language Sync Tool
-Detects changes in any language (Java, Python, Node.js) and creates corresponding sync tasks
+Detects changes in Java and Python and creates corresponding sync tasks
 for the other languages.
 """
 
@@ -15,7 +15,7 @@ from pathlib import Path
 
 
 class MultiLanguageSyncer:
-    """Syncer that handles Java, Python, and Node.js implementations"""
+    """Syncer that handles Java and Python implementations"""
 
     # Language configuration
     LANGUAGES = {
@@ -30,12 +30,6 @@ class MultiLanguageSyncer:
             "extension": ".py",
             "naming": "snake_case",
             "group": "core",
-        },
-        "python-cli": {
-            "path": "lib/python/openlinktoken-cli/src/main/openlinktoken_cli/",
-            "extension": ".py",
-            "naming": "snake_case",
-            "group": "cli",
         },
     }
 
@@ -86,7 +80,7 @@ class MultiLanguageSyncer:
         """Get list of changed files for a specific language
 
         Args:
-            language: The language to check ('java', 'python', or 'nodejs')
+            language: The language to check ('java' or 'python')
             since_commit: The commit to compare against
 
         Returns:
@@ -389,7 +383,7 @@ class MultiLanguageSyncer:
         if total_changes == 0:
             if output_format == "github-checklist":
                 return (
-                    "✅ All changes appear to be in sync across Java, Python, and Node.js!",
+                    "✅ All changes appear to be in sync across Java and Python!",
                     True,
                 )
             else:
@@ -447,7 +441,7 @@ class MultiLanguageSyncer:
     def format_github_checklist(self, sync_requirements, all_changes, since_commit):
         """Format output as GitHub markdown checklist"""
         if not sync_requirements:
-            return "✅ All changes appear to be in sync across Java, Python, and Node.js!"
+            return "✅ All changes appear to be in sync across Java and Python!"
 
         total_items = 0
         completed_items = 0

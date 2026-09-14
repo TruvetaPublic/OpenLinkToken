@@ -1,8 +1,11 @@
 # SPDX-License-Identifier: MIT
 
+import logging
 import os
 import re
 from unittest.mock import patch
+
+import pytest
 
 from openlinktoken_cli.util.cli_run_reporter import (
     CliRunReporter,
@@ -77,8 +80,8 @@ class TestProgressIndicator:
             assert pi._done == 1
         pi.stop()
 
-    def test_render_writes_multiline_progress_block(self):
-        """Rendered progress should show each metric on its own line with aligned columns."""
+    def test_render_writes_single_line_progress_status(self):
+        """Rendered progress should keep all core metrics on one terminal line."""
         pi = _ProgressIndicator()
         pi._start_time = 0.0
         pi.set_total_rows(200)
@@ -103,18 +106,10 @@ class TestProgressIndicator:
 
         assert writes
         rendered_lines = self._rendered_lines("".join(writes))
-        assert rendered_lines == [
-            " \u280b Working",
-            "  processed:    100 rows",
-            "  total:        200 rows",
-            "  complete:    50.0 %",
-            "  throughput:  10.0 rows/s",
-            "  elapsed:    00:10",
-            "  remaining:  00:10",
-        ]
+        assert rendered_lines == ["⠋ Working | 100/200 rows (50.0%) | remaining 00:10 | 10.0 rows/s | elapsed 00:10"]
 
     def test_render_without_total_shows_placeholders(self):
-        """When the total is unknown, the live block should keep stable placeholder lines."""
+        """When the total is unknown, the status line should show stable placeholders."""
         pi = _ProgressIndicator()
         pi._start_time = 0.0
         pi.update(stage="Working", done=25)
@@ -137,18 +132,10 @@ class TestProgressIndicator:
 
         assert writes
         rendered_lines = self._rendered_lines("".join(writes))
-        assert rendered_lines == [
-            " \u280b Working",
-            "  processed:     25 rows",
-            "  total:         --",
-            "  complete:      --",
-            "  throughput:   5.0 rows/s",
-            "  elapsed:    00:05",
-            "  remaining:     --",
-        ]
+        assert rendered_lines == ["⠋ Working | 25/-- rows (--) | remaining -- | 5.0 rows/s | elapsed 00:05"]
 
     def test_render_keeps_progress_to_terminal_width(self):
-        """The live progress block should keep every line within terminal width."""
+        """The live progress line should fit within terminal width."""
         pi = _ProgressIndicator()
         pi._start_time = 0.0
         pi.set_total_rows(200)
@@ -173,13 +160,73 @@ class TestProgressIndicator:
 
         assert writes
         rendered_lines = self._rendered_lines("".join(writes))
-        assert len(rendered_lines) == 7
-        assert rendered_lines[1] == "  processed:    100 rows"
-        assert rendered_lines[2] == "  total:        200 rows"
-        assert all(len(line.rstrip()) <= 80 for line in rendered_lines)
+        assert len(rendered_lines) == 1
+        assert "100/200 rows (50.0%)" in rendered_lines[0]
+        assert "remaining 00:10" in rendered_lines[0]
+        assert len(rendered_lines[0].rstrip()) <= 80
+
+    def test_render_uses_one_terminal_line_for_redraw(self):
+        """A redraw should use one terminal line so cursor tracking cannot drift."""
+        pi = _ProgressIndicator(use_color=False)
+        pi._last_render_line_count = 7
+        lines = ["header", "processed", "total", "complete", "throughput", "elapsed", "remaining"]
+        writes: list[str] = []
+
+        with (
+            patch("shutil.get_terminal_size", return_value=os.terminal_size((160, 24))),
+            patch("sys.stderr.write", side_effect=lambda text: writes.append(text) or len(text)),
+            patch("sys.stderr.flush"),
+        ):
+            pi._write_render_block(lines)
+
+        assert len(writes) == 1
+        assert writes[0].startswith("\r\x1b[2K")
+        assert "\x1b[6F" not in writes[0]
+        assert "\n" not in writes[0]
+        assert " | ".join(lines) in writes[0]
+
+    def test_render_advances_spinner_on_fixed_interval_without_progress_updates(self):
+        """The spinner should animate every 100 ms when progress remains unchanged."""
+        pi = _ProgressIndicator(use_color=False)
+        pi._start_time = 0.0
+        pi.set_total_rows(100)
+        pi.update(stage="Working", done=50)
+        pi._running.set()
+
+        clock = [0.0]
+        writes: list[str] = []
+        wait_timeouts: list[float] = []
+
+        def _wait(timeout: float) -> bool:
+            wait_timeouts.append(timeout)
+            clock[0] += timeout
+            return False
+
+        def _perf_counter() -> float:
+            return clock[0]
+
+        def _write(text: str) -> int:
+            writes.append(text)
+            if len(writes) == 3:
+                pi._running.clear()
+            return len(text)
+
+        with (
+            patch("shutil.get_terminal_size", return_value=os.terminal_size((160, 24))),
+            patch.object(pi._update_event, "wait", side_effect=_wait),
+            patch("sys.stderr.write", side_effect=_write),
+            patch("sys.stderr.flush"),
+            patch("time.perf_counter", side_effect=_perf_counter),
+        ):
+            pi._render()
+
+        assert len(writes) == 3
+        assert wait_timeouts[1:] == pytest.approx([0.1, 0.1])
+        rendered_lines = [self._rendered_lines(write)[0] for write in writes]
+        assert [line[0] for line in rendered_lines] == ["⠋", "⠙", "⠹"]
 
     def test_render_with_stats_provider(self):
-        """Extension stats providers should appear below a divider in the progress block."""
+        """Extension stats providers should appear after core metrics in the status line."""
         pi = _ProgressIndicator()
         pi._start_time = 0.0
         pi.set_total_rows(1000)
@@ -200,7 +247,7 @@ class TestProgressIndicator:
             return len(text)
 
         with (
-            patch("shutil.get_terminal_size", return_value=os.terminal_size((160, 24))),
+            patch("shutil.get_terminal_size", return_value=os.terminal_size((300, 24))),
             patch("sys.stderr.write", side_effect=_write),
             patch("sys.stderr.flush"),
             patch("time.sleep", return_value=None),
@@ -210,15 +257,9 @@ class TestProgressIndicator:
 
         assert writes
         rendered_lines = self._rendered_lines("".join(writes))
-        # 1 header + 6 core metrics + 1 divider + 2 extension metrics = 10 lines
-        assert len(rendered_lines) == 10
-        # Extension metrics appear after divider
-        divider_idx = next(i for i, line in enumerate(rendered_lines) if "─" in line)
-        assert "matched:" in rendered_lines[divider_idx + 1]
-        assert "1,042" in rendered_lines[divider_idx + 1]
-        assert "rows" in rendered_lines[divider_idx + 1]
-        assert "errors:" in rendered_lines[divider_idx + 2]
-        assert "3" in rendered_lines[divider_idx + 2]
+        assert len(rendered_lines) == 1
+        assert "matched: 1,042 rows" in rendered_lines[0]
+        assert "errors: 3" in rendered_lines[0]
 
     def test_stats_provider_protocol(self):
         """Objects implementing get_metrics() should satisfy StatsProvider protocol."""
@@ -273,7 +314,6 @@ class TestCliRunReporter:
             with patch.dict("os.environ", {"NO_COLOR": "1"}, clear=True):
                 reporter = CliRunReporter("test")
                 assert reporter._interactive is True
-                assert reporter._progress_indicator._DIM == ""
                 assert reporter._progress_indicator._BOLD == ""
                 assert reporter._progress_indicator._CYAN == ""
 
@@ -282,7 +322,6 @@ class TestCliRunReporter:
         with patch("sys.stderr.isatty", return_value=True):
             with patch.dict("os.environ", {}, clear=True):
                 reporter = CliRunReporter("test")
-                assert reporter._progress_indicator._DIM != ""
                 assert reporter._progress_indicator._BOLD != ""
 
     def test_set_total_rows_propagates(self):
@@ -424,3 +463,131 @@ class TestFormatNumber:
     def test_format_number_zero(self):
         """Zero should render as 0."""
         assert f"{0:,}" == "0"
+
+
+class TestProgressIndicatorLiveRedraw:
+    """Tests that the progress indicator redraws immediately on update, not just on the timer."""
+
+    def test_update_sets_update_event(self):
+        """update() sets _update_event so the render loop can wake without waiting 1 s."""
+        pi = _ProgressIndicator()
+        assert not pi._update_event.is_set()
+        pi.update(stage="Working", done=10)
+        assert pi._update_event.is_set()
+
+    def test_render_redraws_when_update_event_set(self):
+        """The render loop redraws immediately when _update_event is signalled."""
+        pi = _ProgressIndicator()
+        pi._start_time = 0.0
+        pi.update(stage="Flushing", done=50)
+        pi._running.set()
+
+        writes: list[str] = []
+
+        def _write(text: str) -> int:
+            writes.append(text)
+            pi._running.clear()
+            return len(text)
+
+        sleep_durations: list[float] = []
+
+        def _fake_wait(timeout: float) -> bool:
+            sleep_durations.append(timeout)
+            return True  # simulate event triggered immediately
+
+        with (
+            patch("shutil.get_terminal_size", return_value=__import__("os").terminal_size((160, 24))),
+            patch("sys.stderr.write", side_effect=_write),
+            patch("sys.stderr.flush"),
+            patch("time.perf_counter", return_value=5.0),
+        ):
+            # Patch the event's wait method to return True (event was set) without sleeping
+            pi._update_event.wait = _fake_wait
+            pi._render()
+
+        # The render should have produced output (event-driven, not blocked by sleep)
+        assert writes, "Render must write output when update event is signalled"
+        # The wait should have been called with the configured render interval
+        assert sleep_durations, "wait() should have been called"
+        assert abs(sleep_durations[0] - _ProgressIndicator._RENDER_INTERVAL_SECONDS) < 1e-9
+
+
+class TestCliRunReporterElapsed:
+    """Tests for elapsed-duration tracking and reporting."""
+
+    def test_elapsed_seconds_stored_after_context_exit(self, tmp_path, monkeypatch):
+        """CliRunReporter stores _elapsed_seconds after the with-block exits."""
+        monkeypatch.setattr(
+            "openlinktoken_cli.util.app_paths.get_openlinktoken_home",
+            lambda: tmp_path,
+        )
+        reporter = CliRunReporter("test", no_progress=True)
+        assert reporter._elapsed_seconds is None
+        with reporter:
+            pass
+        assert reporter._elapsed_seconds is not None
+        assert reporter._elapsed_seconds >= 0.0
+
+    def test_finish_success_includes_elapsed_duration(self, tmp_path, monkeypatch, capsys):
+        """finish_success prints elapsed duration in the completion summary."""
+        monkeypatch.setattr(
+            "openlinktoken_cli.util.app_paths.get_openlinktoken_home",
+            lambda: tmp_path,
+        )
+        reporter = CliRunReporter("test", no_progress=True)
+        with reporter:
+            pass
+        reporter.finish_success("Test complete", ["output: test.csv"])
+        captured = capsys.readouterr()
+        assert re.search(r"Duration: \d{2}:\d{2}", captured.err), (
+            f"Expected duration (MM:SS) in summary, got:\n{captured.err}"
+        )
+
+    def test_elapsed_logged_to_file_before_handler_detaches(self, tmp_path, monkeypatch):
+        """Elapsed completion message is written to the log file during __exit__."""
+        monkeypatch.setattr(
+            "openlinktoken_cli.util.app_paths.get_openlinktoken_home",
+            lambda: tmp_path,
+        )
+        reporter = CliRunReporter("test", no_progress=True)
+        with reporter:
+            pass
+        log_path = reporter.log_report.log_path
+        assert log_path.exists(), "Log file must exist after run"
+        log_text = log_path.read_text(encoding="utf-8")
+        # The log file must contain a completion/elapsed message written before handler detach
+        assert "duration" in log_text.lower(), f"Expected duration in log, got:\n{log_text}"
+
+    def test_file_logging_restores_root_logger_level(self, tmp_path, monkeypatch):
+        """Attaching per-run logging should not change the caller's root logger level."""
+        monkeypatch.setattr(
+            "openlinktoken_cli.util.app_paths.get_openlinktoken_home",
+            lambda: tmp_path,
+        )
+        root_logger = logging.getLogger()
+        original_level = root_logger.level
+        root_logger.setLevel(logging.WARNING)
+        try:
+            reporter = CliRunReporter("test", no_progress=True)
+            with reporter:
+                pass
+            assert root_logger.level == logging.WARNING
+        finally:
+            root_logger.setLevel(original_level)
+
+    def test_file_logging_restores_root_logger_level_after_exception(self, tmp_path, monkeypatch):
+        """Root logger restoration should also happen when a run raises an exception."""
+        monkeypatch.setattr(
+            "openlinktoken_cli.util.app_paths.get_openlinktoken_home",
+            lambda: tmp_path,
+        )
+        root_logger = logging.getLogger()
+        original_level = root_logger.level
+        root_logger.setLevel(logging.WARNING)
+        try:
+            with pytest.raises(RuntimeError, match="processing failed"):
+                with CliRunReporter("test", no_progress=True):
+                    raise RuntimeError("processing failed")
+            assert root_logger.level == logging.WARNING
+        finally:
+            root_logger.setLevel(original_level)

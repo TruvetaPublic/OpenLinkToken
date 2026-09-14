@@ -60,9 +60,9 @@ class TokenGeneratorIntegrationTest {
         // Generate all tokens
         Map<String, String> tokens = tokenGenerator.getAllTokens(personAttributes).getTokens();
 
-        // Validate the tokens
+        // Validate the tokens — core module contains only T1-T5; ML1 lives in openlinktoken-core-ai
         assertNotNull(tokens);
-        assertEquals(5, tokens.size(), "Expected 5 tokens to be generated");
+        assertEquals(5, tokens.size(), "Expected 5 tokens to be generated (T1-T5 from core)");
 
         // Validate the actual tokens generated
         assertTrue(tokens.containsKey("T1"));

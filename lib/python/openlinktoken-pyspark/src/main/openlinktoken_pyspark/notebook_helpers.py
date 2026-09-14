@@ -40,7 +40,7 @@ class TokenBuilder:
     A fluent builder for creating custom tokens with minimal code.
 
     Example:
-        >>> token = TokenBuilder("T6") \\
+        >>> token = TokenBuilder("ML1") \\
         ...     .add("last_name", "T|U") \\
         ...     .add("first_name", "T|U") \\
         ...     .add("birth_date", "T|D") \\
@@ -54,7 +54,7 @@ class TokenBuilder:
         Initialize the token builder.
 
         Args:
-            token_id: The identifier for the token (e.g., "T6", "T7").
+            token_id: The identifier for the token (e.g., "ML1", "T7").
         """
         self.token_id = token_id
         self.expressions: List[AttributeExpression] = []
@@ -116,7 +116,7 @@ class CustomTokenDefinition(BaseTokenDefinition):
 
     Example:
         >>> definition = CustomTokenDefinition()
-        >>> definition.add_token(t6_token)
+        >>> definition.add_token(ml1_token)
         >>> definition.add_token(t7_token)
     """
 
@@ -175,7 +175,7 @@ def create_token_generator(
         >>> generator = create_token_generator("my-hash-secret", "my-32-character-encryption-key!")
         >>>
         >>> # Use custom tokens
-        >>> custom_def = CustomTokenDefinition().add_token(t6_token)
+        >>> custom_def = CustomTokenDefinition().add_token(ml1_token)
         >>> generator = create_token_generator("secret", "key123...", custom_def)
     """
     if token_definition is None:
@@ -234,7 +234,7 @@ def quick_token(
     Create a custom token and generator in one quick call.
 
     Args:
-        token_id: The identifier for the new token (e.g., "T6").
+        token_id: The identifier for the new token (e.g., "ML1").
         attributes: List of (attribute_name, expression) tuples.
         hashing_secret: The secret used for HMAC-SHA256 hashing.
         encryption_key: The 32-character key used for AES-256 encryption.
@@ -244,7 +244,7 @@ def quick_token(
 
     Example:
         >>> generator = quick_token(
-        ...     "T6",
+        ...     "ML1",
         ...     [
         ...         ("last_name", "T|U"),
         ...         ("first_name", "T|U"),
@@ -279,7 +279,7 @@ def quick_token_from_exchange_config(
     Create a custom token generator from exchange-config inputs in one quick call.
 
     Args:
-        token_id: The identifier for the new token (e.g., "T6").
+        token_id: The identifier for the new token (e.g., "ML1").
         attributes: List of (attribute_name, expression) tuples.
         exchange_config_path: Optional exchange-config path. Uses the default path when omitted.
         exchange_config_value: Optional in-memory exchange-config JSON or decoded mapping.

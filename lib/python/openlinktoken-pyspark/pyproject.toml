@@ -1,6 +1,6 @@
 [project]
 name = "openlinktoken-pyspark"
-version = "2.1.2"
+version = "2.2.0"
 requires-python = ">=3.10"
 dynamic = [
   "authors",
@@ -12,7 +12,7 @@ dynamic = [
 ]
 
 [build-system]
-requires = ["setuptools==83.0.0", "wheel"]
+requires = ["setuptools==84.0.0", "wheel==0.47.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.uv]

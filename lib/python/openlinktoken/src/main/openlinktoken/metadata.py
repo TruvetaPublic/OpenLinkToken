@@ -13,8 +13,6 @@ class Metadata:
     PYTHON_VERSION = "PythonVersion"
     VERSION = "Version"
     OUTPUT_FORMAT = "OutputFormat"
-    ENCRYPTION_SECRET_HASH = "EncryptionSecretHash"
-    HASHING_SECRET_HASH = "HashingSecretHash"
     BLANK_TOKENS_BY_RULE = "BlankTokensByRule"
 
     # Metadata values
@@ -22,7 +20,7 @@ class Metadata:
     METADATA_FILE_EXTENSION = ".metadata.json"
     SYSTEM_PYTHON_VERSION = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
 
-    DEFAULT_VERSION = "2.1.2"
+    DEFAULT_VERSION = "2.2.0"
 
     # Output format values
     OUTPUT_FORMAT_JSON = "JSON"
@@ -36,7 +34,6 @@ class Metadata:
     def initialize(self) -> Dict[str, Any]:
         """
         Initialize metadata with system information only.
-        Secret hashes must be set separately using add_hashed_secret().
 
         Returns:
             The initialized metadata map

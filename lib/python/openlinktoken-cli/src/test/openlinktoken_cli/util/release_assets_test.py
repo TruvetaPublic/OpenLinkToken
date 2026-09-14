@@ -24,6 +24,22 @@ def _expected_checksum(content: bytes, file_name: str) -> str:
 class TestCreateReleaseAssets:
     """Unit tests for release asset preparation."""
 
+    def test_zips_complete_one_folder_bundle(self, tmp_path):
+        """One-folder builds should include the executable and its dependency files."""
+        bundle_dir = tmp_path / "dist" / "olt"
+        bundle_dir.mkdir(parents=True)
+        (bundle_dir / "olt").write_bytes(b"bundle executable")
+        (bundle_dir / "_internal").mkdir()
+        (bundle_dir / "_internal" / "runtime.dat").write_bytes(b"runtime")
+
+        create_release_assets("2.1.0", "Linux", tmp_path / "dist", tmp_path / "release-assets")
+
+        with zipfile.ZipFile(tmp_path / "release-assets" / "olt-cli-2.1.0-linux-x64.zip") as archive:
+            assert archive.namelist() == [
+                "olt-cli-2.1.0-linux-x64/_internal/runtime.dat",
+                "olt-cli-2.1.0-linux-x64/olt",
+            ]
+
     def test_creates_linux_release_assets_and_checksums(self, tmp_path):
         """Linux builds should emit updater binary, zip package, and checksum sidecars."""
         dist_dir = tmp_path / "dist"
@@ -56,6 +72,42 @@ class TestCreateReleaseAssets:
         assert (output_dir / f"{zip_path.name}.sha256").read_text() == _expected_checksum(
             zip_path.read_bytes(), zip_path.name
         )
+
+    def test_creates_macos_arm64_release_assets(self, tmp_path):
+        """macOS arm64 builds should use an architecture-specific asset name."""
+        dist_dir = tmp_path / "dist"
+        output_dir = tmp_path / "release-assets"
+        binary_content = b"macOS arm64 binary"
+        _write_binary(dist_dir, "olt", binary_content)
+
+        generated_paths = create_release_assets("2.1.0", "macOS", dist_dir, output_dir, architecture="arm64")
+
+        generated_names = {path.name for path in generated_paths}
+        assert generated_names == {
+            "olt-v2.1.0-macos-arm64",
+            "olt-v2.1.0-macos-arm64.sha256",
+            "olt-cli-2.1.0-macos-arm64.zip",
+            "olt-cli-2.1.0-macos-arm64.zip.sha256",
+        }
+
+    def test_creates_macos_x86_64_release_assets(self, tmp_path):
+        """macOS Intel builds should use an architecture-specific asset name."""
+        dist_dir = tmp_path / "dist"
+        output_dir = tmp_path / "release-assets"
+        _write_binary(dist_dir, "olt", b"macOS x86_64 binary")
+
+        generated_paths = create_release_assets("2.1.0", "macOS", dist_dir, output_dir, architecture="x86_64")
+
+        assert (output_dir / "olt-cli-2.1.0-macos-x86_64.zip").exists()
+        assert (output_dir / "olt-v2.1.0-macos-x86_64").exists()
+        assert len(generated_paths) == 4
+
+    def test_rejects_unsupported_macos_architecture(self, tmp_path):
+        """Unsupported macOS architectures should fail before creating assets."""
+        with pytest.raises(ValueError, match="Unsupported macOS architecture"):
+            create_release_assets(
+                "2.1.0", "macOS", tmp_path / "dist", tmp_path / "release-assets", architecture="ppc64"
+            )
 
     def test_normalizes_v_prefixed_versions_for_windows_assets(self, tmp_path):
         """Windows builds should keep the .exe binary name while normalizing the version string."""

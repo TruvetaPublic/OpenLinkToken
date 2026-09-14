@@ -83,8 +83,8 @@ public class AttributeUtilities {
     public static final Pattern WHITESPACE = Pattern.compile("\\s+");
 
     /**
-     * Pattern that matches generational suffixes at the end of a string.
-     * Matches case-insensitive suffixes after a whitespace character.
+     * Pattern that matches one or more generational suffixes at the end of a string.
+     * Matches case-insensitive suffixes after whitespace characters.
      *
      * Matches the following types of generational suffixes:
      * - Jr, Jr., Junior
@@ -99,7 +99,8 @@ public class AttributeUtilities {
      * "Thomas Wilson 2nd" -> matches " 2nd"
      */
     public static final Pattern GENERATIONAL_SUFFIX_PATTERN = Pattern
-            .compile("(?i)\\s+(jr\\.?|junior|sr\\.?|senior|I{1,3}|IV|V|VI{0,3}|IX|X|\\d+(st|nd|rd|th))$");
+            .compile("(?i)(?:\\s+(?:jr\\.?|junior|sr\\.?|senior|I{1,3}|IV|V|VI{0,3}|IX|X|"
+                    + "\\d+(?:st|nd|rd|th)))+$");
 
     /**
      * A set of common placeholder names used to identify non-identifying or

@@ -9,7 +9,13 @@ updates:
     directory: "lib/java"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 2
+    open-pull-requests-limit: 1
+    cooldown:
+      default-days: 7
+    groups:
+      all-dependencies:
+        patterns:
+          - "*"
     target-branch: "develop"
     labels:
       - "dependencies"
@@ -19,7 +25,13 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 2
+    open-pull-requests-limit: 1
+    cooldown:
+      default-days: 7
+    groups:
+      all-dependencies:
+        patterns:
+          - "*"
     target-branch: "develop"
     labels:
       - "dependencies"
@@ -29,40 +41,80 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 2
+    open-pull-requests-limit: 1
+    cooldown:
+      default-days: 7
+    groups:
+      all-dependencies:
+        patterns:
+          - "*"
     target-branch: "develop"
     labels:
       - "dependencies"
       - "python"
 
-  # Keep pip-based updates for the package manifests while the repo also tracks
-  # a root uv.lock for contributor tooling and workspace automation.
-  - package-ecosystem: "pip"
-    directory: "lib/python/openlinktoken"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 2
-    target-branch: "develop"
-    labels:
-      - "dependencies"
-      - "python"
+  # Temporarily disable pip-based updates; uv should take care of these
+  # package dependencies through the workspace uv.lock.
+  # - package-ecosystem: "pip"
+  #   directory: "lib/python/openlinktoken"
+  #   schedule:
+  #     interval: "weekly"
+  #   open-pull-requests-limit: 1
+  #   cooldown:
+  #     default-days: 7
+  #   groups:
+  #     all-dependencies:
+  #       patterns:
+  #         - "*"
+  #   target-branch: "develop"
+  #   labels:
+  #     - "dependencies"
+  #     - "python"
 
-  - package-ecosystem: "pip"
-    directory: "lib/python/openlinktoken-cli"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 2
-    target-branch: "develop"
-    labels:
-      - "dependencies"
-      - "python"
+  # - package-ecosystem: "pip"
+  #   directory: "lib/python/openlinktoken-cli"
+  #   schedule:
+  #     interval: "weekly"
+  #   open-pull-requests-limit: 1
+  #   cooldown:
+  #     default-days: 7
+  #   groups:
+  #     all-dependencies:
+  #       patterns:
+  #         - "*"
+  #   target-branch: "develop"
+  #   labels:
+  #     - "dependencies"
+  #     - "python"
 
-  - package-ecosystem: "pip"
-    directory: "lib/python/openlinktoken-pyspark"
+  # - package-ecosystem: "pip"
+  #   directory: "lib/python/openlinktoken-pyspark"
+  #   schedule:
+  #     interval: "weekly"
+  #   open-pull-requests-limit: 1
+  #   cooldown:
+  #     default-days: 7
+  #   groups:
+  #     all-dependencies:
+  #       patterns:
+  #         - "*"
+  #   target-branch: "develop"
+  #   labels:
+  #     - "dependencies"
+  #     - "python"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 2
+    open-pull-requests-limit: 1
+    cooldown:
+      default-days: 7
+    groups:
+      all-dependencies:
+        patterns:
+          - "*"
     target-branch: "develop"
     labels:
       - "dependencies"
-      - "python"
+      - "github-actions"

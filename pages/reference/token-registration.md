@@ -91,7 +91,7 @@ org.openlinktoken.attributes.person.SocialSecurityNumberAttribute
 1. **Create the token class** implementing `Token`:
 
 ```java
-package org.openlinktoken.tokens.definitions;
+package org.openlinktoken.core.ai.tokens.definitions;
 
 import java.util.ArrayList;
 
@@ -140,7 +140,7 @@ org.openlinktoken.tokens.definitions.T2Token
 org.openlinktoken.tokens.definitions.T3Token
 org.openlinktoken.tokens.definitions.T4Token
 org.openlinktoken.tokens.definitions.T5Token
-org.openlinktoken.tokens.definitions.T6Token
+org.openlinktoken.core.ai.tokens.definitions.T6Token
 ```
 
 ### FieldRegistry and Field IDs
@@ -245,7 +245,7 @@ class AttributeLoader:
 1. **Create the token class**:
 
 ```python
-# lib/python/openlinktoken/src/main/openlinktoken/tokens/definitions/t6_token.py
+# lib/python/openlinktoken/src/main/openlinktoken/tokens/t6_token.py
 
 from typing import List
 

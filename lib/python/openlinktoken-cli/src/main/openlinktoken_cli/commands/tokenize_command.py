@@ -1,31 +1,31 @@
 # SPDX-License-Identifier: MIT
 
+from __future__ import annotations
+
 import logging
 import sys
-from typing import List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 
-from openlinktoken.metadata import Metadata
-from openlinktoken.tokens.tokenizer.passthrough_tokenizer import PassthroughTokenizer
-from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
-from openlinktoken.tokentransformer.token_transformer import TokenTransformer
-from openlinktoken_cli.io.csv.person_attributes_csv_writer import PersonAttributesCSVWriter
-from openlinktoken_cli.io.json.metadata_json_writer import MetadataJsonWriter
-from openlinktoken_cli.io.parquet.person_attributes_parquet_writer import (
-    PersonAttributesParquetWriter,
-)
-from openlinktoken_cli.processor.person_attributes_processor import (
-    PersonAttributesProcessingSummary,
-    PersonAttributesProcessor,
-)
-from openlinktoken_cli.tokens.config.tokenization_config_helper import TokenizationConfigHelper
-from openlinktoken_cli.tokens.config.tokenization_config_loader import TokenizationConfigLoader
-from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
+from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig
+
+if TYPE_CHECKING:
+    from openlinktoken.tokentransformer.token_transformer import TokenTransformer
+    from openlinktoken_cli.processor.person_attributes_processor import PersonAttributesProcessingSummary
+
 from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
-from openlinktoken_cli.util.exchange_config import resolve_exchange_config
-from openlinktoken_cli.util.file_type_detector import FileTypeDetector
-from openlinktoken_cli.util.path_utils import get_auto_output_path
 
 logger = logging.getLogger(__name__)
+
+
+def resolve_exchange_config(
+    exchange_config_path: str | None,
+    private_key_path: str | None = None,
+    private_key_env: str | None = None,
+) -> Any:
+    """Resolve exchange configuration without importing crypto dependencies at startup."""
+    from openlinktoken_cli.util.exchange_config import resolve_exchange_config as implementation
+
+    return implementation(exchange_config_path, private_key_path, private_key_env)
 
 
 class TokenizeCommand:
@@ -105,6 +105,7 @@ class TokenizeCommand:
         )
 
         parser.add_argument(
+            "-c",
             "--exchange-config",
             required=False,
             dest="exchange_config",
@@ -150,6 +151,29 @@ class TokenizeCommand:
             ),
         )
 
+        parser.add_argument(
+            "--disable-inferencing",
+            action="store_true",
+            dest="disable_inferencing",
+            help="Disable ML1 ONNX inference token generation",
+        )
+
+        parser.add_argument(
+            "--inferencing-batch-size",
+            dest="inferencing_batch_size",
+            type=int,
+            default=ML1InferenceConfig.DEFAULT_BATCH_SIZE,
+            help=f"ML1 ONNX inference batch size (default: {ML1InferenceConfig.DEFAULT_BATCH_SIZE})",
+        )
+
+        parser.add_argument(
+            "--inferencing-num-threads",
+            dest="inferencing_num_threads",
+            type=int,
+            default=None,
+            help="ORT intra/inter-op thread count for ML1 inference (default: auto-detect)",
+        )
+
         # --no-progress / -q: suppress interactive progress indicator
         parser.add_argument(
             "--no-progress",
@@ -165,6 +189,13 @@ class TokenizeCommand:
     @staticmethod
     def execute(args):
         """Execute the tokenize command."""
+        from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig
+        from openlinktoken.core.ai.tokens.rotation_config import RotationConfig
+        from openlinktoken_cli.tokens.config.tokenization_config_helper import TokenizationConfigHelper
+        from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
+        from openlinktoken_cli.util.file_type_detector import FileTypeDetector
+        from openlinktoken_cli.util.path_utils import get_auto_output_path
+
         mode = getattr(args, "mode", TokenizeCommand._MODE_DEFAULT)
         hash_record_ids = getattr(args, "hash_record_ids", False)
         tokenization_config_path = getattr(args, "tokenization_config", None)
@@ -182,24 +213,37 @@ class TokenizeCommand:
             logger.error("Unable to auto-detect output type from provided/generated path.")
             return 1
 
+        ml1_enabled = not getattr(args, "disable_inferencing", False)
+        if tokenization_config_path:
+            ml1_enabled = False
+            logger.info("ML1 ONNX inference disabled because custom tokenization configuration is active")
+        configured_num_threads = getattr(args, "inferencing_num_threads", None)
+        if configured_num_threads is None:
+            configured_num_threads = ML1InferenceConfig.DEFAULT_NUM_THREADS
+        ML1InferenceConfig.configure(
+            enable_ml1=ml1_enabled,
+            configured_model_path=ML1InferenceConfig.DEFAULT_MODEL_PATH,
+            configured_tokenizer_path=ML1InferenceConfig.DEFAULT_TOKENIZER_PATH,
+            configured_max_sequence_length=ML1InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH,
+            configured_batch_size=getattr(args, "inferencing_batch_size", ML1InferenceConfig.DEFAULT_BATCH_SIZE),
+            configured_num_threads=configured_num_threads,
+        )
+        num_threads = getattr(args, "inferencing_num_threads", None)
+
         if mode == TokenizeCommand._MODE_DEMO and hash_record_ids:
             logger.error("--mode demo cannot be combined with --hash-record-ids.")
-            return 1
-
-        if mode == TokenizeCommand._MODE_DEMO and args.exchange_config:
-            logger.error("--mode demo cannot be combined with --exchange-config.")
-            return 1
-
-        if mode == TokenizeCommand._MODE_HASH_ONLY and args.exchange_config:
-            logger.error("--mode hash-only cannot be combined with --exchange-config.")
             return 1
 
         if mode == TokenizeCommand._MODE_HASH_ONLY and hash_record_ids:
             logger.error("--mode hash-only cannot be combined with --hash-record-ids.")
             return 1
 
-        if mode == TokenizeCommand._MODE_HASH_ONLY and (args.private_key or args.private_key_env):
-            logger.error("--mode hash-only cannot be combined with --private-key or --private-key-env.")
+        if (
+            mode == TokenizeCommand._MODE_HASH_ONLY
+            and (args.private_key or args.private_key_env)
+            and not args.exchange_config
+        ):
+            logger.error("--mode hash-only only accepts --private-key or --private-key-env with --exchange-config.")
             return 1
 
         reporter = CliRunReporter("tokenize", no_progress=args.no_progress)
@@ -223,8 +267,18 @@ class TokenizeCommand:
                     logger.info(f"Output: {output_path} ({output_type})")
                     if hash_record_ids:
                         logger.info("Record ID hashing enabled: RecordIds will be SHA-256 hashed in output")
+                    logger.info(
+                        "ML1 ONNX inference: enabled=%s, modelPath=%s, tokenizerPath=%s, "
+                        "maxSequenceLength=%s, batchSize=%s, numThreads=%s",
+                        ml1_enabled,
+                        ML1InferenceConfig.get_model_path(),
+                        ML1InferenceConfig.get_tokenizer_path(),
+                        ML1InferenceConfig.get_max_sequence_length(),
+                        getattr(args, "inferencing_batch_size", ML1InferenceConfig.DEFAULT_BATCH_SIZE),
+                        num_threads if num_threads and num_threads > 0 else "auto",
+                    )
 
-                        # Count total rows via reader to enable %/ETA
+                    # Count total rows via reader to enable %/ETA
                     total_rows: int | None = None
                     try:
                         reader = TokenizationConfigHelper.create_reader(args.input_path, input_type)
@@ -237,6 +291,23 @@ class TokenizeCommand:
                         reporter.set_total_rows(total_rows)
 
                     if mode == TokenizeCommand._MODE_DEMO:
+                        if args.exchange_config:
+                            reporter.update_status("Resolving exchange rotation configuration")
+                            exchange = resolve_exchange_config(
+                                args.exchange_config,
+                                private_key_path=args.private_key,
+                                private_key_env=args.private_key_env,
+                            )
+                            logger.info(f"Exchange config: {exchange.path}")
+                            TokenizeCommand._configure_rotation(exchange)
+                        logger.info(
+                            "Rotation token generation: enabled=%s, iv=%s, count=%s, hashDimension=%s, binWidth=%s",
+                            RotationConfig.is_enabled(),
+                            RotationConfig.get_rotation_iv(),
+                            RotationConfig.get_rotation_count(),
+                            RotationConfig.get_hash_dimension(),
+                            RotationConfig.get_bin_width(),
+                        )
                         reporter.update_status("Tokenizing records")
                         summary, metadata_path = TokenizeCommand._process_tokens_demo(
                             args.input_path,
@@ -247,6 +318,15 @@ class TokenizeCommand:
                             progress_callback=reporter.make_progress_callback("Tokenizing records", "records"),
                         )
                     elif mode == TokenizeCommand._MODE_HASH_ONLY:
+                        if args.exchange_config:
+                            reporter.update_status("Resolving exchange rotation configuration")
+                            exchange = resolve_exchange_config(
+                                args.exchange_config,
+                                private_key_path=args.private_key,
+                                private_key_env=args.private_key_env,
+                            )
+                            logger.info(f"Exchange config: {exchange.path}")
+                            TokenizeCommand._configure_rotation(exchange)
                         reporter.update_status("Tokenizing records")
                         summary, metadata_path = TokenizeCommand._process_tokens_hash_only(
                             args.input_path,
@@ -265,6 +345,18 @@ class TokenizeCommand:
                             private_key_env=args.private_key_env,
                         )
                         logger.info(f"Exchange config: {exchange.path}")
+
+                        TokenizeCommand._configure_rotation(exchange)
+
+                        logger.info(
+                            "Rotation token generation: enabled=%s, iv=%s, count=%s, hashDimension=%s, binWidth=%s",
+                            RotationConfig.is_enabled(),
+                            RotationConfig.get_rotation_iv(),
+                            RotationConfig.get_rotation_count(),
+                            RotationConfig.get_hash_dimension(),
+                            RotationConfig.get_bin_width(),
+                        )
+
                         reporter.update_status("Tokenizing records")
                         summary, metadata_path = TokenizeCommand._process_tokens(
                             args.input_path,
@@ -299,6 +391,25 @@ class TokenizeCommand:
             return 1
 
     @staticmethod
+    def _configure_rotation(exchange) -> None:
+        """Apply an exchange's rotation settings."""
+        from openlinktoken.core.ai.tokens.rotation_config import RotationConfig
+        from openlinktoken.exchange_config import rotation_iv_to_text
+
+        if not exchange.rotation_iv:
+            return
+
+        RotationConfig.configure(
+            enable=True,
+            rotation_iv=rotation_iv_to_text(exchange.rotation_iv),
+            rotation_count=(
+                exchange.rotation_count if exchange.rotation_count > 0 else RotationConfig.DEFAULT_ROTATION_COUNT
+            ),
+            bin_width=(exchange.bin_width if exchange.bin_width > 0 else RotationConfig.DEFAULT_BIN_WIDTH),
+            dimension_bias=exchange.dimension_bias if exchange.dimension_bias else None,
+        )
+
+    @staticmethod
     def _process_tokens(
         input_path: str,
         output_path: str,
@@ -310,6 +421,14 @@ class TokenizeCommand:
         progress_callback=None,
     ) -> tuple[PersonAttributesProcessingSummary, str]:
         """Process tokens in normal mode using SHA-256 + HMAC-SHA256."""
+        from openlinktoken.metadata import Metadata
+        from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
+        from openlinktoken_cli.io.json.metadata_json_writer import MetadataJsonWriter
+        from openlinktoken_cli.io.zip.person_attributes_zip_writer import PersonAttributesZipWriter
+        from openlinktoken_cli.processor.person_attributes_processor import PersonAttributesProcessor
+        from openlinktoken_cli.tokens.config.tokenization_config_helper import TokenizationConfigHelper
+        from openlinktoken_cli.tokens.config.tokenization_config_loader import TokenizationConfigLoader
+
         token_transformer_list: List[TokenTransformer] = []
 
         try:
@@ -328,8 +447,6 @@ class TokenizeCommand:
             ):
                 metadata = Metadata()
                 metadata_map = metadata.initialize()
-                # Only record the hashing-secret hash in normal mode
-                metadata.add_hashed_secret(Metadata.HASHING_SECRET_HASH, hashing_secret)
 
                 summary = PersonAttributesProcessor.process(
                     reader,
@@ -341,9 +458,13 @@ class TokenizeCommand:
                     progress_callback=progress_callback,
                 )
 
-                metadata_writer = MetadataJsonWriter(output_path)
-                metadata_writer.write(metadata_map)
-                return summary, metadata_writer.metadata_file_path
+                if isinstance(writer, PersonAttributesZipWriter):
+                    metadata_path = writer.build_zip(metadata_map)
+                else:
+                    metadata_writer = MetadataJsonWriter(output_path)
+                    metadata_writer.write(metadata_map)
+                    metadata_path = metadata_writer.metadata_file_path
+                return summary, metadata_path
 
         except Exception:
             raise
@@ -359,6 +480,13 @@ class TokenizeCommand:
         progress_callback=None,
     ) -> tuple[PersonAttributesProcessingSummary, str]:
         """Process tokens in hash-only mode using SHA-256 only (no HMAC, no secret)."""
+        from openlinktoken.metadata import Metadata
+        from openlinktoken_cli.io.json.metadata_json_writer import MetadataJsonWriter
+        from openlinktoken_cli.io.zip.person_attributes_zip_writer import PersonAttributesZipWriter
+        from openlinktoken_cli.processor.person_attributes_processor import PersonAttributesProcessor
+        from openlinktoken_cli.tokens.config.tokenization_config_helper import TokenizationConfigHelper
+        from openlinktoken_cli.tokens.config.tokenization_config_loader import TokenizationConfigLoader
+
         try:
             config, resolver, token_definition = TokenizationConfigLoader.load_runtime_components(
                 tokenization_config_path
@@ -381,9 +509,13 @@ class TokenizeCommand:
                     progress_callback=progress_callback,
                 )
 
-                metadata_writer = MetadataJsonWriter(output_path)
-                metadata_writer.write(metadata_map)
-                return summary, metadata_writer.metadata_file_path
+                if isinstance(writer, PersonAttributesZipWriter):
+                    metadata_path = writer.build_zip(metadata_map)
+                else:
+                    metadata_writer = MetadataJsonWriter(output_path)
+                    metadata_writer.write(metadata_map)
+                    metadata_path = metadata_writer.metadata_file_path
+                return summary, metadata_path
 
         except Exception:
             raise
@@ -398,6 +530,14 @@ class TokenizeCommand:
         progress_callback=None,
     ) -> tuple[PersonAttributesProcessingSummary, str]:
         """Process tokens in demo mode using PassthroughTokenizer (no hashing)."""
+        from openlinktoken.metadata import Metadata
+        from openlinktoken.tokens.tokenizer.passthrough_tokenizer import PassthroughTokenizer
+        from openlinktoken_cli.io.json.metadata_json_writer import MetadataJsonWriter
+        from openlinktoken_cli.io.zip.person_attributes_zip_writer import PersonAttributesZipWriter
+        from openlinktoken_cli.processor.person_attributes_processor import PersonAttributesProcessor
+        from openlinktoken_cli.tokens.config.tokenization_config_helper import TokenizationConfigHelper
+        from openlinktoken_cli.tokens.config.tokenization_config_loader import TokenizationConfigLoader
+
         try:
             config, resolver, token_definition = TokenizationConfigLoader.load_runtime_components(
                 tokenization_config_path
@@ -419,9 +559,13 @@ class TokenizeCommand:
                     progress_callback=progress_callback,
                 )
 
-                metadata_writer = MetadataJsonWriter(output_path)
-                metadata_writer.write(metadata_map)
-                return summary, metadata_writer.metadata_file_path
+                if isinstance(writer, PersonAttributesZipWriter):
+                    metadata_path = writer.build_zip(metadata_map)
+                else:
+                    metadata_writer = MetadataJsonWriter(output_path)
+                    metadata_writer.write(metadata_map)
+                    metadata_path = metadata_writer.metadata_file_path
+                return summary, metadata_path
 
         except Exception:
             raise
@@ -434,6 +578,9 @@ class TokenizeCommand:
         mode: str,
         hash_record_ids: bool,
     ) -> list[str]:
+        """Build the human-readable completion summary for a tokenize run."""
+        from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
+
         mode_labels = {
             TokenizeCommand._MODE_DEFAULT: "default HMAC-SHA256",
             TokenizeCommand._MODE_HASH_ONLY: "hash-only SHA-256",
@@ -457,10 +604,17 @@ class TokenizeCommand:
     @staticmethod
     def _create_writer(path: str, file_type: str):
         """Create a PersonAttributesWriter based on file type."""
+        from openlinktoken_cli.io.csv.person_attributes_csv_writer import PersonAttributesCSVWriter
+        from openlinktoken_cli.io.parquet.person_attributes_parquet_writer import PersonAttributesParquetWriter
+        from openlinktoken_cli.io.zip.person_attributes_zip_writer import PersonAttributesZipWriter
+        from openlinktoken_cli.util.file_type_detector import FileTypeDetector
+
         file_type_lower = file_type.lower()
         if file_type_lower == FileTypeDetector.TYPE_CSV:
             return PersonAttributesCSVWriter(path)
         elif file_type_lower == FileTypeDetector.TYPE_PARQUET:
             return PersonAttributesParquetWriter(path)
+        elif file_type_lower == FileTypeDetector.TYPE_ZIP:
+            return PersonAttributesZipWriter(path)
         else:
             raise ValueError(f"Unsupported output type: {file_type}")

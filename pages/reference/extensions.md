@@ -10,7 +10,7 @@ Complete reference for building Open Link Token CLI extensions. This page docume
 
 ## Overview
 
-Open Link Token extensions are self-contained Python packages that add top-level subcommands to the `openlinktoken` CLI. Each extension registers exactly one top-level subcommand (for example, `olt hello-world`) by implementing the `OpenLinkTokenExtension` abstract base class and declaring an entry point in the `openlinktoken.extensions` group.
+Open Link Token extensions are self-contained Python packages that add top-level subcommands to the `olt` CLI. Each extension registers exactly one top-level subcommand (for example, `olt hello-world`) by implementing the `OpenLinkTokenExtension` abstract base class and declaring an entry point in the `openlinktoken.extensions` group.
 
 Extensions are installed to a user-local directory and loaded at CLI startup, so they appear alongside built-in commands in `olt --help`.
 
@@ -151,8 +151,38 @@ install → discover → load → register → invoke → uninstall
 | **discover**  | At startup the CLI scans the `openlinktoken.extensions` entry-point group (Python package installs) and/or `registry.json` (binary installs).                                                |
 | **load**      | Each discovered entry point is imported and instantiated. Load errors print a warning and skip the extension; they do not abort the CLI.                                                     |
 | **register**  | `register_subcommand(subparsers)` is called for each successfully loaded extension.                                                                                                          |
-| **invoke**    | The user runs `openlinktoken <command_name> [args]`. The CLI dispatches to the `func` set by `set_defaults`.                                                                                 |
+| **invoke**    | The user runs `olt <command_name> [args]`. The CLI dispatches to the `func` set by `set_defaults`.                                                                                           |
 | **uninstall** | `olt extension uninstall <name>` removes the package and its registry entry.                                                                                                                 |
+
+---
+
+## Reporting Custom Progress Metrics
+
+Extensions that process large datasets can contribute custom metrics to the CLI's interactive progress display. Implement the `StatsProvider` protocol from `openlinktoken_cli.extension` and register an instance with the reporter your command handler receives:
+
+```python
+from openlinktoken_cli.extension import StatsProvider
+
+
+class MyExtensionStats:
+    """Thread-safe custom metrics for the progress display."""
+
+    def __init__(self):
+        self._matched = 0
+
+    def increment_matched(self) -> None:
+        self._matched += 1
+
+    def get_metrics(self) -> list[tuple[str, str, str]]:
+        return [("matched", f"{self._matched:,}", "rows")]
+
+
+# In your command handler (receives reporter as CliRunReporter):
+stats = MyExtensionStats()
+reporter.add_stats_provider(stats)
+```
+
+The reporter calls `get_metrics()` on each render tick (~1 Hz). Metrics appear below a divider in the same multiline progress block, aligned to the same columns as the built-in metrics. Return `(label, number_string, unit_string)` triples — use an empty string for the unit when it does not apply.
 
 ---
 
@@ -193,7 +223,7 @@ Do you want to continue? [y/N]
 
 ### Implications for use
 
-Extensions run with the same privileges as the CLI process. A malicious or tampered extension has full access to the system, credentials, and data available to the user running `openlinktoken`.
+Extensions run with the same privileges as the CLI process. A malicious or tampered extension has full access to the system, credentials, and data available to the user running `olt`.
 
 Before installing an extension:
 

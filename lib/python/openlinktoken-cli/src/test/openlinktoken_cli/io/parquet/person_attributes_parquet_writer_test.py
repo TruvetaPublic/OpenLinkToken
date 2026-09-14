@@ -2,6 +2,7 @@
 
 import os
 import tempfile
+from pathlib import Path
 
 from openlinktoken_cli.io.parquet.person_attributes_parquet_reader import PersonAttributesParquetReader
 from openlinktoken_cli.io.parquet.person_attributes_parquet_writer import PersonAttributesParquetWriter

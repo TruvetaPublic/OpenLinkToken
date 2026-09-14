@@ -162,6 +162,33 @@ def test_local_private_key_is_auto_resolved_by_recipient_kid() -> None:
         assert plaintext_secret == expected_secret.encode("utf-8")
 
 
+def test_validator_prints_rotation_parameters() -> None:
+    """The validator prints rotation IV, rotation count, and bin width alongside the hashing secret."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        tmp_path = Path(temp_dir)
+        exchange_config_path, _, recipient_private_key_path = _generate_exchange_fixture(tmp_path, "shared-secret")
+
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(VALIDATOR_SCRIPT),
+                "--exchange-config",
+                str(exchange_config_path),
+                "--private-key",
+                str(recipient_private_key_path),
+            ],
+            capture_output=True,
+            text=True,
+            cwd=REPO_ROOT,
+            check=False,
+        )
+
+        assert completed.returncode == 0, completed.stderr
+        assert "Rotation IV" in completed.stdout
+        assert "Rotation count" in completed.stdout
+        assert "Bin width" in completed.stdout
+
+
 def test_rejects_private_key_that_matches_no_recipient() -> None:
     """A non-recipient private key fails with a clean mismatch error."""
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -189,6 +216,7 @@ def main() -> int:
         test_validator_rejects_empty_private_key_from_stdin,
         test_local_private_key_is_auto_resolved_by_recipient_kid,
         test_rejects_private_key_that_matches_no_recipient,
+        test_validator_prints_rotation_parameters,
     ]
 
     print("Running validate_exchange_secret.py tests")

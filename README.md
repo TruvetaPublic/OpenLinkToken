@@ -57,41 +57,53 @@ Perfect for understanding privacy-preserving record linkage concepts before divi
 
 Download the binary for your platform from the [latest release](https://github.com/TruvetaPublic/OpenLinkToken/releases):
 
-| Platform                      | Asset                           |
-| ----------------------------- | ------------------------------- |
-| Linux                         | `olt-vX.Y.Z-linux-x86_64`       |
-| macOS (Intel + Apple Silicon) | `olt-vX.Y.Z-macos-universal`    |
-| Windows                       | `olt-vX.Y.Z-windows-x86_64.exe` |
+| Platform            | Asset                            |
+| ------------------- | -------------------------------- |
+| Linux               | `olt-cli-X.Y.Z-linux-x64.zip`    |
+| macOS Apple Silicon | `olt-cli-X.Y.Z-macos-arm64.zip`  |
+| macOS Intel         | `olt-cli-X.Y.Z-macos-x86_64.zip` |
+| Windows             | `olt-cli-X.Y.Z-windows-x64.zip`  |
 
-Each asset has a matching `.sha256` file you can use to verify the download.
+Each ZIP contains the executable and its runtime files. Each asset has a matching
+`.sha256` file you can use to verify the download.
+
+**One-line installers:**
 
 ```bash
-# Linux
-chmod +x olt-v*-linux-x86_64
-mv olt-v*-linux-x86_64 olt
+# macOS/Linux - installs to ~/.local/bin
+curl -fsSL https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.sh | bash
 
-# macOS — make executable, clear Gatekeeper quarantine, and rename
-chmod +x olt-v*-macos-universal
-xattr -d com.apple.quarantine olt-v*-macos-universal
-mv olt-v*-macos-universal olt
+# macOS/Linux - install a specific version
+curl -fsSL https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.sh | \
+  bash -s -- --version v2.2.0
 ```
+
+```powershell
+# Windows - installs to ~/.openlinktoken/bin
+irm https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.ps1 | iex
+
+# Windows - install a specific version
+& ([scriptblock]::Create((irm https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.ps1))) -Version v2.2.0
+```
+
+Extract the ZIP, then run the executable inside its `olt` directory.
 
 Then run:
 
 ```bash
 # Linux/macOS
 # Simulate receiving the recipient's public key (in practice, your partner provides this)
-./olt generate-key-pair --name recipient
+./olt/olt generate-key-pair --name recipient
 # Create the exchange config using the recipient's public key
-./olt initiate-exchange --public-key "$HOME/.openlinktoken/recipient.public.pem"
-./olt package -i ./resources/sample.csv
+./olt/olt initiate-exchange --public-key "$HOME/.openlinktoken/recipient.public.pem"
+./olt/olt package -i ./resources/sample.csv
 
 # Windows
 # Simulate receiving the recipient's public key (in practice, your partner provides this)
-.\olt.exe generate-key-pair --name recipient
+.\olt\olt.exe generate-key-pair --name recipient
 # Create the exchange config using the recipient's public key
-.\olt.exe initiate-exchange --public-key "$HOME/.openlinktoken/recipient.public.pem"
-.\olt.exe package -i .\resources\sample.csv
+.\olt\olt.exe initiate-exchange --public-key "$HOME/.openlinktoken/recipient.public.pem"
+.\olt\olt.exe package -i .\resources\sample.csv
 ```
 
 **Docker convenience scripts (Linux/macOS and Windows):**
@@ -128,6 +140,8 @@ See <a href="https://truvetapublic.github.io/OpenLinkToken/quickstarts/" target=
 ## Key Matching Ideas
 
 - **Token rules**: Five rules (T1–T5) combine attributes in different ways — see <a href="https://truvetapublic.github.io/OpenLinkToken/concepts/token-rules.html" target="_blank" rel="noopener noreferrer">Token Rules</a>
+- **ML1 matching**: The default ONNX matching model generates embeddings from which ML1 derives rotation-based, quantized token projections. When a T1 signature is available, each projection is SHA-256 hashed with a T1-derived blocking key. ML1 is more compute-intensive and slower than T1–T5 alone, but delivers significantly better matching outcomes. Disable it with `package --disable-inferencing` or `tokenize --disable-inferencing`; see the <a href="https://truvetapublic.github.io/OpenLinkToken/reference/cli.html" target="_blank" rel="noopener noreferrer">CLI Reference</a> for options.
+- **Hardware acceleration**: Linux x86_64 installs the CUDA-enabled ONNX Runtime package and selects NVIDIA CUDA when available. macOS and other systems use CPU inference; CoreML is disabled for ML1 because compiling this large transformer can exhaust unified memory.
 - **Normalization**: Names, dates, postal codes normalized before tokenization — see <a href="https://truvetapublic.github.io/OpenLinkToken/concepts/normalization-and-validation.html" target="_blank" rel="noopener noreferrer">Normalization and Validation</a>
 - **Metadata**: Processing statistics and audit trail — see <a href="https://truvetapublic.github.io/OpenLinkToken/reference/metadata-format.html" target="_blank" rel="noopener noreferrer">Metadata Format</a>
 

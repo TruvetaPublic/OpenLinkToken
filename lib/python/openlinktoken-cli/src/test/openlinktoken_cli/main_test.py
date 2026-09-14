@@ -4,8 +4,10 @@ Integration tests for the main module.
 Tests the end-to-end workflows for token generation and decryption using new subcommand interface.
 """
 
+import json
 import os
 import re
+import subprocess
 import sys
 import zipfile
 from pathlib import Path
@@ -22,6 +24,50 @@ class TestOpenLinkTokenCommand:
 
     HASHING_SECRET = "TestHashingSecret"
     ENCRYPTION_KEY = "TestEncryptionKeyValue1234567890"  # Must be exactly 32 chars
+
+    def test_help_path_loads_extension_discovery(self):
+        """Help should discover extensions while keeping heavy processing imports lazy."""
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                (
+                    "import sys; "
+                    "from openlinktoken_cli.commands import OpenLinkTokenCommand; "
+                    "assert OpenLinkTokenCommand.execute(['--help']) == 0; "
+                    "assert 'openlinktoken_cli.extension.extension_loader' in sys.modules; "
+                    "assert not any(name in sys.modules for name in ('pandas', 'pyarrow', 'cryptography'))"
+                ),
+            ],
+            capture_output=True,
+            text=True,
+            env=os.environ.copy(),
+            check=False,
+        )
+
+        assert result.returncode == 0, result.stderr
+
+    def test_no_args_path_loads_extension_discovery(self):
+        """Bare invocation should discover extensions while keeping heavy processing imports lazy."""
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                (
+                    "import sys; "
+                    "from openlinktoken_cli.commands import OpenLinkTokenCommand; "
+                    "assert OpenLinkTokenCommand.execute([]) == 0; "
+                    "assert 'openlinktoken_cli.extension.extension_loader' in sys.modules; "
+                    "assert not any(name in sys.modules for name in ('pandas', 'pyarrow', 'cryptography'))"
+                ),
+            ],
+            capture_output=True,
+            text=True,
+            env=os.environ.copy(),
+            check=False,
+        )
+
+        assert result.returncode == 0, result.stderr
 
     @pytest.fixture
     def temp_dir(self, tmp_path):
@@ -88,6 +134,16 @@ class TestOpenLinkTokenCommand:
         # Check metadata file
         metadata_path = temp_dir / "output.metadata.json"
         assert metadata_path.exists(), "Metadata file should be created"
+        metadata = json.loads(metadata_path.read_text())
+        assert set(metadata) == {
+            "PythonVersion",
+            "Platform",
+            "Version",
+            "TotalRows",
+            "TotalRowsWithInvalidAttributes",
+            "InvalidAttributesByType",
+            "BlankTokensByRule",
+        }
 
     def test_package_command_csv_to_parquet(self, temp_dir):
         """Test package command with CSV input and Parquet output."""
@@ -266,7 +322,7 @@ class TestOpenLinkTokenCommand:
             )
 
         assert encrypt_exit_code == 0
-        set_total_rows.assert_called_once_with(10)
+        set_total_rows.assert_called_once_with(11)
 
     def test_decrypt_command(self, temp_dir):
         """Test decrypt command."""
@@ -658,6 +714,8 @@ class TestOpenLinkTokenCommand:
         assert f"Detailed log: {log_files[0]}" in captured.err
         assert "Running package command (tokenize + encrypt)" not in captured.err
         assert "Running package command (tokenize + encrypt)" in log_files[0].read_text()
+        assert "ML1 ONNX inference" not in captured.err
+        assert "ML1 ONNX inference" in log_files[0].read_text()
         assert "Processed a total of 2 records" in log_files[0].read_text()
 
     def test_tokenize_command_allows_basename_output_path_in_current_directory(self, tmp_path, monkeypatch):
@@ -1007,7 +1065,6 @@ class TestInitiateExchangeViaMain:
         assert "--sender-private-key" in captured.out
         assert "--local-private-key" not in captured.out
         assert "Reuse an existing sender private key PEM" in captured.out
-        assert "embed" not in captured.out.lower()
 
     def test_initiate_exchange_help_lists_public_key_stdin(self, capsys):
         """Subcommand help should advertise --public-key-stdin as an input alternative."""

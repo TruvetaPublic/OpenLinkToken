@@ -12,20 +12,36 @@ ENV PIP_NO_CACHE_DIR=1 \
 WORKDIR /app
 
 COPY README.md /app/README.md
+COPY resources/inferencing/ml1 /app/resources/inferencing/ml1
 COPY lib/python/openlinktoken /app/lib/python/openlinktoken
+COPY lib/python/openlinktoken-core-ai /app/lib/python/openlinktoken-core-ai
 COPY lib/python/openlinktoken-cli /app/lib/python/openlinktoken-cli
 
+# Linux x86_64 dependency markers install CUDA and cuDNN user-space libraries;
+# the host NVIDIA driver is provided at runtime with --gpus all.
 RUN python -m pip install --upgrade pip && \
     python -m pip install --prefix=/install \
     /app/lib/python/openlinktoken \
+    /app/lib/python/openlinktoken-core-ai \
     /app/lib/python/openlinktoken-cli
+
+# The published core-ai package omits large ML1 files; the Docker CLI image keeps
+# them beside the installed modules so ML1 works without a separate download.
+RUN package_dir="$(python -c 'import sys; print(f"/install/lib/python{sys.version_info.major}.{sys.version_info.minor}/site-packages/openlinktoken/core/ai/tokens")')" && \
+    mkdir -p "$package_dir" && \
+    cp /app/resources/inferencing/ml1/asset-manifest.json "$package_dir/" && \
+    cp /app/resources/inferencing/ml1/model.onnx "$package_dir/" && \
+    cp /app/resources/inferencing/ml1/model.onnx.data "$package_dir/" && \
+    cp /app/resources/inferencing/ml1/tokenizer.json "$package_dir/"
 
 ##################################################
 # Stage 2: Create the image to run the Python CLI
 ##################################################
 FROM python:${PYTHON_VERSION}-slim AS final
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
+ENV NVIDIA_VISIBLE_DEVICES=all \
+    NVIDIA_DRIVER_CAPABILITIES=compute,utility \
+    PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 RUN mkdir /app && \

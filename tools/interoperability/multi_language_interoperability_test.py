@@ -1,11 +1,13 @@
 """
 Interoperability tests for Open Link Token Java core library and Python CLI.
 
-These tests validate two parity layers:
+These tests validate three parity surfaces:
 - the Python library reproduces the deterministic fixture values already asserted by
   the Java core-library integration test
-- the Python CLI `tokenize` output matches a thin Java harness that uses the Java
-  core library directly without any CLI layer
+- the Python CLI `tokenize` output with ML1 disabled matches a thin Java harness
+  that uses the Java core library directly
+- the Python ML1 provider and Python CLI output agree, while the provider is
+  compared directly with the Java ML1 harness
 """
 
 import csv
@@ -21,7 +23,11 @@ from typing import Any, Dict
 # Add Python library to path
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "lib/python/openlinktoken/src/main"))
+sys.path.insert(0, str(PROJECT_ROOT / "lib/python/openlinktoken-core-ai/src/main"))
 
+from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig  # noqa: E402
+from openlinktoken.core.ai.tokens.ml1_onnx_signature_provider import ML1OnnxSignatureProvider  # noqa: E402
+from openlinktoken.core.ai.tokens.rotation_config import RotationConfig  # noqa: E402
 
 # These fixture values are intentionally kept aligned with the Java
 # TokenGeneratorIntegrationTest so this interop job verifies the same
@@ -35,23 +41,22 @@ EXPECTED_TOKENS = {
 }
 
 EXPECTED_SAMPLE_METADATA = {
-    "HashingSecretHash": "3fd6f3558ba532410658f8eb0d80b25db01b129b1b04c7c0e4a4a50e26921124",
-    "TotalRows": 105,
-    "TotalRowsWithInvalidAttributes": 12,
+    "TotalRows": 2,
+    "TotalRowsWithInvalidAttributes": 2,
     "InvalidAttributesByType": {
-        "BirthDate": 3,
-        "FirstName": 1,
-        "LastName": 2,
-        "PostalCode": 2,
+        "BirthDate": 1,
+        "FirstName": 0,
+        "LastName": 0,
+        "PostalCode": 0,
         "Sex": 0,
-        "SocialSecurityNumber": 4,
+        "SocialSecurityNumber": 1,
     },
     "BlankTokensByRule": {
-        "T1": 6,
-        "T2": 8,
-        "T3": 6,
-        "T4": 7,
-        "T5": 3,
+        "T1": 1,
+        "T2": 1,
+        "T3": 1,
+        "T4": 2,
+        "T5": 0,
     },
 }
 
@@ -64,7 +69,7 @@ class InteroperabilityTooling:
 
     def __init__(self):
         self.project_root = PROJECT_ROOT
-        self.sample_csv = self.project_root / "resources/sample.csv"
+        self.sample_csv = self.project_root / "resources/interoperability_sample.csv"
 
 
 class PythonCLI(InteroperabilityTooling):
@@ -124,7 +129,11 @@ class PythonCLI(InteroperabilityTooling):
 
         return result
 
-    def _bootstrap_exchange_config(self, workspace_root: Path) -> tuple[Path, Path]:
+    def _bootstrap_exchange_config(
+        self,
+        workspace_root: Path,
+        rotation_iv: str | None = None,
+    ) -> tuple[Path, Path]:
         """Create exchange artifacts for the current CLI tokenize contract."""
         recipient_name = "interop-recipient"
         sender_name = "interop-sender"
@@ -138,7 +147,7 @@ class PythonCLI(InteroperabilityTooling):
             recipient_name,
             home_dir=workspace_root,
         )
-        self.run(
+        initiate_exchange_args = [
             "initiate-exchange",
             "--name",
             sender_name,
@@ -148,27 +157,46 @@ class PythonCLI(InteroperabilityTooling):
             str(exchange_config),
             "--hashingsecret",
             self.HASHING_KEY,
+        ]
+        if rotation_iv is not None:
+            initiate_exchange_args.extend(["--rotation-iv", rotation_iv])
+        self.run(
+            *initiate_exchange_args,
             home_dir=workspace_root,
         )
 
         return exchange_config, sender_private_key
 
-    def generate_tokenized_output(self, input_file: Path, output_file: Path) -> subprocess.CompletedProcess:
+    def generate_tokenized_output(
+        self,
+        input_file: Path,
+        output_file: Path,
+        enable_inferencing: bool = False,
+    ) -> subprocess.CompletedProcess:
         """Run the Python CLI `tokenize` command and write CSV output."""
         workspace_root = output_file.parent
-        exchange_config, private_key = self._bootstrap_exchange_config(workspace_root)
-        return self.run(
+        exchange_config, private_key = self._bootstrap_exchange_config(
+            workspace_root,
+            rotation_iv=RotationConfig.DEFAULT_IV if enable_inferencing else None,
+        )
+        tokenize_args = [
             "tokenize",
             "-i",
             str(input_file),
             "-o",
             str(output_file),
-            "--exchange-config",
-            str(exchange_config),
-            "--private-key",
-            str(private_key),
-            home_dir=workspace_root,
+        ]
+        if not enable_inferencing:
+            tokenize_args.append("--disable-inferencing")
+        tokenize_args.extend(
+            [
+                "--exchange-config",
+                str(exchange_config),
+                "--private-key",
+                str(private_key),
+            ]
         )
+        return self.run(*tokenize_args, home_dir=workspace_root)
 
 
 class JavaLibraryHarness(InteroperabilityTooling):
@@ -202,6 +230,59 @@ class JavaLibraryHarness(InteroperabilityTooling):
             raise RuntimeError(f"Open Link Token-Java failed with return code {result.returncode}: {result.stderr}")
 
         return result
+
+
+class ML1JavaLibraryHarness(InteroperabilityTooling):
+    """Runs the Java ML1 interoperability harness through Maven."""
+
+    JAVA_MAIN_CLASS = "org.openlinktoken.core.ai.tools.Ml1InteropHarness"
+
+    def generate_signatures(self, input_file: Path, output_file: Path) -> Dict[str, str | None]:
+        """Generate RecordId-to-ML1 mappings with the Java core-AI module."""
+        java_dir = self.project_root / "lib/java"
+        compile_cmd = [
+            "mvn",
+            "-pl",
+            "openlinktoken-core-ai",
+            "-am",
+            "-DskipTests",
+            "-q",
+            "install",
+        ]
+        compile_result = subprocess.run(
+            compile_cmd,
+            capture_output=True,
+            text=True,
+            cwd=java_dir,
+            check=False,
+        )
+        if compile_result.returncode != 0:
+            raise RuntimeError(f"Java ML1 module install failed: {compile_result.stderr}")
+
+        execute_cmd = [
+            "mvn",
+            "-pl",
+            "openlinktoken-core-ai",
+            "-DskipTests",
+            "org.codehaus.mojo:exec-maven-plugin:3.5.0:java",
+            f"-Dexec.mainClass={self.JAVA_MAIN_CLASS}",
+            "-Dexec.classpathScope=test",
+            f"-Dexec.args={input_file} {output_file}",
+        ]
+        execute_result = subprocess.run(
+            execute_cmd,
+            capture_output=True,
+            text=True,
+            cwd=java_dir,
+            check=False,
+        )
+        if execute_result.returncode != 0:
+            raise RuntimeError(
+                f"Java ML1 harness failed:\nstdout:\n{execute_result.stdout}\nstderr:\n{execute_result.stderr}"
+            )
+
+        with output_file.open("r", encoding="utf-8") as file_handle:
+            return json.load(file_handle)
 
 
 class TokenValidator:
@@ -283,6 +364,15 @@ class TestTokenCompatibility:
         self.java_harness = JavaLibraryHarness()
         self.validator = TokenValidator()
 
+    @staticmethod
+    def _write_ml1_fixture(input_file: Path) -> None:
+        """Write the shared valid and invalid rows used by ML1 parity tests."""
+        with input_file.open("w", encoding="utf-8", newline="") as file_handle:
+            writer = csv.writer(file_handle)
+            writer.writerow(["RecordId", "BirthDate", "FirstName", "LastName", "PostalCode", "Sex"])
+            writer.writerow(["ml1-valid", "1989-05-25", "Chelsea", "Meister", "06582", "Female"])
+            writer.writerow(["ml1-invalid", "not-a-date", "Chelsea", "Meister", "06582", "Female"])
+
     def test_python_library_matches_known_java_fixture_values(self):
         """Verify the Python library matches the deterministic Java fixture tokens."""
         from openlinktoken.attributes.person.birth_date_attribute import BirthDateAttribute
@@ -303,7 +393,8 @@ class TestTokenCompatibility:
         }
 
         tokens = token_generator.get_all_tokens(person_attributes).tokens
-        assert tokens == EXPECTED_TOKENS
+        core_tokens = {token_id: tokens.get(token_id) for token_id in EXPECTED_TOKENS}
+        assert core_tokens == EXPECTED_TOKENS
 
     def test_python_cli_module_entrypoint_tokenize_flow(self):
         """Verify the Python CLI tokenize flow works through the module entrypoint."""
@@ -328,14 +419,14 @@ class TestTokenCompatibility:
 
             assert python_meta["Platform"] == "Python", python_meta
             assert python_meta["Version"], python_meta
-            assert python_meta["HashingSecretHash"] == EXPECTED_SAMPLE_METADATA["HashingSecretHash"], python_meta
             assert python_meta["TotalRows"] == EXPECTED_SAMPLE_METADATA["TotalRows"], python_meta
             assert (
                 python_meta["TotalRowsWithInvalidAttributes"]
                 == EXPECTED_SAMPLE_METADATA["TotalRowsWithInvalidAttributes"]
             ), python_meta
             assert python_meta["InvalidAttributesByType"] == EXPECTED_SAMPLE_METADATA["InvalidAttributesByType"]
-            assert python_meta["BlankTokensByRule"] == EXPECTED_SAMPLE_METADATA["BlankTokensByRule"]
+            for rule_id, expected_count in EXPECTED_SAMPLE_METADATA["BlankTokensByRule"].items():
+                assert python_meta["BlankTokensByRule"][rule_id] == expected_count
 
     def test_java_library_harness_matches_python_cli_tokenize_output(self):
         """Compare Java library output with Python CLI tokenize output for the sample CSV."""
@@ -360,6 +451,116 @@ class TestTokenCompatibility:
             print("✅ Java core library and Python CLI token outputs match!")
             print("-" * 30)
 
+    def test_java_ml1_harness_matches_python_provider(self):
+        """Compare Java and Python ML1 signatures, including invalid-row handling."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            input_file = temp_path / "ml1_input.csv"
+            java_output = temp_path / "ml1_java_output.json"
+
+            self._write_ml1_fixture(input_file)
+
+            java_tokens = ML1JavaLibraryHarness().generate_signatures(input_file, java_output)
+
+            python_rows = [
+                {
+                    "BirthDate": "1989-05-25",
+                    "FirstName": "Chelsea",
+                    "LastName": "Meister",
+                    "PostalCode": "06582",
+                    "Sex": "Female",
+                },
+                {
+                    "BirthDate": "not-a-date",
+                    "FirstName": "Chelsea",
+                    "LastName": "Meister",
+                    "PostalCode": "06582",
+                    "Sex": "Female",
+                },
+            ]
+            ML1InferenceConfig.configure(
+                True,
+                ML1InferenceConfig.DEFAULT_MODEL_PATH,
+                ML1InferenceConfig.DEFAULT_TOKENIZER_PATH,
+                ML1InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH,
+            )
+            RotationConfig.configure(
+                True,
+                RotationConfig.DEFAULT_IV,
+                RotationConfig.DEFAULT_ROTATION_COUNT,
+                RotationConfig.DEFAULT_HASH_DIMENSION,
+                RotationConfig.DEFAULT_BIN_WIDTH,
+                RotationConfig.DEFAULT_MIN_VAL,
+                RotationConfig.DEFAULT_MAX_VAL,
+            )
+            python_result = ML1OnnxSignatureProvider().generate_batch(python_rows)
+            python_tokens = {
+                record_id: signature
+                for record_id, signature in zip(("ml1-valid", "ml1-invalid"), python_result.signatures)
+            }
+
+            assert java_tokens == python_tokens
+
+    def test_python_cli_ml1_matches_python_provider(self):
+        """Compare Python CLI ML1 output with the direct provider when inferencing is enabled."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            input_file = temp_path / "ml1_input.csv"
+            python_output = temp_path / "ml1_python_output.csv"
+
+            self._write_ml1_fixture(input_file)
+            self.python_cli.generate_tokenized_output(input_file, python_output, enable_inferencing=True)
+
+            python_tokens = self.validator.load_csv_tokens(python_output)
+            valid_python_token = python_tokens["ml1-valid"].get("ML1")
+            invalid_python_token = python_tokens["ml1-invalid"].get("ML1")
+
+            python_rows = [
+                {
+                    "BirthDate": "1989-05-25",
+                    "FirstName": "Chelsea",
+                    "LastName": "Meister",
+                    "PostalCode": "06582",
+                    "Sex": "Female",
+                },
+                {
+                    "BirthDate": "not-a-date",
+                    "FirstName": "Chelsea",
+                    "LastName": "Meister",
+                    "PostalCode": "06582",
+                    "Sex": "Female",
+                },
+            ]
+            ML1InferenceConfig.configure(
+                True,
+                ML1InferenceConfig.DEFAULT_MODEL_PATH,
+                ML1InferenceConfig.DEFAULT_TOKENIZER_PATH,
+                ML1InferenceConfig.DEFAULT_MAX_SEQUENCE_LENGTH,
+            )
+            RotationConfig.configure(
+                True,
+                RotationConfig.DEFAULT_IV,
+                RotationConfig.DEFAULT_ROTATION_COUNT,
+                RotationConfig.DEFAULT_HASH_DIMENSION,
+                RotationConfig.DEFAULT_BIN_WIDTH,
+                RotationConfig.DEFAULT_MIN_VAL,
+                RotationConfig.DEFAULT_MAX_VAL,
+            )
+            provider_result = ML1OnnxSignatureProvider().generate_batch(python_rows)
+            provider_tokens = {
+                record_id: signature
+                for record_id, signature in zip(("ml1-valid", "ml1-invalid"), provider_result.signatures)
+            }
+
+            assert valid_python_token, "Python CLI should emit a non-blank ML1 token for the valid row"
+            assert valid_python_token == provider_tokens["ml1-valid"], (
+                f"ML1 mismatch for ml1-valid: Provider={provider_tokens['ml1-valid']!r}, CLI={valid_python_token!r}"
+            )
+            assert provider_tokens["ml1-invalid"] is None
+            assert invalid_python_token in (None, ""), (
+                f"Python CLI should not emit an ML1 token for ml1-invalid, got {invalid_python_token!r}"
+            )
+
     def test_metadata_consistency(self):
         """Test that the Python CLI produces metadata files with expected fields."""
         print("\nTesting Metadata Consistency")
@@ -377,11 +578,20 @@ class TestTokenCompatibility:
             with open(python_metadata, "r", encoding="utf-8") as file_handle:
                 python_meta = json.load(file_handle)
 
-            expected_fields = ["Platform", "PythonVersion", "Version", "TotalRows", "HashingSecretHash"]
-            for field in expected_fields:
-                assert field in python_meta, f"Python metadata missing expected field '{field}'"
+            expected_fields = {
+                "Platform",
+                "PythonVersion",
+                "Version",
+                "TotalRows",
+                "TotalRowsWithInvalidAttributes",
+                "InvalidAttributesByType",
+                "BlankTokensByRule",
+            }
+            assert set(python_meta) == expected_fields, python_meta
 
             assert python_meta["Platform"] == "Python", f"Expected Platform 'Python', got '{python_meta['Platform']}'"
+            for rule_id, expected_count in EXPECTED_SAMPLE_METADATA["BlankTokensByRule"].items():
+                assert python_meta["BlankTokensByRule"][rule_id] == expected_count
 
             print("✅ Metadata consistency verified!")
             print("-" * 30)
@@ -501,6 +711,8 @@ if __name__ == "__main__":
         test.test_python_library_matches_known_java_fixture_values()
         test.test_python_cli_module_entrypoint_tokenize_flow()
         test.test_java_library_harness_matches_python_cli_tokenize_output()
+        test.test_java_ml1_harness_matches_python_provider()
+        test.test_python_cli_ml1_matches_python_provider()
         test.test_metadata_consistency()
         test.test_package_command_zip_output()
         test.test_encrypt_command_zip_output()

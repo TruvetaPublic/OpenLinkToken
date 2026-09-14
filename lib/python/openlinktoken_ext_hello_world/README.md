@@ -13,7 +13,7 @@ import argparse
 class MyExtension(OpenLinkTokenExtension):
     @property
     def command_name(self) -> str:
-        return "my-ext"                 # becomes `openlinktoken my-ext ...`
+        return "my-ext"                 # becomes `olt my-ext ...`
 
     @property
     def description(self) -> str:

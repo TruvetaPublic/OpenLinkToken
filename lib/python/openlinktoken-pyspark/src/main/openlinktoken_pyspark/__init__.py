@@ -3,7 +3,7 @@
 Open Link Token PySpark Bridge - Distributed token generation for PySpark DataFrames.
 """
 
-__version__ = "2.1.2"
+__version__ = "2.2.0"
 
 from openlinktoken_pyspark.notebook_helpers import (
     CustomTokenDefinition,

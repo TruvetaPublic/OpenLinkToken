@@ -178,23 +178,48 @@ def _extract_hashing_secret(payload: dict[str, Any]) -> bytes:
     return base64.urlsafe_b64decode(hashing_secret + padding)
 
 
+def _extract_rotation_iv(payload: dict[str, Any]) -> bytes:
+    """Decode the rotation IV from the decrypted exchange payload, or return empty bytes if not set."""
+    encoding = payload.get("rotationIvEncoding")
+    value = payload.get("rotationIv")
+    if value is None:
+        return b""
+    if encoding != "base64url":
+        raise ValueError(f"Unsupported rotationIvEncoding '{encoding}'.")
+    if not isinstance(value, str) or not value:
+        return b""
+    padding = "=" * (-len(value) % 4)
+    return base64.urlsafe_b64decode(value + padding)
+
+
 def main() -> int:
-    """Run the helper and print the recovered hashing secret."""
+    """Run the helper and print the recovered hashing secret and rotation parameters."""
     args = parse_args()
     exchange_config_path = Path(args.exchange_config).expanduser()
     private_key_path = Path(args.private_key).expanduser() if args.private_key is not None else None
 
     try:
-        plaintext_secret = decrypt_exchange_secret(
-            exchange_config_path,
-            private_key_path,
-            private_key_stdin=args.private_key_stdin,
+        exchange_config = load_exchange_config(exchange_config_path)
+        private_pem = resolve_private_key_pem(
+            exchange_config, private_key_path, private_key_stdin=args.private_key_stdin
         )
+        payload = decrypt_exchange_payload(exchange_config, private_pem)
+        plaintext_secret = _extract_hashing_secret(payload)
+        rotation_iv = _extract_rotation_iv(payload)
+        rotation_count = payload.get("rotationCount") or 0
+        bin_width = payload.get("binWidth") or 0.05
     except (OSError, ValueError, KeyError, json.JSONDecodeError) as error:
         print(f"Failed to decrypt exchange secret: {error}", file=sys.stderr)
         return 1
 
     print(f"Recovered hashing secret ({len(plaintext_secret)} bytes).")
+    if rotation_iv:
+        print(f"Rotation IV ({len(rotation_iv)} bytes): {rotation_iv.hex()}")
+    else:
+        print("Rotation IV: (not set)")
+    print(f"Rotation count: {rotation_count}")
+    print(f"Bin width: {bin_width}")
+
     if args.expected_secret is not None:
         if plaintext_secret != args.expected_secret.encode("utf-8"):
             print("Recovered secret does not match expected secret.", file=sys.stderr)

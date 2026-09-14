@@ -18,14 +18,14 @@ except FileNotFoundError:
 
 # Core dependencies (version-agnostic, no PySpark)
 core_requirements = [
-    "openlinktoken==2.1.2",
+    "openlinktoken==2.2.0",
     "pycryptodome==3.23.0",
-    "jwcrypto==1.5.8",
+    "jwcrypto==1.5.9",
 ]
 
 setup(
     name="openlinktoken-pyspark",
-    version="2.1.2",
+    version="2.2.0",
     author="Open Link Token Contributors",
     description="Open Link Token PySpark bridge for distributed token generation",
     long_description=long_description,
@@ -76,7 +76,7 @@ setup(
             "pytest-cov==7.1.0",
             "flake8==7.3.0",
             "jupyter==1.1.1",
-            "notebook==7.6.1",
+            "notebook==7.6.2",
             "ipykernel==7.3.0",
         ],
     },

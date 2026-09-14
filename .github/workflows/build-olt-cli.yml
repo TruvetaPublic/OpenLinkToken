@@ -30,14 +30,26 @@ jobs:
   build:
     needs: release-info
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
-    name: Build (${{ matrix.os }})
+    name: Build (${{ matrix.os }} / ${{ matrix.architecture }})
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            architecture: x86_64
+            python-version: "3.11"
+          - os: macos-13
+            architecture: x86_64
+            python-version: "3.10"
+          - os: macos-14
+            architecture: arm64
+            python-version: "3.11"
+          - os: windows-latest
+            architecture: x86_64
+            python-version: "3.11"
 
     env:
       VERSION: ${{ needs.release-info.outputs.version }}
@@ -48,11 +60,29 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          lfs: true
+          ref: ${{ needs.release-info.outputs['release-found'] == 'true' && needs.release-info.outputs.tag || github.sha }}
+
+      - name: Validate POSIX installer
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n install.sh
+          bash install.sh --help
+
+      - name: Validate Windows installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          & .\install.ps1 -Help
 
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
 
       - name: Set up UV
         uses: astral-sh/setup-uv@v6
@@ -63,8 +93,6 @@ jobs:
 
       - name: Build CLI binary
         shell: bash
-        env:
-          OLT_TARGET_ARCH: ${{ runner.os == 'macOS' && 'universal2' || '' }}
         run: |
           uv run pyinstaller --clean --noconfirm lib/python/openlinktoken-cli/openlinktoken-cli.spec
 
@@ -73,9 +101,36 @@ jobs:
         run: |
           mkdir -p smoke
           cp resources/sample.csv smoke/input.csv
-          ./dist/olt generate-key-pair --name recipient --force
-          ./dist/olt initiate-exchange --name smoke --public-key "$HOME/.openlinktoken/recipient.public.pem" --output smoke/smoke.exchange.json --hashingsecret secret
-          ./dist/olt tokenize -i smoke/input.csv -o smoke/out.csv --exchange-config smoke/smoke.exchange.json --private-key "$HOME/.openlinktoken/smoke.private.pem"
+          ./dist/olt/olt generate-key-pair --name recipient --force
+          ./dist/olt/olt initiate-exchange --name smoke --public-key "$HOME/.openlinktoken/recipient.public.pem" --output smoke/smoke.exchange.json --hashingsecret secret
+          ./dist/olt/olt tokenize -i smoke/input.csv -o smoke/out.csv --exchange-config smoke/smoke.exchange.json --private-key "$HOME/.openlinktoken/smoke.private.pem"
+          python - smoke/out.csv <<'PY'
+          import csv
+          import sys
+          from pathlib import Path
+
+          with Path(sys.argv[1]).open(newline="", encoding="utf-8") as file_handle:
+              ml1_tokens = [
+                  row["Token"]
+                  for row in csv.DictReader(file_handle)
+                  if row.get("RuleId") == "ML1" and row.get("Token")
+              ]
+          if not ml1_tokens or any(token == "0" * 64 for token in ml1_tokens):
+              raise SystemExit("Frozen CLI output does not contain a non-blank ML1 token")
+          PY
+
+      - name: Verify CUDA provider on Linux GPU runners
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -e /dev/nvidia0 || -e /dev/nvidiactl ]]; then
+            latest_log=$(find "$HOME/.openlinktoken/logs" -type f -name '*tokenize*.log' -print | sort | tail -n 1)
+            test -n "$latest_log"
+            grep -q "ML1 ONNX: CUDA execution provider active" "$latest_log"
+          else
+            echo "No NVIDIA device is available on this runner; CUDA smoke check skipped."
+          fi
 
       - name: Smoke test (Windows)
         if: runner.os == 'Windows'
@@ -83,9 +138,29 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path smoke | Out-Null
           Copy-Item resources\sample.csv smoke\input.csv
-          .\dist\olt.exe generate-key-pair --name recipient --force
-          .\dist\olt.exe initiate-exchange --name smoke --public-key "$HOME/.openlinktoken/recipient.public.pem" --output smoke\smoke.exchange.json --hashingsecret secret
-          .\dist\olt.exe tokenize -i smoke\input.csv -o smoke\out.csv --exchange-config smoke\smoke.exchange.json --private-key "$HOME/.openlinktoken/smoke.private.pem"
+          .\dist\olt\olt.exe generate-key-pair --name recipient --force
+          .\dist\olt\olt.exe initiate-exchange --name smoke --public-key "$HOME/.openlinktoken/recipient.public.pem" --output smoke\smoke.exchange.json --hashingsecret secret
+          .\dist\olt\olt.exe tokenize -i smoke\input.csv -o smoke\out.csv --exchange-config smoke\smoke.exchange.json --private-key "$HOME/.openlinktoken/smoke.private.pem"
+          $ml1Tokens = Import-Csv smoke\out.csv | Where-Object { $_.RuleId -eq "ML1" -and $_.Token -and $_.Token -ne ("0" * 64) }
+          if (-not $ml1Tokens) {
+            throw "Frozen CLI output does not contain a non-blank ML1 token"
+          }
+
+      - name: Measure standalone startup
+        shell: bash
+        run: |
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            uv run python tools/cli/measure_startup.py --executable dist/olt/olt.exe --output startup-measurements.json
+          else
+            uv run python tools/cli/measure_startup.py --executable dist/olt/olt --output startup-measurements.json
+          fi
+
+      - name: Upload startup measurements
+        uses: actions/upload-artifact@v7
+        with:
+          name: olt-cli-startup-${{ matrix.os }}-${{ matrix.architecture }}
+          path: startup-measurements.json
+          if-no-files-found: error
 
       - name: Prepare release assets
         shell: bash
@@ -94,13 +169,19 @@ jobs:
           uv run python -m openlinktoken_cli.util.release_assets \
             --version "${VERSION}" \
             --runner-os "${{ runner.os }}" \
+            --architecture "${{ matrix.architecture }}" \
             --dist-dir dist \
             --output-dir release-assets
+
+      - name: Add bootstrap installers
+        if: runner.os == 'Linux'
+        shell: bash
+        run: cp install.sh install.ps1 release-assets/
 
       - name: Upload workflow artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: olt-cli-${{ env.VERSION }}-${{ matrix.os }}
+          name: olt-cli-${{ env.VERSION }}-${{ matrix.os }}-${{ matrix.architecture }}
           path: release-assets/*
           if-no-files-found: error
 
@@ -126,6 +207,15 @@ jobs:
             }
 
             const files = fs.readdirSync(assetDir)
+              .sort((left, right) => {
+                const rank = (name) => {
+                  if (name.endsWith('.zip.sha256')) return 3;
+                  if (name.endsWith('.zip')) return 2;
+                  if (name.endsWith('.sha256')) return 1;
+                  return 0;
+                };
+                return rank(left) - rank(right) || left.localeCompare(right);
+              })
               .map((name) => path.join(assetDir, name))
               .filter((filePath) => fs.statSync(filePath).isFile());
 

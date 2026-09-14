@@ -76,7 +76,7 @@ Because encryption uses a random IV, the encrypted `Token` values are intentiona
 
 #### What is inside `*_tokens.metadata.json`
 
-The metadata file contains run statistics and audit information such as counts of processed records and hashes of secrets (not the secrets themselves).
+The metadata file contains run statistics and audit information such as counts of processed records and runtime context.
 
 See [Metadata Format](../reference/metadata-format.md).
 

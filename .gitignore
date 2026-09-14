@@ -48,6 +48,7 @@ buildNumber.properties
 # Ignore DER files generated during conversion
 .devcontainer/scripts/zscaler_root.pem.der
 core
+!**/core/
 !docs/spec/core/
 !docs/spec/core/**
 
@@ -91,6 +92,7 @@ demos/pprl-superhero-example/datasets/
 uv.lock
 apm.lock
 apm.lock.yaml
+test-output.xml
 
 # APM dependencies
 apm_modules/
@@ -103,3 +105,4 @@ apm_modules/
 .agents/
 
 node_modules/
+docs/superpowers/

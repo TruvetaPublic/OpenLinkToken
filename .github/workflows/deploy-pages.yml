@@ -35,6 +35,7 @@ jobs:
         with:
           ruby-version: "3.3"
           bundler-cache: true
+          working-directory: pages
 
       - name: Setup Pages
         id: pages

@@ -8,10 +8,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -24,7 +27,11 @@ import org.openlinktoken.attributes.Attribute;
 import org.openlinktoken.attributes.AttributeExpression;
 import org.openlinktoken.attributes.person.FirstNameAttribute;
 import org.openlinktoken.attributes.person.LastNameAttribute;
+import org.openlinktoken.tokens.tokenizer.PassthroughTokenizer;
+import org.openlinktoken.tokens.tokenizer.SHA256Tokenizer;
 import org.openlinktoken.tokens.tokenizer.Tokenizer;
+import org.openlinktoken.tokentransformer.HashTokenTransformer;
+import org.openlinktoken.tokentransformer.TokenTransformer;
 
 class TokenGeneratorTest {
     @Mock
@@ -94,6 +101,73 @@ class TokenGeneratorTest {
 
         // Validate that no tokens are generated
         assertTrue(tokens.isEmpty(), "Expected no tokens to be generated due to validation failure");
+    }
+
+    @Test
+    void testGetAllTokensViaFieldId_emptyDefinition_skipsTokenization() throws Exception {
+        when(tokenDefinition.getTokenIdentifiers()).thenReturn(Set.of("token1"));
+        when(tokenDefinition.getTokenDefinition("token1")).thenReturn(List.of());
+
+        var result = tokenGenerator.getAllTokensViaFieldId(Map.of());
+
+        assertTrue(result.getTokens().isEmpty());
+        verify(tokenizer, never()).tokenize(anyString());
+    }
+
+    @Test
+    void testFieldIdInferenceProviderHandlesEmptyDefinition() {
+        when(tokenDefinition.getTokenIdentifiers()).thenReturn(Set.of("ML1"));
+        when(tokenDefinition.getTokenDefinition("ML1")).thenReturn(List.of());
+
+        var signatures = tokenGenerator.getAllTokenSignaturesViaFieldId(Map.of("LastName", "Smith"));
+        var result = tokenGenerator.getAllTokensViaFieldId(Map.of("LastName", "Smith"));
+
+        assertEquals("Smith-provider", signatures.get("ML1"));
+        assertEquals("Smith-provider", result.getTokens().get("ML1"));
+        assertTrue(result.getBlankTokensByRule().isEmpty());
+    }
+
+    @Test
+    void testFieldIdExclusionSkipsInferenceProvider() throws Exception {
+        when(tokenDefinition.getTokenIdentifiers()).thenReturn(Set.of("ML1", "token1"));
+        when(tokenDefinition.getTokenDefinition("ML1")).thenReturn(List.of());
+        when(tokenDefinition.getTokenDefinition("token1"))
+                .thenReturn(List.of(new AttributeExpression(FirstNameAttribute.class, "U")));
+        when(tokenizer.tokenize(anyString())).thenReturn("ordinary-token");
+
+        var result = tokenGenerator.generateTokensExcludingViaFieldId(
+                Map.of("FirstName", "John"),
+                Set.of("ML1"));
+
+        assertEquals(Map.of("token1", "ordinary-token"), result.getTokens());
+    }
+
+    @Test
+    void testFieldIdInferenceProviderTracksBlank() throws Exception {
+        when(tokenDefinition.getTokenIdentifiers()).thenReturn(Set.of("ML1"));
+        when(tokenDefinition.getTokenDefinition("ML1")).thenReturn(List.of());
+        tokenGenerator = new TokenGenerator(
+                tokenDefinition,
+                new SHA256Tokenizer(List.of(new HashTokenTransformer("secret"))));
+
+        var result = tokenGenerator.getAllTokensViaFieldId(Map.of("LastName", "Smith"));
+        assertEquals("Smith-provider", result.getTokens().get("ML1"));
+        assertTrue(result.getBlankTokensByRule().isEmpty());
+
+        var blankResult = tokenGenerator.getAllTokensViaFieldId(Map.of());
+        assertEquals(Token.BLANK, blankResult.getTokens().get("ML1"));
+        assertTrue(blankResult.getBlankTokensByRule().contains("ML1"));
+    }
+
+    @Test
+    void testDeprecatedClassKeyedInferenceApiAdaptsToFieldIds() {
+        when(tokenDefinition.getTokenIdentifiers()).thenReturn(Set.of("ML1"));
+        when(tokenDefinition.getTokenDefinition("ML1")).thenReturn(List.of());
+
+        var signatures = tokenGenerator.getAllTokenSignatures(
+                Map.of(LastNameAttribute.class, "Smith"));
+
+        assertEquals("Smith-provider", signatures.get("ML1"));
     }
 
     @Test
@@ -230,5 +304,18 @@ class TokenGeneratorTest {
         assertThrows(TokenGenerationException.class, () -> {
             tokenGenerator.getToken("token1", personAttributes, new TokenGeneratorResult());
         });
+    }
+
+    @Test
+    void storeRawToken_appliesNonHashTransformersWithPassthroughTokenizer() {
+        TokenTransformer encryptTransformer = token -> "encrypted:" + token;
+        tokenGenerator = new TokenGenerator(
+                tokenDefinition,
+                new PassthroughTokenizer(List.of(encryptTransformer)));
+        TokenGeneratorResult result = new TokenGeneratorResult();
+
+        tokenGenerator.storeRawToken(result, "ML1", "quantized-signature");
+
+        assertEquals("encrypted:quantized-signature", result.getTokens().get("ML1"));
     }
 }

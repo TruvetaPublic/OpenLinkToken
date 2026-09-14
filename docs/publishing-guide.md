@@ -1,6 +1,6 @@
-# Publishing OpenLinkToken to Maven Central and PyPI
+# Publishing Open Link Token to Maven Central and PyPI
 
-This guide documents the configuration required to publish OpenLinkToken artifacts to Maven Central (via the Sonatype Central Publisher Portal) and PyPI. It covers prerequisite accounts, repository secrets, Maven settings, and the automated GitHub Actions workflows that perform the actual publishing.
+This guide documents the configuration required to publish Open Link Token artifacts to Maven Central (via the Sonatype Central Publisher Portal) and PyPI. It covers prerequisite accounts, repository secrets, Maven settings, and the automated GitHub Actions workflows that perform the actual publishing.
 
 ---
 
@@ -17,18 +17,111 @@ This guide documents the configuration required to publish OpenLinkToken artifac
 
 ## Publishing Overview
 
-OpenLinkToken artifacts are published to two primary registries via GitHub Actions:
+Open Link Token artifacts are published to two primary registries via GitHub Actions:
 
 | Artifact                                     | Registry                                                   | Workflow                                                        |
 | -------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------- |
 | `openlinktoken` Java JAR + POM               | Maven Central (Central Publisher Portal) + GitHub Packages | [`maven-publish.yml`](../.github/workflows/maven-publish.yml)   |
+| `openlinktoken-core-ai` Java JAR + POM       | Maven Central (Central Publisher Portal) + GitHub Packages | [`maven-publish.yml`](../.github/workflows/maven-publish.yml)   |
 | `openlinktoken` Python wheel + sdist         | PyPI                                                       | [`python-publish.yml`](../.github/workflows/python-publish.yml) |
+| `openlinktoken-core-ai` Python wheel + sdist | PyPI                                                       | [`python-publish.yml`](../.github/workflows/python-publish.yml) |
 | `openlinktoken-pyspark` Python wheel + sdist | PyPI                                                       | [`python-publish.yml`](../.github/workflows/python-publish.yml) |
 
 Both registries use **short-lived, workload-identity-based authentication** rather than long-lived static API tokens wherever the platform supports it:
 
 - **PyPI** uses [Trusted Publishing](https://docs.pypi.org/trusted-publishers/) — GitHub Actions authenticates via OpenID Connect (OIDC); there is no PyPI API token stored as a secret.
 - **Maven Central** (via the Central Publisher Portal) still requires a Portal **user token** (username/password pair) plus a **GPG signing key**, since the Portal does not yet support OIDC. These are stored as repository secrets.
+
+### ML1 model assets
+
+The core-ai JAR and wheel do not contain the large ML1 model files and never
+download them. Place the matched files locally before using ML1:
+
+- Java applications: add `model.onnx`, `model.onnx.data`, and `tokenizer.json`
+  under `src/main/resources/inferencing/ml1/` so they are available at
+  `inferencing/ml1/` on the application classpath.
+- Python applications: place the files beside the installed
+  `openlinktoken/core/ai/tokens/` package modules, or pass explicit model and
+  tokenizer filesystem paths to the ML1 configuration.
+- Source checkouts: keep the files under `resources/inferencing/ml1/`.
+
+For explicit filesystem paths, put the three files in one directory:
+
+```text
+/opt/openlinktoken/ml1/
+  model.onnx
+  model.onnx.data
+  tokenizer.json
+```
+
+Set the model path to `/opt/openlinktoken/ml1/model.onnx` and the tokenizer
+path to `/opt/openlinktoken/ml1/tokenizer.json`. Configure these paths before
+the first ML1 token operation:
+
+```java
+ML1InferenceConfig.configure(
+    true,
+    "/opt/openlinktoken/ml1/model.onnx",
+    "/opt/openlinktoken/ml1/tokenizer.json",
+    128);
+```
+
+```python
+from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig
+
+ML1InferenceConfig.configure(
+    enable_ml1=True,
+    configured_model_path="/opt/openlinktoken/ml1/model.onnx",
+    configured_tokenizer_path="/opt/openlinktoken/ml1/tokenizer.json",
+    configured_max_sequence_length=128,
+)
+```
+
+`model.onnx.data` is not a configuration argument. It is the external tensor
+data file that ONNX Runtime loads automatically from the same directory as
+`model.onnx`.
+
+Standalone `olt` CLI release bundles include the model assets and do not need a
+network connection for ML1 because the files are packaged inside the binary.
+The published Docker image also includes the model assets beside the installed
+Python modules.
+
+### Downloading the ML1 OCI package
+
+The repository also publishes the ML1 files as a release-independent OCI
+artifact in GitHub Container Registry. The package tag identifies the model,
+not the Open Link Token library:
+
+```text
+ghcr.io/truvetapublic/openlinktoken-ml1-assets:v1
+```
+
+Install [ORAS](https://oras.land/docs/installation), then pull the package
+into a local directory:
+
+```bash
+mkdir -p /opt/openlinktoken/ml1
+oras pull \
+  ghcr.io/truvetapublic/openlinktoken-ml1-assets:v1 \
+  --output /opt/openlinktoken/ml1
+```
+
+The package contains `model.onnx`, `model.onnx.data`, `tokenizer.json`, and
+`asset-manifest.json`. Public packages can be pulled without login. For a
+private package, log in with a GitHub token that has `read:packages`:
+
+```bash
+printf '%s' "$GITHUB_TOKEN" | oras login ghcr.io \
+  --username "$GITHUB_USER" \
+  --password-stdin
+```
+
+After the first publish, set the GHCR package visibility to **public** in the
+repository package settings if anonymous downloads are required.
+
+After the pull, use the model and tokenizer paths from the previous section.
+The publishing workflow runs manually and creates a new package tag only when
+the model changes.
 
 ### Prerequisites Checklist
 
@@ -145,7 +238,7 @@ Note that Maven Central **releases** are not deployed via `distributionManagemen
 
 ## PyPI — Python Package Index
 
-OpenLinkToken publishes to PyPI using **Trusted Publishing (OIDC)** — there is no PyPI API token stored anywhere in this repository. GitHub Actions presents a short-lived OIDC identity token scoped to this repository and workflow, and PyPI exchanges it for a temporary upload credential.
+Open Link Token publishes to PyPI using **Trusted Publishing (OIDC)** — there is no PyPI API token stored anywhere in this repository. GitHub Actions presents a short-lived OIDC identity token scoped to this repository and workflow, and PyPI exchanges it for a temporary upload credential.
 
 ### 1. Register a Trusted Publisher on PyPI
 
@@ -274,7 +367,7 @@ The workflow will:
 ### PyPI upload returns `403 Forbidden`
 
 - This is expected if a Trusted Publisher has not been registered for the project yet, or was registered with mismatched repository/workflow/environment values — see above.
-- OpenLinkToken does not use a `PYPI_TOKEN` secret; if you see references to one, treat it as stale/incorrect documentation.
+- Open Link Token does not use a `PYPI_TOKEN` secret; if you see references to one, treat it as stale/incorrect documentation.
 
 ### Artifacts not appearing in Maven Central after `mvn deploy -Pcentral-release`
 

@@ -6,7 +6,7 @@ layout: default
 
 Build, package, and install your first Open Link Token CLI extension end-to-end. This walkthrough uses the `hello-world` reference extension from the Open Link Token monorepo (`lib/python/openlinktoken_ext_hello_world/`).
 
-By the end you will have a new `hello-world` subcommand available in your local `openlinktoken` installation.
+By the end you will have a new `hello-world` subcommand available in your local `olt` installation.
 
 ---
 

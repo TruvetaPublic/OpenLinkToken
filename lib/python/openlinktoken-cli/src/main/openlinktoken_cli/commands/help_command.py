@@ -30,7 +30,11 @@ class HelpCommand:
         """Execute the help command."""
         from openlinktoken_cli.commands import OpenLinkTokenCommand
 
-        parser = OpenLinkTokenCommand.create_parser()
+        parser = OpenLinkTokenCommand.create_parser(
+            OpenLinkTokenCommand._should_load_extensions(
+                ["help", args.subcommand] if args.subcommand else ["help"],
+            )
+        )
 
         if args.subcommand:
             # Show help for specific subcommand

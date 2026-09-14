@@ -7,7 +7,7 @@ layout: default
 For a high-level overview and other entry points, see [Quickstarts](index.md).
 
 Install the Python packages and run the Open Link Token CLI with a virtual environment.
-After installation, use the `openlinktoken` command directly.
+After installation, use the `olt` command directly.
 
 ## Prerequisites
 
@@ -71,7 +71,7 @@ olt initiate-exchange --public-key ~/.openlinktoken/recipient.public.pem
 
 ### Package Command (Tokenize + Encrypt)
 
-By default, `package` writes a self-contained `<input>_packaged.zip` bundle (tokens + metadata + exchange config), ready to share. Pass `-o tokens.csv` if you want a plain CSV instead:
+By default, `package` writes a self-contained `<input>_packaged.zip` bundle (tokens + metadata + exchange config), ready to share. For valid records, the Python CLI includes T1–T5 plus one ML1 row by default; add `--disable-inferencing` for T1–T5 only. Pass `-o tokens.csv` if you want a plain CSV instead:
 
 ```bash
 olt package -i ./resources/sample.csv -o tokens.csv
@@ -116,7 +116,7 @@ olt help package
 olt package --help
 ```
 
-If needed, you can still run the module form directly:
+If the `olt` console script is unavailable, use the equivalent module form:
 
 ```bash
 python -m openlinktoken_cli.main --help
@@ -135,12 +135,6 @@ cat ../../../resources/output.metadata.json
 ## Using the Python API Programmatically
 
 ```python
-from openlinktoken.attributes.person.birth_date_attribute import BirthDateAttribute
-from openlinktoken.attributes.person.first_name_attribute import FirstNameAttribute
-from openlinktoken.attributes.person.last_name_attribute import LastNameAttribute
-from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttribute
-from openlinktoken.attributes.person.sex_attribute import SexAttribute
-from openlinktoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
 from openlinktoken.tokens.token_definition import TokenDefinition
 from openlinktoken.tokens.token_generator import TokenGenerator
 from openlinktoken.tokens.tokenizer.sha256_tokenizer import SHA256Tokenizer
@@ -150,28 +144,32 @@ from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTrans
 record_id = "patient_123"
 
 person_attributes = {
-  FirstNameAttribute: "John",
-  LastNameAttribute: "Doe",
-  BirthDateAttribute: "1980-01-15",
-  SexAttribute: "Male",
-  PostalCodeAttribute: "98004",
-  SocialSecurityNumberAttribute: "123-45-6789",
+  "FirstName": "John",
+  "LastName": "Doe",
+  "BirthDate": "1980-01-15",
+  "Sex": "Male",
+  "PostalCode": "98004",
+  "SocialSecurityNumber": "123-45-6789",
 }
 
 token_definition = TokenDefinition()
 tokenizer = SHA256Tokenizer([
   HashTokenTransformer("HashingSecret"),
-  EncryptTokenTransformer("Secret-Encryption-Key-Goes-Here."),
+  EncryptTokenTransformer("0123456789abcdef0123456789abcdef"),
 ])
 
 generator = TokenGenerator(token_definition, tokenizer)
-result = generator.get_all_tokens(person_attributes)
+result = generator.get_all_tokens_via_field_id(person_attributes)
 if result.invalid_attributes:
   print(f"Invalid attributes: {sorted(result.invalid_attributes)}")
 
 for rule_id, token in result.tokens.items():
   print(f"{record_id},{rule_id},{token}")
 ```
+
+The direct library transformer returns a base64-encoded AES-GCM payload. The
+CLI `package` workflow applies the `olt.V1.<JWE>` wrapper to encrypted package
+output.
 
 ## Cross-Language Parity
 
@@ -228,7 +226,7 @@ Reinstall the packages:
 uv pip install -e . --reinstall
 ```
 
-### "openlinktoken: command not found"
+### "olt: command not found"
 
 The console script is installed into the active environment. Re-activate your venv and reinstall the CLI package:
 

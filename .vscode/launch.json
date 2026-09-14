@@ -14,7 +14,7 @@
       "request": "launch",
       "program": "${workspaceFolder}/lib/python/openlinktoken-cli/src/main/openlinktoken_cli/main.py",
       "env": {
-        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main"
+        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main"
       },
       "args": ["generate-key-pair", "--name", "local-recipient", "--force"]
     },
@@ -24,7 +24,7 @@
       "request": "launch",
       "program": "${workspaceFolder}/lib/python/openlinktoken-cli/src/main/openlinktoken_cli/main.py",
       "env": {
-        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main"
+        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main"
       },
       "args": [
         "initiate-exchange",
@@ -41,16 +41,16 @@
       "request": "launch",
       "program": "${workspaceFolder}/lib/python/openlinktoken-cli/src/main/openlinktoken_cli/main.py",
       "env": {
-        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main"
+        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main"
       },
       "args": [
         "tokenize",
         "-i",
-        "${workspaceFolder}/resources/sample.${input:inputType}",
+        "${workspaceFolder}/resources/sample.csv",
         "-o",
-        "${workspaceFolder}/lib/python/openlinktoken-cli/target/output.${input:outputType}",
+        "${workspaceFolder}/lib/python/openlinktoken-cli/target/output.csv",
         "--exchange-config",
-        "${workspaceFolder}/lib/python/openlinktoken-cli/target/local.exchange.json",
+        "${input:exchangeConfigPath}",
         "--mode",
         "${input:tokenizeMode}"
       ]
@@ -61,16 +61,16 @@
       "request": "launch",
       "program": "${workspaceFolder}/lib/python/openlinktoken-cli/src/main/openlinktoken_cli/main.py",
       "env": {
-        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main"
+        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main"
       },
       "args": [
         "package",
         "-i",
-        "${workspaceFolder}/resources/sample.${input:inputType}",
+        "${workspaceFolder}/resources/sample.csv",
         "-o",
-        "${workspaceFolder}/lib/python/openlinktoken-cli/target/output.${input:outputType}",
+        "${workspaceFolder}/lib/python/openlinktoken-cli/target/packaged.csv",
         "--exchange-config",
-        "${workspaceFolder}/lib/python/openlinktoken-cli/target/local.exchange.json"
+        "${input:exchangeConfigPath}"
       ]
     },
     {
@@ -79,16 +79,16 @@
       "request": "launch",
       "program": "${workspaceFolder}/lib/python/openlinktoken-cli/src/main/openlinktoken_cli/main.py",
       "env": {
-        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main"
+        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main"
       },
       "args": [
         "encrypt",
         "-i",
-        "${workspaceFolder}/lib/python/openlinktoken-cli/target/output.${input:outputType}",
+        "${workspaceFolder}/lib/python/openlinktoken-cli/target/output.csv",
         "-o",
-        "${workspaceFolder}/lib/python/openlinktoken-cli/target/encrypted.${input:outputType}",
+        "${workspaceFolder}/lib/python/openlinktoken-cli/target/encrypted.csv",
         "--exchange-config",
-        "${workspaceFolder}/lib/python/openlinktoken-cli/target/local.exchange.json"
+        "${input:exchangeConfigPath}"
       ]
     },
     {
@@ -97,33 +97,107 @@
       "request": "launch",
       "program": "${workspaceFolder}/lib/python/openlinktoken-cli/src/main/openlinktoken_cli/main.py",
       "env": {
-        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main"
+        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main"
       },
       "args": [
         "decrypt",
         "-i",
-        "${workspaceFolder}/lib/python/openlinktoken-cli/target/encrypted.${input:outputType}",
+        "${workspaceFolder}/lib/python/openlinktoken-cli/target/encrypted.csv",
         "-o",
-        "${workspaceFolder}/lib/python/openlinktoken-cli/target/decrypted.${input:outputType}",
+        "${workspaceFolder}/lib/python/openlinktoken-cli/target/decrypted.csv",
         "--exchange-config",
-        "${workspaceFolder}/lib/python/openlinktoken-cli/target/local.exchange.json"
+        "${input:exchangeConfigPath}"
+      ]
+    },
+    {
+      "name": "Python: generate-key-pair",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/lib/python/openlinktoken-cli/src/main/openlinktoken_cli/main.py",
+      "env": {
+        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main"
+      },
+      "args": [
+        "generate-key-pair",
+        "--name",
+        "debug-key",
+        "--curve",
+        "P-256",
+        "--force"
+      ]
+    },
+    {
+      "name": "Python: initiate-exchange",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/lib/python/openlinktoken-cli/src/main/openlinktoken_cli/main.py",
+      "env": {
+        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main"
+      },
+      "args": [
+        "initiate-exchange",
+        "--name",
+        "debug-exchange",
+        "--public-key",
+        "${env:HOME}/.openlinktoken/receiver.public.pem",
+        "--output",
+        "${workspaceFolder}/lib/python/openlinktoken-cli/target/debug-exchange.exchange.json",
+        "--rotation-count",
+        "50",
+        "--rotation-bin-width",
+        "0.05",
+        "--rotation-embedding-dimension",
+        "1024",
+        "--force"
+      ]
+    },
+    {
+      "name": "Python: update (dry run)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/lib/python/openlinktoken-cli/src/main/openlinktoken_cli/main.py",
+      "env": {
+        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main"
+      },
+      "args": ["update", "--dry-run"]
+    },
+    {
+      "name": "Python: inspect-exchange-config",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/tools/exchange/inspect_exchange_config.py",
+      "env": {
+        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main"
+      },
+      "args": ["--exchange-config", "${input:exchangeConfigPath}"]
+    },
+    {
+      "name": "Python: inspect-exchange-config (JSON)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/tools/exchange/inspect_exchange_config.py",
+      "env": {
+        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main"
+      },
+      "args": [
+        "--exchange-config",
+        "${input:exchangeConfigPathForInspect}",
+        "--json"
       ]
     }
   ],
   "inputs": [
     {
-      "id": "inputType",
-      "type": "pickString",
-      "description": "Select input type",
-      "options": ["csv", "parquet"],
-      "default": "csv"
+      "id": "exchangeConfigPath",
+      "type": "promptString",
+      "description": "Path to the exchange config JSON",
+      "default": "${workspaceFolder}/lib/python/openlinktoken-cli/target/local.exchange.json"
     },
     {
-      "id": "outputType",
-      "type": "pickString",
-      "description": "Select output type",
-      "options": ["csv", "parquet"],
-      "default": "csv"
+      "id": "exchangeConfigPathForInspect",
+      "type": "promptString",
+      "description": "Path to the exchange config JSON for inspection",
+      "default": "${workspaceFolder}/lib/python/openlinktoken-cli/target/local.exchange.json"
     },
     {
       "id": "tokenizeMode",

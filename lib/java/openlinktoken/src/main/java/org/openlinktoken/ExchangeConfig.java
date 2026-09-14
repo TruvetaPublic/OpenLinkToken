@@ -6,7 +6,7 @@ package org.openlinktoken;
  *
  * <p>The full implementation lives in the Python package under
  * {@code openlinktoken.exchange_config} and handles loading, validating, and decrypting
- * initiate-exchange config files produced by {@code openlinktoken initiate-exchange}.
+ * initiate-exchange config files produced by {@code olt initiate-exchange}.
  * A Java equivalent has not yet been implemented because the exchange-config consumer
  * workflow is currently Python-CLI only.
  *

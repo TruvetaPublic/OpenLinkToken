@@ -46,6 +46,7 @@ This guide centralizes contributor-facing information. It covers local setup, la
     - [Full Multi-language Build](#full-multi-language-build)
     - [Docker Image](#docker-image)
   - [Running the Tool (CLI)](#running-the-tool-cli)
+    - [Progress display environment variables](#progress-display-environment-variables)
     - [Key Pair Generation](#key-pair-generation)
   - [Local Extension Development](#local-extension-development)
     - [Setup](#setup)
@@ -53,6 +54,7 @@ This guide centralizes contributor-facing information. It covers local setup, la
     - [Manual testing: wheel install (full pipeline)](#manual-testing-wheel-install-full-pipeline)
     - [Run the extension tests](#run-the-extension-tests)
     - [Developing your own extension](#developing-your-own-extension)
+      - [Reporting custom progress metrics](#reporting-custom-progress-metrics)
     - [Extension tests in `openlinktoken-cli`](#extension-tests-in-openlinktoken-cli)
   - [Development Container](#development-container)
   - [Version Bumping Policy](#version-bumping-policy)
@@ -202,30 +204,23 @@ cd lib/python/openlinktoken-cli && uv pip install -e .
 #### Build a Self-Contained CLI Locally
 
 For parity with the release artifacts, build the PyInstaller executable with Python 3.11. PyInstaller bundles the
-interpreter used at build time, and `.github/workflows/build-openlinktoken-cli.yml` currently builds the published
+interpreter used at build time, and `.github/workflows/build-olt-cli.yml` currently builds the published
 artifacts with Python 3.11.
 
-From the repository root, activate your virtual environment (`.\.venv\Scripts\Activate.ps1` on Windows PowerShell)
-and install the build dependencies:
+From the repository root, install all workspace packages and build dependencies:
 
 ```shell
-uv pip install -e lib/python/openlinktoken
-uv pip install -r lib/python/openlinktoken-cli/pyinstaller-requirements.txt
-uv pip install -r lib/python/openlinktoken-cli/requirements.txt
-uv pip install -e lib/python/openlinktoken-cli --no-deps
+uv sync --all-packages
 ```
 
-Build the executable:
+Build the native executable:
 
 ```shell
-# Linux / Windows
-pyinstaller --clean --noconfirm lib/python/openlinktoken-cli/openlinktoken-cli.spec
-
-# macOS universal2 (Intel + Apple Silicon)
-pyinstaller --clean --noconfirm --target-arch universal2 lib/python/openlinktoken-cli/openlinktoken-cli.spec
+uv run pyinstaller --clean --noconfirm lib/python/openlinktoken-cli/openlinktoken-cli.spec
 ```
 
-The built executable is written to `dist/olt` (`dist/olt.exe` on Windows). Intermediate files are written
+The one-folder bundle is written to `dist/olt/` with the executable at
+`dist/olt/olt` (`dist/olt/olt.exe` on Windows). Intermediate files are written
 to `build/`.
 
 Smoke-test the local build before packaging it:
@@ -233,7 +228,10 @@ Smoke-test the local build before packaging it:
 ```shell
 mkdir -p smoke
 cp resources/sample.csv smoke/input.csv
-./dist/olt tokenize -i smoke/input.csv -o smoke/out.csv -h secret
+./dist/olt/olt generate-key-pair --name recipient --force
+./dist/olt/olt initiate-exchange --name smoke --public-key "$HOME/.openlinktoken/recipient.public.pem" --output smoke/smoke.exchange.json --hashingsecret secret
+./dist/olt/olt tokenize -i smoke/input.csv -o smoke/out.csv --exchange-config smoke/smoke.exchange.json --private-key "$HOME/.openlinktoken/smoke.private.pem"
+uv run python -c "import csv; assert any(row['RuleId'] == 'ML1' for row in csv.DictReader(open('smoke/out.csv'))), 'standalone binary did not generate ML1 tokens'"
 ```
 
 On Windows PowerShell:
@@ -241,27 +239,34 @@ On Windows PowerShell:
 ```powershell
 New-Item -ItemType Directory -Force -Path smoke | Out-Null
 Copy-Item resources\sample.csv smoke\input.csv
-.\dist\olt.exe tokenize -i smoke\input.csv -o smoke\out.csv -h secret
+.\dist\olt\olt.exe generate-key-pair --name recipient --force
+.\dist\olt\olt.exe initiate-exchange --name smoke --public-key "$HOME/.openlinktoken/recipient.public.pem" --output smoke\smoke.exchange.json --hashingsecret secret
+.\dist\olt\olt.exe tokenize -i smoke\input.csv -o smoke\out.csv --exchange-config smoke\smoke.exchange.json --private-key "$HOME/.openlinktoken/smoke.private.pem"
+uv run python -c "import csv; assert any(row['RuleId'] == 'ML1' for row in csv.DictReader(open('smoke/out.csv'))), 'standalone binary did not generate ML1 tokens'"
 ```
 
-If you also want the same ZIP and checksum bundle produced by the release workflow, run:
+If you also want the same ZIP and checksum bundle produced by the release workflow, run
+the following (use `arm64` or `x86_64` on macOS):
 
 ```shell
 python -m openlinktoken_cli.util.release_assets \
-  --version 2.1.2 \
+  --version 2.2.0 \
   --runner-os Linux \
+  --architecture x86_64 \
   --dist-dir dist \
   --output-dir release-assets
 ```
 
-Use `--runner-os macOS` or `--runner-os Windows` for those platforms. The helper writes the updater-ready raw binary,
-the downloadable ZIP, and `.sha256` sidecars to `release-assets/`.
+Use `--runner-os macOS --architecture arm64` (or `x86_64`) or
+`--runner-os Windows --architecture x86_64` for those platforms. The helper writes
+the updater-ready raw binary, the downloadable ZIP, and `.sha256` sidecars to
+`release-assets/`.
 
 CLI usage (from project root):
 
 ```shell
 # After installing openlinktoken-cli
-python -m openlinktoken_cli.main package [OPTIONS]
+olt package [OPTIONS]
 ```
 
 Arguments are consistent with the Java core library's tokenization logic.
@@ -270,7 +275,7 @@ Example:
 
 ```shell
 # After installing openlinktoken-cli
-python -m openlinktoken_cli.main package \
+olt package \
   -i resources/sample.csv -o resources/output.csv \
   --exchange-config ./openlinktoken-YYYY-MM-DD.exchange.json
 ```
@@ -558,7 +563,7 @@ counter++; // Increment counter by one
 
 - Hashing and encryption keys must only appear in test files with dummy values
 - SSN validation logic is public, but never log actual SSN values
-- Metadata files contain SHA-256 hashes of secrets (for audit), not the secrets themselves
+- Metadata files contain processing stats and runtime context, not secrets
 
 **See:** [`.github/instructions/security-and-owasp.instructions.md`](../.github/instructions/security-and-owasp.instructions.md) for comprehensive security guidelines.
 
@@ -697,24 +702,26 @@ docker build . -t openlinktoken
 ## Running the Tool (CLI)
 
 The CLI is provided by the Python `openlinktoken-cli` package.
+After installation, use the `olt` console script. If it is unavailable, use
+`python -m openlinktoken_cli.main` as the equivalent fallback.
 
 Minimum required arguments:
 
 ```shell
-# Python
-python -m openlinktoken_cli.main package -i input.csv -o output.csv --exchange-config ./openlinktoken-YYYY-MM-DD.exchange.json
+# Python console script
+olt package -i input.csv -o output.csv --exchange-config ./openlinktoken-YYYY-MM-DD.exchange.json
 ```
 
 Arguments:
 
-| Flag                | Description                                                        |
-| ------------------- | ------------------------------------------------------------------ |
-| `-i, --input`       | Input file path                                                    |
-| `-o, --output`      | Output file path (optional — auto-generated when omitted)          |
-| `--exchange-config` | Exchange config JSON path                                          |
-| `--private-key`     | Private key PEM used to decrypt the config                         |
-| `--private-key-env` | Environment variable containing the private key                    |
-| `--no-progress, -q` | Suppress interactive progress indicator (for CI / non-interactive) |
+| Flag                    | Description                                                        |
+| ----------------------- | ------------------------------------------------------------------ |
+| `-i, --input`           | Input file path                                                    |
+| `-o, --output`          | Output file path (optional — auto-generated when omitted)          |
+| `-c, --exchange-config` | Exchange config JSON path                                          |
+| `--private-key`         | Private key PEM used to decrypt the config                         |
+| `--private-key-env`     | Environment variable containing the private key                    |
+| `--no-progress, -q`     | Suppress interactive progress indicator (for CI / non-interactive) |
 
 The `--no-progress` / `-q` flag is available on all four processing commands: `package`, `tokenize`, `encrypt`, and `decrypt`.
 
@@ -728,6 +735,10 @@ Two environment variables suppress the interactive progress display without requ
 | `NO_PROGRESS`          | Suppresses the progress indicator (generic convention) |
 
 Setting `NO_COLOR=1` (the cross-tool standard) retains the progress display but strips all ANSI colour codes from it, producing plain-text output suitable for log capture.
+
+For `tokenize` and `package`, the progress display refreshes after each processing batch is written and shows the
+processed total, completion percentage, and estimated remainder on a single terminal line. Successful completion
+summaries include the total duration, which is also recorded in the detailed run log.
 
 ### Key Pair Generation
 
@@ -852,7 +863,7 @@ stats = MyExtensionStats()
 reporter.add_stats_provider(stats)
 ```
 
-The reporter calls `get_metrics()` on each render tick (~1 Hz). Metrics appear below a divider in the same multiline progress block, aligned to the same columns as the built-in metrics. Return `(label, number_string, unit_string)` triples — use an empty string for unit when not applicable.
+The reporter calls `get_metrics()` on each render tick (~10 Hz while active). Metrics are appended to the same single-line status display as the built-in metrics. Return `(label, number_string, unit_string)` triples — use an empty string for unit when not applicable.
 
 See `lib/python/openlinktoken_ext_hello_world/README.md` for the full lifecycle walkthrough and `pages/quickstarts/extension-quickstart.md` for a step-by-step guide.
 

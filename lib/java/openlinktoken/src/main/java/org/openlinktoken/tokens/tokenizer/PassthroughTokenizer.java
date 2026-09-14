@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: MIT */
 package org.openlinktoken.tokens.tokenizer;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.openlinktoken.tokens.Token;
@@ -71,5 +72,15 @@ public final class PassthroughTokenizer implements Tokenizer {
         }
 
         return transformedToken;
+    }
+
+    /**
+     * Returns the transformer list applied after passthrough tokenization.
+     *
+     * @return unmodifiable view of the transformer list
+     */
+    @Override
+    public List<TokenTransformer> getTokenTransformerList() {
+        return Collections.unmodifiableList(tokenTransformerList);
     }
 }

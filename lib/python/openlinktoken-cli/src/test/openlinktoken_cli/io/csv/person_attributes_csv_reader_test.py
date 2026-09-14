@@ -57,6 +57,24 @@ class TestPersonAttributesCSVReader:
             with pytest.raises(StopIteration):
                 next(reader)
 
+    def test_date_of_birth_alias_maps_to_birth_date(self):
+        """Test that DateOfBirth is normalized to the BirthDate field ID."""
+        with open(self.temp_file_path, "w", encoding="utf-8") as f:
+            f.write("DateOfBirth\n")
+            f.write("1980-01-15\n")
+
+        with PersonAttributesCSVReader(self.temp_file_path) as reader:
+            assert next(reader)["BirthDate"] == "1980-01-15"
+
+    def test_ssn_alias_maps_to_social_security_number(self):
+        """Test that SSN is normalized to the SocialSecurityNumber field ID."""
+        with open(self.temp_file_path, "w", encoding="utf-8") as f:
+            f.write("SSN\n")
+            f.write("123-45-6789\n")
+
+        with PersonAttributesCSVReader(self.temp_file_path) as reader:
+            assert next(reader)["SocialSecurityNumber"] == "123-45-6789"
+
     def test_iterator_protocol(self):
         """Test iterator protocol."""
         with open(self.temp_file_path, "w", encoding="utf-8") as f:

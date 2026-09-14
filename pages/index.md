@@ -10,7 +10,7 @@ Open Link Token is a privacy-preserving tokenization and matching library for se
 
 Open Link Token is a library and CLI tool for generating cryptographically secure matching tokens from person attributes. It enables privacy-preserving record linkage by comparing tokens across datasets instead of directly comparing names, birthdates, SSNs, and other sensitive identifiers. It’s designed for any domain that needs deterministic, auditable linkage while minimizing exposure of raw PII.
 
-Matching is foundational for analytics, operations, and research, but traditional record linkage relies on handling raw identifiers that are both highly sensitive and frequently messy (typos, nicknames, missing values, inconsistent formats). Open Link Token provides a deterministic, standards-driven tokenization pipeline (normalize → validate → generate T1–T5 signatures → hash/encrypt) so matching can be performed with minimized identifier exposure and with predictable behavior across environments.
+Matching is foundational for analytics, operations, and research, but traditional record linkage relies on handling raw identifiers that are both highly sensitive and frequently messy (typos, nicknames, missing values, inconsistent formats). Open Link Token provides a deterministic, standards-driven tokenization pipeline (normalize → validate → generate T1–T5 signatures, plus ML1 when enabled → hash/encrypt) so matching can be performed with minimized identifier exposure and with predictable behavior across environments.
 
 Why it matters:
 
@@ -40,6 +40,8 @@ This site organizes quickstarts, concepts, operations guidance, configuration, r
   - [Extension Quickstart](quickstarts/extension-quickstart.md)
 - [Concepts](concepts/index.md)
   - [Matching Model](concepts/matching-model.md)
+  - [ML1 Model and Rotation](concepts/ml1-model-and-rotation.md)
+  - [Matching Concepts](matching-concepts/index.md)
   - [Token Rules](concepts/token-rules.md)
   - [Match Token Format](concepts/match-token-format.md)
   - [Normalization and Validation](concepts/normalization-and-validation.md)
@@ -53,18 +55,16 @@ This site organizes quickstarts, concepts, operations guidance, configuration, r
   - [Tokenize](operations/tokenize.md)
   - [Mock Data Workflows](operations/mock-data-workflows.md)
   - [Managing Extensions](operations/managing-extensions.md)
-- [Configuration](config/index.md)
+  - [Running Open Link Token](running-openlinktoken/index.md)
+- [Configuration](config/index.md) — Input formats, outputs, and environment settings
   - [Configuration Guide](config/configuration.md)
-  - [Configuration & Tuning](configuration-tuning/index.md)
-- [Matching Concepts](matching-concepts/index.md)
-- [Running OpenLinkToken](running-openlinktoken/index.md)
+  - [Configuration & Tuning](configuration-tuning/index.md) — Runtime performance and batch tuning
 - [Security](security.md)
 - [Specification](specification.md)
-- [Community](community/index.md)
+- [Community](community/index.md) — Community standards, contribution, and development guidance
   - [Contributing](community/contributing.md)
   - [Code of Conduct](community/code-of-conduct.md)
-- [Community & Development](community-development/index.md)
-- [Branch Workflow and Release Process](branch-workflow-and-release-process.md)
+  - [Branch Workflow and Release Process](branch-workflow-and-release-process.md)
 - [Reference](reference/index.md)
   - [CLI Reference](reference/cli.md)
   - [Java API Reference](reference/java-api.md)

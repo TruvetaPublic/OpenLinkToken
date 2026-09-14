@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 
+import base64
 import json
 from pathlib import Path
 
@@ -8,12 +9,17 @@ from jwcrypto import jwe, jwk
 
 from openlinktoken.ec_key_utils import fingerprint_to_kid, generate_key_pair, public_key_fingerprint
 from openlinktoken.exchange_config import (
+    _decode_bin_width,
+    _decode_dimension_bias,
+    _decode_rotation_count,
+    _decode_rotation_iv,
     default_exchange_config_path,
     derive_transport_encryption_key,
     load_exchange_config,
     resolve_exchange_config,
     resolve_exchange_config_inputs,
     resolve_exchange_config_private_key,
+    rotation_iv_to_text,
 )
 from openlinktoken.exchange_jwe import (
     EXCHANGE_JWE_CONTENT_TYPE,
@@ -31,6 +37,13 @@ def test_fingerprint_to_kid_normalizes_sha256_fingerprint():
     assert fingerprint_to_kid("AA:BB:CC:DD:EE:FF") == "sha256:aa-bb-cc-dd-ee-ff"
 
 
+def test_rotation_iv_to_text_recovers_non_utf8_exchange_bytes():
+    """Legacy Truveta exchange payload bytes recover the original base64 IV text."""
+    raw_iv = b"t\xecst-rotation-iv"
+
+    assert rotation_iv_to_text(raw_iv) == base64.b64encode(raw_iv).decode("ascii")
+
+
 def test_build_exchange_envelope_round_trips_for_either_private_key():
     """Either intended recipient private key can decrypt the same exchange envelope."""
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
@@ -44,6 +57,9 @@ def test_build_exchange_envelope_round_trips_for_either_private_key():
         curve="P-256",
         created_at="2026-03-11T00:00:00Z",
         exchange_id="exchange-123",
+        rotation_iv=b"test-rotation-iv-24",
+        rotation_count=50,
+        dimension_bias=[0.1, -0.2],
     )
 
     sender_payload = json.loads(decrypt_exchange_envelope(envelope, sender_private_pem))
@@ -61,6 +77,11 @@ def test_build_exchange_envelope_round_trips_for_either_private_key():
         "recipientPublicKey": recipient_public_pem.decode("utf-8"),
         "senderKeyFingerprint": public_key_fingerprint(sender_public_pem),
         "senderPublicKey": sender_public_pem.decode("utf-8"),
+        "rotationIv": "dGVzdC1yb3RhdGlvbi1pdi0yNA",
+        "rotationIvEncoding": "base64url",
+        "rotationCount": 50,
+        "binWidth": 0.05,
+        "dimensionBias": [0.1, -0.2],
     }
 
     recipient_headers = [entry["header"] for entry in envelope["recipients"]]
@@ -109,6 +130,8 @@ def test_resolve_exchange_config_decodes_hashing_secret_and_identifies_sender_ro
                 curve="P-256",
                 created_at="2026-03-12T00:00:00Z",
                 exchange_id="exchange-456",
+                rotation_iv=b"test-rotation-iv-2024",
+                rotation_count=50,
             )
         ),
         encoding="utf-8",
@@ -121,6 +144,10 @@ def test_resolve_exchange_config_decodes_hashing_secret_and_identifies_sender_ro
     assert resolved.private_key_pem == sender_private_pem
     assert resolved.private_key_role == "sender"
     assert resolved.hashing_secret == b"shared-hashing-secret"
+    assert resolved.rotation_iv == b"test-rotation-iv-2024"
+    assert resolved.rotation_count == 50
+    assert resolved.bin_width == 0.05
+    assert resolved.dimension_bias == []
     assert resolved.payload["exchangeId"] == "exchange-456"
 
 
@@ -139,6 +166,8 @@ def test_derive_transport_encryption_key_matches_for_both_participants(tmp_path:
                 curve="P-256",
                 created_at="2026-03-12T00:00:00Z",
                 exchange_id="exchange-789",
+                rotation_iv=b"test-rotation-iv-2024",
+                rotation_count=50,
             )
         ),
         encoding="utf-8",
@@ -164,6 +193,8 @@ def test_load_exchange_config_rejects_future_v2_exchange_config(tmp_path: Path):
         "curve": "P-256",
         "createdAt": "2026-03-12T00:00:00Z",
         "exchangeId": "exchange-legacy",
+        "rotationIv": "test-rotation-iv-2024",
+        "rotationCount": 50,
     }
     protected = {
         "typ": EXCHANGE_JWE_TYPE,
@@ -279,6 +310,8 @@ def _write_current_exchange_config(tmp_path: Path) -> tuple[Path, bytes]:
                 curve="P-256",
                 created_at="2026-03-12T00:00:00Z",
                 exchange_id="exchange-helpers",
+                rotation_iv=b"test-rotation-iv-2024",
+                rotation_count=50,
             )
         ),
         encoding="utf-8",
@@ -361,3 +394,220 @@ def test_parse_exchange_config_value_rejects_non_object_json(tmp_path: Path):
     """A JSON array instead of an object must be rejected as exchange config value."""
     with pytest.raises(ValueError, match="must decode to a JSON object"):
         load_exchange_config(exchange_config_value="[1,2,3]")
+
+
+def test_resolve_exchange_config_exposes_rotation_iv_and_count(tmp_path: Path):
+    """Resolved exchange configs expose rotation_iv and rotation_count from the payload."""
+    sender_private_pem, sender_public_pem = generate_key_pair("P-256")
+    _, recipient_public_pem = generate_key_pair("P-256")
+    exchange_config_path = tmp_path / "rotation.exchange.json"
+    exchange_config_path.write_text(
+        json.dumps(
+            build_exchange_envelope(
+                exchange_name="rotation-exchange",
+                hashing_secret=b"shared-hashing-secret",
+                sender_public_pem=sender_public_pem,
+                recipient_public_pem=recipient_public_pem,
+                curve="P-256",
+                created_at="2026-03-20T00:00:00Z",
+                exchange_id="exchange-rotation",
+                rotation_iv=b"custom-rotation-iv-abc",
+                rotation_count=10,
+            )
+        ),
+        encoding="utf-8",
+    )
+
+    resolved = resolve_exchange_config(exchange_config_path, sender_private_pem)
+
+    assert resolved.rotation_iv == b"custom-rotation-iv-abc"
+    assert resolved.rotation_count == 10
+
+
+@pytest.mark.parametrize(
+    ("payload", "expected"),
+    [
+        ({}, b""),
+        ({"rotationIv": None}, b""),
+        ({"rotationIv": "", "rotationIvEncoding": "base64url"}, b""),
+        ({"rotationIv": "dGVzdC1pdg", "rotationIvEncoding": "base64url"}, b"test-iv"),
+    ],
+)
+def test_decode_rotation_iv_handles_optional_and_valid_values(payload, expected):
+    """Rotation IV decoding supports absent values and valid base64url payloads."""
+    assert _decode_rotation_iv(payload) == expected
+
+
+def test_decode_rotation_iv_rejects_unsupported_encoding():
+    """Rotation IV payloads must declare base64url encoding."""
+    with pytest.raises(ValueError, match="Unsupported rotationIvEncoding"):
+        _decode_rotation_iv({"rotationIv": "dGVzdA", "rotationIvEncoding": "hex"})
+
+
+def test_decode_rotation_iv_rejects_invalid_base64():
+    """Malformed rotation IV data is rejected instead of silently accepted."""
+    with pytest.raises(ValueError, match="rotationIv is not valid base64url data"):
+        _decode_rotation_iv({"rotationIv": "abc!", "rotationIvEncoding": "base64url"})
+
+
+@pytest.mark.parametrize("value", [None, 0])
+def test_decode_rotation_count_defaults_to_zero(value):
+    """Missing and explicit zero rotation counts disable rotation."""
+    assert _decode_rotation_count({"rotationCount": value}) == 0
+
+
+@pytest.mark.parametrize("value", [1, 50])
+def test_decode_rotation_count_accepts_positive_integers(value):
+    """Positive integer rotation counts are preserved."""
+    assert _decode_rotation_count({"rotationCount": value}) == value
+
+
+@pytest.mark.parametrize("value", [-1, "1", True])
+def test_decode_rotation_count_rejects_invalid_values(value):
+    """Rotation counts reject non-positive, non-integer, and boolean values."""
+    with pytest.raises(ValueError, match="invalid rotationCount"):
+        _decode_rotation_count({"rotationCount": value})
+
+
+def test_decode_bin_width_defaults_when_missing():
+    """Missing bin widths use the exchange-config default."""
+    assert _decode_bin_width({}) == 0.05
+
+
+@pytest.mark.parametrize("value", [0.1, 1])
+def test_decode_bin_width_accepts_positive_numbers(value):
+    """Positive numeric bin widths are normalized to floats."""
+    assert _decode_bin_width({"binWidth": value}) == float(value)
+
+
+@pytest.mark.parametrize("value", [0, -0.1, "0.1", True])
+def test_decode_bin_width_rejects_invalid_values(value):
+    """Bin widths reject non-positive, non-numeric, and boolean values."""
+    with pytest.raises(ValueError, match="invalid binWidth"):
+        _decode_bin_width({"binWidth": value})
+
+
+def test_decode_dimension_bias_defaults_when_missing():
+    """Missing dimension bias uses an empty list."""
+    assert _decode_dimension_bias({}) == []
+
+
+def test_decode_dimension_bias_converts_numeric_values_to_float():
+    """Dimension-bias values are normalized to floats."""
+    assert _decode_dimension_bias({"dimensionBias": [1, 0.25, -2]}) == [1.0, 0.25, -2.0]
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "not-a-list",
+        [True],
+        [1, "0.25"],
+    ],
+)
+def test_decode_dimension_bias_rejects_invalid_values(value):
+    """Dimension bias requires a list containing only numeric values."""
+    with pytest.raises(ValueError, match="dimensionBias"):
+        _decode_dimension_bias({"dimensionBias": value})
+
+
+def test_resolve_loaded_exchange_config_missing_rotation_iv_disables_rotation(tmp_path: Path):
+    """A payload without rotationIv resolves successfully with rotation_iv=b'' (rotation disabled)."""
+    from openlinktoken.exchange_config import resolve_loaded_exchange_config
+    from openlinktoken.exchange_jwe import decrypt_exchange_envelope
+
+    sender_private_pem, sender_public_pem = generate_key_pair("P-256")
+    _, recipient_public_pem = generate_key_pair("P-256")
+    envelope = build_exchange_envelope(
+        exchange_name="missing-iv",
+        hashing_secret=b"secret",
+        sender_public_pem=sender_public_pem,
+        recipient_public_pem=recipient_public_pem,
+        curve="P-256",
+        created_at="2026-03-20T00:00:00Z",
+        exchange_id="exchange-missing-iv",
+        rotation_iv=b"placeholder",
+        rotation_count=50,
+    )
+
+    # Tamper: rebuild envelope with rotationIv and rotationIvEncoding removed
+    raw_payload = json.loads(decrypt_exchange_envelope(envelope, sender_private_pem))
+    del raw_payload["rotationIv"]
+    del raw_payload["rotationIvEncoding"]
+
+    tampered_envelope = jwe.JWE(
+        json.dumps(raw_payload, separators=(",", ":")).encode("utf-8"),
+        protected=json.dumps(
+            {"typ": EXCHANGE_JWE_TYPE, "cty": EXCHANGE_JWE_CONTENT_TYPE, "enc": EXCHANGE_JWE_ENCRYPTION},
+            separators=(",", ":"),
+        ),
+    )
+    for public_pem in (sender_public_pem, recipient_public_pem):
+        tampered_envelope.add_recipient(
+            jwk.JWK.from_pem(public_pem),
+            header=json.dumps(
+                {
+                    "alg": EXCHANGE_JWE_RECIPIENT_ALGORITHM,
+                    "kid": fingerprint_to_kid(public_key_fingerprint(public_pem)),
+                },
+                separators=(",", ":"),
+            ),
+        )
+    tampered = json.loads(tampered_envelope.serialize(compact=False))
+    tampered["version"] = 1
+    exchange_config_path = tmp_path / "tampered.exchange.json"
+    exchange_config_path.write_text(json.dumps(tampered), encoding="utf-8")
+
+    loaded = load_exchange_config(exchange_config_path)
+    resolved = resolve_loaded_exchange_config(loaded, sender_private_pem)
+    assert resolved.rotation_iv == b""
+
+
+def test_resolve_loaded_exchange_config_zero_rotation_count_disables_rotation(tmp_path: Path):
+    """A payload with rotationCount of zero resolves successfully with rotation_count=0 (rotation disabled)."""
+    from openlinktoken.exchange_config import resolve_loaded_exchange_config
+    from openlinktoken.exchange_jwe import decrypt_exchange_envelope
+
+    sender_private_pem, sender_public_pem = generate_key_pair("P-256")
+    _, recipient_public_pem = generate_key_pair("P-256")
+    envelope = build_exchange_envelope(
+        exchange_name="bad-count",
+        hashing_secret=b"secret",
+        sender_public_pem=sender_public_pem,
+        recipient_public_pem=recipient_public_pem,
+        curve="P-256",
+        created_at="2026-03-20T00:00:00Z",
+        exchange_id="exchange-bad-count",
+        rotation_iv=b"some-iv",
+        rotation_count=50,
+    )
+
+    raw_payload = json.loads(decrypt_exchange_envelope(envelope, sender_private_pem))
+    raw_payload["rotationCount"] = 0
+
+    tampered_envelope = jwe.JWE(
+        json.dumps(raw_payload, separators=(",", ":")).encode("utf-8"),
+        protected=json.dumps(
+            {"typ": EXCHANGE_JWE_TYPE, "cty": EXCHANGE_JWE_CONTENT_TYPE, "enc": EXCHANGE_JWE_ENCRYPTION},
+            separators=(",", ":"),
+        ),
+    )
+    for public_pem in (sender_public_pem, recipient_public_pem):
+        tampered_envelope.add_recipient(
+            jwk.JWK.from_pem(public_pem),
+            header=json.dumps(
+                {
+                    "alg": EXCHANGE_JWE_RECIPIENT_ALGORITHM,
+                    "kid": fingerprint_to_kid(public_key_fingerprint(public_pem)),
+                },
+                separators=(",", ":"),
+            ),
+        )
+    tampered = json.loads(tampered_envelope.serialize(compact=False))
+    tampered["version"] = 1
+    exchange_config_path = tmp_path / "bad-count.exchange.json"
+    exchange_config_path.write_text(json.dumps(tampered), encoding="utf-8")
+
+    loaded = load_exchange_config(exchange_config_path)
+    resolved = resolve_loaded_exchange_config(loaded, sender_private_pem)
+    assert resolved.rotation_count == 0

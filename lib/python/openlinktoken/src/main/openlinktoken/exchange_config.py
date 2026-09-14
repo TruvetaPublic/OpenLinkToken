@@ -45,6 +45,10 @@ class ResolvedExchangeConfig:
     private_key_pem: bytes
     private_key_role: str
     hashing_secret: bytes
+    rotation_iv: bytes
+    rotation_count: int
+    bin_width: float
+    dimension_bias: list[float]
 
 
 def default_exchange_config_path() -> Path:
@@ -174,6 +178,10 @@ def resolve_loaded_exchange_config(
         private_key_pem=private_key_pem,
         private_key_role=_resolve_private_key_role(private_key_pem, payload),
         hashing_secret=_decode_hashing_secret(payload),
+        rotation_iv=_decode_rotation_iv(payload),
+        rotation_count=_decode_rotation_count(payload),
+        bin_width=_decode_bin_width(payload),
+        dimension_bias=_decode_dimension_bias(payload),
     )
 
 
@@ -303,3 +311,62 @@ def _decode_hashing_secret(payload: Mapping[str, Any]) -> bytes:
         return base64.urlsafe_b64decode(value + padding)
     except Exception as error:
         raise ValueError(f"hashingSecret is not valid base64url data: {error}") from error
+
+
+def _decode_rotation_iv(payload: Mapping[str, Any]) -> bytes:
+    encoding = payload.get("rotationIvEncoding")
+    value = payload.get("rotationIv")
+    if value is None:
+        return b""
+    if encoding != "base64url":
+        raise ValueError(f"Unsupported rotationIvEncoding '{encoding}'.")
+    if not isinstance(value, str) or not value:
+        return b""
+
+    padding = "=" * (-len(value) % 4)
+    try:
+        return base64.urlsafe_b64decode(value + padding)
+    except Exception as error:
+        raise ValueError(f"rotationIv is not valid base64url data: {error}") from error
+
+
+def rotation_iv_to_text(rotation_iv: bytes) -> str:
+    """Convert resolved rotation-IV bytes to the text used by ML1 generation.
+
+    Exchange configs produced by older Truveta clients contain the base64-decoded
+    bytes of the original text IV. Non-UTF-8 bytes identify that representation.
+    """
+    try:
+        return rotation_iv.decode("utf-8")
+    except UnicodeDecodeError:
+        return base64.b64encode(rotation_iv).decode("ascii")
+
+
+def _decode_rotation_count(payload: Mapping[str, Any]) -> int:
+    value = payload.get("rotationCount")
+    if value is None or value == 0:
+        return 0
+    if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+        raise ValueError(f"Exchange config payload has an invalid rotationCount '{value}'. Must be a positive integer.")
+    return value
+
+
+def _decode_bin_width(payload: Mapping[str, Any]) -> float:
+    value = payload.get("binWidth")
+    if value is None:
+        return 0.05
+    if not isinstance(value, (int, float)) or isinstance(value, bool) or value <= 0:
+        raise ValueError(f"Exchange config payload has an invalid binWidth '{value}'. Must be a positive number.")
+    return float(value)
+
+
+def _decode_dimension_bias(payload: Mapping[str, Any]) -> list[float]:
+    value = payload.get("dimensionBias")
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        raise ValueError(f"Exchange config payload has an invalid dimensionBias '{value}'. Must be a list of numbers.")
+    for i, item in enumerate(value):
+        if not isinstance(item, (int, float)) or isinstance(item, bool):
+            raise ValueError(f"dimensionBias[{i}] is not a valid number: {item!r}")
+    return [float(v) for v in value]

@@ -36,6 +36,10 @@ class PassthroughTokenizer(Tokenizer):
         """
         self.token_transformer_list = token_transformer_list
 
+    def get_token_transformer_list(self) -> List[TokenTransformer]:
+        """Return transformers configured after passthrough tokenization."""
+        return self.token_transformer_list
+
     def tokenize(self, value: str) -> str:
         """
         Return the input value unchanged (passthrough).

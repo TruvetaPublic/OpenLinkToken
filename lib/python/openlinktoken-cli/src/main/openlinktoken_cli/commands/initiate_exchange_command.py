@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: MIT
 
+from __future__ import annotations
+
 import argparse
 import json
 import logging
@@ -8,24 +10,17 @@ import secrets
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 from uuid import uuid4
 
-from openlinktoken.exchange_jwe import EXCHANGE_JWE_VERSION, build_exchange_envelope
-from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
-from openlinktoken_cli.util.ec_key_utils import (
-    SUPPORTED_CURVES,
-    derive_public_key_from_private_pem,
-    ensure_directory,
-    generate_key_pair,
-    resolve_key_name,
-    write_key,
-)
 from openlinktoken_cli.util.stdin_utils import read_required_env_bytes, read_required_stdin_bytes
 
 logger = logging.getLogger(__name__)
 
-EXCHANGE_CONFIG_VERSION = EXCHANGE_JWE_VERSION
+EXCHANGE_CONFIG_VERSION = 1
+DEFAULT_ROTATION_COUNT = 50
+DEFAULT_BIN_WIDTH = 0.05
+DEFAULT_EMBEDDING_DIMENSION = 1024
 
 
 class InitiateExchangeCommand:
@@ -116,6 +111,74 @@ class InitiateExchangeCommand:
             help="Read the hashing secret from the named environment variable",
         )
 
+        rotation_iv_group = parser.add_mutually_exclusive_group(required=False)
+        rotation_iv_group.add_argument(
+            "--rotation-iv",
+            dest="rotation_iv",
+            default=None,
+            metavar="IV",
+            help="Rotation IV string for the rotation matrix generator (default: randomly generated)",
+        )
+        rotation_iv_group.add_argument(
+            "--rotation-iv-stdin",
+            dest="rotation_iv_stdin",
+            action="store_true",
+            default=False,
+            help="Read the rotation IV from stdin instead of passing it on the command line",
+        )
+        rotation_iv_group.add_argument(
+            "--rotation-iv-env",
+            dest="rotation_iv_env",
+            default=None,
+            metavar="ENV_VAR",
+            help="Read the rotation IV from the named environment variable",
+        )
+
+        parser.add_argument(
+            "--rotation-count",
+            dest="rotation_count",
+            type=int,
+            default=DEFAULT_ROTATION_COUNT,
+            metavar="N",
+            help=f"Number of rotation matrices to generate (default: {DEFAULT_ROTATION_COUNT})",
+        )
+
+        parser.add_argument(
+            "--rotation-bin-width",
+            dest="bin_width",
+            type=float,
+            default=DEFAULT_BIN_WIDTH,
+            metavar="WIDTH",
+            help=f"Quantization bin width for rotation-based token generation (default: {DEFAULT_BIN_WIDTH})",
+        )
+
+        parser.add_argument(
+            "--rotation-embedding-dimension",
+            dest="embedding_dimension",
+            type=int,
+            default=DEFAULT_EMBEDDING_DIMENSION,
+            metavar="N",
+            help=(
+                f"Embedding vector size of the model (default: {DEFAULT_EMBEDDING_DIMENSION}).\n"
+                "Sets the length of the dimension bias array written into the exchange config.\n"
+                "Ignored when --rotation-embedding-bias is provided."
+            ),
+        )
+
+        parser.add_argument(
+            "--rotation-embedding-bias",
+            dest="embedding_bias",
+            type=str,
+            default=None,
+            metavar="PATH",
+            help=(
+                "Path to a JSON file containing a flat array of floats used as the\n"
+                "dimension bias subtracted from each embedding before rotation\n"
+                "(e.g. '[0.12, -0.05, 0.33]'). Overrides --rotation-embedding-dimension.\n"
+                "When omitted, defaults to zeros of length --rotation-embedding-dimension."
+            ),
+        )
+
         parser.add_argument(
             "-c",
             "--curve",
@@ -162,6 +225,17 @@ class InitiateExchangeCommand:
         Returns:
             Exit code (0 for success, non-zero for errors).
         """
+        from openlinktoken.exchange_jwe import build_exchange_envelope
+        from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
+        from openlinktoken_cli.util.ec_key_utils import (
+            SUPPORTED_CURVES,
+            derive_public_key_from_private_pem,
+            ensure_directory,
+            generate_key_pair,
+            resolve_key_name,
+            write_key,
+        )
+
         name: Optional[str] = getattr(args, "name", None)
         public_key_path_str: str = getattr(args, "public_key", "")
         public_key_stdin: bool = getattr(args, "public_key_stdin", False)
@@ -170,8 +244,15 @@ class InitiateExchangeCommand:
         hashing_secret: Optional[str] = getattr(args, "hashing_secret", None)
         hashing_secret_stdin: bool = getattr(args, "hashing_secret_stdin", False)
         hashing_secret_env_name: Optional[str] = getattr(args, "hashing_secret_env", None)
+        rotation_iv: Optional[str] = getattr(args, "rotation_iv", None)
+        rotation_iv_stdin: bool = getattr(args, "rotation_iv_stdin", False)
+        rotation_iv_env_name: Optional[str] = getattr(args, "rotation_iv_env", None)
+        rotation_count: int = getattr(args, "rotation_count", DEFAULT_ROTATION_COUNT)
         curve: Optional[str] = getattr(args, "curve", None)
         force: bool = getattr(args, "force", False)
+        bin_width: float = getattr(args, "bin_width", DEFAULT_BIN_WIDTH)
+        embedding_dimension: int = getattr(args, "embedding_dimension", DEFAULT_EMBEDDING_DIMENSION)
+        embedding_bias: Optional[list] = getattr(args, "embedding_bias", None)
         local_private_key_path_str: Optional[str] = getattr(args, "local_private_key", None)
         sender_private_key_env_name: Optional[str] = getattr(args, "sender_private_key_env", None)
 
@@ -192,6 +273,53 @@ class InitiateExchangeCommand:
                     "Use an environment-variable or file-based input for one of them."
                 )
                 return 1
+
+            stdin_flags = {
+                "--public-key-stdin": public_key_stdin,
+                "--hashingsecret-stdin": hashing_secret_stdin,
+                "--rotation-iv-stdin": rotation_iv_stdin,
+            }
+            active_stdin_flags = [flag for flag, active in stdin_flags.items() if active]
+            if len(active_stdin_flags) > 1:
+                logger.error(
+                    "Cannot combine %s because they all consume stdin. "
+                    "Use an environment-variable or file-based input for all but one of them.",
+                    " and ".join(active_stdin_flags),
+                )
+                return 1
+
+            if rotation_count < 1:
+                logger.error("--rotation-count must be a positive integer, got %d.", rotation_count)
+                return 1
+
+            if bin_width <= 0:
+                logger.error("--rotation-bin-width must be a positive number, got %s.", bin_width)
+                return 1
+
+            if embedding_bias is not None:
+                bias_path = Path(embedding_bias)
+                if not bias_path.exists():
+                    logger.error("--rotation-embedding-bias file not found: %s", bias_path)
+                    return 1
+                try:
+                    parsed = json.loads(bias_path.read_text(encoding="utf-8"))
+                    if not isinstance(parsed, list) or not all(isinstance(v, (int, float)) for v in parsed):
+                        raise ValueError("Expected a flat JSON array of numbers.")
+                    dimension_bias = [float(v) for v in parsed]
+                except (json.JSONDecodeError, ValueError) as e:
+                    logger.error("--rotation-embedding-bias: invalid JSON in '%s': %s", bias_path, e)
+                    return 1
+                if len(dimension_bias) < 2:
+                    logger.error(
+                        "--rotation-embedding-bias must contain at least 2 values, got %d.",
+                        len(dimension_bias),
+                    )
+                    return 1
+            else:
+                if embedding_dimension < 2:
+                    logger.error("--rotation-embedding-dimension must be at least 2, got %d.", embedding_dimension)
+                    return 1
+                dimension_bias = [0.0] * embedding_dimension
 
             openlinktoken_dir = Path.home() / ".openlinktoken"
             private_key_path = openlinktoken_dir / f"{name}.private.pem"
@@ -222,6 +350,7 @@ class InitiateExchangeCommand:
                 partner_public_pem = partner_public_key_path.read_bytes()
 
             persist_local_key_files = True
+            reused_local_key_files = False
             if local_private_key_path_str:
                 local_private_key_path = Path(local_private_key_path_str)
                 if not local_private_key_path.exists():
@@ -253,8 +382,30 @@ class InitiateExchangeCommand:
                     )
                     return 1
             else:
-                resolved_curve = curve or "P-256"
-                private_pem, local_public_pem = generate_key_pair(resolved_curve)
+                local_key_files_exist = any(
+                    path.exists() or path.is_symlink() for path in (private_key_path, public_key_path_local)
+                )
+                if not force and local_key_files_exist:
+                    try:
+                        private_pem, local_public_pem, resolved_curve = InitiateExchangeCommand._load_existing_key_pair(
+                            private_key_path,
+                            public_key_path_local,
+                            curve,
+                        )
+                    except (OSError, ValueError) as error:
+                        logger.error(
+                            "Key files for '%s' already exist at private key '%s' and public key '%s', "
+                            "but could not be reused: %s",
+                            name,
+                            private_key_path,
+                            public_key_path_local,
+                            error,
+                        )
+                        return 1
+                    reused_local_key_files = True
+                else:
+                    resolved_curve = curve or "P-256"
+                    private_pem, local_public_pem = generate_key_pair(resolved_curve)
 
             resolved_hashing_secret = InitiateExchangeCommand._resolve_hashing_secret(
                 hashing_secret,
@@ -262,18 +413,36 @@ class InitiateExchangeCommand:
                 hashing_secret_env_name=hashing_secret_env_name,
             )
 
+            resolved_rotation_iv = InitiateExchangeCommand._resolve_rotation_iv(
+                rotation_iv,
+                rotation_iv_stdin=rotation_iv_stdin,
+                rotation_iv_env_name=rotation_iv_env_name,
+            )
+
             if persist_local_key_files:
-                if not force and (private_key_path.exists() or public_key_path_local.exists()):
+                if (
+                    not force
+                    and not reused_local_key_files
+                    and (
+                        private_key_path.exists()
+                        or private_key_path.is_symlink()
+                        or public_key_path_local.exists()
+                        or public_key_path_local.is_symlink()
+                    )
+                ):
                     logger.error(
-                        "Key files for '%s' already exist in %s. Use --force to overwrite.",
+                        "Key files for '%s' already exist at private key '%s' and public key '%s'. "
+                        "Use --force to overwrite.",
                         name,
-                        openlinktoken_dir,
+                        private_key_path,
+                        public_key_path_local,
                     )
                     return 1
 
                 ensure_directory(openlinktoken_dir)
-                write_key(private_key_path, private_pem, 0o600, overwrite=force)
-                write_key(public_key_path_local, local_public_pem, 0o644, overwrite=force)
+                if not reused_local_key_files:
+                    write_key(private_key_path, private_pem, 0o600, overwrite=force)
+                    write_key(public_key_path_local, local_public_pem, 0o644, overwrite=force)
 
             config = build_exchange_envelope(
                 exchange_name=name,
@@ -283,6 +452,10 @@ class InitiateExchangeCommand:
                 curve=resolved_curve,
                 created_at=InitiateExchangeCommand._created_at(),
                 exchange_id=InitiateExchangeCommand._exchange_id(),
+                rotation_iv=resolved_rotation_iv,
+                rotation_count=rotation_count,
+                bin_width=bin_width,
+                dimension_bias=dimension_bias,
             )
 
             InitiateExchangeCommand._write_config(output_path, config, overwrite=force)
@@ -337,6 +510,39 @@ class InitiateExchangeCommand:
         return secrets.token_bytes(32)
 
     @staticmethod
+    def _resolve_rotation_iv(
+        rotation_iv: Optional[str],
+        rotation_iv_stdin: bool = False,
+        rotation_iv_env_name: Optional[str] = None,
+    ) -> bytes:
+        """Return the provided rotation IV as bytes, or generate a secure random one.
+
+        Args:
+            rotation_iv: Caller-supplied IV string, or ``None`` to auto-generate.
+            rotation_iv_stdin: When true, read the rotation IV from stdin.
+            rotation_iv_env_name: Environment variable name containing the rotation IV.
+
+        Returns:
+            The rotation IV as raw bytes.
+        """
+        if rotation_iv_stdin:
+            iv_bytes = read_required_stdin_bytes("--rotation-iv-stdin", "rotation IV")
+            if iv_bytes.endswith(b"\r\n"):
+                return iv_bytes[:-2]
+            if iv_bytes.endswith(b"\n"):
+                return iv_bytes[:-1]
+            return iv_bytes
+        if rotation_iv_env_name:
+            return read_required_env_bytes(
+                "--rotation-iv-env",
+                rotation_iv_env_name,
+                "rotation IV",
+            )
+        if rotation_iv:
+            return rotation_iv.encode()
+        return secrets.token_bytes(32)
+
+    @staticmethod
     def _created_at() -> str:
         """Return the current UTC timestamp in ISO 8601 ``Z`` form."""
         return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
@@ -345,6 +551,36 @@ class InitiateExchangeCommand:
     def _exchange_id() -> str:
         """Return a stable random exchange identifier for the envelope payload."""
         return str(uuid4())
+
+    @staticmethod
+    def _load_existing_key_pair(
+        private_key_path: Path,
+        public_key_path: Path,
+        requested_curve: Optional[str],
+    ) -> Tuple[bytes, bytes, str]:
+        """Load and validate an existing local sender key pair."""
+        from openlinktoken_cli.util.ec_key_utils import derive_public_key_from_private_pem, public_key_fingerprint
+
+        if private_key_path.is_symlink() or public_key_path.is_symlink():
+            raise OSError("Existing sender key files must not be symbolic links.")
+        if not private_key_path.is_file() or not public_key_path.is_file():
+            raise OSError("Both existing sender private and public key files are required.")
+
+        private_pem = private_key_path.read_bytes()
+        stored_public_pem = public_key_path.read_bytes()
+        try:
+            local_public_pem, resolved_curve = derive_public_key_from_private_pem(private_pem)
+            if public_key_fingerprint(local_public_pem) != public_key_fingerprint(stored_public_pem):
+                raise ValueError("Existing sender public key does not match the private key.")
+        except (AttributeError, TypeError, ValueError) as error:
+            raise ValueError(f"Existing sender key pair is invalid: {error}") from error
+
+        if requested_curve is not None and requested_curve != resolved_curve:
+            raise ValueError(
+                f"Existing sender key curve '{resolved_curve}' does not match requested --curve '{requested_curve}'."
+            )
+
+        return private_pem, local_public_pem, resolved_curve
 
     @staticmethod
     def _write_config(path: Path, config: dict, overwrite: bool = True) -> None:

@@ -527,7 +527,7 @@ python scripts/analyze_overlap.py --matching-rules T1 T2 T3 T5 --output matching
 
 ### CLI setup errors <!-- omit in toc -->
 
-**Cause**: Python or `uv` is not installed/configured, or the `openlinktoken` CLI could not be installed.
+**Cause**: Python or `uv` is not installed/configured, or the `olt` CLI could not be installed.
 
 **Solution**:
 
