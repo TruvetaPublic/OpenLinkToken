@@ -1,5 +1,5 @@
 # Interoperability Test Requirements
 
-pyarrow==25.0.0
+pyarrow==25.0.1
 pycryptodome==3.23.0
-jwcrypto==1.5.9
+jwcrypto==1.6.0

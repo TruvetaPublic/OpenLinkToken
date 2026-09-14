@@ -56,7 +56,7 @@ idna==3.19
     # via
     #   anyio
     #   httpx
-jwcrypto==1.5.9
+jwcrypto==1.6.0
     # via
     #   openlinktoken
     #   openlinktoken-cli
@@ -112,7 +112,7 @@ protobuf==7.36.1
     # via
     #   onnxruntime
     #   onnxruntime-gpu
-pyarrow==25.0.0
+pyarrow==25.0.1
     # via openlinktoken-cli
 pycparser==3.0 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'
     # via cffi
@@ -132,7 +132,7 @@ sympy==1.14.0 ; python_full_version < '3.11'
     # via
     #   onnxruntime
     #   onnxruntime-gpu
-tokenizers==0.23.1
+tokenizers==0.23.2
     # via openlinktoken-core-ai
 tqdm==4.70.0
     # via huggingface-hub

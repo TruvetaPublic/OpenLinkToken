@@ -6,7 +6,7 @@ cryptography==50.0.1
     # via
     #   jwcrypto
     #   openlinktoken
-jwcrypto==1.5.9
+jwcrypto==1.6.0
     # via openlinktoken
 pycparser==3.0 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'
     # via cffi

@@ -268,6 +268,7 @@ class TestWaitAndNotify:
         checker._result = _NEWER  # inject result directly
         checker._thread = threading.Thread(target=lambda: None)
         checker._thread.start()
+        checker._thread.join()
 
         with patch.object(sys.stderr, "isatty", return_value=True):
             checker.wait_and_notify()
