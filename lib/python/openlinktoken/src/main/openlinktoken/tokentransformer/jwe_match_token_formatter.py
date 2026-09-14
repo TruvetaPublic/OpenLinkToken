@@ -1,7 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""
-JWE Match Token Formatter for Open Link Token V1 format.
-"""
+"""JWE Match Token Formatter for Open Link Token V1 format."""
 
 import base64
 import json
@@ -10,6 +8,7 @@ from typing import Optional, Union
 
 from jwcrypto import jwe, jwk
 
+from openlinktoken.crypto_suite import CryptoSuite
 from openlinktoken.tokentransformer.match_token_constants import (
     HEADER_KEY_ALGORITHM,
     HEADER_KEY_ENCRYPTION,
@@ -29,8 +28,7 @@ from openlinktoken.tokentransformer.token_transformer import TokenTransformer
 
 
 class JweMatchTokenFormatter(TokenTransformer):
-    """
-    Formats tokens in the JWE-based match token format (olt.V1.<JWE>).
+    """Formats tokens in the JWE-based match token format (olt.V1.<JWE>).
 
     This formatter wraps the privacy-protected identifier (PPID) in a
     self-contained JWE structure with all necessary metadata for versioning
@@ -39,9 +37,15 @@ class JweMatchTokenFormatter(TokenTransformer):
     See RFC 7516 - JSON Web Encryption (JWE)
     """
 
-    def __init__(self, encryption_key: Union[str, bytes], ring_id: str, rule_id: str, issuer: Optional[str] = None):
-        """
-        Initialize the JWE match token formatter.
+    def __init__(
+        self,
+        encryption_key: Union[str, bytes],
+        ring_id: str,
+        rule_id: str,
+        issuer: Optional[str] = None,
+        crypto_suite: CryptoSuite | None = None,
+    ):
+        """Initialize the JWE match token formatter.
 
         Accepts either a ``str`` (UTF-8 encoded; must encode to exactly 32 bytes) or
         raw ``bytes`` (must be exactly 32 bytes) for the encryption key.
@@ -51,9 +55,11 @@ class JweMatchTokenFormatter(TokenTransformer):
             ring_id: The ring identifier for key management.
             rule_id: The token rule identifier (e.g., "T1", "T2", etc.).
             issuer: The issuer identifier (optional, defaults to "org.openlinktoken").
+            crypto_suite: The suite whose digest and MAC metadata is embedded in the token.
 
         Raises:
             ValueError: If encryption_key, ring_id, or rule_id are invalid.
+
         """
         if isinstance(encryption_key, bytes):
             key_bytes = encryption_key
@@ -70,14 +76,14 @@ class JweMatchTokenFormatter(TokenTransformer):
         self.ring_id = ring_id
         self.rule_id = rule_id
         self.issuer = issuer if issuer else "org.openlinktoken"
+        self.crypto_suite = crypto_suite or CryptoSuite.default()
 
         # Create JWK from the encryption key - needs to be base64url-encoded
         key_b64 = base64.urlsafe_b64encode(key_bytes).decode("utf-8").rstrip("=")
         self.jwk_key = jwk.JWK(kty="oct", k=key_b64)
 
     def transform(self, token: str) -> str:
-        """
-        Transform a token (PPID) into the JWE match token format.
+        """Transform a token (PPID) into the JWE match token format.
 
         The input token should be the base64-encoded HMAC output from previous transformers.
         This method wraps it in a JWE structure with metadata and prepends the "olt.V1." prefix.
@@ -90,6 +96,7 @@ class JweMatchTokenFormatter(TokenTransformer):
 
         Raises:
             Exception: If JWE encryption or serialization fails
+
         """
         if not token:
             # Return as-is for blank tokens
@@ -99,8 +106,8 @@ class JweMatchTokenFormatter(TokenTransformer):
             # Build the JWE payload with metadata
             payload = {
                 PAYLOAD_KEY_RULE_ID: self.rule_id,
-                PAYLOAD_KEY_HASH_ALGORITHM: "SHA-256",
-                PAYLOAD_KEY_MAC_ALGORITHM: "HS256",
+                PAYLOAD_KEY_HASH_ALGORITHM: self.crypto_suite.token_digest_algorithm,
+                PAYLOAD_KEY_MAC_ALGORITHM: self.crypto_suite.token_mac_algorithm,
                 PAYLOAD_KEY_PPID: [token],  # PPID as an array (single element for hash-based tokens)
                 PAYLOAD_KEY_RING_ID: self.ring_id,
                 PAYLOAD_KEY_ISSUER: self.issuer,

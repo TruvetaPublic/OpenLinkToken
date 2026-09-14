@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Type
 from openlinktoken.attributes.attribute import Attribute
 from openlinktoken.attributes.general.record_id_attribute import RecordIdAttribute
 from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig
+from openlinktoken.crypto_suite import CryptoSuite
 from openlinktoken.tokens.base_token_definition import BaseTokenDefinition
 from openlinktoken.tokens.token_definition import TokenDefinition
 from openlinktoken.tokens.token_generator import TokenGenerator
@@ -46,8 +47,7 @@ class PersonAttributesProcessingSummary:
 
 
 class PersonAttributesProcessor:
-    """
-    Process all person attributes.
+    """Process all person attributes.
 
     This class is used to read person attributes from input source,
     generate tokens for each person record and write the tokens back
@@ -73,10 +73,11 @@ class PersonAttributesProcessor:
         hash_record_ids: bool = False,
         token_definition: BaseTokenDefinition = None,
         progress_callback=None,
+        crypto_suite: CryptoSuite | str | None = None,
     ) -> PersonAttributesProcessingSummary:
-        """
-        Read person attributes from the input data source, generate tokens, and
-        write the result back to the output data source. The tokens can be optionally
+        """Read person attributes, generate tokens, and write the result.
+
+        The tokens can be optionally
         transformed before writing and wrapped in JWE format if ring ID is provided.
         Record IDs are SHA-256 hashed in the output when hash_record_ids is True.
 
@@ -89,18 +90,21 @@ class PersonAttributesProcessor:
             ring_id: Optional ring ID for JWE wrapping (None to skip JWE).
             hash_record_ids: When True, each record ID is SHA-256 hashed before writing
                              to the output. This is a one-way operation with no traceability.
+
         """
         token_definition = token_definition or TokenDefinition()
+        selected_suite = CryptoSuite.from_id(crypto_suite) if isinstance(crypto_suite, str) else crypto_suite
         return PersonAttributesProcessor._process_with_tokenizer(
             reader,
             writer,
-            SHA256Tokenizer(token_transformer_list),
+            SHA256Tokenizer(token_transformer_list, crypto_suite=selected_suite),
             token_definition,
             metadata_map,
             encryption_key,
             ring_id,
             hash_record_ids,
             progress_callback,
+            selected_suite,
         )
 
     @staticmethod
@@ -112,9 +116,7 @@ class PersonAttributesProcessor:
         token_definition: BaseTokenDefinition = None,
         progress_callback=None,
     ) -> PersonAttributesProcessingSummary:
-        """
-        Read person attributes from the input data source, generate tokens using
-        the provided tokenizer, and write the result to the output data source.
+        """Read person attributes, generate tokens with the provided tokenizer, and write the result.
 
         Use this overload when full control over the tokenization strategy is needed,
         for example passing a PassthroughTokenizer for demo mode.
@@ -124,6 +126,7 @@ class PersonAttributesProcessor:
             writer: The writer initialized with the output data source.
             tokenizer: The tokenizer to use (e.g. SHA256Tokenizer or PassthroughTokenizer).
             metadata_map: Optional metadata map to update with processing statistics.
+
         """
         token_definition = token_definition or TokenDefinition()
         return PersonAttributesProcessor._process_with_tokenizer(
@@ -146,9 +149,9 @@ class PersonAttributesProcessor:
         ring_id: str = None,
         hash_record_ids: bool = False,
         progress_callback=None,
+        crypto_suite: CryptoSuite | None = None,
     ) -> PersonAttributesProcessingSummary:
-        """
-        Core row-processing logic shared by all process() overloads.
+        """Core row-processing logic shared by all process() overloads.
 
         Args:
             reader: The reader initialized with the input data source.
@@ -159,6 +162,7 @@ class PersonAttributesProcessor:
             encryption_key: Optional encryption key for JWE wrapping.
             ring_id: Optional ring ID for JWE wrapping.
             hash_record_ids: When True, each record ID is SHA-256 hashed before writing.
+
         """
         field_registry = getattr(token_definition, "field_registry", None)
         token_generator = TokenGenerator(token_definition, tokenizer, field_registry=field_registry)
@@ -176,6 +180,7 @@ class PersonAttributesProcessor:
             token_definition,
             encryption_key,
             ring_id,
+            crypto_suite,
         )
 
         try:
@@ -241,9 +246,9 @@ class PersonAttributesProcessor:
         jwe_formatters: Dict[str, JweMatchTokenFormatter] = None,
         hash_record_ids: bool = False,
     ) -> None:
-        """
-        Write tokens to the output writer. Optionally wraps tokens in JWE format
-        and hashes record IDs when hash_record_ids is True.
+        """Write tokens to the output writer, optionally wrapping them in JWE format.
+
+        Record IDs are hashed when ``hash_record_ids`` is True.
 
         Args:
             writer: The writer to write tokens to.
@@ -254,6 +259,7 @@ class PersonAttributesProcessor:
             ring_id: Optional ring ID for JWE wrapping (None to skip JWE).
             jwe_formatters: Optional cached JWE formatters.
             hash_record_ids: When True, each record ID is SHA-256 hashed before writing.
+
         """
         # Sort token IDs for consistent output
         token_ids = sorted(token_generator_result.tokens.keys())
@@ -303,6 +309,7 @@ class PersonAttributesProcessor:
         token_definition: TokenDefinition,
         encryption_key: str,
         ring_id: str,
+        crypto_suite: CryptoSuite | None = None,
     ) -> Dict[str, JweMatchTokenFormatter]:
         """Initialize per-token JWE formatters when encryption is configured."""
         jwe_formatters: Dict[str, JweMatchTokenFormatter] = {}
@@ -316,6 +323,7 @@ class PersonAttributesProcessor:
                     ring_id,
                     token_id,
                     "org.openlinktoken",
+                    crypto_suite=crypto_suite,
                 )
             except Exception as e:
                 error_msg = f"Failed to initialize JWE formatter for token rule {token_id}"
@@ -557,8 +565,7 @@ class PersonAttributesProcessor:
         row_counter: int,
         invalid_attribute_count: Dict[str, int],
     ) -> bool:
-        """
-        Keep track of invalid attributes for logging purposes.
+        """Keep track of invalid attributes for logging purposes.
 
         Args:
             token_generator_result: The result from token generation.
@@ -567,6 +574,7 @@ class PersonAttributesProcessor:
 
         Returns:
             True when the row contains one or more invalid attributes.
+
         """
         if token_generator_result.invalid_attributes:
             logger.info(f"Invalid Attributes for row {row_counter:,}: {token_generator_result.invalid_attributes}")
@@ -583,13 +591,13 @@ class PersonAttributesProcessor:
         row_counter: int,
         blank_token_count_by_rule: Dict[str, int],
     ) -> None:
-        """
-        Keep track of blank tokens for logging purposes.
+        """Keep track of blank tokens for logging purposes.
 
         Args:
             token_generator_result: The result from token generation.
             row_counter: The current row number.
             blank_token_count_by_rule: Dictionary to track blank token counts by rule.
+
         """
         if token_generator_result.blank_tokens_by_rule:
             logger.debug(f"Blank tokens for row {row_counter:,}: {token_generator_result.blank_tokens_by_rule}")
@@ -601,8 +609,7 @@ class PersonAttributesProcessor:
     def _initialize_invalid_attribute_count(
         token_definition: TokenDefinition,
     ) -> Dict[str, int]:
-        """
-        Initialize the invalid attribute count dictionary with attributes used in the token definition set to 0.
+        """Initialize the invalid attribute count dictionary with attributes used in the token definition set to 0.
         This ensures that all attribute types used in token generation appear in the metadata
         even in happy path scenarios.
 
@@ -611,6 +618,7 @@ class PersonAttributesProcessor:
 
         Returns:
             A dictionary with all attribute names used in token definitions initialized to 0
+
         """
         invalid_attribute_count: Dict[str, int] = {}
         attribute_classes: Set[Type[Attribute]] = set()
@@ -636,8 +644,7 @@ class PersonAttributesProcessor:
     def _initialize_blank_tokens_by_rule_count(
         token_definition: TokenDefinition,
     ) -> Dict[str, int]:
-        """
-        Initialize the blank tokens by rule count dictionary with all token identifiers set to 0.
+        """Initialize the blank tokens by rule count dictionary with all token identifiers set to 0.
         This ensures that all token rules appear in the metadata even in happy path scenarios.
 
         Args:
@@ -645,6 +652,7 @@ class PersonAttributesProcessor:
 
         Returns:
             A dictionary with all token identifiers initialized to 0
+
         """
         blank_tokens_by_rule_count: Dict[str, int] = {}
         for token_id in token_definition.get_token_identifiers():

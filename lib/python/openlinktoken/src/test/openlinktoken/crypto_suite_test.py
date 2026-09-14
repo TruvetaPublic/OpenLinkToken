@@ -1,0 +1,83 @@
+# SPDX-License-Identifier: MIT
+
+import pytest
+
+from openlinktoken.crypto.crypto_suite import CryptoSuite as CompatibilityCryptoSuite
+from openlinktoken.crypto.crypto_suite import CryptoSuiteError as CompatibilityCryptoSuiteError
+from openlinktoken.crypto_suite import CryptoSuite, CryptoSuiteError
+
+
+def test_compatibility_module_reexports_canonical_suite_registry():
+    """The compatibility module exposes the canonical suite types."""
+    assert CompatibilityCryptoSuite is CryptoSuite
+    assert CompatibilityCryptoSuiteError is CryptoSuiteError
+
+
+def test_registered_suites_have_expected_contracts():
+    """Every public suite ID resolves to its exact algorithm contract."""
+    assert [suite.suite_id for suite in CryptoSuite.all()] == [
+        "suite-sha256-v1",
+        "suite-sha3-v1",
+        "suite-pq-shake-v1",
+        "suite-pq-v1",
+        "suite-pq-hybrid-v1",
+    ]
+
+    assert CryptoSuite.from_id("suite-sha256-v1") == CryptoSuite(
+        "suite-sha256-v1", "SHA-256", "HS256", "A256GCM", "ECDH", 1
+    )
+    assert CryptoSuite.from_id("suite-pq-hybrid-v1").exchange_key_agreement == "ECDH+ML-KEM-768"
+
+
+def test_shake_suite_declares_fixed_output_and_kmac():
+    """SHAKE suite records explicit output lengths for digest and MAC."""
+    suite = CryptoSuite.from_id("suite-pq-shake-v1")
+
+    assert suite.token_digest_algorithm == "SHAKE256-256"
+    assert suite.token_mac_algorithm == "KMAC256-256"
+    assert suite.exchange_key_agreement == "ML-KEM-768"
+    assert suite.exchange_config_version == 2
+    assert suite.is_post_quantum
+
+
+def test_default_suite_preserves_legacy_contract():
+    """The default suite remains the existing SHA-256/HMAC-SHA256 ECDH profile."""
+    suite = CryptoSuite.default()
+
+    assert suite.token_digest_algorithm == "SHA-256"
+    assert suite.token_mac_algorithm == "HS256"
+    assert suite.token_content_encryption == "A256GCM"
+    assert suite.exchange_key_agreement == "ECDH"
+    assert suite.exchange_config_version == 1
+    assert not suite.is_post_quantum
+
+
+@pytest.mark.parametrize("suite_id", ["", "unknown", None])
+def test_unknown_suite_ids_fail_closed(suite_id):
+    """Unknown or malformed IDs must not silently fall back to the default."""
+    with pytest.raises(CryptoSuiteError):
+        CryptoSuite.from_id(suite_id)
+
+
+@pytest.mark.parametrize(
+    ("overrides", "message"),
+    [
+        ({"token_content_encryption": "A128GCM"}, "content encryption"),
+        ({"exchange_config_version": 1, "exchange_key_agreement": "ML-KEM-768"}, "only supports ECDH"),
+        ({"exchange_config_version": 2, "exchange_key_agreement": "ECDH"}, "requires a non-ECDH"),
+        ({"exchange_config_version": 3, "exchange_key_agreement": "ML-KEM-768"}, "Unsupported exchange"),
+    ],
+)
+def test_invalid_suite_contracts_fail_validation(overrides, message):
+    """Invalid algorithm and exchange-version combinations fail closed."""
+    suite = CryptoSuite(
+        suite_id="test-suite",
+        token_digest_algorithm="SHA-256",
+        token_mac_algorithm="HS256",
+        token_content_encryption=overrides.get("token_content_encryption", "A256GCM"),
+        exchange_key_agreement=overrides.get("exchange_key_agreement", "ECDH"),
+        exchange_config_version=overrides.get("exchange_config_version", 1),
+    )
+
+    with pytest.raises(CryptoSuiteError, match=message):
+        suite.validate()

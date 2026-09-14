@@ -13,6 +13,8 @@ import com.nimbusds.jose.jwk.OctetSequenceKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.openlinktoken.crypto.CryptoSuite;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -40,6 +42,7 @@ public class JweMatchTokenFormatter implements TokenTransformer {
     private final String ruleId;
     private final String issuer;
     private final byte[] encryptionKey;
+    private final CryptoSuite cryptoSuite;
     private transient DirectEncrypter encrypter;
 
     /**
@@ -53,7 +56,8 @@ public class JweMatchTokenFormatter implements TokenTransformer {
      */
     public JweMatchTokenFormatter(String encryptionKey, String ringId, String ruleId, String issuer)
             throws JOSEException {
-        this(encryptionKey == null ? null : encryptionKey.getBytes(StandardCharsets.UTF_8), ringId, ruleId, issuer);
+        this(encryptionKey == null ? null : encryptionKey.getBytes(StandardCharsets.UTF_8), ringId, ruleId, issuer,
+                CryptoSuite.defaultSuite());
     }
 
     /**
@@ -67,6 +71,25 @@ public class JweMatchTokenFormatter implements TokenTransformer {
      */
     public JweMatchTokenFormatter(byte[] encryptionKey, String ringId, String ruleId, String issuer)
             throws JOSEException {
+        this(encryptionKey, ringId, ruleId, issuer, CryptoSuite.defaultSuite());
+    }
+
+    /**
+     * Initializes the JWE formatter with an explicit crypto suite.
+     *
+     * @param encryptionKey the raw encryption key
+     * @param ringId the key ring identifier
+     * @param ruleId the token rule identifier
+     * @param issuer the token issuer
+     * @param cryptoSuite the suite whose token metadata is embedded
+     * @throws JOSEException if the encrypter cannot be initialized
+     */
+    public JweMatchTokenFormatter(
+            byte[] encryptionKey,
+            String ringId,
+            String ruleId,
+            String issuer,
+            CryptoSuite cryptoSuite) throws JOSEException {
         byte[] keyBytes = validateEncryptionKey(encryptionKey);
         if (ringId == null || ringId.isEmpty()) {
             throw new IllegalArgumentException("Ring ID must not be null or empty");
@@ -79,13 +102,27 @@ public class JweMatchTokenFormatter implements TokenTransformer {
         this.ruleId = ruleId;
         this.issuer = (issuer != null && !issuer.isEmpty()) ? issuer : "org.openlinktoken";
         this.encryptionKey = keyBytes;
+        this.cryptoSuite = cryptoSuite;
         this.encrypter = createEncrypter(this.encryptionKey);
     }
 
+    /**
+     * Serializes the formatter's non-transient configuration.
+     *
+     * @param oos the object stream receiving the formatter state
+     * @throws IOException if the formatter state cannot be written
+     */
     private void writeObject(ObjectOutputStream oos) throws IOException {
         oos.defaultWriteObject();
     }
 
+    /**
+     * Restores the formatter and rebuilds its transient JWE encrypter.
+     *
+     * @param ois the object stream containing the formatter state
+     * @throws IOException if the formatter state or encrypter cannot be restored
+     * @throws ClassNotFoundException if a serialized class cannot be resolved
+     */
     private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
         ois.defaultReadObject();
         try {
@@ -95,6 +132,13 @@ public class JweMatchTokenFormatter implements TokenTransformer {
         }
     }
 
+    /**
+     * Validates and copies the AES-256 encryption key.
+     *
+     * @param encryptionKey the raw encryption key bytes
+     * @return a defensive copy of the validated key
+     * @throws IllegalArgumentException if the key is not exactly 32 bytes
+     */
     private static byte[] validateEncryptionKey(byte[] encryptionKey) {
         if (encryptionKey == null || encryptionKey.length != 32) {
             throw new IllegalArgumentException("Encryption key must be exactly 32 bytes (256 bits)");
@@ -102,6 +146,13 @@ public class JweMatchTokenFormatter implements TokenTransformer {
         return Arrays.copyOf(encryptionKey, encryptionKey.length);
     }
 
+    /**
+     * Creates the Nimbus direct encrypter for the supplied AES key.
+     *
+     * @param encryptionKey the raw AES-256 key bytes
+     * @return an encrypter configured for direct JWE encryption
+     * @throws JOSEException if the key cannot be converted to a JWK
+     */
     private static DirectEncrypter createEncrypter(byte[] encryptionKey) throws JOSEException {
         OctetSequenceKey jwk = new OctetSequenceKey.Builder(encryptionKey).build();
         return new DirectEncrypter(jwk);
@@ -128,8 +179,8 @@ public class JweMatchTokenFormatter implements TokenTransformer {
             // Build the JWE payload with metadata using a Map
             Map<String, Object> payload = new LinkedHashMap<>();
             payload.put(MatchTokenConstants.PAYLOAD_KEY_RULE_ID, ruleId);
-            payload.put(MatchTokenConstants.PAYLOAD_KEY_HASH_ALGORITHM, "SHA-256");
-            payload.put(MatchTokenConstants.PAYLOAD_KEY_MAC_ALGORITHM, "HS256");
+            payload.put(MatchTokenConstants.PAYLOAD_KEY_HASH_ALGORITHM, cryptoSuite.getTokenDigestAlgorithm());
+            payload.put(MatchTokenConstants.PAYLOAD_KEY_MAC_ALGORITHM, cryptoSuite.getTokenMacAlgorithm());
             payload.put(MatchTokenConstants.PAYLOAD_KEY_PPID, Collections.singletonList(token));
             payload.put(MatchTokenConstants.PAYLOAD_KEY_RING_ID, ringId);
             payload.put(MatchTokenConstants.PAYLOAD_KEY_ISSUER, issuer);

@@ -1,25 +1,36 @@
 /* SPDX-License-Identifier: MIT */
 package org.openlinktoken.tokentransformer;
 
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
+import java.util.Base64;
 
 import org.apache.commons.lang3.SerializationUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+/**
+ * Tests AES-GCM decryption, key validation, and transformer serialization.
+ */
 class DecryptTokenTransformerTest {
     private DecryptTokenTransformer decryptor;
     private EncryptTokenTransformer encryptor;
     private static final String VALID_KEY = "12345678901234567890123456789012"; // 32-byte key
     private static final String INVALID_KEY = "short-key"; // Invalid short key
 
+    /**
+     * Creates matching encryptor and decryptor instances for each test.
+     */
     @BeforeEach
     void setUp() throws Exception {
         decryptor = new DecryptTokenTransformer(VALID_KEY);
         encryptor = new EncryptTokenTransformer(VALID_KEY);
     }
 
+    /**
+     * Verifies that a serialized decryptor can decrypt an encrypted token.
+     */
     @Test
     void testSerializable() throws Exception {
         TokenTransformer decryptTokenTransformer = new DecryptTokenTransformer(VALID_KEY);
@@ -36,18 +47,27 @@ class DecryptTokenTransformerTest {
         Assertions.assertEquals(token, decryptedToken);
     }
 
+    /**
+     * Verifies construction with a valid string key.
+     */
     @Test
     void testConstructor_ValidKey_Success() throws Exception {
         DecryptTokenTransformer validTransformer = new DecryptTokenTransformer(VALID_KEY);
         Assertions.assertNotNull(validTransformer);
     }
 
+    /**
+     * Verifies construction with valid raw key bytes.
+     */
     @Test
     void testConstructor_Raw32ByteKey_Success() throws Exception {
-        DecryptTokenTransformer validTransformer = new DecryptTokenTransformer(VALID_KEY.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        DecryptTokenTransformer validTransformer = new DecryptTokenTransformer(VALID_KEY.getBytes(StandardCharsets.UTF_8));
         Assertions.assertNotNull(validTransformer);
     }
 
+    /**
+     * Verifies that a short key is rejected.
+     */
     @Test
     void testConstructor_InvalidKeyLength_ThrowsIllegalArgumentException() {
         Exception exception = Assertions.assertThrows(InvalidKeyException.class, () -> {
@@ -56,6 +76,9 @@ class DecryptTokenTransformerTest {
         Assertions.assertEquals("Key must be 32 bytes long", exception.getMessage());
     }
 
+    /**
+     * Verifies that a non-ASCII string with too many UTF-8 bytes is rejected.
+     */
     @Test
     void testConstructor_NonAscii32CharacterKey_ThrowsInvalidKeyException() {
         String invalidUtf8LengthKey = "é".repeat(32);
@@ -66,6 +89,9 @@ class DecryptTokenTransformerTest {
         Assertions.assertEquals("Key must be 32 bytes long", exception.getMessage());
     }
 
+    /**
+     * Verifies decryption of a valid encrypted token.
+     */
     @Test
     void testTransform_ValidEncryptedToken_ReturnsDecryptedToken() throws Exception {
         String originalToken = "mySecretToken";
@@ -79,6 +105,9 @@ class DecryptTokenTransformerTest {
         Assertions.assertEquals(originalToken, decryptedToken);
     }
 
+    /**
+     * Verifies decryption of multiple independently encrypted tokens.
+     */
     @Test
     void testTransform_MultipleTokens_DecryptsCorrectly() throws Exception {
         String token1 = "firstToken";
@@ -101,6 +130,9 @@ class DecryptTokenTransformerTest {
         Assertions.assertEquals(token3, decrypted3);
     }
 
+    /**
+     * Verifies that repeated encryption of the same token remains decryptable.
+     */
     @Test
     void testTransform_SameTokenEncryptedTwice_BothDecryptCorrectly() throws Exception {
         String originalToken = "sameToken";
@@ -120,6 +152,9 @@ class DecryptTokenTransformerTest {
         Assertions.assertEquals(originalToken, decrypted2);
     }
 
+    /**
+     * Verifies decryption of tokens containing special characters.
+     */
     @Test
     void testTransform_SpecialCharacters_DecryptsCorrectly() throws Exception {
         String specialToken = "token|with|pipes|and|special!@#$%^&*()_+characters";
@@ -130,6 +165,9 @@ class DecryptTokenTransformerTest {
         Assertions.assertEquals(specialToken, decrypted);
     }
 
+    /**
+     * Verifies decryption of tokens containing Unicode characters.
+     */
     @Test
     void testTransform_UnicodeCharacters_DecryptsCorrectly() throws Exception {
         String unicodeToken = "token-with-unicode-你好-мир-🎉";
@@ -140,6 +178,9 @@ class DecryptTokenTransformerTest {
         Assertions.assertEquals(unicodeToken, decrypted);
     }
 
+    /**
+     * Verifies that decrypting with a different key fails.
+     */
     @Test
     void testTransform_WrongKey_ThrowsException() throws Exception {
         String originalToken = "mySecretToken";
@@ -154,5 +195,19 @@ class DecryptTokenTransformerTest {
         Assertions.assertThrows(Exception.class, () -> {
             wrongDecryptor.transform(encryptedToken);
         });
+    }
+
+    /**
+     * Verifies that a token without an authentication tag is rejected.
+     */
+    @Test
+    void testTransform_TokenWithoutIvOrTag_ThrowsIllegalArgumentException() {
+        String malformedToken = Base64.getEncoder().encodeToString(new byte[EncryptionConstants.IV_SIZE]);
+
+        IllegalArgumentException exception = Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> decryptor.transform(malformedToken));
+
+        Assertions.assertEquals("Encrypted token is missing its initialization vector or authentication tag", exception.getMessage());
     }
 }

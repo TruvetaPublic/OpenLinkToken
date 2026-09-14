@@ -10,6 +10,8 @@ jwcrypto==1.5.9
     # via openlinktoken
 pycparser==3.0 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'
     # via cffi
+pycryptodome==3.23.0
+    # via openlinktoken
 pyyaml==6.0.3
     # via openlinktoken
 typing-extensions==4.16.0

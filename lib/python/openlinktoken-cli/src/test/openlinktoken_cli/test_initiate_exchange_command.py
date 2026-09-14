@@ -1,9 +1,8 @@
 # SPDX-License-Identifier: MIT
-"""
-Unit and integration tests for InitiateExchangeCommand.
-"""
+"""Unit and integration tests for InitiateExchangeCommand."""
 
 import base64
+import csv
 import io
 import json
 import logging
@@ -14,7 +13,10 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from jwcrypto import jwe, jwk
 
+from openlinktoken.crypto_suite import CryptoSuite
+from openlinktoken.exchange_config import derive_transport_encryption_key, resolve_exchange_config_inputs
 from openlinktoken.exchange_jwe import decrypt_exchange_envelope
 from openlinktoken_cli.commands.initiate_exchange_command import InitiateExchangeCommand
 from openlinktoken_cli.commands.open_link_token_command import OpenLinkTokenCommand
@@ -33,6 +35,373 @@ def _partner_key_pem(tmp_path: Path, curve: str = "P-256") -> Path:
     pem_path = tmp_path / "partner.public.pem"
     pem_path.write_bytes(public_pem)
     return pem_path
+
+
+@pytest.fixture(autouse=True)
+def _reset_rotation_config():
+    """Keep static rotation settings isolated between CLI integration tests."""
+    from openlinktoken.core.ai.tokens.rotation_config import RotationConfig
+
+    def reset() -> None:
+        """Restore process-wide rotation settings to their test defaults."""
+        RotationConfig.configure(
+            enable=True,
+            rotation_iv=RotationConfig.DEFAULT_IV,
+            dimension_bias=None,
+        )
+
+    reset()
+    yield
+    reset()
+
+
+def test_initiate_exchange_version_two_suite_round_trips(tmp_path: Path) -> None:
+    """The CLI creates a generic v2 envelope from public JSON bundles."""
+    with patch("pathlib.Path.home", return_value=tmp_path):
+        assert (
+            OpenLinkTokenCommand.execute(
+                [
+                    "generate-key-pair",
+                    "--crypto-suite",
+                    "suite-pq-v1",
+                    "--name",
+                    "partner",
+                ]
+            )
+            == 0
+        )
+        assert (
+            OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--crypto-suite",
+                    "suite-pq-v1",
+                    "--name",
+                    "sender",
+                    "--public-key",
+                    str(tmp_path / ".openlinktoken" / "partner.public.bundle.json"),
+                    "--output",
+                    str(tmp_path / "exchange.json"),
+                    "--force",
+                    "--rotation-embedding-dimension",
+                    "2",
+                ]
+            )
+            == 0
+        )
+
+        from openlinktoken.exchange_config import resolve_exchange_config_inputs
+
+        resolved = resolve_exchange_config_inputs(
+            exchange_config_path=tmp_path / "exchange.json",
+            private_key_path=tmp_path / ".openlinktoken" / "partner.private.bundle.json",
+        )
+
+    assert resolved.version == 2
+    assert resolved.crypto_suite.suite_id == "suite-pq-v1"
+
+
+def test_initiate_exchange_resolves_v1_public_key_from_base_path(tmp_path: Path) -> None:
+    """The selected v1 suite appends the PEM public-key suffix to the base path."""
+    with patch("pathlib.Path.home", return_value=tmp_path):
+        key_dir = tmp_path / ".openlinktoken"
+        key_dir.mkdir()
+        _, public_pem = generate_key_pair("P-256")
+        (key_dir / "partner.public.pem").write_bytes(public_pem)
+
+        assert (
+            OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--crypto-suite",
+                    "suite-sha256-v1",
+                    "--name",
+                    "sender",
+                    "--public-key-base",
+                    str(key_dir / "partner"),
+                    "--output",
+                    str(tmp_path / "exchange.json"),
+                    "--force",
+                    "--rotation-embedding-dimension",
+                    "2",
+                ]
+            )
+            == 0
+        )
+
+
+def test_initiate_exchange_resolves_v2_public_key_from_base_path(tmp_path: Path) -> None:
+    """The selected v2 suite appends the JSON bundle suffix to the base path."""
+    with patch("pathlib.Path.home", return_value=tmp_path):
+        assert (
+            OpenLinkTokenCommand.execute(
+                [
+                    "generate-key-pair",
+                    "--crypto-suite",
+                    "suite-pq-v1",
+                    "--name",
+                    "partner",
+                ]
+            )
+            == 0
+        )
+
+        assert (
+            OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--crypto-suite",
+                    "suite-pq-v1",
+                    "--name",
+                    "sender",
+                    "--public-key-base",
+                    str(tmp_path / ".openlinktoken" / "partner"),
+                    "--output",
+                    str(tmp_path / "exchange.json"),
+                    "--force",
+                    "--rotation-embedding-dimension",
+                    "2",
+                ]
+            )
+            == 0
+        )
+
+
+def test_initiate_exchange_shake_suite_flows_through_tokenize_and_package(tmp_path: Path) -> None:
+    """The post-quantum SHAKE suite flows through v2 exchange, tokenization, and packaging."""
+    input_csv = tmp_path / "input.csv"
+    input_csv.write_text(
+        "RecordId,FirstName,LastName,PostalCode,Sex,BirthDate,SocialSecurityNumber\n"
+        "test-001,John,Doe,98004,Male,2000-01-15,123-45-6789\n"
+    )
+    exchange_config_path = tmp_path / "shake.exchange.json"
+    tokenized_csv = tmp_path / "tokenized.csv"
+    packaged_csv = tmp_path / "packaged.csv"
+    hashing_secret = "0123456789abcdef0123456789abcdef"
+
+    with patch("pathlib.Path.home", return_value=tmp_path):
+        assert (
+            OpenLinkTokenCommand.execute(
+                [
+                    "generate-key-pair",
+                    "--crypto-suite",
+                    "suite-pq-shake-v1",
+                    "--name",
+                    "partner",
+                ]
+            )
+            == 0
+        )
+        partner_public_key_path = tmp_path / ".openlinktoken" / "partner.public.bundle.json"
+
+        assert (
+            OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--crypto-suite",
+                    "suite-pq-shake-v1",
+                    "--name",
+                    "shake",
+                    "--public-key",
+                    str(partner_public_key_path),
+                    "--output",
+                    str(exchange_config_path),
+                    "--hashingsecret",
+                    hashing_secret,
+                    "--rotation-embedding-dimension",
+                    "2",
+                    "--force",
+                ]
+            )
+            == 0
+        )
+
+        private_key_path = tmp_path / ".openlinktoken" / "partner.private.bundle.json"
+        resolved = resolve_exchange_config_inputs(
+            exchange_config_path=exchange_config_path,
+            private_key_path=private_key_path,
+        )
+        assert resolved.version == 2
+        assert resolved.crypto_suite.suite_id == "suite-pq-shake-v1"
+        transport_key = derive_transport_encryption_key(resolved)
+
+        assert (
+            OpenLinkTokenCommand.execute(
+                [
+                    "tokenize",
+                    "-i",
+                    str(input_csv),
+                    "-o",
+                    str(tokenized_csv),
+                    "--exchange-config",
+                    str(exchange_config_path),
+                    "--private-key",
+                    str(private_key_path),
+                    "--disable-inferencing",
+                ]
+            )
+            == 0
+        )
+        assert len(next(csv.DictReader(tokenized_csv.open(newline="", encoding="utf-8")))["Token"]) == 44
+
+        assert (
+            OpenLinkTokenCommand.execute(
+                [
+                    "package",
+                    "-i",
+                    str(input_csv),
+                    "-o",
+                    str(packaged_csv),
+                    "--exchange-config",
+                    str(exchange_config_path),
+                    "--private-key",
+                    str(private_key_path),
+                    "--disable-inferencing",
+                    "--ring-id",
+                    "shake-ring",
+                ]
+            )
+            == 0
+        )
+
+    with packaged_csv.open(newline="", encoding="utf-8") as packaged_file:
+        row = next(csv.DictReader(packaged_file))
+    token = next(value for value in row.values() if value.startswith("olt.V1."))
+    jwe_token = jwe.JWE()
+    jwe_token.deserialize(token[len("olt.V1.") :])
+    key_b64 = base64.urlsafe_b64encode(transport_key).decode("utf-8").rstrip("=")
+    jwe_token.decrypt(jwk.JWK(kty="oct", k=key_b64))
+    payload = json.loads(jwe_token.payload.decode("utf-8"))
+    assert payload["hash_alg"] == "SHAKE256-256"
+    assert payload["mac_alg"] == "KMAC256-256"
+
+
+@pytest.mark.parametrize(
+    "crypto_suite",
+    CryptoSuite.all(),
+    ids=lambda crypto_suite: crypto_suite.suite_id,
+)
+def test_all_crypto_suites_flow_through_tokenize_and_package(
+    tmp_path: Path,
+    crypto_suite: CryptoSuite,
+) -> None:
+    """Every registered suite completes exchange, tokenization, and packaging."""
+    input_csv = tmp_path / "input.csv"
+    input_csv.write_text(
+        "RecordId,FirstName,LastName,PostalCode,Sex,BirthDate,SocialSecurityNumber\n"
+        "test-001,John,Doe,98004,Male,2000-01-15,123-45-6789\n"
+    )
+    exchange_config_path = tmp_path / f"{crypto_suite.suite_id}.exchange.json"
+    tokenized_csv = tmp_path / f"{crypto_suite.suite_id}.tokenized.csv"
+    packaged_csv = tmp_path / f"{crypto_suite.suite_id}.packaged.csv"
+    hashing_secret = "0123456789abcdef0123456789abcdef"
+    key_name = crypto_suite.suite_id.replace("-", "_")
+
+    with patch("pathlib.Path.home", return_value=tmp_path):
+        if crypto_suite.exchange_config_version == 1:
+            partner_key_path = _partner_key_pem(tmp_path)
+            public_key_args = ["--public-key", str(partner_key_path)]
+        else:
+            assert (
+                OpenLinkTokenCommand.execute(
+                    [
+                        "generate-key-pair",
+                        "--crypto-suite",
+                        crypto_suite.suite_id,
+                        "--name",
+                        "partner",
+                    ]
+                )
+                == 0
+            )
+            public_key_args = [
+                "--public-key",
+                str(tmp_path / ".openlinktoken" / "partner.public.bundle.json"),
+            ]
+
+        assert (
+            OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--crypto-suite",
+                    crypto_suite.suite_id,
+                    "--name",
+                    key_name,
+                    *public_key_args,
+                    "--output",
+                    str(exchange_config_path),
+                    "--hashingsecret",
+                    hashing_secret,
+                    "--rotation-embedding-dimension",
+                    "2",
+                    "--force",
+                ]
+            )
+            == 0
+        )
+
+        private_key_path = (
+            tmp_path / ".openlinktoken" / f"{key_name}.private.pem"
+            if crypto_suite.exchange_config_version == 1
+            else tmp_path / ".openlinktoken" / "partner.private.bundle.json"
+        )
+        resolved = resolve_exchange_config_inputs(
+            exchange_config_path=exchange_config_path,
+            private_key_path=private_key_path,
+        )
+        assert resolved.version == crypto_suite.exchange_config_version
+        assert resolved.crypto_suite == crypto_suite
+        transport_key = derive_transport_encryption_key(resolved)
+
+        assert (
+            OpenLinkTokenCommand.execute(
+                [
+                    "tokenize",
+                    "-i",
+                    str(input_csv),
+                    "-o",
+                    str(tokenized_csv),
+                    "--exchange-config",
+                    str(exchange_config_path),
+                    "--private-key",
+                    str(private_key_path),
+                    "--disable-inferencing",
+                ]
+            )
+            == 0
+        )
+
+        assert (
+            OpenLinkTokenCommand.execute(
+                [
+                    "package",
+                    "-i",
+                    str(input_csv),
+                    "-o",
+                    str(packaged_csv),
+                    "--exchange-config",
+                    str(exchange_config_path),
+                    "--private-key",
+                    str(private_key_path),
+                    "--disable-inferencing",
+                    "--ring-id",
+                    f"{key_name}-ring",
+                ]
+            )
+            == 0
+        )
+
+    assert len(next(csv.DictReader(tokenized_csv.open(newline="", encoding="utf-8")))["Token"]) == 44
+    with packaged_csv.open(newline="", encoding="utf-8") as packaged_file:
+        row = next(csv.DictReader(packaged_file))
+    token = next(value for value in row.values() if value.startswith("olt.V1."))
+    jwe_token = jwe.JWE()
+    jwe_token.deserialize(token[len("olt.V1.") :])
+    key_b64 = base64.urlsafe_b64encode(transport_key).decode("utf-8").rstrip("=")
+    jwe_token.decrypt(jwk.JWK(kty="oct", k=key_b64))
+    payload = json.loads(jwe_token.payload.decode("utf-8"))
+    assert payload["hash_alg"] == crypto_suite.token_digest_algorithm
+    assert payload["mac_alg"] == crypto_suite.token_mac_algorithm
 
 
 def _decode_base64url_json(encoded: str) -> dict:

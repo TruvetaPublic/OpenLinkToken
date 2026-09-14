@@ -39,8 +39,7 @@ def derive_transport_encryption_key(exchange: Any) -> bytes:
 
 
 class PackageCommand:
-    """
-    Package command - combines tokenize and encrypt in one command.
+    """Package command - combines tokenize and encrypt in one command.
     This is the default workflow: hash + encrypt.
     """
 
@@ -311,6 +310,7 @@ class PackageCommand:
                             hash_record_ids,
                             tokenization_config_path,
                             progress_callback=reporter.make_progress_callback("Packaging records", "records"),
+                            crypto_suite=getattr(exchange, "crypto_suite", None),
                         )
 
                         if is_zip:
@@ -348,6 +348,7 @@ class PackageCommand:
         hash_record_ids: bool = False,
         tokenization_config_path: Optional[str] = None,
         progress_callback=None,
+        crypto_suite=None,
     ) -> tuple[PersonAttributesProcessingSummary, str]:
         """Process tokens from person attributes."""
         from openlinktoken.metadata import Metadata
@@ -363,7 +364,7 @@ class PackageCommand:
 
         try:
             # Add both hash and encryption transformers
-            token_transformer_list.append(HashTokenTransformer(hashing_secret))
+            token_transformer_list.append(HashTokenTransformer(hashing_secret, crypto_suite=crypto_suite))
             token_transformer_list.append(EncryptTokenTransformer(encryption_key))
         except Exception as e:
             raise RuntimeError("Failed to initialize transformers") from e
@@ -391,6 +392,7 @@ class PackageCommand:
                     hash_record_ids,
                     token_definition=token_definition,
                     progress_callback=progress_callback,
+                    crypto_suite=crypto_suite,
                 )
 
                 # Write metadata, or bundle into ZIP if the output is a zip archive

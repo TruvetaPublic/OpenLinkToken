@@ -16,7 +16,14 @@
       "env": {
         "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main"
       },
-      "args": ["generate-key-pair", "--name", "local-recipient", "--force"]
+      "args": [
+        "generate-key-pair",
+        "--crypto-suite",
+        "${input:cryptoSuite}",
+        "--name",
+        "local-recipient",
+        "--force"
+      ]
     },
     {
       "name": "Setup 2: initiate-exchange",
@@ -28,8 +35,10 @@
       },
       "args": [
         "initiate-exchange",
-        "--public-key",
-        "${env:HOME}/.openlinktoken/local-recipient.public.pem",
+        "--crypto-suite",
+        "${input:cryptoSuite}",
+        "--public-key-base",
+        "${env:HOME}/.openlinktoken/local-recipient",
         "--output",
         "${workspaceFolder}/lib/python/openlinktoken-cli/target/local.exchange.json",
         "--force"
@@ -127,6 +136,23 @@
       ]
     },
     {
+      "name": "Python: generate-key-bundle (PQ)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/lib/python/openlinktoken-cli/src/main/openlinktoken_cli/main.py",
+      "env": {
+        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main"
+      },
+      "args": [
+        "generate-key-pair",
+        "--crypto-suite",
+        "${input:cryptoSuite}",
+        "--name",
+        "debug-pq-key",
+        "--force"
+      ]
+    },
+    {
       "name": "Python: initiate-exchange",
       "type": "debugpy",
       "request": "launch",
@@ -148,6 +174,27 @@
         "0.05",
         "--rotation-embedding-dimension",
         "1024",
+        "--force"
+      ]
+    },
+    {
+      "name": "Python: initiate-exchange (PQ)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/lib/python/openlinktoken-cli/src/main/openlinktoken_cli/main.py",
+      "env": {
+        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main"
+      },
+      "args": [
+        "initiate-exchange",
+        "--crypto-suite",
+        "${input:cryptoSuite}",
+        "--name",
+        "debug-pq-exchange",
+        "--public-key",
+        "${input:publicKeyBundlePath}",
+        "--output",
+        "${workspaceFolder}/lib/python/openlinktoken-cli/target/debug-pq-exchange.exchange.json",
         "--force"
       ]
     },
@@ -205,6 +252,25 @@
       "description": "Select tokenize mode",
       "options": ["default", "hash-only", "demo"],
       "default": "default"
+    },
+    {
+      "id": "cryptoSuite",
+      "type": "pickString",
+      "description": "Select the crypto suite",
+      "options": [
+        "suite-pq-v1",
+        "suite-pq-shake-v1",
+        "suite-pq-hybrid-v1",
+        "suite-sha3-v1",
+        "suite-sha256-v1"
+      ],
+      "default": "suite-sha256-v1"
+    },
+    {
+      "id": "publicKeyBundlePath",
+      "type": "promptString",
+      "description": "Path to the partner public JSON key bundle",
+      "default": "${env:HOME}/.openlinktoken/partner.public.bundle.json"
     }
   ]
 }

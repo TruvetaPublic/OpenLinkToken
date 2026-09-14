@@ -28,6 +28,46 @@ For the complete, authoritative list of flags, short options, and defaults, see 
 
 ---
 
+## Crypto Suites
+
+A crypto suite is a registered, versioned set of token and exchange algorithms.
+Select it when you create key material and the exchange config; `package`,
+`tokenize`, `encrypt`, and `decrypt` then use the suite recorded in that
+exchange config. Both parties must use the same suite. Open Link Token records
+the suite ID in exchange metadata and rejects suite or version mismatches
+instead of silently falling back to another algorithm.
+
+All suites use AES-256-GCM for token content encryption. The suite-specific
+choices are:
+
+| Suite                | What it represents                                                                   | Token digest and MAC                         | Exchange format and key agreement    |
+| -------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------- | ------------------------------------ |
+| `suite-sha256-v1`    | Backward-compatible default for existing ECDH exchanges.                             | SHA-256 and HMAC-SHA256 (`HS256`)            | Version 1, ECDH/JWE                  |
+| `suite-sha3-v1`      | A classical-key-agreement profile that uses SHA-3 token primitives.                  | SHA3-256 and HMAC-SHA3-256 (`HS3-256`)       | Version 1, ECDH/JWE                  |
+| `suite-pq-shake-v1`  | A post-quantum profile using ML-KEM with the SHAKE/KMAC family for token primitives. | SHAKE256-256 and KMAC256-256 (`KMAC256-256`) | Version 2, ML-KEM-768                |
+| `suite-pq-v1`        | A post-quantum profile using ML-KEM without a classical ECDH component.              | SHA3-256 and HMAC-SHA3-256 (`HS3-256`)       | Version 2, ML-KEM-768                |
+| `suite-pq-hybrid-v1` | A post-quantum hybrid profile that combines classical ECDH with ML-KEM.              | SHA3-256 and HMAC-SHA3-256 (`HS3-256`)       | Version 2, ECDH-P256 plus ML-KEM-768 |
+
+For a selection guide, compatibility rules, key-file examples, and the
+differences between version-1 PEM keys and version-2 JSON key bundles, see
+[Cryptographic Suites](../concepts/crypto-suites.md).
+
+For version-2 suites, `generate-key-pair` creates JSON key bundles rather than
+PEM files. Pass the same suite ID to key generation and exchange initiation:
+
+```bash
+olt generate-key-pair \
+  --crypto-suite suite-pq-hybrid-v1 \
+  --name partner
+
+olt initiate-exchange \
+  --crypto-suite suite-pq-hybrid-v1 \
+  --public-key ~/.openlinktoken/partner.public.bundle.json \
+  --output ./partner.exchange.json
+```
+
+---
+
 ## Environment Variables
 
 Consumer commands usually auto-discover the matching private key from `~/.openlinktoken/` when you provide the exchange config:
@@ -168,9 +208,9 @@ For the exact CLI flags that enable each mode, see the [CLI Reference](../refere
 
 ### Hashing Secret
 
-- **Purpose**: HMAC-SHA256 key for deterministic hashing
-- **Minimum length**: 8 characters recommended
-- **Best practice**: 16+ characters with mixed case and digits
+- **Purpose**: Key for the suite-selected deterministic MAC (`HS256`, `HS3-256`, or `KMAC256-256`)
+- **Length**: HMAC suites require a non-empty secret; `suite-pq-shake-v1` requires at least 32 bytes for KMAC256
+- **Best practice**: Use a high-entropy secret from a secret manager or secure environment input
 
 ### Encryption Key
 

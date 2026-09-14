@@ -1,7 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""
-PySpark token processor for distributed token generation.
-"""
+"""PySpark token processor for distributed token generation."""
 
 import logging
 import uuid
@@ -24,6 +22,7 @@ from openlinktoken.attributes.person.last_name_attribute import LastNameAttribut
 from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttribute
 from openlinktoken.attributes.person.sex_attribute import SexAttribute
 from openlinktoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
+from openlinktoken.crypto_suite import CryptoSuite
 from openlinktoken.exchange_config import derive_transport_encryption_key, resolve_exchange_config_inputs
 from openlinktoken.tokens.base_token_definition import BaseTokenDefinition
 from openlinktoken.tokens.token_definition import TokenDefinition
@@ -38,8 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 class OpenLinkTokenProcessor:
-    """
-    Process PySpark DataFrames to generate Open Link Tokens.
+    """Process PySpark DataFrames to generate Open Link Tokens.
 
     This class provides a bridge between PySpark DataFrames and Open Link Token
     token generation functionality, enabling distributed token generation
@@ -52,11 +50,11 @@ class OpenLinkTokenProcessor:
 
     @classmethod
     def _build_column_mappings(cls) -> Dict[str, Type[Attribute]]:
-        """
-        Build column name to attribute class mappings dynamically from loaded attributes.
+        """Build column name to attribute class mappings dynamically from loaded attributes.
 
         Returns:
             Dictionary mapping column names to their corresponding attribute classes.
+
         """
         if cls.COLUMN_MAPPINGS is not None:
             return cls.COLUMN_MAPPINGS
@@ -76,9 +74,9 @@ class OpenLinkTokenProcessor:
         encryption_key: str | bytes | None = None,
         token_definition: BaseTokenDefinition | None = None,
         ring_id: str | None = None,
+        crypto_suite: CryptoSuite | str | None = None,
     ):
-        """
-        Initialize the Open Link Token processor with secrets.
+        """Initialize the Open Link Token processor with secrets.
 
         Args:
             hashing_secret: Optional secret for HMAC-SHA256 hashing. If None, tokens will be plain concatenated strings.
@@ -108,6 +106,7 @@ class OpenLinkTokenProcessor:
             >>> custom_token = TokenBuilder("ML1").add("last_name", "T|U").add("first_name", "T|U").build()
             >>> custom_def = CustomTokenDefinition().add_token(custom_token)
             >>> processor = OpenLinkTokenProcessor("hash-secret", "encryption-key-32-chars!!", custom_def)
+
         """
         self._validate_secret_value(
             secret=hashing_secret,
@@ -124,6 +123,11 @@ class OpenLinkTokenProcessor:
         self.encryption_key = encryption_key
         self.token_definition = token_definition  # Store custom token definition
         self.ring_id = ring_id if ring_id else str(uuid.uuid4())
+        self.crypto_suite = (
+            CryptoSuite.from_id(crypto_suite)
+            if isinstance(crypto_suite, str)
+            else crypto_suite or CryptoSuite.default()
+        )
 
         # Build column mappings if not already built
         self._build_column_mappings()
@@ -131,7 +135,7 @@ class OpenLinkTokenProcessor:
         # Validate secrets can initialize transformers
         try:
             if hashing_secret is not None:
-                HashTokenTransformer(hashing_secret)
+                HashTokenTransformer(hashing_secret, crypto_suite=self.crypto_suite)
             if encryption_key is not None:
                 EncryptTokenTransformer(encryption_key)
         except ValueError as error:
@@ -147,9 +151,9 @@ class OpenLinkTokenProcessor:
         private_key_value: str | bytes | None = None,
         token_definition: BaseTokenDefinition | None = None,
         ring_id: str | None = None,
+        crypto_suite: CryptoSuite | str | None = None,
     ) -> "OpenLinkTokenProcessor":
-        """
-        Build a processor from an initiate-exchange config plus private key material.
+        """Build a processor from an initiate-exchange config plus private key material.
 
         Args:
             exchange_config_path: Optional path to the exchange config JSON file.
@@ -163,6 +167,7 @@ class OpenLinkTokenProcessor:
         Returns:
             A processor configured with resolved hashing-secret bytes and the
             derived transport encryption key bytes.
+
         """
         exchange = resolve_exchange_config_inputs(
             exchange_config_path=exchange_config_path,
@@ -171,16 +176,22 @@ class OpenLinkTokenProcessor:
             private_key_env=private_key_env,
             private_key_value=private_key_value,
         )
+        selected_suite = CryptoSuite.from_id(crypto_suite) if isinstance(crypto_suite, str) else crypto_suite
+        if selected_suite is not None and selected_suite != exchange.crypto_suite:
+            raise ValueError(
+                f"Requested crypto suite '{selected_suite.suite_id}' does not match "
+                f"exchange config suite '{exchange.crypto_suite.suite_id}'."
+            )
         return cls(
             hashing_secret=exchange.hashing_secret,
             encryption_key=derive_transport_encryption_key(exchange),
             token_definition=token_definition,
             ring_id=ring_id,
+            crypto_suite=exchange.crypto_suite,
         )
 
     def process_dataframe(self, df: DataFrame) -> DataFrame:
-        """
-        Process a PySpark DataFrame and generate tokens for each record.
+        """Process a PySpark DataFrame and generate tokens for each record.
 
         The input DataFrame must contain the following columns (case-sensitive alternatives listed):
         - RecordId or Id (optional - auto-generated if not provided)
@@ -199,6 +210,7 @@ class OpenLinkTokenProcessor:
 
         Raises:
             ValueError: If required columns are missing or invalid
+
         """
         # Validate Python-side deps (PyArrow/Pandas) for clearer errors before UDF runs
         self._validate_python_env()
@@ -211,6 +223,7 @@ class OpenLinkTokenProcessor:
         encryption_key_bytes = self._resolve_secret_bytes(self.encryption_key)
         token_definition = self.token_definition
         ring_id = self.ring_id
+        crypto_suite = self.crypto_suite
 
         # Define the schema for the output (array of structs)
         token_schema = ArrayType(
@@ -229,8 +242,7 @@ class OpenLinkTokenProcessor:
             postal_code_series: pd.Series,
             ssn_series: pd.Series,
         ) -> pd.Series:
-            """
-            Pandas UDF to generate tokens for a batch of records.
+            """Pandas UDF to generate tokens for a batch of records.
 
             This function is executed on each partition of the DataFrame
             in parallel across the Spark cluster.
@@ -245,10 +257,10 @@ class OpenLinkTokenProcessor:
 
             if hashing_secret_bytes is not None:
                 # Use SHA256 tokenizer with optional encryption
-                token_transformer_list.append(HashTokenTransformer(hashing_secret_bytes))
+                token_transformer_list.append(HashTokenTransformer(hashing_secret_bytes, crypto_suite=crypto_suite))
                 if encryption_key_bytes is not None:
                     token_transformer_list.append(EncryptTokenTransformer(encryption_key_bytes))
-                tokenizer = SHA256Tokenizer(token_transformer_list)
+                tokenizer = SHA256Tokenizer(token_transformer_list, crypto_suite=crypto_suite)
             else:
                 # Use passthrough tokenizer (plain text) with optional encryption
                 if encryption_key_bytes is not None:
@@ -266,6 +278,7 @@ class OpenLinkTokenProcessor:
                         ring_id=ring_id,
                         rule_id=token_id,
                         issuer="org.openlinktoken",
+                        crypto_suite=crypto_suite,
                     )
 
             # Initialize token generator with custom tokenizer
@@ -378,8 +391,7 @@ class OpenLinkTokenProcessor:
             raise ValueError(f"{secret_name} cannot be empty or whitespace-only ({none_hint})")
 
     def _validate_python_env(self) -> None:  # pragma: no cover
-        """
-        Validate Python dependency versions that affect Arrow/Pandas UDFs.
+        """Validate Python dependency versions that affect Arrow/Pandas UDFs.
 
         Raises a clear, actionable error instead of a low-level EOFError from
         the Python worker when PyArrow/Pandas are incompatible with PySpark.
@@ -425,11 +437,11 @@ class OpenLinkTokenProcessor:
 
     @classmethod
     def _get_required_attribute_groups(cls) -> Dict[str, list]:
-        """
-        Get required attribute groups with their column name variants.
+        """Get required attribute groups with their column name variants.
 
         Returns:
             Dictionary mapping attribute names to their column name variants.
+
         """
         # Required attributes for token generation (excluding RecordId which is optional)
         required_attribute_classes = [
@@ -452,14 +464,14 @@ class OpenLinkTokenProcessor:
         return groups
 
     def _validate_dataframe(self, df: DataFrame) -> None:
-        """
-        Validate that the DataFrame has all required columns.
+        """Validate that the DataFrame has all required columns.
 
         Args:
             df: DataFrame to validate
 
         Raises:
             ValueError: If required columns are missing
+
         """
         if df is None:
             raise ValueError("DataFrame cannot be None")
@@ -478,14 +490,14 @@ class OpenLinkTokenProcessor:
             raise ValueError(f"Missing required columns: {', '.join(missing)}")
 
     def _get_column_mapping(self, df: DataFrame) -> Dict[str, str]:
-        """
-        Map standard attribute names to actual column names in the DataFrame.
+        """Map standard attribute names to actual column names in the DataFrame.
 
         Args:
             df: DataFrame to map columns from
 
         Returns:
             Dictionary mapping standard names to actual column names
+
         """
         df_columns = set(df.columns)
         mapping = {}

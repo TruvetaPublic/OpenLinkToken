@@ -150,15 +150,20 @@ LastName, BirthDate, Sex, and PostalCode values.
 | `--private-key-env` |       | No\*     |                                            | Environment variable containing the private key PEM                                             |
 | `--no-progress`     | `-q`  | No       |                                            | Suppress the interactive progress indicator.                                                    |
 
-### `generate-key-pair` (ECDH Key Generation)
+### `generate-key-pair` (ECDH or Version-2 Key Generation)
 
 Available in the Python CLI.
 
-| Argument  | Short | Required | Default                        | Description                                        |
-| --------- | ----- | -------- | ------------------------------ | -------------------------------------------------- |
-| `--curve` | `-c`  | No       | `P-256`                        | Elliptic curve: `P-256`, `P-384`, or `P-521`       |
-| `--name`  | `-n`  | No       | `openlinktoken-<ISO8601-date>` | Base name for output key files                     |
-| `--force` |       | No       | `false`                        | Overwrite existing key files if they already exist |
+Use `--crypto-suite` to select the key format and algorithms. Version-1 suites
+write PEM key pairs; version-2 suites write JSON key bundles containing
+ML-KEM-768 material and, for the hybrid suite, an ECDH-P256 key.
+
+| Argument         | Short | Required | Default                        | Description                                                                                          |
+| ---------------- | ----- | -------- | ------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| `--crypto-suite` |       | No       | `suite-sha256-v1`              | Registered suite ID. Version-2 suites create `.private.bundle.json` and `.public.bundle.json` files. |
+| `--curve`        | `-c`  | No       | `P-256`                        | ECDH curve for version-1 PEM keys: `P-256`, `P-384`, or `P-521`. Not valid for version-2 suites.     |
+| `--name`         | `-n`  | No       | `openlinktoken-<ISO8601-date>` | Base name for output key files.                                                                      |
+| `--force`        |       | No       | `false`                        | Overwrite existing key files if they already exist.                                                  |
 
 Writes key files to `~/.openlinktoken/`:
 
@@ -166,17 +171,30 @@ Writes key files to `~/.openlinktoken/`:
 - `~/.openlinktoken/<name>.public.pem` — SubjectPublicKeyInfo PEM public key (permissions `644`)
 - `~/.openlinktoken/` directory is created with permissions `700` if absent.
 
-### `initiate-exchange` (ECDH Key-Exchange Bootstrap)
+For version-2 suites, the corresponding files are:
+
+- `~/.openlinktoken/<name>.private.bundle.json` — private ML-KEM material and,
+  for the hybrid suite, private ECDH material (permissions `600`)
+- `~/.openlinktoken/<name>.public.bundle.json` — public key bundle (permissions
+  `644`)
+
+### `initiate-exchange` (Versioned Key-Exchange Bootstrap)
 
 Available in the Python CLI.
 
-Generates, reuses, or derives a sender key pair, encrypts a hashing secret into a versioned multi-recipient JWE JSON exchange artifact, and writes recipient entries for both the sender and the partner. The artifact does **not** embed any private keys.
+The selected suite determines the exchange format. Version-1 suites use
+ECDH/JWE and PEM keys. Version-2 suites use the generic exchange envelope with
+ML-KEM-768 or ECDH-P256 plus ML-KEM-768 and JSON key bundles. In either case,
+the command encrypts a hashing secret into a multi-recipient exchange artifact
+for the sender and partner. The artifact does **not** embed private keys.
 
 | Argument                         | Short   | Required | Default                        | Description                                                                                                                                                      |
 | -------------------------------- | ------- | -------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--public-key`                   |         | Yes\*    |                                | Path to the partner's public key (PEM/SPKI format)                                                                                                               |
-| `--public-key-stdin`             |         | Yes\*    | `false`                        | Read the partner's public key PEM from stdin instead of `--public-key`                                                                                           |
-| `--public-key-env`               |         | Yes\*    |                                | Read the partner's public key PEM from the named environment variable                                                                                            |
+| `--crypto-suite`                 |         | No       | `suite-sha256-v1`              | Registered suite ID. It must match the partner's public key format and the suite used for key generation.                                                        |
+| `--public-key`                   |         | Yes\*    |                                | Path to the partner's public PEM key or JSON public key bundle.                                                                                                  |
+| `--public-key-base`              |         | Yes\*    |                                | Base path for the partner's public key; the selected suite appends `.public.pem` for version 1 or `.public.bundle.json` for version 2.                           |
+| `--public-key-stdin`             |         | Yes\*    | `false`                        | Read the partner's public PEM key or JSON public key bundle from stdin instead of `--public-key`.                                                                |
+| `--public-key-env`               |         | Yes\*    |                                | Read the partner's public PEM key or JSON public key bundle from the named environment variable.                                                                 |
 | `--name`                         | `-n`    | No       | `openlinktoken-<ISO8601-date>` | Base name for local key files                                                                                                                                    |
 | `--output`                       | `-o`    | No       | `./<name>.exchange.json`       | Output path for the exchange config JSON                                                                                                                         |
 | `--hashingsecret`                |         | No\*\*   | randomly generated             | Hashing secret to encrypt when you intentionally pass it on the command line                                                                                     |
@@ -189,15 +207,15 @@ Generates, reuses, or derives a sender key pair, encrypts a hashing secret into 
 | `--rotation-bin-width`           | `WIDTH` | No       | `0.05`                         | Quantization bin width for rotation-based token generation                                                                                                       |
 | `--rotation-embedding-dimension` | `N`     | No       | `1024`                         | Embedding vector size. Sets the length of the zero-filled dimension bias written into the exchange config. Ignored when `--rotation-embedding-bias` is provided. |
 | `--rotation-embedding-bias`      | `PATH`  | No       |                                | Path to a JSON file containing a flat array of floats used as the dimension bias (e.g. `[0.12, -0.05, 0.33]`). Overrides `--rotation-embedding-dimension`.       |
-| `--curve`                        | `-c`    | No       | `P-256`                        | Elliptic curve for generated keys: `P-256`, `P-384`, or `P-521`                                                                                                  |
+| `--curve`                        | `-c`    | No       | `P-256`                        | Elliptic curve for version-1 ECDH keys: `P-256`, `P-384`, or `P-521`. Not valid for version-2 suites.                                                            |
 | `--force`                        |         | No       | `false`                        | Overwrite existing key files and exchange config                                                                                                                 |
 | `--sender-private-key`           |         | No       |                                | Reuse an existing sender private key PEM for the sender-side recipient entry instead of generating a new key pair                                                |
 | `--sender-private-key-env`       |         | No       |                                | Read the sender private key PEM from the named environment variable without writing local sender key files                                                       |
 
 **Outputs:**
 
-- `~/.openlinktoken/<name>.private.pem` — local private key (permissions `600`) when Open Link Token generates a sender key or reuses `--sender-private-key`
-- `~/.openlinktoken/<name>.public.pem` — local public key (permissions `644`) when Open Link Token generates a sender key or reuses `--sender-private-key`
+- `~/.openlinktoken/<name>.private.pem` or `.private.bundle.json` — local private key material (permissions `600`)
+- `~/.openlinktoken/<name>.public.pem` or `.public.bundle.json` — local public key material (permissions `644`)
 - `<output>` — versioned multi-recipient JWE JSON exchange artifact containing the encrypted hashing secret
 
 When the named local key pair already exists and the exchange config does not,
@@ -206,7 +224,7 @@ pairs still require correction, while `--force` explicitly replaces them.
 
 `<output>` can be decrypted by either side with its own matching private key. The JSON is still sensitive, but it does **not** contain private key material.
 
-\* Provide one of `--public-key`, `--public-key-stdin`, or `--public-key-env`.
+\* Provide one of `--public-key`, `--public-key-base`, `--public-key-stdin`, or `--public-key-env`.
 
 \*\* Provide at most one of `--hashingsecret`, `--hashingsecret-stdin`, or `--hashingsecret-env`. If you omit all three, Open Link Token generates a secure random hashing secret. For pre-existing secrets, prefer `--hashingsecret-env` or `--hashingsecret-stdin` so the secret does not appear in shell history or process arguments. Because stdin can only be consumed once per command, `--hashingsecret-stdin` cannot be combined with `--public-key-stdin`.
 
@@ -298,6 +316,7 @@ For `tokenize`, `package`, `encrypt`, and `decrypt`, Open Link Token resolves th
 \* Provide at most one of `--private-key` or `--private-key-env`.
 
 See [Sharing Tokenized Data](../operations/sharing-tokenized-data.md) for the full two-command ECDH bootstrap workflow.
+See [Cryptographic Suites](../concepts/crypto-suites.md) for suite selection and version-2 key-bundle workflows.
 For a field-by-field format reference, see `docs/exchange-config-format.md`.
 
 ### `update` (Self-Update CLI)
@@ -338,7 +357,7 @@ olt package \
   --exchange-config ./partner.exchange.json
 ```
 
-**Token Pipeline:**
+**Token Pipeline (for `suite-sha256-v1`):**
 
 ```
 Signature → SHA-256 → HMAC-SHA256 → AES-256-GCM transform
@@ -356,10 +375,10 @@ olt tokenize \
 
 ```
 
-**Token Pipeline:**
+**Token Pipeline (for `suite-sha256-v1`):**
 
 ```
-Signature → SHA-256 → HMAC-SHA256 → Base64
+Signature → suite-selected digest → suite-selected MAC → Base64
 ```
 
 ## Custom Tokenization Configuration (`package --config` or `tokenize --config`)
@@ -435,12 +454,12 @@ ID001,T5,DOE|JOH|MALE
 
 **Differences from normal `tokenize`:**
 
-| Aspect                        | Default mode                   | Hash-only mode                   | Demo mode                                  |
-| ----------------------------- | ------------------------------ | -------------------------------- | ------------------------------------------ |
-| Exchange config / private key | Required in normal mode        | Optional for rotation settings   | Optional for rotation settings             |
-| Token pipeline                | SHA-256 → HMAC-SHA256 → Base64 | SHA-256 → lowercase hex          | Passthrough → raw signature string         |
-| Token format                  | Base64-encoded HMAC-SHA256     | 64-character lowercase hex       | Pipe-separated normalised attribute values |
-| Safe to share                 | No (internal only)             | No (never suitable for exchange) | No (never suitable for exchange)           |
+| Aspect                        | Default mode                         | Hash-only mode                   | Demo mode                                  |
+| ----------------------------- | ------------------------------------ | -------------------------------- | ------------------------------------------ |
+| Exchange config / private key | Required in normal mode              | Optional for rotation settings   | Optional for rotation settings             |
+| Token pipeline                | Suite-selected digest → MAC → Base64 | SHA-256 → lowercase hex          | Passthrough → raw signature string         |
+| Token format                  | Base64-encoded suite-selected MAC    | 64-character lowercase hex       | Pipe-separated normalised attribute values |
+| Safe to share                 | No (internal only)                   | No (never suitable for exchange) | No (never suitable for exchange)           |
 
 ## File Format Examples
 
