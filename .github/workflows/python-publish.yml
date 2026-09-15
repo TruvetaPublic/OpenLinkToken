@@ -48,7 +48,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ needs.release-info.outputs['release-found'] == 'true' && needs.release-info.outputs.tag || github.sha }}
+          # Manual dry runs must test the dispatched commit, not an existing release tag.
+          ref: ${{ github.event_name != 'workflow_dispatch' && needs.release-info.outputs['release-found'] == 'true' && needs.release-info.outputs.tag || github.sha }}
           lfs: true
 
       - name: Setup toolchain (Python only)
