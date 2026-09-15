@@ -83,7 +83,49 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
+      - name: Check Maven Central version
+        id: central-status
+        shell: bash
+        env:
+          VERSION: ${{ env.VERSION }}
+        run: |
+          set -euo pipefail
+          base_url="https://repo.maven.apache.org/maven2/org/openlinktoken"
+          artifacts=(
+            "openlinktoken-parent/${VERSION}/openlinktoken-parent-${VERSION}.pom"
+            "openlinktoken/${VERSION}/openlinktoken-${VERSION}.pom"
+            "openlinktoken-core-ai/${VERSION}/openlinktoken-core-ai-${VERSION}.pom"
+          )
+          published=true
+          published_count=0
+          for artifact in "${artifacts[@]}"; do
+            status=$(curl -sS -o /dev/null -w "%{http_code}" "${base_url}/${artifact}")
+            case "$status" in
+              200)
+                published_count=$((published_count + 1))
+                ;;
+              404)
+                published=false
+                ;;
+              *)
+                echo "Unable to verify Maven Central artifact ${artifact} (HTTP ${status})" >&2
+                exit 1
+                ;;
+            esac
+          done
+          if [ "$published_count" -gt 0 ] && [ "$published" != true ]; then
+            echo "Maven Central contains a partial ${VERSION} publication; immutable versions cannot be republished." >&2
+            exit 1
+          fi
+          echo "published=${published}" >> "$GITHUB_OUTPUT"
+          if [ "$published" = true ]; then
+            echo "Open Link Token ${VERSION} is already published to Maven Central. Skipping deploy."
+          else
+            echo "Maven Central does not contain ${VERSION}; publishing it now."
+          fi
+
       - name: Publish to Maven Central
+        if: steps.central-status.outputs.published != 'true'
         run: |
           cd lib/java
           mvn deploy \

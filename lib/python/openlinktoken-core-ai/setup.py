@@ -56,6 +56,7 @@ class SdistWithInferencingManifest(sdist):
         dst = os.path.join(base_dir, INFERENCING_ASSETS_SOURCE_PKG)
         os.makedirs(dst, exist_ok=True)
         shutil.copy2(_find_manifest_source(), os.path.join(dst, "asset-manifest.json"))
+        shutil.copy2(os.path.join(THIS_DIR, "requirements.txt"), os.path.join(base_dir, "requirements.txt"))
 
 
 # Read the contents of the project README file.
