@@ -7,6 +7,13 @@ applyTo: "**"
 
 Keep repository-specific completion steps consistent.
 
+## Session and GitHub execution preferences
+
+- Use `dev/mattwise-42/<branch-name>` for branches created in this workspace.
+- Use the `gpt-5.6-luna` model when selecting an available model for delegated work.
+- Use `PUBLIC_GH_TOKEN` for authenticated GitHub operations.
+- Run shell and development commands in an existing reusable devcontainer whenever possible; use the host environment only when requested or when the devcontainer is unavailable.
+
 ## Pin exact versions of all dependencies
 
 When adding or updating packages in `requirements.txt`, `setup.py` `install_requires`/`extras_require`, or `pyproject.toml` dependency lists, always use exact version pins (`==`) rather than ranges or unpinned names.
