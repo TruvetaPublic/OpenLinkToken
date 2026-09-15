@@ -74,6 +74,12 @@ class TestSHA256Tokenizer:
             result == expected_hash
         )  # Verify that the result is just the raw SHA-256 hash (no transformations applied)
 
+    def test_no_suite_constructor_uses_sha256_suite(self):
+        """The no-suite constructor explicitly selects the SHA-256 suite."""
+        tokenizer = SHA256Tokenizer([])
+
+        assert tokenizer.crypto_suite is CryptoSuite.SUITE_SHA256_V1
+
     def test_tokenize_valid_input_transformer_throws_exception(self):
         """Test that transformer exceptions are propagated."""
         input_value = "test-input"

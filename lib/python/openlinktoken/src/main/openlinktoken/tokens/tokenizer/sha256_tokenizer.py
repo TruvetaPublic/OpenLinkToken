@@ -22,4 +22,5 @@ class SHA256Tokenizer(CryptoSuiteTokenizer):
             token_transformer_list: A list of token transformers.
             crypto_suite: The suite selecting the token digest. Defaults to SHA-256.
         """
-        super().__init__(token_transformer_list, crypto_suite)
+        selected_suite = crypto_suite if crypto_suite is not None else CryptoSuite.SUITE_SHA256_V1
+        super().__init__(token_transformer_list, selected_suite)

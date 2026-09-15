@@ -17,7 +17,7 @@ public final class SHA256Tokenizer extends CryptoSuiteTokenizer {
      * @param tokenTransformerList a list of token transformers.
      */
     public SHA256Tokenizer(List<TokenTransformer> tokenTransformerList) {
-        this(tokenTransformerList, CryptoSuite.defaultSuite());
+        this(tokenTransformerList, CryptoSuite.SUITE_SHA256_V1);
     }
 
     /**
