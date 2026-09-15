@@ -13,6 +13,16 @@ def test_compatibility_module_reexports_canonical_suite_registry():
     assert CompatibilityCryptoSuiteError is CryptoSuiteError
 
 
+def test_public_constants_are_registered_suites():
+    """Each public suite constant resolves through the canonical registry."""
+    assert CryptoSuite.SUITE_SHA256_V1 is CryptoSuite.from_id("suite-sha256-v1")
+    assert CryptoSuite.SUITE_SHA3_V1 is CryptoSuite.from_id("suite-sha3-v1")
+    assert CryptoSuite.SUITE_PQ_SHAKE_V1 is CryptoSuite.from_id("suite-pq-shake-v1")
+    assert CryptoSuite.SUITE_PQ_V1 is CryptoSuite.from_id("suite-pq-v1")
+    assert CryptoSuite.SUITE_PQ_HYBRID_V1 is CryptoSuite.from_id("suite-pq-hybrid-v1")
+    assert CryptoSuite.default() is CryptoSuite.SUITE_SHA256_V1
+
+
 def test_registered_suites_have_expected_contracts():
     """Every public suite ID resolves to its exact algorithm contract."""
     assert [suite.suite_id for suite in CryptoSuite.all()] == [

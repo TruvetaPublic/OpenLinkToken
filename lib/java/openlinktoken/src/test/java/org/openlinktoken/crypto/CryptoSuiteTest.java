@@ -3,6 +3,7 @@ package org.openlinktoken.crypto;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
@@ -11,6 +12,18 @@ import org.junit.jupiter.api.Test;
  * Tests the registered crypto suite contracts and lookup validation.
  */
 class CryptoSuiteTest {
+    /**
+     * Verifies that each registered suite is exposed as a canonical public constant.
+     */
+    @Test
+    void publicConstantsAreRegisteredSuites() {
+        assertSame(CryptoSuite.SUITE_SHA256_V1, CryptoSuite.fromId("suite-sha256-v1"));
+        assertSame(CryptoSuite.SUITE_SHA3_V1, CryptoSuite.fromId("suite-sha3-v1"));
+        assertSame(CryptoSuite.SUITE_PQ_SHAKE_V1, CryptoSuite.fromId("suite-pq-shake-v1"));
+        assertSame(CryptoSuite.SUITE_PQ_V1, CryptoSuite.fromId("suite-pq-v1"));
+        assertSame(CryptoSuite.SUITE_PQ_HYBRID_V1, CryptoSuite.fromId("suite-pq-hybrid-v1"));
+    }
+
     /**
      * Verifies the algorithms and versions declared by the registered suites.
      */
