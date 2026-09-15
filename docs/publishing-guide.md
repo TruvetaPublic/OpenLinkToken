@@ -331,14 +331,15 @@ To publish a specific version manually:
 2. Click **Run workflow**.
 3. Select the `main` branch.
 4. Enter the version string (e.g., `2.0.0`).
-5. Click **Run workflow**.
+5. For **Python Package**, optionally enable `dry_run` to build and test without publishing to PyPI.
+6. Click **Run workflow**.
 
 The workflow will:
 
 1. Check out the `main` branch.
 2. Read the version from the `release-context.yml` shared workflow.
 3. Build the package (`mvn package` for Maven; `uv build` for Python).
-4. Deploy to Maven Central + GitHub Packages, or to PyPI.
+4. Deploy to Maven Central + GitHub Packages, or to PyPI, unless the Python `dry_run` input is enabled.
 5. Attach artifacts to the named release (Maven) or the workflow run (Python).
 
 ---
