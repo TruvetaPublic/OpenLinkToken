@@ -16,6 +16,11 @@ on:
         description: "Version to publish (e.g., 1.12.5)"
         required: true
         type: string
+      dry_run:
+        description: "Build and test without publishing to PyPI"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -43,7 +48,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ needs.release-info.outputs['release-found'] == 'true' && needs.release-info.outputs.tag || github.sha }}
+          # Manual dry runs must test the dispatched commit, not an existing release tag.
+          ref: ${{ github.event_name != 'workflow_dispatch' && needs.release-info.outputs['release-found'] == 'true' && needs.release-info.outputs.tag || github.sha }}
           lfs: true
 
       - name: Setup toolchain (Python only)
@@ -91,6 +97,7 @@ jobs:
 
   publish_to_pypi:
     needs: [release-info, build_and_test]
+    if: ${{ github.event_name != 'workflow_dispatch' || !inputs.dry_run }}
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
@@ -113,3 +120,13 @@ jobs:
         with:
           packages-dir: dist
           skip-existing: true
+
+  dry_run_summary:
+    needs: [release-info, build_and_test]
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Confirm dry run
+        run: echo "Dry run complete for ${{ needs.release-info.outputs['tag'] }}; packages were built and tested but not published to PyPI."

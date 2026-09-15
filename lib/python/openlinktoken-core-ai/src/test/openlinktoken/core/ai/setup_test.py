@@ -25,3 +25,6 @@ def test_sdist_release_tree_contains_the_verified_manifest(tmp_path):
     staged_manifest = tmp_path / "src" / "main" / "openlinktoken" / "core" / "ai" / "tokens" / "asset-manifest.json"
     assert staged_manifest.read_bytes() == MANIFEST_PATH.read_bytes()
     assert hashlib.sha256(staged_manifest.read_bytes()).digest() == hashlib.sha256(MANIFEST_PATH.read_bytes()).digest()
+
+    staged_requirements = tmp_path / "requirements.txt"
+    assert staged_requirements.is_file()

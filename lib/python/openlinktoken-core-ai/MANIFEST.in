@@ -1,0 +1,10 @@
+# Include files required when rebuilding wheels from the source distribution.
+include requirements.txt
+
+# Include all Python source files.
+recursive-include src *.py
+
+# Exclude test files and Python caches from distribution.
+recursive-exclude src/test *
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
