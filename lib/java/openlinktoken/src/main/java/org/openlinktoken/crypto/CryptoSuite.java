@@ -8,17 +8,37 @@ import java.util.Map;
  * Immutable contract for token primitives and exchange key establishment.
  */
 public final class CryptoSuite {
+    /** The SHA-256 and ECDH crypto suite. */
+    public static final CryptoSuite SUITE_SHA256_V1 =
+            new CryptoSuite("suite-sha256-v1", "SHA-256", "HS256", "A256GCM", "ECDH", 1);
+
+    /** The SHA-3-256 and ECDH crypto suite. */
+    public static final CryptoSuite SUITE_SHA3_V1 =
+            new CryptoSuite("suite-sha3-v1", "SHA3-256", "HS3-256", "A256GCM", "ECDH", 1);
+
+    /** The SHAKE256 and ML-KEM-768 crypto suite. */
+    public static final CryptoSuite SUITE_PQ_SHAKE_V1 =
+            new CryptoSuite("suite-pq-shake-v1", "SHAKE256-256", "KMAC256-256", "A256GCM", "ML-KEM-768", 2);
+
+    /** The SHA-3-256 and ML-KEM-768 crypto suite. */
+    public static final CryptoSuite SUITE_PQ_V1 =
+            new CryptoSuite("suite-pq-v1", "SHA3-256", "HS3-256", "A256GCM", "ML-KEM-768", 2);
+
+    /** The SHA-3-256, ECDH, and ML-KEM-768 hybrid crypto suite. */
+    public static final CryptoSuite SUITE_PQ_HYBRID_V1 =
+            new CryptoSuite("suite-pq-hybrid-v1", "SHA3-256", "HS3-256", "A256GCM", "ECDH+ML-KEM-768", 2);
+
     private static final Map<String, CryptoSuite> REGISTRY = Map.of(
-            "suite-sha256-v1",
-            new CryptoSuite("suite-sha256-v1", "SHA-256", "HS256", "A256GCM", "ECDH", 1),
-            "suite-sha3-v1",
-            new CryptoSuite("suite-sha3-v1", "SHA3-256", "HS3-256", "A256GCM", "ECDH", 1),
-            "suite-pq-shake-v1",
-            new CryptoSuite("suite-pq-shake-v1", "SHAKE256-256", "KMAC256-256", "A256GCM", "ML-KEM-768", 2),
-            "suite-pq-v1",
-            new CryptoSuite("suite-pq-v1", "SHA3-256", "HS3-256", "A256GCM", "ML-KEM-768", 2),
-            "suite-pq-hybrid-v1",
-            new CryptoSuite("suite-pq-hybrid-v1", "SHA3-256", "HS3-256", "A256GCM", "ECDH+ML-KEM-768", 2));
+            SUITE_SHA256_V1.getSuiteId(),
+            SUITE_SHA256_V1,
+            SUITE_SHA3_V1.getSuiteId(),
+            SUITE_SHA3_V1,
+            SUITE_PQ_SHAKE_V1.getSuiteId(),
+            SUITE_PQ_SHAKE_V1,
+            SUITE_PQ_V1.getSuiteId(),
+            SUITE_PQ_V1,
+            SUITE_PQ_HYBRID_V1.getSuiteId(),
+            SUITE_PQ_HYBRID_V1);
 
     private final String suiteId;
     private final String tokenDigestAlgorithm;
@@ -76,7 +96,7 @@ public final class CryptoSuite {
      * @return the default suite
      */
     public static CryptoSuite defaultSuite() {
-        return REGISTRY.get("suite-sha256-v1");
+        return SUITE_SHA256_V1;
     }
 
     /**

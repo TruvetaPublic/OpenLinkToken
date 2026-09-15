@@ -20,6 +20,11 @@ class CryptoSuite:
     exchange_key_agreement: str
     exchange_config_version: int
 
+    SUITE_SHA256_V1: ClassVar["CryptoSuite"]
+    SUITE_SHA3_V1: ClassVar["CryptoSuite"]
+    SUITE_PQ_SHAKE_V1: ClassVar["CryptoSuite"]
+    SUITE_PQ_V1: ClassVar["CryptoSuite"]
+    SUITE_PQ_HYBRID_V1: ClassVar["CryptoSuite"]
     _REGISTRY: ClassVar[dict[str, "CryptoSuite"]]
 
     @classmethod
@@ -37,7 +42,7 @@ class CryptoSuite:
     @classmethod
     def default(cls) -> "CryptoSuite":
         """Return the backward-compatible default suite."""
-        return cls._REGISTRY["suite-sha256-v1"]
+        return cls.SUITE_SHA256_V1
 
     @classmethod
     def all(cls) -> tuple["CryptoSuite", ...]:
@@ -62,49 +67,55 @@ class CryptoSuite:
         return self
 
 
+CryptoSuite.SUITE_SHA256_V1 = CryptoSuite(
+    suite_id="suite-sha256-v1",
+    token_digest_algorithm="SHA-256",
+    token_mac_algorithm="HS256",
+    token_content_encryption="A256GCM",
+    exchange_key_agreement="ECDH",
+    exchange_config_version=1,
+)
+CryptoSuite.SUITE_SHA3_V1 = CryptoSuite(
+    suite_id="suite-sha3-v1",
+    token_digest_algorithm="SHA3-256",
+    token_mac_algorithm="HS3-256",
+    token_content_encryption="A256GCM",
+    exchange_key_agreement="ECDH",
+    exchange_config_version=1,
+)
+CryptoSuite.SUITE_PQ_SHAKE_V1 = CryptoSuite(
+    suite_id="suite-pq-shake-v1",
+    token_digest_algorithm="SHAKE256-256",
+    token_mac_algorithm="KMAC256-256",
+    token_content_encryption="A256GCM",
+    exchange_key_agreement="ML-KEM-768",
+    exchange_config_version=2,
+)
+CryptoSuite.SUITE_PQ_V1 = CryptoSuite(
+    suite_id="suite-pq-v1",
+    token_digest_algorithm="SHA3-256",
+    token_mac_algorithm="HS3-256",
+    token_content_encryption="A256GCM",
+    exchange_key_agreement="ML-KEM-768",
+    exchange_config_version=2,
+)
+CryptoSuite.SUITE_PQ_HYBRID_V1 = CryptoSuite(
+    suite_id="suite-pq-hybrid-v1",
+    token_digest_algorithm="SHA3-256",
+    token_mac_algorithm="HS3-256",
+    token_content_encryption="A256GCM",
+    exchange_key_agreement="ECDH+ML-KEM-768",
+    exchange_config_version=2,
+)
+
 CryptoSuite._REGISTRY = {
     suite.suite_id: suite
     for suite in (
-        CryptoSuite(
-            suite_id="suite-sha256-v1",
-            token_digest_algorithm="SHA-256",
-            token_mac_algorithm="HS256",
-            token_content_encryption="A256GCM",
-            exchange_key_agreement="ECDH",
-            exchange_config_version=1,
-        ),
-        CryptoSuite(
-            suite_id="suite-sha3-v1",
-            token_digest_algorithm="SHA3-256",
-            token_mac_algorithm="HS3-256",
-            token_content_encryption="A256GCM",
-            exchange_key_agreement="ECDH",
-            exchange_config_version=1,
-        ),
-        CryptoSuite(
-            suite_id="suite-pq-shake-v1",
-            token_digest_algorithm="SHAKE256-256",
-            token_mac_algorithm="KMAC256-256",
-            token_content_encryption="A256GCM",
-            exchange_key_agreement="ML-KEM-768",
-            exchange_config_version=2,
-        ),
-        CryptoSuite(
-            suite_id="suite-pq-v1",
-            token_digest_algorithm="SHA3-256",
-            token_mac_algorithm="HS3-256",
-            token_content_encryption="A256GCM",
-            exchange_key_agreement="ML-KEM-768",
-            exchange_config_version=2,
-        ),
-        CryptoSuite(
-            suite_id="suite-pq-hybrid-v1",
-            token_digest_algorithm="SHA3-256",
-            token_mac_algorithm="HS3-256",
-            token_content_encryption="A256GCM",
-            exchange_key_agreement="ECDH+ML-KEM-768",
-            exchange_config_version=2,
-        ),
+        CryptoSuite.SUITE_SHA256_V1,
+        CryptoSuite.SUITE_SHA3_V1,
+        CryptoSuite.SUITE_PQ_SHAKE_V1,
+        CryptoSuite.SUITE_PQ_V1,
+        CryptoSuite.SUITE_PQ_HYBRID_V1,
     )
 }
 

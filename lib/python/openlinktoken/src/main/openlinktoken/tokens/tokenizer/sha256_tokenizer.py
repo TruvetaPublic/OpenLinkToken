@@ -16,4 +16,5 @@ class SHA256Tokenizer(CryptoSuiteTokenizer):
         crypto_suite: CryptoSuite | None = None,
     ):
         """Initialize the compatibility wrapper with the selected suite."""
-        super().__init__(token_transformer_list, crypto_suite)
+        selected_suite = crypto_suite if crypto_suite is not None else CryptoSuite.SUITE_SHA256_V1
+        super().__init__(token_transformer_list, selected_suite)

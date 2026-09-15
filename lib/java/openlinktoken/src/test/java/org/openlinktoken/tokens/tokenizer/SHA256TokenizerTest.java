@@ -104,6 +104,18 @@ class SHA256TokenizerTest {
     }
 
     /**
+     * Verifies that the no-suite constructor remains explicitly SHA-256 based.
+     */
+    @Test
+    void noSuiteConstructorUsesSha256Suite() throws Exception {
+        tokenizer = new SHA256Tokenizer(new ArrayList<>());
+
+        assertEquals(
+                new SHA256Tokenizer(new ArrayList<>(), CryptoSuite.SUITE_SHA256_V1).tokenize("test-input"),
+                tokenizer.tokenize("test-input"));
+    }
+
+    /**
      * Verifies that transformer failures are propagated to the caller.
      */
     @Test
