@@ -162,6 +162,26 @@
       "args": ["update", "--dry-run"]
     },
     {
+      "name": "Python: extension update (dry run)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/lib/python/openlinktoken-cli/src/main/openlinktoken_cli/main.py",
+      "env": {
+        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main"
+      },
+      "args": ["extension", "update", "${input:extensionName}", "--dry-run"]
+    },
+    {
+      "name": "Python: update all extensions (dry run)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/lib/python/openlinktoken-cli/src/main/openlinktoken_cli/main.py",
+      "env": {
+        "PYTHONPATH": "lib/python/openlinktoken-cli/src/main:lib/python/openlinktoken/src/main:lib/python/openlinktoken-core-ai/src/main"
+      },
+      "args": ["extension", "update", "--all", "--dry-run"]
+    },
+    {
       "name": "Python: inspect-exchange-config",
       "type": "debugpy",
       "request": "launch",
@@ -205,6 +225,12 @@
       "description": "Select tokenize mode",
       "options": ["default", "hash-only", "demo"],
       "default": "default"
+    },
+    {
+      "id": "extensionName",
+      "type": "promptString",
+      "description": "Installed extension name to update",
+      "default": "truveta"
     }
   ]
 }
