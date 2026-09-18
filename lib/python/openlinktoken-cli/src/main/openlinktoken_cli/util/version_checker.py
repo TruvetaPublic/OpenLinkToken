@@ -9,8 +9,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 from urllib.error import URLError
+from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
+from openlinktoken_cli.extension.extension_manifest import (
+    CURRENT_CORE_VERSION,
+    ManifestValidationError,
+    is_core_compatible,
+    parse_manifest,
+)
+from openlinktoken_cli.extension.extension_registry import ExtensionRegistry
 from openlinktoken_cli.util.app_paths import get_openlinktoken_home
 
 logger = logging.getLogger(__name__)
@@ -20,6 +28,8 @@ _CACHE_TTL_SECONDS = 24 * 60 * 60  # 24 hours
 _REQUEST_TIMEOUT_SECONDS = 2
 _ENV_DISABLE = "OLT_DISABLE_UPDATE_CHECK"
 _CACHE_FILENAME = "update-check.json"
+_EXTENSION_CACHE_FILENAME = "extension-update-check.json"
+_EXTENSION_CACHE_TTL_SECONDS = 24 * 60 * 60
 
 
 class VersionChecker:
@@ -42,6 +52,7 @@ class VersionChecker:
         self._current_version = current_version
         self._no_update_check = no_update_check
         self._result: Optional[str] = None  # latest version fetched/cached
+        self._extension_results: list[tuple[str, str, str]] = []
         self._thread: Optional[threading.Thread] = None
 
     # ------------------------------------------------------------------
@@ -89,6 +100,7 @@ class VersionChecker:
             if self._notice_due():
                 self._print_notice(self._result)
                 self._record_notice_shown()
+        self._print_extension_notices()
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -107,14 +119,79 @@ class VersionChecker:
             cached = self._read_cache()
             if cached is not None:
                 self._result = cached
-                return
-
-            latest = self._fetch_latest_version()
-            if latest:
-                self._result = latest
-                self._write_cache(latest)
+            else:
+                latest = self._fetch_latest_version()
+                if latest:
+                    self._result = latest
+                    self._write_cache(latest)
+            self._check_extension_updates()
         except Exception as exc:
             logger.debug("Version check failed", exc_info=exc)
+
+    def _check_extension_updates(self) -> None:
+        """Check registered vendor manifests without importing extension code."""
+        cache = self._read_extension_cache()
+        changed = False
+        for name, metadata in ExtensionRegistry.load().items():
+            manifest_url = metadata.get("update_manifest_url")
+            if not manifest_url:
+                continue
+            cached = cache.get(manifest_url)
+            payload = None
+            if cached and self._cache_entry_fresh(cached):
+                payload = cached.get("payload")
+            if payload is None:
+                payload = self._fetch_extension_manifest(manifest_url)
+                if payload is None:
+                    continue
+                cache[manifest_url] = {
+                    "last_checked": datetime.now(timezone.utc).isoformat(),
+                    "payload": payload,
+                }
+                changed = True
+            try:
+                manifest = parse_manifest(payload, expected_name=name)
+                if not is_core_compatible(CURRENT_CORE_VERSION, manifest.core_specifier):
+                    continue
+                current = metadata.get("version", "0.0.0")
+                latest = max(
+                    (artifact.version for artifact in manifest.artifacts if artifact.version),
+                    key=lambda value: self._version_key(value),
+                    default=current,
+                )
+                if self._is_newer(latest, current):
+                    self._extension_results.append((name, current, latest))
+            except (ManifestValidationError, TypeError, ValueError):
+                logger.debug("Ignoring invalid extension update manifest for %s", name)
+        if changed:
+            self._write_extension_cache(cache)
+
+    @staticmethod
+    def _version_key(value: str):
+        """Return a comparable packaging version, with invalid values sorted last."""
+        from packaging.version import Version
+
+        try:
+            return Version(value)
+        except Exception:
+            return Version("0")
+
+    def _fetch_extension_manifest(self, url: str) -> Optional[dict]:
+        """Fetch one HTTPS vendor manifest as JSON, never importing extension code."""
+        try:
+            parsed = urlparse(url)
+            if parsed.scheme != "https" or not parsed.netloc:
+                return None
+            request = Request(url, headers={"User-Agent": "openlinktoken-cli"})
+            with urlopen(request, timeout=_REQUEST_TIMEOUT_SECONDS) as response:
+                final_url = response.geturl()
+                final = urlparse(final_url)
+                if final.scheme != "https" or not final.netloc:
+                    return None
+                payload = json.loads(response.read().decode("utf-8"))
+            return payload if isinstance(payload, dict) else None
+        except (URLError, OSError, json.JSONDecodeError, TypeError, ValueError):
+            return None
 
     def _fetch_latest_version(self) -> Optional[str]:
         """Query the GitHub Releases API and return the tag name."""
@@ -135,6 +212,39 @@ class VersionChecker:
     def _get_cache_path() -> Path:
         """Return the platform-appropriate path for the cache file."""
         return get_openlinktoken_home() / _CACHE_FILENAME
+
+    @staticmethod
+    def _get_extension_cache_path() -> Path:
+        """Return the bounded cache path for extension manifests."""
+        return get_openlinktoken_home() / _EXTENSION_CACHE_FILENAME
+
+    def _read_extension_cache(self) -> dict:
+        """Read the extension manifest cache, returning an empty cache on errors."""
+        try:
+            payload = json.loads(self._get_extension_cache_path().read_text(encoding="utf-8"))
+            return payload if isinstance(payload, dict) else {}
+        except (OSError, TypeError, ValueError, json.JSONDecodeError):
+            return {}
+
+    def _write_extension_cache(self, cache: dict) -> None:
+        """Persist extension manifest responses without affecting command execution."""
+        try:
+            path = self._get_extension_cache_path()
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(cache), encoding="utf-8")
+        except OSError:
+            logger.debug("Could not write extension update cache", exc_info=True)
+
+    @staticmethod
+    def _cache_entry_fresh(entry: dict) -> bool:
+        """Return whether one extension manifest cache entry is inside its TTL."""
+        try:
+            checked = datetime.fromisoformat(entry["last_checked"])
+            if checked.tzinfo is None:
+                checked = checked.replace(tzinfo=timezone.utc)
+            return (datetime.now(timezone.utc) - checked).total_seconds() <= _EXTENSION_CACHE_TTL_SECONDS
+        except (KeyError, TypeError, ValueError):
+            return False
 
     def _read_cache(self) -> Optional[str]:
         """
@@ -196,7 +306,7 @@ class VersionChecker:
             if last_notified.tzinfo is None:
                 last_notified = last_notified.replace(tzinfo=timezone.utc)
             age_seconds = (datetime.now(timezone.utc) - last_notified).total_seconds()
-            return age_seconds > _CACHE_TTL_SECONDS
+            return age_seconds < 0 or age_seconds > _CACHE_TTL_SECONDS
         except Exception as exc:
             logger.debug("Could not read last_notified from cache", exc_info=exc)
             return True
@@ -257,6 +367,38 @@ class VersionChecker:
             print("\n".join(lines), file=sys.stderr)
         except Exception:
             pass
+
+    def _print_extension_notices(self) -> None:
+        """Print rate-limited extension notices after normal command output."""
+        if not self._extension_results:
+            return
+        cache = self._read_extension_cache()
+        now = datetime.now(timezone.utc)
+        changed = False
+        for name, current, latest in self._extension_results:
+            entry = cache.get(name, {})
+            try:
+                last_notified = datetime.fromisoformat(entry.get("last_notified", ""))
+                if last_notified.tzinfo is None:
+                    last_notified = last_notified.replace(tzinfo=timezone.utc)
+                age_seconds = (now - last_notified).total_seconds()
+                if 0 <= age_seconds <= _EXTENSION_CACHE_TTL_SECONDS:
+                    continue
+            except (TypeError, ValueError):
+                pass
+            try:
+                print(
+                    f"⚠ Extension update available: {name} {current} -> {latest}. "
+                    f"Run 'olt extension update {name} --yes'.",
+                    file=sys.stderr,
+                )
+            except Exception:
+                continue
+            entry["last_notified"] = now.isoformat()
+            cache[name] = entry
+            changed = True
+        if changed:
+            self._write_extension_cache(cache)
 
     @staticmethod
     def _stderr_is_interactive() -> bool:

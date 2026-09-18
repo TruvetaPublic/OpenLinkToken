@@ -10,6 +10,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+from openlinktoken_cli.extension.extension_registry import ExtensionRegistry
 from openlinktoken_cli.util.version_checker import VersionChecker, start_version_check
 
 _CURRENT = "2.0.0"
@@ -220,6 +221,51 @@ class TestRun:
                 checker._run()
         assert checker._result == _NEWER
 
+    def test_extension_manifest_check_uses_data_only_registry_metadata(self, tmp_path):
+        """Extension checks fetch only registered manifests and do not import extensions."""
+        manifest = {
+            "schema_version": 1,
+            "extension": "demo",
+            "latest_version": "2.1.0",
+            "requires_core": ">=2.0.0,<3.0.0",
+            "artifacts": [
+                {
+                    "url": "https://example.com/demo-2.1.0.whl",
+                    "sha256": "a" * 64,
+                }
+            ],
+        }
+        registry = {
+            "demo": {
+                "version": "2.0.0",
+                "update_manifest_url": "https://example.com/demo.json",
+            },
+            "no-check": {"version": "1.0.0"},
+        }
+        response = MagicMock()
+        response.read.return_value = json.dumps(manifest).encode()
+        response.geturl.return_value = "https://example.com/demo.json"
+        response.__enter__ = lambda value: value
+        response.__exit__ = MagicMock(return_value=False)
+        checker = VersionChecker(_CURRENT)
+        with patch.object(ExtensionRegistry, "load", return_value=registry):
+            with patch.object(VersionChecker, "_get_extension_cache_path", return_value=tmp_path / "cache.json"):
+                with patch("openlinktoken_cli.util.version_checker.urlopen", return_value=response) as fetch:
+                    checker._check_extension_updates()
+
+        assert checker._extension_results == [("demo", "2.0.0", "2.1.0")]
+        fetch.assert_called_once()
+
+    def test_extension_manifest_check_ignores_entries_without_manifest_url(self):
+        """No network request is made for registry entries without update manifests."""
+        checker = VersionChecker(_CURRENT)
+        with patch.object(ExtensionRegistry, "load", return_value={"demo": {"version": "1.0.0"}}):
+            with patch.object(VersionChecker, "_fetch_extension_manifest") as fetch:
+                checker._check_extension_updates()
+
+        fetch.assert_not_called()
+        assert checker._extension_results == []
+
 
 # ---------------------------------------------------------------------------
 # _print_notice
@@ -260,7 +306,7 @@ class TestWaitAndNotify:
         captured = capsys.readouterr()
         assert captured.err == ""
 
-    def test_notice_shown_after_command(self, capsys, monkeypatch):
+    def test_notice_shown_after_command(self, capsys, monkeypatch, tmp_path):
         monkeypatch.delenv("NO_COLOR", raising=False)
         monkeypatch.delenv("OLT_DISABLE_UPDATE_CHECK", raising=False)
 
@@ -270,8 +316,9 @@ class TestWaitAndNotify:
         checker._thread.start()
         checker._thread.join()
 
-        with patch.object(sys.stderr, "isatty", return_value=True):
-            checker.wait_and_notify()
+        with patch.object(VersionChecker, "_get_cache_path", return_value=tmp_path / "cache.json"):
+            with patch.object(sys.stderr, "isatty", return_value=True):
+                checker.wait_and_notify()
 
         captured = capsys.readouterr()
         assert _NEWER in captured.err

@@ -130,3 +130,16 @@ class TestEnvVarOverride:
             ExtensionRegistry.add_extension("x", meta)
 
         assert (tmp_path / "registry.json").exists()
+
+    def test_default_path_uses_platform_aware_openlinktoken_home(self, tmp_path):
+        """The default registry directory follows app_paths on every platform."""
+        platform_home = tmp_path / "platform-home"
+        with patch.dict(os.environ, {}, clear=True):
+            with patch(
+                "openlinktoken_cli.extension.extension_registry.get_openlinktoken_home",
+                return_value=platform_home,
+            ):
+                with patch("pathlib.Path.home", return_value=tmp_path / "raw-home"):
+                    result = ExtensionRegistry.get_extensions_dir()
+
+        assert result == (platform_home / "extensions").resolve()
