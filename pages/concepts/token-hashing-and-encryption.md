@@ -148,10 +148,11 @@ The workflows use separate cryptographic materials for separate purposes:
 | Exchange private key  | Access to protected exchange-config values | `package`, `encrypt`, and `decrypt`                         |
 | Derived transport key | Encrypted token content                    | `package`, `encrypt`, and `decrypt`                         |
 
-The exchange config carries the hashing secret and transport-key material in a
-protected, versioned envelope. Keep private keys and exchange configs out of
-source control, logs, and unencrypted transfer packages. Prefer environment
-variables or a managed secret store for explicit secret overrides.
+The exchange config carries the hashing secret, suite identifier, and
+transport-key material in a protected, versioned envelope. Keep private keys
+and exchange configs out of source control, logs, and unencrypted transfer
+packages. Prefer environment variables or a managed secret store for explicit
+secret overrides.
 
 ## How crypto suites affect the pipeline
 
