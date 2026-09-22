@@ -194,13 +194,25 @@ def decrypt_v2_jwe(
 
     if token.cek is None:
         raise ValueError("Version-2 JWE decryption did not produce a content-encryption key.")
-    transport_key = HKDF(
+    transport_key = _derive_token_transport_key(token.cek, protected_header["exchangeId"])
+    return token.payload, transport_key
+
+
+def _derive_token_transport_key(cek: bytes, exchange_id: str) -> bytes:
+    """Derive the v2 token transport key from the internal JWE CEK."""
+    if not isinstance(cek, bytes):
+        raise TypeError("Version-2 JWE CEK must be bytes.")
+    if len(cek) != CEK_SIZE:
+        raise ValueError(f"Version-2 JWE CEK must be {CEK_SIZE} bytes.")
+    if not isinstance(exchange_id, str) or not exchange_id:
+        raise ValueError("Version-2 exchange ID must be a non-empty string.")
+
+    return HKDF(
         algorithm=hashes.SHA256(),
         length=CEK_SIZE,
-        salt=protected_header["exchangeId"].encode("utf-8"),
+        salt=exchange_id.encode("utf-8"),
         info=TOKEN_TRANSPORT_KEY_INFO,
-    ).derive(token.cek)
-    return token.payload, transport_key
+    ).derive(cek)
 
 
 def _validate_protected_header(protected_header: Mapping[str, Any]) -> None:

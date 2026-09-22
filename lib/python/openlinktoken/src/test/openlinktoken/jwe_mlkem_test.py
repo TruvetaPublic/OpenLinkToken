@@ -17,6 +17,7 @@ from openlinktoken.jwe_mlkem import (
     MLKEM_CIPHERTEXT_SIZE,
     PURE_KEM_ALGORITHM,
     OpenLinkTokenJWE,
+    _derive_token_transport_key,
     build_v2_jwe,
     decrypt_v2_jwe,
 )
@@ -37,6 +38,17 @@ def _protected_header(suite_id: str) -> dict[str, object]:
 def _decode(value: str) -> bytes:
     """Decode unpadded base64url test values."""
     return base64.urlsafe_b64decode(value + "=" * (-len(value) % 4))
+
+
+def test_v2_token_transport_key_uses_the_documented_hkdf_contract():
+    """The v2 transport key uses the CEK, exchange ID salt, and domain-separated info."""
+    cek = bytes(range(32))
+
+    transport_key = _derive_token_transport_key(cek, "exchange-id-a1")
+
+    assert transport_key.hex() == "28cf4377e92ac7219f4454c73192e4bd6ca29076a648be934abb74f7350a7d6a"
+    assert transport_key == _derive_token_transport_key(cek, "exchange-id-a1")
+    assert transport_key != _derive_token_transport_key(cek, "exchange-id-a2")
 
 
 @pytest.mark.parametrize(

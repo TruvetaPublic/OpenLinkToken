@@ -215,9 +215,12 @@ def resolve_loaded_exchange_config(
 def derive_transport_encryption_key(exchange: ResolvedExchangeConfig) -> bytes:
     """Derive the shared 32-byte transport key defined by the exchange config contract."""
     if exchange.version == EXCHANGE_V2_VERSION:
-        if exchange.transport_encryption_key is None:
-            raise ValueError("Version-2 exchange config did not provide its derived transport encryption key.")
-        return exchange.transport_encryption_key
+        transport_key = exchange.transport_encryption_key
+        if not isinstance(transport_key, bytes) or len(transport_key) != 32:
+            raise ValueError(
+                "Version-2 exchange config did not provide a derived transport encryption key of exactly 32 bytes."
+            )
+        return transport_key
 
     sender_public_key = exchange.payload.get("senderPublicKey")
     recipient_public_key = exchange.payload.get("recipientPublicKey")
