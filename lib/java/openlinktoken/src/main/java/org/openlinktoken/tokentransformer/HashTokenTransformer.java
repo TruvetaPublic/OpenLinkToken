@@ -72,7 +72,8 @@ public class HashTokenTransformer implements TokenTransformer {
     public HashTokenTransformer(byte[] hashingSecret, CryptoSuite cryptoSuite)
             throws NoSuchAlgorithmException, InvalidKeyException {
         this.hashingSecret = hashingSecret == null ? null : Arrays.copyOf(hashingSecret, hashingSecret.length);
-        this.macAlgorithm = macAlgorithm(cryptoSuite);
+        CryptoSuite resolvedCryptoSuite = cryptoSuite == null ? CryptoSuite.defaultSuite() : cryptoSuite;
+        this.macAlgorithm = macAlgorithm(resolvedCryptoSuite);
         rebuildMac();
     }
 

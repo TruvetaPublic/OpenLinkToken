@@ -102,7 +102,7 @@ public class JweMatchTokenFormatter implements TokenTransformer {
         this.ruleId = ruleId;
         this.issuer = (issuer != null && !issuer.isEmpty()) ? issuer : "org.openlinktoken";
         this.encryptionKey = keyBytes;
-        this.cryptoSuite = cryptoSuite;
+        this.cryptoSuite = cryptoSuite == null ? CryptoSuite.defaultSuite() : cryptoSuite;
         this.encrypter = createEncrypter(this.encryptionKey);
     }
 

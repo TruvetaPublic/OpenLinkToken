@@ -42,7 +42,8 @@ public class CryptoSuiteTokenizer implements Tokenizer {
      */
     public CryptoSuiteTokenizer(List<TokenTransformer> tokenTransformerList, CryptoSuite cryptoSuite) {
         this.tokenTransformerList = tokenTransformerList;
-        this.tokenDigest = TokenDigestFactory.forSuite(cryptoSuite);
+        CryptoSuite resolvedCryptoSuite = cryptoSuite == null ? CryptoSuite.defaultSuite() : cryptoSuite;
+        this.tokenDigest = TokenDigestFactory.forSuite(resolvedCryptoSuite);
     }
 
     /**
