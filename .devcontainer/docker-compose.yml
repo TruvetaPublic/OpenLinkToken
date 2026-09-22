@@ -23,9 +23,16 @@ services:
 
 volumes:
   openlinktoken-home:
+    name: openlinktoken-home
   openlinktoken-local:
+    name: openlinktoken-local
   openlinktoken-cache:
+    name: openlinktoken-cache
   openlinktoken-copilot:
+    name: openlinktoken-copilot
   openlinktoken-vscode-server:
+    name: openlinktoken-vscode-server
   openlinktoken-vscode-insiders:
+    name: openlinktoken-vscode-insiders
   openlinktoken-config:
+    name: openlinktoken-config
