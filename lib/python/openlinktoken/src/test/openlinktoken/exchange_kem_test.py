@@ -5,6 +5,7 @@ import json
 from copy import deepcopy
 
 import pytest
+from jwcrypto import jwe, jwk
 
 from openlinktoken.exchange_config import (
     derive_transport_encryption_key,
@@ -13,6 +14,7 @@ from openlinktoken.exchange_config import (
 )
 from openlinktoken.exchange_kem import build_exchange_envelope_v2, decrypt_exchange_envelope_v2
 from openlinktoken.exchange_key_bundle import ExchangeKeyBundle, KeyBundleError, generate_exchange_key_bundle
+from openlinktoken.tokentransformer.jwe_match_token_formatter import JweMatchTokenFormatter
 
 
 def _decode_protected_header(envelope: dict) -> dict:
@@ -47,6 +49,8 @@ def test_v2_exchange_round_trips_for_both_participants(suite_id):
 
     assert sender_plaintext == recipient_plaintext
     assert sender_transport_key == recipient_transport_key
+    _, repeated_transport_key = decrypt_exchange_envelope_v2(envelope, sender.to_json(include_private=True))
+    assert sender_transport_key == repeated_transport_key
     assert len(sender_transport_key) == 32
     assert set(envelope) == {"protected", "recipients", "iv", "ciphertext", "tag"}
     assert _decode_protected_header(envelope) == {
@@ -58,6 +62,37 @@ def test_v2_exchange_round_trips_for_both_participants(suite_id):
         "exchangeId": "exchange-pqc-123",
     }
     assert all("alg" in recipient_entry["header"] for recipient_entry in envelope["recipients"])
+
+
+@pytest.mark.parametrize("suite_id", ["suite-pq-v1", "suite-pq-shake-v1", "suite-pq-hybrid-v1"])
+def test_v2_transport_key_encrypts_and_decrypts_match_tokens(suite_id):
+    """The derived v2 transport key works with the standard match-token formatter."""
+    sender = generate_exchange_key_bundle(suite_id)
+    recipient = generate_exchange_key_bundle(suite_id)
+    envelope = build_exchange_envelope_v2(
+        "token-round-trip",
+        b"hash-secret",
+        sender,
+        recipient,
+        "2026-03-12T00:00:00Z",
+        "exchange-token-round-trip",
+    )
+    resolved = resolve_loaded_exchange_config(
+        load_exchange_config(exchange_config_value=envelope),
+        sender.to_json(include_private=True),
+    )
+    transport_key = derive_transport_encryption_key(resolved)
+
+    encrypted_token = JweMatchTokenFormatter(transport_key, "transport-ring", "T1").transform("test-ppid")
+    token = jwe.JWE()
+    token.deserialize(encrypted_token.removeprefix("olt.V1."))
+    key_b64 = base64.urlsafe_b64encode(transport_key).decode("ascii").rstrip("=")
+    token.decrypt(jwk.JWK(kty="oct", k=key_b64))
+    payload = json.loads(token.payload)
+
+    assert payload["ppid"] == ["test-ppid"]
+    assert payload["rid"] == "transport-ring"
+    assert payload["rlid"] == "T1"
 
 
 def test_v2_exchange_resolves_suite_and_transport_key():

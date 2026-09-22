@@ -2,6 +2,7 @@
 
 import base64
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -276,6 +277,27 @@ def test_resolve_v2_exchange_exposes_same_transport_key_for_both_private_bundles
     assert recipient_exchange.private_key_role == "recipient"
     assert derive_transport_encryption_key(sender_exchange) == derive_transport_encryption_key(recipient_exchange)
     assert len(derive_transport_encryption_key(sender_exchange)) == 32
+
+
+def test_derive_v2_transport_key_rejects_invalid_cached_key():
+    """The v2 consumer API exposes only a complete 32-byte derived key."""
+    sender = generate_exchange_key_bundle("suite-pq-v1")
+    recipient = generate_exchange_key_bundle("suite-pq-v1")
+    envelope = build_exchange_envelope_v2(
+        "invalid-key",
+        b"hash-secret",
+        sender,
+        recipient,
+        "2026-03-12T00:00:00Z",
+        "exchange-invalid-key",
+    )
+    resolved = resolve_loaded_exchange_config(
+        load_exchange_config(exchange_config_value=envelope),
+        sender.to_json(include_private=True),
+    )
+
+    with pytest.raises(ValueError, match="32 bytes"):
+        derive_transport_encryption_key(replace(resolved, transport_encryption_key=b"short"))
 
 
 def test_resolve_v2_exchange_rejects_tampered_protected_exchange_id():
