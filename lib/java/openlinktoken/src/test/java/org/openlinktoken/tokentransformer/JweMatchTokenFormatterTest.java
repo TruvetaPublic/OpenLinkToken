@@ -202,6 +202,28 @@ class JweMatchTokenFormatterTest {
     }
 
     /**
+     * Verifies that a null suite uses the backward-compatible token metadata.
+     */
+    @Test
+    void testNullSuiteUsesDefaultMetadata() throws Exception {
+        JweMatchTokenFormatter formatter = new JweMatchTokenFormatter(
+                TEST_ENCRYPTION_KEY.getBytes(StandardCharsets.UTF_8),
+                TEST_RING_ID,
+                TEST_RULE_ID,
+                "test.issuer",
+                null);
+
+        String result = formatter.transform(TEST_TOKEN);
+        JWEObject jweObject = JWEObject.parse(result.substring("olt.V1.".length()));
+        jweObject.decrypt(new DirectDecrypter(
+                new OctetSequenceKey.Builder(TEST_ENCRYPTION_KEY.getBytes(StandardCharsets.UTF_8)).build()));
+        Map<String, Object> payload = jweObject.getPayload().toJSONObject();
+
+        assertEquals("SHA-256", payload.get("hash_alg"));
+        assertEquals("HS256", payload.get("mac_alg"));
+    }
+
+    /**
      * Verifies that a missing issuer uses the default issuer value.
      */
     @Test

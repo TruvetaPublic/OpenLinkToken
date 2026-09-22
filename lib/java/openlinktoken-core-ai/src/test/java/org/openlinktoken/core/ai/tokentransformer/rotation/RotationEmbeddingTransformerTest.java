@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -161,7 +162,7 @@ class RotationEmbeddingTransformerTest {
         latch.await();
         pool.shutdown();
 
-        assertFalse(!errors.isEmpty(), "No thread errors expected, got: " + errors);
+        assertTrue(errors.isEmpty(), "No thread errors expected, got: " + errors);
 
         List<String> reference = results[0];
         for (List<String> r : results) {

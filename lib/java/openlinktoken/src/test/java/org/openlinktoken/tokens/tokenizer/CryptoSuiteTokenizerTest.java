@@ -15,6 +15,18 @@ import org.openlinktoken.crypto.CryptoSuite;
 class CryptoSuiteTokenizerTest {
 
     /**
+     * Verifies that an omitted suite uses the backward-compatible SHA-256 digest.
+     */
+    @Test
+    void nullSuiteUsesDefaultDigest() throws Exception {
+        CryptoSuiteTokenizer tokenizer = new CryptoSuiteTokenizer(new ArrayList<>(), null);
+
+        assertEquals(
+                "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                tokenizer.tokenize("test"));
+    }
+
+    /**
      * Verifies SHA-3 digest selection and hexadecimal serialization.
      *
      * @throws Exception if tokenization fails

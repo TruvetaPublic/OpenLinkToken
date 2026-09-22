@@ -57,7 +57,7 @@ public final class CryptoSuite {
      * @param exchangeKeyAgreement the key-agreement mechanism used for exchanges
      * @param exchangeConfigVersion the exchange configuration version
      */
-    private CryptoSuite(
+    CryptoSuite(
             String suiteId,
             String tokenDigestAlgorithm,
             String tokenMacAlgorithm,
@@ -70,6 +70,31 @@ public final class CryptoSuite {
         this.tokenContentEncryption = tokenContentEncryption;
         this.exchangeKeyAgreement = exchangeKeyAgreement;
         this.exchangeConfigVersion = exchangeConfigVersion;
+        validate();
+    }
+
+    /**
+     * Validate the internal algorithm and exchange-version contract.
+     *
+     * @return this validated suite
+     */
+    public CryptoSuite validate() {
+        if (!"A256GCM".equals(tokenContentEncryption)) {
+            throw new IllegalArgumentException(
+                    "Unsupported token content encryption '" + tokenContentEncryption + "'.");
+        }
+        if (exchangeConfigVersion == 1 && !"ECDH".equals(exchangeKeyAgreement)) {
+            throw new IllegalArgumentException("Exchange configuration version 1 only supports ECDH.");
+        }
+        if (exchangeConfigVersion == 2 && "ECDH".equals(exchangeKeyAgreement)) {
+            throw new IllegalArgumentException(
+                    "Exchange configuration version 2 requires a non-ECDH key agreement.");
+        }
+        if (exchangeConfigVersion != 1 && exchangeConfigVersion != 2) {
+            throw new IllegalArgumentException(
+                    "Unsupported exchange configuration version '" + exchangeConfigVersion + "'.");
+        }
+        return this;
     }
 
     /**

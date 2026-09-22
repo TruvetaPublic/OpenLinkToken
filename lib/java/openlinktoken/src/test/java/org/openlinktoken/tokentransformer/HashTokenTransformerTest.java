@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
@@ -132,6 +133,17 @@ class HashTokenTransformerTest {
         String expectedHashedToken = Base64.getEncoder().encodeToString(expectedHash);
 
         assertEquals(expectedHashedToken, hashedToken);
+    }
+
+    /**
+     * Verifies that a null suite uses the backward-compatible HMAC-SHA-256 suite.
+     */
+    @Test
+    void testNullSuiteUsesDefaultMac() throws Exception {
+        HashTokenTransformer nullSuiteTransformer =
+                new HashTokenTransformer(VALID_SECRET.getBytes(StandardCharsets.UTF_8), null);
+
+        assertEquals(transformer.transform(VALID_TOKEN), nullSuiteTransformer.transform(VALID_TOKEN));
     }
 
     /**

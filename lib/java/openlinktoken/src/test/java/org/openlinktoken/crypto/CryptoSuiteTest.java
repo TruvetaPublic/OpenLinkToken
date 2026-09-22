@@ -5,6 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Modifier;
 
 import org.junit.jupiter.api.Test;
 
@@ -25,6 +29,32 @@ class CryptoSuiteTest {
     }
 
     /**
+     * Verifies that suite definitions are not exposed through a public constructor.
+     *
+     * @throws NoSuchMethodException if the suite constructor is missing
+     */
+    @Test
+    void constructorIsNotPublic() throws NoSuchMethodException {
+        Constructor<CryptoSuite> constructor = CryptoSuite.class.getDeclaredConstructor(
+                String.class,
+                String.class,
+                String.class,
+                String.class,
+                String.class,
+                int.class);
+
+        assertFalse(Modifier.isPublic(constructor.getModifiers()));
+    }
+
+    /**
+     * Verifies that every registered suite satisfies its internal contract.
+     */
+    @Test
+    void registeredSuitesValidateTheirContracts() {
+        CryptoSuite.all().forEach(suite -> assertSame(suite, suite.validate()));
+    }
+
+    /**
      * Verifies the algorithms and versions declared by the registered suites.
      */
     @Test
@@ -40,14 +70,14 @@ class CryptoSuiteTest {
         assertEquals(2, hybrid.getExchangeConfigVersion());
         assertEquals("HS3-256", hybrid.getTokenMacAlgorithm());
         assertEquals("SHA3-256", hybrid.getTokenDigestAlgorithm());
-        assertFalse(!hybrid.isPostQuantum());
+        assertTrue(hybrid.isPostQuantum());
 
         CryptoSuite pqShake = CryptoSuite.fromId("suite-pq-shake-v1");
         assertEquals("SHAKE256-256", pqShake.getTokenDigestAlgorithm());
         assertEquals("KMAC256-256", pqShake.getTokenMacAlgorithm());
         assertEquals("ML-KEM-768", pqShake.getExchangeKeyAgreement());
         assertEquals(2, pqShake.getExchangeConfigVersion());
-        assertFalse(!pqShake.isPostQuantum());
+        assertTrue(pqShake.isPostQuantum());
     }
 
     /**
@@ -58,5 +88,50 @@ class CryptoSuiteTest {
         assertThrows(IllegalArgumentException.class, () -> CryptoSuite.fromId("unknown"));
         assertThrows(IllegalArgumentException.class, () -> CryptoSuite.fromId(""));
         assertThrows(IllegalArgumentException.class, () -> CryptoSuite.fromId("suite-shake-v1"));
+    }
+
+    /**
+     * Verifies that invalid algorithm and exchange-version combinations fail during construction.
+     */
+    @Test
+    void invalidSuiteContractsFailDuringConstruction() {
+        assertInvalidSuite(
+                "A128GCM",
+                "ECDH",
+                1,
+                "Unsupported token content encryption 'A128GCM'.");
+        assertInvalidSuite(
+                "A256GCM",
+                "ML-KEM-768",
+                1,
+                "Exchange configuration version 1 only supports ECDH.");
+        assertInvalidSuite(
+                "A256GCM",
+                "ECDH",
+                2,
+                "Exchange configuration version 2 requires a non-ECDH key agreement.");
+        assertInvalidSuite(
+                "A256GCM",
+                "ML-KEM-768",
+                3,
+                "Unsupported exchange configuration version '3'.");
+    }
+
+    private static void assertInvalidSuite(
+            String tokenContentEncryption,
+            String exchangeKeyAgreement,
+            int exchangeConfigVersion,
+            String expectedMessage) {
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> new CryptoSuite(
+                        "test-suite",
+                        "SHA-256",
+                        "HS256",
+                        tokenContentEncryption,
+                        exchangeKeyAgreement,
+                        exchangeConfigVersion));
+
+        assertEquals(expectedMessage, exception.getMessage());
     }
 }
