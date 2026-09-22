@@ -14,7 +14,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 INSPECTOR_SCRIPT = REPO_ROOT / "tools" / "exchange" / "print_exchange_envelope.py"
 
-from test_validate_exchange_secret import _generate_exchange_fixture
+from test_validate_exchange_secret import _generate_exchange_fixture, _generate_v2_exchange_fixture
 
 
 def test_inspector_help_lists_exchange_config() -> None:
@@ -93,6 +93,44 @@ def test_inspector_prints_decrypted_payload_with_private_key() -> None:
     assert rendered_envelope["decryptedPayload"]["hashingSecretEncoding"] == "base64url"
 
 
+def test_inspector_prints_standard_v2_jwe_with_private_bundle() -> None:
+    """The inspector preserves standard v2 JWE members and decoded metadata."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir)
+        exchange_config_path, _, recipient_private_bundle_path = _generate_v2_exchange_fixture(
+            temp_path, "shared-v2-secret"
+        )
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(INSPECTOR_SCRIPT),
+                "--exchange-config",
+                str(exchange_config_path),
+                "--private-key",
+                str(recipient_private_bundle_path),
+            ],
+            capture_output=True,
+            text=True,
+            cwd=REPO_ROOT,
+            check=False,
+        )
+
+    assert completed.returncode == 0, completed.stderr
+    rendered_envelope = json.loads(completed.stdout)
+    assert set(rendered_envelope) == {
+        "protected",
+        "recipients",
+        "iv",
+        "ciphertext",
+        "tag",
+        "protectedDecoded",
+        "decryptedPayload",
+    }
+    assert rendered_envelope["protectedDecoded"]["version"] == 2
+    assert rendered_envelope["protectedDecoded"]["cryptoSuite"] == "suite-pq-v1"
+    assert rendered_envelope["decryptedPayload"]["hashingSecretEncoding"] == "base64url"
+
+
 def test_inspector_rejects_invalid_protected_header() -> None:
     """The inspector should fail clearly when the protected header is not base64url JSON."""
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -121,6 +159,7 @@ def main() -> int:
         test_inspector_help_lists_exchange_config,
         test_inspector_prints_decoded_protected_header,
         test_inspector_prints_decrypted_payload_with_private_key,
+        test_inspector_prints_standard_v2_jwe_with_private_bundle,
         test_inspector_rejects_invalid_protected_header,
     ]
 

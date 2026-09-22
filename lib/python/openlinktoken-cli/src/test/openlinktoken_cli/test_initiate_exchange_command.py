@@ -56,7 +56,7 @@ def _reset_rotation_config():
 
 
 def test_initiate_exchange_version_two_suite_round_trips(tmp_path: Path) -> None:
-    """The CLI creates a generic v2 envelope from public JSON bundles."""
+    """The CLI creates a standard JWE JSON v2 envelope from public key bundles."""
     with patch("pathlib.Path.home", return_value=tmp_path):
         assert (
             OpenLinkTokenCommand.execute(
@@ -96,9 +96,11 @@ def test_initiate_exchange_version_two_suite_round_trips(tmp_path: Path) -> None
             exchange_config_path=tmp_path / "exchange.json",
             private_key_path=tmp_path / ".openlinktoken" / "partner.private.bundle.json",
         )
+        config = json.loads((tmp_path / "exchange.json").read_text(encoding="utf-8"))
 
     assert resolved.version == 2
     assert resolved.crypto_suite.suite_id == "suite-pq-v1"
+    _assert_v2_jwe_header(config, "suite-pq-v1")
 
 
 def test_initiate_exchange_resolves_v1_public_key_from_base_path(tmp_path: Path) -> None:
@@ -351,6 +353,8 @@ def test_all_crypto_suites_flow_through_tokenize_and_package(
         )
         assert resolved.version == crypto_suite.exchange_config_version
         assert resolved.crypto_suite == crypto_suite
+        if crypto_suite.exchange_config_version == 2:
+            _assert_v2_jwe_header(json.loads(exchange_config_path.read_text(encoding="utf-8")), crypto_suite.suite_id)
         transport_key = derive_transport_encryption_key(resolved)
 
         assert (
@@ -425,6 +429,34 @@ def _assert_shared_jwe_header(config: dict) -> None:
     assert "alg" not in protected
     assert "kid" not in protected
     assert "epk" not in protected
+
+
+def _assert_v2_jwe_header(config: dict, suite_id: str) -> None:
+    """Assert the complete standard v2 protected and recipient contract."""
+    assert set(config) == {"protected", "recipients", "iv", "ciphertext", "tag"}
+    protected = _decode_base64url_json(config["protected"])
+    assert set(protected) == {"typ", "cty", "enc", "version", "cryptoSuite", "exchangeId"}
+    assert protected["typ"] == "openlinktoken-exchange+jwe"
+    assert protected["cty"] == "application/openlinktoken-exchange+json"
+    assert protected["enc"] == "A256GCM"
+    assert protected["version"] == 2
+    assert protected["cryptoSuite"] == suite_id
+    assert isinstance(protected["exchangeId"], str) and protected["exchangeId"]
+    expected_algorithm = "ECDH-ES+ML-KEM-768" if suite_id == "suite-pq-hybrid-v1" else "ML-KEM-768"
+    assert len(config["recipients"]) == 2
+    for recipient in config["recipients"]:
+        assert set(recipient) == {"header", "encrypted_key"}
+        assert recipient["header"]["alg"] == expected_algorithm
+        assert recipient["header"]["kid"]
+        assert (
+            len(base64.urlsafe_b64decode(recipient["encrypted_key"] + "=" * (-len(recipient["encrypted_key"]) % 4)))
+            == 1128
+        )
+        if suite_id == "suite-pq-hybrid-v1":
+            assert recipient["header"]["epk"]["kty"] == "EC"
+            assert recipient["header"]["epk"]["crv"] == "P-256"
+        else:
+            assert "epk" not in recipient["header"]
 
 
 def _assert_recipient_headers(config: dict, curve: str, expected_kids: set[str]) -> None:

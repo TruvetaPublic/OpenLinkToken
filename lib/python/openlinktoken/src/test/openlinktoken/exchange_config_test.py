@@ -19,6 +19,7 @@ from openlinktoken.exchange_config import (
     resolve_exchange_config,
     resolve_exchange_config_inputs,
     resolve_exchange_config_private_key,
+    resolve_loaded_exchange_config,
     rotation_iv_to_text,
 )
 from openlinktoken.exchange_jwe import (
@@ -30,6 +31,8 @@ from openlinktoken.exchange_jwe import (
     decrypt_exchange_envelope,
     resolve_private_key_by_kid,
 )
+from openlinktoken.exchange_kem import build_exchange_envelope_v2
+from openlinktoken.exchange_key_bundle import generate_exchange_key_bundle
 
 
 def test_fingerprint_to_kid_normalizes_sha256_fingerprint():
@@ -224,6 +227,80 @@ def test_load_exchange_config_rejects_unknown_exchange_config_version(tmp_path: 
 
     with pytest.raises(ValueError, match="Unsupported exchange config version '3'. Supported versions: 1, 2."):
         load_exchange_config(exchange_config_path)
+
+
+@pytest.mark.parametrize("suite_id", ["suite-pq-v1", "suite-pq-shake-v1", "suite-pq-hybrid-v1"])
+def test_load_exchange_config_detects_v2_from_protected_header(suite_id):
+    """Standard v2 configs detect their authenticated version without a top-level marker."""
+    sender = generate_exchange_key_bundle(suite_id)
+    recipient = generate_exchange_key_bundle(suite_id)
+    envelope = build_exchange_envelope_v2(
+        "protected-version",
+        b"hash-secret",
+        sender,
+        recipient,
+        "2026-03-12T00:00:00Z",
+        "exchange-protected-version",
+    )
+
+    loaded = load_exchange_config(exchange_config_value=envelope)
+
+    assert loaded.version == 2
+    assert "version" not in loaded.config
+
+
+def test_resolve_v2_exchange_exposes_same_transport_key_for_both_private_bundles():
+    """Both v2 participants resolve the authenticated transport key."""
+    sender = generate_exchange_key_bundle("suite-pq-v1")
+    recipient = generate_exchange_key_bundle("suite-pq-v1")
+    envelope = build_exchange_envelope_v2(
+        "resolved-v2",
+        b"hash-secret",
+        sender,
+        recipient,
+        "2026-03-12T00:00:00Z",
+        "exchange-resolved-v2",
+    )
+
+    sender_exchange = resolve_loaded_exchange_config(
+        load_exchange_config(exchange_config_value=envelope),
+        sender.to_json(include_private=True),
+    )
+    recipient_exchange = resolve_loaded_exchange_config(
+        load_exchange_config(exchange_config_value=envelope),
+        recipient.to_json(include_private=True),
+    )
+
+    assert sender_exchange.version == 2
+    assert sender_exchange.private_key_role == "sender"
+    assert recipient_exchange.private_key_role == "recipient"
+    assert derive_transport_encryption_key(sender_exchange) == derive_transport_encryption_key(recipient_exchange)
+    assert len(derive_transport_encryption_key(sender_exchange)) == 32
+
+
+def test_resolve_v2_exchange_rejects_tampered_protected_exchange_id():
+    """Changing the protected exchange ID invalidates authenticated resolution."""
+    sender = generate_exchange_key_bundle("suite-pq-v1")
+    recipient = generate_exchange_key_bundle("suite-pq-v1")
+    envelope = build_exchange_envelope_v2(
+        "tampered-v2",
+        b"hash-secret",
+        sender,
+        recipient,
+        "2026-03-12T00:00:00Z",
+        "exchange-authenticated",
+    )
+    protected = json.loads(base64.urlsafe_b64decode(envelope["protected"] + "=" * (-len(envelope["protected"]) % 4)))
+    protected["exchangeId"] = "exchange-tampered"
+    envelope["protected"] = (
+        base64.urlsafe_b64encode(json.dumps(protected, sort_keys=True, separators=(",", ":")).encode("utf-8"))
+        .decode("ascii")
+        .rstrip("=")
+    )
+
+    loaded = load_exchange_config(exchange_config_value=envelope)
+    with pytest.raises(ValueError, match="Failed to decrypt exchange config"):
+        resolve_loaded_exchange_config(loaded, sender.to_json(include_private=True))
 
 
 def test_resolve_exchange_config_private_key_reads_explicit_private_key_path(tmp_path: Path):

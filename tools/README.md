@@ -43,7 +43,9 @@ requires `jwcrypto`.
 ### Initiating an Exchange
 
 Use `olt initiate-exchange` to create an encrypted exchange artifact for
-the sender key and the partner's public key.
+the sender key and the partner's public key. The selected suite determines
+whether the command reads PEM keys for version 1 or JSON key bundles for
+version 2.
 
 ```bash
 # Read the partner public key from a file
@@ -85,6 +87,25 @@ For pre-existing hashing secrets, prefer `--hashingsecret-env ENV_VAR` or
 shell history or process arguments. Because stdin can only be consumed once per
 command, `--hashingsecret-stdin` cannot be combined with `--public-key-stdin`.
 
+For a version 2 ML-KEM exchange, generate JSON bundles and select the same
+suite for both commands:
+
+```bash
+olt generate-key-pair \
+  --crypto-suite suite-pq-hybrid-v1 \
+  --name partner
+
+olt initiate-exchange \
+  --crypto-suite suite-pq-hybrid-v1 \
+  --public-key ~/.openlinktoken/partner.public.bundle.json \
+  --name sender-q2 \
+  --output ./sender-q2.exchange.json
+```
+
+Version 2 writes the RFC 7516 general JWE JSON Serialization. Its protected
+header carries `version`, `cryptoSuite`, and `exchangeId`; recipients use the
+custom `ML-KEM-768` or `ECDH-ES+ML-KEM-768` `alg` identifiers.
+
 ### Exchange Secret Validation
 
 Use `tools/exchange/validate_exchange_secret.py` to verify that an
@@ -96,26 +117,31 @@ either matching private key.
 python tools/exchange/validate_exchange_secret.py \
   --exchange-config sender-q2.exchange.json
 
-# Validate with an explicit sender or recipient private key PEM
+# Validate with an explicit version-1 private key PEM
 python tools/exchange/validate_exchange_secret.py \
   --exchange-config sender-q2.exchange.json \
   --private-key ~/.openlinktoken/recipient-org.private.pem
 
-# Validate with the same private key PEM provided on stdin instead
+# Validate a version-2 exchange with a private JSON bundle
+python tools/exchange/validate_exchange_secret.py \
+  --exchange-config sender-q2.exchange.json \
+  --private-key ~/.openlinktoken/recipient-org.private.bundle.json
+
+# Read a version-1 private key PEM provided on stdin instead
 cat ~/.openlinktoken/recipient-org.private.pem | \
   python tools/exchange/validate_exchange_secret.py \
     --exchange-config sender-q2.exchange.json \
     --private-key-stdin
 ```
 
-The exchange artifact is a version 1 multi-recipient JWE JSON envelope with
-top-level `version`, `protected`, `iv`, `ciphertext`, `tag`, and `recipients`
-fields.
 The validator accepts `--expected-secret` for an explicit pass/fail comparison
-after decryption. If `--private-key` is omitted, it scans `~/.openlinktoken/` for a
-private key whose fingerprint-derived `kid` matches one of the JWE recipients.
-`--private-key-stdin` is an alternative to `--private-key PATH`, so both the
-existing file-based option and stdin-based secret handling remain supported.
+after decryption. Both versions use standard JWE JSON members
+`protected`, `recipients`, `iv`, `ciphertext`, and `tag`; version 2 carries its
+version and suite metadata in the authenticated protected header. If
+`--private-key` is omitted, the validator scans `~/.openlinktoken/` for a
+matching PEM key or JSON private bundle. `--private-key-stdin` is an
+alternative to `--private-key PATH`, so file-based and stdin-based key input
+remain supported.
 
 ### Exchange Config Inspection
 
@@ -133,6 +159,11 @@ python tools/exchange/inspect_exchange_config.py \
   --exchange-config sender-q2.exchange.json \
   --private-key ~/.openlinktoken/sender-q2.private.pem
 
+# Print a version-2 config with a private JSON bundle
+python tools/exchange/inspect_exchange_config.py \
+  --exchange-config sender-q2.exchange.json \
+  --private-key ~/.openlinktoken/sender-q2.private.bundle.json
+
 # Read the private key from an environment variable
 python tools/exchange/inspect_exchange_config.py \
   --exchange-config sender-q2.exchange.json \
@@ -145,9 +176,11 @@ python tools/exchange/inspect_exchange_config.py \
 ```
 
 The summary view shows the exchange name, exchange ID, creation timestamp,
-curve, private key role (sender or recipient), hashing secret length and hex
-preview, rotation parameters (`rotationIv`, `rotationCount`, `binWidth`,
-`dimensionBias`), and both key fingerprints.
+crypto suite, exchange version, private key role (sender or recipient),
+hashing secret length and hex preview, rotation parameters (`rotationIv`,
+`rotationCount`, `binWidth`, `dimensionBias`), and the sender/recipient key
+identifiers. Version 1 additionally reports the exchange curve and legacy
+fingerprints when those fields are present.
 
 ## Mock Data Tools
 

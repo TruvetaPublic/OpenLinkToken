@@ -20,7 +20,13 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from openlinktoken.crypto_suite import CryptoSuite
 from openlinktoken.ec_key_utils import derive_public_key_from_private_pem, public_key_fingerprint
 from openlinktoken.exchange_jwe import decrypt_exchange_envelope, resolve_private_key_by_kid
-from openlinktoken.exchange_kem import decrypt_exchange_envelope_v2
+from openlinktoken.exchange_kem import (
+    EXCHANGE_V2_CONTENT_TYPE,
+    EXCHANGE_V2_ENCRYPTION,
+    EXCHANGE_V2_TYPE,
+    EXCHANGE_V2_VERSION,
+    decrypt_exchange_envelope_v2,
+)
 from openlinktoken.exchange_key_bundle import ExchangeKeyBundle, resolve_private_bundle_by_kid
 
 SUPPORTED_EXCHANGE_CONFIG_VERSIONS = {1, 2}
@@ -100,27 +106,26 @@ def load_exchange_config(
         except json.JSONDecodeError as error:
             raise ValueError(f"Exchange config '{config_path}' is not valid JSON: {error}") from error
 
-    version = config.get("version")
-    if version not in SUPPORTED_EXCHANGE_CONFIG_VERSIONS:
-        supported_versions = ", ".join(str(item) for item in sorted(SUPPORTED_EXCHANGE_CONFIG_VERSIONS))
-        raise ValueError(f"Unsupported exchange config version '{version}'. Supported versions: {supported_versions}.")
+    if not isinstance(config, Mapping):
+        raise ValueError("Exchange config must be a JSON object.")
+    version = _detect_exchange_config_version(config)
 
     return LoadedExchangeConfig(path=config_path, version=version, config=config)
 
 
 def resolve_exchange_config(
     exchange_config_path: str | Path | None,
-    private_key_pem: bytes,
+    private_key_pem: bytes | str | Mapping[str, Any],
 ) -> ResolvedExchangeConfig:
     """
-    Load, validate, and decrypt an exchange config using the provided private key PEM.
+    Load, validate, and decrypt an exchange config using private-key material.
 
     Args:
         exchange_config_path: Path to the exchange-config file to load.
-        private_key_pem: PEM-encoded private key used for decryption.
+        private_key_pem: PEM bytes or serialized v2 private-key bundle material.
 
     Returns:
-        Resolved exchange config.
+        The resolved exchange config, including its decrypted payload and transport key.
     """
     return resolve_loaded_exchange_config(load_exchange_config(exchange_config_path), private_key_pem)
 
@@ -167,18 +172,18 @@ def resolve_exchange_config_private_key(
     environment: Mapping[str, str] | None = None,
 ) -> bytes:
     """
-    Resolve private-key PEM bytes for a loaded exchange config.
+    Resolve private-key material bytes for a loaded exchange config.
 
     Args:
         exchange_config: Exchange config value to resolve.
-        private_key_path: Path to the private-key PEM file.
-        private_key_env: Environment-variable name containing the private-key PEM.
-        private_key_value: Private-key PEM supplied directly as a string or byte sequence.
+        private_key_path: Path to a PEM private key or serialized v2 key bundle.
+        private_key_env: Environment variable containing private-key material.
+        private_key_value: Private-key material supplied as a string or byte sequence.
         openlinktoken_dir: Directory used for the openlinktoken.
         environment: Environment-variable mapping used to resolve configuration.
 
     Returns:
-        Resolved private-key PEM bytes for a loaded exchange config.
+        Resolved private-key material bytes for the loaded exchange config.
     """
     provided_private_key_inputs = [
         private_key_path is not None,
@@ -198,7 +203,7 @@ def resolve_exchange_config_private_key(
         return _read_private_key_value(private_key_value)
 
     resolved_openlinktoken_dir = openlinktoken_dir if openlinktoken_dir else Path.home() / ".openlinktoken"
-    for kid in _recipient_kids(exchange_config.config):
+    for kid in _recipient_kids(exchange_config.config, exchange_config.version):
         try:
             if exchange_config.version == 2:
                 return resolve_private_bundle_by_kid(resolved_openlinktoken_dir, kid)
@@ -213,14 +218,14 @@ def resolve_exchange_config_private_key(
 
 
 def resolve_loaded_exchange_config(
-    exchange_config: LoadedExchangeConfig, private_key_pem: bytes
+    exchange_config: LoadedExchangeConfig, private_key_pem: bytes | str | Mapping[str, Any]
 ) -> ResolvedExchangeConfig:
     """
     Decrypt and resolve a validated exchange-config envelope.
 
     Args:
         exchange_config: Loaded exchange config envelope to decrypt.
-        private_key_pem: Private key bytes in PEM form or a serialized v2 key bundle.
+        private_key_pem: Private-key material as PEM bytes, text, or a v2 key bundle mapping.
 
     Returns:
         Resolved exchange config, including its payload and any transport key from v2 decryption.
@@ -266,14 +271,18 @@ def resolve_loaded_exchange_config(
 
 def derive_transport_encryption_key(exchange: ResolvedExchangeConfig) -> bytes:
     """
-    Return or derive the shared 32-byte transport encryption key.
+    Return the v2 transport key or derive the v1 ECDH transport key.
 
     Args:
         exchange: Resolved exchange config containing the required key material.
 
     Returns:
-        The transport key returned by v2 decryption or derived using the v1 ECDH contract.
+        The transport encryption key for the resolved exchange.
     """
+    if exchange.version == EXCHANGE_V2_VERSION:
+        if exchange.transport_encryption_key is None:
+            raise ValueError("Version-2 exchange config did not provide its derived transport encryption key.")
+        return exchange.transport_encryption_key
     if exchange.transport_encryption_key is not None:
         return exchange.transport_encryption_key
 
@@ -392,15 +401,89 @@ def _parse_exchange_config_value(exchange_config_value: str | bytes | Mapping[st
     return parsed_value
 
 
-def _recipient_kids(exchange_config: Mapping[str, Any]) -> list[str]:
+def _detect_exchange_config_version(exchange_config: Mapping[str, Any]) -> int:
+    """
+    Detect and validate the exchange-config version.
+
+    Args:
+        exchange_config: Exchange-config envelope to inspect.
+
+    Returns:
+        The supported exchange-config version declared by the envelope.
+
+    Raises:
+        ValueError: If the version marker or protected header is missing or unsupported.
+    """
+    top_level_version = exchange_config.get("version")
+    if top_level_version == 1:
+        return 1
+    if top_level_version is not None:
+        if top_level_version == EXCHANGE_V2_VERSION:
+            raise ValueError("Version-2 exchange configs must authenticate version in the protected header.")
+        supported_versions = ", ".join(str(item) for item in sorted(SUPPORTED_EXCHANGE_CONFIG_VERSIONS))
+        raise ValueError(
+            f"Unsupported exchange config version '{top_level_version}'. Supported versions: {supported_versions}."
+        )
+
+    protected_header = _decode_protected_header(exchange_config.get("protected"))
+    required_fields = {"typ", "cty", "enc", "version", "cryptoSuite", "exchangeId"}
+    missing = required_fields - set(protected_header)
+    if missing:
+        raise ValueError(f"Version-2 protected header is missing fields: {', '.join(sorted(missing))}.")
+    if protected_header.get("version") != EXCHANGE_V2_VERSION:
+        raise ValueError("Exchange config must declare top-level version 1 or protected version 2.")
+    if protected_header.get("typ") != EXCHANGE_V2_TYPE:
+        raise ValueError("Version-2 protected header has an unsupported typ.")
+    if protected_header.get("cty") != EXCHANGE_V2_CONTENT_TYPE:
+        raise ValueError("Version-2 protected header has an unsupported cty.")
+    if protected_header.get("enc") != EXCHANGE_V2_ENCRYPTION:
+        raise ValueError("Version-2 protected header must use A256GCM.")
+    if not isinstance(protected_header.get("cryptoSuite"), str):
+        raise ValueError("Version-2 protected header cryptoSuite must be a string.")
+    if not isinstance(protected_header.get("exchangeId"), str) or not protected_header["exchangeId"]:
+        raise ValueError("Version-2 protected header exchangeId must be a non-empty string.")
+    return EXCHANGE_V2_VERSION
+
+
+def _decode_protected_header(value: Any) -> dict[str, Any]:
+    """
+    Decode a base64url-encoded standard JWE protected header.
+
+    Args:
+        value: Encoded protected-header value from the exchange envelope.
+
+    Returns:
+        The decoded protected-header fields.
+
+    Raises:
+        ValueError: If the value is missing, malformed, or not a JSON object.
+    """
+    if not isinstance(value, str) or not value:
+        raise ValueError("Exchange config is missing its protected header.")
+    try:
+        padding = "=" * (-len(value) % 4)
+        decoded = base64.b64decode(value + padding, altchars=b"-_", validate=True)
+        header = json.loads(decoded)
+    except (UnicodeDecodeError, ValueError, json.JSONDecodeError) as error:
+        raise ValueError(f"Exchange config protected header is not valid base64url JSON: {error}") from error
+    if not isinstance(header, dict):
+        raise ValueError("Exchange config protected header must be a JSON object.")
+    return header
+
+
+def _recipient_kids(exchange_config: Mapping[str, Any], version: int | None = None) -> list[str]:
     """
     Extract recipient key identifiers from an exchange-config envelope.
 
     Args:
         exchange_config: Exchange-config envelope whose recipient key IDs are extracted.
+        version: Envelope version; version 2 stores key IDs in recipient headers.
 
     Returns:
         Recipient key IDs in the order they appear in the JWE envelope.
+
+    Raises:
+        ValueError: If the envelope has no usable recipient key identifiers.
     """
     recipients = exchange_config.get("recipients")
     if not isinstance(recipients, list) or not recipients:
@@ -409,6 +492,11 @@ def _recipient_kids(exchange_config: Mapping[str, Any]) -> list[str]:
     kids: list[str] = []
     for recipient in recipients:
         if not isinstance(recipient, dict):
+            continue
+        if version == EXCHANGE_V2_VERSION:
+            header = recipient.get("header")
+            if isinstance(header, dict) and header.get("kid"):
+                kids.append(header["kid"])
             continue
         if recipient.get("kid"):
             kids.append(recipient["kid"])

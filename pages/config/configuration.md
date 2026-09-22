@@ -40,13 +40,13 @@ instead of silently falling back to another algorithm.
 All suites use AES-256-GCM for token content encryption. The suite-specific
 choices are:
 
-| Suite                | What it represents                                                                   | Token digest and MAC                         | Exchange format and key agreement    |
-| -------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------- | ------------------------------------ |
-| `suite-sha256-v1`    | Backward-compatible default for existing ECDH exchanges.                             | SHA-256 and HMAC-SHA256 (`HS256`)            | Version 1, ECDH/JWE                  |
-| `suite-sha3-v1`      | A classical-key-agreement profile that uses SHA-3 token primitives.                  | SHA3-256 and HMAC-SHA3-256 (`HS3-256`)       | Version 1, ECDH/JWE                  |
-| `suite-pq-shake-v1`  | A post-quantum profile using ML-KEM with the SHAKE/KMAC family for token primitives. | SHAKE256-256 and KMAC256-256 (`KMAC256-256`) | Version 2, ML-KEM-768                |
-| `suite-pq-v1`        | A post-quantum profile using ML-KEM without a classical ECDH component.              | SHA3-256 and HMAC-SHA3-256 (`HS3-256`)       | Version 2, ML-KEM-768                |
-| `suite-pq-hybrid-v1` | A post-quantum hybrid profile that combines classical ECDH with ML-KEM.              | SHA3-256 and HMAC-SHA3-256 (`HS3-256`)       | Version 2, ECDH-P256 plus ML-KEM-768 |
+| Suite                | What it represents                                                                   | Token digest and MAC                         | Exchange format and key agreement                 |
+| -------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------- | ------------------------------------------------- |
+| `suite-sha256-v1`    | Backward-compatible default for existing ECDH exchanges.                             | SHA-256 and HMAC-SHA256 (`HS256`)            | Version 1, ECDH/JWE                               |
+| `suite-sha3-v1`      | A classical-key-agreement profile that uses SHA-3 token primitives.                  | SHA3-256 and HMAC-SHA3-256 (`HS3-256`)       | Version 1, ECDH/JWE                               |
+| `suite-pq-shake-v1`  | A post-quantum profile using ML-KEM with the SHAKE/KMAC family for token primitives. | SHAKE256-256 and KMAC256-256 (`KMAC256-256`) | Version 2 standard JWE JSON, `ML-KEM-768`         |
+| `suite-pq-v1`        | A post-quantum profile using ML-KEM without a classical ECDH component.              | SHA3-256 and HMAC-SHA3-256 (`HS3-256`)       | Version 2 standard JWE JSON, `ML-KEM-768`         |
+| `suite-pq-hybrid-v1` | A post-quantum hybrid profile that combines classical ECDH with ML-KEM.              | SHA3-256 and HMAC-SHA3-256 (`HS3-256`)       | Version 2 standard JWE JSON, `ECDH-ES+ML-KEM-768` |
 
 For a selection guide, compatibility rules, key-file examples, and the
 differences between version-1 PEM keys and version-2 JSON key bundles, see
@@ -66,6 +66,12 @@ olt initiate-exchange \
   --output ./partner.exchange.json
 ```
 
+Version-2 exchange configs use the RFC 7516 general JWE JSON Serialization.
+The version, suite, and exchange ID are authenticated in the protected JWE
+header. Consumers derive a separate token transport key from the decrypted JWE
+content-encryption key; the content-encryption key is never used directly for
+token encryption.
+
 ---
 
 ## Environment Variables
@@ -80,7 +86,9 @@ olt package \
 
 ### Docker Environment
 
-If the runtime cannot auto-discover the matching key, override it explicitly with `--private-key-env`:
+If the runtime cannot auto-discover the matching key, override it explicitly
+with `--private-key-env`. For version 1, the value is PEM text; for version 2,
+provide the private JSON bundle text:
 
 ```bash
 docker run --rm \

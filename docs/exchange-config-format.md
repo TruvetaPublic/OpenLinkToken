@@ -2,146 +2,70 @@
 
 ## Overview
 
-`olt initiate-exchange` writes a single JSON exchange artifact that contains:
+`olt initiate-exchange` writes one JSON exchange configuration containing an
+encrypted hashing secret and the key material needed by both participants.
+The matching private key remains local; the JSON file contains public
+recipient information only.
 
-- a top-level `version` field with value `1` for ECDH/JWE or `2` for KEM/hybrid exchange
-- a JSON JWE envelope with shared ciphertext fields
-- two JWE recipients: one for the sender's local key and one for the partner's key
+The selected crypto suite determines the exchange version:
 
-Both sides can decrypt the same file because both public keys are included as JWE
-recipients when the artifact is created. The file does **not** embed any private
-key material.
+| Suite                | Token primitives             | Exchange version | Key agreement             | Key material |
+| -------------------- | ---------------------------- | ---------------: | ------------------------- | ------------ |
+| `suite-sha256-v1`    | SHA-256 and HMAC-SHA256      |                1 | ECDH/JWE                  | PEM          |
+| `suite-sha3-v1`      | SHA3-256 and HMAC-SHA3-256   |                1 | ECDH/JWE                  | PEM          |
+| `suite-pq-shake-v1`  | SHAKE256-256 and KMAC256-256 |                2 | ML-KEM-768                | JSON bundles |
+| `suite-pq-v1`        | SHA3-256 and HMAC-SHA3-256   |                2 | ML-KEM-768                | JSON bundles |
+| `suite-pq-hybrid-v1` | SHA3-256 and HMAC-SHA3-256   |                2 | ECDH-P256 plus ML-KEM-768 | JSON bundles |
 
-The `--crypto-suite` option selects the algorithms without changing the default
-behavior:
+Both participants can decrypt the same configuration because the sender and
+partner public keys are added as JWE recipients. Consumers reject a suite or
+version mismatch instead of silently selecting another algorithm.
 
-| Suite                | Token primitives             | Exchange format | Key agreement             |
-| -------------------- | ---------------------------- | --------------- | ------------------------- |
-| `suite-sha256-v1`    | SHA-256 and HMAC-SHA256      | v1              | ECDH/JWE                  |
-| `suite-sha3-v1`      | SHA3-256 and HMAC-SHA3-256   | v1              | ECDH/JWE                  |
-| `suite-pq-shake-v1`  | SHAKE256-256 and KMAC256-256 | v2              | ML-KEM-768                |
-| `suite-pq-v1`        | SHA3-256 and HMAC-SHA3-256   | v2              | ML-KEM-768                |
-| `suite-pq-hybrid-v1` | SHA3-256 and HMAC-SHA3-256   | v2              | ECDH-P256 plus ML-KEM-768 |
+## Version 2: standard JWE JSON serialization
 
-The short suite ID is recorded in the protected metadata and decrypted
-payload. Consumers reject a suite/version mismatch rather than silently
-falling back to another algorithm.
+Version 2 uses the RFC 7516 general JWE JSON Serialization. The outer object
+contains only standard JWE members:
 
-## Version 2 Generic Envelope
+| Member       | Type   | Description                                               |
+| ------------ | ------ | --------------------------------------------------------- |
+| `protected`  | string | Base64url-encoded authenticated JOSE protected header.    |
+| `recipients` | array  | One JWE recipient for each participant.                   |
+| `iv`         | string | Base64url-encoded 96-bit `A256GCM` initialization vector. |
+| `ciphertext` | string | Base64url-encoded encrypted exchange payload.             |
+| `tag`        | string | Base64url-encoded `A256GCM` authentication tag.           |
 
-Version 2 is a generic envelope for future key-management components. It keeps
-the content-encryption layer separate from the ordered recipient components,
-so a future suite can add a new component without changing the outer schema.
+There is no top-level `version`, `type`, `cryptoSuite`, or custom key-management
+member in a version 2 JWE. The version and exchange metadata are authenticated
+inside the protected header.
 
-The top-level fields are:
-
-| Field                     | Type    | Description                                                |
-| ------------------------- | ------- | ---------------------------------------------------------- |
-| `version`                 | integer | Artifact format marker. Value: `2`.                        |
-| `type`                    | string  | `openlinktoken-exchange+json`.                             |
-| `cryptoSuite`             | string  | Registered suite ID.                                       |
-| `protected`               | string  | Base64url canonical JSON containing suite and exchange ID. |
-| `recipients`              | array   | One generic key-management entry per recipient.            |
-| `iv`, `ciphertext`, `tag` | string  | AES-256-GCM payload fields.                                |
-
-Each recipient contains a `kid` and a `keyManagement` object with:
-
-- `mode`: the registered key-management mode (`kem`, `agreement`, or `hybrid`)
-- `components`: ordered component records, such as `ECDH-P256` followed by
-  `ML-KEM-768`; each algorithm and payload shape is validated by the suite registry
-- `kdf`: explicit HKDF-SHA256 transcript metadata
-- `wrappedContentKey`: the recipient-specific AES-256 content-key wrap
-
-Version-2 key material is exchanged as a JSON bundle, not a PEM file. Public
-bundles contain only public material; private bundles remain local and are
-written with restrictive file permissions:
-
-```bash
-olt generate-key-pair --crypto-suite suite-pq-v1 --name partner --force
-olt initiate-exchange \
---crypto-suite suite-pq-v1 \
---public-key ~/.openlinktoken/partner.public.bundle.json
-```
-
-The current CLI generates local bundles automatically when
-`initiate-exchange` is run with a version-2 suite. The v1 ECDH flow and its
-PEM files remain unchanged.
-
-## Roles
-
-- `sender`: the party that runs `olt initiate-exchange`, creates the
-  exchange artifact, and contributes the local sender key entry written into
-  `recipients`
-- `recipient`: the counterparty whose public key is supplied to
-  `olt initiate-exchange` and whose matching private key can decrypt the
-  recipient entry in `recipients`
-
-## Top-Level Structure
-
-The exchange config is a JSON object with these fields:
-
-| Field        | Type    | Description                                                                               |
-| ------------ | ------- | ----------------------------------------------------------------------------------------- |
-| `version`    | integer | Artifact format marker: `1` for ECDH/JWE or `2` for generic KEM/hybrid exchange.          |
-| `protected`  | string  | Base64url-encoded protected JOSE header shared by all recipients.                         |
-| `iv`         | string  | Base64url AES-GCM initialization vector for the ciphertext.                               |
-| `ciphertext` | string  | Base64url ciphertext for the encrypted payload.                                           |
-| `tag`        | string  | Base64url AES-GCM authentication tag.                                                     |
-| `recipients` | array   | Per-recipient JWE entries. Open Link Token writes one sender entry and one partner entry. |
-
-This is a JWE JSON serialization with shared ciphertext fields and per-recipient
-key-wrapping metadata.
-
-## Protected Header
-
-The `protected` value decodes to a JSON object shared by all recipients:
-
-| Field | Type   | Description                                                                     |
-| ----- | ------ | ------------------------------------------------------------------------------- |
-| `typ` | string | JWE type marker. Current value: `openlinktoken-exchange+jwe`.                   |
-| `cty` | string | Payload content type. Current value: `application/openlinktoken-exchange+json`. |
-| `enc` | string | Content-encryption algorithm. Current value: `A256GCM`.                         |
-
-Example decoded protected header:
+The required protected header is:
 
 ```json
 {
   "typ": "openlinktoken-exchange+jwe",
   "cty": "application/openlinktoken-exchange+json",
-  "enc": "A256GCM"
+  "enc": "A256GCM",
+  "version": 2,
+  "cryptoSuite": "suite-pq-hybrid-v1",
+  "exchangeId": "0f3d5f8a-3f2a-4c2f-b69d-cb1f9d08d4ab"
 }
 ```
 
-## Recipient Entries
+The `exchangeId` is a UUID generated for the exchange. It authenticates the
+configuration metadata and is also the HKDF salt for the token transport-key
+derivation.
 
-Each item in `recipients` contains the wrapped key for one decrypting party.
+### Recipients
 
-| Field           | Type   | Description                                                  |
-| --------------- | ------ | ------------------------------------------------------------ |
-| `encrypted_key` | string | Base64url wrapped content-encryption key for this recipient. |
-| `header`        | object | Recipient-specific JOSE header.                              |
-
-### Recipient Header
-
-| Field | Type   | Description                                                                      |
-| ----- | ------ | -------------------------------------------------------------------------------- |
-| `alg` | string | Key management algorithm. Current value: `ECDH-ES+A256KW`.                       |
-| `kid` | string | Portable recipient identifier derived from the recipient public-key fingerprint. |
-| `epk` | object | Ephemeral EC public key used for this recipient's JWE key agreement.             |
-
-`kid` is not a friendly key name. Open Link Token derives it from the public-key
-fingerprint and writes it in `sha256:<lowercase-hyphenated-hex>` form.
-Friendly names such as `sender-q2` remain local operator-facing names for files in
-`~/.openlinktoken/`; they are not the portable identifiers embedded in the artifact.
-
-Example recipient entry:
+Each object in `recipients` contains the standard JWE `encrypted_key` and an
+optional `header` object:
 
 ```json
 {
-  "encrypted_key": "Base64UrlWrappedKeyHere",
+  "encrypted_key": "Base64UrlEncoded1128ByteValue",
   "header": {
-    "alg": "ECDH-ES+A256KW",
-    "kid": "sha256:11-22-33-44-55-66-77-88-99-aa-bb-cc-dd-ee-ff-00",
+    "alg": "ECDH-ES+ML-KEM-768",
+    "kid": "sha256:11-22-33-44-55-66-77-88",
     "epk": {
       "kty": "EC",
       "crv": "P-256",
@@ -152,97 +76,128 @@ Example recipient entry:
 }
 ```
 
-## Encrypted Payload
+The recipient `alg` and headers are suite-specific:
 
-After decryption, the payload is JSON with these fields:
+| Suite                | `alg`                | Required recipient headers |
+| -------------------- | -------------------- | -------------------------- |
+| `suite-pq-v1`        | `ML-KEM-768`         | `kid`                      |
+| `suite-pq-shake-v1`  | `ML-KEM-768`         | `kid`                      |
+| `suite-pq-hybrid-v1` | `ECDH-ES+ML-KEM-768` | `kid`, P-256 `epk`         |
 
-| Field                     | Type    | Description                                                                             |
-| ------------------------- | ------- | --------------------------------------------------------------------------------------- |
-| `exchangeName`            | string  | Logical exchange name recorded in the payload.                                          |
-| `hashingSecret`           | string  | Hashing secret encoded as unpadded base64url text.                                      |
-| `hashingSecretEncoding`   | string  | Encoding marker. Current value: `base64url`.                                            |
-| `senderKeyFingerprint`    | string  | SHA-256 fingerprint of the sender public key.                                           |
-| `recipientKeyFingerprint` | string  | SHA-256 fingerprint of the partner public key.                                          |
-| `curve`                   | string  | Open Link Token curve name for the exchange keys, such as `P-256`.                      |
-| `createdAt`               | string  | UTC creation timestamp in ISO 8601 `Z` form.                                            |
-| `exchangeId`              | string  | Random UUID used to identify the exchange artifact.                                     |
-| `rotationIv`              | string  | Initialization vector for the rotation matrix generator, encoded as unpadded base64url. |
-| `rotationIvEncoding`      | string  | Encoding marker. Current value: `base64url`.                                            |
-| `rotationCount`           | integer | Number of rotation matrices to generate. Default: `50`.                                 |
-| `binWidth`                | number  | Quantization bin width for rotation-based token generation. Default: `0.05`.            |
-| `dimensionBias`           | array   | Per-dimension bias vector subtracted before rotation. Default: `[]` (all zeros).        |
+`kid` is a stable identifier derived from the recipient public bundle. It is
+not the friendly local name used for files under `~/.openlinktoken/`.
 
-Example decrypted payload:
+For every version 2 recipient, `encrypted_key` contains:
 
-```json
-{
-  "exchangeName": "sender-q2",
-  "hashingSecret": "R2VuZXJhdGVkU2VjcmV0Qnl0ZXMwMTIzNDU2Nzg5MDE",
-  "hashingSecretEncoding": "base64url",
-  "senderKeyFingerprint": "AA:BB:CC:DD:EE:FF",
-  "recipientKeyFingerprint": "11:22:33:44:55:66",
-  "curve": "P-256",
-  "createdAt": "2026-03-11T21:00:00Z",
-  "exchangeId": "0f3d5f8a-3f2a-4c2f-b69d-cb1f9d08d4ab",
-  "rotationIv": "R2VuZXJhdGVkUm90YXRpb25JVkJ5dGVzMDEyMzQ1Njc",
-  "rotationIvEncoding": "base64url",
-  "rotationCount": 50,
-  "binWidth": 0.05,
-  "dimensionBias": []
-}
+1. A 1088-byte ML-KEM-768 ciphertext.
+2. A 40-byte AES-KW result wrapping the 32-byte JWE content-encryption key
+   (CEK).
+
+After base64url decoding, the member is therefore 1128 bytes. For the hybrid
+algorithm, the recipient shared secret is the concatenation of the P-256 ECDH
+shared secret and the ML-KEM shared secret. Both algorithms derive a
+recipient-specific 32-byte AES-KW key with HKDF-SHA256 using the exchange ID
+as salt and this domain-separated info:
+
+```text
+openlinktoken:jwe:v2:<cryptoSuite>:<alg>:<kid>
 ```
 
-## Example Serialized Artifact
+The CEK is used only by the standard JWE content-encryption layer. After the
+payload is authenticated and decrypted, the exchange code derives a separate
+32-byte token transport key with HKDF-SHA256:
 
-```json
-{
-  "version": 1,
-  "protected": "eyJ0eXAiOiJvcGVudG9rZW4tZXhjaGFuZ2UrandlIiwiY3R5IjoiYXBwbGljYXRpb24vb3BlbnRva2VuLWV4Y2hhbmdlK2pzb24iLCJlbmMiOiJBMjU2R0NNIn0",
-  "iv": "Base64UrlIvHere",
-  "ciphertext": "Base64UrlCiphertextHere",
-  "tag": "Base64UrlTagHere",
-  "recipients": [
-    {
-      "encrypted_key": "Base64UrlWrappedKeyForSenderHere",
-      "header": {
-        "alg": "ECDH-ES+A256KW",
-        "kid": "sha256:aa-bb-cc-dd-ee-ff",
-        "epk": {
-          "kty": "EC",
-          "crv": "P-256",
-          "x": "...",
-          "y": "..."
-        }
-      }
-    },
-    {
-      "encrypted_key": "Base64UrlWrappedKeyForRecipientHere",
-      "header": {
-        "alg": "ECDH-ES+A256KW",
-        "kid": "sha256:11-22-33-44-55-66",
-        "epk": {
-          "kty": "EC",
-          "crv": "P-256",
-          "x": "...",
-          "y": "..."
-        }
-      }
-    }
-  ]
-}
+```text
+salt = UTF-8(exchangeId)
+info = openlinktoken:token-encryption:v2
 ```
 
-## Decryption and Validation Notes
+The transport key, not the CEK, is exposed to token encryption and decryption
+consumers.
 
-- The sender and recipient can both decrypt the artifact because each side appears in
-  `recipients`.
-- The artifact alone is not enough to recover the hashing secret; the matching private
-  key must be available locally.
-- A validator or other tool can resolve a private key by the fingerprint-derived
-  `kid`, even when operators primarily know the key by a friendly local filename.
-- `tools/exchange/print_exchange_envelope.py` prints the raw serialized envelope,
-  adds a `protectedDecoded` object for the shared JOSE header, and decrypts the inner
-  payload into `decryptedPayload` when a matching private key is available.
-- `tools/exchange/validate_exchange_secret.py` decrypts the payload, checks that a
-  supplied private key matches one of the recipient `kid` values, or otherwise tries to
-  resolve a matching private key from `~/.openlinktoken/`.
+### Decrypted payload
+
+The JWE plaintext is a JSON object containing the exchange configuration:
+
+| Field                   | Type    | Description                                              |
+| ----------------------- | ------- | -------------------------------------------------------- |
+| `exchangeName`          | string  | Local logical name recorded by the sender.               |
+| `hashingSecret`         | string  | Base64url-encoded hashing secret.                        |
+| `hashingSecretEncoding` | string  | Always `base64url`.                                      |
+| `senderKeyId`           | string  | Stable sender public-bundle identifier.                  |
+| `recipientKeyId`        | string  | Stable partner public-bundle identifier.                 |
+| `createdAt`             | string  | UTC creation timestamp in ISO 8601 `Z` form.             |
+| `exchangeId`            | string  | Must match the protected header.                         |
+| `rotationIv`            | string  | Base64url-encoded rotation-matrix initialization vector. |
+| `rotationIvEncoding`    | string  | Always `base64url`.                                      |
+| `rotationCount`         | integer | Number of rotation matrices to generate.                 |
+| `binWidth`              | number  | Quantization bin width.                                  |
+| `dimensionBias`         | array   | Per-dimension rotation bias vector.                      |
+
+The payload may include suite-specific metadata, but consumers must validate
+the protected `cryptoSuite`, `version`, and `exchangeId` before accepting it.
+
+## Version 1
+
+Version 1 retains the existing ECDH/JWE exchange behavior and PEM key format.
+Its exchange config includes a top-level `version: 1` marker and uses the
+standard JWE JSON members `protected`, `recipients`, `iv`, `ciphertext`, and
+`tag`. Its protected header and recipient algorithm are selected by the
+version 1 exchange implementation, normally `ECDH-ES+A256KW`.
+
+Version 1 derives the token transport key with its existing
+`openlinktoken:token-encryption:v1` contract. Version 1 behavior is preserved
+for existing exchanges and is independent of the version 2 algorithms above.
+
+## Key generation
+
+Version 2 uses JSON key bundles instead of PEM files:
+
+```bash
+olt generate-key-pair --crypto-suite suite-pq-v1 --name partner --force
+olt initiate-exchange \
+  --crypto-suite suite-pq-v1 \
+  --public-key ~/.openlinktoken/partner.public.bundle.json \
+  --output ./partner.exchange.json
+```
+
+The public bundle may be shared. The private bundle contains ML-KEM private
+material and must remain local with restrictive permissions. The hybrid
+profile also stores the P-256 private key in the private bundle.
+
+Version 1 continues to use PEM key pairs:
+
+```bash
+olt generate-key-pair --crypto-suite suite-sha256-v1 --name partner
+olt initiate-exchange \
+  --crypto-suite suite-sha256-v1 \
+  --public-key ~/.openlinktoken/partner.public.pem \
+  --output ./partner.exchange.json
+```
+
+## Roles
+
+- `sender` runs `olt initiate-exchange`, creates the configuration, and
+  contributes the local sender recipient.
+- `recipient` supplies a public key bundle or PEM key and decrypts with the
+  corresponding local private key.
+
+## Decryption and validation
+
+- The sender and recipient can both decrypt the file because both public keys
+  are represented as JWE recipients.
+- The exchange config alone cannot recover the hashing secret; a matching
+  private key is required.
+- `tools/exchange/validate_exchange_secret.py` verifies that a matching key
+  decrypts the configuration and that an optional expected secret matches.
+- `tools/exchange/inspect_exchange_config.py` resolves and prints the
+  authenticated metadata and decrypted payload without exposing private key
+  material.
+- `tools/exchange/print_exchange_envelope.py` prints the raw standard JWE JSON
+  members and, when a private key is supplied, the decoded protected header
+  and decrypted payload.
+
+Version 2 key-bundle processing is implemented by the Python library and CLI.
+Java exchange classes remain synchronization and API-boundary markers; the
+Java token-generation implementation continues to provide cross-language
+parity for deterministic token output.
