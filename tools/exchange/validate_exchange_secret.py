@@ -17,7 +17,15 @@ sys.path.insert(0, str(REPO_ROOT / "lib" / "python" / "openlinktoken" / "src" / 
 
 from jwcrypto.common import JWException
 
-from openlinktoken.exchange_jwe import decrypt_exchange_envelope, resolve_private_key_by_kid
+from openlinktoken.exchange_config import (
+    load_exchange_config as load_shared_exchange_config,
+)
+from openlinktoken.exchange_config import (
+    resolve_exchange_config_private_key,
+)
+from openlinktoken.exchange_jwe import decrypt_exchange_envelope
+from openlinktoken.exchange_kem import decrypt_exchange_envelope_v2
+from openlinktoken.exchange_key_bundle import ExchangeKeyBundle, KeyBundleError
 from openlinktoken_cli.util.ec_key_utils import (
     derive_public_key_from_private_pem,
     fingerprint_to_kid,
@@ -43,13 +51,13 @@ def parse_args() -> argparse.Namespace:
     private_key_group.add_argument(
         "--private-key",
         required=False,
-        help="Optional path to a sender or recipient private key PEM that matches one JWE recipient entry.",
+        help="Optional path to a sender or recipient private PEM or JSON bundle that matches one JWE recipient entry.",
     )
     private_key_group.add_argument(
         "--private-key-stdin",
         action="store_true",
         default=False,
-        help="Read a sender or recipient private key PEM from stdin instead of a file path.",
+        help="Read a sender or recipient private PEM or JSON bundle from stdin instead of a file path.",
     )
     parser.add_argument(
         "--expected-secret",
@@ -66,25 +74,18 @@ def decrypt_exchange_secret(
 ) -> bytes:
     """Recover the plaintext hashing secret bytes from a JWE exchange config."""
     exchange_config = load_exchange_config(exchange_config_path)
-    private_pem = resolve_private_key_pem(exchange_config, private_key_path, private_key_stdin=private_key_stdin)
-    payload = decrypt_exchange_payload(exchange_config, private_pem)
+    private_material = resolve_private_key_pem(
+        exchange_config,
+        private_key_path,
+        private_key_stdin=private_key_stdin,
+    )
+    payload = decrypt_exchange_payload(exchange_config, private_material)
     return _extract_hashing_secret(payload)
 
 
 def load_exchange_config(exchange_config_path: Path) -> dict[str, Any]:
-    """Load and validate the top-level exchange config structure."""
-    exchange_config = json.loads(exchange_config_path.read_text(encoding="utf-8"))
-    if not isinstance(exchange_config, dict):
-        raise ValueError("Exchange config must be a JSON object.")
-
-    if exchange_config.get("version") != 1:
-        raise ValueError("Exchange config must declare top-level version 1.")
-
-    recipients = exchange_config.get("recipients")
-    if not isinstance(recipients, list) or not recipients:
-        raise ValueError("Exchange config must contain at least one JWE recipient entry.")
-
-    return exchange_config
+    """Load and validate an exchange config through the shared resolver."""
+    return dict(load_shared_exchange_config(exchange_config_path).config)
 
 
 def resolve_private_key_pem(
@@ -92,37 +93,37 @@ def resolve_private_key_pem(
     private_key_path: Path | None,
     private_key_stdin: bool = False,
 ) -> bytes:
-    """Return the caller-supplied private key or resolve a local key by recipient kid."""
-    recipient_kids = _recipient_kids(exchange_config)
+    """Return caller-supplied private material or resolve it by recipient kid."""
     if private_key_path is not None and private_key_stdin:
         raise ValueError("Use either --private-key or --private-key-stdin, not both.")
 
+    loaded_exchange = load_shared_exchange_config(exchange_config_value=exchange_config)
     if private_key_stdin:
-        private_pem = read_required_stdin_bytes("--private-key-stdin", "private key")
-        private_key_kid = _kid_for_private_key(private_pem)
-        if private_key_kid not in recipient_kids:
-            raise ValueError("Provided private key does not match any JWE recipient entry in the exchange config.")
-        return private_pem
+        private_material = resolve_exchange_config_private_key(
+            loaded_exchange,
+            private_key_value=read_required_stdin_bytes("--private-key-stdin", "private key"),
+        )
+        _require_recipient_key(exchange_config, private_material)
+        return private_material
 
     if private_key_path is not None:
-        private_pem = private_key_path.read_bytes()
-        private_key_kid = _kid_for_private_key(private_pem)
-        if private_key_kid not in recipient_kids:
-            raise ValueError("Provided private key does not match any JWE recipient entry in the exchange config.")
-        return private_pem
+        private_material = resolve_exchange_config_private_key(
+            loaded_exchange,
+            private_key_value=private_key_path.read_bytes(),
+        )
+        _require_recipient_key(exchange_config, private_material)
+        return private_material
 
-    openlinktoken_dir = Path.home() / ".openlinktoken"
-    missing_kids: list[str] = []
-    for kid in recipient_kids:
-        try:
-            return resolve_private_key_by_kid(openlinktoken_dir, kid)
-        except FileNotFoundError:
-            missing_kids.append(kid)
-
-    raise ValueError(
-        "No local private key could be resolved for any exchange recipient kid "
-        f"in {openlinktoken_dir}: {', '.join(missing_kids)}"
+    return resolve_exchange_config_private_key(
+        loaded_exchange,
+        openlinktoken_dir=Path.home() / ".openlinktoken",
     )
+
+
+def _require_recipient_key(exchange_config: dict[str, Any], private_material: bytes) -> None:
+    """Reject direct key material that cannot target a listed recipient."""
+    if _kid_for_private_key(private_material) not in _recipient_kids(exchange_config):
+        raise ValueError("Provided private key does not match any JWE recipient entry in the exchange config.")
 
 
 def _recipient_kids(exchange_config: dict[str, Any]) -> list[str]:
@@ -146,16 +147,24 @@ def _recipient_kids(exchange_config: dict[str, Any]) -> list[str]:
 
 
 def _kid_for_private_key(private_pem: bytes) -> str:
-    """Derive the fingerprint-based kid for a PEM-encoded private key."""
+    """Derive the key identifier for PEM or JSON-bundle private material."""
+    try:
+        return ExchangeKeyBundle.from_json(private_pem, require_private=True).kid
+    except (KeyBundleError, UnicodeDecodeError, json.JSONDecodeError):
+        pass
     public_pem, _ = derive_public_key_from_private_pem(private_pem)
     return fingerprint_to_kid(public_key_fingerprint(public_pem))
 
 
 def decrypt_exchange_payload(exchange_config: dict[str, Any], private_pem: bytes) -> dict[str, Any]:
     """Decrypt the exchange envelope and parse the payload JSON."""
+    loaded_exchange = load_shared_exchange_config(exchange_config_value=exchange_config)
     try:
-        payload_bytes = decrypt_exchange_envelope(exchange_config, private_pem)
-    except JWException as error:
+        if loaded_exchange.version == 2:
+            payload_bytes, _ = decrypt_exchange_envelope_v2(exchange_config, private_pem)
+        else:
+            payload_bytes = decrypt_exchange_envelope(exchange_config, private_pem)
+    except (JWException, ValueError, KeyError, TypeError) as error:
         raise ValueError("Provided key material does not decrypt the exchange config.") from error
 
     payload = json.loads(payload_bytes)

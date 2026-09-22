@@ -36,6 +36,16 @@ Each suite fixes all of the following:
 Post-quantum suites use **ML-KEM-768** for exchange key establishment. This is
 separate from the token digest and MAC: a suite can use a post-quantum exchange
 while still using SHA-3 and HMAC for its deterministic token primitives.
+Version 2 exchanges use the RFC 7516 general JWE JSON Serialization with
+custom key-management algorithm identifiers:
+
+- `ML-KEM-768` for `suite-pq-v1` and `suite-pq-shake-v1`
+- `ECDH-ES+ML-KEM-768` for `suite-pq-hybrid-v1`
+
+The JWE content-encryption key is used only for the exchange payload. The
+exchange implementation derives a separate token transport key from that CEK
+and the authenticated exchange ID, so token consumers never use the CEK
+directly.
 
 ## Supported suites
 
@@ -133,7 +143,7 @@ This creates:
 The `--curve` option applies only to version-1 ECDH PEM generation. Version-2
 key bundles use ML-KEM-768 and the hybrid profile's fixed ECDH-P256 component.
 
-For a field-by-field description of both envelope versions, see the
+For a field-by-field description of both exchange versions, see the
 `docs/exchange-config-format.md` reference in the repository.
 
 ## Operational rules

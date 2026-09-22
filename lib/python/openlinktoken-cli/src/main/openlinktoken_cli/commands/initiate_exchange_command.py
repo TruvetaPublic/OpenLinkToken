@@ -24,13 +24,13 @@ DEFAULT_EMBEDDING_DIMENSION = 1024
 
 
 class InitiateExchangeCommand:
-    """Initiate an ECDH key-exchange with a partner.
+    """Initiate a configured key exchange with a partner.
 
     Steps performed:
      1. Resolve/create a sender key pair locally, or derive it from an external reference.
      2. Read the partner's public key from a PEM file or JSON key bundle.
      3. Generate a random hashing secret (or accept one provided by the caller).
-     4. Encrypt the exchange payload into a multi-recipient JWE envelope.
+     4. Encrypt the exchange payload into a multi-recipient standard JWE JSON object.
      5. Write the versioned exchange config envelope to the requested output path.
     """
 
@@ -44,7 +44,7 @@ class InitiateExchangeCommand:
             description=(
                 "Initiate a configured key exchange with a partner.\n\n"
                 "The default suite uses ECDH/JWE. Post-quantum suites use JSON key\n"
-                "bundles and the generic version-2 exchange envelope."
+                "bundles and the standard JWE JSON version-2 exchange envelope."
             ),
         )
 
@@ -572,7 +572,7 @@ class InitiateExchangeCommand:
         local_private_key_path_str: Optional[str],
         sender_private_key_env_name: Optional[str],
     ) -> int:
-        """Create a version-2 exchange using validated JSON key bundles."""
+        """Create a standard JWE JSON version-2 exchange using validated key bundles."""
         from openlinktoken.exchange_kem import build_exchange_envelope_v2
         from openlinktoken.exchange_key_bundle import ExchangeKeyBundle, generate_exchange_key_bundle
         from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message

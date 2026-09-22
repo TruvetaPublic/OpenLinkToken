@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: MIT
 
+import base64
+import json
 from copy import deepcopy
 
 import pytest
@@ -11,6 +13,12 @@ from openlinktoken.exchange_config import (
 )
 from openlinktoken.exchange_kem import build_exchange_envelope_v2, decrypt_exchange_envelope_v2
 from openlinktoken.exchange_key_bundle import ExchangeKeyBundle, KeyBundleError, generate_exchange_key_bundle
+
+
+def _decode_protected_header(envelope: dict) -> dict:
+    """Decode a standard JWE protected header for assertions."""
+    protected = envelope["protected"]
+    return json.loads(base64.urlsafe_b64decode(protected + "=" * (-len(protected) % 4)))
 
 
 @pytest.mark.parametrize("suite_id", ["suite-pq-v1", "suite-pq-shake-v1", "suite-pq-hybrid-v1"])
@@ -40,8 +48,16 @@ def test_v2_exchange_round_trips_for_both_participants(suite_id):
     assert sender_plaintext == recipient_plaintext
     assert sender_transport_key == recipient_transport_key
     assert len(sender_transport_key) == 32
-    assert envelope["version"] == 2
-    assert envelope["cryptoSuite"] == suite_id
+    assert set(envelope) == {"protected", "recipients", "iv", "ciphertext", "tag"}
+    assert _decode_protected_header(envelope) == {
+        "typ": "openlinktoken-exchange+jwe",
+        "cty": "application/openlinktoken-exchange+json",
+        "enc": "A256GCM",
+        "version": 2,
+        "cryptoSuite": suite_id,
+        "exchangeId": "exchange-pqc-123",
+    }
+    assert all("alg" in recipient_entry["header"] for recipient_entry in envelope["recipients"])
 
 
 def test_v2_exchange_resolves_suite_and_transport_key():
@@ -60,23 +76,15 @@ def test_v2_exchange_resolves_suite_and_transport_key():
     loaded = load_exchange_config(exchange_config_value=envelope)
     resolved = resolve_loaded_exchange_config(loaded, sender.to_json(include_private=True))
 
+    assert loaded.version == 2
     assert resolved.version == 2
     assert resolved.private_key_role == "sender"
     assert resolved.hashing_secret == b"hash-secret"
     assert derive_transport_encryption_key(resolved) == resolved.transport_encryption_key
 
 
-def test_key_bundle_rejects_public_fingerprint_mismatch():
-    """A bundle must not accept a public key under another key's fingerprint."""
-    bundle = generate_exchange_key_bundle("suite-pq-v1").to_mapping(include_private=True)
-    bundle["keys"]["mlkem"]["fingerprint"] = "00:" * 31 + "00"
-
-    with pytest.raises(KeyBundleError, match="fingerprint"):
-        ExchangeKeyBundle.from_mapping(bundle, require_private=True)
-
-
-def test_v2_exchange_rejects_unknown_component_algorithm():
-    """Unknown component algorithms fail closed instead of being ignored."""
+def test_v2_exchange_rejects_tampered_recipient_algorithm():
+    """Recipient algorithms must remain bound to the protected suite."""
     sender = generate_exchange_key_bundle("suite-pq-v1")
     recipient = generate_exchange_key_bundle("suite-pq-v1")
     envelope = build_exchange_envelope_v2(
@@ -88,9 +96,9 @@ def test_v2_exchange_rejects_unknown_component_algorithm():
         "exchange-tamper",
     )
     tampered = deepcopy(envelope)
-    tampered["recipients"][0]["keyManagement"]["components"][0]["algorithm"] = "UNKNOWN-KEM"
+    tampered["recipients"][0]["header"]["alg"] = "UNKNOWN-KEM"
 
-    with pytest.raises(ValueError, match="component ordering"):
+    with pytest.raises(ValueError, match="algorithm"):
         decrypt_exchange_envelope_v2(tampered, sender.to_json(include_private=True))
 
 
@@ -112,8 +120,8 @@ def test_v2_exchange_rejects_wrong_private_bundle():
         decrypt_exchange_envelope_v2(envelope, unrelated.to_json(include_private=True))
 
 
-def test_v2_exchange_rejects_non_v2_envelope():
-    """Version-1 envelopes cannot be decrypted through the version-2 API."""
+def test_v2_exchange_rejects_wrong_protected_version():
+    """The protected version is authenticated and required for v2."""
     sender = generate_exchange_key_bundle("suite-pq-v1")
     recipient = generate_exchange_key_bundle("suite-pq-v1")
     envelope = build_exchange_envelope_v2(
@@ -124,14 +132,20 @@ def test_v2_exchange_rejects_non_v2_envelope():
         "2026-03-12T00:00:00Z",
         "exchange-version",
     )
-    envelope["version"] = 1
+    protected = _decode_protected_header(envelope)
+    protected["version"] = 1
+    envelope["protected"] = (
+        base64.urlsafe_b64encode(json.dumps(protected, sort_keys=True, separators=(",", ":")).encode("utf-8"))
+        .decode("ascii")
+        .rstrip("=")
+    )
 
-    with pytest.raises(ValueError, match="not version 2"):
+    with pytest.raises(ValueError, match="version"):
         decrypt_exchange_envelope_v2(envelope, sender.to_json(include_private=True))
 
 
 def test_v2_exchange_rejects_v1_crypto_suite():
-    """Version-1 crypto suites cannot be used in version-2 envelopes."""
+    """Version-1 suites cannot be used in version-2 protected headers."""
     sender = generate_exchange_key_bundle("suite-pq-v1")
     recipient = generate_exchange_key_bundle("suite-pq-v1")
     envelope = build_exchange_envelope_v2(
@@ -142,46 +156,43 @@ def test_v2_exchange_rejects_v1_crypto_suite():
         "2026-03-12T00:00:00Z",
         "exchange-suite",
     )
-    envelope["cryptoSuite"] = "suite-sha256-v1"
+    protected = _decode_protected_header(envelope)
+    protected["cryptoSuite"] = "suite-sha256-v1"
+    envelope["protected"] = (
+        base64.urlsafe_b64encode(json.dumps(protected, sort_keys=True, separators=(",", ":")).encode("utf-8"))
+        .decode("ascii")
+        .rstrip("=")
+    )
 
-    with pytest.raises(ValueError, match="not valid for exchange configuration version 2"):
+    with pytest.raises(ValueError, match="exchange configuration version 2|suite"):
         decrypt_exchange_envelope_v2(envelope, sender.to_json(include_private=True))
 
 
-def test_v2_exchange_rejects_missing_key_management():
-    """Recipients without key-management data are rejected before unwrapping."""
+def test_v2_exchange_rejects_missing_recipient_header():
+    """Standard JWE recipients must carry their JOSE header object."""
     sender = generate_exchange_key_bundle("suite-pq-v1")
     recipient = generate_exchange_key_bundle("suite-pq-v1")
     envelope = build_exchange_envelope_v2(
-        "key-management-test",
+        "header-test",
         b"hash-secret",
         sender,
         recipient,
         "2026-03-12T00:00:00Z",
-        "exchange-key-management",
+        "exchange-header",
     )
-    envelope["recipients"][0]["keyManagement"] = None
+    envelope["recipients"][0].pop("header")
 
-    with pytest.raises(ValueError, match="missing keyManagement"):
+    with pytest.raises(ValueError, match="header"):
         decrypt_exchange_envelope_v2(envelope, sender.to_json(include_private=True))
 
 
-def test_v2_exchange_rejects_non_list_components():
-    """Recipient key-management components must be represented as a list."""
-    sender = generate_exchange_key_bundle("suite-pq-v1")
-    recipient = generate_exchange_key_bundle("suite-pq-v1")
-    envelope = build_exchange_envelope_v2(
-        "components-test",
-        b"hash-secret",
-        sender,
-        recipient,
-        "2026-03-12T00:00:00Z",
-        "exchange-components",
-    )
-    envelope["recipients"][0]["keyManagement"]["components"] = None
+def test_key_bundle_rejects_public_fingerprint_mismatch():
+    """A bundle must not accept a public key under another key's fingerprint."""
+    bundle = generate_exchange_key_bundle("suite-pq-v1").to_mapping(include_private=True)
+    bundle["keys"]["mlkem"]["fingerprint"] = "00:" * 31 + "00"
 
-    with pytest.raises(ValueError, match="components must be a list"):
-        decrypt_exchange_envelope_v2(envelope, sender.to_json(include_private=True))
+    with pytest.raises(KeyBundleError, match="fingerprint"):
+        ExchangeKeyBundle.from_mapping(bundle, require_private=True)
 
 
 def test_key_bundle_requires_private_material():
@@ -211,6 +222,6 @@ def test_key_bundle_rejects_missing_keys_object():
 
 
 def test_key_bundle_rejects_non_v2_suite():
-    """Version-1 suites cannot be used to generate version-2 key bundles."""
+    """Version-1 suites cannot generate version-2 key bundles."""
     with pytest.raises(KeyBundleError, match="does not require a version-2 key bundle"):
         generate_exchange_key_bundle("suite-sha256-v1")

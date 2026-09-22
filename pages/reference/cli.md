@@ -101,8 +101,8 @@ LastName, BirthDate, Sex, and PostalCode values.
 | `--output`                  | `-o`  | No       | `<input_basename>_packaged.zip`            | Path to output file. Supported extensions: `.csv`, `.parquet`, `.zip`. A `.zip` path bundles the tokens (always in Parquet format), metadata, and exchange config into one archive. |
 | `--exchange-config`         | `-c`  | No       | `./openlinktoken-YYYY-MM-DD.exchange.json` | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted.                                                                                     |
 | `--config`                  |       | No       |                                            | YAML config file for custom input field mapping and token-rule definitions. Supplying it disables ML1 output. Supported for CSV and Parquet input.                                  |
-| `--private-key`             |       | No\*     |                                            | Private key PEM used to decrypt the exchange config and derive the transport encryption key                                                                                         |
-| `--private-key-env`         |       | No\*     |                                            | Environment variable containing the private key PEM                                                                                                                                 |
+| `--private-key`             |       | No\*     |                                            | Private PEM key or JSON private bundle used to decrypt the exchange config and derive the transport encryption key                                                                  |
+| `--private-key-env`         |       | No\*     |                                            | Environment variable containing the private PEM key or JSON private bundle                                                                                                          |
 | `--ring-id`                 |       | No       | Random UUID                                | Ring identifier for key management. A random UUID is generated when omitted.                                                                                                        |
 | `--hash-record-ids`         |       | No       |                                            | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability)                                                                                              |
 | `--disable-inferencing`     |       | No       | ML1 enabled                                | Disable ML1 ONNX inference token generation. Custom tokenization disables ML1 automatically.                                                                                        |
@@ -117,8 +117,8 @@ LastName, BirthDate, Sex, and PostalCode values.
 | `--input`                   | `-i`  | Yes      |                                            | Path to input file (CSV or Parquet)                                                                                                                                                                                                      |
 | `--output`                  | `-o`  | No       | `<input_basename>_tokenized.<ext>`         | Path to output file. Appends `_tokenized` suffix based on input filename when omitted.                                                                                                                                                   |
 | `--exchange-config`         | `-c`  | No       | `./openlinktoken-YYYY-MM-DD.exchange.json` | Exchange config JSON path. Default `tokenize` mode uses it to resolve the hashing secret; hash-only/demo may use it with a matching private key for optional rotation settings.                                                          |
-| `--private-key`             |       | No\*     |                                            | Private key PEM used to decrypt the exchange config                                                                                                                                                                                      |
-| `--private-key-env`         |       | No\*     |                                            | Environment variable containing the private key PEM                                                                                                                                                                                      |
+| `--private-key`             |       | No\*     |                                            | Private PEM key or JSON private bundle used to decrypt the exchange config                                                                                                                                                               |
+| `--private-key-env`         |       | No\*     |                                            | Environment variable containing the private PEM key or JSON private bundle                                                                                                                                                               |
 | `--config`                  |       | No       |                                            | YAML config file for custom input field mapping and token-rule definitions. Supplying it disables ML1 output. See [Tokenization Configuration Reference](tokenization-config.md). Supported for CSV and Parquet input.                   |
 | `--mode`                    |       | No       | `default`                                  | Mode selector: `default`, `hash-only`, or `demo`. Hash-only/demo do not need secrets; an exchange config and matching private key may be supplied for optional rotation settings. `--hash-record-ids` is supported only in default mode. |
 | `--hash-record-ids`         |       | No       |                                            | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability; default tokenize mode only)                                                                                                                       |
@@ -134,34 +134,34 @@ LastName, BirthDate, Sex, and PostalCode values.
 | `--input`           | `-i`  | Yes      |                                            | Path to input file (CSV or Parquet)                                                                                                                                                                                       |
 | `--output`          | `-o`  | No       | `<input_basename>_encrypted{ext}`          | Path to output file. Supported extensions: `.csv`, `.parquet`, `.zip`. Appends `_encrypted` suffix based on input filename when omitted. A `.zip` path bundles the encrypted tokens and exchange config into one archive. |
 | `--exchange-config` | `-c`  | No       | `./openlinktoken-YYYY-MM-DD.exchange.json` | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted.                                                                                                                           |
-| `--private-key`     |       | No\*     |                                            | Private key PEM used to decrypt the exchange config and derive the transport encryption key                                                                                                                               |
-| `--private-key-env` |       | No\*     |                                            | Environment variable containing the private key PEM                                                                                                                                                                       |
+| `--private-key`     |       | No\*     |                                            | Private PEM key or JSON private bundle used to decrypt the exchange config and derive the transport encryption key                                                                                                        |
+| `--private-key-env` |       | No\*     |                                            | Environment variable containing the private PEM key or JSON private bundle                                                                                                                                                |
 | `--ring-id`         |       | No       | Random UUID                                | Ring identifier for key management. A random UUID is generated when omitted.                                                                                                                                              |
 | `--no-progress`     | `-q`  | No       |                                            | Suppress the interactive progress indicator.                                                                                                                                                                              |
 
 ### `decrypt` (Decrypt Encrypted Tokens)
 
-| Argument            | Short | Required | Default                                    | Description                                                                                     |
-| ------------------- | ----- | -------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| `--input`           | `-i`  | Yes      |                                            | Path to input file (must be encrypted)                                                          |
-| `--output`          | `-o`  | No       | `<input_basename>_decrypted{ext}`          | Path to output file. Appends `_decrypted` suffix based on input filename when omitted.          |
-| `--exchange-config` | `-c`  | No       | `./openlinktoken-YYYY-MM-DD.exchange.json` | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted. |
-| `--private-key`     |       | No\*     |                                            | Private key PEM used to decrypt the exchange config and derive the transport encryption key     |
-| `--private-key-env` |       | No\*     |                                            | Environment variable containing the private key PEM                                             |
-| `--no-progress`     | `-q`  | No       |                                            | Suppress the interactive progress indicator.                                                    |
+| Argument            | Short | Required | Default                                    | Description                                                                                                        |
+| ------------------- | ----- | -------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| `--input`           | `-i`  | Yes      |                                            | Path to input file (must be encrypted)                                                                             |
+| `--output`          | `-o`  | No       | `<input_basename>_decrypted{ext}`          | Path to output file. Appends `_decrypted` suffix based on input filename when omitted.                             |
+| `--exchange-config` | `-c`  | No       | `./openlinktoken-YYYY-MM-DD.exchange.json` | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted.                    |
+| `--private-key`     |       | No\*     |                                            | Private PEM key or JSON private bundle used to decrypt the exchange config and derive the transport encryption key |
+| `--private-key-env` |       | No\*     |                                            | Environment variable containing the private PEM key or JSON private bundle                                         |
+| `--no-progress`     | `-q`  | No       |                                            | Suppress the interactive progress indicator.                                                                       |
 
-### `generate-key-pair` (ECDH or Version-2 Key Generation)
+### `generate-key-pair` (ECDH or version 2 key generation)
 
 Available in the Python CLI.
 
-Use `--crypto-suite` to select the key format and algorithms. Version-1 suites
-write PEM key pairs; version-2 suites write JSON key bundles containing
+Use `--crypto-suite` to select the key format and algorithms. Version 1 suites
+write PEM key pairs; version 2 suites write JSON key bundles containing
 ML-KEM-768 material and, for the hybrid suite, an ECDH-P256 key.
 
 | Argument         | Short | Required | Default                        | Description                                                                                          |
 | ---------------- | ----- | -------- | ------------------------------ | ---------------------------------------------------------------------------------------------------- |
-| `--crypto-suite` |       | No       | `suite-sha256-v1`              | Registered suite ID. Version-2 suites create `.private.bundle.json` and `.public.bundle.json` files. |
-| `--curve`        | `-c`  | No       | `P-256`                        | ECDH curve for version-1 PEM keys: `P-256`, `P-384`, or `P-521`. Not valid for version-2 suites.     |
+| `--crypto-suite` |       | No       | `suite-sha256-v1`              | Registered suite ID. Version 2 suites create `.private.bundle.json` and `.public.bundle.json` files. |
+| `--curve`        | `-c`  | No       | `P-256`                        | ECDH curve for version 1 PEM keys: `P-256`, `P-384`, or `P-521`. Not valid for version 2 suites.     |
 | `--name`         | `-n`  | No       | `openlinktoken-<ISO8601-date>` | Base name for output key files.                                                                      |
 | `--force`        |       | No       | `false`                        | Overwrite existing key files if they already exist.                                                  |
 
@@ -171,22 +171,23 @@ Writes key files to `~/.openlinktoken/`:
 - `~/.openlinktoken/<name>.public.pem` — SubjectPublicKeyInfo PEM public key (permissions `644`)
 - `~/.openlinktoken/` directory is created with permissions `700` if absent.
 
-For version-2 suites, the corresponding files are:
+For version 2 suites, the corresponding files are:
 
 - `~/.openlinktoken/<name>.private.bundle.json` — private ML-KEM material and,
   for the hybrid suite, private ECDH material (permissions `600`)
 - `~/.openlinktoken/<name>.public.bundle.json` — public key bundle (permissions
   `644`)
 
-### `initiate-exchange` (Versioned Key-Exchange Bootstrap)
+### `initiate-exchange` (versioned key-exchange bootstrap)
 
 Available in the Python CLI.
 
-The selected suite determines the exchange format. Version-1 suites use
-ECDH/JWE and PEM keys. Version-2 suites use the generic exchange envelope with
-ML-KEM-768 or ECDH-P256 plus ML-KEM-768 and JSON key bundles. In either case,
-the command encrypts a hashing secret into a multi-recipient exchange artifact
-for the sender and partner. The artifact does **not** embed private keys.
+The selected suite determines the exchange format. Version 1 suites use
+ECDH/JWE and PEM keys. Version-2 suites use the RFC 7516 general JWE JSON
+Serialization with `ML-KEM-768` or `ECDH-ES+ML-KEM-768` recipient algorithms
+and JSON key bundles. In either case, the command encrypts a hashing secret
+into a multi-recipient exchange artifact for the sender and partner. The
+artifact does **not** embed private keys.
 
 | Argument                         | Short   | Required | Default                        | Description                                                                                                                                                      |
 | -------------------------------- | ------- | -------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -207,10 +208,10 @@ for the sender and partner. The artifact does **not** embed private keys.
 | `--rotation-bin-width`           | `WIDTH` | No       | `0.05`                         | Quantization bin width for rotation-based token generation                                                                                                       |
 | `--rotation-embedding-dimension` | `N`     | No       | `1024`                         | Embedding vector size. Sets the length of the zero-filled dimension bias written into the exchange config. Ignored when `--rotation-embedding-bias` is provided. |
 | `--rotation-embedding-bias`      | `PATH`  | No       |                                | Path to a JSON file containing a flat array of floats used as the dimension bias (e.g. `[0.12, -0.05, 0.33]`). Overrides `--rotation-embedding-dimension`.       |
-| `--curve`                        | `-c`    | No       | `P-256`                        | Elliptic curve for version-1 ECDH keys: `P-256`, `P-384`, or `P-521`. Not valid for version-2 suites.                                                            |
+| `--curve`                        | `-c`    | No       | `P-256`                        | Elliptic curve for version 1 ECDH keys: `P-256`, `P-384`, or `P-521`. Not valid for version 2 suites.                                                            |
 | `--force`                        |         | No       | `false`                        | Overwrite existing key files and exchange config                                                                                                                 |
-| `--sender-private-key`           |         | No       |                                | Reuse an existing sender private key PEM for the sender-side recipient entry instead of generating a new key pair                                                |
-| `--sender-private-key-env`       |         | No       |                                | Read the sender private key PEM from the named environment variable without writing local sender key files                                                       |
+| `--sender-private-key`           |         | No       |                                | Reuse an existing sender private PEM key or JSON private bundle for the sender-side recipient entry instead of generating a new key pair                         |
+| `--sender-private-key-env`       |         | No       |                                | Read the sender private PEM key or JSON private bundle from the named environment variable without writing local sender key files                                |
 
 **Outputs:**
 
@@ -316,7 +317,7 @@ For `tokenize`, `package`, `encrypt`, and `decrypt`, Open Link Token resolves th
 \* Provide at most one of `--private-key` or `--private-key-env`.
 
 See [Sharing Tokenized Data](../operations/sharing-tokenized-data.md) for the full two-command ECDH bootstrap workflow.
-See [Cryptographic Suites](../concepts/crypto-suites.md) for suite selection and version-2 key-bundle workflows.
+See [Cryptographic Suites](../concepts/crypto-suites.md) for suite selection and version 2 key-bundle workflows.
 For a field-by-field format reference, see `docs/exchange-config-format.md`.
 
 ### `update` (Self-Update CLI)

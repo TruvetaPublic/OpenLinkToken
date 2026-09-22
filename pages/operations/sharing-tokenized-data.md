@@ -234,9 +234,9 @@ olt package \
 
 ## Version 2 ML-KEM or Hybrid Workflow
 
-Version-2 suites use JSON key bundles and the generic exchange envelope. The
-workflow is the same as the version-1 exchange, but both parties generate and
-share public bundles using the selected suite:
+Version 2 suites use JSON key bundles and the RFC 7516 general JWE JSON
+Serialization. The workflow is the same as the version 1 exchange, but both
+parties generate and share public bundles using the selected suite:
 
 ```bash
 # Recipient: generate a bundle and share only the public bundle
@@ -254,6 +254,10 @@ olt initiate-exchange \
 The private bundle remains under `~/.openlinktoken/` on the machine that
 generated it. Consumer commands still use only `--exchange-config` plus the
 matching private bundle; the suite is read from the exchange artifact.
+For the ML-KEM-only suites, JWE recipients use `alg=ML-KEM-768`. The hybrid
+suite uses `alg=ECDH-ES+ML-KEM-768` and includes an ephemeral P-256 public key
+in each recipient header. The protected JWE header authenticates the exchange
+version, suite, and exchange ID.
 
 ---
 
