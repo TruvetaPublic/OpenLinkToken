@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 from jwcrypto import jwe, jwk
 
+from openlinktoken.crypto_suite import CryptoSuite
 from openlinktoken.ec_key_utils import fingerprint_to_kid, generate_key_pair, public_key_fingerprint
 from openlinktoken.exchange_config import (
     _decode_bin_width,
@@ -94,6 +95,49 @@ def test_build_exchange_envelope_round_trips_for_either_private_key():
         "sha256:" + public_key_fingerprint(sender_public_pem).lower().replace(":", "-"),
         "sha256:" + public_key_fingerprint(recipient_public_pem).lower().replace(":", "-"),
     }
+
+
+def test_build_legacy_exchange_rejects_non_default_suite():
+    """Legacy top-level-version-1 envelopes must not silently encode another suite."""
+    _, sender_public_pem = generate_key_pair("P-256")
+    _, recipient_public_pem = generate_key_pair("P-256")
+
+    with pytest.raises(ValueError, match="suite-sha3-v1.*version 1|version 1.*suite-sha3-v1"):
+        build_exchange_envelope(
+            exchange_name="legacy-suite",
+            hashing_secret=b"shared-hashing-secret",
+            sender_public_pem=sender_public_pem,
+            recipient_public_pem=recipient_public_pem,
+            curve="P-256",
+            created_at="2026-03-11T00:00:00Z",
+            exchange_id="exchange-legacy-suite",
+            crypto_suite=CryptoSuite.from_id("suite-sha3-v1"),
+        )
+
+
+def test_resolve_legacy_exchange_rejects_non_default_suite(monkeypatch):
+    """Legacy readers must reject a v1 payload that declares a non-default suite."""
+    sender_private_pem, sender_public_pem = generate_key_pair("P-256")
+    _, recipient_public_pem = generate_key_pair("P-256")
+    envelope = build_exchange_envelope(
+        exchange_name="legacy-suite",
+        hashing_secret=b"shared-hashing-secret",
+        sender_public_pem=sender_public_pem,
+        recipient_public_pem=recipient_public_pem,
+        curve="P-256",
+        created_at="2026-03-11T00:00:00Z",
+        exchange_id="exchange-legacy-suite",
+    )
+    payload = json.loads(decrypt_exchange_envelope(envelope, sender_private_pem))
+    payload["cryptoSuite"] = "suite-sha3-v1"
+    loaded = load_exchange_config(exchange_config_value={"version": 1})
+    monkeypatch.setattr(
+        "openlinktoken.exchange_config.decrypt_exchange_envelope",
+        lambda _config, _private_key: json.dumps(payload),
+    )
+
+    with pytest.raises(ValueError, match="Legacy version 1.*suite-sha3-v1"):
+        resolve_loaded_exchange_config(loaded, sender_private_pem)
 
 
 def test_resolve_private_key_by_kid_uses_matching_public_key_basename(tmp_path: Path):
@@ -237,7 +281,7 @@ def test_load_exchange_config_detects_v2_from_protected_header(suite_id):
     recipient = generate_exchange_key_bundle(suite_id)
     envelope = build_exchange_envelope_v2(
         "protected-version",
-        b"hash-secret",
+        b"0123456789abcdef0123456789abcdef",
         sender,
         recipient,
         "2026-03-12T00:00:00Z",

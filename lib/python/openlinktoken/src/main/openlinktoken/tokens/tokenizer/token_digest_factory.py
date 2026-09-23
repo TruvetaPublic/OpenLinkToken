@@ -11,9 +11,9 @@ class TokenDigestFactory:
     """Create token digest implementations from validated suite metadata."""
 
     _IMPLEMENTATIONS = {
-        "SHA-256": Sha256TokenDigest,
-        "SHA3-256": Sha3TokenDigest,
-        "SHAKE256-256": Shake256TokenDigest,
+        CryptoSuite.TOKEN_DIGEST_SHA256: Sha256TokenDigest,
+        CryptoSuite.TOKEN_DIGEST_SHA3_256: Sha3TokenDigest,
+        CryptoSuite.TOKEN_DIGEST_SHAKE256_256: Shake256TokenDigest,
     }
 
     @classmethod

@@ -42,7 +42,8 @@ public class JweMatchTokenFormatter implements TokenTransformer {
     private final String ruleId;
     private final String issuer;
     private final byte[] encryptionKey;
-    private final CryptoSuite cryptoSuite;
+    private final String cryptoSuiteId;
+    private transient CryptoSuite cryptoSuite;
     private transient DirectEncrypter encrypter;
 
     /**
@@ -102,7 +103,9 @@ public class JweMatchTokenFormatter implements TokenTransformer {
         this.ruleId = ruleId;
         this.issuer = (issuer != null && !issuer.isEmpty()) ? issuer : "org.openlinktoken";
         this.encryptionKey = keyBytes;
-        this.cryptoSuite = cryptoSuite == null ? CryptoSuite.defaultSuite() : cryptoSuite;
+        CryptoSuite resolvedCryptoSuite = cryptoSuite == null ? CryptoSuite.defaultSuite() : cryptoSuite;
+        this.cryptoSuiteId = resolvedCryptoSuite.getSuiteId();
+        this.cryptoSuite = resolvedCryptoSuite;
         this.encrypter = createEncrypter(this.encryptionKey);
     }
 
@@ -126,9 +129,12 @@ public class JweMatchTokenFormatter implements TokenTransformer {
     private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
         ois.defaultReadObject();
         try {
+            this.cryptoSuite = this.cryptoSuiteId == null
+                    ? CryptoSuite.defaultSuite()
+                    : CryptoSuite.fromId(this.cryptoSuiteId);
             this.encrypter = createEncrypter(this.encryptionKey);
-        } catch (JOSEException e) {
-            throw new IOException("Failed to reconstruct JWE encrypter", e);
+        } catch (IllegalArgumentException | JOSEException e) {
+            throw new IOException("Failed to reconstruct JWE formatter", e);
         }
     }
 

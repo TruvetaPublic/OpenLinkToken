@@ -117,7 +117,7 @@ class JweMatchTokenFormatter(TokenTransformer):
             # Create JWE header with algorithm and encryption method
             protected_header = {
                 HEADER_KEY_ALGORITHM: "dir",  # Direct encryption (key used directly)
-                HEADER_KEY_ENCRYPTION: "A256GCM",  # AES-256-GCM encryption
+                HEADER_KEY_ENCRYPTION: CryptoSuite.TOKEN_CONTENT_ENCRYPTION_A256GCM,
                 HEADER_KEY_TYPE: TOKEN_TYPE,
                 HEADER_KEY_KEY_ID: self.ring_id,
             }

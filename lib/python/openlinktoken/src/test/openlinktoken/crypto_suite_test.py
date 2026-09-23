@@ -39,6 +39,22 @@ def test_registered_suites_have_expected_contracts():
     assert CryptoSuite.from_id("suite-pq-hybrid-v1").exchange_key_agreement == "ECDH+ML-KEM-768"
 
 
+def test_algorithm_identifiers_are_stable_constants():
+    """Suite algorithm identifiers are exposed as shared constants."""
+    assert CryptoSuite.TOKEN_DIGEST_SHA256 == "SHA-256"
+    assert CryptoSuite.TOKEN_DIGEST_SHA3_256 == "SHA3-256"
+    assert CryptoSuite.TOKEN_DIGEST_SHAKE256_256 == "SHAKE256-256"
+    assert CryptoSuite.TOKEN_MAC_HS256 == "HS256"
+    assert CryptoSuite.TOKEN_MAC_HS3_256 == "HS3-256"
+    assert CryptoSuite.TOKEN_MAC_KMAC256_256 == "KMAC256-256"
+    assert CryptoSuite.TOKEN_MAC_KMAC256_PREFIX == "KMAC256"
+    assert CryptoSuite.TOKEN_CONTENT_ENCRYPTION_A256GCM == "A256GCM"
+    assert CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH == "ECDH"
+    assert CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM768 == "ML-KEM-768"
+    assert CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH_MLKEM768 == "ECDH+ML-KEM-768"
+    assert CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM_PREFIX == "ML-KEM"
+
+
 def test_shake_suite_declares_fixed_output_and_kmac():
     """SHAKE suite records explicit output lengths for digest and MAC."""
     suite = CryptoSuite.from_id("suite-pq-shake-v1")
@@ -48,6 +64,21 @@ def test_shake_suite_declares_fixed_output_and_kmac():
     assert suite.exchange_key_agreement == "ML-KEM-768"
     assert suite.exchange_config_version == 2
     assert suite.is_post_quantum
+
+
+def test_kmac_suite_rejects_hashing_secrets_shorter_than_32_bytes():
+    """KMAC suites require a suite-specific minimum hashing-secret length."""
+    suite = CryptoSuite.from_id("suite-pq-shake-v1")
+
+    with pytest.raises(CryptoSuiteError, match="suite-pq-shake-v1.*32 bytes"):
+        suite.validate_hashing_secret(b"x" * 31)
+
+
+def test_hashing_secret_validation_accepts_valid_default_and_kmac_secrets():
+    """Valid hashing secrets remain accepted for both default and KMAC suites."""
+    assert CryptoSuite.default().validate_hashing_secret(b"x") == b"x"
+    kmac_secret = b"x" * 32
+    assert CryptoSuite.from_id("suite-pq-shake-v1").validate_hashing_secret(kmac_secret) == kmac_secret
 
 
 def test_default_suite_preserves_legacy_contract():

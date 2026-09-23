@@ -137,6 +137,13 @@ class TestHashTokenTransformer:
 
         assert base64.b64decode(transformer.transform("person")) == expected
 
+    def test_shake_suite_rejects_short_secret_with_suite_requirement(self):
+        """The transformer retains KMAC key validation with suite-specific guidance."""
+        transformer = HashTokenTransformer(b"x" * 31, CryptoSuite.from_id("suite-pq-shake-v1"))
+
+        with pytest.raises(ValueError, match="suite-pq-shake-v1.*KMAC256.*32 bytes"):
+            transformer.transform(self.VALID_TOKEN)
+
     def _calculate_expected_hash(self, secret: str, token: str) -> str:
         """Calculate the expected HMAC-SHA256 hash for validation.
 

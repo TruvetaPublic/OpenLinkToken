@@ -41,6 +41,7 @@ def build_exchange_envelope_v2(
         raise ValueError("Exchange name and exchange ID must be non-empty.")
     if not isinstance(hashing_secret, bytes):
         raise TypeError("Hashing secret must be bytes.")
+    suite.validate_hashing_secret(hashing_secret)
     if not isinstance(rotation_iv, bytes):
         raise TypeError("Rotation IV must be bytes.")
     if rotation_count < 0:

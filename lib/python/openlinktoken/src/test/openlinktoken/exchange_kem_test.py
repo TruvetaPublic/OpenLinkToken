@@ -30,7 +30,7 @@ def test_v2_exchange_round_trips_for_both_participants(suite_id):
     recipient = generate_exchange_key_bundle(suite_id)
     envelope = build_exchange_envelope_v2(
         exchange_name="pqc-exchange",
-        hashing_secret=b"shared-hashing-secret",
+        hashing_secret=b"0123456789abcdef0123456789abcdef",
         sender_bundle=sender,
         recipient_bundle=recipient,
         created_at="2026-03-12T00:00:00Z",
@@ -64,6 +64,22 @@ def test_v2_exchange_round_trips_for_both_participants(suite_id):
     assert all("alg" in recipient_entry["header"] for recipient_entry in envelope["recipients"])
 
 
+def test_v2_exchange_rejects_short_kmac_hashing_secret():
+    """The v2 envelope boundary rejects KMAC secrets shorter than its required key size."""
+    sender = generate_exchange_key_bundle("suite-pq-shake-v1")
+    recipient = generate_exchange_key_bundle("suite-pq-shake-v1")
+
+    with pytest.raises(ValueError, match="suite-pq-shake-v1.*32 bytes"):
+        build_exchange_envelope_v2(
+            exchange_name="short-kmac-secret",
+            hashing_secret=b"x" * 31,
+            sender_bundle=sender,
+            recipient_bundle=recipient,
+            created_at="2026-03-12T00:00:00Z",
+            exchange_id="exchange-short-kmac-secret",
+        )
+
+
 @pytest.mark.parametrize("suite_id", ["suite-pq-v1", "suite-pq-shake-v1", "suite-pq-hybrid-v1"])
 def test_v2_transport_key_encrypts_and_decrypts_match_tokens(suite_id):
     """The derived v2 transport key works with the standard match-token formatter."""
@@ -71,7 +87,7 @@ def test_v2_transport_key_encrypts_and_decrypts_match_tokens(suite_id):
     recipient = generate_exchange_key_bundle(suite_id)
     envelope = build_exchange_envelope_v2(
         "token-round-trip",
-        b"hash-secret",
+        b"0123456789abcdef0123456789abcdef",
         sender,
         recipient,
         "2026-03-12T00:00:00Z",

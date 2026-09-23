@@ -8,25 +8,91 @@ import java.util.Map;
  * Immutable contract for token primitives and exchange key establishment.
  */
 public final class CryptoSuite {
+    /** SHA-256 token digest identifier. */
+    public static final String TOKEN_DIGEST_SHA256 = "SHA-256";
+
+    /** SHA3-256 token digest identifier. */
+    public static final String TOKEN_DIGEST_SHA3_256 = "SHA3-256";
+
+    /** SHAKE256-256 token digest identifier. */
+    public static final String TOKEN_DIGEST_SHAKE256_256 = "SHAKE256-256";
+
+    /** HMAC-SHA256 token MAC identifier. */
+    public static final String TOKEN_MAC_HS256 = "HS256";
+
+    /** HMAC-SHA3-256 token MAC identifier. */
+    public static final String TOKEN_MAC_HS3_256 = "HS3-256";
+
+    /** KMAC256-256 token MAC identifier. */
+    public static final String TOKEN_MAC_KMAC256_256 = "KMAC256-256";
+
+    /** KMAC256 token MAC family prefix. */
+    public static final String TOKEN_MAC_KMAC256_PREFIX = "KMAC256";
+
+    /** AES-256-GCM token content-encryption identifier. */
+    public static final String TOKEN_CONTENT_ENCRYPTION_A256GCM = "A256GCM";
+
+    /** ECDH exchange key-agreement identifier. */
+    public static final String EXCHANGE_KEY_AGREEMENT_ECDH = "ECDH";
+
+    /** ML-KEM-768 exchange key-agreement identifier. */
+    public static final String EXCHANGE_KEY_AGREEMENT_MLKEM768 = "ML-KEM-768";
+
+    /** ECDH and ML-KEM-768 hybrid exchange key-agreement identifier. */
+    public static final String EXCHANGE_KEY_AGREEMENT_ECDH_MLKEM768 = "ECDH+ML-KEM-768";
+
+    /** ML-KEM exchange key-agreement family prefix. */
+    public static final String EXCHANGE_KEY_AGREEMENT_MLKEM_PREFIX = "ML-KEM";
+
     /** The SHA-256 and ECDH crypto suite. */
     public static final CryptoSuite SUITE_SHA256_V1 =
-            new CryptoSuite("suite-sha256-v1", "SHA-256", "HS256", "A256GCM", "ECDH", 1);
+            new CryptoSuite(
+                    "suite-sha256-v1",
+                    TOKEN_DIGEST_SHA256,
+                    TOKEN_MAC_HS256,
+                    TOKEN_CONTENT_ENCRYPTION_A256GCM,
+                    EXCHANGE_KEY_AGREEMENT_ECDH,
+                    1);
 
     /** The SHA-3-256 and ECDH crypto suite. */
     public static final CryptoSuite SUITE_SHA3_V1 =
-            new CryptoSuite("suite-sha3-v1", "SHA3-256", "HS3-256", "A256GCM", "ECDH", 1);
+            new CryptoSuite(
+                    "suite-sha3-v1",
+                    TOKEN_DIGEST_SHA3_256,
+                    TOKEN_MAC_HS3_256,
+                    TOKEN_CONTENT_ENCRYPTION_A256GCM,
+                    EXCHANGE_KEY_AGREEMENT_ECDH,
+                    1);
 
     /** The SHAKE256 and ML-KEM-768 crypto suite. */
     public static final CryptoSuite SUITE_PQ_SHAKE_V1 =
-            new CryptoSuite("suite-pq-shake-v1", "SHAKE256-256", "KMAC256-256", "A256GCM", "ML-KEM-768", 2);
+            new CryptoSuite(
+                    "suite-pq-shake-v1",
+                    TOKEN_DIGEST_SHAKE256_256,
+                    TOKEN_MAC_KMAC256_256,
+                    TOKEN_CONTENT_ENCRYPTION_A256GCM,
+                    EXCHANGE_KEY_AGREEMENT_MLKEM768,
+                    2);
 
     /** The SHA-3-256 and ML-KEM-768 crypto suite. */
     public static final CryptoSuite SUITE_PQ_V1 =
-            new CryptoSuite("suite-pq-v1", "SHA3-256", "HS3-256", "A256GCM", "ML-KEM-768", 2);
+            new CryptoSuite(
+                    "suite-pq-v1",
+                    TOKEN_DIGEST_SHA3_256,
+                    TOKEN_MAC_HS3_256,
+                    TOKEN_CONTENT_ENCRYPTION_A256GCM,
+                    EXCHANGE_KEY_AGREEMENT_MLKEM768,
+                    2);
 
     /** The SHA-3-256, ECDH, and ML-KEM-768 hybrid crypto suite. */
     public static final CryptoSuite SUITE_PQ_HYBRID_V1 =
-            new CryptoSuite("suite-pq-hybrid-v1", "SHA3-256", "HS3-256", "A256GCM", "ECDH+ML-KEM-768", 2);
+            new CryptoSuite(
+                    "suite-pq-hybrid-v1",
+                    TOKEN_DIGEST_SHA3_256,
+                    TOKEN_MAC_HS3_256,
+                    TOKEN_CONTENT_ENCRYPTION_A256GCM,
+                    EXCHANGE_KEY_AGREEMENT_ECDH_MLKEM768,
+                    2);
 
     private static final Map<String, CryptoSuite> REGISTRY = Map.of(
             SUITE_SHA256_V1.getSuiteId(),
@@ -79,14 +145,14 @@ public final class CryptoSuite {
      * @return this validated suite
      */
     public CryptoSuite validate() {
-        if (!"A256GCM".equals(tokenContentEncryption)) {
+        if (!TOKEN_CONTENT_ENCRYPTION_A256GCM.equals(tokenContentEncryption)) {
             throw new IllegalArgumentException(
                     "Unsupported token content encryption '" + tokenContentEncryption + "'.");
         }
-        if (exchangeConfigVersion == 1 && !"ECDH".equals(exchangeKeyAgreement)) {
+        if (exchangeConfigVersion == 1 && !EXCHANGE_KEY_AGREEMENT_ECDH.equals(exchangeKeyAgreement)) {
             throw new IllegalArgumentException("Exchange configuration version 1 only supports ECDH.");
         }
-        if (exchangeConfigVersion == 2 && "ECDH".equals(exchangeKeyAgreement)) {
+        if (exchangeConfigVersion == 2 && EXCHANGE_KEY_AGREEMENT_ECDH.equals(exchangeKeyAgreement)) {
             throw new IllegalArgumentException(
                     "Exchange configuration version 2 requires a non-ECDH key agreement.");
         }
@@ -193,6 +259,6 @@ public final class CryptoSuite {
      * @return {@code true} when the suite uses ML-KEM
      */
     public boolean isPostQuantum() {
-        return exchangeKeyAgreement.contains("ML-KEM");
+        return exchangeKeyAgreement.contains(EXCHANGE_KEY_AGREEMENT_MLKEM_PREFIX);
     }
 }

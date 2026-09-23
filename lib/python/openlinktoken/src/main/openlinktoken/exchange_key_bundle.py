@@ -17,7 +17,7 @@ from openlinktoken.crypto_suite import CryptoSuite
 
 BUNDLE_VERSION = 1
 BUNDLE_TYPE = "openlinktoken-key-bundle"
-MLKEM_ALGORITHM = "ML-KEM-768"
+MLKEM_ALGORITHM = CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM768
 MLKEM_PUBLIC_KEY_SIZE = 1184
 MLKEM_PRIVATE_SEED_SIZE = 64
 EC_ALGORITHM = "ECDH-P256"
@@ -84,9 +84,9 @@ class ExchangeKeyBundle:
         """Return whether the bundle contains all private material required by its suite."""
         mlkem_private = self.mlkem_private_seed is not None
         ec_private = self.ec_private_pem is not None
-        if self.suite.exchange_key_agreement == "ML-KEM-768":
+        if self.suite.exchange_key_agreement == CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM768:
             return mlkem_private
-        if self.suite.exchange_key_agreement == "ECDH+ML-KEM-768":
+        if self.suite.exchange_key_agreement == CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH_MLKEM768:
             return mlkem_private and ec_private
         return False
 
@@ -168,7 +168,7 @@ class ExchangeKeyBundle:
         mlkem_section = keys.get("mlkem")
         mlkem_public_key = None
         mlkem_private_seed = None
-        if "ML-KEM" in suite.exchange_key_agreement:
+        if CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM768 in suite.exchange_key_agreement:
             if not isinstance(mlkem_section, Mapping):
                 raise KeyBundleError("The selected suite requires an mlkem key section.")
             if mlkem_section.get("algorithm") != MLKEM_ALGORITHM:
@@ -189,7 +189,7 @@ class ExchangeKeyBundle:
         ec_section = keys.get("ec")
         ec_public_pem = None
         ec_private_pem = None
-        if suite.exchange_key_agreement == "ECDH+ML-KEM-768":
+        if suite.exchange_key_agreement == CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH_MLKEM768:
             if not isinstance(ec_section, Mapping):
                 raise KeyBundleError("The selected hybrid suite requires an ec key section.")
             if ec_section.get("algorithm") != EC_ALGORITHM:
@@ -233,11 +233,14 @@ def generate_exchange_key_bundle(suite_id: str) -> ExchangeKeyBundle:
     try:
         mlkem_private = mlkem.MLKEM768PrivateKey.generate()
     except Exception as error:
-        raise KeyBundleError(f"ML-KEM-768 is unavailable from the configured cryptography provider: {error}") from error
+        raise KeyBundleError(
+            f"{CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM768} is unavailable "
+            f"from the configured cryptography provider: {error}"
+        ) from error
 
     ec_private_pem = None
     ec_public_pem = None
-    if suite.exchange_key_agreement == "ECDH+ML-KEM-768":
+    if suite.exchange_key_agreement == CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH_MLKEM768:
         private_ec = ec.generate_private_key(ec.SECP256R1())
         ec_private_pem = private_ec.private_bytes(
             encoding=serialization.Encoding.PEM,

@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Optional, Tuple
 from uuid import uuid4
 
+from openlinktoken.crypto_suite import CryptoSuite
 from openlinktoken_cli.util.stdin_utils import read_required_env_bytes, read_required_stdin_bytes
 
 logger = logging.getLogger(__name__)
@@ -243,7 +244,6 @@ class InitiateExchangeCommand:
             Exit code (0 for success, non-zero for errors).
 
         """
-        from openlinktoken.crypto_suite import CryptoSuite
         from openlinktoken.exchange_jwe import build_exchange_envelope
         from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
         from openlinktoken_cli.util.ec_key_utils import (
@@ -469,6 +469,7 @@ class InitiateExchangeCommand:
                 hashing_secret,
                 hashing_secret_stdin=hashing_secret_stdin,
                 hashing_secret_env_name=hashing_secret_env_name,
+                crypto_suite=crypto_suite,
             )
 
             resolved_rotation_iv = InitiateExchangeCommand._resolve_rotation_iv(
@@ -651,6 +652,7 @@ class InitiateExchangeCommand:
                 hashing_secret,
                 hashing_secret_stdin=hashing_secret_stdin,
                 hashing_secret_env_name=hashing_secret_env_name,
+                crypto_suite=crypto_suite,
             )
             resolved_rotation_iv = InitiateExchangeCommand._resolve_rotation_iv(
                 rotation_iv,
@@ -706,6 +708,7 @@ class InitiateExchangeCommand:
         hashing_secret: Optional[str],
         hashing_secret_stdin: bool = False,
         hashing_secret_env_name: Optional[str] = None,
+        crypto_suite: Optional[CryptoSuite] = None,
     ) -> bytes:
         """Return the provided hashing secret as bytes, or generate a secure random one.
 
@@ -718,22 +721,27 @@ class InitiateExchangeCommand:
             The hashing secret as raw bytes.
 
         """
+        selected_suite = crypto_suite or CryptoSuite.default()
         if hashing_secret_stdin:
             hashing_secret_bytes = read_required_stdin_bytes("--hashingsecret-stdin", "hashing secret")
             if hashing_secret_bytes.endswith(b"\r\n"):
-                return hashing_secret_bytes[:-2]
-            if hashing_secret_bytes.endswith(b"\n"):
-                return hashing_secret_bytes[:-1]
-            return hashing_secret_bytes
-        if hashing_secret_env_name:
-            return read_required_env_bytes(
+                hashing_secret_bytes = hashing_secret_bytes[:-2]
+            elif hashing_secret_bytes.endswith(b"\n"):
+                hashing_secret_bytes = hashing_secret_bytes[:-1]
+        elif hashing_secret_env_name:
+            hashing_secret_bytes = read_required_env_bytes(
                 "--hashingsecret-env",
                 hashing_secret_env_name,
                 "hashing secret",
             )
-        if hashing_secret:
-            return hashing_secret.encode()
-        return secrets.token_bytes(32)
+        elif hashing_secret:
+            hashing_secret_bytes = hashing_secret.encode()
+        elif hashing_secret is not None and selected_suite.minimum_mac_key_length > 0:
+            hashing_secret_bytes = hashing_secret.encode()
+        else:
+            hashing_secret_bytes = secrets.token_bytes(32)
+
+        return selected_suite.validate_hashing_secret(hashing_secret_bytes)
 
     @staticmethod
     def _resolve_rotation_iv(

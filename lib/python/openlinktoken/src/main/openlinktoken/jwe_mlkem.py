@@ -22,9 +22,9 @@ from openlinktoken.exchange_key_bundle import ExchangeKeyBundle
 EXCHANGE_V2_VERSION = 2
 EXCHANGE_V2_TYPE = "openlinktoken-exchange+jwe"
 EXCHANGE_V2_CONTENT_TYPE = "application/openlinktoken-exchange+json"
-EXCHANGE_V2_ENCRYPTION = "A256GCM"
-PURE_KEM_ALGORITHM = "ML-KEM-768"
-HYBRID_KEM_ALGORITHM = "ECDH-ES+ML-KEM-768"
+EXCHANGE_V2_ENCRYPTION = CryptoSuite.TOKEN_CONTENT_ENCRYPTION_A256GCM
+PURE_KEM_ALGORITHM = CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM768
+HYBRID_KEM_ALGORITHM = f"ECDH-ES+{CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM768}"
 TOKEN_TRANSPORT_KEY_INFO = b"openlinktoken:token-encryption:v2"
 
 CEK_SIZE = 32
@@ -227,7 +227,7 @@ def _validate_protected_header(protected_header: Mapping[str, Any]) -> None:
     if protected_header.get("cty") != EXCHANGE_V2_CONTENT_TYPE:
         raise ValueError("Version-2 protected header has an unsupported cty.")
     if protected_header.get("enc") != EXCHANGE_V2_ENCRYPTION:
-        raise ValueError("Version-2 protected header must use A256GCM.")
+        raise ValueError(f"Version-2 protected header must use {CryptoSuite.TOKEN_CONTENT_ENCRYPTION_A256GCM}.")
     if protected_header.get("version") != EXCHANGE_V2_VERSION:
         raise ValueError("Version-2 protected header must declare version 2.")
     if not isinstance(protected_header.get("cryptoSuite"), str):
@@ -288,9 +288,9 @@ def _algorithm_for_suite(suite: CryptoSuite) -> str:
     """Return the custom JOSE key-management algorithm for a suite."""
     if suite.exchange_config_version != EXCHANGE_V2_VERSION:
         raise ValueError(f"Suite '{suite.suite_id}' does not use exchange configuration version 2.")
-    if suite.exchange_key_agreement == "ML-KEM-768":
+    if suite.exchange_key_agreement == CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM768:
         return PURE_KEM_ALGORITHM
-    if suite.exchange_key_agreement == "ECDH+ML-KEM-768":
+    if suite.exchange_key_agreement == CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH_MLKEM768:
         return HYBRID_KEM_ALGORITHM
     raise ValueError(f"Unsupported version-2 exchange agreement '{suite.exchange_key_agreement}'.")
 
@@ -328,7 +328,7 @@ def _validate_header_context(headers: Mapping[str, Any], algorithm: str) -> None
     if headers.get("alg") != algorithm:
         raise ValueError("Recipient algorithm does not match the selected handler.")
     if headers.get("enc") != EXCHANGE_V2_ENCRYPTION:
-        raise ValueError("Version-2 custom algorithms require A256GCM.")
+        raise ValueError(f"Version-2 custom algorithms require {CryptoSuite.TOKEN_CONTENT_ENCRYPTION_A256GCM}.")
     if headers.get("version") != EXCHANGE_V2_VERSION:
         raise ValueError("Version-2 custom algorithms require protected version 2.")
     if not isinstance(headers.get("cryptoSuite"), str) or not headers["cryptoSuite"]:
@@ -347,7 +347,7 @@ def _encapsulate(
     mlkem_public = mlkem.MLKEM768PublicKey.from_public_bytes(bundle.mlkem_public_key or b"")
     mlkem_shared_secret, mlkem_ciphertext = mlkem_public.encapsulate()
     if len(mlkem_ciphertext) != MLKEM_CIPHERTEXT_SIZE:
-        raise ValueError("ML-KEM-768 produced an unexpected ciphertext length.")
+        raise ValueError(f"{CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM768} produced an unexpected ciphertext length.")
 
     if algorithm == PURE_KEM_ALGORITHM:
         return mlkem_shared_secret, mlkem_ciphertext, None

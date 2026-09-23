@@ -30,6 +30,7 @@ import org.openlinktoken.crypto.CryptoSuite;
 public class HashTokenTransformer implements TokenTransformer {
     private static final long serialVersionUID = 1L;
     private static final Logger logger = LoggerFactory.getLogger(HashTokenTransformer.class);
+    private static final String KMAC256_PROVIDER_ALGORITHM = CryptoSuite.TOKEN_MAC_KMAC256_PREFIX;
 
     private transient Mac mac;
     private transient Encoder encoder;
@@ -97,7 +98,7 @@ public class HashTokenTransformer implements TokenTransformer {
         }
 
         synchronized (this) {
-            if ("KMAC256".equals(this.macAlgorithm)) {
+            if (KMAC256_PROVIDER_ALGORITHM.equals(this.macAlgorithm)) {
                 KMAC kmac = new KMAC(256, new byte[0]);
                 kmac.init(new KeyParameter(this.hashingSecret));
                 byte[] dataAsBytes = token.getBytes(StandardCharsets.UTF_8);
@@ -152,7 +153,7 @@ public class HashTokenTransformer implements TokenTransformer {
             this.encoder = null;
             return;
         }
-        if ("KMAC256".equals(this.macAlgorithm)) {
+        if (KMAC256_PROVIDER_ALGORITHM.equals(this.macAlgorithm)) {
             if (this.hashingSecret.length < 32) {
                 throw new InvalidKeyException("KMAC256 requires a hashing secret of at least 32 bytes.");
             }
@@ -173,9 +174,9 @@ public class HashTokenTransformer implements TokenTransformer {
      */
     private static String macAlgorithm(CryptoSuite cryptoSuite) throws NoSuchAlgorithmException {
         return switch (cryptoSuite.getTokenMacAlgorithm()) {
-            case "HS256" -> "HmacSHA256";
-            case "HS3-256" -> "HmacSHA3-256";
-            case "KMAC256-256" -> "KMAC256";
+            case CryptoSuite.TOKEN_MAC_HS256 -> "HmacSHA256";
+            case CryptoSuite.TOKEN_MAC_HS3_256 -> "HmacSHA3-256";
+            case CryptoSuite.TOKEN_MAC_KMAC256_256 -> KMAC256_PROVIDER_ALGORITHM;
             default -> throw new NoSuchAlgorithmException(
                     "Unsupported token MAC algorithm: " + cryptoSuite.getTokenMacAlgorithm());
         };

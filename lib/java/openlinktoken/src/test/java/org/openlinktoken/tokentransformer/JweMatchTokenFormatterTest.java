@@ -11,7 +11,13 @@ import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWEObject;
 import com.nimbusds.jose.crypto.DirectDecrypter;
 import com.nimbusds.jose.jwk.OctetSequenceKey;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.openlinktoken.crypto.CryptoSuite;
@@ -224,6 +230,45 @@ class JweMatchTokenFormatterTest {
     }
 
     /**
+     * Verifies that the default-suite formatter rebuilds its encrypter after serialization.
+     */
+    @Test
+    void testDefaultSuiteFormatterRoundTripsThroughSerialization() throws Exception {
+        JweMatchTokenFormatter formatter = new JweMatchTokenFormatter(
+                TEST_ENCRYPTION_KEY,
+                TEST_RING_ID,
+                TEST_RULE_ID,
+                "test.issuer");
+
+        JweMatchTokenFormatter deserializedFormatter = serializeAndDeserialize(formatter);
+        Map<String, Object> payload = decryptPayload(deserializedFormatter.transform(TEST_TOKEN));
+
+        assertEquals("SHA-256", payload.get("hash_alg"));
+        assertEquals("HS256", payload.get("mac_alg"));
+        assertEquals(List.of(TEST_TOKEN), payload.get("ppid"));
+    }
+
+    /**
+     * Verifies that an explicit-suite formatter restores its suite and encrypter after serialization.
+     */
+    @Test
+    void testExplicitSuiteFormatterRoundTripsThroughSerialization() throws Exception {
+        JweMatchTokenFormatter formatter = new JweMatchTokenFormatter(
+                TEST_ENCRYPTION_KEY.getBytes(StandardCharsets.UTF_8),
+                TEST_RING_ID,
+                TEST_RULE_ID,
+                "test.issuer",
+                CryptoSuite.fromId("suite-pq-shake-v1"));
+
+        JweMatchTokenFormatter deserializedFormatter = serializeAndDeserialize(formatter);
+        Map<String, Object> payload = decryptPayload(deserializedFormatter.transform(TEST_TOKEN));
+
+        assertEquals("SHAKE256-256", payload.get("hash_alg"));
+        assertEquals("KMAC256-256", payload.get("mac_alg"));
+        assertEquals(List.of(TEST_TOKEN), payload.get("ppid"));
+    }
+
+    /**
      * Verifies that a missing issuer uses the default issuer value.
      */
     @Test
@@ -237,5 +282,25 @@ class JweMatchTokenFormatterTest {
 
         assertNotNull(formatter);
         // The default issuer is set internally and will be verified in the decrypted payload
+    }
+
+    private static JweMatchTokenFormatter serializeAndDeserialize(JweMatchTokenFormatter formatter)
+            throws IOException, ClassNotFoundException {
+        ByteArrayOutputStream serializedBytes = new ByteArrayOutputStream();
+        try (ObjectOutputStream output = new ObjectOutputStream(serializedBytes)) {
+            output.writeObject(formatter);
+        }
+
+        try (ObjectInputStream input = new ObjectInputStream(
+                new ByteArrayInputStream(serializedBytes.toByteArray()))) {
+            return JweMatchTokenFormatter.class.cast(input.readObject());
+        }
+    }
+
+    private static Map<String, Object> decryptPayload(String token) throws Exception {
+        JWEObject jweObject = JWEObject.parse(token.substring("olt.V1.".length()));
+        jweObject.decrypt(new DirectDecrypter(
+                new OctetSequenceKey.Builder(TEST_ENCRYPTION_KEY.getBytes(StandardCharsets.UTF_8)).build()));
+        return jweObject.getPayload().toJSONObject();
     }
 }

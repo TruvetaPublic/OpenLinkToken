@@ -73,17 +73,16 @@ class HashTokenTransformer(TokenTransformer):
             raise RuntimeError("HMAC is not properly initialized due to empty hashing secret.")
 
         with self._lock:
-            if self.crypto_suite.token_mac_algorithm == "KMAC256-256":
-                if len(self.hashing_secret) < 32:
-                    raise ValueError("KMAC256 requires a hashing secret of at least 32 bytes.")
+            if self.crypto_suite.token_mac_algorithm == CryptoSuite.TOKEN_MAC_KMAC256_256:
+                self.crypto_suite.validate_hashing_secret(self.hashing_secret)
                 from Crypto.Hash import KMAC256
 
                 digest = KMAC256.new(key=self.hashing_secret, data=token.encode("utf-8"), mac_len=32).digest()
                 return base64.b64encode(digest).decode("utf-8")
 
             digest_name = {
-                "HS256": hashlib.sha256,
-                "HS3-256": hashlib.sha3_256,
+                CryptoSuite.TOKEN_MAC_HS256: hashlib.sha256,
+                CryptoSuite.TOKEN_MAC_HS3_256: hashlib.sha3_256,
             }.get(self.crypto_suite.token_mac_algorithm)
             if digest_name is None:
                 raise ValueError(f"Unsupported token MAC algorithm '{self.crypto_suite.token_mac_algorithm}'.")

@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: MIT
 """Shared helpers for building and decrypting exchange-config JWE envelopes.
 
-Note: The exchange-config workflow is Python-CLI only. The Java counterpart
-(``ExchangeJwe.java``) is a placeholder stub that references this module.
+The envelope helpers are shared-library functionality. CLI-only path,
+environment, and file-permission policies remain in the Python CLI layer.
 """
 
 import base64
@@ -18,7 +18,7 @@ from openlinktoken.ec_key_utils import fingerprint_to_kid, public_key_fingerprin
 EXCHANGE_JWE_VERSION = 1
 EXCHANGE_JWE_TYPE = "openlinktoken-exchange+jwe"
 EXCHANGE_JWE_CONTENT_TYPE = "application/openlinktoken-exchange+json"
-EXCHANGE_JWE_ENCRYPTION = "A256GCM"
+EXCHANGE_JWE_ENCRYPTION = CryptoSuite.TOKEN_CONTENT_ENCRYPTION_A256GCM
 EXCHANGE_JWE_RECIPIENT_ALGORITHM = "ECDH-ES+A256KW"
 
 
@@ -38,6 +38,13 @@ def build_exchange_envelope(
 ) -> dict[str, Any]:
     """Build a multi-recipient JWE exchange envelope."""
     selected_suite = crypto_suite or CryptoSuite.default()
+    if selected_suite != CryptoSuite.default():
+        raise ValueError(
+            f"Legacy version 1 exchange envelopes only support the default crypto suite "
+            f"'{CryptoSuite.default().suite_id}'; suite '{selected_suite.suite_id}' cannot be encoded. "
+            "Use the default suite for v1 or a format with an authenticated version and suite marker."
+        )
+    selected_suite.validate_hashing_secret(hashing_secret)
     payload = {
         "exchangeName": exchange_name,
         "hashingSecret": _base64url_encode(hashing_secret),
@@ -55,8 +62,6 @@ def build_exchange_envelope(
         "binWidth": bin_width,
         "dimensionBias": dimension_bias if dimension_bias is not None else [],
     }
-    if selected_suite != CryptoSuite.default():
-        payload["cryptoSuite"] = selected_suite.suite_id
     protected_header = {
         "typ": EXCHANGE_JWE_TYPE,
         "cty": EXCHANGE_JWE_CONTENT_TYPE,

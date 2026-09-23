@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: MIT
 """Shared helpers for loading and consuming initiate-exchange config files.
 
-Note: The exchange-config workflow is Python-CLI only. The Java counterpart
-(``ExchangeConfig.java``) is a placeholder stub that references this module.
+The in-memory loading and resolution helpers are shared-library functionality.
+CLI-only path, environment, and file-permission policies remain in the Python
+CLI layer.
 """
 
 import base64
@@ -190,6 +191,11 @@ def resolve_loaded_exchange_config(
         raise ValueError(f"Exchange config '{exchange_config.path}' decrypted to an invalid payload.")
 
     crypto_suite = CryptoSuite.from_id(payload.get("cryptoSuite", CryptoSuite.default().suite_id))
+    if exchange_config.version == 1 and crypto_suite != CryptoSuite.default():
+        raise ValueError(
+            f"Legacy version 1 exchange configs only support the default crypto suite "
+            f"'{CryptoSuite.default().suite_id}'; found '{crypto_suite.suite_id}'."
+        )
     if crypto_suite.exchange_config_version != exchange_config.version:
         raise ValueError(
             f"Exchange config version {exchange_config.version} does not match suite '{crypto_suite.suite_id}'."
@@ -329,7 +335,7 @@ def _detect_exchange_config_version(exchange_config: Mapping[str, Any]) -> int:
     if protected_header.get("cty") != EXCHANGE_V2_CONTENT_TYPE:
         raise ValueError("Version-2 protected header has an unsupported cty.")
     if protected_header.get("enc") != EXCHANGE_V2_ENCRYPTION:
-        raise ValueError("Version-2 protected header must use A256GCM.")
+        raise ValueError(f"Version-2 protected header must use {CryptoSuite.TOKEN_CONTENT_ENCRYPTION_A256GCM}.")
     if not isinstance(protected_header.get("cryptoSuite"), str):
         raise ValueError("Version-2 protected header cryptoSuite must be a string.")
     if not isinstance(protected_header.get("exchangeId"), str) or not protected_header["exchangeId"]:
