@@ -29,18 +29,49 @@ class ExchangeConfigTest {
     void loadsV1FromMappingJsonAndPath() throws Exception {
         V1Keys keys = generateV1Keys();
         Map<String, Object> envelope = buildV1Envelope(keys, 3);
+        byte[] jsonBytes = ExchangeJsonTestSupport.writeObject(envelope);
+        String jsonText = new String(jsonBytes, StandardCharsets.UTF_8);
 
         ExchangeConfig.LoadedExchangeConfig fromMapping = ExchangeConfig.loadExchangeConfig(envelope);
-        ExchangeConfig.LoadedExchangeConfig fromJson = ExchangeConfig.loadExchangeConfig(
-                ExchangeJsonTestSupport.writeObject(envelope));
+        ExchangeConfig.LoadedExchangeConfig fromJson = ExchangeConfig.loadExchangeConfig(jsonBytes);
+        ExchangeConfig.LoadedExchangeConfig fromText = ExchangeConfig.loadExchangeConfig(jsonText);
         Path path = Files.createTempFile("openlinktoken-exchange", ".json");
-        Files.write(path, ExchangeJsonTestSupport.writeObject(envelope));
+        Files.write(path, jsonBytes);
         ExchangeConfig.LoadedExchangeConfig fromPath = ExchangeConfig.loadExchangeConfig(path);
 
         assertEquals(1, fromMapping.version());
         assertEquals(1, fromJson.version());
+        assertEquals(1, fromText.version());
         assertEquals(path, fromPath.path());
         assertEquals(envelope.keySet(), fromMapping.config().keySet());
+        assertEquals("sender", ExchangeConfig.resolveExchangeConfig(envelope, keys.senderPrivatePem()).privateKeyRole());
+        assertEquals("sender", ExchangeConfig.resolveExchangeConfig(jsonBytes, keys.senderPrivatePem()).privateKeyRole());
+        assertEquals("sender", ExchangeConfig.resolveExchangeConfig(jsonText, keys.senderPrivatePem()).privateKeyRole());
+        assertEquals("sender", ExchangeConfig.resolveExchangeConfig(path, keys.senderPrivatePem()).privateKeyRole());
+        assertEquals(
+                "sender",
+                ExchangeConfig.resolveLoadedExchangeConfig(fromMapping, keys.senderPrivatePem()).privateKeyRole());
+    }
+
+    @Test
+    void rejectsInvalidConfigSources() throws Exception {
+        assertThrows(NullPointerException.class, () -> ExchangeConfig.loadExchangeConfig((Path) null));
+        assertThrows(IllegalArgumentException.class, () -> ExchangeConfig.loadExchangeConfig((String) null));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> ExchangeConfig.loadExchangeConfig(new byte[] {(byte) 0xc3, 0x28}));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> ExchangeConfig.loadExchangeConfig("[]".getBytes(StandardCharsets.US_ASCII)));
+
+        Path missingPath = Files.createTempFile("openlinktoken-missing-exchange", ".json");
+        Files.delete(missingPath);
+        assertThrows(IllegalArgumentException.class, () -> ExchangeConfig.loadExchangeConfig(missingPath));
+
+        Map<String, Object> unsupportedValue = new LinkedHashMap<>();
+        unsupportedValue.put("version", 1);
+        unsupportedValue.put("unsupported", new Object());
+        assertThrows(IllegalArgumentException.class, () -> ExchangeConfig.loadExchangeConfig(unsupportedValue));
     }
 
     @Test
@@ -65,7 +96,11 @@ class ExchangeConfigTest {
         assertEquals(List.of(0.1, -0.2), sender.dimensionBias());
         assertArrayEquals(sender.transportEncryptionKey(), recipient.transportEncryptionKey());
         assertArrayEquals(sender.transportEncryptionKey(), ExchangeConfig.deriveTransportEncryptionKey(sender));
+        assertArrayEquals(sender.transportEncryptionKey(), ExchangeConfig.deriveTransportEncryptionKey(recipient));
         assertEquals(32, sender.transportEncryptionKey().length);
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> ExchangeConfig.resolveExchangeConfig(loaded, ExchangeKeyBundle.generate("suite-pq-v1")));
     }
 
     @Test
@@ -94,6 +129,16 @@ class ExchangeConfigTest {
         assertArrayEquals(sender.transportEncryptionKey(), ExchangeConfig.deriveTransportEncryptionKey(sender));
         assertEquals(32, sender.transportEncryptionKey().length);
         assertEquals(sender.payload(), recipient.payload());
+        assertEquals(
+                "sender",
+                ExchangeConfig.resolveExchangeConfig(
+                        new String(ExchangeJsonTestSupport.writeObject(envelope), StandardCharsets.UTF_8),
+                        senderBundle)
+                        .privateKeyRole());
+        assertEquals("sender", ExchangeConfig.resolveLoadedExchangeConfig(loaded, senderBundle).privateKeyRole());
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> ExchangeConfig.resolveExchangeConfig(loaded, new byte[] {1}));
     }
 
     @Test

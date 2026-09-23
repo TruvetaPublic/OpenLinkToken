@@ -129,6 +129,62 @@ class ExchangeJweTest {
     }
 
     @Test
+    void buildsDefaultPayloadOptions() {
+        KeyMaterial keys = generateKeyMaterial();
+        Map<String, Object> envelope = ExchangeJwe.buildExchangeEnvelope(
+                "demo-exchange",
+                HASHING_SECRET,
+                keys.senderPublicPem,
+                keys.recipientPublicPem,
+                "P-256",
+                "2026-03-11T00:00:00Z",
+                "exchange-defaults");
+
+        ExchangeJwe.ExchangePayload payload =
+                ExchangeJwe.decryptExchangePayload(envelope, keys.senderPrivatePem);
+
+        assertEquals(0, payload.rotationCount());
+        assertEquals(0.05, payload.binWidth());
+        assertArrayEquals(new byte[0], payload.rotationIv());
+        assertEquals(List.of(), payload.dimensionBias());
+    }
+
+    @Test
+    void rejectsMalformedUtf8AndInvalidPayloadFields() {
+        KeyMaterial keys = generateKeyMaterial();
+        Map<String, Object> payload = ExchangeJsonTestSupport.readObject(
+                ExchangeJwe.decryptExchangeEnvelope(buildEnvelope(keys), keys.senderPrivatePem));
+
+        Map<String, Object> invalid = new LinkedHashMap<>(payload);
+        invalid.put("hashingSecretEncoding", "base64");
+        assertInvalidPayload(invalid);
+
+        invalid = new LinkedHashMap<>(payload);
+        invalid.put("hashingSecret", payload.get("hashingSecret") + "=");
+        assertInvalidPayload(invalid);
+
+        invalid = new LinkedHashMap<>(payload);
+        invalid.put("senderKeyFingerprint", "00");
+        assertInvalidPayload(invalid);
+
+        invalid = new LinkedHashMap<>(payload);
+        invalid.put("rotationCount", 1.5);
+        assertInvalidPayload(invalid);
+
+        invalid = new LinkedHashMap<>(payload);
+        invalid.put("binWidth", 0.0);
+        assertInvalidPayload(invalid);
+
+        invalid = new LinkedHashMap<>(payload);
+        invalid.put("dimensionBias", List.of("not-a-number"));
+        assertInvalidPayload(invalid);
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> ExchangeJwe.parseExchangePayload(new byte[] {(byte) 0xc3, 0x28}));
+    }
+
+    @Test
     void rejectsTamperedCiphertextAndUnrelatedPrivateKey() {
         KeyMaterial keys = generateKeyMaterial();
         Map<String, Object> tampered = new LinkedHashMap<>(buildEnvelope(keys));
@@ -174,6 +230,12 @@ class ExchangeJweTest {
                 0.05,
                 List.of(0.1, -0.2),
                 CryptoSuite.defaultSuite());
+    }
+
+    private static void assertInvalidPayload(Map<String, Object> payload) {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> ExchangeJwe.parseExchangePayload(ExchangeJsonTestSupport.writeObject(payload)));
     }
 
     private static Map<String, Object> readProtectedHeader(Map<String, Object> envelope) {

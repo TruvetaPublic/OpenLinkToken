@@ -107,6 +107,133 @@ class ExchangeKemTest {
         assertFalse(Arrays.equals(
                 transportKey,
                 JweMlkem.deriveTokenTransportKey(cek, "exchange-id-a2")));
+        assertThrows(IllegalArgumentException.class, () -> JweMlkem.deriveTokenTransportKey(null, "exchange-id"));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> JweMlkem.deriveTokenTransportKey(new byte[31], "exchange-id"));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> JweMlkem.deriveTokenTransportKey(cek, ""));
+    }
+
+    @Test
+    void rejectsInvalidDirectJweBuildInputs() {
+        ExchangeKeyBundle sender = ExchangeKeyBundle.generate("suite-pq-v1");
+        ExchangeKeyBundle recipient = ExchangeKeyBundle.generate("suite-pq-v1");
+        Map<String, Object> header = protectedHeader("suite-pq-v1");
+
+        assertThrows(IllegalArgumentException.class, () -> JweMlkem.build(null, header, List.of(sender, recipient)));
+        assertThrows(IllegalArgumentException.class, () -> JweMlkem.build(new byte[0], null, List.of(sender, recipient)));
+
+        Map<String, Object> missingExchangeId = new LinkedHashMap<>(header);
+        missingExchangeId.remove("exchangeId");
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> JweMlkem.build(new byte[0], missingExchangeId, List.of(sender, recipient)));
+        assertThrows(IllegalArgumentException.class, () -> JweMlkem.build(new byte[0], header, List.of(sender)));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> JweMlkem.build(new byte[0], header, Arrays.asList(sender, null)));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> JweMlkem.build(new byte[0], header, List.of(sender, sender)));
+
+        Map<String, Object> unknownSuite = new LinkedHashMap<>(header);
+        unknownSuite.put("cryptoSuite", "unknown-suite");
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> JweMlkem.build(new byte[0], unknownSuite, List.of(sender, recipient)));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> JweMlkem.build(
+                        new byte[0],
+                        header,
+                        List.of(sender, ExchangeKeyBundle.generate("suite-pq-shake-v1"))));
+    }
+
+    @Test
+    void rejectsMalformedJweMembersAndContentParameters() {
+        ExchangeKeyBundle sender = ExchangeKeyBundle.generate("suite-pq-v1");
+        ExchangeKeyBundle recipient = ExchangeKeyBundle.generate("suite-pq-v1");
+        Map<String, Object> envelope = ExchangeKem.buildExchangeEnvelopeV2(
+                "malformed-test",
+                "hash-secret".getBytes(StandardCharsets.UTF_8),
+                sender,
+                recipient,
+                "2026-03-12T00:00:00Z",
+                "exchange-malformed");
+
+        assertThrows(IllegalArgumentException.class, () -> JweMlkem.decrypt(null, sender));
+        assertThrows(IllegalArgumentException.class, () -> JweMlkem.decrypt(envelope, null));
+
+        Map<String, Object> missingTag = copyEnvelope(envelope);
+        missingTag.remove("tag");
+        assertThrows(IllegalArgumentException.class, () -> JweMlkem.decrypt(missingTag, sender));
+
+        Map<String, Object> invalidProtected = copyEnvelope(envelope);
+        invalidProtected.put("protected", "*");
+        assertThrows(IllegalArgumentException.class, () -> JweMlkem.decrypt(invalidProtected, sender));
+
+        Map<String, Object> invalidRecipientAlgorithm = copyEnvelope(envelope);
+        Map<String, Object> invalidAlgorithmHeader = copyFirstRecipientHeader(invalidRecipientAlgorithm);
+        invalidAlgorithmHeader.put("alg", "dir");
+        setFirstRecipientHeader(invalidRecipientAlgorithm, invalidAlgorithmHeader);
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> JweMlkem.decrypt(invalidRecipientAlgorithm, sender));
+
+        Map<String, Object> invalidEncryptedKey = copyEnvelope(envelope);
+        recipients(invalidEncryptedKey).get(0).put("encrypted_key", "!");
+        assertThrows(IllegalArgumentException.class, () -> JweMlkem.decrypt(invalidEncryptedKey, sender));
+
+        Map<String, Object> invalidIv = copyEnvelope(envelope);
+        invalidIv.put("iv", encode(new byte[11]));
+        assertThrows(IllegalArgumentException.class, () -> JweMlkem.decrypt(invalidIv, sender));
+
+        Map<String, Object> invalidTag = copyEnvelope(envelope);
+        invalidTag.put("tag", encode(new byte[15]));
+        assertThrows(IllegalArgumentException.class, () -> JweMlkem.decrypt(invalidTag, sender));
+
+        Map<String, Object> duplicateRecipient = copyEnvelope(envelope);
+        recipients(duplicateRecipient).set(1, new LinkedHashMap<>(recipients(duplicateRecipient).get(0)));
+        assertThrows(IllegalArgumentException.class, () -> JweMlkem.decrypt(duplicateRecipient, sender));
+    }
+
+    @Test
+    void rejectsMalformedHybridEphemeralKeysAndWrappedContentKeys() {
+        ExchangeKeyBundle sender = ExchangeKeyBundle.generate("suite-pq-hybrid-v1");
+        ExchangeKeyBundle recipient = ExchangeKeyBundle.generate("suite-pq-hybrid-v1");
+        Map<String, Object> envelope = ExchangeKem.buildExchangeEnvelopeV2(
+                "hybrid-malformed-test",
+                "hash-secret".getBytes(StandardCharsets.UTF_8),
+                sender,
+                recipient,
+                "2026-03-12T00:00:00Z",
+                "exchange-hybrid-malformed");
+
+        Map<String, Object> invalidCurve = copyEnvelope(envelope);
+        Map<String, Object> curveHeader = copyFirstRecipientHeader(invalidCurve);
+        Map<String, Object> invalidCurveEpk = copyStringMap((Map<?, ?>) curveHeader.get("epk"));
+        invalidCurveEpk.put("crv", "P-384");
+        curveHeader.put("epk", invalidCurveEpk);
+        setFirstRecipientHeader(invalidCurve, curveHeader);
+        assertThrows(IllegalArgumentException.class, () -> JweMlkem.decrypt(invalidCurve, sender));
+
+        Map<String, Object> invalidCoordinates = copyEnvelope(envelope);
+        Map<String, Object> coordinatesHeader = copyFirstRecipientHeader(invalidCoordinates);
+        Map<String, Object> invalidEpk = copyStringMap((Map<?, ?>) coordinatesHeader.get("epk"));
+        invalidEpk.put("x", encode(new byte[32]));
+        invalidEpk.put("y", encode(new byte[32]));
+        coordinatesHeader.put("epk", invalidEpk);
+        setFirstRecipientHeader(invalidCoordinates, coordinatesHeader);
+        assertThrows(IllegalArgumentException.class, () -> JweMlkem.decrypt(invalidCoordinates, sender));
+
+        Map<String, Object> invalidWrappedKey = copyEnvelope(envelope);
+        Map<String, Object> recipientEntry = recipients(invalidWrappedKey).get(0);
+        byte[] encryptedKey = decode((String) recipientEntry.get("encrypted_key"));
+        encryptedKey[encryptedKey.length - 1] ^= 0x01;
+        recipientEntry.put("encrypted_key", encode(encryptedKey));
+        assertThrows(IllegalArgumentException.class, () -> JweMlkem.decrypt(invalidWrappedKey, sender));
     }
 
     @Test
@@ -232,9 +359,38 @@ class ExchangeKemTest {
         Map<String, Object> copy = new LinkedHashMap<>(envelope);
         List<Map<String, Object>> recipientCopies = new ArrayList<>();
         for (Map<String, Object> recipient : recipients(envelope)) {
-            recipientCopies.add(new LinkedHashMap<>(recipient));
+            Map<String, Object> recipientCopy = new LinkedHashMap<>(recipient);
+            recipientCopy.put("header", copyStringMap((Map<?, ?>) recipient.get("header")));
+            recipientCopies.add(recipientCopy);
         }
         copy.put("recipients", recipientCopies);
+        return copy;
+    }
+
+    private static Map<String, Object> protectedHeader(String suiteId) {
+        Map<String, Object> header = new LinkedHashMap<>();
+        header.put("typ", JweMlkem.EXCHANGE_V2_TYPE);
+        header.put("cty", JweMlkem.EXCHANGE_V2_CONTENT_TYPE);
+        header.put("enc", JweMlkem.EXCHANGE_V2_ENCRYPTION);
+        header.put("version", JweMlkem.EXCHANGE_V2_VERSION);
+        header.put("cryptoSuite", suiteId);
+        header.put("exchangeId", "direct-build-test");
+        return header;
+    }
+
+    private static Map<String, Object> copyFirstRecipientHeader(Map<String, Object> envelope) {
+        return copyStringMap((Map<?, ?>) recipients(envelope).get(0).get("header"));
+    }
+
+    private static void setFirstRecipientHeader(Map<String, Object> envelope, Map<String, Object> header) {
+        recipients(envelope).get(0).put("header", header);
+    }
+
+    private static Map<String, Object> copyStringMap(Map<?, ?> source) {
+        Map<String, Object> copy = new LinkedHashMap<>();
+        for (Map.Entry<?, ?> entry : source.entrySet()) {
+            copy.put((String) entry.getKey(), entry.getValue());
+        }
         return copy;
     }
 
