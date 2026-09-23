@@ -37,7 +37,6 @@ class JavaSerializationTest {
     @Test
     void featureProductionTypesImplementSerializable() throws ClassNotFoundException {
         List<Class<?>> types = List.of(
-                CryptoEncoding.class,
                 EcKeyUtils.class,
                 ExchangeConfig.class,
                 ExchangeConfig.LoadedExchangeConfig.class,
@@ -50,7 +49,6 @@ class JavaSerializationTest {
                 ExchangeKem.DecryptionResult.class,
                 ExchangeKeyBundle.class,
                 ExchangeKeyBundle.KeyBundleException.class,
-                JsonSupport.class,
                 JweMlkem.class,
                 JweMlkem.Decryption.class,
                 Class.forName("org.openlinktoken.JweMlkem$Encapsulation"),

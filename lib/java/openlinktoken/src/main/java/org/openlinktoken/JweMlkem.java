@@ -1,8 +1,12 @@
 /* SPDX-License-Identifier: MIT */
 package org.openlinktoken;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
@@ -28,6 +32,11 @@ import javax.crypto.KeyAgreement;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.bouncycastle.crypto.SecretWithEncapsulation;
 import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.engines.AESWrapEngine;
@@ -76,6 +85,11 @@ final class JweMlkem implements Serializable {
             "cryptoSuite",
             "exchangeId");
     private static final SecureRandom RANDOM = new SecureRandom();
+    private static final TypeReference<Map<String, Object>> JSON_OBJECT_TYPE = new TypeReference<>() {
+    };
+    private static final ObjectMapper JSON_MAPPER = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_TRAILING_TOKENS, true)
+            .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
 
     private JweMlkem() {
     }
@@ -109,7 +123,7 @@ final class JweMlkem implements Serializable {
             }
         }
 
-        String protectedValue = encodeBase64(JsonSupport.writeObject(header));
+        String protectedValue = encodeBase64(writeJsonObject(header));
         byte[] cek = randomBytes(CEK_SIZE);
         byte[] iv = randomBytes(IV_SIZE);
         List<Map<String, Object>> serializedRecipients = recipients.stream()
@@ -557,9 +571,40 @@ final class JweMlkem implements Serializable {
 
     private static Map<String, Object> decodeJsonObject(byte[] json, String fieldName) {
         try {
-            return JsonSupport.readObject(json);
+            return readJsonObject(json);
         } catch (IllegalArgumentException exception) {
             throw new IllegalArgumentException(fieldName + " is not valid JSON.", exception);
+        }
+    }
+
+    private static Map<String, Object> readJsonObject(byte[] json) {
+        if (json == null || json.length == 0) {
+            throw new IllegalArgumentException("JSON value must not be empty.");
+        }
+        try {
+            return JSON_MAPPER.readValue(decodeUtf8(json), JSON_OBJECT_TYPE);
+        } catch (IOException exception) {
+            throw new IllegalArgumentException("JSON value must be an object.", exception);
+        }
+    }
+
+    private static byte[] writeJsonObject(Map<String, Object> value) {
+        try {
+            return JSON_MAPPER.writeValueAsBytes(value);
+        } catch (JsonProcessingException exception) {
+            throw new IllegalStateException("Unable to serialize JSON object.", exception);
+        }
+    }
+
+    private static String decodeUtf8(byte[] json) {
+        try {
+            return StandardCharsets.UTF_8.newDecoder()
+                    .onMalformedInput(CodingErrorAction.REPORT)
+                    .onUnmappableCharacter(CodingErrorAction.REPORT)
+                    .decode(ByteBuffer.wrap(json))
+                    .toString();
+        } catch (CharacterCodingException exception) {
+            throw new IllegalArgumentException("JSON value must be valid UTF-8.", exception);
         }
     }
 
@@ -624,7 +669,7 @@ final class JweMlkem implements Serializable {
     }
 
     private static String encodeBase64(byte[] value) {
-        return CryptoEncoding.encodeBase64Url(value);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(value);
     }
 
     private static byte[] randomBytes(int length) {

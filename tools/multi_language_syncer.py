@@ -40,6 +40,11 @@ class MultiLanguageSyncer:
         "auto_generate_unmapped": True,
     }
 
+    SPECIAL_FILE_MAPPINGS = {
+        ("java", "crypto/CryptoSuite.java", "python"): "crypto_suite.py",
+        ("python", "crypto_suite.py", "java"): "crypto/CryptoSuite.java",
+    }
+
     def __init__(self, mapping_file="tools/multi-language-mapping.json"):
         self.root_dir = Path(__file__).parent.parent
         self.mapping_file = self.root_dir / mapping_file
@@ -177,7 +182,7 @@ class MultiLanguageSyncer:
         """Check if a file exists"""
         return (self.root_dir / file_path).exists()
 
-    KNOWN_ACRONYMS = {"us", "sha256"}
+    KNOWN_ACRONYMS = {"us", "sha256", "sha3", "shake256"}
 
     def convert_filename(self, filename, from_naming, to_naming):
         """Convert filename between naming conventions"""
@@ -228,14 +233,15 @@ class MultiLanguageSyncer:
             if source_group and target_config.get("group") != source_group:
                 continue
 
-            # Convert directory structure (usually similar)
-            target_path = source_path
-            path_parts = target_path.split("/")
-            if path_parts:
-                filename = path_parts[-1]
-                converted = self.convert_filename(filename, lang_config["naming"], target_config["naming"])
-                path_parts[-1] = converted + target_config["extension"]
-                target_path = "/".join(path_parts)
+            target_path = self.SPECIAL_FILE_MAPPINGS.get((source_lang, source_path, target_lang))
+            if target_path is None:
+                target_path = source_path
+                path_parts = target_path.split("/")
+                if path_parts:
+                    filename = path_parts[-1]
+                    converted = self.convert_filename(filename, lang_config["naming"], target_config["naming"])
+                    path_parts[-1] = converted + target_config["extension"]
+                    target_path = "/".join(path_parts)
 
             target_file = target_config["path"] + target_path
             corresponding[target_lang] = target_file

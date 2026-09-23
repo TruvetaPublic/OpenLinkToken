@@ -45,7 +45,7 @@ class ExchangeKemTest {
             assertEquals(
                     SetOf.members("protected", "recipients", "iv", "ciphertext", "tag"),
                     envelope.keySet());
-            Map<String, Object> protectedHeader = JsonSupport.readObject(
+            Map<String, Object> protectedHeader = ExchangeJsonTestSupport.readObject(
                     Base64.getUrlDecoder().decode((String) envelope.get("protected")));
             assertEquals("openlinktoken-exchange+jwe", protectedHeader.get("typ"));
             assertEquals("application/openlinktoken-exchange+json", protectedHeader.get("cty"));
@@ -60,7 +60,7 @@ class ExchangeKemTest {
             expectedProtected.put("version", 2);
             expectedProtected.put("cryptoSuite", suiteId);
             expectedProtected.put("exchangeId", "exchange-pqc-" + suiteId);
-            assertEquals(encode(JsonSupport.writeObject(expectedProtected)), envelope.get("protected"));
+            assertEquals(encode(ExchangeJsonTestSupport.writeObject(expectedProtected)), envelope.get("protected"));
 
             List<?> recipients = (List<?>) envelope.get("recipients");
             assertEquals(2, recipients.size());
@@ -88,7 +88,7 @@ class ExchangeKemTest {
             assertArrayEquals(senderResult.getPlaintext(), ExchangeKem.decryptExchangeEnvelope(envelope, sender));
             assertArrayEquals(
                     senderResult.getPlaintext(),
-                    ExchangeKem.decryptExchangeEnvelope(JsonSupport.writeObject(envelope), sender));
+                    ExchangeKem.decryptExchangeEnvelope(ExchangeJsonTestSupport.writeObject(envelope), sender));
         }
     }
 
@@ -129,18 +129,18 @@ class ExchangeKemTest {
                 () -> ExchangeKem.decryptExchangeEnvelopeV2(tamperedCiphertext, sender));
 
         Map<String, Object> tamperedHeader = new LinkedHashMap<>(envelope);
-        Map<String, Object> protectedHeader = JsonSupport.readObject(
+        Map<String, Object> protectedHeader = ExchangeJsonTestSupport.readObject(
                 decode((String) envelope.get("protected")));
         protectedHeader.put("exchangeId", "different-exchange");
-        tamperedHeader.put("protected", encode(JsonSupport.writeObject(protectedHeader)));
+        tamperedHeader.put("protected", encode(ExchangeJsonTestSupport.writeObject(protectedHeader)));
         assertThrows(IllegalArgumentException.class,
                 () -> ExchangeKem.decryptExchangeEnvelopeV2(tamperedHeader, sender));
 
         Map<String, Object> tamperedAad = new LinkedHashMap<>(envelope);
-        Map<String, Object> aadHeader = JsonSupport.readObject(
+        Map<String, Object> aadHeader = ExchangeJsonTestSupport.readObject(
                 decode((String) envelope.get("protected")));
         aadHeader.put("aadTamper", true);
-        tamperedAad.put("protected", encode(JsonSupport.writeObject(aadHeader)));
+        tamperedAad.put("protected", encode(ExchangeJsonTestSupport.writeObject(aadHeader)));
         assertThrows(IllegalArgumentException.class,
                 () -> ExchangeKem.decryptExchangeEnvelopeV2(tamperedAad, sender));
 
@@ -219,7 +219,7 @@ class ExchangeKemTest {
                 "empty-secret-id");
 
         ExchangeKem.DecryptionResult result = ExchangeKem.decryptExchangeEnvelopeV2(envelope, recipient);
-        Map<String, Object> payload = JsonSupport.readObject(result.getPlaintext());
+        Map<String, Object> payload = ExchangeJsonTestSupport.readObject(result.getPlaintext());
         assertEquals("", payload.get("hashingSecret"));
     }
 
