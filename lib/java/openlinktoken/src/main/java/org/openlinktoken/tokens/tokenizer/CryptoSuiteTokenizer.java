@@ -1,6 +1,8 @@
 /* SPDX-License-Identifier: MIT */
 package org.openlinktoken.tokens.tokenizer;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
@@ -23,7 +25,8 @@ public class CryptoSuiteTokenizer implements Tokenizer {
     public static final String EMPTY = Token.BLANK;
 
     private final List<TokenTransformer> tokenTransformerList;
-    private final TokenDigest tokenDigest;
+    private final String cryptoSuiteId;
+    private transient TokenDigest tokenDigest;
 
     /**
      * Initializes the tokenizer with the backward-compatible default suite.
@@ -43,7 +46,27 @@ public class CryptoSuiteTokenizer implements Tokenizer {
     public CryptoSuiteTokenizer(List<TokenTransformer> tokenTransformerList, CryptoSuite cryptoSuite) {
         this.tokenTransformerList = tokenTransformerList;
         CryptoSuite resolvedCryptoSuite = cryptoSuite == null ? CryptoSuite.defaultSuite() : cryptoSuite;
+        this.cryptoSuiteId = resolvedCryptoSuite.getSuiteId();
         this.tokenDigest = TokenDigestFactory.forSuite(resolvedCryptoSuite);
+    }
+
+    /**
+     * Restores the tokenizer and rebuilds its transient digest implementation.
+     *
+     * @param ois the object stream containing the tokenizer state
+     * @throws IOException if the digest cannot be reconstructed
+     * @throws ClassNotFoundException if a serialized class cannot be resolved
+     */
+    private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
+        ois.defaultReadObject();
+        try {
+            CryptoSuite resolvedCryptoSuite = this.cryptoSuiteId == null
+                    ? CryptoSuite.defaultSuite()
+                    : CryptoSuite.fromId(this.cryptoSuiteId);
+            this.tokenDigest = TokenDigestFactory.forSuite(resolvedCryptoSuite);
+        } catch (IllegalArgumentException e) {
+            throw new IOException("Failed to reconstruct token digest", e);
+        }
     }
 
     /**

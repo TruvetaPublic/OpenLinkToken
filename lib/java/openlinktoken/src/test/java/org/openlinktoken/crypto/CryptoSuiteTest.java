@@ -81,6 +81,25 @@ class CryptoSuiteTest {
     }
 
     /**
+     * Verifies that suite algorithm identifiers are exposed as stable constants.
+     */
+    @Test
+    void algorithmIdentifiersAreStableConstants() {
+        assertEquals("SHA-256", CryptoSuite.TOKEN_DIGEST_SHA256);
+        assertEquals("SHA3-256", CryptoSuite.TOKEN_DIGEST_SHA3_256);
+        assertEquals("SHAKE256-256", CryptoSuite.TOKEN_DIGEST_SHAKE256_256);
+        assertEquals("HS256", CryptoSuite.TOKEN_MAC_HS256);
+        assertEquals("HS3-256", CryptoSuite.TOKEN_MAC_HS3_256);
+        assertEquals("KMAC256-256", CryptoSuite.TOKEN_MAC_KMAC256_256);
+        assertEquals("KMAC256", CryptoSuite.TOKEN_MAC_KMAC256_PREFIX);
+        assertEquals("A256GCM", CryptoSuite.TOKEN_CONTENT_ENCRYPTION_A256GCM);
+        assertEquals("ECDH", CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH);
+        assertEquals("ML-KEM-768", CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM768);
+        assertEquals("ECDH+ML-KEM-768", CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH_MLKEM768);
+        assertEquals("ML-KEM", CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM_PREFIX);
+    }
+
+    /**
      * Verifies that unknown or blank suite identifiers are rejected.
      */
     @Test

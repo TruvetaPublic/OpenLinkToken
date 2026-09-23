@@ -21,6 +21,21 @@ Both participants can decrypt the same configuration because the sender and
 partner public keys are added as JWE recipients. Consumers reject a suite or
 version mismatch instead of silently selecting another algorithm.
 
+## Java library boundary
+
+The Java core library provides the same exchange operations without adopting
+the Python CLI's filesystem policy:
+
+- `ExchangeJwe` builds and decrypts version-1 ECDH/JWE envelopes.
+- `ExchangeKem` builds and decrypts version-2 ML-KEM and hybrid envelopes.
+- `ExchangeKeyBundle` generates, parses, and serializes version-2 key bundles.
+- `ExchangeConfig` loads caller-supplied JSON or paths and resolves it with
+  caller-supplied private PEM or bundle material.
+
+Java callers must provide the input path or JSON and matching private material
+explicitly. The library does not read `~/.openlinktoken`, inspect environment
+variables, parse CLI arguments, or choose file overwrite/permission policies.
+
 ## Version 2: standard JWE JSON serialization
 
 Version 2 uses the RFC 7516 general JWE JSON Serialization. The outer object
@@ -140,10 +155,16 @@ the protected `cryptoSuite`, `version`, and `exchangeId` before accepting it.
 ## Version 1
 
 Version 1 retains the existing ECDH/JWE exchange behavior and PEM key format.
-Its exchange config includes a top-level `version: 1` marker and uses the
-standard JWE JSON members `protected`, `recipients`, `iv`, `ciphertext`, and
-`tag`. Its protected header and recipient algorithm are selected by the
-version 1 exchange implementation, normally `ECDH-ES+A256KW`.
+Legacy top-level-version-1 envelopes are default-suite-only and use
+`suite-sha256-v1`; the top-level marker is not a selector for a non-default
+suite. A non-default suite requires an authenticated, versioned exchange
+format. The implemented version 2 format above authenticates `version`,
+`cryptoSuite`, and `exchangeId` in the protected header for the post-quantum
+suites; no alternate version 1 wire format is defined here. The exchange
+config uses the standard JWE JSON members `protected`, `recipients`, `iv`,
+`ciphertext`, and `tag`. Its protected header and recipient algorithm are
+selected by the version 1 exchange implementation, normally
+`ECDH-ES+A256KW`.
 
 Version 1 derives the token transport key with its existing
 `openlinktoken:token-encryption:v1` contract. Version 1 behavior is preserved
@@ -197,7 +218,10 @@ olt initiate-exchange \
   members and, when a private key is supplied, the decoded protected header
   and decrypted payload.
 
-Version 2 key-bundle processing is implemented by the Python library and CLI.
-Java exchange classes remain synchronization and API-boundary markers; the
-Java token-generation implementation continues to provide cross-language
-parity for deterministic token output.
+Version 2 key-bundle processing is implemented by both the Python library/CLI
+and the Java core library. The Java APIs intentionally do not provide CLI
+defaults, environment-variable lookup, or filesystem key discovery; callers
+must supply exchange JSON and the matching private key material explicitly.
+Both implementations validate the same authenticated headers, payload identity,
+key-bundle identifiers, and transport-key derivation contracts. The Java core
+library does not add a production exchange CLI.

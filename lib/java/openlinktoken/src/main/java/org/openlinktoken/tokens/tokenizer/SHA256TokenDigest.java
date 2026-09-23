@@ -4,6 +4,8 @@ package org.openlinktoken.tokens.tokenizer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import org.openlinktoken.crypto.CryptoSuite;
+
 /**
  * Calculates SHA-256 token digests.
  */
@@ -18,6 +20,6 @@ public final class SHA256TokenDigest implements TokenDigest {
      */
     @Override
     public byte[] digest(byte[] value) throws NoSuchAlgorithmException {
-        return MessageDigest.getInstance("SHA-256").digest(value);
+        return MessageDigest.getInstance(CryptoSuite.TOKEN_DIGEST_SHA256).digest(value);
     }
 }

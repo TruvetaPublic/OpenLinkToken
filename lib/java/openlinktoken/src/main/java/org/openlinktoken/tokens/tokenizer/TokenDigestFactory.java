@@ -44,9 +44,9 @@ public final class TokenDigestFactory {
      */
     public static TokenDigest forAlgorithm(String algorithm) throws NoSuchAlgorithmException {
         return switch (algorithm) {
-            case "SHA-256" -> new SHA256TokenDigest();
-            case "SHA3-256" -> new SHA3TokenDigest();
-            case "SHAKE256-256" -> new SHAKE256TokenDigest();
+            case CryptoSuite.TOKEN_DIGEST_SHA256 -> new SHA256TokenDigest();
+            case CryptoSuite.TOKEN_DIGEST_SHA3_256 -> new SHA3TokenDigest();
+            case CryptoSuite.TOKEN_DIGEST_SHAKE256_256 -> new SHAKE256TokenDigest();
             default -> throw new NoSuchAlgorithmException("Unsupported token digest algorithm '" + algorithm + "'.");
         };
     }

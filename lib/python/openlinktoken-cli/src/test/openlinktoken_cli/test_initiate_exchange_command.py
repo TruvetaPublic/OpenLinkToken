@@ -18,6 +18,7 @@ from jwcrypto import jwe, jwk
 from openlinktoken.crypto_suite import CryptoSuite
 from openlinktoken.exchange_config import derive_transport_encryption_key, resolve_exchange_config_inputs
 from openlinktoken.exchange_jwe import decrypt_exchange_envelope
+from openlinktoken.exchange_key_bundle import generate_exchange_key_bundle
 from openlinktoken_cli.commands.initiate_exchange_command import InitiateExchangeCommand
 from openlinktoken_cli.commands.open_link_token_command import OpenLinkTokenCommand
 from openlinktoken_cli.util.cli_run_reporter import configure_default_logging
@@ -169,6 +170,59 @@ def test_initiate_exchange_resolves_v2_public_key_from_base_path(tmp_path: Path)
         )
 
 
+@pytest.mark.parametrize(
+    ("secret_option", "secret_value"),
+    [
+        ("--hashingsecret", "x" * 31),
+        ("--hashingsecret-env", "OLT_SHORT_HASHING_SECRET"),
+        ("--hashingsecret-stdin", "x" * 31),
+    ],
+)
+def test_initiate_exchange_rejects_short_kmac_secret_before_writing_config(
+    tmp_path: Path,
+    monkeypatch,
+    capsys,
+    secret_option: str,
+    secret_value: str,
+) -> None:
+    """All hashing-secret input paths reject an invalid KMAC key before writing v2 config."""
+    partner_bundle = generate_exchange_key_bundle("suite-pq-shake-v1")
+    partner_path = tmp_path / "partner.public.bundle.json"
+    partner_path.write_bytes(partner_bundle.to_json())
+    output_path = tmp_path / "short-kmac.exchange.json"
+
+    command = [
+        "initiate-exchange",
+        "--crypto-suite",
+        "suite-pq-shake-v1",
+        "--name",
+        "short-kmac",
+        "--public-key",
+        str(partner_path),
+        "--output",
+        str(output_path),
+        "--rotation-embedding-dimension",
+        "2",
+        secret_option,
+    ]
+    if secret_option == "--hashingsecret-env":
+        monkeypatch.setenv(secret_value, "x" * 31)
+        command.append(secret_value)
+    elif secret_option == "--hashingsecret-stdin":
+        monkeypatch.setattr(sys, "stdin", io.TextIOWrapper(io.BytesIO(secret_value.encode()), encoding="utf-8"))
+    else:
+        command.append(secret_value)
+
+    with patch("pathlib.Path.home", return_value=tmp_path):
+        exit_code = OpenLinkTokenCommand.execute(command)
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "suite-pq-shake-v1" in captured.err
+    assert "32 bytes" in captured.err
+    assert not output_path.exists()
+
+
 def test_initiate_exchange_shake_suite_flows_through_tokenize_and_package(tmp_path: Path) -> None:
     """The post-quantum SHAKE suite flows through v2 exchange, tokenization, and packaging."""
     input_csv = tmp_path / "input.csv"
@@ -280,14 +334,14 @@ def test_initiate_exchange_shake_suite_flows_through_tokenize_and_package(tmp_pa
 
 @pytest.mark.parametrize(
     "crypto_suite",
-    CryptoSuite.all(),
+    [suite for suite in CryptoSuite.all() if suite == CryptoSuite.default() or suite.exchange_config_version == 2],
     ids=lambda crypto_suite: crypto_suite.suite_id,
 )
 def test_all_crypto_suites_flow_through_tokenize_and_package(
     tmp_path: Path,
     crypto_suite: CryptoSuite,
 ) -> None:
-    """Every registered suite completes exchange, tokenization, and packaging."""
+    """Every supported exchange suite completes exchange, tokenization, and packaging."""
     input_csv = tmp_path / "input.csv"
     input_csv.write_text(
         "RecordId,FirstName,LastName,PostalCode,Sex,BirthDate,SocialSecurityNumber\n"

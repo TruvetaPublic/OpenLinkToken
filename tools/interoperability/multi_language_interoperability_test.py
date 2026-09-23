@@ -1,14 +1,17 @@
 """Interoperability tests for Open Link Token Java core library and Python CLI.
 
-These tests validate three parity surfaces:
+These tests validate token, exchange, and ML1 parity surfaces:
 - the Python library reproduces the deterministic fixture values already asserted by
   the Java core-library integration test
 - the Python CLI `tokenize` output with ML1 disabled matches a thin Java harness
   that uses the Java core library directly
+- Java and Python exchange envelope helpers decrypt each other's legacy and
+  version-two envelopes
 - the Python ML1 provider and Python CLI output agree, while the provider is
   compared directly with the Java ML1 harness
 """
 
+import base64
 import csv
 import json
 import os
@@ -28,6 +31,17 @@ from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig
 from openlinktoken.core.ai.tokens.ml1_onnx_signature_provider import ML1OnnxSignatureProvider  # noqa: E402
 from openlinktoken.core.ai.tokens.rotation_config import RotationConfig  # noqa: E402
 from openlinktoken.crypto_suite import CryptoSuite  # noqa: E402
+from openlinktoken.ec_key_utils import generate_key_pair  # noqa: E402
+from openlinktoken.exchange_config import (  # noqa: E402
+    derive_transport_encryption_key,
+    resolve_exchange_config,
+)
+from openlinktoken.exchange_jwe import build_exchange_envelope, decrypt_exchange_envelope  # noqa: E402
+from openlinktoken.exchange_kem import (  # noqa: E402
+    build_exchange_envelope_v2,
+    decrypt_exchange_envelope_v2,
+)
+from openlinktoken.exchange_key_bundle import ExchangeKeyBundle, generate_exchange_key_bundle  # noqa: E402
 
 # These fixture values are intentionally kept aligned with the Java
 # TokenGeneratorIntegrationTest so this interop job verifies the same
@@ -59,6 +73,11 @@ EXPECTED_SAMPLE_METADATA = {
         "T5": 0,
     },
 }
+
+EXCHANGE_HASHING_SECRET = b"0123456789abcdef0123456789abcdef"
+EXCHANGE_ROTATION_IV = b"interop-rotation-iv"
+EXCHANGE_CREATED_AT = "2026-03-12T00:00:00Z"
+EXCHANGE_DIMENSION_BIAS = [0.1, -0.2]
 
 
 class InteroperabilityTooling:
@@ -247,6 +266,92 @@ class JavaLibraryHarness(InteroperabilityTooling):
         return result
 
 
+class JavaExchangeHarness(InteroperabilityTooling):
+    """Runs the test-only Java exchange envelope harness."""
+
+    JAVA_MAIN_CLASS = "org.openlinktoken.tools.ExchangeInteropHarness"
+
+    def __init__(self):
+        """Initialize the harness and defer compilation until it is first used."""
+        super().__init__()
+        self._compiled = False
+
+    def _ensure_compiled(self) -> None:
+        """Compile the Java test harness once for the exchange parity checks."""
+        if self._compiled:
+            return
+
+        compile_result = subprocess.run(
+            [
+                "mvn",
+                "-pl",
+                "openlinktoken",
+                "-DskipTests",
+                "test-compile",
+            ],
+            capture_output=True,
+            text=True,
+            cwd=self.project_root / "lib/java",
+            check=False,
+        )
+        if compile_result.returncode != 0:
+            raise RuntimeError(
+                f"Java exchange harness compilation failed:\n"
+                f"stdout:\n{compile_result.stdout}\nstderr:\n{compile_result.stderr}"
+            )
+        self._compiled = True
+
+    def _run(self, *args: str) -> subprocess.CompletedProcess:
+        """Run the compiled Java exchange harness through Maven."""
+        self._ensure_compiled()
+        exec_args = " ".join(str(argument) for argument in args)
+        result = subprocess.run(
+            [
+                "mvn",
+                "-pl",
+                "openlinktoken",
+                "-DskipTests",
+                "org.codehaus.mojo:exec-maven-plugin:3.5.0:java",
+                f"-Dexec.mainClass={self.JAVA_MAIN_CLASS}",
+                "-Dexec.classpathScope=test",
+                f"-Dexec.args={exec_args}",
+            ],
+            capture_output=True,
+            text=True,
+            cwd=self.project_root / "lib/java",
+            check=False,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(f"Java exchange harness failed:\nstdout:\n{result.stdout}\nstderr:\n{result.stderr}")
+        return result
+
+    def build(self, crypto_suite: CryptoSuite, output_dir: Path) -> tuple[Path, Path]:
+        """Build a Java envelope and return its envelope and sender key paths."""
+        self._run("build", crypto_suite.suite_id, str(output_dir))
+        private_name = (
+            "sender.private.pem" if crypto_suite.exchange_config_version == 1 else "sender.private.bundle.json"
+        )
+        return output_dir / "exchange.json", output_dir / private_name
+
+    def decrypt(
+        self,
+        crypto_suite: CryptoSuite,
+        exchange_config: Path,
+        private_key: Path,
+        output_file: Path,
+    ) -> Dict[str, Any]:
+        """Decrypt an envelope with Java and load its normalized result."""
+        self._run(
+            "decrypt",
+            crypto_suite.suite_id,
+            str(exchange_config),
+            str(private_key),
+            str(output_file),
+        )
+        with output_file.open("r", encoding="utf-8") as file_handle:
+            return json.load(file_handle)
+
+
 class ML1JavaLibraryHarness(InteroperabilityTooling):
     """Runs the Java ML1 interoperability harness through Maven."""
 
@@ -388,6 +493,165 @@ class TestTokenCompatibility:
             writer.writerow(["ml1-valid", "1989-05-25", "Chelsea", "Meister", "06582", "Female"])
             writer.writerow(["ml1-invalid", "not-a-date", "Chelsea", "Meister", "06582", "Female"])
 
+    @staticmethod
+    def _exchange_suites() -> tuple[CryptoSuite, ...]:
+        """Return the legacy default suite and all registered version-2 suites."""
+        return tuple(
+            suite for suite in CryptoSuite.all() if suite == CryptoSuite.default() or suite.exchange_config_version == 2
+        )
+
+    @staticmethod
+    def _build_python_exchange(
+        crypto_suite: CryptoSuite,
+        output_dir: Path,
+    ) -> tuple[Path, Path, dict[str, Any]]:
+        """Build a Python exchange envelope and persist its sender key material."""
+        output_dir.mkdir(parents=True, exist_ok=True)
+        exchange_name = f"interop-exchange-{crypto_suite.suite_id}"
+        exchange_id = f"interop-{crypto_suite.suite_id}"
+        envelope_path = output_dir / "exchange.json"
+
+        if crypto_suite.exchange_config_version == 1:
+            sender_private, sender_public = generate_key_pair("P-256")
+            _, recipient_public = generate_key_pair("P-256")
+            envelope = build_exchange_envelope(
+                exchange_name=exchange_name,
+                hashing_secret=EXCHANGE_HASHING_SECRET,
+                sender_public_pem=sender_public,
+                recipient_public_pem=recipient_public,
+                curve="P-256",
+                created_at=EXCHANGE_CREATED_AT,
+                exchange_id=exchange_id,
+                rotation_iv=EXCHANGE_ROTATION_IV,
+                rotation_count=3,
+                bin_width=0.05,
+                dimension_bias=EXCHANGE_DIMENSION_BIAS,
+                crypto_suite=crypto_suite,
+            )
+            private_key_path = output_dir / "sender.private.pem"
+            private_key_path.write_bytes(sender_private)
+        else:
+            sender_bundle = generate_exchange_key_bundle(crypto_suite.suite_id)
+            recipient_bundle = generate_exchange_key_bundle(crypto_suite.suite_id)
+            envelope = build_exchange_envelope_v2(
+                exchange_name=exchange_name,
+                hashing_secret=EXCHANGE_HASHING_SECRET,
+                sender_bundle=sender_bundle,
+                recipient_bundle=recipient_bundle,
+                created_at=EXCHANGE_CREATED_AT,
+                exchange_id=exchange_id,
+                rotation_iv=EXCHANGE_ROTATION_IV,
+                rotation_count=3,
+                bin_width=0.05,
+                dimension_bias=EXCHANGE_DIMENSION_BIAS,
+            )
+            private_key_path = output_dir / "sender.private.bundle.json"
+            private_key_path.write_bytes(sender_bundle.to_json(include_private=True))
+
+        envelope_path.write_text(json.dumps(envelope, sort_keys=True), encoding="utf-8")
+        return envelope_path, private_key_path, envelope
+
+    @staticmethod
+    def _decrypt_python_exchange(
+        crypto_suite: CryptoSuite,
+        envelope: dict[str, Any],
+        private_key_path: Path,
+        envelope_path: Path,
+    ) -> Dict[str, Any]:
+        """Decrypt an exchange envelope with the matching Python helper."""
+        if crypto_suite.exchange_config_version == 1:
+            plaintext = decrypt_exchange_envelope(envelope, private_key_path.read_bytes())
+            resolved = resolve_exchange_config(envelope_path, private_key_path.read_bytes())
+            transport_key = derive_transport_encryption_key(resolved)
+        else:
+            private_bundle = ExchangeKeyBundle.from_json(private_key_path.read_bytes(), require_private=True)
+            plaintext, transport_key = decrypt_exchange_envelope_v2(envelope, private_bundle)
+
+        return {
+            "version": crypto_suite.exchange_config_version,
+            "payload": json.loads(plaintext),
+            "transportKey": (
+                None if transport_key is None else base64.urlsafe_b64encode(transport_key).decode("ascii").rstrip("=")
+            ),
+        }
+
+    @staticmethod
+    def _assert_exchange_results(
+        crypto_suite: CryptoSuite,
+        expected: Dict[str, Any],
+        actual: Dict[str, Any],
+    ) -> None:
+        """Compare only deterministic decrypted fields, never randomized JWE members."""
+        assert actual["version"] == expected["version"] == crypto_suite.exchange_config_version
+        assert actual["payload"] == expected["payload"]
+        assert actual["transportKey"] == expected["transportKey"]
+
+        identity_fields = ("exchangeName", "exchangeId", "createdAt")
+        for field_name in identity_fields:
+            assert actual["payload"][field_name] == expected["payload"][field_name]
+
+        if crypto_suite.exchange_config_version == 1:
+            key_fields = ("senderKeyFingerprint", "recipientKeyFingerprint")
+        else:
+            assert actual["payload"]["cryptoSuite"] == expected["payload"]["cryptoSuite"] == crypto_suite.suite_id
+            key_fields = ("senderKeyId", "recipientKeyId")
+            for field_name, bundle_field in (
+                ("senderKeyId", "senderKeyBundle"),
+                ("recipientKeyId", "recipientKeyBundle"),
+            ):
+                assert actual["payload"][field_name] == actual["payload"][bundle_field]["kid"]
+        for field_name in key_fields:
+            assert actual["payload"][field_name] == expected["payload"][field_name]
+
+    def test_java_python_exchange_envelopes_interoperate(self):
+        """Compare Java and Python decryption for legacy and version-two exchanges."""
+        print("\nTesting Java/Python exchange envelope interoperability")
+        print("-" * 30)
+
+        java_exchange = JavaExchangeHarness()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            for crypto_suite in self._exchange_suites():
+                python_dir = temp_path / f"python_{crypto_suite.suite_id}"
+                python_envelope_path, python_private_key, python_envelope = self._build_python_exchange(
+                    crypto_suite,
+                    python_dir,
+                )
+                python_result = self._decrypt_python_exchange(
+                    crypto_suite,
+                    python_envelope,
+                    python_private_key,
+                    python_envelope_path,
+                )
+                java_result = java_exchange.decrypt(
+                    crypto_suite,
+                    python_envelope_path,
+                    python_private_key,
+                    python_dir / "java-decrypted.json",
+                )
+                self._assert_exchange_results(crypto_suite, python_result, java_result)
+
+                java_dir = temp_path / f"java_{crypto_suite.suite_id}"
+                java_envelope_path, java_private_key = java_exchange.build(crypto_suite, java_dir)
+                with java_envelope_path.open("r", encoding="utf-8") as file_handle:
+                    java_envelope = json.load(file_handle)
+                python_result = self._decrypt_python_exchange(
+                    crypto_suite,
+                    java_envelope,
+                    java_private_key,
+                    java_envelope_path,
+                )
+                java_result = java_exchange.decrypt(
+                    crypto_suite,
+                    java_envelope_path,
+                    java_private_key,
+                    java_dir / "java-decrypted.json",
+                )
+                self._assert_exchange_results(crypto_suite, python_result, java_result)
+
+                print(f"✅ {crypto_suite.suite_id}: Java and Python exchange envelopes interoperate!")
+            print("-" * 30)
+
     def test_python_library_matches_known_java_fixture_values(self):
         """Verify the Python library matches the deterministic Java fixture tokens."""
         from openlinktoken.attributes.person.birth_date_attribute import BirthDateAttribute
@@ -450,7 +714,11 @@ class TestTokenCompatibility:
 
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
-            for crypto_suite in CryptoSuite.all():
+            for crypto_suite in (
+                suite
+                for suite in CryptoSuite.all()
+                if suite == CryptoSuite.default() or suite.exchange_config_version == 2
+            ):
                 java_output = temp_path / f"java_{crypto_suite.suite_id}.csv"
                 python_output = temp_path / f"python_{crypto_suite.suite_id}.csv"
 
@@ -741,6 +1009,7 @@ if __name__ == "__main__":
         test.test_python_library_matches_known_java_fixture_values()
         test.test_python_cli_module_entrypoint_tokenize_flow()
         test.test_java_library_harness_matches_python_cli_tokenize_output()
+        test.test_java_python_exchange_envelopes_interoperate()
         test.test_java_ml1_harness_matches_python_provider()
         test.test_python_cli_ml1_matches_python_provider()
         test.test_metadata_consistency()
