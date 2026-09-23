@@ -10,6 +10,7 @@ import org.openlinktoken.crypto.CryptoSuite;
  * Calculates SHA3-256 token digests.
  */
 public final class SHA3TokenDigest implements TokenDigest {
+    private static final long serialVersionUID = 1L;
 
     /**
      * Calculates a SHA3-256 digest.

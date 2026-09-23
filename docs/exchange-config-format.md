@@ -36,6 +36,12 @@ Java callers must provide the input path or JSON and matching private material
 explicitly. The library does not read `~/.openlinktoken`, inspect environment
 variables, parse CLI arguments, or choose file overwrite/permission policies.
 
+Java exchange and crypto-suite objects support native Java serialization,
+preserving private keys and other secret fields. Object streams are not
+encrypted and are Java-specific: protect serialized bytes as secrets and never
+deserialize streams from untrusted sources. Use the JSON formats below for
+cross-language exchange.
+
 ## Version 2: standard JWE JSON serialization
 
 Version 2 uses the RFC 7516 general JWE JSON Serialization. The outer object

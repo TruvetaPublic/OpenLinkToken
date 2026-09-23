@@ -1,12 +1,13 @@
 /* SPDX-License-Identifier: MIT */
 package org.openlinktoken.tokens.tokenizer;
 
+import java.io.Serializable;
 import java.security.NoSuchAlgorithmException;
 
 /**
  * Calculates the raw digest bytes used by suite-aware tokenization.
  */
-public interface TokenDigest {
+public interface TokenDigest extends Serializable {
 
     /**
      * Calculates a digest for UTF-8 token-signature bytes.

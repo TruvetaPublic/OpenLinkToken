@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: MIT */
 package org.openlinktoken;
 
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.SecureRandom;
@@ -21,7 +22,8 @@ import org.openlinktoken.crypto.CryptoSuite;
 /**
  * Immutable version-two exchange key material and its JSON representation.
  */
-public final class ExchangeKeyBundle {
+public final class ExchangeKeyBundle implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     /** Key-bundle schema version. */
     public static final int BUNDLE_VERSION = 1;

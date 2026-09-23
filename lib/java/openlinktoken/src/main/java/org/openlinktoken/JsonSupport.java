@@ -2,6 +2,7 @@
 package org.openlinktoken;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CodingErrorAction;
@@ -17,7 +18,8 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 /**
  * Package-private deterministic JSON support for exchange key bundles.
  */
-final class JsonSupport {
+final class JsonSupport implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     private static final TypeReference<Map<String, Object>> OBJECT_TYPE = new TypeReference<>() {
     };

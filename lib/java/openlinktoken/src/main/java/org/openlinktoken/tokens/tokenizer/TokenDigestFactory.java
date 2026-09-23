@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: MIT */
 package org.openlinktoken.tokens.tokenizer;
 
+import java.io.Serializable;
 import java.security.NoSuchAlgorithmException;
 
 import org.openlinktoken.crypto.CryptoSuite;
@@ -8,7 +9,9 @@ import org.openlinktoken.crypto.CryptoSuite;
 /**
  * Creates token digest implementations from suite or algorithm identifiers.
  */
-public final class TokenDigestFactory {
+public final class TokenDigestFactory implements Serializable {
+    private static final long serialVersionUID = 1L;
+
 
     /**
      * Prevents construction of this factory.
