@@ -33,6 +33,7 @@ git push -u origin "dev/<github-username>/<feature-description>"
 - Prefer repository-integrated PR tooling when available instead of `gh pr create`.
 - Use `.github/pull_request_template.md` as the default PR body when creating or refreshing a PR description, unless a different structure is explicitly requested.
 - Assign the PR to the current GitHub user after creation.
+- Request review from the `OpenLinkToken-Maintainers` team (`TruvetaPublic/openlinktoken-maintainers`) on every new PR.
 - Add all fitting repository labels based on the surfaces touched by the change (for example `documentation`, `copilot`, `java`, `python`, `cli`, `pyspark`, `testing`, `devops`, or `release`).
 - Always set `draft: true` when opening a PR.
 - If a PR is accidentally opened as ready for review, move it back to draft immediately.
