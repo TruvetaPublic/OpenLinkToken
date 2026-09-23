@@ -63,4 +63,9 @@ class TokenDigestFactoryTest {
                 NoSuchAlgorithmException.class,
                 () -> TokenDigestFactory.forAlgorithm("UNKNOWN"));
     }
+
+    @Test
+    void factoryRejectsNullSuite() {
+        assertThrows(IllegalArgumentException.class, () -> TokenDigestFactory.forSuite(null));
+    }
 }

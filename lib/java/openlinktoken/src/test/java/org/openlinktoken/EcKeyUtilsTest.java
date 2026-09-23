@@ -6,7 +6,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 
@@ -68,6 +71,38 @@ class EcKeyUtilsTest {
         assertThrows(IllegalArgumentException.class, () -> EcKeyUtils.generateKeyPair("P-255"));
         assertThrows(IllegalArgumentException.class, () -> EcKeyUtils.privateKeyFromPem("not PEM".getBytes()));
         assertThrows(IllegalArgumentException.class, () -> EcKeyUtils.fingerprintToKid(" "));
+    }
+
+    @Test
+    void rejectsNonEcKeysAndMalformedDer() throws GeneralSecurityException {
+        KeyPair rsa = KeyPairGenerator.getInstance("RSA").generateKeyPair();
+
+        assertThrows(IllegalArgumentException.class, () -> EcKeyUtils.privateKeyToDer(rsa.getPrivate()));
+        assertThrows(IllegalArgumentException.class, () -> EcKeyUtils.publicKeyToDer(rsa.getPublic()));
+        assertThrows(IllegalArgumentException.class, () -> EcKeyUtils.curveName(rsa.getPrivate()));
+        assertThrows(IllegalArgumentException.class, () -> EcKeyUtils.curveName(rsa.getPublic()));
+        assertThrows(IllegalArgumentException.class, () -> EcKeyUtils.publicKeyFingerprint(rsa.getPublic()));
+        assertThrows(IllegalArgumentException.class, () -> EcKeyUtils.privateKeyFromDer(new byte[0]));
+        assertThrows(IllegalArgumentException.class, () -> EcKeyUtils.publicKeyFromDer(new byte[0]));
+        assertThrows(IllegalArgumentException.class, () -> EcKeyUtils.privateKeyFromDer(rsa.getPrivate().getEncoded()));
+        assertThrows(IllegalArgumentException.class, () -> EcKeyUtils.publicKeyFromDer(rsa.getPublic().getEncoded()));
+    }
+
+    @Test
+    void rejectsMalformedPemAndNullFingerprint() {
+        assertThrows(IllegalArgumentException.class, () -> EcKeyUtils.privateKeyFromPem(null));
+        assertThrows(IllegalArgumentException.class, () -> EcKeyUtils.publicKeyFromPem(new byte[0]));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> EcKeyUtils.privateKeyFromPem(
+                        "-----BEGIN PRIVATE KEY-----\n\n-----END PRIVATE KEY-----"
+                                .getBytes(StandardCharsets.US_ASCII)));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> EcKeyUtils.publicKeyFromPem(
+                        "-----BEGIN PUBLIC KEY-----\n%%%\n-----END PUBLIC KEY-----"
+                                .getBytes(StandardCharsets.US_ASCII)));
+        assertThrows(IllegalArgumentException.class, () -> EcKeyUtils.fingerprintToKid(null));
     }
 
     @Test

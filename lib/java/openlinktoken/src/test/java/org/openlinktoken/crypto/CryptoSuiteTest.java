@@ -3,14 +3,18 @@ package org.openlinktoken.crypto;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
+import java.security.NoSuchAlgorithmException;
 
 import org.junit.jupiter.api.Test;
+
+import org.openlinktoken.tokens.tokenizer.TokenDigestFactory;
 
 /**
  * Tests the registered crypto suite contracts and lookup validation.
@@ -134,6 +138,23 @@ class CryptoSuiteTest {
                 "ML-KEM-768",
                 3,
                 "Unsupported exchange configuration version '3'.");
+    }
+
+    @Test
+    void tokenDigestFactoryRejectsUnsupportedSuiteDigest() {
+        CryptoSuite suite = new CryptoSuite(
+                "unsupported-digest-suite",
+                "UNKNOWN-DIGEST",
+                CryptoSuite.TOKEN_MAC_HS256,
+                CryptoSuite.TOKEN_CONTENT_ENCRYPTION_A256GCM,
+                CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH,
+                1);
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> TokenDigestFactory.forSuite(suite));
+
+        assertInstanceOf(NoSuchAlgorithmException.class, exception.getCause());
     }
 
     private static void assertInvalidSuite(
