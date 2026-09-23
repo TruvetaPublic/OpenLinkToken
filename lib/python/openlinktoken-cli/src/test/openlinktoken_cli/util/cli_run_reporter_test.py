@@ -3,6 +3,7 @@
 import logging
 import os
 import re
+import threading
 from unittest.mock import patch
 
 import pytest
@@ -69,6 +70,39 @@ class TestProgressIndicator:
         with pi._lock:
             assert pi._total_rows == 1000
         pi.stop()
+        assert not pi._thread.is_alive()
+
+    def test_stop_waits_for_render_thread_to_exit(self):
+        """Stopping the reporter must wait until its render thread has exited."""
+        pi = _ProgressIndicator()
+        render_started = threading.Event()
+        finish_rendering = threading.Event()
+        stop_returned = threading.Event()
+
+        def _blocked_render() -> None:
+            render_started.set()
+            finish_rendering.wait()
+
+        def _stop() -> None:
+            pi.stop()
+            stop_returned.set()
+
+        pi._render = _blocked_render
+        pi.start()
+        stopper: threading.Thread | None = None
+        try:
+            assert render_started.wait(timeout=1)
+            stopper = threading.Thread(target=_stop)
+            stopper.start()
+            assert not stop_returned.wait(timeout=1)
+        finally:
+            finish_rendering.set()
+            if stopper is not None:
+                stopper.join(timeout=1)
+            else:
+                pi._thread.join(timeout=1)
+
+        assert stop_returned.is_set()
         assert not pi._thread.is_alive()
 
     def test_progress_update_via_lock(self):
@@ -186,7 +220,7 @@ class TestProgressIndicator:
         assert " | ".join(lines) in writes[0]
 
     def test_render_advances_spinner_on_fixed_interval_without_progress_updates(self):
-        """The spinner should animate every 100 ms when progress remains unchanged."""
+        """The spinner should animate every 50 ms when progress remains unchanged."""
         pi = _ProgressIndicator(use_color=False)
         pi._start_time = 0.0
         pi.set_total_rows(100)
@@ -221,7 +255,7 @@ class TestProgressIndicator:
             pi._render()
 
         assert len(writes) == 3
-        assert wait_timeouts[1:] == pytest.approx([0.1, 0.1])
+        assert wait_timeouts[1:] == pytest.approx([0.05, 0.05])
         rendered_lines = [self._rendered_lines(write)[0] for write in writes]
         assert [line[0] for line in rendered_lines] == ["⠋", "⠙", "⠹"]
 
