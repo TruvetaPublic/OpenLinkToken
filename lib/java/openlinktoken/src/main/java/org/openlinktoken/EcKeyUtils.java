@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: MIT */
 package org.openlinktoken;
 
+import java.io.Serializable;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
@@ -30,7 +31,8 @@ import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
  * <p>This class deliberately does not perform filesystem or environment operations. It
  * supports the named curves and key encodings required by the exchange bundle format.
  */
-public final class EcKeyUtils {
+public final class EcKeyUtils implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     /** Curves supported by the exchange format. */
     public static final List<String> SUPPORTED_CURVES = List.of("P-256", "P-384", "P-521");

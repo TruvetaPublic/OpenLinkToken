@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: MIT */
 package org.openlinktoken;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -11,7 +12,8 @@ import org.openlinktoken.crypto.CryptoSuite;
 /**
  * Version-two ML-KEM exchange facade backed by standard general JWE JSON serialization.
  */
-public final class ExchangeKem {
+public final class ExchangeKem implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     /** Version-two exchange envelope version. */
     public static final int VERSION = JweMlkem.EXCHANGE_V2_VERSION;
@@ -304,7 +306,9 @@ public final class ExchangeKem {
     /**
      * Immutable result returned by version-two exchange decryption.
      */
-    public static final class DecryptionResult {
+    public static final class DecryptionResult implements Serializable {
+        private static final long serialVersionUID = 1L;
+
         private final byte[] plaintext;
         private final byte[] transportKey;
 

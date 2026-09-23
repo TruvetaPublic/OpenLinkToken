@@ -2,6 +2,7 @@
 package org.openlinktoken;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -32,7 +33,8 @@ import org.openlinktoken.crypto.CryptoSuite;
  * select default paths, inspect the environment, parse command-line options, or
  * resolve private keys from disk.</p>
  */
-public final class ExchangeConfig {
+public final class ExchangeConfig implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     /** Legacy exchange configuration version. */
     public static final int VERSION_ONE = 1;
@@ -723,7 +725,7 @@ public final class ExchangeConfig {
             byte[] rotationIv,
             int rotationCount,
             double binWidth,
-            List<Double> dimensionBias) {
+            List<Double> dimensionBias) implements Serializable {
     }
 
     /**
@@ -733,7 +735,7 @@ public final class ExchangeConfig {
      * @param version detected exchange configuration version
      * @param config immutable JSON-compatible envelope
      */
-    public record LoadedExchangeConfig(Path path, int version, Map<String, Object> config) {
+    public record LoadedExchangeConfig(Path path, int version, Map<String, Object> config) implements Serializable {
 
         /**
          * Canonicalizes and defensively copies the loaded envelope.
@@ -744,6 +746,10 @@ public final class ExchangeConfig {
                 throw new IllegalArgumentException("Unsupported exchange config version '" + version + "'.");
             }
             config = copyJsonMap(config, "exchangeConfig");
+        }
+
+        private Object writeReplace() {
+            return new LoadedExchangeConfigSerializedForm(path.toString(), version, config);
         }
     }
 
@@ -779,7 +785,7 @@ public final class ExchangeConfig {
             int rotationCount,
             double binWidth,
             List<Double> dimensionBias,
-            byte[] transportEncryptionKey) {
+            byte[] transportEncryptionKey) implements Serializable {
 
         /**
          * Canonicalizes and defensively copies mutable resolved values.
@@ -806,6 +812,24 @@ public final class ExchangeConfig {
             }
             dimensionBias = dimensionBias == null ? List.of() : List.copyOf(dimensionBias);
             transportEncryptionKey = copy(transportEncryptionKey);
+        }
+
+        private Object writeReplace() {
+            return new ResolvedExchangeConfigSerializedForm(
+                    path.toString(),
+                    version,
+                    config,
+                    payload,
+                    privateKeyPem,
+                    privateKeyBundle,
+                    privateKeyRole,
+                    cryptoSuite,
+                    hashingSecret,
+                    rotationIv,
+                    rotationCount,
+                    binWidth,
+                    dimensionBias,
+                    transportEncryptionKey);
         }
 
         @Override
@@ -835,6 +859,92 @@ public final class ExchangeConfig {
 
         private byte[] storedTransportEncryptionKey() {
             return copy(transportEncryptionKey);
+        }
+    }
+
+    private static final class LoadedExchangeConfigSerializedForm implements Serializable {
+        private static final long serialVersionUID = 1L;
+
+        private final String path;
+        private final int version;
+        private final Map<String, Object> config;
+
+        private LoadedExchangeConfigSerializedForm(String path, int version, Map<String, Object> config) {
+            this.path = path;
+            this.version = version;
+            this.config = config;
+        }
+
+        private Object readResolve() {
+            return new LoadedExchangeConfig(Path.of(path), version, config);
+        }
+    }
+
+    private static final class ResolvedExchangeConfigSerializedForm implements Serializable {
+        private static final long serialVersionUID = 1L;
+
+        private final String path;
+        private final int version;
+        private final Map<String, Object> config;
+        private final Map<String, Object> payload;
+        private final byte[] privateKeyPem;
+        private final ExchangeKeyBundle privateKeyBundle;
+        private final String privateKeyRole;
+        private final CryptoSuite cryptoSuite;
+        private final byte[] hashingSecret;
+        private final byte[] rotationIv;
+        private final int rotationCount;
+        private final double binWidth;
+        private final List<Double> dimensionBias;
+        private final byte[] transportEncryptionKey;
+
+        private ResolvedExchangeConfigSerializedForm(
+                String path,
+                int version,
+                Map<String, Object> config,
+                Map<String, Object> payload,
+                byte[] privateKeyPem,
+                ExchangeKeyBundle privateKeyBundle,
+                String privateKeyRole,
+                CryptoSuite cryptoSuite,
+                byte[] hashingSecret,
+                byte[] rotationIv,
+                int rotationCount,
+                double binWidth,
+                List<Double> dimensionBias,
+                byte[] transportEncryptionKey) {
+            this.path = path;
+            this.version = version;
+            this.config = config;
+            this.payload = payload;
+            this.privateKeyPem = privateKeyPem;
+            this.privateKeyBundle = privateKeyBundle;
+            this.privateKeyRole = privateKeyRole;
+            this.cryptoSuite = cryptoSuite;
+            this.hashingSecret = hashingSecret;
+            this.rotationIv = rotationIv;
+            this.rotationCount = rotationCount;
+            this.binWidth = binWidth;
+            this.dimensionBias = dimensionBias;
+            this.transportEncryptionKey = transportEncryptionKey;
+        }
+
+        private Object readResolve() {
+            return new ResolvedExchangeConfig(
+                    Path.of(path),
+                    version,
+                    config,
+                    payload,
+                    privateKeyPem,
+                    privateKeyBundle,
+                    privateKeyRole,
+                    cryptoSuite,
+                    hashingSecret,
+                    rotationIv,
+                    rotationCount,
+                    binWidth,
+                    dimensionBias,
+                    transportEncryptionKey);
         }
     }
 }

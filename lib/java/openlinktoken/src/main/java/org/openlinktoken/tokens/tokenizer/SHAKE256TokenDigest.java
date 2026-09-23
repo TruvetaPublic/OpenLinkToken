@@ -7,6 +7,7 @@ import org.bouncycastle.crypto.digests.SHAKEDigest;
  * Calculates fixed-width SHAKE256 token digests.
  */
 public final class SHAKE256TokenDigest implements TokenDigest {
+    private static final long serialVersionUID = 1L;
     private static final int OUTPUT_LENGTH_BYTES = 32;
 
     /**

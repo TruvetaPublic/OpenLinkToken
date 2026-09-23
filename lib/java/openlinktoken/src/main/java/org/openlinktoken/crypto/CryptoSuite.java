@@ -1,13 +1,17 @@
 /* SPDX-License-Identifier: MIT */
 package org.openlinktoken.crypto;
 
+import java.io.InvalidObjectException;
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
 /**
  * Immutable contract for token primitives and exchange key establishment.
  */
-public final class CryptoSuite {
+public final class CryptoSuite implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     /** SHA-256 token digest identifier. */
     public static final String TOKEN_DIGEST_SHA256 = "SHA-256";
 
@@ -179,6 +183,16 @@ public final class CryptoSuite {
                     + String.join(", ", REGISTRY.keySet()) + ".");
         }
         return suite;
+    }
+
+    private Object readResolve() throws InvalidObjectException {
+        try {
+            return fromId(suiteId);
+        } catch (IllegalArgumentException exception) {
+            InvalidObjectException invalidObjectException = new InvalidObjectException(exception.getMessage());
+            invalidObjectException.initCause(exception);
+            throw invalidObjectException;
+        }
     }
 
     /**

@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: MIT */
 package org.openlinktoken;
 
+import java.io.Serializable;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
@@ -43,7 +44,8 @@ import org.openlinktoken.crypto.CryptoSuite;
 /**
  * Package-private standard JWE JSON support for version-two ML-KEM exchange envelopes.
  */
-final class JweMlkem {
+final class JweMlkem implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     static final int EXCHANGE_V2_VERSION = 2;
     static final String EXCHANGE_V2_TYPE = "openlinktoken-exchange+jwe";
@@ -649,7 +651,9 @@ final class JweMlkem {
         return result;
     }
 
-    static final class Decryption {
+    static final class Decryption implements Serializable {
+        private static final long serialVersionUID = 1L;
+
         private final byte[] plaintext;
         private final byte[] transportKey;
         private final byte[] cek;
@@ -683,6 +687,7 @@ final class JweMlkem {
         }
     }
 
-    private record Encapsulation(byte[] sharedSecret, byte[] ciphertext, Map<String, Object> epk) {
+    private record Encapsulation(byte[] sharedSecret, byte[] ciphertext, Map<String, Object> epk)
+            implements Serializable {
     }
 }

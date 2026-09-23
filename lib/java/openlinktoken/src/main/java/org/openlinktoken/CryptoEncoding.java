@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: MIT */
 package org.openlinktoken;
 
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -9,7 +10,8 @@ import java.util.Base64;
 /**
  * Package-private encoding primitives shared by the exchange key components.
  */
-final class CryptoEncoding {
+final class CryptoEncoding implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     private CryptoEncoding() {
     }

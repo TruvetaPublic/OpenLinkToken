@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: MIT */
 package org.openlinktoken;
 
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
@@ -35,7 +36,8 @@ import org.openlinktoken.crypto.CryptoSuite;
  * reader. Nimbus's multi-recipient JWE provider supplies one shared content
  * encryption key and an ECDH-wrapped copy for each participant.</p>
  */
-public final class ExchangeJwe {
+public final class ExchangeJwe implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     /** Legacy exchange envelope version. */
     public static final int VERSION = 1;
@@ -581,7 +583,7 @@ public final class ExchangeJwe {
             byte[] rotationIv,
             int rotationCount,
             double binWidth,
-            List<Double> dimensionBias) {
+            List<Double> dimensionBias) implements Serializable {
 
         /**
          * Canonicalizes mutable payload values.
