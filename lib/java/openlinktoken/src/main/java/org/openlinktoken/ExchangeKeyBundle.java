@@ -1,16 +1,28 @@
 /* SPDX-License-Identifier: MIT */
 package org.openlinktoken;
 
+import java.io.IOException;
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CodingErrorAction;
 import java.security.KeyPair;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.pqc.crypto.mlkem.MLKEMKeyGenerationParameters;
 import org.bouncycastle.pqc.crypto.mlkem.MLKEMKeyPairGenerator;
@@ -42,6 +54,12 @@ public final class ExchangeKeyBundle implements Serializable {
 
     /** EC algorithm identifier used by the hybrid bundle format. */
     public static final String EC_ALGORITHM = "ECDH-P256";
+
+    private static final TypeReference<Map<String, Object>> JSON_OBJECT_TYPE = new TypeReference<>() {
+    };
+    private static final ObjectMapper JSON_MAPPER = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_TRAILING_TOKENS, true)
+            .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
 
     private final CryptoSuite suite;
     private final byte[] mlkemPublicKey;
@@ -135,7 +153,7 @@ public final class ExchangeKeyBundle implements Serializable {
      */
     public static ExchangeKeyBundle fromJson(byte[] json, boolean requirePrivate) {
         try {
-            return fromMapping(JsonSupport.readObject(json), requirePrivate);
+            return fromMapping(readJsonObject(json), requirePrivate);
         } catch (KeyBundleException exception) {
             throw exception;
         } catch (RuntimeException exception) {
@@ -226,7 +244,7 @@ public final class ExchangeKeyBundle implements Serializable {
             }
             requireEquals(
                     mlkem.get("fingerprint"),
-                    CryptoEncoding.fingerprint(mlkemPublicKey),
+                    fingerprint(mlkemPublicKey),
                     "mlkem.fingerprint does not match mlkem.publicKey.");
             boolean hasPrivateKey = mlkem.containsKey("privateKey");
             boolean hasPrivateKeyEncoding = mlkem.containsKey("privateKeyEncoding");
@@ -315,14 +333,14 @@ public final class ExchangeKeyBundle implements Serializable {
         Map<String, Object> mlkem = new LinkedHashMap<>();
         mlkem.put("algorithm", MLKEM_ALGORITHM);
         mlkem.put("publicKeyEncoding", "base64url");
-        mlkem.put("publicKey", CryptoEncoding.encodeBase64Url(mlkemPublicKey));
-        mlkem.put("fingerprint", CryptoEncoding.fingerprint(mlkemPublicKey));
+        mlkem.put("publicKey", encodeBase64Url(mlkemPublicKey));
+        mlkem.put("fingerprint", fingerprint(mlkemPublicKey));
         if (includePrivate) {
             if (mlkemPrivateSeed == null) {
                 throw new KeyBundleException("ML-KEM private seed is missing.");
             }
             mlkem.put("privateKeyEncoding", "base64url");
-            mlkem.put("privateKey", CryptoEncoding.encodeBase64Url(mlkemPrivateSeed));
+            mlkem.put("privateKey", encodeBase64Url(mlkemPrivateSeed));
         }
         keys.put("mlkem", mlkem);
 
@@ -366,7 +384,7 @@ public final class ExchangeKeyBundle implements Serializable {
      * @return deterministic UTF-8 JSON
      */
     public byte[] toJson(boolean includePrivate) {
-        return JsonSupport.writeObject(toMapping(includePrivate));
+        return writeJsonObject(toMapping(includePrivate));
     }
 
     /**
@@ -541,7 +559,7 @@ public final class ExchangeKeyBundle implements Serializable {
             offset += ecMarker.length;
             System.arraycopy(ecEncoded, 0, fingerprintInput, offset, ecEncoded.length);
         }
-        return EcKeyUtils.fingerprintToKid(CryptoEncoding.fingerprint(fingerprintInput));
+        return EcKeyUtils.fingerprintToKid(fingerprint(fingerprintInput));
     }
 
     private static Map<?, ?> section(Map<?, ?> keys, String name, String message) {
@@ -579,10 +597,78 @@ public final class ExchangeKeyBundle implements Serializable {
 
     private static byte[] decodeBase64(Object value, String fieldName) {
         try {
-            return CryptoEncoding.decodeBase64Url(stringValue(value, fieldName), fieldName);
+            return decodeBase64Url(stringValue(value, fieldName), fieldName);
         } catch (IllegalArgumentException exception) {
             throw new KeyBundleException(exception.getMessage(), exception);
         }
+    }
+
+    private static Map<String, Object> readJsonObject(byte[] json) {
+        if (json == null || json.length == 0) {
+            throw new IllegalArgumentException("JSON value must not be empty.");
+        }
+        try {
+            return JSON_MAPPER.readValue(decodeUtf8(json), JSON_OBJECT_TYPE);
+        } catch (IOException exception) {
+            throw new IllegalArgumentException("JSON value must be an object.", exception);
+        }
+    }
+
+    private static byte[] writeJsonObject(Map<String, Object> value) {
+        try {
+            return JSON_MAPPER.writeValueAsBytes(value);
+        } catch (JsonProcessingException exception) {
+            throw new IllegalStateException("Unable to serialize JSON object.", exception);
+        }
+    }
+
+    private static String decodeUtf8(byte[] json) {
+        try {
+            return StandardCharsets.UTF_8.newDecoder()
+                    .onMalformedInput(CodingErrorAction.REPORT)
+                    .onUnmappableCharacter(CodingErrorAction.REPORT)
+                    .decode(ByteBuffer.wrap(json))
+                    .toString();
+        } catch (CharacterCodingException exception) {
+            throw new IllegalArgumentException("JSON value must be valid UTF-8.", exception);
+        }
+    }
+
+    private static String encodeBase64Url(byte[] value) {
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(value);
+    }
+
+    private static byte[] decodeBase64Url(String value, String fieldName) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(fieldName + " must be a non-empty base64url string.");
+        }
+        try {
+            byte[] decoded = Base64.getUrlDecoder().decode(value);
+            if (!value.equals(encodeBase64Url(decoded))) {
+                throw new IllegalArgumentException("non-canonical base64url encoding");
+            }
+            return decoded;
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException(fieldName + " is not valid base64url data.", exception);
+        }
+    }
+
+    private static String fingerprint(byte[] value) {
+        byte[] digest;
+        try {
+            digest = MessageDigest.getInstance("SHA-256").digest(value);
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 is not available.", exception);
+        }
+
+        StringBuilder result = new StringBuilder(digest.length * 3 - 1);
+        for (int index = 0; index < digest.length; index++) {
+            if (index > 0) {
+                result.append(':');
+            }
+            result.append(String.format("%02X", digest[index] & 0xFF));
+        }
+        return result.toString();
     }
 
     private static void requireEquals(Object actual, Object expected, String message) {

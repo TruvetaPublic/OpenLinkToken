@@ -32,9 +32,9 @@ class ExchangeConfigTest {
 
         ExchangeConfig.LoadedExchangeConfig fromMapping = ExchangeConfig.loadExchangeConfig(envelope);
         ExchangeConfig.LoadedExchangeConfig fromJson = ExchangeConfig.loadExchangeConfig(
-                JsonSupport.writeObject(envelope));
+                ExchangeJsonTestSupport.writeObject(envelope));
         Path path = Files.createTempFile("openlinktoken-exchange", ".json");
-        Files.write(path, JsonSupport.writeObject(envelope));
+        Files.write(path, ExchangeJsonTestSupport.writeObject(envelope));
         ExchangeConfig.LoadedExchangeConfig fromPath = ExchangeConfig.loadExchangeConfig(path);
 
         assertEquals(1, fromMapping.version());

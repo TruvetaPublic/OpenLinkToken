@@ -1,17 +1,27 @@
 /* SPDX-License-Identifier: MIT */
 package org.openlinktoken;
 
+import java.io.IOException;
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CodingErrorAction;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.nimbusds.jose.EncryptionMethod;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JOSEObjectType;
@@ -71,6 +81,11 @@ public final class ExchangeJwe implements Serializable {
 
     private static final String BASE64URL_ENCODING = "base64url";
     private static final JWEAlgorithm RECIPIENT_JWE_ALGORITHM = JWEAlgorithm.ECDH_ES_A256KW;
+    private static final TypeReference<Map<String, Object>> JSON_OBJECT_TYPE = new TypeReference<>() {
+    };
+    private static final ObjectMapper JSON_MAPPER = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_TRAILING_TOKENS, true)
+            .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
 
     private ExchangeJwe() {
     }
@@ -253,7 +268,7 @@ public final class ExchangeJwe implements Serializable {
     public static byte[] decryptExchangeEnvelope(byte[] exchangeConfig, byte[] privatePem) {
         Map<String, Object> envelope;
         try {
-            envelope = JsonSupport.readObject(exchangeConfig);
+            envelope = readJsonObject(exchangeConfig);
         } catch (RuntimeException exception) {
             throw new ExchangeJweException("Exchange envelope is not valid JSON.", exception);
         }
@@ -289,7 +304,7 @@ public final class ExchangeJwe implements Serializable {
      * @return the validated typed payload
      */
     public static ExchangePayload parseExchangePayload(byte[] payloadJson) {
-        Map<String, Object> payload = JsonSupport.readObject(payloadJson);
+        Map<String, Object> payload = readJsonObject(payloadJson);
         return payloadFromMapping(payload);
     }
 
@@ -308,7 +323,7 @@ public final class ExchangeJwe implements Serializable {
         try {
             JWEObjectJSON jwe = new JWEObjectJSON(
                     protectedHeader,
-                    new Payload(JsonSupport.writeObject(payloadToMapping(payload))));
+                    new Payload(writeJsonObject(payloadToMapping(payload))));
             jwe.encrypt(new MultiEncrypter(new JWKSet(List.of(senderJwk, recipientJwk))));
             Map<String, Object> envelope = new LinkedHashMap<>(jwe.toGeneralJSONObject());
             envelope.put("version", VERSION);
@@ -384,7 +399,7 @@ public final class ExchangeJwe implements Serializable {
     private static Map<String, Object> payloadToMapping(ExchangePayload payload) {
         Map<String, Object> mapping = new LinkedHashMap<>();
         mapping.put("exchangeName", payload.exchangeName());
-        mapping.put("hashingSecret", CryptoEncoding.encodeBase64Url(payload.hashingSecret()));
+        mapping.put("hashingSecret", encodeBase64Url(payload.hashingSecret()));
         mapping.put("hashingSecretEncoding", BASE64URL_ENCODING);
         mapping.put("senderKeyFingerprint", EcKeyUtils.publicKeyFingerprint(payload.senderPublicPem()));
         mapping.put("recipientKeyFingerprint", EcKeyUtils.publicKeyFingerprint(payload.recipientPublicPem()));
@@ -393,7 +408,7 @@ public final class ExchangeJwe implements Serializable {
         mapping.put("curve", payload.curve());
         mapping.put("createdAt", payload.createdAt());
         mapping.put("exchangeId", payload.exchangeId());
-        mapping.put("rotationIv", CryptoEncoding.encodeBase64Url(payload.rotationIv()));
+        mapping.put("rotationIv", encodeBase64Url(payload.rotationIv()));
         mapping.put("rotationIvEncoding", BASE64URL_ENCODING);
         mapping.put("rotationCount", payload.rotationCount());
         mapping.put("binWidth", payload.binWidth());
@@ -414,7 +429,7 @@ public final class ExchangeJwe implements Serializable {
         if (!BASE64URL_ENCODING.equals(hashingSecretEncoding)) {
             throw new ExchangeJweException("Unsupported hashingSecretEncoding '" + hashingSecretEncoding + "'.");
         }
-        byte[] hashingSecret = CryptoEncoding.decodeBase64Url(
+        byte[] hashingSecret = decodeBase64Url(
                 requireText(mapping.get("hashingSecret"), "hashingSecret"),
                 "hashingSecret");
         byte[] senderPublicPem = requireText(mapping.get("senderPublicKey"), "senderPublicKey")
@@ -436,7 +451,7 @@ public final class ExchangeJwe implements Serializable {
         String rotationIvValue = requireTextAllowEmpty(mapping.get("rotationIv"), "rotationIv");
         byte[] rotationIv = rotationIvValue.isEmpty()
                 ? new byte[0]
-                : CryptoEncoding.decodeBase64Url(rotationIvValue, "rotationIv");
+                : decodeBase64Url(rotationIvValue, "rotationIv");
 
         int rotationCount = mapping.containsKey("rotationCount")
                 ? requireInteger(mapping.get("rotationCount"), "rotationCount")
@@ -657,6 +672,56 @@ public final class ExchangeJwe implements Serializable {
 
         private ExchangeJweException(String message, Throwable cause) {
             super(message, cause);
+        }
+    }
+
+    private static Map<String, Object> readJsonObject(byte[] json) {
+        if (json == null || json.length == 0) {
+            throw new IllegalArgumentException("JSON value must not be empty.");
+        }
+        try {
+            return JSON_MAPPER.readValue(decodeUtf8(json), JSON_OBJECT_TYPE);
+        } catch (IOException exception) {
+            throw new IllegalArgumentException("JSON value must be an object.", exception);
+        }
+    }
+
+    private static byte[] writeJsonObject(Map<String, Object> value) {
+        try {
+            return JSON_MAPPER.writeValueAsBytes(value);
+        } catch (JsonProcessingException exception) {
+            throw new IllegalStateException("Unable to serialize JSON object.", exception);
+        }
+    }
+
+    private static String decodeUtf8(byte[] json) {
+        try {
+            return StandardCharsets.UTF_8.newDecoder()
+                    .onMalformedInput(CodingErrorAction.REPORT)
+                    .onUnmappableCharacter(CodingErrorAction.REPORT)
+                    .decode(ByteBuffer.wrap(json))
+                    .toString();
+        } catch (CharacterCodingException exception) {
+            throw new IllegalArgumentException("JSON value must be valid UTF-8.", exception);
+        }
+    }
+
+    private static String encodeBase64Url(byte[] value) {
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(value);
+    }
+
+    private static byte[] decodeBase64Url(String value, String fieldName) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(fieldName + " must be a non-empty base64url string.");
+        }
+        try {
+            byte[] decoded = Base64.getUrlDecoder().decode(value);
+            if (!value.equals(encodeBase64Url(decoded))) {
+                throw new IllegalArgumentException("non-canonical base64url encoding");
+            }
+            return decoded;
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException(fieldName + " is not valid base64url data.", exception);
         }
     }
 }

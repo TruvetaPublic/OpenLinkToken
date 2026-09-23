@@ -2,10 +2,13 @@
 package org.openlinktoken;
 
 import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.interfaces.ECPrivateKey;
@@ -18,6 +21,7 @@ import java.security.spec.ECPublicKeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -83,7 +87,7 @@ public final class EcKeyUtils implements Serializable {
      * @return a defensive PEM byte array
      */
     public static byte[] privateKeyToPem(PrivateKey privateKey) {
-        return CryptoEncoding.encodePem(privateKeyToDer(privateKey), "PRIVATE KEY");
+        return encodePem(privateKeyToDer(privateKey), "PRIVATE KEY");
     }
 
     /**
@@ -93,7 +97,7 @@ public final class EcKeyUtils implements Serializable {
      * @return a defensive PEM byte array
      */
     public static byte[] publicKeyToPem(PublicKey publicKey) {
-        return CryptoEncoding.encodePem(publicKeyToDer(publicKey), "PUBLIC KEY");
+        return encodePem(publicKeyToDer(publicKey), "PUBLIC KEY");
     }
 
     /**
@@ -131,7 +135,7 @@ public final class EcKeyUtils implements Serializable {
      * @return the parsed EC private key
      */
     public static ECPrivateKey privateKeyFromPem(byte[] privatePem) {
-        return privateKeyFromDer(CryptoEncoding.decodePem(privatePem, "PRIVATE KEY"));
+        return privateKeyFromDer(decodePem(privatePem, "PRIVATE KEY"));
     }
 
     /**
@@ -160,7 +164,7 @@ public final class EcKeyUtils implements Serializable {
      * @return the parsed EC public key
      */
     public static ECPublicKey publicKeyFromPem(byte[] publicPem) {
-        return publicKeyFromDer(CryptoEncoding.decodePem(publicPem, "PUBLIC KEY"));
+        return publicKeyFromDer(decodePem(publicPem, "PUBLIC KEY"));
     }
 
     /**
@@ -242,7 +246,7 @@ public final class EcKeyUtils implements Serializable {
         if (!(publicKey instanceof ECPublicKey)) {
             throw new IllegalArgumentException("Key must be an EC public key.");
         }
-        return CryptoEncoding.fingerprint(publicKey.getEncoded());
+        return fingerprint(publicKey.getEncoded());
     }
 
     /**
@@ -256,6 +260,53 @@ public final class EcKeyUtils implements Serializable {
             throw new IllegalArgumentException("Fingerprint must not be empty.");
         }
         return "sha256:" + fingerprint.trim().toLowerCase(Locale.ROOT).replace(':', '-');
+    }
+
+    private static byte[] encodePem(byte[] value, String type) {
+        String encoded = Base64.getMimeEncoder(64, "\n".getBytes(StandardCharsets.US_ASCII)).encodeToString(value);
+        String pem = "-----BEGIN " + type + "-----\n"
+                + encoded
+                + "\n-----END " + type + "-----\n";
+        return pem.getBytes(StandardCharsets.US_ASCII);
+    }
+
+    private static byte[] decodePem(byte[] pem, String type) {
+        if (pem == null || pem.length == 0) {
+            throw new IllegalArgumentException(type + " PEM must not be empty.");
+        }
+        String value = new String(pem, StandardCharsets.US_ASCII).trim();
+        String header = "-----BEGIN " + type + "-----";
+        String footer = "-----END " + type + "-----";
+        if (!value.startsWith(header) || !value.endsWith(footer)) {
+            throw new IllegalArgumentException("Invalid " + type + " PEM.");
+        }
+        String body = value.substring(header.length(), value.length() - footer.length()).replaceAll("\\s", "");
+        if (body.isEmpty()) {
+            throw new IllegalArgumentException("Invalid " + type + " PEM.");
+        }
+        try {
+            return Base64.getDecoder().decode(body);
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("Invalid " + type + " PEM.", exception);
+        }
+    }
+
+    private static String fingerprint(byte[] value) {
+        byte[] digest;
+        try {
+            digest = MessageDigest.getInstance("SHA-256").digest(value);
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 is not available.", exception);
+        }
+
+        StringBuilder result = new StringBuilder(digest.length * 3 - 1);
+        for (int index = 0; index < digest.length; index++) {
+            if (index > 0) {
+                result.append(':');
+            }
+            result.append(String.format("%02X", digest[index] & 0xFF));
+        }
+        return result.toString();
     }
 
     private static PublicKey derivePublicKey(ECPrivateKey privateKey) {

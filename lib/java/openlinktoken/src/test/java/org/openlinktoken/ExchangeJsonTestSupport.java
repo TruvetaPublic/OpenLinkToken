@@ -2,7 +2,6 @@
 package org.openlinktoken;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CodingErrorAction;
@@ -15,20 +14,14 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
-/**
- * Package-private deterministic JSON support for exchange key bundles.
- */
-final class JsonSupport implements Serializable {
-    private static final long serialVersionUID = 1L;
-
+final class ExchangeJsonTestSupport {
     private static final TypeReference<Map<String, Object>> OBJECT_TYPE = new TypeReference<>() {
     };
-
     private static final ObjectMapper MAPPER = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_TRAILING_TOKENS, true)
             .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
 
-    private JsonSupport() {
+    private ExchangeJsonTestSupport() {
     }
 
     static Map<String, Object> readObject(byte[] json) {
@@ -42,7 +35,7 @@ final class JsonSupport implements Serializable {
         }
     }
 
-    static byte[] writeObject(Map<String, Object> value) {
+    static byte[] writeObject(Map<String, ?> value) {
         try {
             return MAPPER.writeValueAsBytes(value);
         } catch (JsonProcessingException exception) {

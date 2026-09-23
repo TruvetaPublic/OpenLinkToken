@@ -4,7 +4,10 @@ package org.openlinktoken;
 import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CodingErrorAction;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
@@ -12,6 +15,7 @@ import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -21,6 +25,10 @@ import java.util.Set;
 
 import javax.crypto.KeyAgreement;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.generators.HKDFBytesGenerator;
 import org.bouncycastle.crypto.params.HKDFParameters;
@@ -47,6 +55,11 @@ public final class ExchangeConfig implements Serializable {
 
     private static final String BASE64URL_ENCODING = "base64url";
     private static final Path PROVIDED_CONFIG_PATH = Path.of("<provided exchange config>");
+    private static final TypeReference<Map<String, Object>> JSON_OBJECT_TYPE = new TypeReference<>() {
+    };
+    private static final ObjectMapper JSON_MAPPER = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_TRAILING_TOKENS, true)
+            .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
     private static final Set<String> V2_REQUIRED_PROTECTED_FIELDS = Set.of(
             "typ",
             "cty",
@@ -127,7 +140,7 @@ public final class ExchangeConfig implements Serializable {
                     exception);
         }
 
-        Map<String, Object> payload = JsonSupport.readObject(plaintext);
+        Map<String, Object> payload = readJsonObject(plaintext);
         DecodedPayload decoded = decodePayload(payload, VERSION_ONE);
         String role = resolveV1Role(privatePem, payload);
         return new ResolvedExchangeConfig(
@@ -172,7 +185,7 @@ public final class ExchangeConfig implements Serializable {
                     exception);
         }
 
-        Map<String, Object> payload = JsonSupport.readObject(decryption.getPlaintext());
+        Map<String, Object> payload = readJsonObject(decryption.getPlaintext());
         DecodedPayload decoded = decodePayload(payload, VERSION_TWO);
         String role = resolveV2Role(privateBundle, payload);
         return new ResolvedExchangeConfig(
@@ -359,8 +372,31 @@ public final class ExchangeConfig implements Serializable {
         }
     }
 
+    private static Map<String, Object> readJsonObject(byte[] json) {
+        if (json == null || json.length == 0) {
+            throw new IllegalArgumentException("JSON value must not be empty.");
+        }
+        try {
+            return JSON_MAPPER.readValue(decodeUtf8(json), JSON_OBJECT_TYPE);
+        } catch (IOException exception) {
+            throw new IllegalArgumentException("JSON value must be an object.", exception);
+        }
+    }
+
+    private static String decodeUtf8(byte[] json) {
+        try {
+            return StandardCharsets.UTF_8.newDecoder()
+                    .onMalformedInput(CodingErrorAction.REPORT)
+                    .onUnmappableCharacter(CodingErrorAction.REPORT)
+                    .decode(ByteBuffer.wrap(json))
+                    .toString();
+        } catch (CharacterCodingException exception) {
+            throw new IllegalArgumentException("JSON value must be valid UTF-8.", exception);
+        }
+    }
+
     private static LoadedExchangeConfig loadExchangeConfig(byte[] json, Path path) {
-        Map<String, Object> config = JsonSupport.readObject(json);
+        Map<String, Object> config = readJsonObject(json);
         return loadExchangeConfig(config, path);
     }
 
@@ -424,7 +460,7 @@ public final class ExchangeConfig implements Serializable {
             throw new IllegalArgumentException("Exchange config is missing its protected header.");
         }
         try {
-            return JsonSupport.readObject(CryptoEncoding.decodeBase64Url(protectedValue, "protected"));
+            return readJsonObject(decodeBase64Url(protectedValue, "protected"));
         } catch (RuntimeException exception) {
             throw new IllegalArgumentException(
                     "Exchange config protected header is not valid base64url JSON.",
@@ -546,7 +582,22 @@ public final class ExchangeConfig implements Serializable {
         if (!BASE64URL_ENCODING.equals(encoding)) {
             throw new IllegalArgumentException("Unsupported " + encodingField + " '" + encoding + "'.");
         }
-        return CryptoEncoding.decodeBase64Url(requireText(payload.get(valueField), valueField), valueField);
+        return decodeBase64Url(requireText(payload.get(valueField), valueField), valueField);
+    }
+
+    private static byte[] decodeBase64Url(String value, String fieldName) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(fieldName + " must be a non-empty base64url string.");
+        }
+        try {
+            byte[] decoded = Base64.getUrlDecoder().decode(value);
+            if (!value.equals(Base64.getUrlEncoder().withoutPadding().encodeToString(decoded))) {
+                throw new IllegalArgumentException("non-canonical base64url encoding");
+            }
+            return decoded;
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException(fieldName + " is not valid base64url data.", exception);
+        }
     }
 
     private static byte[] decodeRotationIv(Map<String, Object> payload) {
@@ -559,7 +610,7 @@ public final class ExchangeConfig implements Serializable {
             throw new IllegalArgumentException("Unsupported rotationIvEncoding '" + encoding + "'.");
         }
         String text = requireTextAllowEmpty(value, "rotationIv");
-        return text.isEmpty() ? new byte[0] : CryptoEncoding.decodeBase64Url(text, "rotationIv");
+        return text.isEmpty() ? new byte[0] : decodeBase64Url(text, "rotationIv");
     }
 
     private static int decodeRotationCount(Map<String, Object> payload) {

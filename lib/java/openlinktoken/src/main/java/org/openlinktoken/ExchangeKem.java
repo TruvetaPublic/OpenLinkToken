@@ -1,12 +1,23 @@
 /* SPDX-License-Identifier: MIT */
 package org.openlinktoken;
 
+import java.io.IOException;
 import java.io.Serializable;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.openlinktoken.crypto.CryptoSuite;
 
 /**
@@ -50,6 +61,11 @@ public final class ExchangeKem implements Serializable {
 
     private static final String HASHING_SECRET_ENCODING = "base64url";
     private static final String ROTATION_IV_ENCODING = "base64url";
+    private static final TypeReference<Map<String, Object>> JSON_OBJECT_TYPE = new TypeReference<>() {
+    };
+    private static final ObjectMapper JSON_MAPPER = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_TRAILING_TOKENS, true)
+            .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
 
     private ExchangeKem() {
     }
@@ -148,7 +164,7 @@ public final class ExchangeKem implements Serializable {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("exchangeName", exchangeName);
         payload.put("cryptoSuite", suite.getSuiteId());
-        payload.put("hashingSecret", CryptoEncoding.encodeBase64Url(hashingSecret));
+        payload.put("hashingSecret", encodeBase64Url(hashingSecret));
         payload.put("hashingSecretEncoding", HASHING_SECRET_ENCODING);
         payload.put("senderKeyId", senderBundle.getKid());
         payload.put("recipientKeyId", recipientBundle.getKid());
@@ -156,14 +172,14 @@ public final class ExchangeKem implements Serializable {
         payload.put("recipientKeyBundle", recipientBundle.toMapping());
         payload.put("createdAt", createdAt);
         payload.put("exchangeId", exchangeId);
-        payload.put("rotationIv", CryptoEncoding.encodeBase64Url(rotationIv));
+        payload.put("rotationIv", encodeBase64Url(rotationIv));
         payload.put("rotationIvEncoding", ROTATION_IV_ENCODING);
         payload.put("rotationCount", rotationCount);
         payload.put("binWidth", binWidth);
         payload.put("dimensionBias", biases);
 
         return JweMlkem.build(
-                JsonSupport.writeObject(payload),
+                writeJsonObject(payload),
                 protectedHeader,
                 List.of(senderBundle, recipientBundle));
     }
@@ -197,7 +213,7 @@ public final class ExchangeKem implements Serializable {
             byte[] exchangeConfig,
             ExchangeKeyBundle privateBundle) {
         try {
-            return decryptExchangeEnvelopeV2(JsonSupport.readObject(exchangeConfig), privateBundle);
+            return decryptExchangeEnvelopeV2(readJsonObject(exchangeConfig), privateBundle);
         } catch (IllegalArgumentException exception) {
             throw exception;
         } catch (RuntimeException exception) {
@@ -245,7 +261,7 @@ public final class ExchangeKem implements Serializable {
 
     private static Map<String, Object> parsePayload(byte[] plaintext) {
         try {
-            return JsonSupport.readObject(plaintext);
+            return readJsonObject(plaintext);
         } catch (IllegalArgumentException exception) {
             throw new IllegalArgumentException(
                     "Version-2 exchange payload is not valid JSON.", exception);
@@ -301,6 +317,41 @@ public final class ExchangeKem implements Serializable {
             throw new IllegalArgumentException(
                     "Version-2 exchange payload " + fieldName + " does not match its key ID or suite.");
         }
+    }
+
+    private static Map<String, Object> readJsonObject(byte[] json) {
+        if (json == null || json.length == 0) {
+            throw new IllegalArgumentException("JSON value must not be empty.");
+        }
+        try {
+            return JSON_MAPPER.readValue(decodeUtf8(json), JSON_OBJECT_TYPE);
+        } catch (IOException exception) {
+            throw new IllegalArgumentException("JSON value must be an object.", exception);
+        }
+    }
+
+    private static byte[] writeJsonObject(Map<String, Object> value) {
+        try {
+            return JSON_MAPPER.writeValueAsBytes(value);
+        } catch (JsonProcessingException exception) {
+            throw new IllegalStateException("Unable to serialize JSON object.", exception);
+        }
+    }
+
+    private static String decodeUtf8(byte[] json) {
+        try {
+            return StandardCharsets.UTF_8.newDecoder()
+                    .onMalformedInput(CodingErrorAction.REPORT)
+                    .onUnmappableCharacter(CodingErrorAction.REPORT)
+                    .decode(ByteBuffer.wrap(json))
+                    .toString();
+        } catch (CharacterCodingException exception) {
+            throw new IllegalArgumentException("JSON value must be valid UTF-8.", exception);
+        }
+    }
+
+    private static String encodeBase64Url(byte[] value) {
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(value);
     }
 
     /**

@@ -60,7 +60,7 @@ class ExchangeJweTest {
 
         assertArrayEquals(senderPayload, recipientPayload);
         ExchangeJwe.ExchangePayload payload = ExchangeJwe.decryptExchangePayload(
-                JsonSupport.writeObject(envelope),
+                ExchangeJsonTestSupport.writeObject(envelope),
                 keys.senderPrivatePem);
         assertEquals("demo-exchange", payload.exchangeName());
         assertArrayEquals(HASHING_SECRET, payload.hashingSecret());
@@ -74,7 +74,7 @@ class ExchangeJweTest {
         KeyMaterial keys = generateKeyMaterial();
 
         Map<String, Object> envelope = buildEnvelope(keys);
-        Map<String, Object> payload = JsonSupport.readObject(
+        Map<String, Object> payload = ExchangeJsonTestSupport.readObject(
                 ExchangeJwe.decryptExchangeEnvelope(envelope, keys.senderPrivatePem));
 
         assertFalse(((String) payload.get("hashingSecret")).contains("="));
@@ -150,7 +150,10 @@ class ExchangeJweTest {
         Map<String, Object> tampered = new LinkedHashMap<>(buildEnvelope(keys));
         Map<String, Object> protectedHeader = readProtectedHeader(tampered);
         protectedHeader.put("enc", "A128GCM");
-        tampered.put("protected", CryptoEncoding.encodeBase64Url(JsonSupport.writeObject(protectedHeader)));
+        tampered.put(
+                "protected",
+                Base64.getUrlEncoder().withoutPadding().encodeToString(
+                        ExchangeJsonTestSupport.writeObject(protectedHeader)));
 
         assertThrows(
                 IllegalArgumentException.class,
@@ -174,8 +177,8 @@ class ExchangeJweTest {
     }
 
     private static Map<String, Object> readProtectedHeader(Map<String, Object> envelope) {
-        return JsonSupport.readObject(
-                CryptoEncoding.decodeBase64Url((String) envelope.get("protected"), "protected"));
+        return ExchangeJsonTestSupport.readObject(
+                Base64.getUrlDecoder().decode((String) envelope.get("protected")));
     }
 
     private static KeyMaterial generateKeyMaterial() {
