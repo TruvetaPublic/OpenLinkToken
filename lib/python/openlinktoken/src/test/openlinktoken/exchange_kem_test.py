@@ -7,13 +7,28 @@ from copy import deepcopy
 import pytest
 from jwcrypto import jwe, jwk
 
+from openlinktoken.crypto_suite import CryptoSuite
 from openlinktoken.exchange_config import (
     derive_transport_encryption_key,
     load_exchange_config,
     resolve_loaded_exchange_config,
 )
-from openlinktoken.exchange_kem import build_exchange_envelope_v2, decrypt_exchange_envelope_v2
-from openlinktoken.exchange_key_bundle import ExchangeKeyBundle, KeyBundleError, generate_exchange_key_bundle
+from openlinktoken.exchange_kem import (
+    _decode,
+    _parse_payload,
+    _validate_payload,
+    build_exchange_envelope_v2,
+    decrypt_exchange_envelope_v2,
+)
+from openlinktoken.exchange_kem import (
+    _decode_protected_header as decode_exchange_protected_header,
+)
+from openlinktoken.exchange_key_bundle import (
+    ExchangeKeyBundle,
+    KeyBundleError,
+    generate_exchange_key_bundle,
+    resolve_private_bundle_by_kid,
+)
 from openlinktoken.tokentransformer.jwe_match_token_formatter import JweMatchTokenFormatter
 
 
@@ -276,3 +291,180 @@ def test_key_bundle_rejects_non_v2_suite():
     """Version-1 suites cannot generate version-2 key bundles."""
     with pytest.raises(KeyBundleError, match="does not require a version-2 key bundle"):
         generate_exchange_key_bundle("suite-sha256-v1")
+
+
+def test_v2_exchange_rejects_invalid_build_inputs():
+    """The v2 facade validates suite, payload, and rotation settings before encryption."""
+    sender = generate_exchange_key_bundle("suite-pq-v1")
+    recipient = generate_exchange_key_bundle("suite-pq-hybrid-v1")
+    with pytest.raises(ValueError, match="same crypto suite"):
+        build_exchange_envelope_v2("name", b"secret", sender, recipient, "now", "id")
+
+    v1_bundle = ExchangeKeyBundle(CryptoSuite.from_id("suite-sha256-v1"))
+    with pytest.raises(ValueError, match="version 2"):
+        build_exchange_envelope_v2("name", b"secret", v1_bundle, v1_bundle, "now", "id")
+
+    recipient = generate_exchange_key_bundle("suite-pq-v1")
+    invalid_inputs = (
+        (("", b"secret", b"", 0, 0.05), "non-empty"),
+        (("name", "secret", b"", 0, 0.05), "bytes"),
+        (("name", b"secret", "not-bytes", 0, 0.05), "bytes"),
+        (("name", b"secret", b"", -1, 0.05), "non-negative"),
+        (("name", b"secret", b"", 0, 0), "positive"),
+    )
+    for (name, secret, rotation_iv, rotation_count, bin_width), message in invalid_inputs:
+        with pytest.raises((TypeError, ValueError), match=message):
+            build_exchange_envelope_v2(
+                name,
+                secret,
+                generate_exchange_key_bundle("suite-pq-v1"),
+                recipient,
+                "now",
+                "id",
+                rotation_iv=rotation_iv,
+                rotation_count=rotation_count,
+                bin_width=bin_width,
+            )
+
+
+def test_v2_exchange_accepts_bundle_mapping_and_object_inputs():
+    """Private bundles can be supplied as mappings or already parsed objects."""
+    sender = generate_exchange_key_bundle("suite-pq-v1")
+    recipient = generate_exchange_key_bundle("suite-pq-v1")
+    envelope = build_exchange_envelope_v2("mapping-input", b"secret", sender, recipient, "now", "mapping-id")
+
+    mapping_plaintext, _ = decrypt_exchange_envelope_v2(
+        envelope,
+        sender.to_mapping(include_private=True),
+    )
+    object_plaintext, _ = decrypt_exchange_envelope_v2(envelope, sender)
+
+    assert mapping_plaintext == object_plaintext
+
+
+def test_v2_exchange_payload_helpers_reject_malformed_values():
+    """Payload and protected-header helpers reject malformed or inconsistent values."""
+    sender = generate_exchange_key_bundle("suite-pq-v1")
+    recipient = generate_exchange_key_bundle("suite-pq-v1")
+    envelope = build_exchange_envelope_v2("payload-test", b"secret", sender, recipient, "now", "payload-id")
+    protected = json.loads(base64.urlsafe_b64decode(envelope["protected"] + "=" * (-len(envelope["protected"]) % 4)))
+    payload, _ = decrypt_exchange_envelope_v2(envelope, sender)
+    payload_mapping = json.loads(payload)
+    suite = CryptoSuite.from_id("suite-pq-v1")
+
+    with pytest.raises(ValueError, match="not valid JSON"):
+        _parse_payload(b"not-json")
+    with pytest.raises(ValueError, match="JSON object"):
+        _parse_payload(b"[]")
+    with pytest.raises(ValueError, match="not valid JSON"):
+        decode_exchange_protected_header(base64.urlsafe_b64encode(b"not-json").decode("ascii"))
+    with pytest.raises(ValueError, match="JSON object"):
+        decode_exchange_protected_header(base64.urlsafe_b64encode(b"[]").decode("ascii"))
+    with pytest.raises(ValueError, match="non-empty"):
+        _decode(None, "field")
+    with pytest.raises(ValueError, match="not valid"):
+        _decode("not base64!", "field")
+
+    invalid_payloads = (
+        ({"cryptoSuite": "suite-pq-hybrid-v1"}, "suite"),
+        ({"exchangeId": "other-id"}, "exchangeId"),
+        ({"senderKeyId": ""}, "senderKeyId"),
+        ({"recipientKeyId": ""}, "recipientKeyId"),
+        ({"senderKeyBundle": None}, "senderKeyBundle"),
+        ({"recipientKeyBundle": None}, "recipientKeyBundle"),
+    )
+    for updates, message in invalid_payloads:
+        candidate = dict(payload_mapping)
+        candidate.update(updates)
+        with pytest.raises(ValueError, match=message):
+            _validate_payload(candidate, suite, protected)
+
+    candidate = dict(payload_mapping)
+    candidate["senderKeyBundle"] = recipient.to_mapping()
+    with pytest.raises(ValueError, match="senderKeyBundle"):
+        _validate_payload(candidate, suite, protected)
+
+
+def test_key_bundle_rejects_malformed_sections():
+    """Key bundles validate every encoded key section and key relationship."""
+    pure = generate_exchange_key_bundle("suite-pq-v1").to_mapping(include_private=True)
+    invalid_pure_sections = (
+        ({"mlkem": None}, "requires an mlkem"),
+        ({"mlkem": {**pure["keys"]["mlkem"], "algorithm": "wrong"}}, "algorithm"),
+        ({"mlkem": {**pure["keys"]["mlkem"], "publicKey": "AA"}}, "publicKey must be"),
+        (
+            {"mlkem": {**pure["keys"]["mlkem"], "privateKeyEncoding": "pem"}},
+            "privateKeyEncoding",
+        ),
+        ({"mlkem": {**pure["keys"]["mlkem"], "privateKey": "AA"}}, "privateKey must be"),
+    )
+    for keys, message in invalid_pure_sections:
+        candidate = deepcopy(pure)
+        candidate["keys"].update(keys)
+        with pytest.raises(KeyBundleError, match=message):
+            ExchangeKeyBundle.from_mapping(candidate, require_private=True)
+
+    hybrid = generate_exchange_key_bundle("suite-pq-hybrid-v1").to_mapping(include_private=True)
+    invalid_hybrid_sections = (
+        ({"ec": None}, "requires an ec"),
+        ({"ec": {**hybrid["keys"]["ec"], "algorithm": "wrong"}}, "algorithm"),
+        ({"ec": {**hybrid["keys"]["ec"], "publicKeyEncoding": "der"}}, "publicKeyEncoding"),
+        ({"ec": {**hybrid["keys"]["ec"], "publicKey": ""}}, "publicKey"),
+        ({"ec": {**hybrid["keys"]["ec"], "publicKey": "not-pem"}}, "not valid PEM"),
+        ({"ec": {**hybrid["keys"]["ec"], "privateKeyEncoding": "der"}}, "privateKeyEncoding"),
+        ({"ec": {**hybrid["keys"]["ec"], "privateKey": ""}}, "privateKey"),
+        ({"ec": {**hybrid["keys"]["ec"], "privateKey": "not-pem"}}, "not valid PEM"),
+    )
+    for keys, message in invalid_hybrid_sections:
+        candidate = deepcopy(hybrid)
+        candidate["keys"].update(keys)
+        with pytest.raises(KeyBundleError, match=message):
+            ExchangeKeyBundle.from_mapping(candidate, require_private=True)
+
+    mismatched_private = deepcopy(hybrid)
+    other_hybrid = generate_exchange_key_bundle("suite-pq-hybrid-v1").to_mapping(include_private=True)
+    mismatched_private["keys"]["ec"]["privateKey"] = other_hybrid["keys"]["ec"]["privateKey"]
+    with pytest.raises(KeyBundleError, match="does not match"):
+        ExchangeKeyBundle.from_mapping(mismatched_private, require_private=True)
+
+
+def test_key_bundle_rejects_invalid_json_kid_and_private_serialization():
+    """JSON, key identifiers, and private serialization boundaries are validated."""
+    bundle = generate_exchange_key_bundle("suite-pq-v1")
+    mapping = bundle.to_mapping(include_private=True)
+
+    with pytest.raises(KeyBundleError, match="not valid UTF-8 JSON"):
+        ExchangeKeyBundle.from_json(b"not-json")
+    with pytest.raises(KeyBundleError, match="JSON object"):
+        ExchangeKeyBundle.from_json("[]")
+
+    invalid_kid = deepcopy(mapping)
+    invalid_kid["kid"] = "wrong"
+    with pytest.raises(KeyBundleError, match="kid"):
+        ExchangeKeyBundle.from_mapping(invalid_kid, require_private=True)
+
+    with pytest.raises(KeyBundleError, match="private seed"):
+        ExchangeKeyBundle(bundle.suite, mlkem_public_key=bundle.mlkem_public_key).to_mapping(include_private=True)
+
+    hybrid = generate_exchange_key_bundle("suite-pq-hybrid-v1")
+    with pytest.raises(KeyBundleError, match="EC private key"):
+        ExchangeKeyBundle(
+            hybrid.suite,
+            mlkem_public_key=hybrid.mlkem_public_key,
+            mlkem_private_seed=hybrid.mlkem_private_seed,
+            ec_public_pem=hybrid.ec_public_pem,
+        ).to_mapping(include_private=True)
+
+
+def test_private_bundle_resolution_finds_matching_kid(tmp_path):
+    """Private bundle discovery returns the matching bundle and rejects unknown IDs."""
+    bundle = generate_exchange_key_bundle("suite-pq-v1")
+    matching_path = tmp_path / "matching.private.bundle.json"
+    matching_path.write_bytes(bundle.to_json(include_private=True))
+    (tmp_path / "unrelated.private.bundle.json").write_bytes(
+        generate_exchange_key_bundle("suite-pq-v1").to_json(include_private=True)
+    )
+
+    assert resolve_private_bundle_by_kid(tmp_path, bundle.kid) == matching_path.read_bytes()
+    with pytest.raises(FileNotFoundError, match="No private key bundle"):
+        resolve_private_bundle_by_kid(tmp_path, "sha256:missing")
