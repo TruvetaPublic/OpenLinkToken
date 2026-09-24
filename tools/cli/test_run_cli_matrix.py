@@ -15,12 +15,7 @@ from run_cli_matrix import CommandResult, CommandSpec, build_command_plan, execu
 
 
 def test_build_command_plan_covers_all_cli_subcommands(tmp_path: Path) -> None:
-    """
-    The default command plan should touch every subcommand with local-safe invocations.
-
-    Args:
-        tmp_path: Temporary directory supplied by pytest for files created by the test.
-    """
+    """The default command plan should touch every subcommand with local-safe invocations."""
     plan = build_command_plan(tmp_path, pause_seconds=0.25)
 
     command_names = {spec.name for spec in plan}
@@ -49,12 +44,7 @@ def test_build_command_plan_covers_all_cli_subcommands(tmp_path: Path) -> None:
 
 
 def test_build_command_plan_can_opt_into_live_update_check(tmp_path: Path) -> None:
-    """
-    Live update dry-run should be included only when explicitly requested.
-
-    Args:
-        tmp_path: Temporary directory supplied by pytest for files created by the test.
-    """
+    """Live update dry-run should be included only when explicitly requested."""
     plan = build_command_plan(tmp_path, pause_seconds=0.0, include_live_update=True)
 
     update_step = next(spec for spec in plan if spec.name == "update-dry-run")
@@ -67,26 +57,10 @@ def test_execute_command_plan_pauses_between_steps() -> None:
     pauses: list[float] = []
 
     def fake_runner(args: list[str], **_: object) -> CompletedProcess[str]:
-        """
-        Record a subprocess invocation and return a successful simulated process result.
-
-        Args:
-            args: Command-line argument list for the simulated subprocess.
-            _: Additional subprocess options accepted and ignored by the test stub.
-
-        Returns:
-            Successful CompletedProcess result for the supplied command arguments.
-        """
         calls.append(args)
         return CompletedProcess(args=args, returncode=0, stdout="ok", stderr="")
 
     def fake_sleep(seconds: float) -> None:
-        """
-        Record the requested delay without pausing the test.
-
-        Args:
-            seconds: Elapsed time in seconds.
-        """
         pauses.append(seconds)
 
     plan = [

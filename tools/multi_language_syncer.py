@@ -41,12 +41,6 @@ class MultiLanguageSyncer:
     }
 
     def __init__(self, mapping_file="tools/multi-language-mapping.json"):
-        """
-        Initialize the instance.
-
-        Args:
-            mapping_file: File containing or receiving the mapping.
-        """
         self.root_dir = Path(__file__).parent.parent
         self.mapping_file = self.root_dir / mapping_file
 
@@ -122,15 +116,7 @@ class MultiLanguageSyncer:
             return []
 
     def _filter_ignored_files(self, files):
-        """
-        Filter out files that match ignore patterns
-
-        Args:
-            files: Files value to filter.
-
-        Returns:
-            Filtered out files that match ignore patterns.
-        """
+        """Filter out files that match ignore patterns"""
         ignore_patterns = self.mappings.get("ignore_patterns", [])
         filtered_files = []
 
@@ -147,16 +133,7 @@ class MultiLanguageSyncer:
         return filtered_files
 
     def get_file_last_modified_commit(self, file_path, since_commit="HEAD~1"):
-        """
-        Get the most recent commit that modified a specific file
-
-        Args:
-            file_path: Filesystem path to the file handled by the operation.
-            since_commit: Since commit value to retrieve.
-
-        Returns:
-            The most recent commit that modified a specific file.
-        """
+        """Get the most recent commit that modified a specific file"""
         try:
             result = subprocess.run(
                 [
@@ -181,19 +158,10 @@ class MultiLanguageSyncer:
             return None
 
     def is_file_up_to_date(self, source_file, target_file, since_commit="HEAD~1"):
-        """
-        Check if target file was touched anywhere in the PR when the source was also touched.
+        """Check if target file was touched anywhere in the PR when the source was also touched.
 
         A sync pair is considered complete as long as both files were modified
         at least once in the PR, regardless of commit order.
-
-        Args:
-            source_file: File containing or receiving the source.
-            target_file: File containing or receiving the target.
-            since_commit: Since commit value to check.
-
-        Returns:
-            Checked if target file was touched anywhere in the PR when the source was also touched.
         """
         source_last_modified = self.get_file_last_modified_commit(source_file, since_commit)
         target_last_modified = self.get_file_last_modified_commit(target_file, since_commit)
@@ -206,31 +174,13 @@ class MultiLanguageSyncer:
         return target_last_modified is not None
 
     def check_file_exists(self, file_path):
-        """
-        Check if a file exists
-
-        Args:
-            file_path: Filesystem path to the file handled by the operation.
-
-        Returns:
-            Checked if a file exists.
-        """
+        """Check if a file exists"""
         return (self.root_dir / file_path).exists()
 
     KNOWN_ACRONYMS = {"us", "sha256"}
 
     def convert_filename(self, filename, from_naming, to_naming):
-        """
-        Convert filename between naming conventions
-
-        Args:
-            filename: Filename value to convert.
-            from_naming: From naming value to convert.
-            to_naming: To naming value to convert.
-
-        Returns:
-            Converted filename between naming conventions.
-        """
+        """Convert filename between naming conventions"""
         # Remove extension
         base_name = filename
         for lang_config in self.LANGUAGES.values():
@@ -253,17 +203,13 @@ class MultiLanguageSyncer:
         return base_name
 
     def get_corresponding_files(self, source_file, source_lang, active_languages=None):
-        """
-        Get corresponding files in other languages
+        """Get corresponding files in other languages
 
         Args:
             source_file: Path to the source file
             source_lang: Language of the source file
             active_languages: Optional dict of language configs to restrict results to.
                               Defaults to all LANGUAGES when None.
-
-        Returns:
-            The corresponding files in other languages.
         """
         corresponding = {}
 
@@ -469,18 +415,7 @@ class MultiLanguageSyncer:
         output_format="console",
         since_commit="HEAD~1",
     ):
-        """
-        Format the output based on the specified format
-
-        Args:
-            sync_requirements: Sync requirements value to format.
-            all_changes: All changes value to format.
-            output_format: Output format value to format.
-            since_commit: Since commit value to format.
-
-        Returns:
-            JSON-serialized text.
-        """
+        """Format the output based on the specified format"""
         if output_format == "github-checklist":
             return self.format_github_checklist(sync_requirements, all_changes, since_commit)
         elif output_format == "json":
@@ -492,13 +427,7 @@ class MultiLanguageSyncer:
             return self.format_console(sync_requirements, all_changes, since_commit)
 
     def _check_sync_complete(self, sync_requirements, since_commit="HEAD~1"):
-        """
-        Check if all sync requirements are complete (up-to-date)
-
-        Args:
-            sync_requirements: Sync requirements value to check.
-            since_commit: Since commit value to check.
-
+        """Check if all sync requirements are complete (up-to-date)
 
         Returns:
             True if all corresponding files are up-to-date, False otherwise
@@ -510,17 +439,7 @@ class MultiLanguageSyncer:
         return True
 
     def format_github_checklist(self, sync_requirements, all_changes, since_commit):
-        """
-        Format output as GitHub markdown checklist
-
-        Args:
-            sync_requirements: Sync requirements value to format.
-            all_changes: All changes value to format.
-            since_commit: Since commit value to format.
-
-        Returns:
-            Formatted output as GitHub markdown checklist.
-        """
+        """Format output as GitHub markdown checklist"""
         if not sync_requirements:
             return "✅ All changes appear to be in sync across Java and Python!"
 
@@ -576,17 +495,7 @@ class MultiLanguageSyncer:
         return output
 
     def format_console(self, sync_requirements, all_changes, since_commit):
-        """
-        Format output for console
-
-        Args:
-            sync_requirements: Sync requirements value to format.
-            all_changes: All changes value to format.
-            since_commit: Since commit value to format.
-
-        Returns:
-            Formatted output for console.
-        """
+        """Format output for console"""
         output = "Multi-Language Sync Report\n"
         output += "=" * 60 + "\n\n"
 
@@ -608,7 +517,12 @@ class MultiLanguageSyncer:
 
 
 def main():
-    """Run the multi-language sync check and exit with its status."""
+    """Main entry point
+
+    Returns:
+        0 if successful (health check passed or sync is complete)
+        1 if sync is incomplete (corresponding files not updated)
+    """
     parser = argparse.ArgumentParser(description="Multi-language sync checker")
     parser.add_argument(
         "--format",

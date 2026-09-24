@@ -13,17 +13,7 @@ from pathlib import Path
 
 
 def _measure_once(executable: Path, arguments: list[str], environment: dict[str, str]) -> dict[str, float | None]:
-    """
-    Run one CLI command and record first output and completion timings.
-
-    Args:
-        executable: Path to the executable used by the operation.
-        arguments: CLI arguments to execute and measure.
-        environment: Environment-variable mapping used to resolve configuration.
-
-    Returns:
-        Run one CLI command and record first output and completion timings.
-    """
+    """Run one CLI command and record first output and completion timings."""
     started = time.perf_counter()
     process = subprocess.Popen(
         [str(executable), *arguments],
@@ -45,18 +35,7 @@ def _measure_once(executable: Path, arguments: list[str], environment: dict[str,
 
 
 def measure(executable: Path, arguments: list[str], environment: dict[str, str], repeats: int = 3) -> dict[str, object]:
-    """
-    Measure cold startup and repeated invocations of one CLI command.
-
-    Args:
-        executable: Path to the executable used by the operation.
-        arguments: CLI arguments to execute and measure.
-        environment: Environment-variable mapping used to resolve configuration.
-        repeats: Numeric repeats value used to measure.
-
-    Returns:
-        Measured cold startup and repeated invocations of one CLI command.
-    """
+    """Measure cold startup and repeated invocations of one CLI command."""
     return {
         "arguments": arguments,
         "runs": [_measure_once(executable, arguments, environment) for _ in range(repeats)],
@@ -64,12 +43,7 @@ def measure(executable: Path, arguments: list[str], environment: dict[str, str],
 
 
 def main() -> int:
-    """
-    Measure the supported startup commands and write JSON results.
-
-    Returns:
-        Measured the supported startup commands and write JSON results.
-    """
+    """Measure the supported startup commands and write JSON results."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--executable", type=Path, required=True)
     parser.add_argument("--output", type=Path, default=Path("startup-measurements.json"))
