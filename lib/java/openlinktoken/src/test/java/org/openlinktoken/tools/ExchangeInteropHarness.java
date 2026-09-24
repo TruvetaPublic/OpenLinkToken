@@ -132,6 +132,7 @@ public final class ExchangeInteropHarness {
 
     /**
      * Decrypts an envelope and writes only deterministic plaintext and key material.
+     * Returns no value; the result is written to the requested output path.
      *
      * @param args command-line arguments
      * @throws Exception if an artifact cannot be read, decrypted, or written

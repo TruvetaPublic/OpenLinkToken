@@ -511,10 +511,25 @@ public final class ExchangeConfig implements Serializable {
         }
     }
 
+    /**
+     * Decodes a decrypted exchange payload using the suite selection implied by its version.
+     *
+     * @param payload decrypted exchange payload fields
+     * @param version exchange envelope version
+     * @return typed payload values
+     */
     private static DecodedPayload decodePayload(Map<String, Object> payload, int version) {
         return decodePayload(payload, version, null);
     }
 
+    /**
+     * Decodes a decrypted exchange payload using an authenticated v1 suite when provided.
+     *
+     * @param payload decrypted exchange payload fields
+     * @param version exchange envelope version
+     * @param protectedV1Suite suite resolved from the v1 protected header, or {@code null} for the default
+     * @return typed payload values
+     */
     private static DecodedPayload decodePayload(
             Map<String, Object> payload, int version, CryptoSuite protectedV1Suite) {
         if (payload == null) {
@@ -549,6 +564,14 @@ public final class ExchangeConfig implements Serializable {
                 dimensionBias);
     }
 
+    /**
+     * Resolves the payload's crypto suite and verifies that it is compatible with the envelope version.
+     *
+     * @param payload decrypted exchange payload fields
+     * @param version exchange envelope version
+     * @param protectedV1Suite suite resolved from the v1 protected header, or {@code null} for the default
+     * @return the validated crypto suite
+     */
     private static CryptoSuite resolvePayloadSuite(
             Map<String, Object> payload, int version, CryptoSuite protectedV1Suite) {
         CryptoSuite suite;

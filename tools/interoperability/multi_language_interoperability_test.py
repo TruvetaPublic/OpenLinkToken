@@ -494,7 +494,14 @@ class TestTokenCompatibility:
 
     @staticmethod
     def _exchange_suites() -> tuple[CryptoSuite, ...]:
-        """Return every registered suite supported by an exchange envelope."""
+        """Return every registered suite supported by an exchange envelope.
+
+        Args:
+            None.
+
+        Returns:
+            All registered exchange crypto suites.
+        """
         return CryptoSuite.all()
 
     @staticmethod
@@ -502,7 +509,15 @@ class TestTokenCompatibility:
         crypto_suite: CryptoSuite,
         output_dir: Path,
     ) -> tuple[Path, Path]:
-        """Build a Python exchange envelope and persist its sender key material."""
+        """Build a Python exchange envelope and persist its sender key material.
+
+        Args:
+            crypto_suite: Registered suite to use for the exchange.
+            output_dir: Directory in which to write the envelope and sender key.
+
+        Returns:
+            Paths to the serialized envelope and matching sender private key.
+        """
         output_dir.mkdir(parents=True, exist_ok=True)
         exchange_name = f"interop-exchange-{crypto_suite.suite_id}"
         exchange_id = f"interop-{crypto_suite.suite_id}"
@@ -554,7 +569,16 @@ class TestTokenCompatibility:
         private_key_path: Path,
         envelope_path: Path,
     ) -> Dict[str, Any]:
-        """Resolve an envelope with Python and report the suite identified by its reader."""
+        """Resolve an envelope with Python and report the suite identified by its reader.
+
+        Args:
+            crypto_suite: Expected registered suite for the exchange.
+            private_key_path: Path to the matching sender private key.
+            envelope_path: Path to the serialized exchange envelope.
+
+        Returns:
+            Resolved version, suite, payload, and transport key fields.
+        """
         resolved = resolve_exchange_config(envelope_path, private_key_path.read_bytes())
         assert resolved.crypto_suite == crypto_suite
         transport_key = derive_transport_encryption_key(resolved)
@@ -571,7 +595,16 @@ class TestTokenCompatibility:
         expected: Dict[str, Any],
         actual: Dict[str, Any],
     ) -> None:
-        """Compare only deterministic decrypted fields, never randomized JWE members."""
+        """Compare deterministic decrypted fields and ignore randomized JWE members.
+
+        Args:
+            crypto_suite: Registered suite expected in both results.
+            expected: Result produced by the first language implementation.
+            actual: Result produced by the second language implementation.
+
+        Returns:
+            None.
+        """
         assert actual["version"] == expected["version"] == crypto_suite.exchange_config_version
         assert actual["cryptoSuite"] == expected["cryptoSuite"] == crypto_suite.suite_id
         assert actual["payload"] == expected["payload"]
@@ -596,7 +629,14 @@ class TestTokenCompatibility:
             assert actual["payload"][field_name] == expected["payload"][field_name]
 
     def test_java_python_exchange_envelopes_interoperate(self):
-        """Compare Java and Python decryption for every registered exchange suite."""
+        """Compare Java and Python decryption for every registered exchange suite.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+        """
         print("\nTesting Java/Python exchange envelope interoperability")
         print("-" * 30)
 
@@ -696,7 +736,14 @@ class TestTokenCompatibility:
                 assert python_meta["BlankTokensByRule"][rule_id] == expected_count
 
     def test_java_library_harness_matches_python_cli_tokenize_output(self):
-        """Compare Java and Python token output for every registered crypto suite."""
+        """Compare Java and Python token output for every registered crypto suite.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+        """
         print("\nTesting Java library harness against Python CLI tokenize output")
         print("-" * 30)
 

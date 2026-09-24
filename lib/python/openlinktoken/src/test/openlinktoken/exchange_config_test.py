@@ -52,7 +52,14 @@ def test_rotation_iv_to_text_recovers_non_utf8_exchange_bytes():
 
 
 def test_build_exchange_envelope_round_trips_for_either_private_key():
-    """Either intended recipient private key can decrypt the same exchange envelope."""
+    """Either intended recipient private key can decrypt the same exchange envelope.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     recipient_private_pem, recipient_public_pem = generate_key_pair("P-256")
 
@@ -103,7 +110,14 @@ def test_build_exchange_envelope_round_trips_for_either_private_key():
 
 
 def test_build_v1_sha3_exchange_marks_suite_in_critical_protected_header():
-    """The non-default v1 suite is authenticated in the protected header, not payload."""
+    """The non-default v1 suite is authenticated in the protected header, not payload.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     _, recipient_public_pem = generate_key_pair("P-256")
 
@@ -126,7 +140,14 @@ def test_build_v1_sha3_exchange_marks_suite_in_critical_protected_header():
 
 
 def test_resolve_v1_exchange_rejects_payload_suite_marker(monkeypatch):
-    """Version-one suite identity must not be selected from encrypted payload data."""
+    """Version-one suite identity must not be selected from encrypted payload data.
+
+    Args:
+        monkeypatch: Pytest fixture for replacing the payload-decryption function.
+
+    Returns:
+        None.
+    """
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     _, recipient_public_pem = generate_key_pair("P-256")
     envelope = build_exchange_envelope(
@@ -151,7 +172,14 @@ def test_resolve_v1_exchange_rejects_payload_suite_marker(monkeypatch):
 
 
 def test_resolve_v1_sha3_exchange_uses_protected_suite_marker():
-    """The authenticated v1 suite marker selects SHA3 when resolving an exchange."""
+    """The authenticated v1 suite marker selects SHA3 when resolving an exchange.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     _, recipient_public_pem = generate_key_pair("P-256")
     envelope = build_exchange_envelope(
@@ -202,7 +230,16 @@ def test_resolve_v1_crypto_suite_rejects_noncritical_or_unprotected_markers(
     unprotected_header: dict[str, object] | None,
     message: str,
 ):
-    """A v1 suite marker is accepted only as a protected critical parameter."""
+    """A v1 suite marker is accepted only as a protected critical parameter.
+
+    Args:
+        protected_header: Candidate authenticated protected-header mapping.
+        unprotected_header: Optional unauthenticated header mapping.
+        message: Expected error-message fragment.
+
+    Returns:
+        None.
+    """
     with pytest.raises(ValueError, match=message):
         resolve_v1_exchange_crypto_suite(_v1_header_config(protected_header, unprotected_header))
 
@@ -215,7 +252,15 @@ def test_resolve_v1_crypto_suite_rejects_noncritical_or_unprotected_markers(
     ],
 )
 def test_resolve_v1_crypto_suite_rejects_unknown_or_incompatible_suites(suite_id: str, message: str):
-    """Only registered version-one ECDH suites can be selected by a v1 envelope."""
+    """Only registered version-one ECDH suites can be selected by a v1 envelope.
+
+    Args:
+        suite_id: Candidate suite identifier.
+        message: Expected error-message fragment.
+
+    Returns:
+        None.
+    """
     header = {"cryptoSuite": suite_id, "crit": ["cryptoSuite"]}
 
     with pytest.raises(ValueError, match=message):
@@ -223,7 +268,14 @@ def test_resolve_v1_crypto_suite_rejects_unknown_or_incompatible_suites(suite_id
 
 
 def test_default_jwcrypto_reader_rejects_unknown_critical_suite_extension():
-    """A reader without the cryptoSuite extension fails closed on a SHA3 v1 envelope."""
+    """A reader without the cryptoSuite extension fails closed on a SHA3 v1 envelope.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     _, recipient_public_pem = generate_key_pair("P-256")
     envelope = build_exchange_envelope(
@@ -247,7 +299,15 @@ def _v1_header_config(
     protected_header: dict[str, object],
     unprotected_header: dict[str, object] | None = None,
 ) -> dict[str, object]:
-    """Build the envelope header fields consumed by v1 suite resolution."""
+    """Build the envelope header fields consumed by v1 suite resolution.
+
+    Args:
+        protected_header: Authenticated protected-header fields to encode.
+        unprotected_header: Optional unauthenticated header fields to include.
+
+    Returns:
+        A minimal version-one envelope mapping for suite-resolution tests.
+    """
     protected = base64.urlsafe_b64encode(json.dumps(protected_header).encode("utf-8")).decode("ascii").rstrip("=")
     config: dict[str, object] = {"version": 1, "protected": protected}
     if unprotected_header is not None:
@@ -256,7 +316,14 @@ def _v1_header_config(
 
 
 def _decode_protected_header(envelope: dict[str, object]) -> dict[str, object]:
-    """Decode a JWE general-JSON protected header for wire-format assertions."""
+    """Decode a JWE general-JSON protected header for wire-format assertions.
+
+    Args:
+        envelope: General-JSON JWE envelope containing the encoded protected header.
+
+    Returns:
+        The decoded protected-header mapping.
+    """
     protected = envelope["protected"]
     assert isinstance(protected, str)
     protected_bytes = base64.urlsafe_b64decode(protected + "=" * (-len(protected) % 4))

@@ -177,7 +177,15 @@ def resolve_exchange_config_private_key(
 def resolve_loaded_exchange_config(
     exchange_config: LoadedExchangeConfig, private_key_pem: bytes | str | Mapping[str, Any]
 ) -> ResolvedExchangeConfig:
-    """Decrypt a validated exchange-config envelope using the provided private key material."""
+    """Decrypt a validated exchange-config envelope using the provided private key material.
+
+    Args:
+        exchange_config: Validated exchange envelope and its source path.
+        private_key_pem: Matching v1 private-key PEM or v2 private-key bundle.
+
+    Returns:
+        Resolved exchange metadata, secrets, and the selected crypto suite.
+    """
     transport_encryption_key = None
     v1_crypto_suite = None
     try:

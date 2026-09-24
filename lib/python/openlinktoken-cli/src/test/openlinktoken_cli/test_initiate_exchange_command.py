@@ -105,7 +105,14 @@ def test_initiate_exchange_version_two_suite_round_trips(tmp_path: Path) -> None
 
 
 def test_initiate_exchange_sha3_v1_suite_round_trips(tmp_path: Path) -> None:
-    """The CLI creates and resolves a v1 SHA3 envelope with a critical suite marker."""
+    """The CLI creates and resolves a v1 SHA3 envelope with a critical suite marker.
+
+    Args:
+        tmp_path: Pytest temporary directory for key and exchange files.
+
+    Returns:
+        None.
+    """
     key_dir = tmp_path / ".openlinktoken"
     key_dir.mkdir()
     partner_private_pem, partner_public_pem = generate_key_pair("P-256")

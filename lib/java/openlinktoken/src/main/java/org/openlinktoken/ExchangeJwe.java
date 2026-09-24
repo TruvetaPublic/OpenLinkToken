@@ -309,6 +309,12 @@ public final class ExchangeJwe implements Serializable {
         return payloadFromMapping(payload);
     }
 
+    /**
+     * Resolves the suite authenticated by an exchange envelope's protected header.
+     *
+     * @param exchangeConfig general JSON exchange envelope
+     * @return the registered version-one ECDH suite
+     */
     static CryptoSuite resolveCryptoSuite(Map<String, ?> exchangeConfig) {
         Map<String, Object> envelope = copyObject(exchangeConfig, "exchangeConfig");
         validateVersion(envelope);
@@ -370,6 +376,13 @@ public final class ExchangeJwe implements Serializable {
         }
     }
 
+    /**
+     * Validates the envelope structure and resolves its protected-header suite.
+     *
+     * @param jwe parsed general JWE object
+     * @param envelope original general JSON exchange envelope
+     * @return the validated crypto suite
+     */
     private static CryptoSuite validateJweAndResolveSuite(JWEObjectJSON jwe, Map<String, Object> envelope) {
         JWEHeader header = jwe.getHeader();
         if (header.getType() == null || !TYPE.equals(header.getType().getType())) {
@@ -410,6 +423,12 @@ public final class ExchangeJwe implements Serializable {
         return cryptoSuite;
     }
 
+    /**
+     * Resolves and validates suite metadata from the authenticated protected header.
+     *
+     * @param protectedHeader authenticated JWE protected header
+     * @return the registered version-one ECDH suite
+     */
     private static CryptoSuite resolveProtectedHeaderSuite(JWEHeader protectedHeader) {
         Set<String> criticalParams = protectedHeader.getCriticalParams();
         if (criticalParams == null) {
@@ -440,6 +459,11 @@ public final class ExchangeJwe implements Serializable {
         return suite;
     }
 
+    /**
+     * Rejects suite markers placed in unauthenticated headers; returns no value.
+     *
+     * @param envelope general JSON exchange envelope
+     */
     private static void rejectUnprotectedSuiteMarker(Map<String, Object> envelope) {
         if (containsSuiteMarker(envelope.get("unprotected"))) {
             throw new ExchangeJweException("Version 1 cryptoSuite must appear only in the protected header.");
@@ -456,6 +480,12 @@ public final class ExchangeJwe implements Serializable {
         }
     }
 
+    /**
+     * Checks whether a header value contains the suite marker.
+     *
+     * @param value candidate JOSE header value
+     * @return {@code true} if the value is a mapping that contains {@code cryptoSuite}
+     */
     private static boolean containsSuiteMarker(Object value) {
         return value instanceof Map<?, ?> header && header.containsKey(CRYPTO_SUITE_HEADER);
     }
@@ -569,6 +599,12 @@ public final class ExchangeJwe implements Serializable {
         }
     }
 
+    /**
+     * Resolves a requested suite to its registered version-one ECDH definition.
+     *
+     * @param suite requested suite, or {@code null} to select the default
+     * @return the registered version-one ECDH suite
+     */
     private static CryptoSuite requireV1Suite(CryptoSuite suite) {
         CryptoSuite selectedSuite = suite == null
                 ? CryptoSuite.defaultSuite()

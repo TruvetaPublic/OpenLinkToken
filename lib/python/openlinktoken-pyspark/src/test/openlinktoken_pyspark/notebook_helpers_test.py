@@ -157,7 +157,14 @@ class TestCreateTokenGenerator:
             assert analyzer._decrypt_token(generated_token) == analyzer._decrypt_token(expected_tokens[token_id])
 
     def test_create_from_exchange_config_supports_every_crypto_suite(self, exchange_config_case):
-        """Exchange-config token generators retain every suite's digest and MAC choices."""
+        """Exchange-config token generators retain every suite's digest and MAC choices.
+
+        Args:
+            exchange_config_case: Real exchange and private-key fixture for the current suite.
+
+        Returns:
+            None.
+        """
         exchange = resolve_exchange_config_inputs(
             exchange_config_case.exchange_config_path,
             private_key_value=exchange_config_case.private_key_value,
@@ -256,7 +263,14 @@ class TestQuickToken:
             assert analyzer._decrypt_token(generated_token) == analyzer._decrypt_token(expected_tokens[token_id])
 
     def test_quick_token_from_exchange_config_supports_every_crypto_suite(self, exchange_config_case):
-        """Quick-token helpers preserve the suite resolved from each exchange config."""
+        """Quick-token helpers preserve the suite resolved from each exchange config.
+
+        Args:
+            exchange_config_case: Real exchange and private-key fixture for the current suite.
+
+        Returns:
+            None.
+        """
         exchange = resolve_exchange_config_inputs(
             exchange_config_case.exchange_config_path,
             private_key_value=exchange_config_case.private_key_value,

@@ -151,7 +151,14 @@ class TestOpenLinkTokenOverlapAnalyzerInit:
         assert analyzer._decrypt_token(v1_encrypted) == plaintext
 
     def test_from_exchange_config_supports_every_crypto_suite(self, exchange_config_case):
-        """The analyzer derives the correct transport key for each exchange suite."""
+        """The analyzer derives the correct transport key for each exchange suite.
+
+        Args:
+            exchange_config_case: Real exchange and private-key fixture for the current suite.
+
+        Returns:
+            None.
+        """
         exchange = resolve_exchange_config_inputs(
             exchange_config_case.exchange_config_path,
             private_key_path=exchange_config_case.private_key_path,

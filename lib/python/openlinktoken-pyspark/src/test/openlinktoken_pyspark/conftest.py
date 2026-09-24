@@ -18,7 +18,17 @@ HASHING_SECRET = b"shared-hashing-secret-0123456789"
 
 @dataclass(frozen=True)
 class ExchangeConfigCase:
-    """Exchange configuration and matching private key for one crypto suite."""
+    """Exchange configuration and matching private key for one crypto suite.
+
+    Args:
+        crypto_suite: Suite used to build the exchange configuration.
+        exchange_config_path: Path to the serialized exchange configuration.
+        private_key_path: Path to the matching private-key material.
+        private_key_value: PEM or key-bundle JSON text for resolving the exchange.
+
+    Returns:
+        An immutable ``ExchangeConfigCase`` containing the exchange and key inputs.
+    """
 
     crypto_suite: CryptoSuite
     exchange_config_path: Path
@@ -31,7 +41,15 @@ def exchange_config_case(
     request: pytest.FixtureRequest,
     tmp_path_factory: pytest.TempPathFactory,
 ) -> ExchangeConfigCase:
-    """Create a valid real exchange configuration for each registered suite."""
+    """Create a valid real exchange configuration for each registered suite.
+
+    Args:
+        request: Parameterized pytest request whose parameter is the current suite.
+        tmp_path_factory: Factory for creating suite-specific temporary directories.
+
+    Returns:
+        Exchange configuration and matching private-key inputs for the requested suite.
+    """
     suite = request.param
     fixture_dir = tmp_path_factory.mktemp(suite.suite_id)
     exchange_config_path = fixture_dir / "exchange.json"
