@@ -306,6 +306,11 @@ class TokenGeneratorTest {
         });
     }
 
+    /**
+     * Verifies non-hash transformers receive and transform raw token values using a passthrough tokenizer.
+     *
+     * @throws Exception if the token generator encounters a checked transformation failure
+     */
     @Test
     void storeRawToken_appliesNonHashTransformersWithPassthroughTokenizer() throws Exception {
         TokenTransformer encryptTransformer = token -> "encrypted:" + token;
@@ -319,6 +324,11 @@ class TokenGeneratorTest {
         assertEquals("encrypted:quantized-signature", result.getTokens().get("ML1"));
     }
 
+    /**
+     * Verifies class-keyed attributes produce raw signatures while requested legacy rules are excluded.
+     *
+     * @throws Exception if token generation fails
+     */
     @Test
     void excludesLegacyRulesAndReturnsValidSignatures() throws Exception {
         when(tokenDefinition.getTokenIdentifiers()).thenReturn(Set.of("keep", "skip"));
@@ -335,6 +345,9 @@ class TokenGeneratorTest {
         assertEquals(Map.of("keep", "hashed-token"), result.getTokens());
     }
 
+    /**
+     * Verifies invalid class-keyed attributes are returned as invalid attribute names.
+     */
     @Test
     void reportsInvalidClassKeyedAttributes() {
         Map<Class<? extends Attribute>, String> personAttributes = Map.of(
@@ -346,6 +359,11 @@ class TokenGeneratorTest {
         assertEquals(Set.of("FirstName"), tokenGenerator.getInvalidPersonAttributes(personAttributes));
     }
 
+    /**
+     * Verifies embedding-derived tokens and precomputed signatures are stored with blank fallbacks.
+     *
+     * @throws Exception if tokenization fails unexpectedly
+     */
     @Test
     void appliesEmbeddingAndPrecomputedSignaturesWithBlankFallback() throws Exception {
         TokenGeneratorResult result = new TokenGeneratorResult();
@@ -367,6 +385,9 @@ class TokenGeneratorTest {
         assertEquals(Set.of("blank", "failed"), result.getBlankTokensByRule());
     }
 
+    /**
+     * Verifies null, blank, and transformation-failing raw tokens are stored as blank tokens.
+     */
     @Test
     void storesNullBlankAndFailedRawTokensAsBlank() {
         TokenTransformer failingTransformer = token -> {

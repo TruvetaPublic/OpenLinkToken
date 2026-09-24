@@ -14,6 +14,9 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
+/**
+ * Provides deterministic JSON serialization helpers for exchange tests.
+ */
 final class ExchangeJsonTestSupport {
     private static final TypeReference<Map<String, Object>> OBJECT_TYPE = new TypeReference<>() {
     };
@@ -21,9 +24,17 @@ final class ExchangeJsonTestSupport {
             .configure(DeserializationFeature.FAIL_ON_TRAILING_TOKENS, true)
             .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
 
+    /** Prevents instantiation. */
     private ExchangeJsonTestSupport() {
     }
 
+    /**
+     * Parses UTF-8 JSON bytes as an object.
+     *
+     * @param json UTF-8 JSON bytes
+     * @return the parsed JSON object
+     * @throws IllegalArgumentException if the bytes are empty, invalid UTF-8, or not a JSON object
+     */
     static Map<String, Object> readObject(byte[] json) {
         if (json == null || json.length == 0) {
             throw new IllegalArgumentException("JSON value must not be empty.");
@@ -35,6 +46,12 @@ final class ExchangeJsonTestSupport {
         }
     }
 
+    /**
+     * Serializes a JSON-compatible mapping.
+     *
+     * @param value mapping to serialize
+     * @return deterministic UTF-8 JSON bytes
+     */
     static byte[] writeObject(Map<String, ?> value) {
         try {
             return MAPPER.writeValueAsBytes(value);
@@ -43,6 +60,13 @@ final class ExchangeJsonTestSupport {
         }
     }
 
+    /**
+     * Decodes JSON bytes using strict UTF-8 validation.
+     *
+     * @param json bytes to decode
+     * @return the decoded JSON text
+     * @throws IllegalArgumentException if the bytes are not valid UTF-8
+     */
     private static String decodeUtf8(byte[] json) {
         try {
             return StandardCharsets.UTF_8.newDecoder()

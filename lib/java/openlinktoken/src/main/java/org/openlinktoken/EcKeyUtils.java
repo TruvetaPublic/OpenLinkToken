@@ -262,6 +262,13 @@ public final class EcKeyUtils implements Serializable {
         return "sha256:" + fingerprint.trim().toLowerCase(Locale.ROOT).replace(':', '-');
     }
 
+    /**
+     * Encodes DER key bytes in a PEM envelope.
+     *
+     * @param value DER-encoded key bytes
+     * @param type PEM label to place in the envelope
+     * @return ASCII-encoded PEM bytes
+     */
     private static byte[] encodePem(byte[] value, String type) {
         String encoded = Base64.getMimeEncoder(64, "\n".getBytes(StandardCharsets.US_ASCII)).encodeToString(value);
         String pem = "-----BEGIN " + type + "-----\n"
@@ -270,6 +277,14 @@ public final class EcKeyUtils implements Serializable {
         return pem.getBytes(StandardCharsets.US_ASCII);
     }
 
+    /**
+     * Decodes PEM bytes with the expected key type label.
+     *
+     * @param pem ASCII-encoded PEM bytes
+     * @param type expected PEM label
+     * @return decoded DER key bytes
+     * @throws IllegalArgumentException if the PEM is empty, malformed, or contains invalid base64
+     */
     private static byte[] decodePem(byte[] pem, String type) {
         if (pem == null || pem.length == 0) {
             throw new IllegalArgumentException(type + " PEM must not be empty.");
@@ -291,6 +306,12 @@ public final class EcKeyUtils implements Serializable {
         }
     }
 
+    /**
+     * Computes a SHA-256 fingerprint for encoded key material.
+     *
+     * @param value encoded key bytes
+     * @return uppercase, colon-delimited SHA-256 fingerprint
+     */
     private static String fingerprint(byte[] value) {
         byte[] digest;
         try {

@@ -64,6 +64,9 @@ class TokenDigestFactoryTest {
                 () -> TokenDigestFactory.forAlgorithm("UNKNOWN"));
     }
 
+    /**
+     * Verifies a null suite input is rejected by suite-based digest selection.
+     */
     @Test
     void factoryRejectsNullSuite() {
         assertThrows(IllegalArgumentException.class, () -> TokenDigestFactory.forSuite(null));

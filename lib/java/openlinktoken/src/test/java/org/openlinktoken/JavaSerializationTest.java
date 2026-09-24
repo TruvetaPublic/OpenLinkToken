@@ -34,6 +34,11 @@ class JavaSerializationTest {
 
     private static final byte[] HASHING_SECRET = "0123456789abcdef0123456789abcdef".getBytes(StandardCharsets.UTF_8);
 
+    /**
+     * Verifies every registered production type in the exchange and token paths implements {@link Serializable}.
+     *
+     * @throws ClassNotFoundException if a production type cannot be loaded
+     */
     @Test
     void featureProductionTypesImplementSerializable() throws ClassNotFoundException {
         List<Class<?>> types = List.of(
@@ -70,6 +75,12 @@ class JavaSerializationTest {
         }
     }
 
+    /**
+     * Verifies loaded and resolved configurations preserve their paths, maps, and secret byte arrays after
+     * serialization.
+     *
+     * @throws Exception if configuration serialization or deserialization fails
+     */
     @Test
     void loadedAndResolvedConfigsRoundTripPathsAndSecrets() throws Exception {
         Path path = Path.of("exchange-config.json");
@@ -112,6 +123,11 @@ class JavaSerializationTest {
         assertArrayEquals(rotationIv, resolvedCopy.rotationIv());
     }
 
+    /**
+     * Verifies crypto suites retain canonical identity and hybrid key bundles preserve their private key material.
+     *
+     * @throws Exception if suite or key-bundle serialization fails
+     */
     @Test
     void cryptoSuiteAndHybridKeyBundleRoundTripPrivateState() throws Exception {
         CryptoSuite suite = roundTrip(CryptoSuite.SUITE_PQ_HYBRID_V1, CryptoSuite.class);
@@ -131,6 +147,11 @@ class JavaSerializationTest {
         assertArrayEquals(bundle.getEcPrivatePem(), bundleCopy.getEcPrivatePem());
     }
 
+    /**
+     * Verifies exchange payloads and version-two decryption results preserve their secret and key bytes.
+     *
+     * @throws Exception if an exchange value cannot be serialized or deserialized
+     */
     @Test
     void exchangePayloadAndV2DecryptionResultsRoundTripSecrets() throws Exception {
         ExchangeJwe.ExchangePayload payload = new ExchangeJwe.ExchangePayload(
@@ -174,6 +195,11 @@ class JavaSerializationTest {
         assertEquals(internal.protectedHeader(), internalCopy.protectedHeader());
     }
 
+    /**
+     * Verifies a serialized suite tokenizer produces the same token with its digest and secret transformer.
+     *
+     * @throws Exception if tokenizer serialization or deserialization fails
+     */
     @Test
     void suiteTokenizerRoundTripsItsDigestAndSecretTransformer() throws Exception {
         CryptoSuiteTokenizer tokenizer = new CryptoSuiteTokenizer(
@@ -185,6 +211,15 @@ class JavaSerializationTest {
         assertEquals(tokenizer.tokenize("serializable-token"), tokenizerCopy.tokenize("serializable-token"));
     }
 
+    /**
+     * Serializes a value and deserializes it as the requested type.
+     *
+     * @param value value to serialize
+     * @param type expected deserialized type
+     * @param <T> value type
+     * @return the deserialized copy
+     * @throws Exception if serialization, deserialization, or type conversion fails
+     */
     private static <T> T roundTrip(T value, Class<T> type) throws Exception {
         ByteArrayOutputStream serialized = new ByteArrayOutputStream();
         try (ObjectOutputStream output = new ObjectOutputStream(serialized)) {

@@ -372,6 +372,13 @@ public final class ExchangeConfig implements Serializable {
         }
     }
 
+    /**
+     * Parses UTF-8 JSON bytes as an object.
+     *
+     * @param json UTF-8 JSON bytes
+     * @return the parsed JSON object
+     * @throws IllegalArgumentException if the bytes are empty, invalid UTF-8, or not a JSON object
+     */
     private static Map<String, Object> readJsonObject(byte[] json) {
         if (json == null || json.length == 0) {
             throw new IllegalArgumentException("JSON value must not be empty.");
@@ -383,6 +390,13 @@ public final class ExchangeConfig implements Serializable {
         }
     }
 
+    /**
+     * Decodes JSON bytes using strict UTF-8 validation.
+     *
+     * @param json bytes to decode
+     * @return the decoded JSON text
+     * @throws IllegalArgumentException if the bytes are not valid UTF-8
+     */
     private static String decodeUtf8(byte[] json) {
         try {
             return StandardCharsets.UTF_8.newDecoder()
@@ -455,6 +469,13 @@ public final class ExchangeConfig implements Serializable {
         }
     }
 
+    /**
+     * Decodes and parses a protected-header value from an exchange configuration.
+     *
+     * @param value configured protected-header value
+     * @return the parsed protected-header object
+     * @throws IllegalArgumentException if the value is missing or is not valid base64url JSON
+     */
     private static Map<String, Object> decodeProtectedHeader(Object value) {
         if (!(value instanceof String protectedValue) || protectedValue.isEmpty()) {
             throw new IllegalArgumentException("Exchange config is missing its protected header.");
@@ -574,6 +595,14 @@ public final class ExchangeConfig implements Serializable {
         return sender ? "sender" : "recipient";
     }
 
+    /**
+     * Validates an encoding marker and decodes its required base64url payload field.
+     *
+     * @param payload exchange payload fields
+     * @param encodingField field containing the required encoding marker
+     * @param valueField field containing the encoded bytes
+     * @return the decoded payload bytes
+     */
     private static byte[] decodeRequiredBase64(
             Map<String, Object> payload,
             String encodingField,
@@ -585,6 +614,14 @@ public final class ExchangeConfig implements Serializable {
         return decodeBase64Url(requireText(payload.get(valueField), valueField), valueField);
     }
 
+    /**
+     * Decodes a canonical, unpadded base64url value.
+     *
+     * @param value encoded value
+     * @param fieldName field name used in validation errors
+     * @return decoded bytes
+     * @throws IllegalArgumentException if the value is empty, malformed, or non-canonical
+     */
     private static byte[] decodeBase64Url(String value, String fieldName) {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException(fieldName + " must be a non-empty base64url string.");

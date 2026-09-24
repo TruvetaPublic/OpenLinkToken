@@ -308,6 +308,12 @@ public final class ExchangeJwe implements Serializable {
         return payloadFromMapping(payload);
     }
 
+    /**
+     * Encrypts a validated exchange payload for its sender and recipient.
+     *
+     * @param payload exchange payload to encrypt
+     * @return the serialized general JWE envelope
+     */
     private static Map<String, Object> encryptPayload(ExchangePayload payload) {
         ECPublicKey senderPublicKey = EcKeyUtils.publicKeyFromPem(payload.senderPublicPem());
         ECPublicKey recipientPublicKey = EcKeyUtils.publicKeyFromPem(payload.recipientPublicPem());
@@ -396,6 +402,12 @@ public final class ExchangeJwe implements Serializable {
         }
     }
 
+    /**
+     * Converts a typed exchange payload to its JSON-compatible representation.
+     *
+     * @param payload validated exchange payload
+     * @return payload fields ready for JSON serialization
+     */
     private static Map<String, Object> payloadToMapping(ExchangePayload payload) {
         Map<String, Object> mapping = new LinkedHashMap<>();
         mapping.put("exchangeName", payload.exchangeName());
@@ -416,6 +428,12 @@ public final class ExchangeJwe implements Serializable {
         return mapping;
     }
 
+    /**
+     * Validates and converts decrypted JSON fields to a typed exchange payload.
+     *
+     * @param mapping decrypted payload fields
+     * @return the validated exchange payload
+     */
     private static ExchangePayload payloadFromMapping(Map<String, Object> mapping) {
         Object suite = mapping.get("cryptoSuite");
         if (suite != null && !CryptoSuite.defaultSuite().getSuiteId().equals(requireText(suite, "cryptoSuite"))) {
@@ -675,6 +693,13 @@ public final class ExchangeJwe implements Serializable {
         }
     }
 
+    /**
+     * Parses UTF-8 JSON bytes as an object.
+     *
+     * @param json UTF-8 JSON bytes
+     * @return the parsed JSON object
+     * @throws IllegalArgumentException if the bytes are empty, invalid UTF-8, or not a JSON object
+     */
     private static Map<String, Object> readJsonObject(byte[] json) {
         if (json == null || json.length == 0) {
             throw new IllegalArgumentException("JSON value must not be empty.");
@@ -686,6 +711,12 @@ public final class ExchangeJwe implements Serializable {
         }
     }
 
+    /**
+     * Serializes a JSON-compatible mapping.
+     *
+     * @param value mapping to serialize
+     * @return UTF-8 JSON bytes
+     */
     private static byte[] writeJsonObject(Map<String, Object> value) {
         try {
             return JSON_MAPPER.writeValueAsBytes(value);
@@ -694,6 +725,13 @@ public final class ExchangeJwe implements Serializable {
         }
     }
 
+    /**
+     * Decodes JSON bytes using strict UTF-8 validation.
+     *
+     * @param json bytes to decode
+     * @return the decoded JSON text
+     * @throws IllegalArgumentException if the bytes are not valid UTF-8
+     */
     private static String decodeUtf8(byte[] json) {
         try {
             return StandardCharsets.UTF_8.newDecoder()
@@ -706,10 +744,24 @@ public final class ExchangeJwe implements Serializable {
         }
     }
 
+    /**
+     * Encodes bytes as unpadded base64url.
+     *
+     * @param value bytes to encode
+     * @return unpadded base64url text
+     */
     private static String encodeBase64Url(byte[] value) {
         return Base64.getUrlEncoder().withoutPadding().encodeToString(value);
     }
 
+    /**
+     * Decodes a canonical, unpadded base64url value.
+     *
+     * @param value encoded value
+     * @param fieldName field name used in validation errors
+     * @return decoded bytes
+     * @throws IllegalArgumentException if the value is empty, malformed, or non-canonical
+     */
     private static byte[] decodeBase64Url(String value, String fieldName) {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException(fieldName + " must be a non-empty base64url string.");

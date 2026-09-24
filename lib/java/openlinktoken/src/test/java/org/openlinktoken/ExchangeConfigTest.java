@@ -25,6 +25,11 @@ class ExchangeConfigTest {
     private static final byte[] HASHING_SECRET = "shared-hashing-secret".getBytes(StandardCharsets.UTF_8);
     private static final byte[] ROTATION_IV = "test-rotation-iv".getBytes(StandardCharsets.UTF_8);
 
+    /**
+     * Verifies a version-one configuration can be loaded and resolved from a map, JSON bytes, text, or file.
+     *
+     * @throws Exception if the temporary configuration file cannot be created or read
+     */
     @Test
     void loadsV1FromMappingJsonAndPath() throws Exception {
         V1Keys keys = generateV1Keys();
@@ -53,6 +58,11 @@ class ExchangeConfigTest {
                 ExchangeConfig.resolveLoadedExchangeConfig(fromMapping, keys.senderPrivatePem()).privateKeyRole());
     }
 
+    /**
+     * Verifies null, malformed, missing, and unsupported configuration inputs are rejected.
+     *
+     * @throws Exception if the temporary missing-path fixture cannot be created
+     */
     @Test
     void rejectsInvalidConfigSources() throws Exception {
         assertThrows(NullPointerException.class, () -> ExchangeConfig.loadExchangeConfig((Path) null));
@@ -74,6 +84,9 @@ class ExchangeConfigTest {
         assertThrows(IllegalArgumentException.class, () -> ExchangeConfig.loadExchangeConfig(unsupportedValue));
     }
 
+    /**
+     * Verifies both version-one recipient roles derive the same transport key and payload settings.
+     */
     @Test
     void resolvesV1ForBothRolesAndDerivesSharedTransportKey() {
         V1Keys keys = generateV1Keys();
@@ -103,6 +116,9 @@ class ExchangeConfigTest {
                 () -> ExchangeConfig.resolveExchangeConfig(loaded, ExchangeKeyBundle.generate("suite-pq-v1")));
     }
 
+    /**
+     * Verifies both version-two recipient roles resolve the authenticated KEM transport key.
+     */
     @Test
     void resolvesV2ForBothRolesAndReturnsKemTransportKey() {
         ExchangeKeyBundle senderBundle = ExchangeKeyBundle.generate("suite-pq-v1");
@@ -141,6 +157,9 @@ class ExchangeConfigTest {
                 () -> ExchangeConfig.resolveExchangeConfig(loaded, new byte[] {1}));
     }
 
+    /**
+     * Verifies unsupported, missing, and ambiguous version markers are rejected.
+     */
     @Test
     void rejectsMalformedUnsupportedAndAmbiguousVersions() {
         V1Keys keys = generateV1Keys();
@@ -181,6 +200,9 @@ class ExchangeConfigTest {
                 () -> ExchangeConfig.loadExchangeConfig(ambiguous));
     }
 
+    /**
+     * Verifies invalid payload values and private keys unrelated to either supported version are rejected.
+     */
     @Test
     void rejectsInvalidPayloadValuesAndWrongPrivateKeys() {
         V1Keys keys = generateV1Keys();
@@ -212,6 +234,9 @@ class ExchangeConfigTest {
                 () -> ExchangeConfig.resolveExchangeConfig(v2Loaded, unrelatedBundle));
     }
 
+    /**
+     * Verifies loaded and resolved configurations do not expose mutable maps or byte-array state.
+     */
     @Test
     void keepsLoadedAndResolvedValuesDefensive() {
         V1Keys keys = generateV1Keys();
