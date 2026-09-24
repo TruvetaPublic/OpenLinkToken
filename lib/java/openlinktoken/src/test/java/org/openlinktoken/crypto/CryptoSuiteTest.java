@@ -140,6 +140,9 @@ class CryptoSuiteTest {
                 "Unsupported exchange configuration version '3'.");
     }
 
+    /**
+     * Verifies suite-based digest selection rejects a suite with an unsupported digest identifier.
+     */
     @Test
     void tokenDigestFactoryRejectsUnsupportedSuiteDigest() {
         CryptoSuite suite = new CryptoSuite(

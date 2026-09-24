@@ -88,6 +88,9 @@ class EcKeyUtilsTest {
         assertThrows(IllegalArgumentException.class, () -> EcKeyUtils.publicKeyFromDer(rsa.getPublic().getEncoded()));
     }
 
+    /**
+     * Verifies null, empty, and malformed PEM inputs and null fingerprints are rejected.
+     */
     @Test
     void rejectsMalformedPemAndNullFingerprint() {
         assertThrows(IllegalArgumentException.class, () -> EcKeyUtils.privateKeyFromPem(null));
@@ -105,6 +108,9 @@ class EcKeyUtilsTest {
         assertThrows(IllegalArgumentException.class, () -> EcKeyUtils.fingerprintToKid(null));
     }
 
+    /**
+     * Verifies mutating private PEM input after derivation does not change the derived public PEM output.
+     */
     @Test
     void doesNotExposeMutablePemInputThroughDerivedOutput() {
         KeyPair keyPair = EcKeyUtils.generateKeyPair("P-256");

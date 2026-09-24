@@ -94,6 +94,14 @@ final class JweMlkem implements Serializable {
     private JweMlkem() {
     }
 
+    /**
+     * Encrypts plaintext into a version-two general JWE for the supplied recipients.
+     *
+     * @param plaintext plaintext bytes
+     * @param protectedHeader protected JWE header fields
+     * @param recipients recipient key bundles
+     * @return the serialized general JWE envelope
+     */
     static Map<String, Object> build(
             byte[] plaintext,
             Map<String, ?> protectedHeader,
@@ -569,6 +577,14 @@ final class JweMlkem implements Serializable {
                 "Unsupported version-2 exchange agreement '" + suite.getExchangeKeyAgreement() + "'.");
     }
 
+    /**
+     * Parses JSON bytes as an object and adds a field-specific validation error.
+     *
+     * @param json UTF-8 JSON bytes
+     * @param fieldName description used in validation errors
+     * @return the parsed JSON object
+     * @throws IllegalArgumentException if the bytes are not a valid JSON object
+     */
     private static Map<String, Object> decodeJsonObject(byte[] json, String fieldName) {
         try {
             return readJsonObject(json);
@@ -577,6 +593,13 @@ final class JweMlkem implements Serializable {
         }
     }
 
+    /**
+     * Parses UTF-8 JSON bytes as an object.
+     *
+     * @param json UTF-8 JSON bytes
+     * @return the parsed JSON object
+     * @throws IllegalArgumentException if the bytes are empty, invalid UTF-8, or not a JSON object
+     */
     private static Map<String, Object> readJsonObject(byte[] json) {
         if (json == null || json.length == 0) {
             throw new IllegalArgumentException("JSON value must not be empty.");
@@ -588,6 +611,12 @@ final class JweMlkem implements Serializable {
         }
     }
 
+    /**
+     * Serializes a JSON-compatible mapping.
+     *
+     * @param value mapping to serialize
+     * @return UTF-8 JSON bytes
+     */
     private static byte[] writeJsonObject(Map<String, Object> value) {
         try {
             return JSON_MAPPER.writeValueAsBytes(value);
@@ -596,6 +625,13 @@ final class JweMlkem implements Serializable {
         }
     }
 
+    /**
+     * Decodes JSON bytes using strict UTF-8 validation.
+     *
+     * @param json bytes to decode
+     * @return the decoded JSON text
+     * @throws IllegalArgumentException if the bytes are not valid UTF-8
+     */
     private static String decodeUtf8(byte[] json) {
         try {
             return StandardCharsets.UTF_8.newDecoder()
@@ -650,6 +686,15 @@ final class JweMlkem implements Serializable {
         return string;
     }
 
+    /**
+     * Decodes a canonical base64url value, optionally allowing an empty value.
+     *
+     * @param value encoded value
+     * @param fieldName field name used in validation errors
+     * @param allowEmpty whether empty input represents an empty byte array
+     * @return decoded bytes
+     * @throws IllegalArgumentException if the value is malformed or non-canonical
+     */
     private static byte[] decodeBase64(String value, String fieldName, boolean allowEmpty) {
         if (value == null || (!allowEmpty && value.isEmpty())) {
             throw new IllegalArgumentException(fieldName + " must be non-empty base64url data.");
@@ -668,6 +713,12 @@ final class JweMlkem implements Serializable {
         }
     }
 
+    /**
+     * Encodes bytes as unpadded base64url.
+     *
+     * @param value bytes to encode
+     * @return unpadded base64url text
+     */
     private static String encodeBase64(byte[] value) {
         return Base64.getUrlEncoder().withoutPadding().encodeToString(value);
     }

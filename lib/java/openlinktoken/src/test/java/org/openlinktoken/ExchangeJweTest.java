@@ -24,6 +24,9 @@ class ExchangeJweTest {
     private static final byte[] HASHING_SECRET = "shared-hashing-secret".getBytes(StandardCharsets.UTF_8);
     private static final byte[] ROTATION_IV = "test-rotation-iv-24".getBytes(StandardCharsets.UTF_8);
 
+    /**
+     * Verifies a version-one envelope matches the Python-compatible shape and decrypts for both recipients.
+     */
     @Test
     void buildsPythonCompatibleEnvelopeAndDecryptsForEitherRecipient() {
         KeyMaterial keys = generateKeyMaterial();
@@ -69,6 +72,9 @@ class ExchangeJweTest {
         assertEquals(List.of(0.1, -0.2), payload.dimensionBias());
     }
 
+    /**
+     * Verifies secret, IV, and protected-header fields use unpadded base64url encoding.
+     */
     @Test
     void emitsUnpaddedBase64UrlPayloadFields() {
         KeyMaterial keys = generateKeyMaterial();
@@ -85,6 +91,9 @@ class ExchangeJweTest {
                 Base64.getUrlDecoder().decode((String) payload.get("hashingSecret")));
     }
 
+    /**
+     * Verifies the legacy envelope builder rejects a non-default crypto suite.
+     */
     @Test
     void rejectsNonDefaultLegacySuite() {
         KeyMaterial keys = generateKeyMaterial();
@@ -106,6 +115,9 @@ class ExchangeJweTest {
                         CryptoSuite.SUITE_SHA3_V1));
     }
 
+    /**
+     * Verifies malformed JSON and envelopes missing required structural fields are rejected.
+     */
     @Test
     void rejectsMalformedEnvelopeJsonAndStructure() {
         KeyMaterial keys = generateKeyMaterial();
@@ -128,6 +140,9 @@ class ExchangeJweTest {
                 () -> ExchangeJwe.decryptExchangeEnvelope(missingRecipients, keys.senderPrivatePem));
     }
 
+    /**
+     * Verifies omitted rotation options resolve to their documented defaults.
+     */
     @Test
     void buildsDefaultPayloadOptions() {
         KeyMaterial keys = generateKeyMaterial();
@@ -149,6 +164,9 @@ class ExchangeJweTest {
         assertEquals(List.of(), payload.dimensionBias());
     }
 
+    /**
+     * Verifies invalid UTF-8 and malformed version-one payload fields are rejected.
+     */
     @Test
     void rejectsMalformedUtf8AndInvalidPayloadFields() {
         KeyMaterial keys = generateKeyMaterial();
@@ -184,6 +202,9 @@ class ExchangeJweTest {
                 () -> ExchangeJwe.parseExchangePayload(new byte[] {(byte) 0xc3, 0x28}));
     }
 
+    /**
+     * Verifies ciphertext tampering and unrelated private keys cannot decrypt an envelope.
+     */
     @Test
     void rejectsTamperedCiphertextAndUnrelatedPrivateKey() {
         KeyMaterial keys = generateKeyMaterial();
@@ -200,6 +221,9 @@ class ExchangeJweTest {
                 () -> ExchangeJwe.decryptExchangeEnvelope(buildEnvelope(keys), unrelated.senderPrivatePem));
     }
 
+    /**
+     * Verifies an unsupported protected content-encryption value is rejected before decryption.
+     */
     @Test
     void rejectsTamperedProtectedHeaderBeforeDecryption() {
         KeyMaterial keys = generateKeyMaterial();
@@ -232,6 +256,11 @@ class ExchangeJweTest {
                 CryptoSuite.defaultSuite());
     }
 
+    /**
+     * Verifies a mapping with invalid payload fields fails JSON payload validation.
+     *
+     * @param payload invalid exchange payload fields
+     */
     private static void assertInvalidPayload(Map<String, Object> payload) {
         assertThrows(
                 IllegalArgumentException.class,

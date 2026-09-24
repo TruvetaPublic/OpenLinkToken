@@ -185,7 +185,16 @@ class MultiLanguageSyncer:
     KNOWN_ACRONYMS = {"us", "sha256", "sha3", "shake256"}
 
     def convert_filename(self, filename, from_naming, to_naming):
-        """Convert filename between naming conventions"""
+        """Convert a filename stem between naming conventions.
+
+        Args:
+            filename: Source filename, optionally including a configured extension.
+            from_naming: Source naming convention.
+            to_naming: Target naming convention.
+
+        Returns:
+            The converted filename stem without an extension, preserving known acronyms.
+        """
         # Remove extension
         base_name = filename
         for lang_config in self.LANGUAGES.values():
@@ -215,6 +224,9 @@ class MultiLanguageSyncer:
             source_lang: Language of the source file
             active_languages: Optional dict of language configs to restrict results to.
                               Defaults to all LANGUAGES when None.
+
+        Returns:
+            A mapping from each active target language to its corresponding file path.
         """
         corresponding = {}
 

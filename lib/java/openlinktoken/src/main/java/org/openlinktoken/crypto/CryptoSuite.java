@@ -185,6 +185,12 @@ public final class CryptoSuite implements Serializable {
         return suite;
     }
 
+    /**
+     * Replaces a deserialized suite with its canonical registered instance.
+     *
+     * @return the registered suite matching this instance's identifier
+     * @throws InvalidObjectException if this instance's identifier is not registered
+     */
     private Object readResolve() throws InvalidObjectException {
         try {
             return fromId(suiteId);

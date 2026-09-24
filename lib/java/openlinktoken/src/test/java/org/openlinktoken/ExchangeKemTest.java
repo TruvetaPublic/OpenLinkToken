@@ -25,6 +25,9 @@ class ExchangeKemTest {
             "suite-pq-shake-v1",
             "suite-pq-hybrid-v1");
 
+    /**
+     * Verifies each version-two suite encrypts and decrypts equivalent payloads for both recipients.
+     */
     @Test
     void buildsAndDecryptsEveryV2SuiteForBothRecipients() {
         for (String suiteId : V2_SUITES) {
@@ -92,6 +95,9 @@ class ExchangeKemTest {
         }
     }
 
+    /**
+     * Verifies the derived token transport key differs from the JWE content key and depends on the exchange ID.
+     */
     @Test
     void derivesTransportKeySeparatelyFromTheJweCek() {
         byte[] cek = new byte[32];
@@ -116,6 +122,9 @@ class ExchangeKemTest {
                 () -> JweMlkem.deriveTokenTransportKey(cek, ""));
     }
 
+    /**
+     * Verifies direct JWE construction rejects missing, mismatched, duplicate, or unsupported inputs.
+     */
     @Test
     void rejectsInvalidDirectJweBuildInputs() {
         ExchangeKeyBundle sender = ExchangeKeyBundle.generate("suite-pq-v1");
@@ -151,6 +160,9 @@ class ExchangeKemTest {
                         List.of(sender, ExchangeKeyBundle.generate("suite-pq-shake-v1"))));
     }
 
+    /**
+     * Verifies malformed JWE members and unsupported content parameters are rejected during decryption.
+     */
     @Test
     void rejectsMalformedJweMembersAndContentParameters() {
         ExchangeKeyBundle sender = ExchangeKeyBundle.generate("suite-pq-v1");
@@ -199,6 +211,9 @@ class ExchangeKemTest {
         assertThrows(IllegalArgumentException.class, () -> JweMlkem.decrypt(duplicateRecipient, sender));
     }
 
+    /**
+     * Verifies malformed hybrid ephemeral keys and tampered wrapped content keys are rejected.
+     */
     @Test
     void rejectsMalformedHybridEphemeralKeysAndWrappedContentKeys() {
         ExchangeKeyBundle sender = ExchangeKeyBundle.generate("suite-pq-hybrid-v1");
@@ -236,6 +251,9 @@ class ExchangeKemTest {
         assertThrows(IllegalArgumentException.class, () -> JweMlkem.decrypt(invalidWrappedKey, sender));
     }
 
+    /**
+     * Verifies ciphertext/header tampering, wrong suites or keys, and short recipient keys are rejected.
+     */
     @Test
     void rejectsTamperingWrongSuiteWrongKeyAndRecipientLength() {
         ExchangeKeyBundle sender = ExchangeKeyBundle.generate("suite-pq-v1");
@@ -286,6 +304,9 @@ class ExchangeKemTest {
         assertTrue(exception.getMessage().contains("1128"));
     }
 
+    /**
+     * Verifies mismatched suites and invalid exchange names, counts, or KMAC secrets are rejected.
+     */
     @Test
     void rejectsMismatchedSuitesAndInvalidExchangeInputs() {
         ExchangeKeyBundle pure = ExchangeKeyBundle.generate("suite-pq-v1");
@@ -333,6 +354,9 @@ class ExchangeKemTest {
                         "short-kmac-secret-id"));
     }
 
+    /**
+     * Verifies an empty hashing secret remains valid for non-KMAC version-two suites.
+     */
     @Test
     void preservesNonKmacEmptyHashingSecretBehavior() {
         ExchangeKeyBundle sender = ExchangeKeyBundle.generate("suite-pq-v1");
@@ -355,6 +379,12 @@ class ExchangeKemTest {
         return (List<Map<String, Object>>) envelope.get("recipients");
     }
 
+    /**
+     * Copies an envelope and its recipient/header mappings so tests can mutate them independently.
+     *
+     * @param envelope source envelope
+     * @return a mutable envelope copy with mutable recipient and header mappings
+     */
     private static Map<String, Object> copyEnvelope(Map<String, Object> envelope) {
         Map<String, Object> copy = new LinkedHashMap<>(envelope);
         List<Map<String, Object>> recipientCopies = new ArrayList<>();
@@ -367,6 +397,12 @@ class ExchangeKemTest {
         return copy;
     }
 
+    /**
+     * Creates a minimal protected header for direct JWE construction tests.
+     *
+     * @param suiteId crypto suite identifier to include
+     * @return mutable protected-header fields
+     */
     private static Map<String, Object> protectedHeader(String suiteId) {
         Map<String, Object> header = new LinkedHashMap<>();
         header.put("typ", JweMlkem.EXCHANGE_V2_TYPE);
@@ -378,14 +414,32 @@ class ExchangeKemTest {
         return header;
     }
 
+    /**
+     * Copies the first recipient header from an envelope.
+     *
+     * @param envelope source envelope
+     * @return mutable copy of its first recipient header
+     */
     private static Map<String, Object> copyFirstRecipientHeader(Map<String, Object> envelope) {
         return copyStringMap((Map<?, ?>) recipients(envelope).get(0).get("header"));
     }
 
+    /**
+     * Replaces the first recipient's header in a mutable envelope.
+     *
+     * @param envelope envelope to update
+     * @param header replacement recipient header
+     */
     private static void setFirstRecipientHeader(Map<String, Object> envelope, Map<String, Object> header) {
         recipients(envelope).get(0).put("header", header);
     }
 
+    /**
+     * Copies a mapping whose keys are expected to be strings.
+     *
+     * @param source mapping to copy
+     * @return mutable mapping with string keys
+     */
     private static Map<String, Object> copyStringMap(Map<?, ?> source) {
         Map<String, Object> copy = new LinkedHashMap<>();
         for (Map.Entry<?, ?> entry : source.entrySet()) {
