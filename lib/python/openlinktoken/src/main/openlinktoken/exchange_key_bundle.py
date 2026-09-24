@@ -13,7 +13,7 @@ from typing import Any, Mapping
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec, mlkem
 
-from openlinktoken.crypto_suite import CryptoSuite
+from openlinktoken.crypto.crypto_suite import CryptoSuite
 
 BUNDLE_VERSION = 1
 BUNDLE_TYPE = "openlinktoken-key-bundle"

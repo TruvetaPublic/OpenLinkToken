@@ -11,15 +11,15 @@ def test_python_crypto_suite_module_maps_to_java_crypto_package():
     syncer = MultiLanguageSyncer()
 
     corresponding = syncer.get_corresponding_files(
-        "lib/python/openlinktoken/src/main/openlinktoken/crypto_suite.py",
+        "lib/python/openlinktoken/src/main/openlinktoken/crypto/crypto_suite.py",
         "python",
     )
 
     assert corresponding["java"] == "lib/java/openlinktoken/src/main/java/org/openlinktoken/crypto/CryptoSuite.java"
 
 
-def test_java_crypto_suite_module_maps_to_python_package_root():
-    """Asserts the Java crypto-suite source maps to the Python package-root path."""
+def test_java_crypto_suite_module_maps_to_python_crypto_package():
+    """Asserts the Java crypto-suite source maps to the Python crypto package path."""
     syncer = MultiLanguageSyncer()
 
     corresponding = syncer.get_corresponding_files(
@@ -27,7 +27,7 @@ def test_java_crypto_suite_module_maps_to_python_package_root():
         "java",
     )
 
-    assert corresponding["python"] == "lib/python/openlinktoken/src/main/openlinktoken/crypto_suite.py"
+    assert corresponding["python"] == "lib/python/openlinktoken/src/main/openlinktoken/crypto/crypto_suite.py"
 
 
 @pytest.mark.parametrize(

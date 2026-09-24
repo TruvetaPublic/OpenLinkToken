@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Type
 from openlinktoken.attributes.attribute import Attribute
 from openlinktoken.attributes.general.record_id_attribute import RecordIdAttribute
 from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig
-from openlinktoken.crypto_suite import CryptoSuite
+from openlinktoken.crypto.crypto_suite import CryptoSuite
 from openlinktoken.tokens.base_token_definition import BaseTokenDefinition
 from openlinktoken.tokens.token_definition import TokenDefinition
 from openlinktoken.tokens.token_generator import TokenGenerator

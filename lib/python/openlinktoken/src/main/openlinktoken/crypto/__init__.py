@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
-"""Compatibility package for crypto-suite module path parity."""
+"""Crypto-suite definitions for Open Link Token."""
 
-from openlinktoken.crypto_suite import CryptoSuite, CryptoSuiteError
+from .crypto_suite import CryptoSuite, CryptoSuiteError
 
 __all__ = ["CryptoSuite", "CryptoSuiteError"]

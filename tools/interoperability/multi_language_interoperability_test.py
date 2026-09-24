@@ -30,7 +30,7 @@ sys.path.insert(0, str(PROJECT_ROOT / "lib/python/openlinktoken-core-ai/src/main
 from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig  # noqa: E402
 from openlinktoken.core.ai.tokens.ml1_onnx_signature_provider import ML1OnnxSignatureProvider  # noqa: E402
 from openlinktoken.core.ai.tokens.rotation_config import RotationConfig  # noqa: E402
-from openlinktoken.crypto_suite import CryptoSuite  # noqa: E402
+from openlinktoken.crypto.crypto_suite import CryptoSuite  # noqa: E402
 from openlinktoken.ec_key_utils import generate_key_pair  # noqa: E402
 from openlinktoken.exchange_config import (  # noqa: E402
     derive_transport_encryption_key,

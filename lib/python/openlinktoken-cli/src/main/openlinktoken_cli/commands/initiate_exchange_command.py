@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Optional, Tuple
 from uuid import uuid4
 
-from openlinktoken.crypto_suite import CryptoSuite
+from openlinktoken.crypto.crypto_suite import CryptoSuite
 from openlinktoken_cli.util.stdin_utils import read_required_env_bytes, read_required_stdin_bytes
 
 logger = logging.getLogger(__name__)

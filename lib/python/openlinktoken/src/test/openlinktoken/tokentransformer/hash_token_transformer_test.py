@@ -7,7 +7,7 @@ import pickle
 
 import pytest
 
-from openlinktoken.crypto_suite import CryptoSuite
+from openlinktoken.crypto.crypto_suite import CryptoSuite
 from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 
 

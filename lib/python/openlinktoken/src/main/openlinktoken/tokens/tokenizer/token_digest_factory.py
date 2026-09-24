@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
 
-from openlinktoken.crypto_suite import CryptoSuite
+from openlinktoken.crypto.crypto_suite import CryptoSuite
 from openlinktoken.tokens.tokenizer.sha3_token_digest import Sha3TokenDigest
 from openlinktoken.tokens.tokenizer.sha256_token_digest import Sha256TokenDigest
 from openlinktoken.tokens.tokenizer.shake256_token_digest import Shake256TokenDigest

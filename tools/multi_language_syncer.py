@@ -41,8 +41,8 @@ class MultiLanguageSyncer:
     }
 
     SPECIAL_FILE_MAPPINGS = {
-        ("java", "crypto/CryptoSuite.java", "python"): "crypto_suite.py",
-        ("python", "crypto_suite.py", "java"): "crypto/CryptoSuite.java",
+        ("java", "crypto/CryptoSuite.java", "python"): "crypto/crypto_suite.py",
+        ("python", "crypto/crypto_suite.py", "java"): "crypto/CryptoSuite.java",
     }
 
     def __init__(self, mapping_file="tools/multi-language-mapping.json"):

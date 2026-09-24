@@ -7,7 +7,7 @@ import base64
 import json
 from typing import Any, Mapping
 
-from openlinktoken.crypto_suite import CryptoSuite
+from openlinktoken.crypto.crypto_suite import CryptoSuite
 from openlinktoken.exchange_key_bundle import ExchangeKeyBundle
 from openlinktoken.jwe_mlkem import (
     EXCHANGE_V2_CONTENT_TYPE,

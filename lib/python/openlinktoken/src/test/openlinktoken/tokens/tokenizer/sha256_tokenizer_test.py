@@ -5,7 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from openlinktoken.crypto_suite import CryptoSuite
+from openlinktoken.crypto.crypto_suite import CryptoSuite
 from openlinktoken.tokens.tokenizer.sha256_tokenizer import SHA256Tokenizer
 from openlinktoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
 from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer

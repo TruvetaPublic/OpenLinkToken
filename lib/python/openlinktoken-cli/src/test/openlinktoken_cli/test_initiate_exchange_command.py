@@ -15,7 +15,7 @@ from unittest.mock import patch
 import pytest
 from jwcrypto import jwe, jwk
 
-from openlinktoken.crypto_suite import CryptoSuite
+from openlinktoken.crypto.crypto_suite import CryptoSuite
 from openlinktoken.exchange_config import derive_transport_encryption_key, resolve_exchange_config_inputs
 from openlinktoken.exchange_jwe import decrypt_exchange_envelope
 from openlinktoken.exchange_key_bundle import generate_exchange_key_bundle

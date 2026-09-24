@@ -2,15 +2,15 @@
 
 import pytest
 
-from openlinktoken.crypto.crypto_suite import CryptoSuite as CompatibilityCryptoSuite
-from openlinktoken.crypto.crypto_suite import CryptoSuiteError as CompatibilityCryptoSuiteError
-from openlinktoken.crypto_suite import CryptoSuite, CryptoSuiteError
+from openlinktoken.crypto import CryptoSuite, CryptoSuiteError
+from openlinktoken.crypto.crypto_suite import CryptoSuite as ModuleCryptoSuite
+from openlinktoken.crypto.crypto_suite import CryptoSuiteError as ModuleCryptoSuiteError
 
 
-def test_compatibility_module_reexports_canonical_suite_registry():
-    """The compatibility module exposes the canonical suite types."""
-    assert CompatibilityCryptoSuite is CryptoSuite
-    assert CompatibilityCryptoSuiteError is CryptoSuiteError
+def test_crypto_package_reexports_canonical_suite_registry():
+    """The crypto package exposes the canonical suite types."""
+    assert ModuleCryptoSuite is CryptoSuite
+    assert ModuleCryptoSuiteError is CryptoSuiteError
 
 
 def test_public_constants_are_registered_suites():

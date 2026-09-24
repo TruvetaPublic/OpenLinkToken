@@ -16,7 +16,7 @@ from cryptography.hazmat.primitives.keywrap import aes_key_unwrap, aes_key_wrap
 from jwcrypto import jwe
 from jwcrypto.common import InvalidJWEOperation, JWException
 
-from openlinktoken.crypto_suite import CryptoSuite
+from openlinktoken.crypto.crypto_suite import CryptoSuite
 from openlinktoken.exchange_key_bundle import ExchangeKeyBundle
 
 EXCHANGE_V2_VERSION = 2

@@ -18,7 +18,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
-from openlinktoken.crypto_suite import CryptoSuite
+from openlinktoken.crypto.crypto_suite import CryptoSuite
 from openlinktoken.ec_key_utils import derive_public_key_from_private_pem, public_key_fingerprint
 from openlinktoken.exchange_jwe import decrypt_exchange_envelope, resolve_private_key_by_kid
 from openlinktoken.exchange_kem import (
