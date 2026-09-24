@@ -16,17 +16,20 @@ import org.apache.commons.lang3.SerializationUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+/** Tests keyed SHA-256 hashing, raw secrets, and serialized transformer behavior. */
 class HashTokenTransformerTest {
     private static final String VALID_SECRET = "sampleSecret";
     private static final String VALID_TOKEN = "sampleToken";
 
     private HashTokenTransformer transformer;
 
+    /** Creates a hash transformer with the valid test secret. */
     @BeforeEach
     void setup() throws NoSuchAlgorithmException, InvalidKeyException {
         transformer = new HashTokenTransformer(VALID_SECRET);
     }
 
+    /** Verifies a serialized transformer produces the expected Base64 HMAC-SHA-256 digest. */
     @Test
     void testSerializable() throws Exception {
         TokenTransformer encryptTokenTransformer = new HashTokenTransformer(VALID_SECRET);
@@ -45,6 +48,7 @@ class HashTokenTransformerTest {
         assertEquals(expectedHashedToken, hashedToken);
     }
 
+    /** Verifies hashing a valid token matches an independently calculated HMAC-SHA-256 digest. */
     @Test
     void testTransform_ValidToken_ReturnsHashedToken() throws Exception {
         String hashedToken = transformer.transform(VALID_TOKEN);
@@ -59,6 +63,7 @@ class HashTokenTransformerTest {
         assertEquals(expectedHashedToken, hashedToken);
     }
 
+    /** Verifies null token input is rejected with an argument error. */
     @Test
     void testTransform_NullToken_ThrowsIllegalArgumentException() {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
@@ -67,6 +72,7 @@ class HashTokenTransformerTest {
         assertEquals("Invalid Argument. Token can't be Null.", exception.getMessage());
     }
 
+    /** Verifies a transformer created without a secret cannot hash a token. */
     @Test
     void testConstructor_NullSecret_InitializesWithNullMac() throws Exception {
         HashTokenTransformer nullSecretTransformer = new HashTokenTransformer((String) null);
@@ -75,6 +81,7 @@ class HashTokenTransformerTest {
         });
     }
 
+    /** Verifies a transformer created with a blank secret cannot hash a token. */
     @Test
     void testConstructor_BlankSecret_InitializesWithNullMac() throws Exception {
         HashTokenTransformer blankSecretTransformer = new HashTokenTransformer("");
@@ -83,6 +90,7 @@ class HashTokenTransformerTest {
         });
     }
 
+    /** Verifies repeated hashing of the same token produces a consistent digest. */
     @Test
     void testTransform_ValidTokenMultipleTimes_ReturnsConsistentHash() throws Exception {
         String hash1 = transformer.transform(VALID_TOKEN);
@@ -90,6 +98,7 @@ class HashTokenTransformerTest {
         assertEquals(hash1, hash2); // The hashed value should be consistent
     }
 
+    /** Verifies a raw-byte secret produces the expected HMAC-SHA-256 digest. */
     @Test
     void testTransform_RawByteSecret_ReturnsExpectedHash() throws Exception {
         byte[] rawSecret = new byte[] {(byte) 0xff, 0x00, 's', 'e', 'c', 'r', 'e', 't'};

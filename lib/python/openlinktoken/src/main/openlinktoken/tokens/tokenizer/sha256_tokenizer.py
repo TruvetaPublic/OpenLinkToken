@@ -34,7 +34,12 @@ class SHA256Tokenizer(Tokenizer):
         self.token_transformer_list = token_transformer_list
 
     def get_token_transformer_list(self) -> List[TokenTransformer]:
-        """Return transformers configured after SHA-256 tokenization."""
+        """
+        Return transformers configured after SHA-256 tokenization.
+
+        Returns:
+            The token transformer list value returned by the operation.
+        """
         return self.token_transformer_list
 
     def tokenize(self, value: str) -> str:

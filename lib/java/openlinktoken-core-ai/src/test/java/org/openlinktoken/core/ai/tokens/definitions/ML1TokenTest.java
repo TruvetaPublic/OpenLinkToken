@@ -11,11 +11,17 @@ import org.junit.jupiter.api.Test;
  */
 class ML1TokenTest {
 
+    /**
+     * Verifies that the token exposes the stable ML1 identifier.
+     */
     @Test
     void identifierIsMl1() {
         assertEquals("ML1", new ML1Token().getIdentifier());
     }
 
+    /**
+     * Verifies that ML1 has no attribute expressions in its definition.
+     */
     @Test
     void definitionIsEmpty() {
         assertTrue(new ML1Token().getDefinition().isEmpty());

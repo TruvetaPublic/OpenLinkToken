@@ -19,7 +19,8 @@ import javax.crypto.spec.SecretKeySpec;
  * resulting columns are normalized by the signs of the QR diagonal to match the persisted
  * PersonMatching rotation-matrix contract.
  *
- * <p>Each returned matrix Q satisfies {@code Q * Q^T = I} and {@code det(Q) = +1}.
+ * <p>The three-argument overload returns full matrices satisfying {@code Q * Q^T = I} and
+ * {@code det(Q) = +1}. The row-limited overload returns the leading rows of those matrices.
  */
 public final class RotationMatrixGenerator {
 
@@ -36,6 +37,9 @@ public final class RotationMatrixGenerator {
 
     private static final double TWO_PI = 2.0 * Math.PI;
 
+    /**
+     * Prevents instances of this static matrix-generation utility.
+     */
     private RotationMatrixGenerator() {
     }
 

@@ -12,7 +12,12 @@ class HelpCommand:
 
     @staticmethod
     def register_subcommand(subparsers):
-        """Register the help subcommand with the argument parser."""
+        """
+        Register the help subcommand with the argument parser.
+
+        Args:
+            subparsers: Argument-parser subparsers to configure with command handlers.
+        """
         help_parser = subparsers.add_parser(
             "help",
             help="Display help information about the specified command",
@@ -27,7 +32,15 @@ class HelpCommand:
 
     @staticmethod
     def execute(args):
-        """Execute the help command."""
+        """
+        Execute the help command.
+
+        Args:
+            args: Parsed command-line options for this command.
+
+        Returns:
+            Integer exit status of the help command; zero indicates successful display.
+        """
         from openlinktoken_cli.commands import OpenLinkTokenCommand
 
         parser = OpenLinkTokenCommand.create_parser(

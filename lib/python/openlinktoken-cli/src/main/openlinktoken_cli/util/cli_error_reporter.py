@@ -31,6 +31,15 @@ _SENSITIVE_KV_PATTERN = re.compile(
 
 
 def redact_sensitive_text(value: str) -> str:
+    """
+    Replace recognized secret and credential values with [REDACTED].
+
+    Args:
+        value: CLI error text to redact before it is displayed or written to a report.
+
+    Returns:
+        Text with recognized secret and credential values replaced by [REDACTED].
+    """
     redacted = value
     for pattern in _SENSITIVE_FLAG_PATTERNS:
         redacted = pattern.sub(
@@ -47,11 +56,28 @@ class RedactingFormatter(logging.Formatter):
     """Formatter that redacts sensitive values before writing log output."""
 
     def format(self, record: logging.LogRecord) -> str:
+        """
+        Format the requested value.
+
+        Args:
+            record: Record to format.
+
+        Returns:
+            Formatted the requested value.
+        """
         return redact_sensitive_text(super().format(record))
 
 
 def create_cli_log_report(command_name: str | None = None) -> CliErrorReport:
-    """Create a log reference under the Open Link Token logs directory."""
+    """
+    Create a log reference under the Open Link Token logs directory.
+
+    Args:
+        command_name: Name of the command.
+
+    Returns:
+        Created a log reference under the Open Link Token logs directory.
+    """
     logs_dir = get_logs_dir()
     logs_dir.mkdir(parents=True, exist_ok=True)
 
@@ -70,7 +96,17 @@ def archive_cli_error(
     command_name: str | None = None,
     existing_report: CliErrorReport | None = None,
 ) -> CliErrorReport:
-    """Persist an exception traceback under the Open Link Token logs directory."""
+    """
+    Persist an exception traceback under the Open Link Token logs directory.
+
+    Args:
+        error: Error message or exception text to include in the status record.
+        command_name: Name of the command.
+        existing_report: Existing CLI error report whose log file should receive the traceback.
+
+    Returns:
+        CliErrorReport instance produced by archive cli error.
+    """
     report = existing_report or create_cli_log_report(command_name)
 
     command_line = redact_sensitive_text(command_name or "<unknown>")
@@ -98,18 +134,43 @@ def archive_cli_error(
 
 
 def archive_unexpected_error(error: BaseException, command_name: str | None = None) -> CliErrorReport:
-    """Backward-compatible wrapper for archived unexpected failures."""
+    """
+    Backward-compatible wrapper for archived unexpected failures.
+
+    Args:
+        error: Error message or exception text to include in the status record.
+        command_name: Name of the command.
+
+    Returns:
+        CliErrorReport instance produced by archive unexpected error.
+    """
     return archive_cli_error(error, command_name=command_name)
 
 
 def format_error_reference_message(report: CliErrorReport) -> str:
-    """Build the shared stderr handoff for archived CLI failures."""
+    """
+    Build the shared stderr handoff for archived CLI failures.
+
+    Args:
+        report: Report value to format.
+
+    Returns:
+        Built the shared stderr handoff for archived CLI failures.
+    """
     stack_trace_message = f"Stack trace: {report.log_path}"
     return format_dimmed_stderr_message(stack_trace_message)
 
 
 def format_dimmed_stderr_message(message: str) -> str:
-    """Render a dimmed stderr message when the current terminal supports color."""
+    """
+    Render a dimmed stderr message when the current terminal supports color.
+
+    Args:
+        message: String containing the message used to format.
+
+    Returns:
+        Rendered a dimmed stderr message when the current terminal supports color.
+    """
     isatty = getattr(sys.stderr, "isatty", None)
     use_color = not os.getenv("NO_COLOR") and bool(isatty and isatty())
     if not use_color:
@@ -119,6 +180,15 @@ def format_dimmed_stderr_message(message: str) -> str:
 
 
 def format_unexpected_error_message(report: CliErrorReport, command_name: str | None = None) -> str:
-    """Build the stderr message shown to users for archived unexpected failures."""
+    """
+    Build the stderr message shown to users for archived unexpected failures.
+
+    Args:
+        report: Report value to format.
+        command_name: Name of the command.
+
+    Returns:
+        Built the stderr message shown to users for archived unexpected failures.
+    """
     command_context = f" while running '{command_name}'" if command_name else ""
     return f"Error: Unexpected internal error{command_context}.\n{format_error_reference_message(report)}"

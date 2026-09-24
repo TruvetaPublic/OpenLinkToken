@@ -97,5 +97,12 @@ class HashCalculationException(Exception):
     """Custom exception for hash calculation errors."""
 
     def __init__(self, message: str, cause: Exception = None):
+        """
+        Initialize the instance.
+
+        Args:
+            message: String containing the message used to initialize.
+            cause: Cause value to initialize.
+        """
         super().__init__(message)
         self.cause = cause

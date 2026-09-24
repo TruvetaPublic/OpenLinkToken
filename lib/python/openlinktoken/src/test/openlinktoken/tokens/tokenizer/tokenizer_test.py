@@ -7,7 +7,15 @@ class ConcreteTokenizer(Tokenizer):
     """Minimal tokenizer implementation for testing base behavior."""
 
     def tokenize(self, value: str) -> str:
-        """Return the value unchanged."""
+        """
+        Return the value unchanged.
+
+        Args:
+            value: Input value to tokenize.
+
+        Returns:
+            Tokenized result.
+        """
         return value
 
 

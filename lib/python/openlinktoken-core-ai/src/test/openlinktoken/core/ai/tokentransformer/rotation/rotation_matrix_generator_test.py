@@ -144,7 +144,12 @@ class TestRotationMatrixGenerator:
         errors = []
 
         def worker(idx):
-            """Generate one matrix concurrently and capture any exception."""
+            """
+            Generate one matrix concurrently and capture any exception.
+
+            Args:
+                idx: Worker index used to select the parallel calculation task.
+            """
             try:
                 results[idx] = generate(_IV, 1, _DIMENSION)[0]
             except Exception as e:
@@ -163,7 +168,16 @@ class TestRotationMatrixGenerator:
 
 
 def _det(matrix, n):
-    """Compute determinant via Gaussian elimination for test validation."""
+    """
+    Compute determinant via Gaussian elimination for test validation.
+
+    Args:
+        matrix: Square matrix whose determinant is calculated.
+        n: Dimension of the square matrix.
+
+    Returns:
+        Computed determinant via Gaussian elimination for test validation.
+    """
     a = [list(row) for row in matrix]
     sign = 1
     for col in range(n):

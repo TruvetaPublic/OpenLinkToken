@@ -54,10 +54,19 @@ def parse_manifest(
     expected_name: Optional[str] = None,
     allow_local: bool = False,
 ) -> ExtensionManifest:
-    """Validate and normalize a bootstrap or vendor update manifest.
+    """
+    Validate and normalize a bootstrap or vendor update manifest.
 
     The function only examines JSON-compatible data. It never imports or loads
     extension modules, which keeps update checks safe before installation.
+
+    Args:
+        payload: Structured payload to parse, validate, or encrypt.
+        expected_name: Expected name used to check the actual result.
+        allow_local: Whether to allow local.
+
+    Returns:
+        Validated and normalize a bootstrap or vendor update manifest.
     """
     if not isinstance(payload, Mapping):
         raise ManifestValidationError("Manifest must be a JSON object.")
@@ -112,7 +121,16 @@ def parse_manifest(
 
 
 def is_core_compatible(core_version: str, core_specifier: str) -> bool:
-    """Return whether *core_version* satisfies a validated core range."""
+    """
+    Return whether *core_version* satisfies a validated core range.
+
+    Args:
+        core_version: String containing the core version used to check.
+        core_specifier: String containing the core specifier used to check.
+
+    Returns:
+        Whether *core_version* satisfies a validated core range.
+    """
     try:
         return Version(core_version) in SpecifierSet(core_specifier)
     except (InvalidVersion, InvalidSpecifier, TypeError):
@@ -125,6 +143,17 @@ def _parse_artifact(
     default_version: str,
     allow_local: bool,
 ) -> ArtifactRecord:
+    """
+    Parse artifact.
+
+    Args:
+        payload: Structured payload to parse, validate, or encrypt.
+        default_version: Fallback version used when no explicit value is supplied.
+        allow_local: Whether to allow local.
+
+    Returns:
+        Parsed artifact.
+    """
     if not isinstance(payload, Mapping):
         raise ManifestValidationError("Each artifact must be a JSON object.")
     url_value = payload.get("artifact_url", payload.get("url"))
@@ -150,6 +179,15 @@ def _parse_artifact(
 
 
 def _parse_signature(value: Any) -> Optional[dict[str, str]]:
+    """
+    Parse signature.
+
+    Args:
+        value: Signature object from the extension manifest.
+
+    Returns:
+        Parsed signature.
+    """
     if value is None:
         return None
     if not isinstance(value, Mapping):
@@ -171,6 +209,15 @@ def _parse_signature(value: Any) -> Optional[dict[str, str]]:
 
 
 def _bootstrap_core_specifier(core: Any) -> str:
+    """
+    Build a validated core-version specifier from a bootstrap manifest.
+
+    Args:
+        core: Core version bounds from the bootstrap manifest.
+
+    Returns:
+        Comma-separated core-version specifier built from the manifest minimum and maximum.
+    """
     if not isinstance(core, Mapping):
         raise ManifestValidationError("Bootstrap manifests require a core object.")
     minimum = core.get("min_version")
@@ -189,6 +236,15 @@ def _bootstrap_core_specifier(core: Any) -> str:
 
 
 def _required_core_specifier(value: Any) -> str:
+    """
+    Validate and normalize a non-empty core-version compatibility range.
+
+    Args:
+        value: Core-version compatibility range to parse and normalize.
+
+    Returns:
+        Normalized non-empty core-version compatibility specifier.
+    """
     if not isinstance(value, str) or not value.strip():
         raise ManifestValidationError("A non-empty core compatibility range is required.")
     try:
@@ -199,6 +255,16 @@ def _required_core_specifier(value: Any) -> str:
 
 
 def _required_string(payload: Mapping[str, Any], key: str) -> str:
+    """
+    Extract and validate a required non-empty string from a manifest mapping.
+
+    Args:
+        payload: Manifest mapping containing the required string field.
+        key: Manifest field name whose non-empty string value is required.
+
+    Returns:
+        Stripped non-empty string stored under the requested manifest key.
+    """
     value = payload.get(key)
     if not isinstance(value, str) or not value.strip():
         raise ManifestValidationError(f"{key} must be a non-empty string.")
@@ -206,6 +272,15 @@ def _required_string(payload: Mapping[str, Any], key: str) -> str:
 
 
 def _optional_string(value: Any) -> Optional[str]:
+    """
+    Validate an optional string and return its stripped value when present.
+
+    Args:
+        value: Optional value to validate and normalize as a string.
+
+    Returns:
+        Stripped optional string, or None when the field is absent.
+    """
     if value is None:
         return None
     if not isinstance(value, str) or not value.strip():
@@ -214,6 +289,16 @@ def _optional_string(value: Any) -> Optional[str]:
 
 
 def _required_version(payload: Mapping[str, Any], key: str) -> str:
+    """
+    Extract and validate a required version string from a manifest mapping.
+
+    Args:
+        payload: Manifest mapping containing the required version field.
+        key: Manifest field name whose version string is required.
+
+    Returns:
+        Validated version string stored under the requested manifest key.
+    """
     value = _required_string(payload, key)
     try:
         Version(value)
@@ -223,6 +308,16 @@ def _required_version(payload: Mapping[str, Any], key: str) -> str:
 
 
 def _valid_version(value: Any, field: str) -> str:
+    """
+    Validate and strip a version value associated with a manifest field.
+
+    Args:
+        value: Version value to validate and strip.
+        field: Manifest field name used in validation errors.
+
+    Returns:
+        Stripped version string after successful version validation.
+    """
     if not isinstance(value, str) or not value.strip():
         raise ManifestValidationError(f"{field} must be a non-empty version.")
     try:
@@ -233,18 +328,48 @@ def _valid_version(value: Any, field: str) -> str:
 
 
 def _required_url(value: Any, *, allow_local: bool) -> str:
+    """
+    Validate a required artifact URL under the configured local-file policy.
+
+    Args:
+        value: Artifact URL value to validate and normalize.
+        allow_local: Whether local file URLs are permitted.
+
+    Returns:
+        Validated artifact URL accepted by the configured URL policy.
+    """
     if not isinstance(value, str) or not value.strip():
         raise ManifestValidationError("Artifact URL must be a non-empty string.")
     return _validate_url(value.strip(), allow_local=allow_local)
 
 
 def _optional_url(value: Any, *, allow_local: bool) -> Optional[str]:
+    """
+    Validate an optional URL, returning None when it is omitted.
+
+    Args:
+        value: Optional URL value to validate and normalize.
+        allow_local: Whether local file URLs are permitted.
+
+    Returns:
+        Validated URL, or None when the optional URL is absent.
+    """
     if value is None:
         return None
     return _validate_url(value, allow_local=allow_local)
 
 
 def _validate_url(value: Any, *, allow_local: bool) -> str:
+    """
+    Validate url.
+
+    Args:
+        value: URL value from the extension manifest.
+        allow_local: Whether to allow local.
+
+    Returns:
+        Validated url.
+    """
     if not isinstance(value, str) or not value.strip():
         raise ManifestValidationError("URL fields must be non-empty strings.")
     parsed = urlparse(value.strip())

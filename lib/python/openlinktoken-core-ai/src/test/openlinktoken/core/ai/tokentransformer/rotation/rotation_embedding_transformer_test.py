@@ -19,7 +19,13 @@ _ROTATION_COUNT = 3
 
 @pytest.fixture(autouse=True)
 def isolate_rotation_cache(tmp_path, monkeypatch):
-    """Keep matrix-cache tests and transforms isolated from the user's home."""
+    """
+    Keep matrix-cache tests and transforms isolated from the user's home.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+        monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
+    """
     monkeypatch.setenv("OLT_ROTATION_CACHE_DIR", str(tmp_path))
 
 
@@ -29,7 +35,16 @@ class TestRotationEmbeddingTransformer:
     def _make_transformer(
         self, rotation_count=_ROTATION_COUNT, hash_dimension=_HASH_DIMENSION
     ) -> RotationEmbeddingTransformer:
-        """Create a transformer using the shared test configuration."""
+        """
+        Create a transformer using the shared test configuration.
+
+        Args:
+            rotation_count: Number of token rotations to generate or apply.
+            hash_dimension: Hash dimension used in the matrix-cache filename.
+
+        Returns:
+            Created a transformer using the shared test configuration.
+        """
         return RotationEmbeddingTransformer(
             iv=_IV,
             rotation_count=rotation_count,
@@ -38,7 +53,12 @@ class TestRotationEmbeddingTransformer:
         )
 
     def _sample_embedding(self) -> list:
-        """Return a small embedding suitable for deterministic assertions."""
+        """
+        Return a small embedding suitable for deterministic assertions.
+
+        Returns:
+            Sequence produced by sample embedding.
+        """
         return [0.1, -0.2, 0.3, -0.4]
 
     def test_transform_returns_rotation_count_tokens(self):
@@ -120,13 +140,25 @@ class TestRotationEmbeddingTransformer:
         assert matrices_after_first is matrices_after_second
 
     def test_cached_matrices_are_reused_by_new_transformer(self, tmp_path, monkeypatch):
-        """A second transformer should load the deterministic matrix cache."""
+        """
+        A second transformer should load the deterministic matrix cache.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
+        """
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
         first = self._make_transformer()
         first_tokens = first.transform(self._sample_embedding())
 
         def fail_generate(*args, **kwargs):
-            """Fail if the second transformer regenerates an existing cache entry."""
+            """
+            Fail if the second transformer regenerates an existing cache entry.
+
+            Args:
+                args: Additional positional arguments to pass to the command or wrapped operation.
+                kwargs: Additional keyword arguments to pass to the wrapped operation.
+            """
             raise AssertionError("rotation matrices were regenerated instead of loaded from cache")
 
         monkeypatch.setattr(transformer_module, "generate", fail_generate)
@@ -135,7 +167,12 @@ class TestRotationEmbeddingTransformer:
         assert second.transform(self._sample_embedding()) == first_tokens
 
     def test_corrupt_cached_matrices_are_regenerated(self, tmp_path):
-        """A cache with a mismatched digest should not change emitted tokens."""
+        """
+        A cache with a mismatched digest should not change emitted tokens.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         transformer = self._make_transformer()
         expected_tokens = transformer.transform(self._sample_embedding())
         cache_path = next((tmp_path / "rotation-matrices").glob("*.npz"))
@@ -151,7 +188,12 @@ class TestRotationEmbeddingTransformer:
         assert regenerated.transform(self._sample_embedding()) == expected_tokens
 
     def test_unresolvable_home_does_not_break_transform(self, monkeypatch):
-        """Matrix caching should be skipped when the home directory is unavailable."""
+        """
+        Matrix caching should be skipped when the home directory is unavailable.
+
+        Args:
+            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
+        """
         monkeypatch.delenv("OLT_ROTATION_CACHE_DIR")
 
         def fail_home():

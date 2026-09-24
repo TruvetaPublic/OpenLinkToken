@@ -22,25 +22,30 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+/** Tests birth-year names, normalization, range validation, and serialization. */
 class BirthYearAttributeTest {
 
     private BirthYearAttribute birthYearAttribute;
 
+    /** Creates a fresh birth-year attribute for each test. */
     @BeforeEach
     void setUp() {
         birthYearAttribute = new BirthYearAttribute();
     }
 
+    /** Verifies the attribute reports the {@code BirthYear} name. */
     @Test
     void getName_ShouldReturnBirthYear() {
         assertEquals("BirthYear", birthYearAttribute.getName());
     }
 
+    /** Verifies both supported birth-year aliases are exposed. */
     @Test
     void getAliases_ShouldReturnBirthYearAndYearOfBirthAliases() {
         assertArrayEquals(new String[] { "BirthYear", "YearOfBirth" }, birthYearAttribute.getAliases());
     }
 
+    /** Verifies valid four-digit years normalize to trimmed integer strings. */
     @Test
     void normalize_ValidYear_ShouldNormalizeToInteger() {
         assertEquals("1990", birthYearAttribute.normalize("1990"));
@@ -49,6 +54,7 @@ class BirthYearAttributeTest {
         assertEquals("2020", birthYearAttribute.normalize("2020"));
     }
 
+    /** Verifies malformed, null, and blank years are rejected during normalization. */
     @Test
     void normalize_InvalidYearFormat_ShouldThrowIllegalArgumentException() {
         assertThrows(IllegalArgumentException.class, () -> {
@@ -65,6 +71,7 @@ class BirthYearAttributeTest {
         });
     }
 
+    /** Verifies years within the supported range through the current year pass validation. */
     @Test
     void validate_ValidYear_ShouldReturnTrue() {
         assertTrue(birthYearAttribute.validate("1910"));
@@ -74,6 +81,7 @@ class BirthYearAttributeTest {
         assertTrue(birthYearAttribute.validate("  1980  "));
     }
 
+    /** Verifies out-of-range, future, and malformed years fail validation. */
     @Test
     void validate_InvalidYear_ShouldReturnFalse() {
         // Out of range
@@ -89,6 +97,7 @@ class BirthYearAttributeTest {
         assertFalse(birthYearAttribute.validate(null));
     }
 
+    /** Verifies concurrent birth-year normalization returns the same value for every thread. */
     @Test
     void normalize_ThreadSafety() throws InterruptedException {
         final int threadCount = 100;
@@ -126,6 +135,7 @@ class BirthYearAttributeTest {
         }
     }
 
+    /** Verifies serialization preserves birth-year normalization and validation behavior. */
     @Test
     void testSerialization() throws Exception {
         // Serialize the attribute
@@ -173,6 +183,7 @@ class BirthYearAttributeTest {
         }
     }
 
+    /** Verifies validation accepts the minimum year and current year boundaries. */
     @Test
     void validate_BoundaryValues_ShouldValidateCorrectly() {
         int currentYear = Year.now().getValue();

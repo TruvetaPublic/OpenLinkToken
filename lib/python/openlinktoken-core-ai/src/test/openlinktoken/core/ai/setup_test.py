@@ -10,13 +10,23 @@ MANIFEST_PATH = SETUP_PATH.parents[3] / "resources" / "inferencing" / "ml1" / "a
 
 
 def _load_setup_namespace():
-    """Load setup helpers without executing a real package build."""
+    """
+    Load setup helpers without executing a real package build.
+
+    Returns:
+        Loaded setup helpers without executing a real package build.
+    """
     with patch("setuptools.find_namespace_packages", return_value=[]), patch("setuptools.setup"):
         return runpy.run_path(str(SETUP_PATH))
 
 
 def test_sdist_release_tree_contains_the_verified_manifest(tmp_path):
-    """The sdist hook should stage the manifest inside the package source tree."""
+    """
+    The sdist hook should stage the manifest inside the package source tree.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+    """
     setup_namespace = _load_setup_namespace()
     command = setup_namespace["SdistWithInferencingManifest"](Distribution())
 

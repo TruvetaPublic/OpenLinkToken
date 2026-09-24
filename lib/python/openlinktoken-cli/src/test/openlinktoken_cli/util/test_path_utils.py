@@ -7,32 +7,62 @@ class TestGetAutoOutputPath:
     """Unit tests for get_auto_output_path()."""
 
     def test_tokenize_csv(self):
+        """
+        Verify that tokenize csv.
+        """
         assert get_auto_output_path("data.csv", "tokenize") == "data_tokenized.csv"
 
     def test_encrypt_parquet(self):
+        """
+        Verify that encrypt parquet.
+        """
         assert get_auto_output_path("records.parquet", "encrypt") == "records_encrypted.parquet"
 
     def test_decrypt_file_no_extension(self):
+        """
+        Verify that decrypt file no extension.
+        """
         assert get_auto_output_path("myfile", "decrypt") == "myfile_decrypted"
 
     def test_package_zip(self):
+        """
+        Verify that package zip.
+        """
         assert get_auto_output_path("input.csv", "package") == "input_packaged.zip"
 
     def test_tokenize_no_extension(self):
+        """
+        Verify that tokenize no extension.
+        """
         assert get_auto_output_path("myfile", "tokenize") == "myfile_tokenized"
 
     def test_decrypt_known_file(self):
+        """
+        Verify that decrypt known file.
+        """
         assert get_auto_output_path("customers.csv", "decrypt") == "customers_decrypted.csv"
 
     def test_package_nested_path(self):
-         # Path.stem returns just the filename ("data"), but with_name() preserves parent dirs
+        # Path.stem returns just the filename ("data"), but with_name() preserves parent dirs
+        """
+        Verify that package nested path.
+        """
         assert get_auto_output_path("path/to/data.json", "package") == "path/to/data_packaged.zip"
 
     def test_suffix_unknown_subcommand(self):
+        """
+        Verify that suffix unknown subcommand.
+        """
         assert get_auto_output_path("file.txt", "mymode") == "file_mymode.txt"
 
     def test_no_extension_nonstandard_subcommand(self):
+        """
+        Verify that no extension nonstandard subcommand.
+        """
         assert get_auto_output_path("README", "custom") == "README_custom"
 
     def test_package_already_zip(self):
+        """
+        Verify that package already zip.
+        """
         assert get_auto_output_path("output.zip", "package") == "output_packaged.zip"

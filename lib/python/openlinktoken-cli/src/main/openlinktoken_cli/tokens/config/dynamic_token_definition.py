@@ -22,9 +22,6 @@ class DynamicTokenDefinition(BaseTokenDefinition):
             config: Parsed tokenization configuration containing token rule entries.
             resolver: Attribute resolver used to resolve each rule field id
                 to its attribute class and build the field registry.
-
-        Returns:
-            None. Populates ``self._definitions`` for runtime token generation.
         """
         self._definitions: Dict[str, List[AttributeExpression]] = {}
         self.field_registry: FieldRegistry = resolver.build_field_registry()

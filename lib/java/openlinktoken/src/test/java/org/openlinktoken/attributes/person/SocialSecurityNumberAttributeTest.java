@@ -20,25 +20,30 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+/** Tests Social Security number formatting, validation, and serialization. */
 class SocialSecurityNumberAttributeTest {
     private SocialSecurityNumberAttribute ssnAttribute;
 
+    /** Creates a fresh Social Security number attribute for each test. */
     @BeforeEach
     void setUp() {
         ssnAttribute = new SocialSecurityNumberAttribute();
     }
 
+    /** Verifies the attribute reports the {@code SocialSecurityNumber} name. */
     @Test
     void getName_ShouldReturnSocialSecurityNumber() {
         assertEquals("SocialSecurityNumber", ssnAttribute.getName());
     }
 
+    /** Verifies the supported Social Security number aliases are exposed. */
     @Test
     void getAliases_ShouldReturnSocialSecurityNumberAliases() {
         String[] expectedAliases = { "SocialSecurityNumber", "NationalIdentificationNumber", "SSN" };
         assertArrayEquals(expectedAliases, ssnAttribute.getAliases());
     }
 
+    /** Verifies digit-only and formatted inputs normalize to dashed form. */
     @Test
     void normalize_ShouldFormatWithDashes() {
         assertEquals("123-45-6789", ssnAttribute.normalize("123456789"), "Should format without dashes");
@@ -49,6 +54,7 @@ class SocialSecurityNumberAttributeTest {
                 "Should format with leading zeros and decimal point");
     }
 
+    /** Verifies long, decimal, and nonnumeric inputs follow their expected normalization paths. */
     @Test
     void normalize_ShouldHandleEdgeCases() {
         assertEquals("1234567890", ssnAttribute.normalize("1234567890"), "Should return unchanged");
@@ -61,6 +67,7 @@ class SocialSecurityNumberAttributeTest {
         assertEquals("ABC-12-DEFG", ssnAttribute.normalize("ABC-12-DEFG"), "Should return non-numeric input unchanged");
     }
 
+    /** Verifies short numeric and empty inputs are returned without indexing failures. */
     @Test
     void normalize_ShouldHandleShortInputsWithoutCrashing() {
         assertEquals("123456", ssnAttribute.normalize("123456"), "Should handle 6-digit input without crashing");
@@ -72,6 +79,7 @@ class SocialSecurityNumberAttributeTest {
         assertEquals("", ssnAttribute.normalize(""), "Should handle empty input without crashing");
     }
 
+    /** Verifies spaces between number groups normalize to dashes. */
     @Test
     void normalize_ShouldHandleSpaces() {
         assertEquals("123-45-6789", ssnAttribute.normalize("123 45 6789"), "Should normalize spaces to dashes");
@@ -80,6 +88,7 @@ class SocialSecurityNumberAttributeTest {
         assertEquals("123-45-6789", ssnAttribute.normalize(" 123456789 "), "Should trim and format");
     }
 
+    /** Verifies mixed spaces and dashes normalize to standard formatting. */
     @Test
     void normalize_ShouldHandleMixedFormatting() {
         assertEquals("123-45-6789", ssnAttribute.normalize("123 45-6789"), "Should normalize mix of spaces and dashes");
@@ -88,12 +97,14 @@ class SocialSecurityNumberAttributeTest {
                 "Should handle leading space and partial formatting");
     }
 
+    /** Verifies null and empty inputs remain null and empty during normalization. */
     @Test
     void normalize_ShouldHandleNullAndEmptyValues() {
         assertEquals(null, ssnAttribute.normalize(null), "Should return null for null input");
         assertEquals("", ssnAttribute.normalize(""), "Should return empty for empty input");
     }
 
+    /** Verifies accepted Social Security number formats pass validation. */
     @Test
     void validate_ShouldReturnTrueForValidSSNs() {
         assertTrue(ssnAttribute.validate("223-45-6789"), "Valid SSN should be allowed");
@@ -106,6 +117,7 @@ class SocialSecurityNumberAttributeTest {
         assertTrue(ssnAttribute.validate("22345678.00"), "8-digit SSN with decimal should be allowed");
     }
 
+    /** Verifies malformed, out-of-range, and disallowed sequence values fail validation. */
     @Test
     void validate_ShouldReturnFalseForInvalidSSNs() {
         assertFalse(ssnAttribute.validate(null), "Null value should not be allowed");
@@ -127,6 +139,7 @@ class SocialSecurityNumberAttributeTest {
                 "Decimal with non-zero fractional part should not be allowed");
     }
 
+    /** Verifies additional explicitly disallowed Social Security number values fail validation. */
     @Test
     void validate_ShouldReturnFalseForSpecificInvalidSSNs() {
         assertFalse(ssnAttribute.validate("001-01-0001"), "Invalid SSN 001-01-0001 should not be allowed");
@@ -169,6 +182,7 @@ class SocialSecurityNumberAttributeTest {
         assertFalse(ssnAttribute.validate("111223333"), "Invalid SSN 111223333 (without dashes) should not be allowed");
     }
 
+    /** Verifies concurrent number normalization returns consistent dashed values. */
     @Test
     void normalize_ThreadSafety() throws InterruptedException {
         final int threadCount = 100;
@@ -206,6 +220,7 @@ class SocialSecurityNumberAttributeTest {
         }
     }
 
+    /** Verifies serialization preserves Social Security number behavior. */
     @Test
     void testSerialization() throws Exception {
         // Serialize the attribute

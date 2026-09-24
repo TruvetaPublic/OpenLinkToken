@@ -36,6 +36,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public final class Ml1InteropHarness {
 
+    /**
+     * Prevents instances of this command-line harness.
+     */
     private Ml1InteropHarness() {
     }
 
@@ -116,6 +119,12 @@ public final class Ml1InteropHarness {
         new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(outputPath.toFile(), byRecordId);
     }
 
+    /**
+     * Maps each CSV header name to its column position.
+     *
+     * @param headers CSV header names in input order
+     * @return insertion-ordered map of header names to column indexes
+     */
     private static Map<String, Integer> buildHeaderIndexes(String[] headers) {
         Map<String, Integer> indexes = new LinkedHashMap<>();
         for (int index = 0; index < headers.length; index++) {
@@ -126,6 +135,13 @@ public final class Ml1InteropHarness {
         return indexes;
     }
 
+    /**
+     * Builds the ML1 attribute map for one CSV row from the recognized columns.
+     *
+     * @param headerIndexes mapping from CSV header names to column positions
+     * @param values values for the current CSV row
+     * @return insertion-ordered map of available ML1 attributes
+     */
     private static Map<String, String> buildPersonAttributes(
             Map<String, Integer> headerIndexes,
             String[] values) {
@@ -138,6 +154,14 @@ public final class Ml1InteropHarness {
         return personAttributes;
     }
 
+    /**
+     * Adds a recognized attribute to the row map when its column exists.
+     *
+     * @param personAttributes destination map for ML1 attributes
+     * @param headerIndexes mapping from CSV header names to column positions
+     * @param values values for the current CSV row
+     * @param columnName ML1 attribute column to copy
+     */
     private static void addAttribute(
             Map<String, String> personAttributes,
             Map<String, Integer> headerIndexes,
@@ -151,6 +175,14 @@ public final class Ml1InteropHarness {
         }
     }
 
+    /**
+     * Gets a column value, treating a missing column or short row as empty.
+     *
+     * @param headerIndexes mapping from CSV header names to column positions
+     * @param values values for the current CSV row
+     * @param columnName column whose value is requested
+     * @return the column value, or an empty string if the column is unavailable
+     */
     private static String getValue(Map<String, Integer> headerIndexes, String[] values, String columnName) {
         Integer index = headerIndexes.get(columnName);
         // Treat a missing column or short row as an empty value. The provider
@@ -161,6 +193,12 @@ public final class Ml1InteropHarness {
         return values[index];
     }
 
+    /**
+     * Splits one CSV line into fields while preserving quoted commas and decoding doubled quotes.
+     *
+     * @param line CSV line to parse
+     * @return parsed field values in source order
+     */
     private static List<String> parseCsvLine(String line) {
         List<String> values = new ArrayList<>();
         StringBuilder currentValue = new StringBuilder();

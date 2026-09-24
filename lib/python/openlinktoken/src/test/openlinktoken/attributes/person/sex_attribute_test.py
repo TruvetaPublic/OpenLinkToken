@@ -67,7 +67,12 @@ class TestSexAttribute:
         results = []
 
         def normalize_sex():
-            """Function to be executed by each thread."""
+            """
+            Function to be executed by each thread.
+
+            Returns:
+                Normalized sex.
+            """
             try:
                 result = self.sex_attribute.normalize(test_sex)
                 return result
@@ -191,12 +196,23 @@ class TestSexAttribute:
         ],
     )
     def test_normalize_parametrized(self, input_value, expected_output):
-        """Parametrized test for normalization with various inputs."""
+        """
+        Parametrized test for normalization with various inputs.
+
+        Args:
+            input_value: Sex value to normalize to Male, Female, or None.
+            expected_output: Expected output used to verify the operation.
+        """
         assert self.sex_attribute.normalize(input_value) == expected_output
 
     @pytest.mark.parametrize("valid_value", ["M", "F", "Male", "Female", "m", "f", "male", "female"])
     def test_validate_valid_values_parametrized(self, valid_value):
-        """Parametrized test for validation with valid values."""
+        """
+        Parametrized test for validation with valid values.
+
+        Args:
+            valid_value: Supported sex value to validate.
+        """
         assert self.sex_attribute.validate(valid_value) is True
 
     @pytest.mark.parametrize(
@@ -204,7 +220,12 @@ class TestSexAttribute:
         ["X", "Other", "", None, "U", "Unknown", "u", "unknown", "MALE", "FEMALE", "Man", "Woman", "1", "0"],
     )
     def test_validate_invalid_values_parametrized(self, invalid_value):
-        """Parametrized test for validation with invalid values."""
+        """
+        Parametrized test for validation with invalid values.
+
+        Args:
+            invalid_value: Unsupported sex value that validation should reject.
+        """
         assert self.sex_attribute.validate(invalid_value) is False
 
     def test_normalize_case_insensitivity(self):

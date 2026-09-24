@@ -107,6 +107,12 @@ class VersionChecker:
     # ------------------------------------------------------------------
 
     def _is_disabled(self) -> bool:
+        """
+        Determine whether disabled.
+
+        Returns:
+            Whether disabled.
+        """
         if self._no_update_check:
             return True
         if os.getenv(_ENV_DISABLE, "").strip() == "1":
@@ -168,7 +174,15 @@ class VersionChecker:
 
     @staticmethod
     def _version_key(value: str):
-        """Return a comparable packaging version, with invalid values sorted last."""
+        """
+        Return a comparable packaging version, with invalid values sorted last.
+
+        Args:
+            value: Version string to parse into a comparable packaging version.
+
+        Returns:
+            Parsed packaging Version used for ordering; invalid values map to Version("0").
+        """
         from packaging.version import Version
 
         try:
@@ -177,7 +191,15 @@ class VersionChecker:
             return Version("0")
 
     def _fetch_extension_manifest(self, url: str) -> Optional[dict]:
-        """Fetch one HTTPS vendor manifest as JSON, never importing extension code."""
+        """
+        Fetch one HTTPS vendor manifest as JSON, never importing extension code.
+
+        Args:
+            url: URL for the remote manifest, artifact, or release resource to fetch.
+
+        Returns:
+            Mapping produced by fetch extension manifest.
+        """
         try:
             parsed = urlparse(url)
             if parsed.scheme != "https" or not parsed.netloc:
@@ -194,7 +216,12 @@ class VersionChecker:
             return None
 
     def _fetch_latest_version(self) -> Optional[str]:
-        """Query the GitHub Releases API and return the tag name."""
+        """
+        Query the GitHub Releases API and return the tag name.
+
+        Returns:
+            Str] instance produced by fetch latest version.
+        """
         try:
             req = Request(_GITHUB_API_URL, headers={"User-Agent": "openlinktoken-cli"})
             with urlopen(req, timeout=_REQUEST_TIMEOUT_SECONDS) as resp:
@@ -210,16 +237,31 @@ class VersionChecker:
 
     @staticmethod
     def _get_cache_path() -> Path:
-        """Return the platform-appropriate path for the cache file."""
+        """
+        Return the platform-appropriate path for the cache file.
+
+        Returns:
+            The cache path value returned by the operation.
+        """
         return get_openlinktoken_home() / _CACHE_FILENAME
 
     @staticmethod
     def _get_extension_cache_path() -> Path:
-        """Return the bounded cache path for extension manifests."""
+        """
+        Return the bounded cache path for extension manifests.
+
+        Returns:
+            The extension cache path value returned by the operation.
+        """
         return get_openlinktoken_home() / _EXTENSION_CACHE_FILENAME
 
     def _read_extension_cache(self) -> dict:
-        """Read the extension manifest cache, returning an empty cache on errors."""
+        """
+        Read the extension manifest cache, returning an empty cache on errors.
+
+        Returns:
+            Read the extension manifest cache, returning an empty cache on errors.
+        """
         try:
             payload = json.loads(self._get_extension_cache_path().read_text(encoding="utf-8"))
             return payload if isinstance(payload, dict) else {}
@@ -227,7 +269,12 @@ class VersionChecker:
             return {}
 
     def _write_extension_cache(self, cache: dict) -> None:
-        """Persist extension manifest responses without affecting command execution."""
+        """
+        Persist extension manifest responses without affecting command execution.
+
+        Args:
+            cache: Mapping of cache values used to write.
+        """
         try:
             path = self._get_extension_cache_path()
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -237,7 +284,15 @@ class VersionChecker:
 
     @staticmethod
     def _cache_entry_fresh(entry: dict) -> bool:
-        """Return whether one extension manifest cache entry is inside its TTL."""
+        """
+        Return whether one extension manifest cache entry is inside its TTL.
+
+        Args:
+            entry: Cache entry containing the last-check timestamp and manifest payload.
+
+        Returns:
+            Whether one extension manifest cache entry is inside its TTL.
+        """
         try:
             checked = datetime.fromisoformat(entry["last_checked"])
             if checked.tzinfo is None:
@@ -277,7 +332,12 @@ class VersionChecker:
             return None
 
     def _write_cache(self, latest_version: str) -> None:
-        """Write the fetched version to the cache file, silently ignoring errors."""
+        """
+        Write the fetched version to the cache file, silently ignoring errors.
+
+        Args:
+            latest_version: String containing the latest version used to write.
+        """
         try:
             cache_path = self._get_cache_path()
             cache_path.parent.mkdir(parents=True, exist_ok=True)
@@ -292,7 +352,12 @@ class VersionChecker:
             logger.debug("Could not write version cache", exc_info=exc)
 
     def _notice_due(self) -> bool:
-        """Return True if the update notice has not been shown in the last 24 hours."""
+        """
+        Return True if the update notice has not been shown in the last 24 hours.
+
+        Returns:
+            True when the check succeeds; otherwise, False.
+        """
         try:
             cache_path = self._get_cache_path()
             if not cache_path.exists():
@@ -338,6 +403,13 @@ class VersionChecker:
         """
         Return True when *candidate* is strictly greater than *current*
         using semantic-version comparison.
+
+        Args:
+            candidate: String containing the candidate used to check.
+            current: String containing the current used to check.
+
+        Returns:
+            True when the newer condition holds; otherwise, False.
         """
         from packaging.version import Version  # type: ignore[import]
 
@@ -350,6 +422,9 @@ class VersionChecker:
         """
         Write the update notice to stderr.
         Respects the ``NO_COLOR`` environment variable.
+
+        Args:
+            latest_version: String containing the latest version used to print.
         """
         use_color = not os.getenv("NO_COLOR")
         yellow = "\033[33m" if use_color else ""
@@ -402,7 +477,12 @@ class VersionChecker:
 
     @staticmethod
     def _stderr_is_interactive() -> bool:
-        """Return whether stderr is attached to an interactive terminal."""
+        """
+        Return whether stderr is attached to an interactive terminal.
+
+        Returns:
+            Whether stderr is attached to an interactive terminal.
+        """
         isatty = getattr(sys.stderr, "isatty", None)
         return bool(isatty and isatty())
 
@@ -416,13 +496,24 @@ class VersionChecker:
         Return the cached latest version without making a network call.
 
         Useful for tests and tooling.
+
+        Args:
+            current_version: String containing the current version used to retrieve.
+
+        Returns:
+            The latest version from cache value returned by the operation.
         """
         checker = cls(current_version)
         return checker._read_cache()
 
     @staticmethod
     def get_cache_path() -> Path:
-        """Return the path where the cache file is stored (public for tests)."""
+        """
+        Return the path where the cache file is stored (public for tests).
+
+        Returns:
+            The cache path value returned by the operation.
+        """
         return VersionChecker._get_cache_path()
 
     # ------------------------------------------------------------------

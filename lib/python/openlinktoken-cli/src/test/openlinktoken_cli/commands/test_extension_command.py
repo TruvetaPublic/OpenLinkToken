@@ -20,6 +20,15 @@ from openlinktoken_cli.extension.extension_registry import ExtensionRegistry
 
 
 def _make_args(**kwargs) -> MagicMock:
+    """
+    Create a mock argument namespace populated from the supplied keyword values.
+
+    Args:
+        kwargs: Additional keyword arguments to pass to the wrapped operation.
+
+    Returns:
+        Mock argument namespace populated with the supplied keyword attributes.
+    """
     args = MagicMock()
     for k, v in kwargs.items():
         setattr(args, k, v)
@@ -31,6 +40,14 @@ def _make_wheel(dest: Path, name: str = "hello-world", version: str = "1.0.0") -
     Write a minimal valid wheel (.whl) to *dest* and return the path.
 
     The wheel contains METADATA and entry_points.txt in a dist-info directory.
+
+    Args:
+        dest: Directory where the test wheel archive is written.
+        name: Name identifying the item being processed.
+        version: Version string to validate, compare, or include in generated metadata.
+
+    Returns:
+        Written a minimal valid wheel (.whl) to *dest* and return the path.
     """
     dist_info = f"openlinktoken_{name.replace('-', '_')}-{version}.dist-info"
     metadata_content = f"Metadata-Version: 2.1\nName: openlinktoken-{name}\nVersion: {version}\n"
@@ -47,7 +64,17 @@ def _make_wheel(dest: Path, name: str = "hello-world", version: str = "1.0.0") -
 
 
 def _make_loadable_wheel(dest: Path, name: str = "hello-world", version: str = "1.0.0") -> Path:
-    """Write a wheel containing a loadable extension class for frozen tests."""
+    """
+    Write a wheel containing a loadable extension class for frozen tests.
+
+    Args:
+        dest: Directory where the loadable test wheel archive is written.
+        name: Name identifying the item being processed.
+        version: Version string to validate, compare, or include in generated metadata.
+
+    Returns:
+        Written a wheel containing a loadable extension class for frozen tests.
+    """
     dist_info = f"openlinktoken_{name.replace('-', '_')}-{version}.dist-info"
     package = name.replace("-", "_")
     metadata_content = f"Metadata-Version: 2.1\nName: openlinktoken-{name}\nVersion: {version}\n"
@@ -81,7 +108,13 @@ class TestExtensionList:
     """Tests for ``extension list``."""
 
     def test_list_empty_registry(self, tmp_path, capsys):
-        """list prints a friendly message when no extensions are installed."""
+        """
+        list prints a friendly message when no extensions are installed.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            capsys: Pytest fixture for capturing standard output and standard error.
+        """
         with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             with patch("importlib.metadata.entry_points", return_value=[]):
                 result = ExtensionCommand._list(_make_args())
@@ -90,7 +123,13 @@ class TestExtensionList:
         assert "No extensions installed" in capsys.readouterr().out
 
     def test_list_populated_registry(self, tmp_path, capsys):
-        """list prints a table with name, version, command, and source_url columns."""
+        """
+        list prints a table with name, version, command, and source_url columns.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            capsys: Pytest fixture for capturing standard output and standard error.
+        """
         data = {
             "my-ext": {
                 "version": "1.2.3",
@@ -119,7 +158,12 @@ class TestExtensionUninstall:
     """Tests for ``extension uninstall``."""
 
     def test_uninstall_removes_directory_and_registry_entry(self, tmp_path):
-        """uninstall removes the extension's directory and its registry entry (frozen mode)."""
+        """
+        uninstall removes the extension's directory and its registry entry (frozen mode).
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         data = {"bye-ext": {"version": "1.0.0", "source_url": "", "dist_name": "openlinktoken-bye-ext"}}
         (tmp_path / "registry.json").write_text(json.dumps(data))
         ext_dir = tmp_path / "bye-ext"
@@ -136,7 +180,12 @@ class TestExtensionUninstall:
         assert "bye-ext" not in registry
 
     def test_uninstall_calls_pip_in_non_frozen_mode(self, tmp_path):
-        """uninstall calls pip uninstall for registry entries in a normal Python environment."""
+        """
+        uninstall calls pip uninstall for registry entries in a normal Python environment.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         data = {"my-ext": {"version": "1.0.0", "source_url": "", "dist_name": "openlinktoken-my-ext"}}
         (tmp_path / "registry.json").write_text(json.dumps(data))
 
@@ -154,7 +203,13 @@ class TestExtensionUninstall:
         assert "openlinktoken-my-ext" in call_args
 
     def test_uninstall_pip_installed_extension_shows_guidance(self, tmp_path, capsys):
-        """uninstall prints pip guidance and returns 1 for entry-point extensions."""
+        """
+        uninstall prints pip guidance and returns 1 for entry-point extensions.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            capsys: Pytest fixture for capturing standard output and standard error.
+        """
         mock_ep = MagicMock()
         mock_ep.name = "pip-ext"
 
@@ -168,7 +223,13 @@ class TestExtensionUninstall:
         assert "pip-ext" in output.err
 
     def test_uninstall_unknown_extension_returns_error(self, tmp_path, capsys):
-        """uninstall returns 1 with an error message for unknown extension names."""
+        """
+        uninstall returns 1 with an error message for unknown extension names.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            capsys: Pytest fixture for capturing standard output and standard error.
+        """
         with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             with patch("importlib.metadata.entry_points", return_value=[]):
                 result = ExtensionCommand._uninstall(_make_args(name="ghost-ext"))
@@ -177,7 +238,13 @@ class TestExtensionUninstall:
         assert "not installed" in capsys.readouterr().err
 
     def test_uninstall_invalid_dist_name_returns_error(self, tmp_path, capsys):
-        """_uninstall returns 1 and does not call pip when the registry dist_name is invalid."""
+        """
+        _uninstall returns 1 and does not call pip when the registry dist_name is invalid.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            capsys: Pytest fixture for capturing standard output and standard error.
+        """
         data = {"evil-ext": {"version": "1.0.0", "source_url": "", "dist_name": "-r evil.txt"}}
         (tmp_path / "registry.json").write_text(json.dumps(data))
 
@@ -200,7 +267,13 @@ class TestExtensionInstall:
     """Tests for ``extension install``."""
 
     def test_install_prints_security_warning(self, tmp_path, capsys):
-        """install always prints the security warning before any other action."""
+        """
+        install always prints the security warning before any other action.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            capsys: Pytest fixture for capturing standard output and standard error.
+        """
         args = _make_args(url="file:///nonexistent.whl", yes=True)
         with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             # The file doesn't exist — we just want to confirm the warning is printed.
@@ -210,7 +283,13 @@ class TestExtensionInstall:
         assert _SECURITY_WARNING in out
 
     def test_install_yes_flag_skips_prompt(self, tmp_path, capsys):
-        """--yes skips the interactive confirmation prompt."""
+        """
+        --yes skips the interactive confirmation prompt.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            capsys: Pytest fixture for capturing standard output and standard error.
+        """
         args = _make_args(url="file:///nonexistent.whl", yes=True)
         with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             with patch("builtins.input") as mock_input:
@@ -218,7 +297,13 @@ class TestExtensionInstall:
                 mock_input.assert_not_called()
 
     def test_install_prompts_without_yes(self, tmp_path, capsys):
-        """Without --yes, the user is prompted when stdin is a tty."""
+        """
+        Without --yes, the user is prompted when stdin is a tty.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            capsys: Pytest fixture for capturing standard output and standard error.
+        """
         args = _make_args(url="file:///nonexistent.whl", yes=False)
         with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             with patch("sys.stdin") as mock_stdin:
@@ -231,7 +316,13 @@ class TestExtensionInstall:
         assert "cancelled" in out.lower()
 
     def test_install_file_url(self, tmp_path, capsys):
-        """install file:// downloads from a local path and registers the extension."""
+        """
+        install file:// downloads from a local path and registers the extension.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            capsys: Pytest fixture for capturing standard output and standard error.
+        """
         whl = _make_wheel(tmp_path)
         args = _make_args(url=f"file://{whl}", yes=True)
 
@@ -255,7 +346,13 @@ class TestExtensionInstall:
         assert registry["hello-world"]["version"] == "1.0.0"
 
     def test_install_non_interactive_without_yes_fails(self, tmp_path, capsys):
-        """Without --yes and in a non-TTY context, install must fail with a clear error."""
+        """
+        Without --yes and in a non-TTY context, install must fail with a clear error.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            capsys: Pytest fixture for capturing standard output and standard error.
+        """
         args = _make_args(url="file:///nonexistent.whl", yes=False)
         with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             with patch("sys.stdin") as mock_stdin:
@@ -268,7 +365,12 @@ class TestExtensionInstall:
         assert "--yes" in err
 
     def test_install_bootstrap_manifest_downloads_declared_artifact(self, tmp_path):
-        """install accepts a local bootstrap manifest and forwards its contract."""
+        """
+        install accepts a local bootstrap manifest and forwards its contract.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         wheel = _make_wheel(tmp_path)
         artifact_url = f"file://{wheel}"
         manifest_path = tmp_path / "bootstrap.json"
@@ -304,7 +406,12 @@ class TestExtensionInstall:
         assert call.kwargs["signature"]["algorithm"] == "ed25519"
 
     def test_install_manifest_option_accepts_https_manifest(self, tmp_path):
-        """The explicit --manifest form uses the same bootstrap installer path."""
+        """
+        The explicit --manifest form uses the same bootstrap installer path.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         manifest = {
             "schema_version": 1,
             "extension": {
@@ -323,6 +430,16 @@ class TestExtensionInstall:
         response.__exit__ = MagicMock(return_value=False)
 
         def download(url, destination):
+            """
+            Simulate downloading the test manifest by writing it to the destination path.
+
+            Args:
+                url: URL for the remote manifest, artifact, or release resource to fetch.
+                destination: Destination path where the downloaded file is written.
+
+            Returns:
+                True to indicate that the mocked download completed successfully.
+            """
             if url.endswith("bootstrap.json"):
                 destination.write_text(json.dumps(manifest))
             return True
@@ -336,7 +453,12 @@ class TestExtensionInstall:
         install_wheel.assert_called_once()
 
     def test_frozen_install_rejects_invalid_entry_point_name_without_path_escape(self, tmp_path):
-        """Frozen installation rejects traversal names before constructing extension paths."""
+        """
+        Frozen installation rejects traversal names before constructing extension paths.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         wheel = tmp_path / "malicious.whl"
         with zipfile.ZipFile(wheel, "w") as archive:
             archive.writestr(
@@ -360,7 +482,12 @@ class TestExtensionInstall:
         assert not (tmp_path / "extensions").exists()
 
     def test_download_accepts_existing_plain_local_path(self, tmp_path):
-        """Direct local paths are copied without weakening HTTPS restrictions."""
+        """
+        Direct local paths are copied without weakening HTTPS restrictions.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         source = tmp_path / "extension.whl"
         source.write_bytes(b"wheel")
         destination = tmp_path / "downloaded.whl"
@@ -386,7 +513,13 @@ class TestExtensionUpdate:
         assert all_args.yes is True
 
     def test_update_all_reports_failure_without_stopping_other_extensions(self, tmp_path, capsys):
-        """--all processes every registered extension and returns failure if one fails."""
+        """
+        --all processes every registered extension and returns failure if one fails.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            capsys: Pytest fixture for capturing standard output and standard error.
+        """
         registry = {
             "bad": {"version": "1.0.0", "update_manifest_url": "https://example.com/bad.json"},
             "good": {"version": "1.0.0", "update_manifest_url": "https://example.com/good.json"},
@@ -404,7 +537,12 @@ class TestExtensionUpdate:
         assert [call.args[0] for call in update_one.call_args_list] == ["bad", "good"]
 
     def test_update_dry_run_selects_newer_compatible_artifact_without_loading_code(self, capsys):
-        """Dry-run selects a newer artifact and stops before download or install."""
+        """
+        Dry-run selects a newer artifact and stops before download or install.
+
+        Args:
+            capsys: Pytest fixture for capturing standard output and standard error.
+        """
         manifest = {
             "schema_version": 1,
             "extension": "demo",
@@ -434,7 +572,12 @@ class TestExtensionUpdate:
         install.assert_not_called()
 
     def test_frozen_install_rolls_back_directory_and_registry_when_registry_write_fails(self, tmp_path):
-        """A failed atomic registry commit leaves the prior extension untouched."""
+        """
+        A failed atomic registry commit leaves the prior extension untouched.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         wheel = _make_loadable_wheel(tmp_path)
         ext_dir = tmp_path / "hello-world"
         ext_dir.mkdir()
@@ -458,7 +601,12 @@ class TestExtensionUpdate:
         assert json.loads((tmp_path / "registry.json").read_text()) == old_registry
 
     def test_frozen_install_rolls_back_directory_when_stage_swap_fails(self, tmp_path):
-        """A failed staged directory swap leaves the prior extension untouched."""
+        """
+        A failed staged directory swap leaves the prior extension untouched.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         wheel = _make_loadable_wheel(tmp_path)
         ext_dir = tmp_path / "hello-world"
         ext_dir.mkdir()
@@ -475,6 +623,16 @@ class TestExtensionUpdate:
         original_replace = Path.replace
 
         def fail_stage_swap(source: Path, target: Path) -> Path:
+            """
+            Simulate a failed staged-extension rename during installation.
+
+            Args:
+                source: Path to the source used by the operation.
+                target: Path to the target used by the operation.
+
+            Returns:
+                Path returned by the original replacement operation when no staged swap is simulated.
+            """
             if source.name.startswith(".hello-world.stage-") and target == ext_dir:
                 raise OSError("rename failed")
             return original_replace(source, target)
@@ -489,7 +647,12 @@ class TestExtensionUpdate:
         assert json.loads((tmp_path / "registry.json").read_text()) == old_registry
 
     def test_install_rejects_declared_checksum_before_extracting(self, tmp_path):
-        """A mismatched declared SHA-256 never changes the installed extension."""
+        """
+        A mismatched declared SHA-256 never changes the installed extension.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         wheel = _make_wheel(tmp_path)
         with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             with patch.object(sys, "frozen", True, create=True):
@@ -503,7 +666,13 @@ class TestExtensionUpdate:
         assert not (tmp_path / "hello-world").exists()
 
     def test_install_rejects_non_https_url(self, tmp_path, capsys):
-        """install must reject URLs with schemes other than https:// or file://."""
+        """
+        install must reject URLs with schemes other than https:// or file://.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            capsys: Pytest fixture for capturing standard output and standard error.
+        """
         args = _make_args(url="http://example.com/ext.whl", yes=True)
         with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             result = ExtensionCommand._install(args)
@@ -513,7 +682,13 @@ class TestExtensionUpdate:
         assert "Unsupported URL scheme" in err
 
     def test_install_pip_uses_upgrade_without_no_deps(self, tmp_path, capsys):
-        """install passes --upgrade to pip but NOT --no-deps so transitive dependencies are resolved normally."""
+        """
+        install passes --upgrade to pip but NOT --no-deps so transitive dependencies are resolved normally.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            capsys: Pytest fixture for capturing standard output and standard error.
+        """
         whl = _make_wheel(tmp_path)
         args = _make_args(url=f"file://{whl}", yes=True)
 
@@ -530,7 +705,12 @@ class TestExtensionUpdate:
         assert "--no-deps" not in install_call_args
 
     def test_install_rolls_back_pip_on_none_command_name(self, tmp_path):
-        """install rolls back pip when _resolve_extension_command_name returns None."""
+        """
+        install rolls back pip when _resolve_extension_command_name returns None.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         whl = _make_wheel(tmp_path)
         args = _make_args(url=f"file://{whl}", yes=True)
 
@@ -553,7 +733,12 @@ class TestExtensionUpdate:
         assert "openlinktoken-hello-world" in uninstall_call_args
 
     def test_frozen_install_cleans_up_src_dir_on_extract_error(self, tmp_path):
-        """install removes src_dir when _safe_extract_wheel raises ValueError."""
+        """
+        install removes src_dir when _safe_extract_wheel raises ValueError.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         whl = _make_wheel(tmp_path)
         args = _make_args(url=f"file://{whl}", yes=True)
 
@@ -572,7 +757,12 @@ class TestExtensionUpdate:
         assert not src_dir.exists()
 
     def test_frozen_install_cleans_up_src_dir_on_none_command_name(self, tmp_path):
-        """install removes src_dir when _resolve_extension_command_name returns None (frozen mode)."""
+        """
+        install removes src_dir when _resolve_extension_command_name returns None (frozen mode).
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         whl = _make_wheel(tmp_path)
         args = _make_args(url=f"file://{whl}", yes=True)
 
@@ -590,7 +780,12 @@ class TestExtensionUpdate:
         assert not src_dir.exists()
 
     def test_frozen_install_cleans_up_src_dir_on_command_name_mismatch(self, tmp_path):
-        """install removes src_dir when _resolve_extension_command_name returns a mismatched name (frozen mode)."""
+        """
+        install removes src_dir when _resolve_extension_command_name returns a mismatched name (frozen mode).
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         whl = _make_wheel(tmp_path)
         args = _make_args(url=f"file://{whl}", yes=True)
 
@@ -608,7 +803,12 @@ class TestExtensionUpdate:
         assert not src_dir.exists()
 
     def test_install_rolls_back_pip_on_command_name_mismatch(self, tmp_path):
-        """install rolls back pip when _resolve_extension_command_name returns a name that doesn't match."""
+        """
+        install rolls back pip when _resolve_extension_command_name returns a name that doesn't match.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         whl = _make_wheel(tmp_path)
         args = _make_args(url=f"file://{whl}", yes=True)
 
@@ -631,7 +831,13 @@ class TestExtensionUpdate:
         assert "openlinktoken-hello-world" in uninstall_call_args
 
     def test_nonfrozen_install_invalid_ext_name_returns_error(self, tmp_path, capsys):
-        """_install_wheel returns 1 without calling pip when ext_name is not a valid dist name (non-frozen)."""
+        """
+        _install_wheel returns 1 without calling pip when ext_name is not a valid dist name (non-frozen).
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            capsys: Pytest fixture for capturing standard output and standard error.
+        """
         whl = _make_wheel(tmp_path)
 
         with patch.object(
@@ -657,12 +863,28 @@ class TestCheckFrozenDeps:
     """Unit tests for ExtensionCommand._check_frozen_deps."""
 
     def _make_wheel_with_metadata(self, dest: Path, metadata_content: str) -> zipfile.ZipFile:
+        """
+        Create a wheel archive containing the supplied METADATA file.
+
+        Args:
+            dest: Directory where the test wheel with metadata is written.
+            metadata_content: Wheel METADATA file text to include in the archive.
+
+        Returns:
+            Open ZipFile containing the wheel METADATA entry.
+        """
         whl_path = dest / "test-1.0.0-py3-none-any.whl"
         with zipfile.ZipFile(whl_path, "w") as zf:
             zf.writestr("test-1.0.0.dist-info/METADATA", metadata_content)
         return zipfile.ZipFile(whl_path, "r")
 
     def test_no_metadata_returns_none(self, tmp_path):
+        """
+        Verify that no metadata returns none.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         whl_path = tmp_path / "test-1.0.0-py3-none-any.whl"
         with zipfile.ZipFile(whl_path, "w") as zf:
             zf.writestr("test/__init__.py", "")
@@ -670,6 +892,12 @@ class TestCheckFrozenDeps:
             assert ExtensionCommand._check_frozen_deps(zf) is None
 
     def test_all_bundled_deps_returns_none(self, tmp_path):
+        """
+        Verify that all bundled deps returns none.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         metadata = (
             "Metadata-Version: 2.1\n"
             "Name: my-extension\n"
@@ -681,7 +909,12 @@ class TestCheckFrozenDeps:
             assert ExtensionCommand._check_frozen_deps(zf) is None
 
     def test_version_specifier_with_parentheses_is_parsed_correctly(self, tmp_path):
-        """Wheel METADATA may use 'pkg (>=1.2)' format; the name must be extracted cleanly."""
+        """
+        Wheel METADATA may use 'pkg (>=1.2)' format; the name must be extracted cleanly.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         metadata = (
             "Metadata-Version: 2.1\n"
             "Name: my-extension\n"
@@ -694,6 +927,12 @@ class TestCheckFrozenDeps:
         assert result == "requests"
 
     def test_version_specifier_without_parentheses_is_parsed_correctly(self, tmp_path):
+        """
+        Verify that version specifier without parentheses is parsed correctly.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         metadata = (
             "Metadata-Version: 2.1\nName: my-extension\n"
             "Requires-Dist: openlinktoken>=2.0\nRequires-Dist: requests>=2.28\n"
@@ -703,13 +942,24 @@ class TestCheckFrozenDeps:
         assert result == "requests"
 
     def test_underscore_normalized_to_dash(self, tmp_path):
-        """Package names with underscores should be treated the same as dashes."""
+        """
+        Package names with underscores should be treated the same as dashes.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         metadata = "Metadata-Version: 2.1\nName: my-extension\nRequires-Dist: openlinktoken_cli\n"
         with self._make_wheel_with_metadata(tmp_path, metadata) as zf:
             result = ExtensionCommand._check_frozen_deps(zf)
         assert result is None
 
     def test_multiple_external_deps_reported(self, tmp_path):
+        """
+        Verify that multiple external deps reported.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         metadata = (
             "Metadata-Version: 2.1\n"
             "Name: my-extension\n"
@@ -724,7 +974,13 @@ class TestCheckFrozenDeps:
         assert "httpx" in result
 
     def test_warns_on_multiple_dist_info_directories(self, tmp_path, caplog):
-        """_check_frozen_deps emits a warning when the wheel has multiple dist-info directories."""
+        """
+        _check_frozen_deps emits a warning when the wheel has multiple dist-info directories.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            caplog: Pytest fixture for capturing log records.
+        """
         whl_path = tmp_path / "multi-1.0.0-py3-none-any.whl"
         with zipfile.ZipFile(whl_path, "w") as zf:
             zf.writestr("foo-1.0.dist-info/METADATA", "Metadata-Version: 2.1\nName: foo\nVersion: 1.0\n")
@@ -738,7 +994,12 @@ class TestCheckFrozenDeps:
         assert result is None  # Neither METADATA entry has Requires-Dist lines
 
     def test_frozen_deps_skips_extras_conditional_dep(self, tmp_path):
-        """_check_frozen_deps returns None when the only Requires-Dist entry is extras-conditional."""
+        """
+        _check_frozen_deps returns None when the only Requires-Dist entry is extras-conditional.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         metadata = 'Metadata-Version: 2.1\nName: my-extension\nRequires-Dist: requests; extra == "dev"\n'
         with self._make_wheel_with_metadata(tmp_path, metadata) as zf:
             result = ExtensionCommand._check_frozen_deps(zf)
@@ -754,7 +1015,13 @@ class TestExtractEntryPoint:
     """Unit tests for ExtensionCommand._extract_entry_point."""
 
     def test_warns_on_multiple_entry_points(self, tmp_path, caplog):
-        """_extract_entry_point warns and picks the first of multiple openlinktoken.extensions entries."""
+        """
+        _extract_entry_point warns and picks the first of multiple openlinktoken.extensions entries.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            caplog: Pytest fixture for capturing log records.
+        """
         ep_content = "[openlinktoken.extensions]\ncmd-one = mymodule:MyClass\ncmd-two = mymodule:OtherClass\n"
         metadata_content = "Metadata-Version: 2.1\nName: mymodule\nVersion: 1.0.0\n"
         whl_path = tmp_path / "mymodule-1.0.0-py3-none-any.whl"

@@ -14,25 +14,30 @@ import java.io.ObjectOutputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+/** Tests record-identifier naming, trimming, validation, and serialization. */
 class RecordIdAttributeTest {
 
     private RecordIdAttribute recordIdAttribute;
 
+    /** Creates a fresh record-identifier attribute for each test. */
     @BeforeEach
     void setUp() {
         recordIdAttribute = new RecordIdAttribute();
     }
 
+    /** Verifies the attribute reports the {@code RecordId} name. */
     @Test
     void getName_ShouldReturnRecordId() {
         assertEquals("RecordId", recordIdAttribute.getName());
     }
 
+    /** Verifies both supported record-identifier aliases are exposed. */
     @Test
     void getAliases_ShouldReturnRecordIdAndId() {
         assertArrayEquals(new String[] { "RecordId", "Id" }, recordIdAttribute.getAliases());
     }
 
+    /** Verifies normalization removes surrounding whitespace from record identifiers. */
     @Test
     void normalize_ShouldTrimWhitespace() {
         assertEquals("test123", recordIdAttribute.normalize("test123"));
@@ -41,6 +46,7 @@ class RecordIdAttributeTest {
         assertEquals("record_001", recordIdAttribute.normalize("\t\nrecord_001\n\t"));
     }
 
+    /** Verifies null and empty identifiers fail validation while nonempty values pass. */
     @Test
     void validate_ShouldNotAllowNullOrEmpty() {
         assertFalse(recordIdAttribute.validate(null), "Null value should not be allowed");
@@ -48,6 +54,7 @@ class RecordIdAttributeTest {
         assertTrue(recordIdAttribute.validate("test123"), "Non-empty value should be allowed");
     }
 
+    /** Verifies serialization preserves record-identifier behavior. */
     @Test
     void testSerialization() throws Exception {
         // Serialize the attribute

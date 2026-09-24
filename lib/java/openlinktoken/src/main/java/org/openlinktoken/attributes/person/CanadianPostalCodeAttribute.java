@@ -96,6 +96,12 @@ public class CanadianPostalCodeAttribute extends BaseAttribute {
         this.notStartsWithValidator = new NotStartsWithValidator(INVALID_ZIP_CODES);
     }
 
+    /**
+     * Validates the postal-code format and rejects configured invalid codes and padded prefixes.
+     *
+     * @param value the postal code to validate
+     * @return {@code true} if the value has an accepted format and is not a configured invalid code
+     */
     @Override
     public boolean validate(String value) {
         if (value == null) {
@@ -142,11 +148,13 @@ public class CanadianPostalCodeAttribute extends BaseAttribute {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override
     public String getName() {
         return NAME;
     }
 
+    /** {@inheritDoc} */
     @Override
     public String[] getAliases() {
         return ALIASES;

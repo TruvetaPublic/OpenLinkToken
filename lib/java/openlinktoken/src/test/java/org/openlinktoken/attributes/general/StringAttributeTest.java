@@ -21,25 +21,30 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+/** Tests string attribute names, trimming, validation, and serialization. */
 class StringAttributeTest {
 
     private StringAttribute stringAttribute;
 
+    /** Creates a fresh string attribute for each test. */
     @BeforeEach
     void setUp() {
         stringAttribute = new StringAttribute();
     }
 
+    /** Verifies the attribute reports the {@code String} name. */
     @Test
     void getName_ShouldReturnString() {
         assertEquals("String", stringAttribute.getName());
     }
 
+    /** Verifies the string attribute exposes both expected aliases. */
     @Test
     void getAliases_ShouldReturnStringAndTextAliases() {
         assertArrayEquals(new String[] { "String", "Text" }, stringAttribute.getAliases());
     }
 
+    /** Verifies normalization trims whitespace at the edges of a string. */
     @Test
     void normalize_ValidString_ShouldTrimWhitespace() {
         assertEquals("hello", stringAttribute.normalize("hello"));
@@ -49,12 +54,14 @@ class StringAttributeTest {
         assertEquals("a b c", stringAttribute.normalize("  a b c  "));
     }
 
+    /** Verifies normalization preserves whitespace between string characters. */
     @Test
     void normalize_StringWithInternalWhitespace_ShouldPreserveIt() {
         assertEquals("hello  world", stringAttribute.normalize("  hello  world  "));
         assertEquals("test\tvalue", stringAttribute.normalize("  test\tvalue  "));
     }
 
+    /** Verifies null input is rejected with the documented argument error. */
     @Test
     void normalize_NullValue_ShouldThrowIllegalArgumentException() {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
@@ -63,6 +70,7 @@ class StringAttributeTest {
         assertEquals("String value cannot be null", exception.getMessage());
     }
 
+    /** Verifies nonempty strings pass validation. */
     @Test
     void validate_ValidStrings_ShouldReturnTrue() {
         assertTrue(stringAttribute.validate("hello"));
@@ -73,6 +81,7 @@ class StringAttributeTest {
         assertTrue(stringAttribute.validate("test@example.com"));
     }
 
+    /** Verifies null, empty, and whitespace-only strings fail validation. */
     @Test
     void validate_InvalidStrings_ShouldReturnFalse() {
         assertFalse(stringAttribute.validate(null));
@@ -81,6 +90,7 @@ class StringAttributeTest {
         assertFalse(stringAttribute.validate("\t\n"));
     }
 
+    /** Verifies concurrent normalization returns the same trimmed string for every thread. */
     @Test
     void normalize_ThreadSafety() throws InterruptedException {
         final int threadCount = 100;
@@ -118,6 +128,7 @@ class StringAttributeTest {
         }
     }
 
+    /** Verifies serialization preserves string normalization and validation behavior. */
     @Test
     void testSerialization() throws Exception {
         // Serialize the attribute
@@ -165,6 +176,7 @@ class StringAttributeTest {
         }
     }
 
+    /** Verifies whitespace-only input normalizes to an empty string. */
     @Test
     void normalize_EmptyStringAfterTrim_ShouldReturnEmpty() {
         // This tests that normalization doesn't fail on whitespace-only strings
@@ -173,6 +185,7 @@ class StringAttributeTest {
         assertEquals("", stringAttribute.normalize("\t\n"));
     }
 
+    /** Verifies nonempty special-character and Unicode strings pass validation. */
     @Test
     void validate_SpecialCharacters_ShouldReturnTrue() {
         // StringAttribute should accept any non-empty string

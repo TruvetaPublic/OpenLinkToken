@@ -15,16 +15,28 @@ from openlinktoken_cli.extension.extension_registry import ExtensionRegistry
 
 
 class TestLoad:
-    """Tests for ExtensionRegistry.load()."""
+    """
+    Test extension loading and registry population.
+    """
 
     def test_returns_empty_dict_when_file_absent(self, tmp_path):
-        """load() returns {} when registry.json does not exist."""
+        """
+        load() returns {} when registry.json does not exist.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             result = ExtensionRegistry.load()
         assert result == {}
 
     def test_returns_parsed_contents_when_file_exists(self, tmp_path):
-        """load() parses and returns the registry JSON when the file is present."""
+        """
+        load() parses and returns the registry JSON when the file is present.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         data = {"my-ext": {"version": "1.0.0"}}
         (tmp_path / "registry.json").write_text(json.dumps(data))
 
@@ -34,7 +46,12 @@ class TestLoad:
         assert result == data
 
     def test_returns_empty_dict_on_invalid_json(self, tmp_path):
-        """load() returns {} and does not raise when the file contains invalid JSON."""
+        """
+        load() returns {} and does not raise when the file contains invalid JSON.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         (tmp_path / "registry.json").write_text("NOT VALID JSON{{}")
 
         with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
@@ -47,7 +64,12 @@ class TestAddAndRoundTrip:
     """Tests for ExtensionRegistry.add_extension() + load() round-trip."""
 
     def test_add_extension_persists_and_reloads(self, tmp_path):
-        """add_extension() writes the entry; a subsequent load() returns it."""
+        """
+        add_extension() writes the entry; a subsequent load() returns it.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         meta = {
             "version": "2.0.0",
             "source_url": "https://example.com/ext.whl",
@@ -63,7 +85,12 @@ class TestAddAndRoundTrip:
         assert loaded["my-ext"] == meta
 
     def test_add_extension_overwrites_existing_entry(self, tmp_path):
-        """add_extension() replaces an existing entry with the same name."""
+        """
+        add_extension() replaces an existing entry with the same name.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         meta_v1 = {"version": "1.0.0"}
         meta_v2 = {"version": "2.0.0"}
 
@@ -76,10 +103,17 @@ class TestAddAndRoundTrip:
 
 
 class TestRemoveExtension:
-    """Tests for ExtensionRegistry.remove_extension()."""
+    """
+    Test removal of extensions from the registry.
+    """
 
     def test_remove_existing_entry(self, tmp_path):
-        """remove_extension() deletes the named entry from the registry."""
+        """
+        remove_extension() deletes the named entry from the registry.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         data = {"ext-a": {"version": "1.0.0"}, "ext-b": {"version": "0.1.0"}}
         (tmp_path / "registry.json").write_text(json.dumps(data))
 
@@ -91,7 +125,12 @@ class TestRemoveExtension:
         assert "ext-b" in loaded
 
     def test_remove_absent_entry_is_noop(self, tmp_path):
-        """remove_extension() does nothing (no error) when the entry is absent."""
+        """
+        remove_extension() does nothing (no error) when the entry is absent.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         data = {"ext-a": {"version": "1.0.0"}}
         (tmp_path / "registry.json").write_text(json.dumps(data))
 
@@ -106,7 +145,12 @@ class TestEnvVarOverride:
     """Tests for OLT_EXTENSIONS_DIR environment variable override."""
 
     def test_env_var_overrides_default_dir(self, tmp_path):
-        """get_extensions_dir() returns the path from OLT_EXTENSIONS_DIR."""
+        """
+        get_extensions_dir() returns the path from OLT_EXTENSIONS_DIR.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         custom_dir = tmp_path / "custom_ext_dir"
         custom_dir.mkdir()
 
@@ -116,14 +160,24 @@ class TestEnvVarOverride:
         assert result == custom_dir
 
     def test_registry_path_uses_custom_dir(self, tmp_path):
-        """get_registry_path() is rooted inside OLT_EXTENSIONS_DIR."""
+        """
+        get_registry_path() is rooted inside OLT_EXTENSIONS_DIR.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             path = ExtensionRegistry.get_registry_path()
 
         assert path == tmp_path / "registry.json"
 
     def test_data_stored_in_custom_dir(self, tmp_path):
-        """Registry data is written inside the overridden directory."""
+        """
+        Registry data is written inside the overridden directory.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         meta = {"version": "1.0.0"}
 
         with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
@@ -132,7 +186,12 @@ class TestEnvVarOverride:
         assert (tmp_path / "registry.json").exists()
 
     def test_default_path_uses_platform_aware_openlinktoken_home(self, tmp_path):
-        """The default registry directory follows app_paths on every platform."""
+        """
+        The default registry directory follows app_paths on every platform.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         platform_home = tmp_path / "platform-home"
         with patch.dict(os.environ, {}, clear=True):
             with patch(

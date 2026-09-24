@@ -116,26 +116,30 @@ public class SocialSecurityNumberAttribute extends BaseAttribute {
             "799-99-9999",
             "899-99-9999");
 
+    /** Creates an SSN attribute with placeholder and format validation. */
     public SocialSecurityNumberAttribute() {
         super(List.of(
                 new NotInValidator(INVALID_SSNS),
                 new RegexValidator(SSN_REGEX)));
     }
 
+    /** {@inheritDoc} */
     @Override
     public String getName() {
         return NAME;
     }
 
+    /** {@inheritDoc} */
     @Override
     public String[] getAliases() {
         return ALIASES;
     }
 
     /**
-     * Validates the social security number value.
-     * This method overrides the validate method from BaseAttribute
-     * to ensure that the value is normalized before validation.
+     * Validates the normalized SSN against the configured placeholder and format rules.
+     *
+     * @param value the SSN to validate
+     * @return {@code true} if the normalized SSN passes all configured rules
      */
     @Override
     public boolean validate(String value) {
@@ -143,10 +147,12 @@ public class SocialSecurityNumberAttribute extends BaseAttribute {
     }
 
     /**
-     * Normalize the social security number value. Remove any dashes and format the
-     * value as xxx-xx-xxxx. If not possible return the original but trimmed value.
+     * Removes whitespace and dashes, discards a locale-specific decimal suffix, and formats
+     * valid seven-to-nine-digit values as {@code xxx-xx-xxxx}.
      *
-     * @param originalValue the social security number value.
+     * @param originalValue the SSN value to normalize
+     * @return the formatted SSN when the remaining value contains seven to nine digits;
+     *         otherwise, the original input
      */
     @Override
     public String normalize(String originalValue) {
@@ -185,6 +191,12 @@ public class SocialSecurityNumberAttribute extends BaseAttribute {
     // Examples:
     // "1234567" -> "001234567"
     // "12345678" -> "012345678"
+    /**
+     * Pads seven- or eight-digit SSNs with leading zeros to nine digits.
+     *
+     * @param ssn the digit-only SSN
+     * @return the nine-digit value, or the original value for other lengths
+     */
     private String padWithZeros(String ssn) {
         if (ssn.length() >= MIN_SSN_LENGTH && ssn.length() < SSN_LENGTH) {
             ssn = String.format(SSN_FORMAT, Long.parseLong(ssn));
@@ -202,6 +214,9 @@ public class SocialSecurityNumberAttribute extends BaseAttribute {
      * - First 3 digits: Area number
      * - Middle 2 digits: Group number
      * - Last 4 digits: Serial number
+     *
+     * @param value the nine-digit SSN
+     * @return the SSN formatted as {@code xxx-xx-xxxx}
      */
     private String formatWithDashes(String value) {
         String areaNumber = value.substring(0, 3);

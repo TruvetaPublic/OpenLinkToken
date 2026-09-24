@@ -19,6 +19,9 @@ public final class ML1InferenceConfig {
     private static volatile int batchSize = DEFAULT_BATCH_SIZE;
     private static volatile int numThreads = DEFAULT_NUM_THREADS;
 
+    /**
+     * Prevents instances of this configuration holder.
+     */
     private ML1InferenceConfig() {
     }
 
@@ -87,7 +90,6 @@ public final class ML1InferenceConfig {
         numThreads = configuredNumThreads;
     }
 
-    /**
     /**
      * Return whether ML1 inference is enabled.
      *

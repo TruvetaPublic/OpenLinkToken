@@ -10,21 +10,41 @@ class HelloWorldExtension(OpenLinkTokenExtension):
 
     @property
     def command_name(self) -> str:
-        """Return the top-level subcommand name owned by this extension."""
+        """
+        Return the top-level subcommand name owned by this extension.
+
+        Returns:
+            Command name registered by the test extension.
+        """
         return "hello-world"
 
     @property
     def description(self) -> str:
-        """Return a short human-readable description of this extension."""
+        """
+        Return a short human-readable description of this extension.
+
+        Returns:
+            Help description exposed for the test extension command.
+        """
         return "Open Link Token hello-world reference extension"
 
     @property
     def version(self) -> str:
-        """Return the SemVer version string for this extension."""
+        """
+        Return the SemVer version string for this extension.
+
+        Returns:
+            Version string reported by the test extension.
+        """
         return "1.0.0"
 
     def register_subcommand(self, subparsers: argparse._SubParsersAction) -> None:
-        """Register the ``hello-world`` parser and its sub-subcommands."""
+        """
+        Register the ``hello-world`` parser and its sub-subcommands.
+
+        Args:
+            subparsers: Argument-parser subparsers to configure with command handlers.
+        """
         parser = subparsers.add_parser(self.command_name, help=self.description)
         sub = parser.add_subparsers(dest="hello_world_subcommand")
 
@@ -40,12 +60,28 @@ class HelloWorldExtension(OpenLinkTokenExtension):
 
     @staticmethod
     def _hello(args) -> int:
-        """Print a personalised hello greeting and return exit code 0."""
+        """
+        Print a personalised hello greeting and return exit code 0.
+
+        Args:
+            args: Additional positional arguments to pass to the command or wrapped operation.
+
+        Returns:
+            Printed a personalised hello greeting and return exit code 0.
+        """
         print(f"Hello, {args.name}")
         return 0
 
     @staticmethod
     def _bye(args) -> int:
-        """Print a personalised goodbye greeting and return exit code 0."""
+        """
+        Print a personalised goodbye greeting and return exit code 0.
+
+        Args:
+            args: Additional positional arguments to pass to the command or wrapped operation.
+
+        Returns:
+            Printed a personalised goodbye greeting and return exit code 0.
+        """
         print(f"Bye, {args.name}")
         return 0

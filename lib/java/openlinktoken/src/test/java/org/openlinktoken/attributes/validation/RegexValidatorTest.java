@@ -13,14 +13,17 @@ import java.io.ObjectOutputStream;
 
 import org.junit.jupiter.api.Test;
 
+/** Tests regular-expression matching and serialization for {@link RegexValidator}. */
 class RegexValidatorTest {
 
+    /** Verifies a value matching the configured pattern is accepted. */
     @Test
     void eval_ShouldReturnTrueForMatchingPattern() {
         RegexValidator validator = new RegexValidator("^[A-Z]+$");
         assertTrue(validator.eval("ABC"), "All uppercase letters should match");
     }
 
+    /** Verifies values that do not match the configured pattern are rejected. */
     @Test
     void eval_ShouldReturnFalseForNonMatchingPattern() {
         RegexValidator validator = new RegexValidator("^[A-Z]+$");
@@ -28,18 +31,21 @@ class RegexValidatorTest {
         assertFalse(validator.eval("123"), "Numbers should not match");
     }
 
+    /** Verifies null input is rejected even by a pattern matching arbitrary text. */
     @Test
     void eval_ShouldReturnFalseForNullValue() {
         RegexValidator validator = new RegexValidator(".*");
         assertFalse(validator.eval(null), "Null value should not match");
     }
 
+    /** Verifies an empty value matches a pattern anchored to the empty string. */
     @Test
     void eval_ShouldReturnTrueForEmptyStringWithMatchingPattern() {
         RegexValidator validator = new RegexValidator("^$");
         assertTrue(validator.eval(""), "Empty string should match");
     }
 
+    /** Verifies a representative email pattern accepts valid text and rejects malformed text. */
     @Test
     void eval_ShouldReturnTrueForComplexPattern() {
         RegexValidator validator = new RegexValidator("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$");
@@ -47,6 +53,7 @@ class RegexValidatorTest {
         assertFalse(validator.eval("invalid-email"), "Invalid email should not match");
     }
 
+    /** Verifies construction compiles and retains the supplied regular expression. */
     @Test
     void constructor_ShouldCompilePattern() {
         RegexValidator validator = new RegexValidator("test");
@@ -54,6 +61,7 @@ class RegexValidatorTest {
         assertEquals("test", validator.getCompiledPattern().pattern(), "Pattern should be the same as input");
     }
 
+    /** Verifies serialization preserves the configured regular expression. */
     @Test
     void serialization_ShouldPreserveState() throws Exception {
         RegexValidator originalValidator = new RegexValidator("^[A-Z]+$");

@@ -38,7 +38,15 @@ DEFAULT_NUM_THREADS = os.cpu_count() or 1
 
 
 def _payloads_from_jsonl(path: Path) -> Iterator[str]:
-    """Read person records, normalize ML1 fields, and serialize model payloads."""
+    """
+    Read person records, normalize ML1 fields, and serialize model payloads.
+
+    Args:
+        path: Path to the JSONL file containing records to encode as ML1 payloads.
+
+    Yields:
+        JSON-serialized ML1 payload for each valid person record.
+    """
     with path.open(encoding="utf-8") as input_file:
         for line_number, line in enumerate(input_file, start=1):
             if not line.strip():
@@ -63,7 +71,13 @@ def _payloads_from_jsonl(path: Path) -> Iterator[str]:
 
 
 def _copy_values(target: np.ndarray, values: list[int]) -> None:
-    """Copy token values into a padded tensor, truncating at its sequence length."""
+    """
+    Copy token values into a padded tensor, truncating at its sequence length.
+
+    Args:
+        target: Destination token-ID array to populate.
+        values: Token IDs to copy into the destination array.
+    """
     copy_length = min(len(values), target.shape[0])
     if copy_length:
         target[:copy_length] = np.asarray(values[:copy_length], dtype=np.int64)
@@ -75,7 +89,18 @@ def _embed_batch(
     payloads: list[str],
     max_sequence_length: int,
 ) -> np.ndarray:
-    """Run one padded batch and return its CLS embeddings."""
+    """
+    Run one padded batch and return its CLS embeddings.
+
+    Args:
+        session: ONNX Runtime inference session used to compute embeddings.
+        tokenizer: Tokenizer used to encode the text payloads.
+        payloads: Text payloads to encode as a batch.
+        max_sequence_length: Maximum number of tokens to retain from each encoded input.
+
+    Returns:
+        NumPy array containing the batch CLS embeddings.
+    """
     encodings = tokenizer.encode_batch(payloads)
     sequence_length = min(max((len(encoding.ids) for encoding in encodings), default=1), max_sequence_length)
     input_ids = np.zeros((len(payloads), sequence_length), dtype=np.int64)
@@ -118,7 +143,18 @@ def generate_embeddings(
     max_sequence_length: int,
     num_threads: int,
 ) -> None:
-    """Generate and save one embedding vector for each JSONL input record."""
+    """
+    Generate and save one embedding vector for each JSONL input record.
+
+    Args:
+        input_path: Path to the input file to read.
+        output_path: Destination path for the generated output file.
+        model_path: Filesystem path to the model handled by the operation.
+        tokenizer_path: Filesystem path to the tokenizer handled by the operation.
+        batch_size: Numeric batch size value used to generate.
+        max_sequence_length: Numeric max sequence length value used to generate.
+        num_threads: Numeric num threads value used to generate.
+    """
     if batch_size <= 0 or max_sequence_length <= 0 or num_threads <= 0:
         raise ValueError("batch_size, max_sequence_length, and num_threads must be positive")
 
@@ -153,7 +189,12 @@ def generate_embeddings(
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments."""
+    """
+    Parse command-line arguments.
+
+    Returns:
+        Parsed command-line arguments.
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, required=True, help="JSONL person-record input")
     parser.add_argument("--output", type=Path, required=True, help="Output .npy embedding file")

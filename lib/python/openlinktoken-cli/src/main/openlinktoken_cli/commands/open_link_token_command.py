@@ -38,12 +38,22 @@ class OpenLinkTokenCommand:
 
     @staticmethod
     def _is_interactive():
-        """Check if stdout is connected to an interactive terminal."""
+        """
+        Check if stdout is connected to an interactive terminal.
+
+        Returns:
+            Checked if stdout is connected to an interactive terminal.
+        """
         return sys.stdout.isatty()
 
     @staticmethod
     def _get_colorized_banner():
-        """Get the colorized Open Link Token banner."""
+        """
+        Get the colorized Open Link Token banner.
+
+        Returns:
+            The colorized Open Link Token banner.
+        """
         cyan = "\033[36m"
         blue = "\033[34m"
         reset = "\033[0m"
@@ -59,7 +69,15 @@ class OpenLinkTokenCommand:
 
     @staticmethod
     def create_parser(load_extensions: bool = True):
-        """Create the main argument parser with subcommands."""
+        """
+        Create the main argument parser with subcommands.
+
+        Args:
+            load_extensions: Whether to load extensions.
+
+        Returns:
+            Created the main argument parser with subcommands.
+        """
         parser = argparse.ArgumentParser(
             prog="olt",
             description="Privacy-preserving record linkage via cryptographic tokens",
@@ -135,7 +153,15 @@ class OpenLinkTokenCommand:
 
     @staticmethod
     def main(args=None):
-        """Main entry point for the command-line application."""
+        """
+        Main entry point for the command-line application.
+
+        Args:
+            args: Optional command-line argument list; when omitted, the command uses sys.argv.
+
+        Returns:
+            Integer exit status returned by the selected command or argument parser.
+        """
         from openlinktoken_cli.util.cli_error_reporter import archive_unexpected_error, format_unexpected_error_message
         from openlinktoken_cli.util.cli_run_reporter import configure_default_logging
 
@@ -205,7 +231,7 @@ class OpenLinkTokenCommand:
         Useful for testing or when embedding the CLI in another application.
 
         Args:
-            args: Command-line arguments as a list
+            args: Command-line argument list to pass to the CLI parser.
 
         Returns:
             Exit code (0 for success, non-zero for errors)
@@ -214,7 +240,15 @@ class OpenLinkTokenCommand:
 
     @staticmethod
     def _is_help_request(args):
-        """Check if the command is a help request."""
+        """
+        Check if the command is a help request.
+
+        Args:
+            args: Command-line argument tokens to check for a help request.
+
+        Returns:
+            Checked if the command is a help request.
+        """
         if not args:
             return False
         for arg in args:
@@ -224,7 +258,15 @@ class OpenLinkTokenCommand:
 
     @staticmethod
     def _should_show_banner(args):
-        """Return whether the current argv should display the CLI banner."""
+        """
+        Return whether the current argv should display the CLI banner.
+
+        Args:
+            args: Command-line argument tokens used to decide whether to show the banner.
+
+        Returns:
+            Whether the current argv should display the CLI banner.
+        """
         if not args or OpenLinkTokenCommand._is_help_request(args):
             return True
         # Show banner when only a subcommand name is given with no additional args
@@ -234,13 +276,20 @@ class OpenLinkTokenCommand:
 
     @staticmethod
     def _get_subcommand_map(parser):
-        """Return the subcommand name-to-parser mapping from the main parser.
+        """
+        Return the subcommand name-to-parser mapping from the main parser.
 
         Relies on argparse internals (_subparsers, _group_actions, _name_parser_map)
         that have no stable public API equivalent. The same approach is already used
         in create_parser() for alphabetical sorting.  If a future argparse version
         removes these attributes the method returns an empty dict and bare-subcommand
         help display is simply skipped rather than raising an error.
+
+        Args:
+            parser: Parser value to retrieve.
+
+        Returns:
+            The subcommand name-to-parser mapping from the main parser.
         """
         try:
             if parser._subparsers:
@@ -253,11 +302,18 @@ class OpenLinkTokenCommand:
 
     @staticmethod
     def _subcommand_needs_args(subparser):
-        """Return True if the subcommand requires at least one argument to run.
+        """
+        Return True if the subcommand requires at least one argument to run.
 
         Inspects argparse internals (_actions, _mutually_exclusive_groups) because
         there is no stable public API for querying required-argument status.  Both
         attributes have been present since Python 3.2 and are unlikely to change.
+
+        Args:
+            subparser: Command parser to configure for the subcommand.
+
+        Returns:
+            True if the subcommand requires at least one argument to run.
         """
         # Individual required flags/positionals
         if any(action.required for action in subparser._actions):
@@ -267,8 +323,13 @@ class OpenLinkTokenCommand:
 
     @staticmethod
     def _safe_wait_and_notify(version_checker) -> None:
-        """Call wait_and_notify, swallowing all exceptions so notice display
-        can never affect the exit code or mask command output."""
+        """
+        Call wait_and_notify, swallowing all exceptions so notice display
+        can never affect the exit code or mask command output.
+
+        Args:
+            version_checker: Version checker value to wait for.
+        """
         if version_checker is None:
             return
         try:
@@ -279,12 +340,28 @@ class OpenLinkTokenCommand:
 
     @staticmethod
     def _should_start_version_check(parsed_args: argparse.Namespace) -> bool:
-        """Return whether startup version checks should run for the parsed command."""
+        """
+        Return whether startup version checks should run for the parsed command.
+
+        Args:
+            parsed_args: Parsed args value to check.
+
+        Returns:
+            Whether startup version checks should run for the parsed command.
+        """
         return getattr(parsed_args, "command", None) != "update"
 
     @staticmethod
     def _should_load_extensions(args: list[str]) -> bool:
-        """Return whether parsing requires loading a non-built-in extension."""
+        """
+        Return whether parsing requires loading a non-built-in extension.
+
+        Args:
+            args: Command-line argument tokens used to decide whether extensions are needed.
+
+        Returns:
+            Whether parsing requires loading a non-built-in extension.
+        """
         built_in_commands = {
             "help",
             "tokenize",

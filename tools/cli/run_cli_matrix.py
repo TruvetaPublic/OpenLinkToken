@@ -45,7 +45,12 @@ class CommandResult:
 
     @property
     def passed(self) -> bool:
-        """Return whether the command succeeded."""
+        """
+        Return whether the command succeeded.
+
+        Returns:
+            Whether the command succeeded.
+        """
         return self.returncode == 0
 
 
@@ -291,7 +296,15 @@ def execute_command_plan(
 
 
 def format_summary(results: Sequence[CommandResult]) -> str:
-    """Render a readable text summary for a completed CLI matrix run."""
+    """
+    Render a readable text summary for a completed CLI matrix run.
+
+    Args:
+        results: Sequence of results values to format.
+
+    Returns:
+        Rendered a readable text summary for a completed CLI matrix run.
+    """
     total = len(results)
     passed = sum(1 for result in results if result.passed)
     failed = total - passed
@@ -327,7 +340,15 @@ def format_summary(results: Sequence[CommandResult]) -> str:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Run the local CLI command matrix harness."""
+    """
+    Run the local CLI command matrix harness.
+
+    Args:
+        argv: Sequence of argv values to process.
+
+    Returns:
+        Run the local CLI command matrix harness.
+    """
     parser = argparse.ArgumentParser(
         description=(
             "Run a local Open Link Token CLI command matrix against the current worktree "
@@ -365,7 +386,16 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 def _apply_pause_configuration(plan: Sequence[CommandSpec], pause_seconds: float) -> list[CommandSpec]:
-    """Return plan copies with pauses on all non-final commands and zero on the final command."""
+    """
+    Return plan copies with pauses on all non-final commands and zero on the final command.
+
+    Args:
+        plan: Sequence of plan values to apply.
+        pause_seconds: Numeric pause seconds value used to apply.
+
+    Returns:
+        Applied pause configuration.
+    """
     configured_plan: list[CommandSpec] = []
     last_index = len(plan) - 1
 
@@ -385,7 +415,15 @@ def _apply_pause_configuration(plan: Sequence[CommandSpec], pause_seconds: float
 
 
 def _build_command_env(home_dir: Path) -> dict[str, str]:
-    """Build a subprocess environment that targets local source and a temporary HOME."""
+    """
+    Build a subprocess environment that targets local source and a temporary HOME.
+
+    Args:
+        home_dir: Directory used for the home.
+
+    Returns:
+        Built a subprocess environment that targets local source and a temporary HOME.
+    """
     env = os.environ.copy()
     pythonpath_entries = [str(CLI_SOURCE_ROOT), str(CORE_SOURCE_ROOT)]
     existing_pythonpath = env.get("PYTHONPATH")
@@ -399,7 +437,12 @@ def _build_command_env(home_dir: Path) -> dict[str, str]:
 
 
 def _build_people_csv_fixture() -> str:
-    """Return a compact but valid CSV fixture for local CLI exercises."""
+    """
+    Return a compact but valid CSV fixture for local CLI exercises.
+
+    Returns:
+        Built people csv fixture.
+    """
     return textwrap.dedent(
         """\
         RecordId,FirstName,LastName,PostalCode,Sex,BirthDate,SocialSecurityNumber
@@ -410,12 +453,29 @@ def _build_people_csv_fixture() -> str:
 
 
 def _cli_args(*command_args: str) -> list[str]:
-    """Build a current-source CLI invocation."""
+    """
+    Build a current-source CLI invocation.
+
+    Args:
+        command_args: CLI argument tokens to normalize before constructing a command plan.
+
+    Returns:
+        Built a current-source CLI invocation.
+    """
     return [sys.executable, "-m", "openlinktoken_cli.main", *command_args]
 
 
 def _preview_output(output: str, limit: int = 120) -> str:
-    """Return a one-line preview of command output suitable for summaries."""
+    """
+    Return a one-line preview of command output suitable for summaries.
+
+    Args:
+        output: Captured command output to abbreviate for display.
+        limit: Maximum number of output characters to include in the preview.
+
+    Returns:
+        String produced by preview output.
+    """
     collapsed = " ".join(output.split())
     if len(collapsed) <= limit:
         return collapsed

@@ -26,13 +26,42 @@ def test_pyinstaller_spec_collects_ml1_runtime_dependencies():
     analysis_kwargs = {}
 
     def collect_all(package_name):
+        """
+        Collect all.
+
+        Args:
+            package_name: Name of the package.
+
+        Returns:
+            Collected all.
+        """
         collected_packages.append(package_name)
         return [f"{package_name}:data"], [f"{package_name}:binary"], [f"{package_name}:hidden"]
 
     def collect_dynamic_libs(package_name, search_patterns):
+        """
+        Collect dynamic libs.
+
+        Args:
+            package_name: Name of the package.
+            search_patterns: Search patterns value to collect.
+
+        Returns:
+            Collected dynamic libs.
+        """
         return [(f"{package_name}:{pattern}", "lib") for pattern in search_patterns]
 
     def fake_analysis(*args, **kwargs):
+        """
+        Record the supplied PyInstaller Analysis options and return a minimal fake result.
+
+        Args:
+            args: Positional arguments passed to PyInstaller's Analysis constructor.
+            kwargs: Keyword options passed to PyInstaller's Analysis constructor.
+
+        Returns:
+            Fake Analysis object with the fields required by the PyInstaller specification.
+        """
         analysis_kwargs.update(kwargs)
         return _FakeAnalysis()
 

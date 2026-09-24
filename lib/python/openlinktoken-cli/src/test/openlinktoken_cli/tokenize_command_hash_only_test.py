@@ -38,7 +38,15 @@ class TestTokenizeCommandHashOnly:
 
     @pytest.fixture
     def temp_dir(self, tmp_path: Path) -> Path:
-        """Create a temporary directory with a two-row CSV input."""
+        """
+        Create a temporary directory with a two-row CSV input.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+
+        Returns:
+            Temporary directory supplied by pytest for ZIP archive tests.
+        """
         input_csv = tmp_path / "input.csv"
         input_csv.write_text(
             "RecordId,FirstName,LastName,PostalCode,Sex,BirthDate,SocialSecurityNumber\n"
@@ -48,7 +56,16 @@ class TestTokenizeCommandHashOnly:
         return tmp_path
 
     def _create_exchange_config(self, temp_dir: Path, name: str = "hash-only") -> tuple[Path, Path]:
-        """Create an exchange config and return ``(exchange_config_path, private_key_path)``."""
+        """
+        Create an exchange config and return ``(exchange_config_path, private_key_path)``.
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+            name: Name identifying the item being processed.
+
+        Returns:
+            Created an exchange config and return ``(exchange_config_path, private_key_path)``.
+        """
         _, partner_public_pem = generate_key_pair("P-256")
         partner_public_key_path = temp_dir / f"{name}.partner.public.pem"
         partner_public_key_path.write_bytes(partner_public_pem)
@@ -77,7 +94,12 @@ class TestTokenizeCommandHashOnly:
     # ------------------------------------------------------------------
 
     def test_hash_only_mode_succeeds_without_exchange_config(self, temp_dir: Path):
-        """Hash-only mode should not require an exchange config."""
+        """
+        Hash-only mode should not require an exchange config.
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+        """
         exit_code = OpenLinkTokenCommand.execute(
             [
                 "tokenize",
@@ -94,7 +116,13 @@ class TestTokenizeCommandHashOnly:
     def test_hash_only_mode_accepts_bare_csv_paths_from_working_directory(
         self, temp_dir: Path, monkeypatch: pytest.MonkeyPatch
     ):
-        """Bare CSV filenames should resolve relative to the working directory."""
+        """
+        Bare CSV filenames should resolve relative to the working directory.
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
+        """
         monkeypatch.chdir(temp_dir)
 
         exit_code = OpenLinkTokenCommand.execute(
@@ -114,7 +142,12 @@ class TestTokenizeCommandHashOnly:
         assert (temp_dir / "output.metadata.json").exists()
 
     def test_hash_only_mode_rejects_exchange_config(self, temp_dir: Path):
-        """Hash-only mode requires a private key when given an exchange config."""
+        """
+        Hash-only mode requires a private key when given an exchange config.
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+        """
         exchange_config, _ = self._create_exchange_config(temp_dir, "hash-with-config")
         exit_code = OpenLinkTokenCommand.execute(
             [
@@ -132,7 +165,12 @@ class TestTokenizeCommandHashOnly:
         assert exit_code != 0
 
     def test_hash_only_mode_accepts_exchange_config_for_rotation(self, temp_dir: Path):
-        """Hash-only mode may load an exchange's rotation configuration without HMAC hashing."""
+        """
+        Hash-only mode may load an exchange's rotation configuration without HMAC hashing.
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+        """
         exchange_config, private_key = self._create_exchange_config(temp_dir, "hash-with-config")
         output_csv = temp_dir / "output.csv"
 
@@ -157,7 +195,12 @@ class TestTokenizeCommandHashOnly:
         assert output_csv.exists()
 
     def test_hash_only_mode_rejects_private_key(self, temp_dir: Path):
-        """Hash-only mode should reject --private-key."""
+        """
+        Hash-only mode should reject --private-key.
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+        """
         _, private_key = self._create_exchange_config(temp_dir, "hash-with-key")
         exit_code = OpenLinkTokenCommand.execute(
             [
@@ -175,7 +218,12 @@ class TestTokenizeCommandHashOnly:
         assert exit_code != 0
 
     def test_hash_only_mode_rejects_private_key_env(self, temp_dir: Path):
-        """Hash-only mode should reject --private-key-env."""
+        """
+        Hash-only mode should reject --private-key-env.
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+        """
         exit_code = OpenLinkTokenCommand.execute(
             [
                 "tokenize",
@@ -192,7 +240,12 @@ class TestTokenizeCommandHashOnly:
         assert exit_code != 0
 
     def test_tokenize_rejects_unknown_mode_value(self, temp_dir: Path):
-        """The mode selector should reject unsupported values."""
+        """
+        The mode selector should reject unsupported values.
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+        """
         exit_code = OpenLinkTokenCommand.execute(
             [
                 "tokenize",
@@ -211,7 +264,12 @@ class TestTokenizeCommandHashOnly:
     # ------------------------------------------------------------------
 
     def test_hash_only_tokens_are_64_char_hex(self, temp_dir: Path):
-        """Hash-only tokens are SHA-256 hex encoded, always exactly 64 characters."""
+        """
+        Hash-only tokens are SHA-256 hex encoded, always exactly 64 characters.
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+        """
         output_csv = temp_dir / "output.csv"
         OpenLinkTokenCommand.execute(
             [
@@ -238,7 +296,12 @@ class TestTokenizeCommandHashOnly:
                 )
 
     def test_hash_only_and_normal_mode_produce_different_tokens(self, temp_dir: Path):
-        """Hash-only and normal-mode outputs must differ for the same input."""
+        """
+        Hash-only and normal-mode outputs must differ for the same input.
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+        """
         hash_only_output = temp_dir / "hash_only_output.csv"
         normal_output = temp_dir / "normal_output.csv"
         exchange_config, private_key = self._create_exchange_config(temp_dir, "hash-vs-normal")
@@ -271,7 +334,12 @@ class TestTokenizeCommandHashOnly:
         assert hash_only_output.read_text() != normal_output.read_text()
 
     def test_hash_only_and_demo_mode_produce_different_tokens(self, temp_dir: Path):
-        """Hash-only and demo-mode outputs must differ for the same input."""
+        """
+        Hash-only and demo-mode outputs must differ for the same input.
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+        """
         hash_only_output = temp_dir / "hash_only_output.csv"
         demo_output = temp_dir / "demo_output.csv"
 
@@ -301,7 +369,12 @@ class TestTokenizeCommandHashOnly:
         assert hash_only_output.read_text() != demo_output.read_text()
 
     def test_hash_only_tokens_are_deterministic(self, temp_dir: Path):
-        """Running hash-only twice on the same input must produce identical output."""
+        """
+        Running hash-only twice on the same input must produce identical output.
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+        """
         output1 = temp_dir / "output1.csv"
         output2 = temp_dir / "output2.csv"
 
@@ -321,7 +394,13 @@ class TestTokenizeCommandHashOnly:
         assert output1.read_text() == output2.read_text()
 
     def test_hash_only_logs_deterministic_sha256_warning(self, temp_dir: Path, caplog: pytest.LogCaptureFixture):
-        """Hash-only mode should warn that output is deterministic SHA-256 and not for exchange use."""
+        """
+        Hash-only mode should warn that output is deterministic SHA-256 and not for exchange use.
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+            caplog: Pytest fixture for capturing log records.
+        """
         with caplog.at_level(logging.WARNING, logger="openlinktoken_cli.commands.tokenize_command"):
             exit_code = OpenLinkTokenCommand.execute(
                 [
@@ -344,7 +423,12 @@ class TestTokenizeCommandHashOnly:
     # ------------------------------------------------------------------
 
     def test_hash_only_metadata_contains_only_core_fields(self, temp_dir: Path):
-        """Hash-only mode metadata should contain only the shared metadata fields and counters."""
+        """
+        Hash-only mode metadata should contain only the shared metadata fields and counters.
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+        """
         OpenLinkTokenCommand.execute(
             [
                 "tokenize",
@@ -361,7 +445,12 @@ class TestTokenizeCommandHashOnly:
         assert set(metadata) == EXPECTED_METADATA_KEYS
 
     def test_hash_only_metadata_contains_processing_counters(self, temp_dir: Path):
-        """Hash-only mode metadata must still record row and attribute statistics."""
+        """
+        Hash-only mode metadata must still record row and attribute statistics.
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+        """
         OpenLinkTokenCommand.execute(
             [
                 "tokenize",
@@ -382,7 +471,12 @@ class TestTokenizeCommandHashOnly:
     # ------------------------------------------------------------------
 
     def test_hash_only_rejects_hash_record_ids(self, temp_dir: Path):
-        """``--mode hash-only`` should reject --hash-record-ids."""
+        """
+        ``--mode hash-only`` should reject --hash-record-ids.
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+        """
         exit_code = OpenLinkTokenCommand.execute(
             [
                 "tokenize",
@@ -407,7 +501,16 @@ def _extract_tokens(
     csv_path: Path,
     exclude_rule_ids: set[str] | None = None,
 ) -> list[str]:
-    """Return non-blank, non-sentinel token values from the Token column of a CSV."""
+    """
+    Return non-blank, non-sentinel token values from the Token column of a CSV.
+
+    Args:
+        csv_path: Filesystem path to the csv handled by the operation.
+        exclude_rule_ids: Identifiers for the exclude rule to extract.
+
+    Returns:
+        Extracted tokens.
+    """
     exclude_rule_ids = exclude_rule_ids or set()
     with csv_path.open(newline="") as csv_file:
         return [
@@ -418,5 +521,13 @@ def _extract_tokens(
 
 
 def _read_metadata(path: Path) -> dict:
-    """Read and parse a metadata JSON file."""
+    """
+    Read and parse a metadata JSON file.
+
+    Args:
+        path: Path to the sidecar metadata file containing tokenization details.
+
+    Returns:
+        Read and parse a metadata JSON file.
+    """
     return json.loads(path.read_text())

@@ -66,7 +66,12 @@ class TestBirthDateAttribute:
         results = []
 
         def normalize_date():
-            """Function to be executed by each thread."""
+            """
+            Function to be executed by each thread.
+
+            Returns:
+                Normalized date.
+            """
             try:
                 result = self.birth_date_attribute.normalize(test_date)
                 return result
@@ -197,7 +202,13 @@ class TestBirthDateAttribute:
         ],
     )
     def test_normalize_parametrized(self, input_date, expected_output):
-        """Parametrized test for normalization with various date formats."""
+        """
+        Parametrized test for normalization with various date formats.
+
+        Args:
+            input_date: Input date value to exercise the behavior under test.
+            expected_output: Expected output used to verify the operation.
+        """
         assert self.birth_date_attribute.normalize(input_date) == expected_output
 
     @pytest.mark.parametrize(
@@ -214,7 +225,12 @@ class TestBirthDateAttribute:
         ],
     )
     def test_normalize_invalid_dates_parametrized(self, invalid_date):
-        """Parametrized test for normalization with invalid dates."""
+        """
+        Parametrized test for normalization with invalid dates.
+
+        Args:
+            invalid_date: Invalid date value to exercise the behavior under test.
+        """
         with pytest.raises(ValueError):
             self.birth_date_attribute.normalize(invalid_date)
 
@@ -232,7 +248,12 @@ class TestBirthDateAttribute:
         ],
     )
     def test_validate_valid_dates_parametrized(self, valid_date):
-        """Parametrized test for validation with valid dates."""
+        """
+        Parametrized test for validation with valid dates.
+
+        Args:
+            valid_date: Valid date value to exercise the behavior under test.
+        """
         assert self.birth_date_attribute.validate(valid_date) is True
 
     def test_edge_cases(self):

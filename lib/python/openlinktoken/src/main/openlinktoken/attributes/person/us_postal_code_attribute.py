@@ -58,9 +58,21 @@ class USPostalCodeAttribute(BaseAttribute):
         self.min_length = min_length
 
     def get_name(self) -> str:
+        """
+        Retrieve name.
+
+        Returns:
+            The name.
+        """
         return self.NAME
 
     def get_aliases(self) -> List[str]:
+        """
+        Retrieve aliases.
+
+        Returns:
+            The aliases.
+        """
         return self.ALIASES.copy()
 
     def normalize(self, value: str) -> str:
@@ -76,6 +88,12 @@ class USPostalCodeAttribute(BaseAttribute):
         - 5-digit or longer ZIP codes return the first 5 digits (e.g., "12345-6789" becomes "12345")
         If the input value is null or doesn't match US ZIP pattern, the original
         trimmed value is returned.
+
+        Args:
+            value: Postal-code value to normalize to the U.S. format.
+
+        Returns:
+            Normalized a US ZIP code to standard 5-digit format.
         """
         if not value:
             return value

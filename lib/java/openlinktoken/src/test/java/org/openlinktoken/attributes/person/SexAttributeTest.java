@@ -21,25 +21,30 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+/** Tests sex aliases, canonicalization, validation, and serialization. */
 class SexAttributeTest {
     private SexAttribute sexAttribute;
 
+    /** Creates a fresh sex attribute for each test. */
     @BeforeEach
     void setUp() {
         sexAttribute = new SexAttribute();
     }
 
+    /** Verifies the attribute reports the {@code Sex} name. */
     @Test
     void getName_ShouldReturnSex() {
         assertEquals("Sex", sexAttribute.getName());
     }
 
+    /** Verifies both supported sex aliases are exposed. */
     @Test
     void getAliases_ShouldReturnSexAndGender() {
         String[] expectedAliases = { "Sex", "Gender" };
         assertArrayEquals(expectedAliases, sexAttribute.getAliases());
     }
 
+    /** Verifies male abbreviations and names normalize to {@code Male}. */
     @Test
     void normalize_ShouldReturnMaleForMInput() {
         assertEquals("Male", sexAttribute.normalize("M"));
@@ -48,6 +53,7 @@ class SexAttributeTest {
         assertEquals("Male", sexAttribute.normalize("male"));
     }
 
+    /** Verifies female abbreviations and names normalize to {@code Female}. */
     @Test
     void normalize_ShouldReturnFemaleForFInput() {
         assertEquals("Female", sexAttribute.normalize("F"));
@@ -56,12 +62,14 @@ class SexAttributeTest {
         assertEquals("Female", sexAttribute.normalize("female"));
     }
 
+    /** Verifies unrecognized sex values normalize to {@code null}. */
     @Test
     void normalize_ShouldReturnNullForInvalidInput() {
         assertNull(sexAttribute.normalize("X"), "Invalid value should return null");
         assertNull(sexAttribute.normalize("Other"), "Invalid value should return null");
     }
 
+    /** Verifies supported abbreviations and names pass validation. */
     @Test
     void validate_ShouldReturnTrueForValidValues() {
         assertTrue(sexAttribute.validate("M"));
@@ -70,6 +78,7 @@ class SexAttributeTest {
         assertTrue(sexAttribute.validate("Female"));
     }
 
+    /** Verifies null, empty, and unrecognized values fail validation. */
     @Test
     void validate_ShouldReturnFalseForInvalidValues() {
         assertFalse(sexAttribute.validate("X"), "Invalid value should not be allowed");
@@ -78,6 +87,7 @@ class SexAttributeTest {
         assertFalse(sexAttribute.validate(null), "Null value should not be allowed");
     }
 
+    /** Verifies concurrent normalization of a male abbreviation is consistent. */
     @Test
     void normalize_ThreadSafety() throws InterruptedException {
         final int threadCount = 100;
@@ -115,6 +125,7 @@ class SexAttributeTest {
         }
     }
 
+    /** Verifies serialization preserves sex normalization and validation behavior. */
     @Test
     void testSerialization() throws Exception {
         // Serialize the attribute

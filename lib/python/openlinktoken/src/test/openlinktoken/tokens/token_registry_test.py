@@ -11,9 +11,21 @@ class ExternalToken(Token):
     """Minimal token implementation used to test entry-point registration."""
 
     def get_identifier(self):
+        """
+        Retrieve identifier.
+
+        Returns:
+            The identifier.
+        """
         return "EXT"
 
     def get_definition(self):
+        """
+        Retrieve definition.
+
+        Returns:
+            The definition.
+        """
         return []
 
 

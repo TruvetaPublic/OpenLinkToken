@@ -14,16 +14,19 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+/** Tests AES-GCM encryption key validation, serialization, and token round trips. */
 class EncryptTokenTransformerTest {
     private EncryptTokenTransformer transformer;
     private static final String VALID_KEY = "12345678901234567890123456789012"; // 32-byte key
     private static final String INVALID_KEY = "short-key"; // Invalid short key
 
+    /** Creates an encryptor with a valid 32-byte key for each test. */
     @BeforeEach
     void setUp() throws Exception {
         transformer = new EncryptTokenTransformer(VALID_KEY);
     }
 
+    /** Verifies a serialized encryptor can still produce a Base64-encoded token. */
     @Test
     void testSerializable() throws Exception {
         TokenTransformer encryptTokenTransformer = new EncryptTokenTransformer(VALID_KEY);
@@ -42,18 +45,21 @@ class EncryptTokenTransformerTest {
         Assertions.assertNotNull(decodedBytes);
     }
 
+    /** Verifies construction accepts a valid string key. */
     @Test
     void testConstructor_ValidKey_Success() throws Exception {
         EncryptTokenTransformer validTransformer = new EncryptTokenTransformer(VALID_KEY);
         Assertions.assertNotNull(validTransformer);
     }
 
+    /** Verifies construction accepts a raw 32-byte key. */
     @Test
     void testConstructor_Raw32ByteKey_Success() throws Exception {
         EncryptTokenTransformer validTransformer = new EncryptTokenTransformer(VALID_KEY.getBytes(StandardCharsets.UTF_8));
         Assertions.assertNotNull(validTransformer);
     }
 
+    /** Verifies a short key is rejected with an invalid-key error. */
     @Test
     void testConstructor_InvalidKeyLength_ThrowsIllegalArgumentException() {
         Exception exception = Assertions.assertThrows(InvalidKeyException.class, () -> {
@@ -62,6 +68,7 @@ class EncryptTokenTransformerTest {
         Assertions.assertEquals("Key must be 32 bytes long", exception.getMessage());
     }
 
+    /** Verifies a 32-character non-ASCII key is rejected when its UTF-8 length is not 32 bytes. */
     @Test
     void testConstructor_NonAscii32CharacterKey_ThrowsInvalidKeyException() {
         String invalidUtf8LengthKey = "é".repeat(32);
@@ -72,6 +79,7 @@ class EncryptTokenTransformerTest {
         Assertions.assertEquals("Key must be 32 bytes long", exception.getMessage());
     }
 
+    /** Verifies a valid token is encrypted to a nonempty Base64 value. */
     @Test
     void testTransform_ValidToken_ReturnsEncryptedToken() throws Exception {
         String token = "mySecretToken";
@@ -86,6 +94,7 @@ class EncryptTokenTransformerTest {
         Assertions.assertNotNull(decodedBytes);
     }
 
+    /** Verifies an encrypted token can be decrypted with the matching AES-GCM parameters. */
     @Test
     void testTransform_ReversibleEncryption() throws Exception {
         // Testing if encryption followed by decryption will give back the original

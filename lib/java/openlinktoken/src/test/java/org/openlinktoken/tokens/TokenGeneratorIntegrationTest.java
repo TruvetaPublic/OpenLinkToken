@@ -24,6 +24,7 @@ import org.openlinktoken.attributes.person.SocialSecurityNumberAttribute;
 import org.openlinktoken.tokens.tokenizer.SHA256Tokenizer;
 import org.openlinktoken.tokentransformer.TokenTransformer;
 
+/** Tests end-to-end token generation with the built-in T1-T5 definitions. */
 class TokenGeneratorIntegrationTest {
 
     @Mock
@@ -35,6 +36,7 @@ class TokenGeneratorIntegrationTest {
     @InjectMocks
     private TokenGenerator tokenGenerator;
 
+    /** Creates a real token definition and tokenizer for integration tests. */
     @BeforeEach
     void setUp() throws Exception {
         // Setup real TokenDefinition and TokenTransformers for integration testing
@@ -44,6 +46,7 @@ class TokenGeneratorIntegrationTest {
         tokenGenerator = new TokenGenerator(tokenDefinition, new SHA256Tokenizer(tokenTransformerList));
     }
 
+    /** Verifies valid class-keyed person fields generate the expected T1-T5 tokens. */
     @Test
     void testGetAllTokens_validPersonAttributes_generatesTokens() {
         // Define token identifiers and attribute expressions
@@ -78,6 +81,7 @@ class TokenGeneratorIntegrationTest {
         assertEquals("3756556f2323148cb57e1e13b1abcd457e1c1706a84ae83d522a3fc0ad43506d", tokens.get("T5"));
     }
 
+    /** Verifies field-ID inputs generate the same T1-T5 values as class-keyed inputs. */
     @Test
     void testGetAllTokensViaFieldId_validPersonAttributes_generatesSameTokensAsClassBasedApi() {
         // Regression test: the field-ID-based API must produce byte-identical tokens

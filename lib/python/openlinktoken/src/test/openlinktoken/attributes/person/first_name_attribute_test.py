@@ -51,12 +51,23 @@ class TestFirstNameAttribute:
         ],
     )
     def test_normalize_should_transliterate_latin_extended_names(self, value, expected):
-        """Test normalization of first names that rely on Latin Extended transliteration."""
+        """
+        Test normalization of first names that rely on Latin Extended transliteration.
+
+        Args:
+            value: Latin Extended first name used to verify transliteration.
+            expected: Expected result against which the operation is checked.
+        """
         assert self.first_name_attribute.normalize(value) == expected
 
     @pytest.mark.parametrize("value", ["Łukasz", "Søren", "Ægir"])
     def test_validate_should_accept_latin_extended_names(self, value):
-        """Test validation acceptance for first names that rely on Latin Extended transliteration."""
+        """
+        Test validation acceptance for first names that rely on Latin Extended transliteration.
+
+        Args:
+            value: Latin Extended first name whose validation is being checked.
+        """
         assert self.first_name_attribute.validate(value) is True
         assert self.first_name_attribute.validate(self.first_name_attribute.normalize(value)) is True
 
@@ -146,7 +157,12 @@ class TestFirstNameAttribute:
         results = []
 
         def normalize_name():
-            """Function to be executed by each thread."""
+            """
+            Function to be executed by each thread.
+
+            Returns:
+                Normalized name.
+            """
             try:
                 result = self.first_name_attribute.normalize(test_name)
                 return result
@@ -258,7 +274,13 @@ class TestFirstNameAttribute:
         ],
     )
     def test_normalize_should_keep_first_part_with_non_dash_separators(self, input_name, expected_output):
-        """Keep the first part when a name has a non-dash separator."""
+        """
+        Keep the first part when a name has a non-dash separator.
+
+        Args:
+            input_name: Name of the input.
+            expected_output: Expected output used to verify the operation.
+        """
         assert self.first_name_attribute.normalize(input_name) == expected_output
 
     @pytest.mark.parametrize(
@@ -269,7 +291,13 @@ class TestFirstNameAttribute:
         ],
     )
     def test_normalize_should_require_three_letter_first_part(self, input_name, expected_output):
-        """Keep two-letter first parts and reduce first parts with at least three letters."""
+        """
+        Keep two-letter first parts and reduce first parts with at least three letters.
+
+        Args:
+            input_name: Name of the input.
+            expected_output: Expected output used to verify the operation.
+        """
         assert self.first_name_attribute.normalize(input_name) == expected_output
 
     def test_serialization_should_preserve_state(self):
@@ -411,7 +439,13 @@ class TestFirstNameAttribute:
         ],
     )
     def test_normalize_parametrized(self, input_name, expected_output):
-        """Parametrized test for normalization with various inputs."""
+        """
+        Parametrized test for normalization with various inputs.
+
+        Args:
+            input_name: Name of the input.
+            expected_output: Expected output used to verify the operation.
+        """
         assert self.first_name_attribute.normalize(input_name) == expected_output
 
     @pytest.mark.parametrize(
@@ -432,7 +466,12 @@ class TestFirstNameAttribute:
         ],
     )
     def test_validate_valid_names_parametrized(self, valid_name):
-        """Parametrized test for validation with valid names."""
+        """
+        Parametrized test for validation with valid names.
+
+        Args:
+            valid_name: Name of the valid.
+        """
         assert self.first_name_attribute.validate(valid_name) is True
 
     @pytest.mark.parametrize(
@@ -464,7 +503,12 @@ class TestFirstNameAttribute:
         ],
     )
     def test_validate_invalid_names_parametrized(self, invalid_name):
-        """Parametrized test for validation with invalid names."""
+        """
+        Parametrized test for validation with invalid names.
+
+        Args:
+            invalid_name: Name of the invalid.
+        """
         assert self.first_name_attribute.validate(invalid_name) is False
 
     def test_validate_idempotency_should_be_stable(self):

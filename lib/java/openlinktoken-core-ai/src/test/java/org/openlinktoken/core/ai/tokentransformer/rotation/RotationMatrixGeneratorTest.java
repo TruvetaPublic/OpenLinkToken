@@ -26,12 +26,18 @@ class RotationMatrixGeneratorTest {
     private static final double TOLERANCE = 1e-10;
     private static final double QR_FIXTURE_TOLERANCE = 1e-15;
 
+    /**
+     * Verifies that generation returns the requested number of matrices.
+     */
     @Test
     void testReturnsCorrectCount() {
         List<double[][]> matrices = RotationMatrixGenerator.generate(IV, COUNT, DIMENSION);
         assertEquals(COUNT, matrices.size());
     }
 
+    /**
+     * Verifies that every generated matrix has the requested dimensions.
+     */
     @Test
     void testMatrixDimensions() {
         for (double[][] m : RotationMatrixGenerator.generate(IV, COUNT, DIMENSION)) {
@@ -42,6 +48,9 @@ class RotationMatrixGeneratorTest {
         }
     }
 
+    /**
+     * Verifies that row-limited results retain the leading rows of full matrices.
+     */
     @Test
     void testRowCountKeepsLeadingRowsWithFullRotationValues() {
         List<double[][]> fullMatrices = RotationMatrixGenerator.generate(IV, COUNT, DIMENSION);
@@ -58,6 +67,9 @@ class RotationMatrixGeneratorTest {
         }
     }
 
+    /**
+     * Verifies that requesting every row matches the full-matrix overload.
+     */
     @Test
     void testRowCountEqualsDimensionMatchesFullApi() {
         List<double[][]> fullMatrices = RotationMatrixGenerator.generate(IV, COUNT, DIMENSION);
@@ -71,6 +83,9 @@ class RotationMatrixGeneratorTest {
         }
     }
 
+    /**
+     * Verifies that the requested row count must be between one and the dimension.
+     */
     @Test
     void testRowCountMustBeWithinDimension() {
         assertThrows(IllegalArgumentException.class,
@@ -79,6 +94,9 @@ class RotationMatrixGeneratorTest {
                 () -> RotationMatrixGenerator.generate(IV, COUNT, DIMENSION, DIMENSION + 1));
     }
 
+    /**
+     * Verifies that each generated matrix has orthonormal rows.
+     */
     @Test
     void testOrthogonality() {
         for (double[][] m : RotationMatrixGenerator.generate(IV, COUNT, DIMENSION)) {
@@ -98,6 +116,9 @@ class RotationMatrixGeneratorTest {
         }
     }
 
+    /**
+     * Verifies that generated orthogonal matrices have determinant {@code +1}.
+     */
     @Test
     void testProperRotationDeterminant() {
         for (double[][] m : RotationMatrixGenerator.generate(IV, COUNT, DIMENSION)) {
@@ -107,6 +128,9 @@ class RotationMatrixGeneratorTest {
         }
     }
 
+    /**
+     * Verifies that the same initialization vector generates identical matrices.
+     */
     @Test
     void testDeterminismSameIv() {
         List<double[][]> matricesA = RotationMatrixGenerator.generate(IV, COUNT, DIMENSION);
@@ -120,6 +144,9 @@ class RotationMatrixGeneratorTest {
         }
     }
 
+    /**
+     * Verifies that different initialization vectors produce different matrices.
+     */
     @Test
     void testDifferentIvsProduceDifferentMatrices() {
         double[][] a = RotationMatrixGenerator.generate(IV, 1, DIMENSION).get(0);
@@ -137,6 +164,9 @@ class RotationMatrixGeneratorTest {
         assertTrue(anyDiffers, "Different IVs must produce different matrices");
     }
 
+    /**
+     * Verifies that distinct rotation indices generate distinct matrices.
+     */
     @Test
     void testRotationIndicesDiffer() {
         List<double[][]> matrices = RotationMatrixGenerator.generate(IV, 3, DIMENSION);
@@ -156,6 +186,9 @@ class RotationMatrixGeneratorTest {
         assertTrue(oneTwoDiffers, "Matrix 1 and matrix 2 must differ");
     }
 
+    /**
+     * Verifies orthogonality and determinant for a two-dimensional matrix.
+     */
     @Test
     void testDimension2() {
         List<double[][]> matrices = RotationMatrixGenerator.generate(IV, 1, 2);
@@ -174,6 +207,9 @@ class RotationMatrixGeneratorTest {
         assertTrue(Math.abs(computeDet(m, n) - 1.0) < TOLERANCE);
     }
 
+    /**
+     * Verifies orthogonality and determinant for eight-dimensional matrices.
+     */
     @Test
     void testDimension8() {
         int n = 8;
@@ -192,6 +228,9 @@ class RotationMatrixGeneratorTest {
         }
     }
 
+    /**
+     * Verifies that generated values match the reference Householder QR fixture.
+     */
     @Test
     void testMatchesNumpyHouseholderQrReferenceFixture() {
         // NumPy QR output after normalizing columns by sign(diag(R)) and enforcing det(Q) = +1.
@@ -212,6 +251,11 @@ class RotationMatrixGeneratorTest {
         }
     }
 
+    /**
+     * Verifies that concurrent generation completes with identical matrices.
+     *
+     * @throws InterruptedException if the test thread is interrupted while awaiting workers
+     */
     @Test
     void testThreadSafety() throws InterruptedException {
         int threadCount = 100;
@@ -251,7 +295,13 @@ class RotationMatrixGeneratorTest {
         }
     }
 
-    /** Compute determinant via Gaussian elimination for test validation. */
+    /**
+     * Computes a matrix determinant by Gaussian elimination for test validation.
+     *
+     * @param matrix square matrix whose determinant is computed
+     * @param n number of rows and columns
+     * @return determinant of the matrix
+     */
     private static double computeDet(double[][] matrix, int n) {
         double[][] a = new double[n][];
         for (int i = 0; i < n; i++) {

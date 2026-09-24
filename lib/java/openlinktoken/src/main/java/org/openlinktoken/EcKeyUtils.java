@@ -13,6 +13,7 @@ package org.openlinktoken;
  */
 public final class EcKeyUtils {
 
+    /** Prevents instantiation of this placeholder class. */
     private EcKeyUtils() {
     }
 }

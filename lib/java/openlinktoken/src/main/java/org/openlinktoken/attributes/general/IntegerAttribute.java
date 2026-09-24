@@ -35,6 +35,7 @@ public class IntegerAttribute extends BaseAttribute {
      */
     private static final String INTEGER_REGEX = "^\\s*[+-]?\\d+\\s*$";
 
+    /** Creates an integer attribute with the standard integer-format validator. */
     public IntegerAttribute() {
         super(List.of(new RegexValidator(INTEGER_REGEX)));
     }
@@ -48,6 +49,12 @@ public class IntegerAttribute extends BaseAttribute {
         super(createValidatorList(additionalValidators));
     }
 
+    /**
+     * Combines the standard integer-format validator with subclass-specific validators.
+     *
+     * @param additionalValidators validators to apply in addition to the integer-format check
+     * @return the complete validator list
+     */
     private static List<SerializableAttributeValidator> createValidatorList(
             List<SerializableAttributeValidator> additionalValidators) {
         java.util.ArrayList<SerializableAttributeValidator> validators = new java.util.ArrayList<>();
@@ -56,16 +63,25 @@ public class IntegerAttribute extends BaseAttribute {
         return validators;
     }
 
+    /** {@inheritDoc} */
     @Override
     public String getName() {
         return NAME;
     }
 
+    /** {@inheritDoc} */
     @Override
     public String[] getAliases() {
         return ALIASES;
     }
 
+    /**
+     * Trims the value, parses it as a {@code long}, and returns its canonical decimal form.
+     *
+     * @param value the integer value to normalize
+     * @return the parsed integer as a string
+     * @throws IllegalArgumentException if the value is {@code null} or cannot be parsed as a {@code long}
+     */
     @Override
     public String normalize(String value) {
         if (value == null) {

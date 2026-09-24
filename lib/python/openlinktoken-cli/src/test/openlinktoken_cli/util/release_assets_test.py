@@ -10,13 +10,29 @@ from openlinktoken_cli.util.release_assets import create_release_assets
 
 
 def _write_binary(dist_dir: Path, name: str, content: bytes) -> None:
-    """Create a fake built CLI executable for release asset tests."""
+    """
+    Create a fake built CLI executable for release asset tests.
+
+    Args:
+        dist_dir: Directory used for the dist.
+        name: Name identifying the item being processed.
+        content: Byte sequence containing the content used to write.
+    """
     dist_dir.mkdir(parents=True, exist_ok=True)
     (dist_dir / name).write_bytes(content)
 
 
 def _expected_checksum(content: bytes, file_name: str) -> str:
-    """Return the checksum file contents for an asset."""
+    """
+    Return the checksum file contents for an asset.
+
+    Args:
+        content: Text or file content whose SHA-256 checksum is calculated.
+        file_name: Name of the file.
+
+    Returns:
+        String produced by expected checksum.
+    """
     digest = hashlib.sha256(content).hexdigest()
     return f"{digest}  {file_name}\n"
 
@@ -25,7 +41,12 @@ class TestCreateReleaseAssets:
     """Unit tests for release asset preparation."""
 
     def test_zips_complete_one_folder_bundle(self, tmp_path):
-        """One-folder builds should include the executable and its dependency files."""
+        """
+        One-folder builds should include the executable and its dependency files.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         bundle_dir = tmp_path / "dist" / "olt"
         bundle_dir.mkdir(parents=True)
         (bundle_dir / "olt").write_bytes(b"bundle executable")
@@ -41,7 +62,12 @@ class TestCreateReleaseAssets:
             ]
 
     def test_creates_linux_release_assets_and_checksums(self, tmp_path):
-        """Linux builds should emit updater binary, zip package, and checksum sidecars."""
+        """
+        Linux builds should emit updater binary, zip package, and checksum sidecars.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         dist_dir = tmp_path / "dist"
         output_dir = tmp_path / "release-assets"
         binary_content = b"linux binary"
@@ -74,7 +100,12 @@ class TestCreateReleaseAssets:
         )
 
     def test_creates_macos_arm64_release_assets(self, tmp_path):
-        """macOS arm64 builds should use an architecture-specific asset name."""
+        """
+        macOS arm64 builds should use an architecture-specific asset name.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         dist_dir = tmp_path / "dist"
         output_dir = tmp_path / "release-assets"
         binary_content = b"macOS arm64 binary"
@@ -91,7 +122,12 @@ class TestCreateReleaseAssets:
         }
 
     def test_creates_macos_x86_64_release_assets(self, tmp_path):
-        """macOS Intel builds should use an architecture-specific asset name."""
+        """
+        macOS Intel builds should use an architecture-specific asset name.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         dist_dir = tmp_path / "dist"
         output_dir = tmp_path / "release-assets"
         _write_binary(dist_dir, "olt", b"macOS x86_64 binary")
@@ -103,14 +139,24 @@ class TestCreateReleaseAssets:
         assert len(generated_paths) == 4
 
     def test_rejects_unsupported_macos_architecture(self, tmp_path):
-        """Unsupported macOS architectures should fail before creating assets."""
+        """
+        Unsupported macOS architectures should fail before creating assets.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         with pytest.raises(ValueError, match="Unsupported macOS architecture"):
             create_release_assets(
                 "2.1.0", "macOS", tmp_path / "dist", tmp_path / "release-assets", architecture="ppc64"
             )
 
     def test_normalizes_v_prefixed_versions_for_windows_assets(self, tmp_path):
-        """Windows builds should keep the .exe binary name while normalizing the version string."""
+        """
+        Windows builds should keep the .exe binary name while normalizing the version string.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         dist_dir = tmp_path / "dist"
         output_dir = tmp_path / "release-assets"
         binary_content = b"windows binary"
@@ -125,11 +171,21 @@ class TestCreateReleaseAssets:
             assert archive.namelist() == ["olt-cli-2.1.0-windows-x64/olt.exe"]
 
     def test_rejects_unsupported_runner_os(self, tmp_path):
-        """Unsupported runner names should fail fast with a clear error."""
+        """
+        Unsupported runner names should fail fast with a clear error.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         with pytest.raises(ValueError, match="Unsupported runner OS"):
             create_release_assets("2.1.0", "Solaris", tmp_path / "dist", tmp_path / "release-assets")
 
     def test_requires_built_executable_to_exist(self, tmp_path):
-        """Preparing release assets should fail if PyInstaller output is missing."""
+        """
+        Preparing release assets should fail if PyInstaller output is missing.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         with pytest.raises(FileNotFoundError, match="Expected built executable"):
             create_release_assets("2.1.0", "Linux", tmp_path / "dist", tmp_path / "release-assets")

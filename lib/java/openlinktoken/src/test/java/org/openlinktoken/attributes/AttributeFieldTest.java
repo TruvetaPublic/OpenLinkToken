@@ -11,8 +11,10 @@ import org.openlinktoken.attributes.general.StringAttribute;
 import org.openlinktoken.attributes.person.FirstNameAttribute;
 import org.openlinktoken.attributes.person.LastNameAttribute;
 
+/** Tests construction, equality, and representation of attribute-field descriptors. */
 class AttributeFieldTest {
 
+    /** Verifies construction retains the field identifier and attribute class. */
     @Test
     void testConstructor() {
         var field = new AttributeField("LastName", LastNameAttribute.class);
@@ -20,16 +22,19 @@ class AttributeFieldTest {
         assertEquals(LastNameAttribute.class, field.getAttributeClass());
     }
 
+    /** Verifies construction rejects a null field identifier. */
     @Test
     void testConstructorRejectsNullFieldId() {
         assertThrows(NullPointerException.class, () -> new AttributeField(null, StringAttribute.class));
     }
 
+    /** Verifies construction rejects a null attribute class. */
     @Test
     void testConstructorRejectsNullAttributeClass() {
         assertThrows(NullPointerException.class, () -> new AttributeField("Test", null));
     }
 
+    /** Verifies field equality and hash codes depend on the field identifier. */
     @Test
     void testEqualityByFieldId() {
         var field1 = new AttributeField("Name", StringAttribute.class);
@@ -38,6 +43,7 @@ class AttributeFieldTest {
         assertEquals(field1.hashCode(), field2.hashCode());
     }
 
+    /** Verifies fields with different identifiers are unequal. */
     @Test
     void testInequalityByFieldId() {
         var field1 = new AttributeField("FirstName", StringAttribute.class);
@@ -45,6 +51,7 @@ class AttributeFieldTest {
         assertNotEquals(field1, field2);
     }
 
+    /** Verifies the descriptor's string representation includes its identifier and class name. */
     @Test
     void testToString() {
         var field = new AttributeField("BirthDate", StringAttribute.class);

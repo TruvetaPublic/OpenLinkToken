@@ -2,7 +2,6 @@
 
 import os
 import tempfile
-from pathlib import Path
 
 from openlinktoken_cli.io.parquet.person_attributes_parquet_reader import PersonAttributesParquetReader
 from openlinktoken_cli.io.parquet.person_attributes_parquet_writer import PersonAttributesParquetWriter
@@ -64,7 +63,13 @@ class TestPersonAttributesParquetWriter:
             assert record["FirstName"] == "Jane"
 
     def test_write_basename_output_path_in_current_directory(self, tmp_path, monkeypatch):
-        """Test that a basename-only output path writes to the current directory."""
+        """
+        Test that a basename-only output path writes to the current directory.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
+        """
         monkeypatch.chdir(tmp_path)
         writer = PersonAttributesParquetWriter("output.parquet")
 

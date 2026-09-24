@@ -16,6 +16,12 @@ class BaseAttribute(SerializableAttribute):
     """
 
     def __init__(self, validation_rules: List[SerializableAttributeValidator] = None):
+        """
+        Initialize the instance.
+
+        Args:
+            validation_rules: Sequence of validation rules values to initialize.
+        """
         if validation_rules is None:
             validation_rules = []
 
@@ -24,7 +30,15 @@ class BaseAttribute(SerializableAttribute):
         self.validation_rules = rule_list
 
     def validate(self, value: str) -> bool:
-        """Validates the attribute value against a set of validation rules."""
+        """
+        Validates the attribute value against a set of validation rules.
+
+        Args:
+            value: Attribute value to check against this attribute's validation rules.
+
+        Returns:
+            True when the check succeeds; otherwise, False.
+        """
         if value is None:
             return False
 

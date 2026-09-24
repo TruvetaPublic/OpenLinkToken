@@ -158,7 +158,13 @@ class TestMetadataJsonWriter:
             os.remove(expected_metadata_path)
 
     def test_write_metadata_for_basename_output_path_in_current_directory(self, tmp_path, monkeypatch):
-        """Test that basename-only output paths create metadata in the current directory."""
+        """
+        Test that basename-only output paths create metadata in the current directory.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
+        """
         monkeypatch.chdir(tmp_path)
         writer = MetadataJsonWriter("output.csv")
 
@@ -212,7 +218,13 @@ class TestMetadataJsonWriter:
         assert hasattr(self.default_writer, "output_path"), "MetadataJsonWriter should have output_path attribute"
 
     def test_write_metadata_to_current_directory_with_filename_only(self, tmp_path: Path, monkeypatch):
-        """Test writing metadata beside a bare output filename in the current directory."""
+        """
+        Test writing metadata beside a bare output filename in the current directory.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
+        """
         monkeypatch.chdir(tmp_path)
         writer = MetadataJsonWriter("output.csv")
 

@@ -67,6 +67,7 @@ public class DateAttribute extends BaseAttribute {
     // Thread-safe date formatter
     private static final DateTimeFormatter NORMALIZED_DATE_FORMATTER = DateTimeFormatter.ofPattern(NORMALIZED_FORMAT);
 
+    /** Creates a date attribute with the standard date-format validator. */
     public DateAttribute() {
         super(List.of(new RegexValidator(DATE_REGEX)));
     }
@@ -80,6 +81,12 @@ public class DateAttribute extends BaseAttribute {
         super(createValidatorList(additionalValidators));
     }
 
+    /**
+     * Combines the standard date-format validator with subclass-specific validators.
+     *
+     * @param additionalValidators validators to apply in addition to the date-format check
+     * @return the complete validator list
+     */
     private static List<SerializableAttributeValidator> createValidatorList(
             List<SerializableAttributeValidator> additionalValidators) {
         java.util.ArrayList<SerializableAttributeValidator> validators = new java.util.ArrayList<>();
@@ -88,16 +95,25 @@ public class DateAttribute extends BaseAttribute {
         return validators;
     }
 
+    /** {@inheritDoc} */
     @Override
     public String getName() {
         return NAME;
     }
 
+    /** {@inheritDoc} */
     @Override
     public String[] getAliases() {
         return ALIASES;
     }
 
+    /**
+     * Parses a supported date representation and formats it as {@code yyyy-MM-dd}.
+     *
+     * @param value the date value to normalize
+     * @return the date in {@code yyyy-MM-dd} format
+     * @throws IllegalArgumentException if the value cannot be parsed in a supported format
+     */
     @Override
     public String normalize(String value) {
         try {

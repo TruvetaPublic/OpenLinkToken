@@ -20,20 +20,24 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+/** Tests first-name normalization and validation across names, accents, titles, and placeholders. */
 class FirstNameAttributeTest {
 
     private FirstNameAttribute firstNameAttribute;
 
+    /** Creates a fresh first-name attribute for each test. */
     @BeforeEach
     void setUp() {
         firstNameAttribute = new FirstNameAttribute();
     }
 
+    /** Verifies the attribute reports the {@code FirstName} name. */
     @Test
     void getName_ShouldReturnFirstName() {
         assertEquals("FirstName", firstNameAttribute.getName());
     }
 
+    /** Verifies both supported first-name aliases are exposed. */
     @Test
     void getAliases_ShouldReturnFirstNameAndGivenName() {
         String[] expectedAliases = { "FirstName", "GivenName" };
@@ -41,12 +45,14 @@ class FirstNameAttributeTest {
         assertArrayEquals(expectedAliases, actualAliases);
     }
 
+    /** Verifies an ordinary first name is unchanged by normalization. */
     @Test
     void normalize_ShouldReturnUnchangedValue() {
         String input = "John";
         assertEquals(input, firstNameAttribute.normalize(input));
     }
 
+    /** Verifies common accented names normalize without diacritics. */
     @Test
     void normalize_Accent() {
         String name1 = "José";
@@ -59,6 +65,7 @@ class FirstNameAttributeTest {
         assertEquals("Renee", firstNameAttribute.normalize(name4));
     }
 
+    /** Verifies Latin Extended first names are transliterated to ASCII letters. */
     @Test
     void normalize_ShouldTransliterateLatinExtendedNames() {
         assertEquals("Lukasz", firstNameAttribute.normalize("Łukasz"));
@@ -66,6 +73,7 @@ class FirstNameAttributeTest {
         assertEquals("AEgir", firstNameAttribute.normalize("Ægir"));
     }
 
+    /** Verifies Latin Extended names and their normalized forms pass validation. */
     @Test
     void validate_ShouldAcceptLatinExtendedNames() {
         assertTrue(firstNameAttribute.validate("Łukasz"));
@@ -76,6 +84,7 @@ class FirstNameAttributeTest {
         assertTrue(firstNameAttribute.validate(firstNameAttribute.normalize("Ægir")));
     }
 
+    /** Verifies representative nonempty names pass validation. */
     @Test
     void validate_ShouldReturnTrueForAnyNonEmptyString() {
         assertTrue(firstNameAttribute.validate("John"));
@@ -83,6 +92,7 @@ class FirstNameAttributeTest {
         assertTrue(firstNameAttribute.validate("J"));
     }
 
+    /** Verifies null, empty, and placeholder-normalizing values fail validation. */
     @Test
     void validate_ShouldReturnFalseForNullOrEmptyString() {
         assertFalse(firstNameAttribute.validate(null), "Null value should not be allowed");
@@ -90,6 +100,7 @@ class FirstNameAttributeTest {
         assertFalse(firstNameAttribute.validate("Test123"), "Non-empty value should be allowed");
     }
 
+    /** Verifies common placeholder first names fail validation. */
     @Test
     void validate_ShouldReturnFalseForBasicPlaceholderValues() {
         // Test basic placeholder values
@@ -101,6 +112,7 @@ class FirstNameAttributeTest {
         assertFalse(firstNameAttribute.validate("Anonymous"), "Anonymous should not be allowed");
     }
 
+    /** Verifies healthcare-specific placeholder first names fail validation. */
     @Test
     void validate_ShouldReturnFalseForMedicalPlaceholderValues() {
         // Test medical/healthcare specific placeholders
@@ -111,6 +123,7 @@ class FirstNameAttributeTest {
         assertFalse(firstNameAttribute.validate("<masked>"), "<masked> should not be allowed");
     }
 
+    /** Verifies automation and test placeholders fail validation. */
     @Test
     void validate_ShouldReturnFalseForTestingPlaceholderValues() {
         // Test automation/testing specific placeholders
@@ -119,6 +132,7 @@ class FirstNameAttributeTest {
         assertFalse(firstNameAttribute.validate("zzztrash"), "zzztrash should not be allowed");
     }
 
+    /** Verifies missing and unavailable data placeholders fail validation. */
     @Test
     void validate_ShouldReturnFalseForDataAvailabilityPlaceholders() {
         // Test data availability placeholders
@@ -128,6 +142,7 @@ class FirstNameAttributeTest {
         assertFalse(firstNameAttribute.validate("NotAvailable"), "NotAvailable should not be allowed");
     }
 
+    /** Verifies placeholder matching is case-insensitive. */
     @Test
     void validate_ShouldReturnFalseForCaseInsensitivePlaceholders() {
         // Test case insensitivity (NotInValidator uses equalsIgnoreCase)
@@ -142,6 +157,7 @@ class FirstNameAttributeTest {
         assertFalse(firstNameAttribute.validate("missing"), "missing (lowercase) should not be allowed");
     }
 
+    /** Verifies common, accented, and hyphenated first names pass validation. */
     @Test
     void validate_ShouldReturnTrueForValidNames() {
         // Test that legitimate names are still allowed
@@ -155,6 +171,7 @@ class FirstNameAttributeTest {
         assertTrue(firstNameAttribute.validate("Jean-Luc"), "Jean-Luc should be allowed");
     }
 
+    /** Verifies legitimate names resembling placeholders remain valid. */
     @Test
     void validate_ShouldReturnTrueForNamesCloseToPlaceholders() {
         // Test names that might be similar to placeholders but are legitimate
@@ -164,6 +181,7 @@ class FirstNameAttributeTest {
         assertTrue(firstNameAttribute.validate("Ana"), "Ana should be allowed (different from Anonymous)");
     }
 
+    /** Verifies concurrent normalization produces the same transliterated name. */
     @Test
     void normalize_ThreadSafety() throws InterruptedException {
         final int threadCount = 100;
@@ -201,6 +219,7 @@ class FirstNameAttributeTest {
         }
     }
 
+    /** Verifies recognized titles are removed before first-name normalization. */
     @Test
     void normalize_ShouldRemoveTitles() {
         // Test various title formats
@@ -235,6 +254,7 @@ class FirstNameAttributeTest {
         assertEquals("Sarah", firstNameAttribute.normalize("MS Sarah"));
     }
 
+    /** Verifies trailing middle initials are removed without truncating short names. */
     @Test
     void normalize_ShouldRemoveMiddleInitials() {
         // Test middle initial removal (detected by second to last character being a
@@ -254,6 +274,7 @@ class FirstNameAttributeTest {
         assertEquals("A", firstNameAttribute.normalize("A")); // Single character name
     }
 
+    /** Verifies titles and middle initials are removed together, including accented names. */
     @Test
     void normalize_ShouldHandleTitlesAndInitialsTogether() {
         // Test combination of title and middle initial
@@ -267,6 +288,7 @@ class FirstNameAttributeTest {
         assertEquals("Francois", firstNameAttribute.normalize("Dr. François B."));
     }
 
+    /** Verifies punctuation, digits, and separators are removed from normalized names. */
     @Test
     void normalize_ShouldRemoveNonAlphabeticCharacters() {
         // Test removal of dashes, spaces, and other non-alphanumeric characters
@@ -281,6 +303,7 @@ class FirstNameAttributeTest {
         assertEquals("RobertSmith", firstNameAttribute.normalize("Robert_Smith"));
     }
 
+    /** Verifies non-dash multi-part input keeps its first segment while hyphens join name parts. */
     @Test
     void normalize_ShouldKeepFirstPartWithNonDashSeparators() {
         assertEquals("Eric", firstNameAttribute.normalize("Eric Karl"));
@@ -295,12 +318,14 @@ class FirstNameAttributeTest {
         assertEquals("Mary", firstNameAttribute.normalize("Mary Anne-Marie"));
     }
 
+    /** Verifies the first-part length rule for multi-part first names. */
     @Test
     void normalize_ShouldRequireThreeLetterFirstPart() {
         assertEquals("JoAnne", firstNameAttribute.normalize("Jo Anne"));
         assertEquals("Amy", firstNameAttribute.normalize("Amy Lee"));
     }
 
+    /** Verifies serialization preserves first-name normalization and validation behavior. */
     void serialization_ShouldPreserveState() throws Exception {
         FirstNameAttribute originalAttribute = new FirstNameAttribute();
 
@@ -351,6 +376,7 @@ class FirstNameAttributeTest {
         }
     }
 
+    /** Verifies title removal handles title-only, spacing, and title-like name edge cases. */
     @Test
     void normalize_ShouldHandleEdgeCasesInTitleRemoval() {
         // Test edge cases for title removal
@@ -377,6 +403,7 @@ class FirstNameAttributeTest {
         assertEquals("Jane", firstNameAttribute.normalize("Dr.  Jane"));
     }
 
+    /** Verifies recognized generational suffixes are removed from first names. */
     @Test
     void normalize_ShouldRemoveGenerationalSuffixes() {
         // Test various generational suffix formats in first names
@@ -412,6 +439,7 @@ class FirstNameAttributeTest {
         assertEquals("Michelle", firstNameAttribute.normalize("Michelle Sr"));
     }
 
+    /** Verifies normalization removes titles and generational suffixes in combination. */
     @Test
     void normalize_ShouldHandleTitlesAndGenerationalSuffixesTogether() {
         // Test combination of titles and generational suffixes
@@ -438,6 +466,7 @@ class FirstNameAttributeTest {
         assertEquals("Michael", firstNameAttribute.normalize("Gen. Michael VI"));
     }
 
+    /** Verifies title and suffix normalization handles empty results and unusual combinations. */
     @Test
     void normalize_ShouldHandleEdgeCasesWithTitlesAndSuffixes() {
         // Test when title and suffix removal would result in empty string
@@ -468,6 +497,7 @@ class FirstNameAttributeTest {
         assertEquals("RobertSmith", firstNameAttribute.normalize("Prof. Robert_Smith III"));
     }
 
+    /** Verifies normalization handles repeated titles, repeated suffixes, and title-like names. */
     @Test
     void normalize_ShouldHandleMultipleTitlesAndSuffixes() {
         // Test multiple titles
@@ -484,6 +514,7 @@ class FirstNameAttributeTest {
         assertEquals("Gene", firstNameAttribute.normalize("Gene")); // Gene is not Gen.
     }
 
+    /** Verifies generational suffix removal works without a preceding title. */
     @Test
     void normalize_ShouldHandleGenerationalSuffixesWithoutTitles() {
         // Test standalone generational suffixes in various formats
@@ -511,6 +542,7 @@ class FirstNameAttributeTest {
         assertEquals("JeanMarc", firstNameAttribute.normalize("Jean-Marc III"));
     }
 
+    /** Verifies valid input remains valid after normalization and repeated normalization is stable. */
     @Test
     void validate_IdempotencyShouldBeStable() {
         // Test that validation is idempotent: validate(x) == validate(normalize(x))
@@ -545,6 +577,7 @@ class FirstNameAttributeTest {
         }
     }
 
+    /** Verifies a representative normalized first name is accepted by validation. */
     @Test
     void validate_NormalizedValuesShouldPassValidation() {
         // Specific test for idempotency issue
@@ -565,6 +598,7 @@ class FirstNameAttributeTest {
         }
     }
 
+    /** Verifies inputs that normalize to placeholder names are rejected. */
     @Test
     void validate_ShouldRejectValuesNormalizingToPlaceholders() {
         // Test that values which normalize to placeholder values are rejected

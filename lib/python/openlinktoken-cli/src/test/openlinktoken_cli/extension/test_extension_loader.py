@@ -16,35 +16,84 @@ from openlinktoken_cli.extension.extension_loader import ExtensionLoader
 
 
 def _make_subparsers() -> argparse._SubParsersAction:
-    """Return a fresh subparsers action for use in tests."""
+    """
+    Return a fresh subparsers action for use in tests.
+
+    Returns:
+        _SubParsersAction instance produced by make subparsers.
+    """
     parser = argparse.ArgumentParser()
     return parser.add_subparsers(dest="command")
 
 
 def _make_extension(command_name: str = "test-ext") -> OpenLinkTokenExtension:
-    """Build a minimal concrete OpenLinkTokenExtension instance."""
+    """
+    Build a minimal concrete OpenLinkTokenExtension instance.
+
+    Args:
+        command_name: Name of the command.
+
+    Returns:
+        Built a minimal concrete OpenLinkTokenExtension instance.
+    """
 
     class _TestExt(OpenLinkTokenExtension):
+        """
+        Minimal extension implementation used by extension-loader tests.
+        """
+
         @property
         def command_name(self) -> str:
+            """
+            Return the command name exposed by the test extension.
+
+            Returns:
+                Command name registered by the test extension.
+            """
             return command_name
 
         @property
         def description(self) -> str:
+            """
+            Return the help text exposed by the test extension.
+
+            Returns:
+                Help description exposed for the test extension command.
+            """
             return "Test extension"
 
         @property
         def version(self) -> str:
+            """
+            Return the version string exposed by the test extension.
+
+            Returns:
+                Version string reported by the test extension.
+            """
             return "0.1.0"
 
         def register_subcommand(self, subparsers: argparse._SubParsersAction) -> None:
+            """
+            Register the extension command with the supplied argparse subparsers.
+
+            Args:
+                subparsers: Argument-parser subparsers to configure with command handlers.
+            """
             subparsers.add_parser(self.command_name, help=self.description)
 
     return _TestExt()
 
 
 def _make_entry_point(ext_instance: OpenLinkTokenExtension) -> MagicMock:
-    """Wrap an extension instance in a mock importlib EntryPoint."""
+    """
+    Wrap an extension instance in a mock importlib EntryPoint.
+
+    Args:
+        ext_instance: Extension instance whose metadata defines the entry point.
+
+    Returns:
+        MagicMock instance produced by make entry point.
+    """
     ep = MagicMock()
     ep.name = ext_instance.command_name
     ep.load.return_value = type(ext_instance)
@@ -102,7 +151,12 @@ class TestLoadExtensionsEntryPoints:
         assert list(subparsers.choices.keys()).count("shared-cmd") == 1
 
     def test_import_error_emits_warning_but_does_not_crash(self, caplog):
-        """An exception during entry-point load is caught and warns but doesn't raise."""
+        """
+        An exception during entry-point load is caught and warns but doesn't raise.
+
+        Args:
+            caplog: Pytest fixture for capturing log records.
+        """
         ep = MagicMock()
         ep.name = "bad-ext"
         ep.load.side_effect = ImportError("broken module")
@@ -135,7 +189,12 @@ class TestLoadExtensionsFrozen:
     """Tests for the frozen-binary (registry) discovery track."""
 
     def test_frozen_track_loads_extension_from_registry(self, tmp_path):
-        """When sys.frozen is True, extensions are loaded from registry.json."""
+        """
+        When sys.frozen is True, extensions are loaded from registry.json.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         # Build a tiny importable module on the fly.
         pkg_dir = tmp_path / "myext_src"
         pkg_dir.mkdir()

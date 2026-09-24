@@ -15,19 +15,39 @@ class TestStringAttribute:
 
     @pytest.fixture
     def string_attribute(self):
-        """Create a default StringAttribute."""
+        """
+        Create a default StringAttribute.
+
+        Returns:
+            Created a default StringAttribute.
+        """
         return StringAttribute()
 
     def test_get_name_should_return_string(self, string_attribute):
-        """Test that getName returns 'String'."""
+        """
+        Test that getName returns 'String'.
+
+        Args:
+            string_attribute: String attribute implementation used by the test.
+        """
         assert string_attribute.get_name() == "String"
 
     def test_get_aliases_should_return_string_and_text_aliases(self, string_attribute):
-        """Test that getAliases returns ['String', 'Text']."""
+        """
+        Test that getAliases returns ['String', 'Text'].
+
+        Args:
+            string_attribute: String attribute implementation used by the test.
+        """
         assert string_attribute.get_aliases() == ["String", "Text"]
 
     def test_normalize_valid_string_should_trim_whitespace(self, string_attribute):
-        """Test normalization of valid string values."""
+        """
+        Test normalization of valid string values.
+
+        Args:
+            string_attribute: String attribute implementation used by the test.
+        """
         assert string_attribute.normalize("hello") == "hello"
         assert string_attribute.normalize("  hello  ") == "hello"
         assert string_attribute.normalize("  hello world  ") == "hello world"
@@ -35,17 +55,32 @@ class TestStringAttribute:
         assert string_attribute.normalize("  a b c  ") == "a b c"
 
     def test_normalize_string_with_internal_whitespace_should_preserve_it(self, string_attribute):
-        """Test that internal whitespace is preserved."""
+        """
+        Test that internal whitespace is preserved.
+
+        Args:
+            string_attribute: String attribute implementation used by the test.
+        """
         assert string_attribute.normalize("  hello  world  ") == "hello  world"
         assert string_attribute.normalize("  test\tvalue  ") == "test\tvalue"
 
     def test_normalize_null_value_should_raise_exception(self, string_attribute):
-        """Test that null values raise exceptions."""
+        """
+        Test that null values raise exceptions.
+
+        Args:
+            string_attribute: String attribute implementation used by the test.
+        """
         with pytest.raises(ValueError, match="String value cannot be null"):
             string_attribute.normalize(None)
 
     def test_validate_valid_strings_should_return_true(self, string_attribute):
-        """Test validation of valid string values."""
+        """
+        Test validation of valid string values.
+
+        Args:
+            string_attribute: String attribute implementation used by the test.
+        """
         assert string_attribute.validate("hello") is True
         assert string_attribute.validate("  hello  ") is True
         assert string_attribute.validate("a") is True
@@ -54,14 +89,24 @@ class TestStringAttribute:
         assert string_attribute.validate("test@example.com") is True
 
     def test_validate_invalid_strings_should_return_false(self, string_attribute):
-        """Test validation of invalid string values."""
+        """
+        Test validation of invalid string values.
+
+        Args:
+            string_attribute: String attribute implementation used by the test.
+        """
         assert string_attribute.validate(None) is False
         assert string_attribute.validate("") is False
         assert string_attribute.validate("   ") is False
         assert string_attribute.validate("\t\n") is False
 
     def test_normalize_thread_safety(self, string_attribute):
-        """Test thread safety of normalize method with barrier-style synchronization."""
+        """
+        Test thread safety of normalize method with barrier-style synchronization.
+
+        Args:
+            string_attribute: String attribute implementation used by the test.
+        """
         thread_count = 100
         test_string = "  hello world  "
         results = []
@@ -70,6 +115,9 @@ class TestStringAttribute:
         start_event = threading.Event()
 
         def normalize_value():
+            """
+            Normalize value.
+            """
             try:
                 # Wait for the signal to start
                 start_event.wait(timeout=10)
@@ -96,7 +144,12 @@ class TestStringAttribute:
             assert result == "hello world"
 
     def test_serialization(self, string_attribute):
-        """Test serialization and deserialization of the attribute."""
+        """
+        Test serialization and deserialization of the attribute.
+
+        Args:
+            string_attribute: String attribute implementation used by the test.
+        """
         # Serialize the attribute
         serialized_data = pickle.dumps(string_attribute)
 
@@ -122,14 +175,24 @@ class TestStringAttribute:
             )
 
     def test_normalize_empty_string_after_trim_should_return_empty(self, string_attribute):
-        """Test that normalization doesn't fail on whitespace-only strings."""
+        """
+        Test that normalization doesn't fail on whitespace-only strings.
+
+        Args:
+            string_attribute: String attribute implementation used by the test.
+        """
         # This tests that normalization doesn't fail on whitespace-only strings
         # Validation will fail, but normalization should succeed
         assert string_attribute.normalize("   ") == ""
         assert string_attribute.normalize("\t\n") == ""
 
     def test_validate_special_characters_should_return_true(self, string_attribute):
-        """Test that special characters are valid."""
+        """
+        Test that special characters are valid.
+
+        Args:
+            string_attribute: String attribute implementation used by the test.
+        """
         # StringAttribute should accept any non-empty string
         assert string_attribute.validate("hello@world.com") is True
         assert string_attribute.validate("test-value_123") is True

@@ -89,6 +89,11 @@ class PersonAttributesProcessor:
             ring_id: Optional ring ID for JWE wrapping (None to skip JWE).
             hash_record_ids: When True, each record ID is SHA-256 hashed before writing
                              to the output. This is a one-way operation with no traceability.
+            token_definition: Token definition that specifies the attributes and rules for token generation.
+            progress_callback: Callback invoked with updates as processing advances.
+
+        Returns:
+            Read person attributes from the input data source, generate tokens, and.
         """
         token_definition = token_definition or TokenDefinition()
         return PersonAttributesProcessor._process_with_tokenizer(
@@ -124,6 +129,11 @@ class PersonAttributesProcessor:
             writer: The writer initialized with the output data source.
             tokenizer: The tokenizer to use (e.g. SHA256Tokenizer or PassthroughTokenizer).
             metadata_map: Optional metadata map to update with processing statistics.
+            token_definition: Token definition that specifies the attributes and rules for token generation.
+            progress_callback: Callback invoked with updates as processing advances.
+
+        Returns:
+            Read person attributes from the input data source, generate tokens using.
         """
         token_definition = token_definition or TokenDefinition()
         return PersonAttributesProcessor._process_with_tokenizer(
@@ -159,6 +169,10 @@ class PersonAttributesProcessor:
             encryption_key: Optional encryption key for JWE wrapping.
             ring_id: Optional ring ID for JWE wrapping.
             hash_record_ids: When True, each record ID is SHA-256 hashed before writing.
+            progress_callback: Callback invoked with updates as processing advances.
+
+        Returns:
+            Processed with tokenizer.
         """
         field_registry = getattr(token_definition, "field_registry", None)
         token_generator = TokenGenerator(token_definition, tokenizer, field_registry=field_registry)
@@ -304,7 +318,17 @@ class PersonAttributesProcessor:
         encryption_key: str,
         ring_id: str,
     ) -> Dict[str, JweMatchTokenFormatter]:
-        """Initialize per-token JWE formatters when encryption is configured."""
+        """
+        Initialize per-token JWE formatters when encryption is configured.
+
+        Args:
+            token_definition: Token definition value to initialize.
+            encryption_key: Key used to encrypt or decrypt the payload.
+            ring_id: Identifier of the key or token ring to retrieve.
+
+        Returns:
+            Initialized per-token JWE formatters when encryption is configured.
+        """
         jwe_formatters: Dict[str, JweMatchTokenFormatter] = {}
         if not (encryption_key and ring_id):
             return jwe_formatters
@@ -337,7 +361,24 @@ class PersonAttributesProcessor:
         hash_record_ids: bool = False,
         progress_callback=None,
     ) -> Tuple[int, int]:
-        """Process rows with either batched or standard token generation based on ML1 configuration."""
+        """
+        Process rows with either batched or standard token generation based on ML1 configuration.
+
+        Args:
+            reader: Reader that supplies input person-attribute rows.
+            writer: Writer that receives processed token rows.
+            token_generator: TokenGenerator used to create token signatures and token values.
+            invalid_attribute_count: Number of invalid attribute items.
+            blank_tokens_by_rule_count: Number of blank tokens by rule items.
+            encryption_key: Key used to encrypt or decrypt the payload.
+            ring_id: Identifier of the key or token ring to retrieve.
+            jwe_formatters: Mapping from token rule identifiers to the JWE formatters used to wrap tokens.
+            hash_record_ids: Whether record identifiers should be hashed in the output.
+            progress_callback: Callback invoked with updates as processing advances.
+
+        Returns:
+            Processed rows with either batched or standard token generation based on ML1 configuration.
+        """
         if ML1InferenceConfig.is_enabled():
             return PersonAttributesProcessor._process_rows_with_batched_ml1(
                 reader,
@@ -377,7 +418,24 @@ class PersonAttributesProcessor:
         hash_record_ids: bool = False,
         progress_callback=None,
     ) -> Tuple[int, int]:
-        """Process rows in standard per-row token generation mode."""
+        """
+        Process rows in standard per-row token generation mode.
+
+        Args:
+            reader: Reader that supplies input person-attribute rows.
+            writer: Writer that receives processed token rows.
+            token_generator: TokenGenerator used to create token signatures and token values.
+            invalid_attribute_count: Number of invalid attribute items.
+            blank_tokens_by_rule_count: Number of blank tokens by rule items.
+            encryption_key: Key used to encrypt or decrypt the payload.
+            ring_id: Identifier of the key or token ring to retrieve.
+            jwe_formatters: Mapping from token rule identifiers to the JWE formatters used to wrap tokens.
+            hash_record_ids: Whether record identifiers should be hashed in the output.
+            progress_callback: Callback invoked with updates as processing advances.
+
+        Returns:
+            Processed rows in standard per-row token generation mode.
+        """
         row_counter = 0
         invalid_row_count = 0
         last_reported_count = 0
@@ -428,7 +486,24 @@ class PersonAttributesProcessor:
         hash_record_ids: bool = False,
         progress_callback=None,
     ) -> Tuple[int, int]:
-        """Process rows using batched ML1 ONNX inference while retaining streaming output behavior."""
+        """
+        Process rows using batched ML1 ONNX inference while retaining streaming output behavior.
+
+        Args:
+            reader: Reader that supplies input person-attribute rows.
+            writer: Writer that receives processed token rows.
+            token_generator: TokenGenerator used to create token signatures and token values.
+            invalid_attribute_count: Number of invalid attribute items.
+            blank_tokens_by_rule_count: Number of blank tokens by rule items.
+            encryption_key: Key used to encrypt or decrypt the payload.
+            ring_id: Identifier of the key or token ring to retrieve.
+            jwe_formatters: Mapping from token rule identifiers to the JWE formatters used to wrap tokens.
+            hash_record_ids: Whether record identifiers should be hashed in the output.
+            progress_callback: Callback invoked with updates as processing advances.
+
+        Returns:
+            Processed rows using batched ML1 ONNX inference while retaining streaming output behavior.
+        """
         row_counter = 0
         invalid_row_count = 0
         last_reported_count = 0
@@ -490,7 +565,15 @@ class PersonAttributesProcessor:
 
     @staticmethod
     def _infer_ml1_batch(pending_rows: List[_PendingRow]) -> List[Optional[str]]:
-        """Generate ML1 signatures for pending rows without writing output."""
+        """
+        Generate ML1 signatures for pending rows without writing output.
+
+        Args:
+            pending_rows: Sequence of pending rows values to process.
+
+        Returns:
+            Generated ML1 signatures for pending rows without writing output.
+        """
         signatures: List[Optional[str]] = [None] * len(pending_rows)
         inference_provider = TokenGenerator.get_inference_provider()
         if inference_provider is None or not inference_provider.is_enabled():
@@ -515,7 +598,24 @@ class PersonAttributesProcessor:
         ml1_signatures: List[Optional[str]],
         hash_record_ids: bool = False,
     ) -> int:
-        """Apply ML1 results, update statistics, and write pending rows."""
+        """
+        Apply ML1 results, update statistics, and write pending rows.
+
+        Args:
+            writer: Writer that receives processed token rows.
+            token_generator: TokenGenerator used to create token signatures and token values.
+            invalid_attribute_count: Number of invalid attribute items.
+            blank_tokens_by_rule_count: Number of blank tokens by rule items.
+            encryption_key: Key used to encrypt or decrypt the payload.
+            ring_id: Identifier of the key or token ring to retrieve.
+            jwe_formatters: Mapping from token rule identifiers to the JWE formatters used to wrap tokens.
+            pending_rows: Sequence of pending rows values to process.
+            ml1_signatures: Sequence of ml1 signatures values to process.
+            hash_record_ids: Whether record identifiers should be hashed in the output.
+
+        Returns:
+            Applied ML1 results, update statistics, and write pending rows.
+        """
         invalid_row_count = 0
         for i, pending_row in enumerate(pending_rows):
             ml1_signature = ml1_signatures[i] if i < len(ml1_signatures) else None
