@@ -39,17 +39,27 @@ public class SexAttribute extends BaseAttribute {
      */
     private static final String VALIDATE_REGEX = "^([Mm](ale)?|[Ff](emale)?)$";
 
+    /** Creates a sex attribute with the standard accepted-value validator. */
     public SexAttribute() {
         super(
                 List.of(
                         new RegexValidator(VALIDATE_REGEX)));
     }
 
+    /** {@inheritDoc} */
     @Override
     public String getName() {
         return NAME;
     }
 
+    /**
+     * Converts an initial {@code M} or {@code F} to the corresponding full value.
+     *
+     * @param value the value to normalize
+     * @return {@code "Male"} or {@code "Female"} for a recognized initial, or {@code null} otherwise
+     * @throws NullPointerException if {@code value} is {@code null}
+     * @throws IndexOutOfBoundsException if {@code value} is empty
+     */
     @Override
     public String normalize(String value) {
         switch (value.charAt(0)) {
@@ -64,6 +74,7 @@ public class SexAttribute extends BaseAttribute {
         }
     }
 
+    /** {@inheritDoc} */
     @Override
     public String[] getAliases() {
         return ALIASES;

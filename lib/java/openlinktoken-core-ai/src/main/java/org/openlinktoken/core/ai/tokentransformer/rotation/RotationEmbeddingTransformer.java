@@ -44,7 +44,8 @@ public final class RotationEmbeddingTransformer implements EmbeddingTransformer 
      * @param minVal        quantizer lower bound
      * @param maxVal        quantizer upper bound
      * @param binWidth      quantizer bin width; must be &gt; 0
-     * @throws IllegalArgumentException if any parameter is invalid
+     * @throws IllegalArgumentException if the IV is null or blank, a count, dimension, or bin width is outside
+     *                                  its valid range, or the bias is null or has the wrong length
      */
     public RotationEmbeddingTransformer(
             String iv,
@@ -121,6 +122,9 @@ public final class RotationEmbeddingTransformer implements EmbeddingTransformer 
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Generates and caches the sentinel followed by the configured rotation matrices on first use.
+     */
     private synchronized void ensureMatrices() {
         if (matrices == null) {
             // Index 0 is the [[-1]] sentinel (pass-through token); the remaining

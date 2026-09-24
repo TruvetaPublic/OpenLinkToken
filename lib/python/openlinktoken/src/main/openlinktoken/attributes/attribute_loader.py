@@ -25,11 +25,19 @@ class AttributeLoader:
     """
 
     def __init__(self):
+        """
+        Initialize the instance.
+        """
         raise RuntimeError("AttributeLoader should not be instantiated.")
 
     @staticmethod
     def load() -> Set[Attribute]:
-        """Load all attribute implementations."""
+        """
+        Load all attribute implementations.
+
+        Returns:
+            Loaded all attribute implementations.
+        """
         return {
             RecordIdAttribute(),
             StringAttribute(),

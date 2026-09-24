@@ -12,8 +12,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
+/** Tests loading the built-in token definitions from the registry. */
 class TokenRegistryTest {
 
+    /** Verifies the registry contains nonempty definitions for each built-in T1-T5 token. */
     @Test
     void testLoadAllTokensReturnsNonEmptyMap() {
         Map<String, List<AttributeExpression>> tokens = TokenRegistry.loadAllTokens();

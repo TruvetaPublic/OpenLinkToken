@@ -22,20 +22,38 @@ from openlinktoken_pyspark.overlap_analyzer import OpenLinkTokenOverlapAnalyzer
 
 @pytest.fixture(scope="module")
 def spark():
-    """Create a Spark session for testing."""
+    """
+    Create a Spark session for testing.
+
+    Returns:
+        Created a Spark session for testing.
+    """
     return SparkSession.builder.appName("OverlapAnalyzerTest").master("local[2]").getOrCreate()
 
 
 @pytest.fixture
 def encryption_key():
-    """Standard 32-character encryption key for testing."""
+    """
+    Standard 32-character encryption key for testing.
+
+    Returns:
+        String value returned by the operation.
+    """
     # Use exactly 32 ASCII characters
     return "12345678901234567890123456789012"
 
 
 @pytest.fixture
 def sample_tokens_df1(spark):
-    """Create sample tokenized dataset 1."""
+    """
+    Create sample tokenized dataset 1.
+
+    Args:
+        spark: Spark session used to create and inspect DataFrames.
+
+    Returns:
+        Created sample tokenized dataset 1.
+    """
     data = [
         ("rec1", "T1", "token_a_t1"),
         ("rec1", "T2", "token_a_t2"),
@@ -52,7 +70,15 @@ def sample_tokens_df1(spark):
 
 @pytest.fixture
 def sample_tokens_df2(spark):
-    """Create sample tokenized dataset 2 with some overlap."""
+    """
+    Create sample tokenized dataset 2 with some overlap.
+
+    Args:
+        spark: Spark session used to create and inspect DataFrames.
+
+    Returns:
+        Created sample tokenized dataset 2 with some overlap.
+    """
     data = [
         ("rec10", "T1", "token_a_t1"),  # Matches rec1 from df1
         ("rec10", "T2", "token_a_t2"),
@@ -71,7 +97,12 @@ class TestOpenLinkTokenOverlapAnalyzerInit:
     """Tests for OpenLinkTokenOverlapAnalyzer initialization."""
 
     def test_init_valid_key(self, encryption_key):
-        """Test initialization with valid encryption key."""
+        """
+        Test initialization with valid encryption key.
+
+        Args:
+            encryption_key: Key used to encrypt or decrypt the payload.
+        """
         analyzer = OpenLinkTokenOverlapAnalyzer(encryption_key)
         assert analyzer.encryption_key == encryption_key.encode("utf-8")
 
@@ -91,7 +122,13 @@ class TestOpenLinkTokenOverlapAnalyzerInit:
             OpenLinkTokenOverlapAnalyzer(b" " * 32)
 
     def test_from_exchange_config_uses_derived_transport_key(self, tmp_path, monkeypatch):
-        """Factory should resolve and use the exchange-derived transport key."""
+        """
+        Factory should resolve and use the exchange-derived transport key.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
+        """
         exchange_config_path, sender_private_pem = _write_exchange_config(tmp_path)
         monkeypatch.setenv("OLT_TEST_PRIVATE_KEY", sender_private_pem.decode("utf-8"))
         resolved_exchange = resolve_exchange_config_inputs(
@@ -107,7 +144,12 @@ class TestOpenLinkTokenOverlapAnalyzerInit:
         assert analyzer.encryption_key == derive_transport_encryption_key(resolved_exchange)
 
     def test_from_exchange_config_decrypts_v1_tokens(self, tmp_path):
-        """Factory-created analyzers should decrypt olt.V1 tokens with the derived key."""
+        """
+        Factory-created analyzers should decrypt olt.V1 tokens with the derived key.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         exchange_config_path, sender_private_pem = _write_exchange_config(tmp_path)
         private_key_path = tmp_path / "sender.private.pem"
         private_key_path.write_bytes(sender_private_pem)
@@ -129,7 +171,12 @@ class TestOpenLinkTokenOverlapAnalyzerInit:
         assert analyzer._decrypt_token(v1_encrypted) == plaintext
 
     def test_from_exchange_config_accepts_direct_exchange_config_and_private_key_values(self, tmp_path):
-        """Direct exchange-config JSON and private-key PEM values should configure the analyzer."""
+        """
+        Direct exchange-config JSON and private-key PEM values should configure the analyzer.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         exchange_config_path, sender_private_pem = _write_exchange_config(tmp_path)
         private_key_path = tmp_path / "sender.private.pem"
         private_key_path.write_bytes(sender_private_pem)
@@ -155,7 +202,15 @@ class TestAnalyzeOverlap:
     """Tests for overlap analysis functionality."""
 
     def test_analyze_overlap_single_rule(self, spark, encryption_key, sample_tokens_df1, sample_tokens_df2):
-        """Test overlap analysis with single matching rule."""
+        """
+        Test overlap analysis with single matching rule.
+
+        Args:
+            spark: Spark session used to create and inspect DataFrames.
+            encryption_key: Key used to encrypt or decrypt the payload.
+            sample_tokens_df1: First sample token DataFrame used in the overlap analysis.
+            sample_tokens_df2: Second sample token DataFrame used in the overlap analysis.
+        """
         analyzer = OpenLinkTokenOverlapAnalyzer(encryption_key)
         results = analyzer.analyze_overlap(sample_tokens_df1, sample_tokens_df2, ["T1"])
 
@@ -168,7 +223,15 @@ class TestAnalyzeOverlap:
         assert results["overlap_percentage"] > 0
 
     def test_analyze_overlap_multiple_rules(self, spark, encryption_key, sample_tokens_df1, sample_tokens_df2):
-        """Test overlap analysis requiring multiple matching rules."""
+        """
+        Test overlap analysis requiring multiple matching rules.
+
+        Args:
+            spark: Spark session used to create and inspect DataFrames.
+            encryption_key: Key used to encrypt or decrypt the payload.
+            sample_tokens_df1: First sample token DataFrame used in the overlap analysis.
+            sample_tokens_df2: Second sample token DataFrame used in the overlap analysis.
+        """
         analyzer = OpenLinkTokenOverlapAnalyzer(encryption_key)
         results = analyzer.analyze_overlap(sample_tokens_df1, sample_tokens_df2, ["T1", "T2", "T3"])
 
@@ -177,7 +240,13 @@ class TestAnalyzeOverlap:
         assert results["matching_records_dataset2"] == 2  # rec10, rec11
 
     def test_analyze_overlap_no_matches(self, spark, encryption_key):
-        """Test overlap analysis with no matching records."""
+        """
+        Test overlap analysis with no matching records.
+
+        Args:
+            spark: Spark session used to create and inspect DataFrames.
+            encryption_key: Key used to encrypt or decrypt the payload.
+        """
         df1_data = [
             ("rec1", "T1", "token_a"),
             ("rec1", "T2", "token_b"),
@@ -197,7 +266,14 @@ class TestAnalyzeOverlap:
         assert results["overlap_percentage"] == 0
 
     def test_analyze_overlap_custom_dataset_names(self, encryption_key, sample_tokens_df1, sample_tokens_df2):
-        """Test overlap analysis with custom dataset names."""
+        """
+        Test overlap analysis with custom dataset names.
+
+        Args:
+            encryption_key: Key used to encrypt or decrypt the payload.
+            sample_tokens_df1: First sample token DataFrame used in the overlap analysis.
+            sample_tokens_df2: Second sample token DataFrame used in the overlap analysis.
+        """
         analyzer = OpenLinkTokenOverlapAnalyzer(encryption_key)
         results = analyzer.analyze_overlap(
             sample_tokens_df1, sample_tokens_df2, ["T1"], dataset1_name="Hospital_A", dataset2_name="Hospital_B"
@@ -209,7 +285,13 @@ class TestAnalyzeOverlap:
         assert "Hospital_B_RecordId" in results["matches"].columns
 
     def test_analyze_overlap_missing_columns(self, spark, encryption_key):
-        """Test that missing columns raise ValueError."""
+        """
+        Test that missing columns raise ValueError.
+
+        Args:
+            spark: Spark session used to create and inspect DataFrames.
+            encryption_key: Key used to encrypt or decrypt the payload.
+        """
         df_invalid = spark.createDataFrame(
             [("rec1", "token")],
             ["RecordId", "Token"],  # Missing RuleId
@@ -221,13 +303,27 @@ class TestAnalyzeOverlap:
             analyzer.analyze_overlap(df_invalid, df_valid, ["T1"])
 
     def test_analyze_overlap_empty_rules(self, encryption_key, sample_tokens_df1, sample_tokens_df2):
-        """Test that empty matching rules raise ValueError."""
+        """
+        Test that empty matching rules raise ValueError.
+
+        Args:
+            encryption_key: Key used to encrypt or decrypt the payload.
+            sample_tokens_df1: First sample token DataFrame used in the overlap analysis.
+            sample_tokens_df2: Second sample token DataFrame used in the overlap analysis.
+        """
         analyzer = OpenLinkTokenOverlapAnalyzer(encryption_key)
         with pytest.raises(ValueError, match="matching_rules cannot be empty"):
             analyzer.analyze_overlap(sample_tokens_df1, sample_tokens_df2, [])
 
     def test_analyze_overlap_matches_dataframe(self, encryption_key, sample_tokens_df1, sample_tokens_df2):
-        """Test that matches DataFrame is returned correctly."""
+        """
+        Test that matches DataFrame is returned correctly.
+
+        Args:
+            encryption_key: Key used to encrypt or decrypt the payload.
+            sample_tokens_df1: First sample token DataFrame used in the overlap analysis.
+            sample_tokens_df2: Second sample token DataFrame used in the overlap analysis.
+        """
         analyzer = OpenLinkTokenOverlapAnalyzer(encryption_key)
         results = analyzer.analyze_overlap(sample_tokens_df1, sample_tokens_df2, ["T1"])
 
@@ -237,7 +333,12 @@ class TestAnalyzeOverlap:
         assert "Dataset2_RecordId" in matches_df.columns
 
     def test_decrypt_token_legacy_format(self, encryption_key):
-        """Legacy encrypted tokens decrypt to deterministic values."""
+        """
+        Legacy encrypted tokens decrypt to deterministic values.
+
+        Args:
+            encryption_key: Key used to encrypt or decrypt the payload.
+        """
         analyzer = OpenLinkTokenOverlapAnalyzer(encryption_key)
         plaintext = "deterministic-hash-value"
         encrypted = EncryptTokenTransformer(encryption_key).transform(plaintext)
@@ -245,7 +346,12 @@ class TestAnalyzeOverlap:
         assert analyzer._decrypt_token(encrypted) == plaintext
 
     def test_decrypt_token_v1_format(self, encryption_key):
-        """olt.V1 tokens decrypt to deterministic values for matching."""
+        """
+        olt.V1 tokens decrypt to deterministic values for matching.
+
+        Args:
+            encryption_key: Key used to encrypt or decrypt the payload.
+        """
         analyzer = OpenLinkTokenOverlapAnalyzer(encryption_key)
         plaintext = "deterministic-hash-value"
         legacy_encrypted = EncryptTokenTransformer(encryption_key).transform(plaintext)
@@ -261,7 +367,14 @@ class TestCompareWithMultipleRules:
     """Tests for comparing with multiple rule sets."""
 
     def test_compare_with_multiple_rules(self, encryption_key, sample_tokens_df1, sample_tokens_df2):
-        """Test comparison with multiple rule sets."""
+        """
+        Test comparison with multiple rule sets.
+
+        Args:
+            encryption_key: Key used to encrypt or decrypt the payload.
+            sample_tokens_df1: First sample token DataFrame used in the overlap analysis.
+            sample_tokens_df2: Second sample token DataFrame used in the overlap analysis.
+        """
         analyzer = OpenLinkTokenOverlapAnalyzer(encryption_key)
         rule_sets = [["T1"], ["T1", "T2"], ["T1", "T2", "T3"]]
         results = analyzer.compare_with_multiple_rules(sample_tokens_df1, sample_tokens_df2, rule_sets)
@@ -272,7 +385,13 @@ class TestCompareWithMultipleRules:
             assert "matching_records_dataset1" in result
 
     def test_compare_different_overlap_rates(self, spark, encryption_key):
-        """Test that different rules produce different overlap rates."""
+        """
+        Test that different rules produce different overlap rates.
+
+        Args:
+            spark: Spark session used to create and inspect DataFrames.
+            encryption_key: Key used to encrypt or decrypt the payload.
+        """
         # Create datasets where T1 matches but T2 doesn't for some records
         df1_data = [
             ("rec1", "T1", "token_a"),
@@ -303,7 +422,15 @@ class TestPrintSummary:
     """Tests for summary printing functionality."""
 
     def test_print_summary_no_error(self, encryption_key, sample_tokens_df1, sample_tokens_df2, capsys):
-        """Test that print_summary executes without error."""
+        """
+        Test that print_summary executes without error.
+
+        Args:
+            encryption_key: Key used to encrypt or decrypt the payload.
+            sample_tokens_df1: First sample token DataFrame used in the overlap analysis.
+            sample_tokens_df2: Second sample token DataFrame used in the overlap analysis.
+            capsys: Pytest fixture for capturing standard output and standard error.
+        """
         analyzer = OpenLinkTokenOverlapAnalyzer(encryption_key)
         results = analyzer.analyze_overlap(sample_tokens_df1, sample_tokens_df2, ["T1"])
 
@@ -319,7 +446,15 @@ class TestPrintSummary:
 
 
 def _write_exchange_config(tmp_path: Path) -> tuple[Path, bytes]:
-    """Create a version 1 exchange config and matching sender private key."""
+    """
+    Create a version 1 exchange config and matching sender private key.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+
+    Returns:
+        Created a version 1 exchange config and matching sender private key.
+    """
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     _, recipient_public_pem = generate_key_pair("P-256")
     exchange_config_path = tmp_path / "test.exchange.json"

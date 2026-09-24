@@ -16,6 +16,16 @@ ANALYZE_SCRIPT = DEMO_DIR / "scripts" / "analyze_overlap.py"
 
 
 def _run_command(*args: str, cwd: Path = DEMO_DIR) -> subprocess.CompletedProcess[str]:
+    """
+    Run command.
+
+    Args:
+        cwd: Path to the cwd used by the operation.
+        args: Command and arguments to execute as a subprocess.
+
+    Returns:
+        Run command.
+    """
     return subprocess.run(
         list(args),
         cwd=str(cwd),
@@ -27,11 +37,20 @@ def _run_command(*args: str, cwd: Path = DEMO_DIR) -> subprocess.CompletedProces
 
 @pytest.fixture(scope="module")
 def prepared_demo_artifacts() -> None:
+    """
+    Generate the demo datasets and token outputs required by the smoke tests.
+    """
     result = _run_command("bash", "run_end_to_end.sh")
     assert result.returncode == 0, result.stdout + "\n" + result.stderr
 
 
 def test_analyze_overlap_supports_relaxed_rules_and_custom_output(prepared_demo_artifacts: None) -> None:
+    """
+    Verify that analyze overlap supports relaxed rules and custom output.
+
+    Args:
+        prepared_demo_artifacts: Prepared demo artifacts value to exercise the behavior under test.
+    """
     output_name = "matching_records_alt.csv"
     output_path = DEMO_DIR / "outputs" / output_name
     if output_path.exists():
@@ -60,6 +79,9 @@ def test_analyze_overlap_supports_relaxed_rules_and_custom_output(prepared_demo_
 
 
 def test_notebook_uses_pyspark_bridge_apis() -> None:
+    """
+    Verify that notebook uses pyspark bridge apis.
+    """
     notebook = json.loads(NOTEBOOK_PATH.read_text(encoding="utf-8"))
     source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
 
@@ -68,6 +90,12 @@ def test_notebook_uses_pyspark_bridge_apis() -> None:
 
 
 def test_notebook_executes_end_to_end(tmp_path: Path) -> None:
+    """
+    Verify that notebook executes end to end.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+    """
     if shutil.which("jupyter") is None:
         pytest.skip("jupyter is not installed in this environment")
     if importlib.util.find_spec("pyspark") is None:

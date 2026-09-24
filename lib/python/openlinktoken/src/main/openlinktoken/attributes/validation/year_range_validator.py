@@ -24,7 +24,12 @@ class YearRangeValidator(SerializableAttributeValidator):
 
     @property
     def max_year(self) -> int:
-        """Get the maximum allowed year (current year)."""
+        """
+        Get the maximum allowed year (current year).
+
+        Returns:
+            The maximum allowed year (current year).
+        """
         return date.today().year
 
     def eval(self, value: str) -> bool:

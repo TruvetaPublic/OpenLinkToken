@@ -7,6 +7,9 @@ import java.security.NoSuchAlgorithmException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * Maintains token-output metadata and provides SHA-256 helpers for secret values.
+ */
 public class Metadata {
 
     // Metadata keys
@@ -30,6 +33,7 @@ public class Metadata {
 
     private Map<String, Object> metadataMap;
 
+    /** Creates metadata with an empty backing map. */
     public Metadata() {
         metadataMap = new LinkedHashMap<>();
     }
@@ -49,10 +53,11 @@ public class Metadata {
     }
 
     /**
-     * Sets the hashing secret and adds its hash to the metadata.
+     * Adds the hash of a non-empty secret string to the metadata.
      *
-     * @param secretToHash the secret to hash
-     * @return the metadata map for method chaining
+     * @param secretKey the metadata key under which to store the hash
+     * @param secretToHash the secret string to hash
+     * @return the updated metadata map
      */
     public Map<String, Object> addHashedSecret(String secretKey, String secretToHash) {
         if (secretToHash != null && !secretToHash.isEmpty()) {
@@ -62,10 +67,11 @@ public class Metadata {
     }
 
     /**
-     * Sets a raw-byte secret and adds its hash to the metadata.
+     * Adds the hash of non-empty secret bytes to the metadata.
      *
+     * @param secretKey the metadata key under which to store the hash
      * @param secretToHash the raw secret bytes to hash
-     * @return the metadata map for method chaining
+     * @return the updated metadata map
      */
     public Map<String, Object> addHashedSecret(String secretKey, byte[] secretToHash) {
         if (secretToHash != null && secretToHash.length > 0) {
@@ -78,9 +84,9 @@ public class Metadata {
      * Calculates a secure SHA-256 hash of the given input.
      * The hash is returned as a hexadecimal string.
      *
-     * @param input the input string to hash
-     * @return the SHA-256 hash as a hexadecimal string
-     * @throws HashCalculationException if SHA-256 algorithm is not available
+     * @param input the input string to hash, or {@code null} or empty
+     * @return the SHA-256 hash as a hexadecimal string, or {@code null} for null or empty input
+     * @throws HashCalculationException if SHA-256 is unavailable
      */
     public static String calculateSecureHash(String input) {
         if (input == null || input.isEmpty()) {
@@ -94,9 +100,9 @@ public class Metadata {
      * Calculates a secure SHA-256 hash of the given raw bytes.
      * The hash is returned as a hexadecimal string.
      *
-     * @param input the input bytes to hash
-     * @return the SHA-256 hash as a hexadecimal string
-     * @throws HashCalculationException if SHA-256 algorithm is not available
+     * @param input the input bytes to hash, or {@code null} or empty
+     * @return the SHA-256 hash as a hexadecimal string, or {@code null} for null or empty input
+     * @throws HashCalculationException if SHA-256 is unavailable
      */
     public static String calculateSecureHash(byte[] input) {
         if (input == null || input.length == 0) {
@@ -124,9 +130,15 @@ public class Metadata {
     }
 
     /**
-     * Custom exception for hash calculation errors.
+     * Indicates that a SHA-256 hash could not be calculated.
      */
     public static class HashCalculationException extends RuntimeException {
+        /**
+         * Creates an exception describing the hash calculation failure.
+         *
+         * @param message the failure description
+         * @param cause the underlying cause
+         */
         public HashCalculationException(String message, Throwable cause) {
             super(message, cause);
         }

@@ -14,6 +14,7 @@ package org.openlinktoken;
  */
 public final class ExchangeConfig {
 
+    /** Prevents instantiation of this placeholder class. */
     private ExchangeConfig() {
     }
 }

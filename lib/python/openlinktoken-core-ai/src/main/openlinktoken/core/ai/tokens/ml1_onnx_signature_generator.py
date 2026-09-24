@@ -25,7 +25,12 @@ _ACCELERATED_EXECUTION_PROVIDERS = {"CUDAExecutionProvider", "CoreMLExecutionPro
 
 @contextlib.contextmanager
 def _suppress_ort_stderr():
-    """Redirect C-level stderr to /dev/null to silence ORT native error messages."""
+    """
+    Redirect C-level stderr to /dev/null to silence ORT native error messages.
+
+    Yields:
+        No value; control passes to the with block while native stderr is redirected to /dev/null.
+    """
     devnull_fd = os.open(os.devnull, os.O_WRONLY)
     saved_fd = os.dup(2)
     os.dup2(devnull_fd, 2)
@@ -38,10 +43,14 @@ def _suppress_ort_stderr():
 
 
 def _resolve_providers() -> List[str | tuple]:
-    """Return the best available ORT execution provider list for this environment.
+    """
+    Return the best available ORT execution provider list for this environment.
 
     Prefer CUDA on NVIDIA systems. macOS uses CPU because CoreML's compilation
     of this large transformer can exhaust unified memory.
+
+    Returns:
+        Resolved providers.
     """
 
     import onnxruntime as ort
@@ -54,14 +63,25 @@ def _resolve_providers() -> List[str | tuple]:
 
 
 def _nvidia_device_available() -> bool:
-    """Return whether Linux exposes an NVIDIA device to the current process."""
+    """
+    Return whether Linux exposes an NVIDIA device to the current process.
+
+    Returns:
+        Whether Linux exposes an NVIDIA device to the current process.
+    """
     if platform.system() != "Linux":
         return True
     return Path("/dev/nvidia0").exists() or Path("/dev/nvidiactl").exists()
 
 
 def _preload_cuda_libraries(ort, providers: List[str | tuple]) -> None:
-    """Load CUDA libraries bundled with the GPU wheel before session creation."""
+    """
+    Load CUDA libraries bundled with the GPU wheel before session creation.
+
+    Args:
+        ort: ONNX Runtime module whose CUDA libraries should be preloaded.
+        providers: Sequence of providers values to process.
+    """
     if "CUDAExecutionProvider" not in providers:
         return
 
@@ -86,7 +106,15 @@ class ML1OnnxSignatureGenerator:
 
     @classmethod
     def generate_signature(cls, input_json: str) -> str:
-        """Generate a deterministic ML1 signature for one input JSON row."""
+        """
+        Generate a deterministic ML1 signature for one input JSON row.
+
+        Args:
+            input_json: String containing the input json used to generate.
+
+        Returns:
+            Generated a deterministic ML1 signature for one input JSON row.
+        """
         signatures = cls.generate_signatures([input_json])
         if not signatures:
             raise RuntimeError("Failed to generate ONNX-based ML1 signature.")
@@ -94,7 +122,15 @@ class ML1OnnxSignatureGenerator:
 
     @classmethod
     def _generate_signature_with_embedding(cls, input_json: str) -> tuple[str, np.ndarray]:
-        """Generate a deterministic ML1 signature and embedding for one input JSON row."""
+        """
+        Generate a deterministic ML1 signature and embedding for one input JSON row.
+
+        Args:
+            input_json: String containing the input json used to generate.
+
+        Returns:
+            Generated a deterministic ML1 signature and embedding for one input JSON row.
+        """
         signatures, embeddings = cls._generate_signatures_with_embeddings([input_json])
         if not signatures:
             raise RuntimeError("Failed to generate ONNX-based ML1 signature.")
@@ -102,7 +138,15 @@ class ML1OnnxSignatureGenerator:
 
     @classmethod
     def generate_signatures(cls, input_json_rows: List[str]) -> List[str]:
-        """Generate deterministic ML1 signatures for multiple rows using batched ONNX inference."""
+        """
+        Generate deterministic ML1 signatures for multiple rows using batched ONNX inference.
+
+        Args:
+            input_json_rows: Sequence of input json rows values to generate.
+
+        Returns:
+            Generated deterministic ML1 signatures for multiple rows using batched ONNX inference.
+        """
         signatures, _ = cls._generate_signatures_with_embeddings(input_json_rows)
         return signatures
 
@@ -170,7 +214,15 @@ class ML1OnnxSignatureGenerator:
 
     @classmethod
     def _run_batch_inference(cls, input_json_rows: List[str]) -> tuple[float, float]:
-        """Run ONNX inference for one batch and return embeddings with elapsed ms."""
+        """
+        Run ONNX inference for one batch and return embeddings with elapsed ms.
+
+        Args:
+            input_json_rows: Sequence of input json rows values to run.
+
+        Returns:
+            Run ONNX inference for one batch and return embeddings with elapsed ms.
+        """
         import time
 
         input_ids_batch, attention_mask_batch, token_type_ids_batch, position_ids_batch = cls._build_inputs(
@@ -208,7 +260,15 @@ class ML1OnnxSignatureGenerator:
 
     @classmethod
     def _build_inputs(cls, input_json_rows: List[str]) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-        """Build int64 ONNX tensors from input JSON rows using parallel batch tokenization and dynamic padding."""
+        """
+        Build int64 ONNX tensors from input JSON rows using parallel batch tokenization and dynamic padding.
+
+        Args:
+            input_json_rows: Sequence of input json rows values to build.
+
+        Returns:
+            Built int64 ONNX tensors from input JSON rows using parallel batch tokenization and dynamic padding.
+        """
         max_sequence_length = ML1InferenceConfig.get_max_sequence_length()
         batch_size = len(input_json_rows)
 
@@ -232,7 +292,13 @@ class ML1OnnxSignatureGenerator:
 
     @staticmethod
     def _copy_fixed_length(target: np.ndarray, values: List[int]) -> None:
-        """Copy source values into fixed-length target array with truncation."""
+        """
+        Copy source values into fixed-length target array with truncation.
+
+        Args:
+            target: Destination token-ID array to populate.
+            values: Token IDs to copy into the destination array.
+        """
         copy_length = min(len(values), target.shape[0])
         if copy_length > 0:
             target[:copy_length] = np.asarray(values[:copy_length], dtype=np.int64)
@@ -333,7 +399,18 @@ class ML1OnnxSignatureGenerator:
 
     @classmethod
     def _create_session(cls, ort, session_options, model_path: Path, providers: List[str | tuple]):
-        """Create an ONNX session, loading external weights in memory for CoreML."""
+        """
+        Create an ONNX session, loading external weights in memory for CoreML.
+
+        Args:
+            ort: Ort value to create.
+            session_options: Session options value to create.
+            model_path: Filesystem path to the model handled by the operation.
+            providers: Sequence of providers values to create.
+
+        Returns:
+            Created an ONNX session, loading external weights in memory for CoreML.
+        """
         _preload_cuda_libraries(ort, providers)
         if cls._coreml_requested(providers):
             # CoreML otherwise inlines the model's MatMul weights and multiplies peak memory use.
@@ -372,7 +449,15 @@ class ML1OnnxSignatureGenerator:
 
     @staticmethod
     def _coreml_requested(providers: List[str | tuple]) -> bool:
-        """Return whether CoreML is included in the requested provider chain."""
+        """
+        Return whether CoreML is included in the requested provider chain.
+
+        Args:
+            providers: Sequence of providers values to process.
+
+        Returns:
+            Whether CoreML is included in the requested provider chain.
+        """
         return any(
             (provider[0] if isinstance(provider, tuple) else provider) == "CoreMLExecutionProvider"
             for provider in providers
@@ -409,11 +494,18 @@ class ML1OnnxSignatureGenerator:
 
     @classmethod
     def _resolve_path(cls, configured_path: str) -> Path:
-        """Resolve classpath-style paths and regular filesystem paths.
+        """
+        Resolve classpath-style paths and regular filesystem paths.
 
         Resolution order:
         1. Bundled package data via importlib.resources (installed wheel or CLI).
         2. Filesystem walk up from the source file (source checkout / development).
+
+        Args:
+            configured_path: Filesystem path to the configured handled by the operation.
+
+        Returns:
+            Resolved classpath-style paths and regular filesystem paths.
         """
         if not configured_path or not configured_path.strip():
             raise ValueError("ML1 asset path must not be blank.")
@@ -438,7 +530,16 @@ class ML1OnnxSignatureGenerator:
 
     @classmethod
     def _find_local_asset(cls, filename: str, resource_path: str) -> Optional[Path]:
-        """Find an asset in an installed package or source checkout."""
+        """
+        Find an asset in an installed package or source checkout.
+
+        Args:
+            filename: String containing the filename used to find.
+            resource_path: Filesystem path to the resource handled by the operation.
+
+        Returns:
+            Found an asset in an installed package or source checkout.
+        """
         try:
             ref = importlib.resources.files("openlinktoken.core.ai.tokens") / filename
             if ref.is_file():
@@ -456,15 +557,30 @@ class ML1OnnxSignatureGenerator:
 
     @staticmethod
     def _serialize_embedding(embedding: np.ndarray) -> str:
-        """Serialize embedding as big-endian float32 bytes encoded to lowercase hex."""
+        """
+        Serialize embedding as big-endian float32 bytes encoded to lowercase hex.
+
+        Args:
+            embedding: Embedding value to serialize.
+
+        Returns:
+            Serialized embedding as big-endian float32 bytes encoded to lowercase hex.
+        """
         return np.asarray(embedding, dtype=">f4").tobytes().hex()
 
 
 def ml1_payload_to_json(payload: Dict[str, str]) -> str:
-    """Convert an ordered payload map to JSON used for ML1 tokenization.
+    """
+    Convert an ordered payload map to JSON used for ML1 tokenization.
 
     Uses Python's default separators (", " and ": ") to match the format
     produced by generate_embeddings.py, ensuring identical tokenizer input.
     Non-ASCII characters are escaped as \\uXXXX (ensure_ascii=True default).
+
+    Args:
+        payload: Structured payload to parse, validate, or encrypt.
+
+    Returns:
+        Converted an ordered payload map to JSON used for ML1 tokenization.
     """
     return json.dumps(payload)

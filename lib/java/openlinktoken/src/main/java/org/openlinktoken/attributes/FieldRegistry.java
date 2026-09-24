@@ -27,6 +27,7 @@ public final class FieldRegistry implements Serializable {
     private final Map<String, AttributeField> fields;
     private final Map<String, Attribute> fieldToAttribute;
 
+    /** Creates an immutable registry from the supplied mappings. */
     private FieldRegistry(Map<String, AttributeField> fields, Map<String, Attribute> fieldToAttribute) {
         this.fields = Collections.unmodifiableMap(new HashMap<>(fields));
         this.fieldToAttribute = Collections.unmodifiableMap(new HashMap<>(fieldToAttribute));
@@ -95,6 +96,7 @@ public final class FieldRegistry implements Serializable {
         private final Map<String, AttributeField> fields = new HashMap<>();
         private final Map<String, Attribute> fieldToAttribute = new HashMap<>();
 
+        /** Creates an empty field-registry builder. */
         public Builder() {
         }
 

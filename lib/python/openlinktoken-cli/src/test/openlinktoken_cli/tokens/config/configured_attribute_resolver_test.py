@@ -9,7 +9,14 @@ from openlinktoken_cli.tokens.config.tokenization_config import AttributeMapping
 
 
 class TestConfiguredAttributeResolver:
+    """
+    Test resolution of configured attributes by field identifier.
+    """
+
     def test_maps_same_base_type_to_same_class_with_distinct_field_ids(self):
+        """
+        Verify that maps same base type to same class with distinct field ids.
+        """
         config = TokenizationConfig(
             column_mappings={
                 "PatientZip": AttributeMappingEntry(column_name="patient_zip", type="PostalCode"),
@@ -31,6 +38,9 @@ class TestConfiguredAttributeResolver:
         assert resolver.get_field_for_column("hospital_zip") == "HospitalZip"
 
     def test_build_field_registry_contains_all_configured_fields(self):
+        """
+        Verify that build field registry contains all configured fields.
+        """
         config = TokenizationConfig(
             column_mappings={
                 "PatientZip": AttributeMappingEntry(column_name="patient_zip", type="PostalCode"),
@@ -49,6 +59,9 @@ class TestConfiguredAttributeResolver:
         assert isinstance(registry.get_attribute("PatientZip"), PostalCodeAttribute)
 
     def test_unknown_field_lookup_raises_key_error(self):
+        """
+        Verify that unknown field lookup raises key error.
+        """
         config = TokenizationConfig(
             column_mappings={
                 "PatientZip": AttributeMappingEntry(column_name="patient_zip", type="PostalCode"),
@@ -62,6 +75,9 @@ class TestConfiguredAttributeResolver:
             resolver.get_class_for_field("DoesNotExist")
 
     def test_unknown_attribute_type_raises_value_error(self):
+        """
+        Verify that unknown attribute type raises value error.
+        """
         config = TokenizationConfig(
             column_mappings={
                 "SomeField": AttributeMappingEntry(column_name="some_column", type="NotARealType"),
@@ -73,18 +89,57 @@ class TestConfiguredAttributeResolver:
             ConfiguredAttributeResolver(config)
 
     def test_conflicting_aliases_raise_value_error(self, monkeypatch):
+        """
+        Verify that conflicting aliases raise value error.
+
+        Args:
+            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
+        """
+
         class FirstAttribute:
+            """
+            Test attribute implementation for the first configured person field.
+            """
+
             def get_name(self):
+                """
+                Retrieve name.
+
+                Returns:
+                    The name.
+                """
                 return "TypeOne"
 
             def get_aliases(self):
+                """
+                Retrieve aliases.
+
+                Returns:
+                    The aliases.
+                """
                 return ["SharedAlias"]
 
         class SecondAttribute:
+            """
+            Test attribute implementation for the second configured person field.
+            """
+
             def get_name(self):
+                """
+                Retrieve name.
+
+                Returns:
+                    The name.
+                """
                 return "TypeTwo"
 
             def get_aliases(self):
+                """
+                Retrieve aliases.
+
+                Returns:
+                    The aliases.
+                """
                 return ["SharedAlias"]
 
         monkeypatch.setattr(AttributeLoader, "load", lambda: [FirstAttribute(), SecondAttribute()])

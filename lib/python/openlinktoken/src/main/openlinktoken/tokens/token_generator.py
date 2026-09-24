@@ -26,7 +26,12 @@ _provider_discovered = False
 
 
 def _get_inference_provider() -> Optional[InferenceSignatureProvider]:
-    """Lazily discover and cache the first registered InferenceSignatureProvider."""
+    """
+    Lazily discover and cache the first registered InferenceSignatureProvider.
+
+    Returns:
+        The inference provider value returned by the operation.
+    """
     global _inference_provider, _provider_discovered
     if not _provider_discovered:
         _provider_discovered = True
@@ -176,6 +181,14 @@ class TokenGenerator:
 
         .. deprecated::
             Use :meth:`get_all_tokens_via_field_id` with a field-ID-keyed map instead.
+
+        Args:
+            token_id: Identifier of the token or rule to process.
+            person_attributes: Mapping of person-attribute identifiers to their input values.
+            result: Accumulator for generated tokens, invalid attributes, and blank tokens.
+
+        Returns:
+            The token for a given token identifier using a class-keyed person attributes map.
         """
         signature = self._get_token_signature(token_id, person_attributes, result)
         logger.debug(f"Token signature for token id {token_id}: {signature}")
@@ -306,7 +319,12 @@ class TokenGenerator:
 
     @staticmethod
     def get_inference_provider() -> Optional[InferenceSignatureProvider]:
-        """Return the discovered InferenceSignatureProvider, or None if none is installed."""
+        """
+        Return the discovered InferenceSignatureProvider, or None if none is installed.
+
+        Returns:
+            The inference provider value returned by the operation.
+        """
         return _get_inference_provider()
 
     def get_invalid_person_attributes(self, person_attributes: Dict[Type[Attribute], str]) -> Set[str]:
@@ -458,12 +476,41 @@ class TokenGenerator:
 
     @staticmethod
     def _has_active_provider_for_token(token_id: str, provider: Optional[InferenceSignatureProvider]) -> bool:
+        """
+        Determine whether active provider for token.
+
+        Args:
+            token_id: Identifier of the token or rule to process.
+            provider: Provider value to check.
+
+        Returns:
+            Whether active provider for token.
+        """
         return provider is not None and provider.get_token_id() == token_id and provider.is_enabled()
 
     def _has_active_inference_provider(self, token_id: str) -> bool:
+        """
+        Determine whether active inference provider.
+
+        Args:
+            token_id: Identifier of the token or rule to process.
+
+        Returns:
+            Whether active inference provider.
+        """
         return self._has_active_provider_for_token(token_id, _get_inference_provider())
 
     def _get_inference_signature(self, token_id: str, person_attributes: Dict[str, str]) -> Optional[str]:
+        """
+        Retrieve inference signature.
+
+        Args:
+            token_id: Identifier of the token or rule to process.
+            person_attributes: Mapping of person-attribute identifiers to their input values.
+
+        Returns:
+            The inference signature.
+        """
         provider = _get_inference_provider()
         if not self._has_active_provider_for_token(token_id, provider):
             return None
@@ -476,6 +523,17 @@ class TokenGenerator:
     def _tokenize_signature(
         self, token_id: str, signature: Optional[str], result: TokenGeneratorResult
     ) -> Optional[str]:
+        """
+        Tokenize signature.
+
+        Args:
+            token_id: Identifier of the token or rule to process.
+            signature: String containing the signature used to tokenize.
+            result: Accumulator for generated tokens, invalid attributes, and blank tokens.
+
+        Returns:
+            Tokenized signature.
+        """
         try:
             if self._has_active_inference_provider(token_id):
                 transformers = [
@@ -494,6 +552,15 @@ class TokenGenerator:
             raise TokenGenerationException("Error generating token", error)
 
     def _to_field_id_map(self, person_attributes: Dict[Type[Attribute], str]) -> Dict[str, str]:
+        """
+        Map to field id.
+
+        Args:
+            person_attributes: Mapping of person-attribute identifiers to their input values.
+
+        Returns:
+            Mapped to field id.
+        """
         return {
             attribute.get_name(): value
             for attribute_class, value in person_attributes.items()
@@ -501,7 +568,15 @@ class TokenGenerator:
         }
 
     def _resolve_field_id(self, expression) -> Optional[str]:
-        """Resolve the effective field ID from an AttributeExpression."""
+        """
+        Resolve the effective field ID from an AttributeExpression.
+
+        Args:
+            expression: Expression value to resolve.
+
+        Returns:
+            Resolved the effective field ID from an AttributeExpression.
+        """
         if expression.field_id is not None:
             return expression.field_id
         # Legacy fallback: derive field ID from attribute class name
@@ -509,7 +584,16 @@ class TokenGenerator:
         return attribute.get_name() if attribute else None
 
     def _resolve_attribute(self, expression, resolved_field_id: str) -> Optional[Attribute]:
-        """Resolve the attribute instance for an expression and field ID."""
+        """
+        Resolve the attribute instance for an expression and field ID.
+
+        Args:
+            expression: Expression value to resolve.
+            resolved_field_id: Identifier for the resolved field.
+
+        Returns:
+            Resolved the attribute instance for an expression and field ID.
+        """
         # Try field registry first
         from_registry = self.field_registry.get_attribute(resolved_field_id)
         if from_registry is not None:

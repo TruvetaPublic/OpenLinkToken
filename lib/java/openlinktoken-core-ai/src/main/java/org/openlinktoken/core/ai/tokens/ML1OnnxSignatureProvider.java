@@ -32,8 +32,8 @@ import java.util.Map;
  * {@link InferenceSignatureProvider} implementation that delegates to the ONNX-backed
  * {@link ML1OnnxSignatureGenerator} for ML1 token signature generation.
  *
- * <p>Registered via {@link java.util.ServiceLoader} so that the core module
- * discovers it at runtime when {@code openlinktoken-core-ai} is on the classpath.
+ * <p>Registered as a service provider so the core module discovers it at runtime
+ * when {@code openlinktoken-core-ai} is on the classpath.
  */
 @Slf4j
 public class ML1OnnxSignatureProvider implements InferenceSignatureProvider {
@@ -47,7 +47,7 @@ public class ML1OnnxSignatureProvider implements InferenceSignatureProvider {
     private final Map<Class<? extends Attribute>, Attribute> attributeInstanceMap;
 
     /**
-     * No-arg constructor required by {@link java.util.ServiceLoader}.
+     * No-arg constructor required for service-provider instantiation.
      */
     public ML1OnnxSignatureProvider() {
         attributeInstanceMap = new HashMap<>();
@@ -78,7 +78,7 @@ public class ML1OnnxSignatureProvider implements InferenceSignatureProvider {
      * Generate one ML1 signature from a person's attributes.
      *
      * @param personAttributes normalized attribute values for one person
-     * @return generated ML1 signature, or {@code null} when required input is invalid
+     * @return generated ML1 signature, or {@code null} when required input is invalid or generation fails
      */
     @Override
     public String generateSignature(Map<String, String> personAttributes) {
@@ -296,7 +296,7 @@ public class ML1OnnxSignatureProvider implements InferenceSignatureProvider {
      *
      * @param personAttributes normalised attribute map for one record
      * @param result           result object to record invalid attributes into
-     * @return JSON string payload, or {@code null} if any required field is missing/invalid
+     * @return JSON payload, or {@code null} if the attribute map is null or any required field is missing/invalid
      */
     public String buildMl1Payload(Map<String, String> personAttributes,
             TokenGeneratorResult result) {
@@ -317,6 +317,17 @@ public class ML1OnnxSignatureProvider implements InferenceSignatureProvider {
         return asJson(payload);
     }
 
+    /**
+     * Validates and normalizes one required attribute before adding it to the inference payload.
+     *
+     * @param fieldId key used to find the raw value in {@code personAttributes}
+     * @param attributeClass implementation used to validate and normalize that value
+     * @param fieldName key assigned to the normalized value in the model payload
+     * @param personAttributes raw attribute values for one person
+     * @param result result whose invalid-attribute list is updated when validation fails
+     * @param payload payload map that receives the normalized value on success
+     * @return {@code true} if the attribute was present, valid, and added to the payload
+     */
     private boolean addMl1Field(String fieldId, Class<? extends Attribute> attributeClass, String fieldName,
             Map<String, String> personAttributes, TokenGeneratorResult result,
             Map<String, String> payload) {

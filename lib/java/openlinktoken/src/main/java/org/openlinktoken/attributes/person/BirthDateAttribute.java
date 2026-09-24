@@ -26,15 +26,18 @@ public class BirthDateAttribute extends DateAttribute {
     private static final String NAME = "BirthDate";
     private static final String[] ALIASES = new String[] { NAME, "DateOfBirth" };
 
+    /** Creates a birth-date attribute limited to dates from 1910 through today. */
     public BirthDateAttribute() {
         super(List.of(new DateRangeValidator(LocalDate.of(1910, 1, 1), true)));
     }
 
+    /** {@inheritDoc} */
     @Override
     public String getName() {
         return NAME;
     }
 
+    /** {@inheritDoc} */
     @Override
     public String[] getAliases() {
         return ALIASES;

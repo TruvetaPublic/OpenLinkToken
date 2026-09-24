@@ -18,12 +18,22 @@ public final class RegexValidator implements SerializableAttributeValidator {
 
     private final Pattern compiledPattern;
 
+    /**
+     * Compiles the regular expression used to validate values.
+     *
+     * @param pattern the regular expression to compile
+     * @throws NullPointerException if {@code pattern} is {@code null}
+     * @throws IllegalArgumentException if {@code pattern} is invalid
+     */
     public RegexValidator(@NotNull String pattern) {
         this.compiledPattern = Pattern.compile(pattern);
     }
 
     /**
-     * Validates that the value matches the regex pattern.
+     * Validates that the non-null value fully matches the compiled pattern.
+     *
+     * @param value the value to validate
+     * @return {@code true} if the value fully matches the pattern
      */
     @Override
     public boolean eval(String value) {

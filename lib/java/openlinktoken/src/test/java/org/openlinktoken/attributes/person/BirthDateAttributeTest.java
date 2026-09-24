@@ -18,25 +18,30 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+/** Tests birth-date names, normalization, validation, concurrency, and serialization. */
 class BirthDateAttributeTest {
 
     private BirthDateAttribute birthDateAttribute;
 
+    /** Creates a fresh birth-date attribute for each test. */
     @BeforeEach
     void setUp() {
         birthDateAttribute = new BirthDateAttribute();
     }
 
+    /** Verifies the attribute reports the {@code BirthDate} name. */
     @Test
     void getName_ShouldReturnBirthDate() {
         assertEquals("BirthDate", birthDateAttribute.getName());
     }
 
+    /** Verifies both supported birth-date aliases are exposed. */
     @Test
     void getAliases_ShouldReturnBirthDateAndDateOfBirthAliases() {
         assertArrayEquals(new String[] { "BirthDate", "DateOfBirth" }, birthDateAttribute.getAliases());
     }
 
+    /** Verifies supported date formats normalize to ISO local-date form. */
     @Test
     void normalize_ValidDateFormats_ShouldNormalizeToYYYYMMDD() {
         assertEquals("2023-10-26", birthDateAttribute.normalize("2023-10-26"));
@@ -46,6 +51,7 @@ class BirthDateAttributeTest {
         assertEquals("2023-10-26", birthDateAttribute.normalize("26.10.2023"));
     }
 
+    /** Verifies an unsupported date format raises an informative argument error. */
     @Test
     void normalize_InvalidDateFormat_ShouldThrowIllegalArgumentException() {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
@@ -54,11 +60,13 @@ class BirthDateAttributeTest {
         assertEquals("Invalid date format: 20231026", exception.getMessage());
     }
 
+    /** Verifies a valid birth date passes validation. */
     @Test
     void validate_ValidDate_ShouldReturnTrue() {
         assertTrue(birthDateAttribute.validate("2023-10-26"));
     }
 
+    /** Verifies concurrent birth-date normalization returns a consistent result. */
     @Test
     void normalize_ThreadSafety() throws InterruptedException {
         final int threadCount = 100;
@@ -96,6 +104,7 @@ class BirthDateAttributeTest {
         }
     }
 
+    /** Verifies serialization preserves birth-date normalization and validation behavior. */
     void testSerialization() throws Exception {
         // Serialize the attribute
         ByteArrayOutputStream baos = new ByteArrayOutputStream();

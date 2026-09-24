@@ -41,6 +41,7 @@ public final class TokenizeInteropHarness {
     private static final String SOCIAL_SECURITY_NUMBER_COLUMN = "SocialSecurityNumber";
     private static final String TOKEN_COLUMN = "Token";
 
+    /** Prevents instantiation of this command-line utility. */
     private TokenizeInteropHarness() {
     }
 
@@ -48,7 +49,8 @@ public final class TokenizeInteropHarness {
      * Generates tokenize-compatible CSV output using Java library APIs.
      *
      * @param args input CSV path, output CSV path, and hashing secret.
-     * @throws Exception if the harness cannot read input or write output.
+     * @throws IllegalArgumentException if the arguments are missing or the input CSV has no header
+     * @throws Exception if the harness cannot initialize tokenization or read or write the CSV files
      */
     public static void main(String[] args) throws Exception {
         if (args.length != 3) {
@@ -98,12 +100,25 @@ public final class TokenizeInteropHarness {
         }
     }
 
+    /**
+     * Creates the token generator used by the interoperability run.
+     *
+     * @param hashingSecret secret used by the hash transformer
+     * @return a generator with the built-in token definitions and SHA-256 tokenizer
+     * @throws Exception if the hashing transformer cannot be initialized
+     */
     private static TokenGenerator createTokenGenerator(String hashingSecret) throws Exception {
         List<TokenTransformer> tokenTransformers = new ArrayList<>();
         tokenTransformers.add(new HashTokenTransformer(hashingSecret));
         return new TokenGenerator(new TokenDefinition(), new SHA256Tokenizer(tokenTransformers));
     }
 
+    /**
+     * Maps each CSV header name to its column index.
+     *
+     * @param headers parsed column names from the CSV header row
+     * @return a map from header names to their indexes
+     */
     private static Map<String, Integer> buildHeaderIndexes(String[] headers) {
         var indexes = new HashMap<String, Integer>();
         for (int index = 0; index < headers.length; index++) {
@@ -112,6 +127,13 @@ public final class TokenizeInteropHarness {
         return indexes;
     }
 
+    /**
+     * Builds the class-keyed person fields present in one CSV row.
+     *
+     * @param headerIndexes mapping from CSV column names to indexes
+     * @param values parsed values for the current row
+     * @return supported person attributes whose columns are present in the header
+     */
     private static Map<Class<? extends Attribute>, String> buildPersonAttributes(
             Map<String, Integer> headerIndexes,
             String[] values) {
@@ -126,6 +148,15 @@ public final class TokenizeInteropHarness {
         return personAttributes;
     }
 
+    /**
+     * Adds a row value for a supported attribute when its CSV column exists.
+     *
+     * @param personAttributes destination map of class-keyed person fields
+     * @param headerIndexes mapping from CSV column names to indexes
+     * @param values parsed values for the current row
+     * @param columnName CSV header to read
+     * @param attributeClass attribute type used as the destination key
+     */
     private static void addAttribute(
             Map<Class<? extends Attribute>, String> personAttributes,
             Map<String, Integer> headerIndexes,
@@ -137,6 +168,14 @@ public final class TokenizeInteropHarness {
         }
     }
 
+    /**
+     * Reads a value by its header name, returning an empty string when the column or row value is absent.
+     *
+     * @param headerIndexes mapping from CSV column names to indexes
+     * @param values parsed values for the current row
+     * @param columnName CSV header to read
+     * @return the row value, or an empty string when no value is available
+     */
     private static String getValue(Map<String, Integer> headerIndexes, String[] values, String columnName) {
         Integer index = headerIndexes.get(columnName);
         if (index == null || index >= values.length) {
@@ -145,6 +184,12 @@ public final class TokenizeInteropHarness {
         return values[index];
     }
 
+    /**
+     * Splits one CSV row while preserving commas inside quoted fields and unescaping doubled quotes.
+     *
+     * @param line CSV row to parse
+     * @return the parsed field values in their original order
+     */
     private static List<String> parseCsvLine(String line) {
         List<String> values = new ArrayList<>();
         StringBuilder currentValue = new StringBuilder();

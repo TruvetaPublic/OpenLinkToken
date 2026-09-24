@@ -56,6 +56,7 @@ public class LastNameAttribute extends BaseAttribute {
 
     private final RegexValidator regexValidator;
 
+    /** Creates a last-name attribute with placeholder and format validation. */
     public LastNameAttribute() {
         super(List.of(
                 new NotInValidator(
@@ -63,6 +64,13 @@ public class LastNameAttribute extends BaseAttribute {
         this.regexValidator = new RegexValidator(LAST_NAME_REGEX);
     }
 
+    /**
+     * Validates the original value, its normalized form, and the normalized-name pattern.
+     *
+     * @param value the last name to validate
+     * @return {@code true} if the normalized value is non-placeholder, is not a single letter,
+     *         and matches the accepted last-name pattern
+     */
     @Override
     public boolean validate(String value) {
         if (value == null) {
@@ -95,16 +103,24 @@ public class LastNameAttribute extends BaseAttribute {
         return regexValidator.eval(normalizedValue);
     }
 
+    /** {@inheritDoc} */
     @Override
     public String getName() {
         return NAME;
     }
 
+    /** {@inheritDoc} */
     @Override
     public String[] getAliases() {
         return ALIASES;
     }
 
+    /**
+     * Removes diacritics, generational suffixes, and non-letters from a last name.
+     *
+     * @param value the last name to normalize
+     * @return the normalized last name
+     */
     @Override
     public String normalize(String value) {
         String normalizedValue = AttributeUtilities.normalizeDiacritics(value);

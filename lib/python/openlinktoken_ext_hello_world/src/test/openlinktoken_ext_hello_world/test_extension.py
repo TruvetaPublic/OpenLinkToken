@@ -17,15 +17,27 @@ class TestHelloWorldProperties:
     """Tests for HelloWorldExtension abstract-property implementations."""
 
     def setup_method(self):
+        """
+        Set up method.
+        """
         self.ext = HelloWorldExtension()
 
     def test_command_name(self):
+        """
+        Verify that command name.
+        """
         assert self.ext.command_name == "hello-world"
 
     def test_description(self):
+        """
+        Verify that description.
+        """
         assert self.ext.description == "Open Link Token hello-world reference extension"
 
     def test_version(self):
+        """
+        Verify that version.
+        """
         assert self.ext.version == "1.0.0"
 
 
@@ -81,7 +93,12 @@ class TestHelloDispatch:
     """Tests for HelloWorldExtension._hello static method."""
 
     def test_hello_output(self, capsys):
-        """_hello prints the expected greeting to stdout."""
+        """
+        _hello prints the expected greeting to stdout.
+
+        Args:
+            capsys: Pytest fixture for capturing standard output and standard error.
+        """
         args = MagicMock()
         args.name = "Alice"
 
@@ -92,7 +109,12 @@ class TestHelloDispatch:
         assert out.strip() == "Hello, Alice"
 
     def test_hello_different_name(self, capsys):
-        """_hello uses the provided name in the output."""
+        """
+        _hello uses the provided name in the output.
+
+        Args:
+            capsys: Pytest fixture for capturing standard output and standard error.
+        """
         args = MagicMock()
         args.name = "Bob"
 
@@ -111,7 +133,12 @@ class TestByeDispatch:
     """Tests for HelloWorldExtension._bye static method."""
 
     def test_bye_output(self, capsys):
-        """_bye prints the expected farewell to stdout."""
+        """
+        _bye prints the expected farewell to stdout.
+
+        Args:
+            capsys: Pytest fixture for capturing standard output and standard error.
+        """
         args = MagicMock()
         args.name = "Alice"
 
@@ -122,7 +149,12 @@ class TestByeDispatch:
         assert out.strip() == "Bye, Alice"
 
     def test_bye_different_name(self, capsys):
-        """_bye uses the provided name in the output."""
+        """
+        _bye uses the provided name in the output.
+
+        Args:
+            capsys: Pytest fixture for capturing standard output and standard error.
+        """
         args = MagicMock()
         args.name = "Bob"
 

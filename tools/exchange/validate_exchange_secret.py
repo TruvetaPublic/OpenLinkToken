@@ -29,7 +29,12 @@ PROGRAM = "validate_exchange_secret.py"
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments for exchange validation."""
+    """
+    Parse command-line arguments for exchange validation.
+
+    Returns:
+        Parsed command-line arguments for exchange validation.
+    """
     parser = argparse.ArgumentParser(
         prog=PROGRAM,
         description="Decrypt an initiate-exchange JWE envelope with either matching private key.",
@@ -64,7 +69,17 @@ def decrypt_exchange_secret(
     private_key_path: Path | None,
     private_key_stdin: bool = False,
 ) -> bytes:
-    """Recover the plaintext hashing secret bytes from a JWE exchange config."""
+    """
+    Recover the plaintext hashing secret bytes from a JWE exchange config.
+
+    Args:
+        exchange_config_path: Path to the exchange-config file to load.
+        private_key_path: Path to the private-key PEM file.
+        private_key_stdin: Whether to private key stdin.
+
+    Returns:
+        Decrypted exchange secret.
+    """
     exchange_config = load_exchange_config(exchange_config_path)
     private_pem = resolve_private_key_pem(exchange_config, private_key_path, private_key_stdin=private_key_stdin)
     payload = decrypt_exchange_payload(exchange_config, private_pem)
@@ -72,7 +87,15 @@ def decrypt_exchange_secret(
 
 
 def load_exchange_config(exchange_config_path: Path) -> dict[str, Any]:
-    """Load and validate the top-level exchange config structure."""
+    """
+    Load and validate the top-level exchange config structure.
+
+    Args:
+        exchange_config_path: Path to the exchange-config file to load.
+
+    Returns:
+        Loaded and validate the top-level exchange config structure.
+    """
     exchange_config = json.loads(exchange_config_path.read_text(encoding="utf-8"))
     if not isinstance(exchange_config, dict):
         raise ValueError("Exchange config must be a JSON object.")
@@ -92,7 +115,17 @@ def resolve_private_key_pem(
     private_key_path: Path | None,
     private_key_stdin: bool = False,
 ) -> bytes:
-    """Return the caller-supplied private key or resolve a local key by recipient kid."""
+    """
+    Return the caller-supplied private key or resolve a local key by recipient kid.
+
+    Args:
+        exchange_config: Mapping of exchange config values used to resolve.
+        private_key_path: Path to the private-key PEM file.
+        private_key_stdin: Whether to private key stdin.
+
+    Returns:
+        Resolved private key pem.
+    """
     recipient_kids = _recipient_kids(exchange_config)
     if private_key_path is not None and private_key_stdin:
         raise ValueError("Use either --private-key or --private-key-stdin, not both.")
@@ -126,7 +159,15 @@ def resolve_private_key_pem(
 
 
 def _recipient_kids(exchange_config: dict[str, Any]) -> list[str]:
-    """Return the ordered list of recipient kid values from the JWE envelope."""
+    """
+    Return the ordered list of recipient kid values from the JWE envelope.
+
+    Args:
+        exchange_config: JWE exchange envelope containing the recipient key IDs.
+
+    Returns:
+        Recipient key IDs in the order they appear in the JWE envelope.
+    """
     recipient_kids: list[str] = []
     for index, recipient in enumerate(exchange_config["recipients"]):
         if not isinstance(recipient, dict):
@@ -146,13 +187,30 @@ def _recipient_kids(exchange_config: dict[str, Any]) -> list[str]:
 
 
 def _kid_for_private_key(private_pem: bytes) -> str:
-    """Derive the fingerprint-based kid for a PEM-encoded private key."""
+    """
+    Derive the fingerprint-based kid for a PEM-encoded private key.
+
+    Args:
+        private_pem: PEM-encoded private bytes.
+
+    Returns:
+        Derived the fingerprint-based kid for a PEM-encoded private key.
+    """
     public_pem, _ = derive_public_key_from_private_pem(private_pem)
     return fingerprint_to_kid(public_key_fingerprint(public_pem))
 
 
 def decrypt_exchange_payload(exchange_config: dict[str, Any], private_pem: bytes) -> dict[str, Any]:
-    """Decrypt the exchange envelope and parse the payload JSON."""
+    """
+    Decrypt the exchange envelope and parse the payload JSON.
+
+    Args:
+        exchange_config: Mapping of exchange config values used to decrypt.
+        private_pem: PEM-encoded private bytes.
+
+    Returns:
+        Decrypted the exchange envelope and parse the payload JSON.
+    """
     try:
         payload_bytes = decrypt_exchange_envelope(exchange_config, private_pem)
     except JWException as error:
@@ -165,7 +223,15 @@ def decrypt_exchange_payload(exchange_config: dict[str, Any], private_pem: bytes
 
 
 def _extract_hashing_secret(payload: dict[str, Any]) -> bytes:
-    """Decode the hashing secret from the decrypted exchange payload."""
+    """
+    Decode the hashing secret from the decrypted exchange payload.
+
+    Args:
+        payload: Structured payload to parse, validate, or encrypt.
+
+    Returns:
+        Decoded the hashing secret from the decrypted exchange payload.
+    """
     encoding = payload.get("hashingSecretEncoding")
     hashing_secret = payload.get("hashingSecret")
 
@@ -179,7 +245,15 @@ def _extract_hashing_secret(payload: dict[str, Any]) -> bytes:
 
 
 def _extract_rotation_iv(payload: dict[str, Any]) -> bytes:
-    """Decode the rotation IV from the decrypted exchange payload, or return empty bytes if not set."""
+    """
+    Decode the rotation IV from the decrypted exchange payload, or return empty bytes if not set.
+
+    Args:
+        payload: Structured payload to parse, validate, or encrypt.
+
+    Returns:
+        Decoded the rotation IV from the decrypted exchange payload, or return empty bytes if not set.
+    """
     encoding = payload.get("rotationIvEncoding")
     value = payload.get("rotationIv")
     if value is None:
@@ -193,7 +267,12 @@ def _extract_rotation_iv(payload: dict[str, Any]) -> bytes:
 
 
 def main() -> int:
-    """Run the helper and print the recovered hashing secret and rotation parameters."""
+    """
+    Run the helper and print the recovered hashing secret and rotation parameters.
+
+    Returns:
+        Run the helper and print the recovered hashing secret and rotation parameters.
+    """
     args = parse_args()
     exchange_config_path = Path(args.exchange_config).expanduser()
     private_key_path = Path(args.private_key).expanduser() if args.private_key is not None else None

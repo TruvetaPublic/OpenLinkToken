@@ -30,16 +30,19 @@ public class PostalCodeAttribute extends CombinedAttribute {
             new USPostalCodeAttribute(3),
             new CanadianPostalCodeAttribute(3));
 
+    /** {@inheritDoc} */
     @Override
     public String getName() {
         return NAME;
     }
 
+    /** {@inheritDoc} */
     @Override
     public String[] getAliases() {
         return ALIASES;
     }
 
+    /** {@inheritDoc} */
     @Override
     protected List<SerializableAttribute> getAttributeImplementations() {
         return implementations;

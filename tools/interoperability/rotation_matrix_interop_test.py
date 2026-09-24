@@ -52,11 +52,21 @@ class JavaRotationHarness:
     def generate_matrices(
         self, iv: str, rotation_count: int, dimension: int, output_path: Path
     ) -> list[list[list[float]]]:
-        """Run the Java harness and return parsed matrices.
+        """
+        Run the Java harness and return parsed matrices.
 
         Uses two Maven invocations: one to compile (with -am for transitive deps),
         and one to execute only on the openlinktoken-core-ai module to avoid exec:java
         running on the parent pom.
+
+        Args:
+            iv: String containing the iv used to generate.
+            rotation_count: Number of token rotations to generate or apply.
+            dimension: Numeric dimension value used to generate.
+            output_path: Destination path for the generated output file.
+
+        Returns:
+            Run the Java harness and return parsed matrices.
         """
         java_dir = self.project_root / "lib/java"
 
@@ -114,7 +124,16 @@ class JavaRotationHarness:
 
 
 def _assert_matrices_match(java_matrices: list, python_matrices: list, iv: str, rotation_count: int, dimension: int):
-    """Compare Java and Python matrix lists element-by-element within tolerance."""
+    """
+    Compare Java and Python matrix lists element-by-element within tolerance.
+
+    Args:
+        java_matrices: Sequence of java matrices values to check.
+        python_matrices: Sequence of python matrices values to check.
+        iv: String containing the iv used to check.
+        rotation_count: Number of token rotations to generate or apply.
+        dimension: Numeric dimension value used to check.
+    """
     assert len(java_matrices) == rotation_count, (
         f"IV={iv!r}: Java returned {len(java_matrices)} matrices, expected {rotation_count}"
     )

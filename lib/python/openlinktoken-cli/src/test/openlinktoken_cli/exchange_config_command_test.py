@@ -23,7 +23,13 @@ class TestExchangeConfigCommands:
     """Focused command tests for exchange-config-driven secret resolution."""
 
     def test_tokenize_rejects_future_v2_exchange_config(self, tmp_path: Path, caplog) -> None:
-        """Tokenize should reject unsupported v2 configs during exchange-config loading."""
+        """
+        Tokenize should reject unsupported v2 configs during exchange-config loading.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            caplog: Pytest fixture for capturing log records.
+        """
         input_csv = _write_input_csv(tmp_path)
         output_csv = tmp_path / "output.csv"
         exchange_config_path, private_key_path = _write_future_v2_exchange_config(tmp_path)
@@ -46,7 +52,13 @@ class TestExchangeConfigCommands:
         assert "Unsupported exchange config version '2'. Supported versions: 1." in caplog.text
 
     def test_encrypt_rejects_future_v2_exchange_config(self, tmp_path: Path, caplog) -> None:
-        """Encrypt should reject unsupported v2 configs during exchange-config loading."""
+        """
+        Encrypt should reject unsupported v2 configs during exchange-config loading.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            caplog: Pytest fixture for capturing log records.
+        """
         input_csv = _write_tokenized_csv(tmp_path)
         output_csv = tmp_path / "encrypted.csv"
         exchange_config_path, private_key_path = _write_future_v2_exchange_config(tmp_path)
@@ -69,7 +81,12 @@ class TestExchangeConfigCommands:
         assert "Unsupported exchange config version '2'. Supported versions: 1." in caplog.text
 
     def test_tokenize_uses_default_date_based_exchange_config_path(self, tmp_path: Path) -> None:
-        """Consumer commands should use the same date-based default config name as initiate-exchange."""
+        """
+        Consumer commands should use the same date-based default config name as initiate-exchange.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         input_csv = _write_input_csv(tmp_path)
         output_csv = tmp_path / "output.csv"
         default_config_path = tmp_path / default_exchange_config_path().name
@@ -96,7 +113,13 @@ class TestExchangeConfigCommands:
         assert private_key_path.exists()
 
     def test_missing_default_exchange_config_fails_clearly(self, tmp_path: Path, caplog) -> None:
-        """Omitting --exchange-config should fail clearly when the default path does not exist."""
+        """
+        Omitting --exchange-config should fail clearly when the default path does not exist.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            caplog: Pytest fixture for capturing log records.
+        """
         input_csv = _write_input_csv(tmp_path)
         output_csv = tmp_path / "output.csv"
 
@@ -121,7 +144,12 @@ class TestExchangeConfigCommands:
         assert "initiate-exchange" in caplog.text
 
     def test_encrypt_and_decrypt_round_trip_using_derived_transport_key(self, tmp_path: Path) -> None:
-        """Encrypt and decrypt should round-trip using the exchange-derived transport key."""
+        """
+        Encrypt and decrypt should round-trip using the exchange-derived transport key.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         input_csv = _write_input_csv(tmp_path)
         tokenized_csv = tmp_path / "tokenized.csv"
         encrypted_csv = tmp_path / "encrypted.csv"
@@ -176,6 +204,15 @@ class TestExchangeConfigCommands:
 
 
 def _write_input_csv(tmp_path: Path) -> Path:
+    """
+    Write input csv.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+
+    Returns:
+        Written input csv.
+    """
     input_csv = tmp_path / "input.csv"
     input_csv.write_text(
         "RecordId,FirstName,LastName,PostalCode,Sex,BirthDate,SocialSecurityNumber\n"
@@ -186,6 +223,15 @@ def _write_input_csv(tmp_path: Path) -> Path:
 
 
 def _write_tokenized_csv(tmp_path: Path) -> Path:
+    """
+    Write tokenized csv.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+
+    Returns:
+        Written tokenized csv.
+    """
     tokenized_csv = tmp_path / "tokenized.csv"
     tokenized_csv.write_text(
         "RecordId,RuleNumber,RuleExpression,RuleWeight,RuleCount,Token\ntest-001,1,T1,1.0,1,SGVsbG9Ub2tlbg==\n",
@@ -195,6 +241,16 @@ def _write_tokenized_csv(tmp_path: Path) -> Path:
 
 
 def _write_current_exchange_config(exchange_config_path: Path, tmp_path: Path) -> Path:
+    """
+    Write current exchange config.
+
+    Args:
+        exchange_config_path: Path to the exchange-config file to load.
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+
+    Returns:
+        Written current exchange config.
+    """
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     _, recipient_public_pem = generate_key_pair("P-256")
     config = build_exchange_envelope(
@@ -216,6 +272,15 @@ def _write_current_exchange_config(exchange_config_path: Path, tmp_path: Path) -
 
 
 def _write_future_v2_exchange_config(tmp_path: Path) -> tuple[Path, Path]:
+    """
+    Write future v2 exchange config.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+
+    Returns:
+        Written future v2 exchange config.
+    """
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     _, recipient_public_pem = generate_key_pair("P-256")
     payload = {

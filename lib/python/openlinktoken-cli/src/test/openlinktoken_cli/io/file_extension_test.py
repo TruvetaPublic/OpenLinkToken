@@ -5,21 +5,33 @@ from openlinktoken_cli.io.file_extension import FileExtension as FileExtensionDi
 
 
 def test_file_extension_values():
+    """
+    Verify that file extension values.
+    """
     assert FileExtension.CSV == ".csv"
     assert FileExtension.PARQUET == ".parquet"
     assert FileExtension.ZIP == ".zip"
 
 
 def test_file_extension_is_str():
+    """
+    Verify that file extension is str.
+    """
     assert isinstance(FileExtension.CSV, str)
     assert isinstance(FileExtension.PARQUET, str)
     assert isinstance(FileExtension.ZIP, str)
 
 
 def test_file_extension_importable_from_io_package():
+    """
+    Verify that file extension importable from io package.
+    """
     assert FileExtension is FileExtensionDirect
 
 
 def test_file_extension_all_members():
+    """
+    Verify that file extension all members.
+    """
     members = {e.value for e in FileExtension}
     assert members == {".csv", ".parquet", ".zip"}

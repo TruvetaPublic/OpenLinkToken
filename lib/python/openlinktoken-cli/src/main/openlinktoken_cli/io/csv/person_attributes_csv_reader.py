@@ -45,11 +45,15 @@ class PersonAttributesCSVReader(PersonAttributesReader):
             raise
 
     def row_count(self) -> int:
-        """Return the total number of rows in the CSV file.
+        """
+        Return the total number of rows in the CSV file.
 
         Counts rows on first call and caches the result. After counting,
         seeks back to the beginning and rebuilds the iterator so downstream
         iteration (for / __next__) works correctly.
+
+        Returns:
+            Total number of rows in the loaded Parquet file.
         """
         if hasattr(self, "_cached_row_count"):
             return self._cached_row_count
@@ -67,7 +71,12 @@ class PersonAttributesCSVReader(PersonAttributesReader):
         return count
 
     def __iter__(self):
-        """Return the iterator object."""
+        """
+        Return the iterator object.
+
+        Returns:
+            The iterator object.
+        """
         return self
 
     def __next__(self) -> Dict[str, str]:
@@ -94,7 +103,12 @@ class PersonAttributesCSVReader(PersonAttributesReader):
             self.file_handle.close()
 
     def _build_column_to_field_id_map(self) -> Dict[str, str]:
-        """Build column-to-field-id mapping using AttributeLoader aliases."""
+        """
+        Build column-to-field-id mapping using AttributeLoader aliases.
+
+        Returns:
+            Built column-to-field-id mapping using AttributeLoader aliases.
+        """
         field_id_map: Dict[str, str] = {}
         attributes: Set[Attribute] = AttributeLoader.load()
         for header_name in self.csv_reader.fieldnames or []:

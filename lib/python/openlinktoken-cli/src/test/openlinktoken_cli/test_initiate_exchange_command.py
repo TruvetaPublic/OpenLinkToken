@@ -28,7 +28,16 @@ from openlinktoken_cli.util.stdin_utils import read_required_env_bytes
 
 
 def _partner_key_pem(tmp_path: Path, curve: str = "P-256") -> Path:
-    """Write a fresh partner public-key PEM file and return its path."""
+    """
+    Write a fresh partner public-key PEM file and return its path.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+        curve: Elliptic-curve name used to generate the key pair.
+
+    Returns:
+        Written a fresh partner public-key PEM file and return its path.
+    """
     _, public_pem = generate_key_pair(curve)
     pem_path = tmp_path / "partner.public.pem"
     pem_path.write_bytes(public_pem)
@@ -36,19 +45,40 @@ def _partner_key_pem(tmp_path: Path, curve: str = "P-256") -> Path:
 
 
 def _decode_base64url_json(encoded: str) -> dict:
-    """Decode a base64url JSON value with permissive padding restoration."""
+    """
+    Decode a base64url JSON value with permissive padding restoration.
+
+    Args:
+        encoded: String containing the encoded used to decode.
+
+    Returns:
+        Decoded a base64url JSON value with permissive padding restoration.
+    """
     padding = "=" * (-len(encoded) % 4)
     return json.loads(base64.urlsafe_b64decode(encoded + padding))
 
 
 def _fingerprint_to_kid(public_pem: bytes) -> str:
-    """Convert a public-key fingerprint into the portable recipient kid format."""
+    """
+    Convert a public-key fingerprint into the portable recipient kid format.
+
+    Args:
+        public_pem: PEM-encoded public bytes.
+
+    Returns:
+        Converted a public-key fingerprint into the portable recipient kid format.
+    """
     fingerprint = public_key_fingerprint(public_pem).lower().replace(":", "-")
     return f"sha256:{fingerprint}"
 
 
 def _assert_shared_jwe_header(config: dict) -> None:
-    """Assert the common protected header matches the JWE exchange contract."""
+    """
+    Assert the common protected header matches the JWE exchange contract.
+
+    Args:
+        config: Configuration mapping used by the operation.
+    """
     protected = _decode_base64url_json(config["protected"])
     assert protected["typ"] == "openlinktoken-exchange+jwe"
     assert protected["cty"] == "application/openlinktoken-exchange+json"
@@ -59,7 +89,14 @@ def _assert_shared_jwe_header(config: dict) -> None:
 
 
 def _assert_recipient_headers(config: dict, curve: str, expected_kids: set[str]) -> None:
-    """Assert the recipient list uses the expected JOSE headers and key ids."""
+    """
+    Assert the recipient list uses the expected JOSE headers and key ids.
+
+    Args:
+        config: Configuration mapping used by the operation.
+        curve: Elliptic-curve name used to generate the key pair.
+        expected_kids: Expected kids used to check the actual result.
+    """
     assert len(config["recipients"]) == 2
 
     recipient_headers = [entry["header"] for entry in config["recipients"]]
@@ -82,7 +119,15 @@ def _assert_recipient_headers(config: dict, curve: str, expected_kids: set[str])
 
 
 def _recipient_headers_by_kid(config: dict) -> dict[str, dict]:
-    """Return recipient headers indexed by recipient kid."""
+    """
+    Return recipient headers indexed by recipient kid.
+
+    Args:
+        config: Configuration mapping used by the operation.
+
+    Returns:
+        Mapping produced by recipient headers by kid.
+    """
     return {entry["header"]["kid"]: entry["header"] for entry in config["recipients"]}
 
 
@@ -116,13 +161,23 @@ class TestInitiateExchangeCommandUnit:
         assert not hasattr(InitiateExchangeCommand, "_encrypt_hashing_secret")
 
     def test_read_required_env_bytes_returns_utf8_bytes(self, monkeypatch):
-        """read_required_env_bytes returns the referenced environment value as bytes."""
+        """
+        read_required_env_bytes returns the referenced environment value as bytes.
+
+        Args:
+            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
+        """
         monkeypatch.setenv("OLT_TEST_KEY", "pem-data")
 
         assert read_required_env_bytes("--test-key-env", "OLT_TEST_KEY", "test key") == b"pem-data"
 
     def test_read_required_env_bytes_rejects_missing_value(self, monkeypatch):
-        """read_required_env_bytes rejects missing environment variables."""
+        """
+        read_required_env_bytes rejects missing environment variables.
+
+        Args:
+            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
+        """
         monkeypatch.delenv("OLT_MISSING_KEY", raising=False)
 
         with pytest.raises(ValueError, match="OLT_MISSING_KEY"):
@@ -133,7 +188,12 @@ class TestInitiateExchangeCommandUnit:
     # -------------------------------------------------------------------------
 
     def test_write_config_creates_json_file(self, tmp_path):
-        """_write_config creates a readable JSON file."""
+        """
+        _write_config creates a readable JSON file.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         path = tmp_path / "out.exchange.json"
         config = {"version": 1, "test": True}
         InitiateExchangeCommand._write_config(path, config)
@@ -143,14 +203,24 @@ class TestInitiateExchangeCommandUnit:
         assert loaded == config
 
     def test_write_config_overwrite_false_raises_on_existing(self, tmp_path):
-        """_write_config raises FileExistsError when overwrite=False and file exists."""
+        """
+        _write_config raises FileExistsError when overwrite=False and file exists.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         path = tmp_path / "existing.json"
         path.write_text("{}")
         with pytest.raises(FileExistsError):
             InitiateExchangeCommand._write_config(path, {}, overwrite=False)
 
     def test_write_config_overwrite_true_replaces_file(self, tmp_path):
-        """_write_config silently replaces an existing file when overwrite=True."""
+        """
+        _write_config silently replaces an existing file when overwrite=True.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         path = tmp_path / "replaceable.json"
         path.write_text('{"old": true}')
         InitiateExchangeCommand._write_config(path, {"new": True}, overwrite=True)
@@ -158,13 +228,23 @@ class TestInitiateExchangeCommandUnit:
         assert loaded == {"new": True}
 
     def test_write_config_creates_parent_directories(self, tmp_path):
-        """_write_config creates missing parent directories."""
+        """
+        _write_config creates missing parent directories.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         path = tmp_path / "deep" / "nested" / "config.json"
         InitiateExchangeCommand._write_config(path, {"ok": True})
         assert path.exists()
 
     def test_write_config_rejects_symlink_output_path(self, tmp_path):
-        """_write_config rejects a symbolic-link output path instead of following it."""
+        """
+        _write_config rejects a symbolic-link output path instead of following it.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         target_path = tmp_path / "target.exchange.json"
         target_path.write_text('{"target": true}', encoding="utf-8")
         symlink_path = tmp_path / "link.exchange.json"
@@ -189,7 +269,12 @@ class TestInitiateExchangeCommandIntegration:
     # -------------------------------------------------------------------------
 
     def test_basic_exchange_creates_expected_files(self, tmp_path):
-        """initiate-exchange creates local key files and the exchange config."""
+        """
+        initiate-exchange creates local key files and the exchange config.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         partner_pem = _partner_key_pem(tmp_path)
         output_path = tmp_path / "test.exchange.json"
 
@@ -213,7 +298,13 @@ class TestInitiateExchangeCommandIntegration:
         assert output_path.exists()
 
     def test_basic_exchange_accepts_partner_public_key_from_stdin(self, tmp_path, monkeypatch):
-        """initiate-exchange accepts --public-key-stdin instead of --public-key PATH."""
+        """
+        initiate-exchange accepts --public-key-stdin instead of --public-key PATH.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
+        """
         _, partner_public_pem = generate_key_pair("P-256")
         output_path = tmp_path / "stdin.exchange.json"
         monkeypatch.setattr(sys, "stdin", io.TextIOWrapper(io.BytesIO(partner_public_pem), encoding="utf-8"))
@@ -237,7 +328,12 @@ class TestInitiateExchangeCommandIntegration:
         assert output_path.exists()
 
     def test_basic_exchange_existing_key_files_prints_concise_stderr(self, tmp_path):
-        """initiate-exchange should surface quick-command validation errors without raw log formatting."""
+        """
+        initiate-exchange should surface quick-command validation errors without raw log formatting.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         partner_pem = _partner_key_pem(tmp_path)
         output_path = tmp_path / "existing-keys.exchange.json"
         openlinktoken_dir = tmp_path / ".openlinktoken"
@@ -278,7 +374,13 @@ class TestInitiateExchangeCommandIntegration:
         assert not output_path.exists()
 
     def test_basic_exchange_accepts_public_and_sender_key_refs_from_env(self, tmp_path, monkeypatch):
-        """initiate-exchange accepts env-var references for both partner and sender keys in one command."""
+        """
+        initiate-exchange accepts env-var references for both partner and sender keys in one command.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
+        """
         sender_private_pem, sender_public_pem = generate_key_pair("P-256")
         _, partner_public_pem = generate_key_pair("P-256")
         output_path = tmp_path / "env-ref.exchange.json"
@@ -318,7 +420,13 @@ class TestInitiateExchangeCommandIntegration:
         )
 
     def test_basic_exchange_accepts_hashing_secret_from_env(self, tmp_path, monkeypatch):
-        """initiate-exchange accepts --hashingsecret-env as a safe alternative to argv input."""
+        """
+        initiate-exchange accepts --hashingsecret-env as a safe alternative to argv input.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
+        """
         partner_private_pem, partner_public_pem = generate_key_pair("P-256")
         partner_pem_path = tmp_path / "partner.public.pem"
         partner_pem_path.write_bytes(partner_public_pem)
@@ -348,7 +456,13 @@ class TestInitiateExchangeCommandIntegration:
         assert recipient_payload["hashingSecret"] == expected_hashing_secret
 
     def test_basic_exchange_accepts_hashing_secret_from_stdin(self, tmp_path, monkeypatch):
-        """initiate-exchange accepts --hashingsecret-stdin as a safe alternative to argv input."""
+        """
+        initiate-exchange accepts --hashingsecret-stdin as a safe alternative to argv input.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
+        """
         partner_private_pem, partner_public_pem = generate_key_pair("P-256")
         partner_pem_path = tmp_path / "partner.public.pem"
         partner_pem_path.write_bytes(partner_public_pem)
@@ -381,7 +495,13 @@ class TestInitiateExchangeCommandIntegration:
         assert recipient_payload["hashingSecret"] == expected_hashing_secret
 
     def test_basic_exchange_strips_one_trailing_newline_from_hashing_secret_stdin(self, tmp_path, monkeypatch):
-        """A typical echo-style stdin newline should not change the hashing secret bytes."""
+        """
+        A typical echo-style stdin newline should not change the hashing secret bytes.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
+        """
         partner_private_pem, partner_public_pem = generate_key_pair("P-256")
         partner_pem_path = tmp_path / "partner.public.pem"
         partner_pem_path.write_bytes(partner_public_pem)
@@ -413,7 +533,14 @@ class TestInitiateExchangeCommandIntegration:
         ).decode().rstrip("=")
 
     def test_basic_exchange_rejects_conflicting_stdin_inputs(self, tmp_path, monkeypatch, caplog):
-        """The command should reject multiple stdin-consuming flags with a clear error."""
+        """
+        The command should reject multiple stdin-consuming flags with a clear error.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
+            caplog: Pytest fixture for capturing log records.
+        """
         output_path = tmp_path / "conflicting-stdin.exchange.json"
         monkeypatch.setattr(
             sys,
@@ -442,7 +569,14 @@ class TestInitiateExchangeCommandIntegration:
         assert not output_path.exists()
 
     def test_basic_exchange_rejects_empty_partner_public_key_from_stdin(self, tmp_path, monkeypatch, caplog):
-        """initiate-exchange fails clearly when --public-key-stdin receives no key bytes."""
+        """
+        initiate-exchange fails clearly when --public-key-stdin receives no key bytes.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
+            caplog: Pytest fixture for capturing log records.
+        """
         output_path = tmp_path / "empty-stdin.exchange.json"
         monkeypatch.setattr(sys, "stdin", io.TextIOWrapper(io.BytesIO(b""), encoding="utf-8"))
 
@@ -464,7 +598,13 @@ class TestInitiateExchangeCommandIntegration:
         assert not output_path.exists()
 
     def test_basic_exchange_rejects_missing_partner_public_key_env(self, tmp_path, caplog):
-        """initiate-exchange fails clearly when --public-key-env references a missing environment variable."""
+        """
+        initiate-exchange fails clearly when --public-key-env references a missing environment variable.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            caplog: Pytest fixture for capturing log records.
+        """
         output_path = tmp_path / "missing-public-env.exchange.json"
 
         with patch("pathlib.Path.home", return_value=tmp_path):
@@ -485,7 +625,14 @@ class TestInitiateExchangeCommandIntegration:
         assert not output_path.exists()
 
     def test_basic_exchange_rejects_missing_sender_private_key_env(self, tmp_path, monkeypatch, caplog):
-        """initiate-exchange fails clearly when --sender-private-key-env references a missing environment variable."""
+        """
+        initiate-exchange fails clearly when --sender-private-key-env references a missing environment variable.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
+            caplog: Pytest fixture for capturing log records.
+        """
         _, partner_public_pem = generate_key_pair("P-256")
         output_path = tmp_path / "missing-sender-env.exchange.json"
         monkeypatch.setenv("OLT_PARTNER_PUBLIC_KEY", partner_public_pem.decode("utf-8"))
@@ -510,7 +657,13 @@ class TestInitiateExchangeCommandIntegration:
         assert not output_path.exists()
 
     def test_basic_exchange_rejects_missing_hashing_secret_env_without_writing_keys(self, tmp_path, caplog):
-        """Missing hashing-secret env input should fail before new local key files are written."""
+        """
+        Missing hashing-secret env input should fail before new local key files are written.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            caplog: Pytest fixture for capturing log records.
+        """
         partner_pem = _partner_key_pem(tmp_path)
         output_path = tmp_path / "missing-hashing-secret-env.exchange.json"
 
@@ -541,7 +694,12 @@ class TestInitiateExchangeCommandIntegration:
     # -------------------------------------------------------------------------
 
     def test_exchange_config_drops_legacy_bundle_fields(self, tmp_path):
-        """The exchange config must no longer expose legacy bundle fields."""
+        """
+        The exchange config must no longer expose legacy bundle fields.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         partner_pem = _partner_key_pem(tmp_path)
         output_path = tmp_path / "legacy-fields.exchange.json"
 
@@ -564,7 +722,12 @@ class TestInitiateExchangeCommandIntegration:
         assert "encryptedHashingSecret" not in config
 
     def test_exchange_config_uses_jwe_envelope_fields(self, tmp_path):
-        """The exchange config must expose the shared JWE envelope fields."""
+        """
+        The exchange config must expose the shared JWE envelope fields.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         partner_pem = _partner_key_pem(tmp_path)
         output_path = tmp_path / "struct.exchange.json"
 
@@ -588,7 +751,12 @@ class TestInitiateExchangeCommandIntegration:
         _assert_shared_jwe_header(config)
 
     def test_exchange_config_payload_includes_both_public_keys(self, tmp_path):
-        """Payloads retain both public keys for later transport-key derivation."""
+        """
+        Payloads retain both public keys for later transport-key derivation.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         partner_private_pem, partner_public_pem = generate_key_pair("P-256")
         partner_pem_path = tmp_path / "partner.public.pem"
         partner_pem_path.write_bytes(partner_public_pem)
@@ -614,7 +782,12 @@ class TestInitiateExchangeCommandIntegration:
         assert payload["recipientPublicKey"] == partner_public_pem.decode("utf-8")
 
     def test_exchange_config_recipients_use_kids_and_epk_headers(self, tmp_path):
-        """Each JWE recipient must carry the expected kid and epk header shape."""
+        """
+        Each JWE recipient must carry the expected kid and epk header shape.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         partner_pem = _partner_key_pem(tmp_path)
         output_path = tmp_path / "recipients.exchange.json"
 
@@ -642,7 +815,12 @@ class TestInitiateExchangeCommandIntegration:
         )
 
     def test_exchange_config_never_embeds_private_key_material(self, tmp_path):
-        """The exchange config must never embed private key material."""
+        """
+        The exchange config must never embed private key material.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         partner_pem = _partner_key_pem(tmp_path)
         output_path = tmp_path / "security.exchange.json"
 
@@ -665,7 +843,12 @@ class TestInitiateExchangeCommandIntegration:
         assert "BEGIN RSA PRIVATE KEY" not in raw
 
     def test_exchange_config_can_use_provided_sender_private_key(self, tmp_path):
-        """The CLI can reuse a caller-supplied sender private key without embedding it."""
+        """
+        The CLI can reuse a caller-supplied sender private key without embedding it.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         partner_pem = _partner_key_pem(tmp_path)
         output_path = tmp_path / "provided-local.exchange.json"
         local_private_pem, local_public_pem = generate_key_pair("P-256")
@@ -707,7 +890,12 @@ class TestInitiateExchangeCommandIntegration:
         assert (tmp_path / ".openlinktoken" / "provided-local.public.pem").read_bytes() == local_public_pem
 
     def test_exchange_config_supports_mixed_sender_and_recipient_curves(self, tmp_path):
-        """Different sender and recipient curves can decrypt the same exchange payload."""
+        """
+        Different sender and recipient curves can decrypt the same exchange payload.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         partner_private_pem, partner_public_pem = generate_key_pair("P-256")
         partner_pem_path = tmp_path / "partner-p256.public.pem"
         partner_pem_path.write_bytes(partner_public_pem)
@@ -752,7 +940,12 @@ class TestInitiateExchangeCommandIntegration:
         assert recipient_headers[_fingerprint_to_kid(partner_public_pem)]["epk"]["crv"] == "P-256"
 
     def test_exchange_config_rejects_removed_local_private_key_flag(self, tmp_path):
-        """The unreleased --local-private-key flag is rejected now that sender terminology is canonical."""
+        """
+        The unreleased --local-private-key flag is rejected now that sender terminology is canonical.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         partner_pem = _partner_key_pem(tmp_path)
         output_path = tmp_path / "compat-local.exchange.json"
         local_private_pem, _ = generate_key_pair("P-256")
@@ -783,7 +976,13 @@ class TestInitiateExchangeCommandIntegration:
 
     @pytest.mark.parametrize("curve", SUPPORTED_CURVES)
     def test_all_supported_curves(self, tmp_path, curve):
-        """initiate-exchange succeeds for every supported --curve value."""
+        """
+        initiate-exchange succeeds for every supported --curve value.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            curve: Elliptic-curve name used to generate the key pair.
+        """
         partner_pem = _partner_key_pem(tmp_path, curve)
         output_path = tmp_path / f"curve-{curve}.exchange.json"
 
@@ -822,7 +1021,12 @@ class TestInitiateExchangeCommandIntegration:
     # -------------------------------------------------------------------------
 
     def test_provided_hashing_secret_is_encrypted(self, tmp_path):
-        """When --hashingsecret is given it appears nowhere in the config as plaintext."""
+        """
+        When --hashingsecret is given it appears nowhere in the config as plaintext.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         partner_private_pem, partner_public_pem_bytes = generate_key_pair("P-256")
         partner_pem_path = tmp_path / "p.public.pem"
         partner_pem_path.write_bytes(partner_public_pem_bytes)
@@ -853,7 +1057,12 @@ class TestInitiateExchangeCommandIntegration:
     # -------------------------------------------------------------------------
 
     def test_default_output_path_uses_name(self, tmp_path):
-        """When --output is omitted the config is written to ./<name>.exchange.json."""
+        """
+        When --output is omitted the config is written to ./<name>.exchange.json.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         partner_pem = _partner_key_pem(tmp_path)
         expected_output = tmp_path / "myexchange.exchange.json"
 
@@ -879,7 +1088,12 @@ class TestInitiateExchangeCommandIntegration:
     # -------------------------------------------------------------------------
 
     def test_default_name_uses_iso_date(self, tmp_path):
-        """When --name is omitted, key files are named openlinktoken-<YYYY-MM-DD>.*."""
+        """
+        When --name is omitted, key files are named openlinktoken-<YYYY-MM-DD>.*.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         partner_pem = _partner_key_pem(tmp_path)
         output_path = tmp_path / "default-name.exchange.json"
 
@@ -900,7 +1114,13 @@ class TestInitiateExchangeCommandIntegration:
         assert matches, "Expected private key file matching openlinktoken-<ISO-date>.private.pem"
 
     def test_reuses_existing_default_key_pair_when_exchange_config_is_missing(self, tmp_path, monkeypatch):
-        """A valid existing default key pair should allow a missing exchange config to be created."""
+        """
+        A valid existing default key pair should allow a missing exchange config to be created.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
+        """
         partner_pem = _partner_key_pem(tmp_path)
         private_pem, public_pem = generate_key_pair("P-256")
         openlinktoken_dir = tmp_path / ".openlinktoken"
@@ -931,7 +1151,12 @@ class TestInitiateExchangeCommandIntegration:
     # -------------------------------------------------------------------------
 
     def test_fails_when_key_already_exists(self, tmp_path):
-        """Second run without --force must exit non-zero."""
+        """
+        Second run without --force must exit non-zero.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         partner_pem = _partner_key_pem(tmp_path)
         output_path = tmp_path / "dup.exchange.json"
 
@@ -963,7 +1188,12 @@ class TestInitiateExchangeCommandIntegration:
         assert second != 0, "Second run without --force must fail"
 
     def test_force_overwrites_existing_keys(self, tmp_path):
-        """--force allows overwriting existing key files and the exchange config."""
+        """
+        --force allows overwriting existing key files and the exchange config.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         partner_pem = _partner_key_pem(tmp_path)
         output_path = tmp_path / "force.exchange.json"
 
@@ -999,14 +1229,24 @@ class TestInitiateExchangeCommandIntegration:
     # -------------------------------------------------------------------------
 
     def test_missing_public_key_arg_exits_nonzero(self, tmp_path):
-        """Omitting --public-key must produce a non-zero exit code."""
+        """
+        Omitting --public-key must produce a non-zero exit code.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         with patch("pathlib.Path.home", return_value=tmp_path):
             exit_code = OpenLinkTokenCommand.execute(["initiate-exchange", "--name", "no-pk"])
 
         assert exit_code != 0
 
     def test_nonexistent_partner_key_file_exits_nonzero(self, tmp_path):
-        """A non-existent partner public key file must produce a non-zero exit code."""
+        """
+        A non-existent partner public key file must produce a non-zero exit code.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         with patch("pathlib.Path.home", return_value=tmp_path):
             exit_code = OpenLinkTokenCommand.execute(
                 [
@@ -1023,7 +1263,12 @@ class TestInitiateExchangeCommandIntegration:
         assert exit_code != 0
 
     def test_invalid_partner_pem_exits_nonzero(self, tmp_path):
-        """A corrupt/invalid PEM file must produce a non-zero exit code."""
+        """
+        A corrupt/invalid PEM file must produce a non-zero exit code.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         bad_pem = tmp_path / "bad.pem"
         bad_pem.write_text("not a real pem")
         output_path = tmp_path / "bad.exchange.json"
@@ -1044,7 +1289,12 @@ class TestInitiateExchangeCommandIntegration:
         assert exit_code != 0
 
     def test_unsupported_curve_exits_nonzero(self, tmp_path):
-        """Unsupported --curve value must produce a non-zero exit code."""
+        """
+        Unsupported --curve value must produce a non-zero exit code.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         partner_pem = _partner_key_pem(tmp_path)
         with patch("pathlib.Path.home", return_value=tmp_path):
             exit_code = OpenLinkTokenCommand.execute(
@@ -1063,7 +1313,13 @@ class TestInitiateExchangeCommandIntegration:
 
     @pytest.mark.parametrize("invalid_name", ["../escape", "nested/key", r"nested\\key", "C:\\temp\\key"])
     def test_invalid_name_exits_nonzero(self, tmp_path, invalid_name):
-        """Unsafe key basenames must be rejected with a non-zero exit code."""
+        """
+        Unsafe key basenames must be rejected with a non-zero exit code.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            invalid_name: Name of the invalid.
+        """
         partner_pem = _partner_key_pem(tmp_path)
         with patch("pathlib.Path.home", return_value=tmp_path):
             exit_code = OpenLinkTokenCommand.execute(
@@ -1083,7 +1339,12 @@ class TestInitiateExchangeCommandIntegration:
     # -------------------------------------------------------------------------
 
     def test_private_key_has_600_permissions(self, tmp_path):
-        """initiate-exchange writes the local private key with 600 permissions."""
+        """
+        initiate-exchange writes the local private key with 600 permissions.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         if sys.platform == "win32":
             pytest.skip("POSIX permission test skipped on Windows")
 
@@ -1114,7 +1375,13 @@ class TestInitiateExchangeCommandIntegration:
     # -------------------------------------------------------------------------
 
     def test_output_paths_printed_to_stdout(self, tmp_path, capsys):
-        """Private key, public key, and exchange config paths are printed on success."""
+        """
+        Private key, public key, and exchange config paths are printed on success.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            capsys: Pytest fixture for capturing standard output and standard error.
+        """
         partner_pem = _partner_key_pem(tmp_path)
         output_path = tmp_path / "stdout.exchange.json"
 
@@ -1163,13 +1430,23 @@ class TestResolveRotationIv:
         assert iv1 != iv2, "Each call must produce a unique IV"
 
     def test_reads_rotation_iv_from_env_var(self, monkeypatch):
-        """A named environment variable supplies the rotation IV as bytes."""
+        """
+        A named environment variable supplies the rotation IV as bytes.
+
+        Args:
+            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
+        """
         monkeypatch.setenv("OT_ROTATION_IV", "env-rotation-iv-value")
         iv = InitiateExchangeCommand._resolve_rotation_iv(None, rotation_iv_env_name="OT_ROTATION_IV")
         assert iv == b"env-rotation-iv-value"
 
     def test_reads_rotation_iv_from_stdin(self, monkeypatch):
-        """--rotation-iv-stdin reads and strips a trailing newline."""
+        """
+        --rotation-iv-stdin reads and strips a trailing newline.
+
+        Args:
+            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
+        """
         monkeypatch.setattr("sys.stdin", io.TextIOWrapper(io.BytesIO(b"stdin-rotation-iv\n"), encoding="utf-8"))
         iv = InitiateExchangeCommand._resolve_rotation_iv(None, rotation_iv_stdin=True)
         assert iv == b"stdin-rotation-iv"
@@ -1184,7 +1461,12 @@ class TestRotationIvAndCount:
     """Integration tests for --rotation-iv and --rotation-count flags."""
 
     def test_exchange_config_payload_includes_rotation_iv_and_count_by_default(self, tmp_path):
-        """Generated exchange config payload includes rotationIv and rotationCount=50 by default."""
+        """
+        Generated exchange config payload includes rotationIv and rotationCount=50 by default.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         partner_private_pem, partner_public_pem = generate_key_pair("P-256")
         partner_pem_path = tmp_path / "partner.public.pem"
         partner_pem_path.write_bytes(partner_public_pem)
@@ -1212,7 +1494,12 @@ class TestRotationIvAndCount:
         assert payload["rotationCount"] == 50
 
     def test_exchange_config_accepts_explicit_rotation_iv(self, tmp_path):
-        """--rotation-iv stores the provided value base64url-encoded in the encrypted payload."""
+        """
+        --rotation-iv stores the provided value base64url-encoded in the encrypted payload.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         partner_private_pem, partner_public_pem = generate_key_pair("P-256")
         partner_pem_path = tmp_path / "partner.public.pem"
         partner_pem_path.write_bytes(partner_public_pem)
@@ -1241,7 +1528,12 @@ class TestRotationIvAndCount:
         assert decoded == b"my-fixed-rotation-iv"
 
     def test_exchange_config_accepts_explicit_rotation_count(self, tmp_path):
-        """--rotation-count stores the provided integer in the encrypted payload."""
+        """
+        --rotation-count stores the provided integer in the encrypted payload.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         partner_private_pem, partner_public_pem = generate_key_pair("P-256")
         partner_pem_path = tmp_path / "partner.public.pem"
         partner_pem_path.write_bytes(partner_public_pem)
@@ -1268,7 +1560,13 @@ class TestRotationIvAndCount:
         assert payload["rotationCount"] == 5
 
     def test_exchange_config_accepts_rotation_iv_from_env(self, tmp_path, monkeypatch):
-        """--rotation-iv-env reads the rotation IV from a named environment variable."""
+        """
+        --rotation-iv-env reads the rotation IV from a named environment variable.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
+        """
         partner_private_pem, partner_public_pem = generate_key_pair("P-256")
         partner_pem_path = tmp_path / "partner.public.pem"
         partner_pem_path.write_bytes(partner_public_pem)
@@ -1297,7 +1595,13 @@ class TestRotationIvAndCount:
         assert base64.urlsafe_b64decode(payload["rotationIv"] + "==") == b"rotation-iv-from-env"
 
     def test_exchange_config_accepts_rotation_iv_from_stdin(self, tmp_path, monkeypatch):
-        """--rotation-iv-stdin reads the rotation IV from stdin and stores it base64url-encoded."""
+        """
+        --rotation-iv-stdin reads the rotation IV from stdin and stores it base64url-encoded.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
+        """
         partner_private_pem, partner_public_pem = generate_key_pair("P-256")
         partner_pem_path = tmp_path / "partner.public.pem"
         partner_pem_path.write_bytes(partner_public_pem)
@@ -1329,7 +1633,13 @@ class TestRotationIvAndCount:
         assert base64.urlsafe_b64decode(payload["rotationIv"] + "==") == b"rotation-iv-from-stdin"
 
     def test_exchange_config_rejects_zero_rotation_count(self, tmp_path, caplog):
-        """--rotation-count 0 should fail with a clear error."""
+        """
+        --rotation-count 0 should fail with a clear error.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            caplog: Pytest fixture for capturing log records.
+        """
         partner_pem = _partner_key_pem(tmp_path)
         output_path = tmp_path / "zero-count.exchange.json"
 
@@ -1355,7 +1665,14 @@ class TestRotationIvAndCount:
     def test_exchange_config_rejects_rotation_iv_stdin_combined_with_public_key_stdin(
         self, tmp_path, monkeypatch, caplog
     ):
-        """--rotation-iv-stdin and --public-key-stdin cannot both consume stdin."""
+        """
+        --rotation-iv-stdin and --public-key-stdin cannot both consume stdin.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
+            caplog: Pytest fixture for capturing log records.
+        """
         output_path = tmp_path / "double-stdin.exchange.json"
         monkeypatch.setattr(
             sys,
@@ -1390,7 +1707,12 @@ class TestBinWidthAndDimensionBias:
     """Integration tests for --rotation-bin-width and --rotation-embedding-* flags."""
 
     def test_payload_includes_default_bin_width_and_dimension_bias(self, tmp_path):
-        """Generated payload includes binWidth=0.05 and 1024 zero-valued bias entries by default."""
+        """
+        Generated payload includes binWidth=0.05 and 1024 zero-valued bias entries by default.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         partner_private_pem, partner_public_pem = generate_key_pair("P-256")
         partner_pem_path = tmp_path / "partner.public.pem"
         partner_pem_path.write_bytes(partner_public_pem)
@@ -1417,7 +1739,12 @@ class TestBinWidthAndDimensionBias:
         assert all(v == 0.0 for v in payload["dimensionBias"])
 
     def test_payload_accepts_explicit_bin_width(self, tmp_path):
-        """--rotation-bin-width stores the provided float in the encrypted payload."""
+        """
+        --rotation-bin-width stores the provided float in the encrypted payload.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         partner_private_pem, partner_public_pem = generate_key_pair("P-256")
         partner_pem_path = tmp_path / "partner.public.pem"
         partner_pem_path.write_bytes(partner_public_pem)
@@ -1444,7 +1771,12 @@ class TestBinWidthAndDimensionBias:
         assert payload["binWidth"] == pytest.approx(0.1)
 
     def test_payload_accepts_explicit_embedding_dimension(self, tmp_path):
-        """--rotation-embedding-dimension sets the length of the zero-filled dimensionBias."""
+        """
+        --rotation-embedding-dimension sets the length of the zero-filled dimensionBias.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         partner_private_pem, partner_public_pem = generate_key_pair("P-256")
         partner_pem_path = tmp_path / "partner.public.pem"
         partner_pem_path.write_bytes(partner_public_pem)
@@ -1472,7 +1804,12 @@ class TestBinWidthAndDimensionBias:
         assert all(v == 0.0 for v in payload["dimensionBias"])
 
     def test_payload_accepts_embedding_bias_from_file(self, tmp_path):
-        """--rotation-embedding-bias loads a JSON float array from a file into dimensionBias."""
+        """
+        --rotation-embedding-bias loads a JSON float array from a file into dimensionBias.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         bias_file = tmp_path / "bias.json"
         bias_file.write_text("[0.1, 0.2, 0.3]", encoding="utf-8")
         partner_private_pem, partner_public_pem = generate_key_pair("P-256")
@@ -1501,7 +1838,13 @@ class TestBinWidthAndDimensionBias:
         assert payload["dimensionBias"] == pytest.approx([0.1, 0.2, 0.3])
 
     def test_rejects_nonpositive_bin_width(self, tmp_path, caplog):
-        """--rotation-bin-width 0 should fail with a clear error."""
+        """
+        --rotation-bin-width 0 should fail with a clear error.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            caplog: Pytest fixture for capturing log records.
+        """
         partner_pem = _partner_key_pem(tmp_path)
         output_path = tmp_path / "zero-binwidth.exchange.json"
 
@@ -1525,7 +1868,13 @@ class TestBinWidthAndDimensionBias:
         assert not output_path.exists()
 
     def test_rejects_embedding_dimension_below_2(self, tmp_path, caplog):
-        """--rotation-embedding-dimension 1 should fail with a clear error."""
+        """
+        --rotation-embedding-dimension 1 should fail with a clear error.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            caplog: Pytest fixture for capturing log records.
+        """
         partner_pem = _partner_key_pem(tmp_path)
         output_path = tmp_path / "small-dim.exchange.json"
 
@@ -1549,7 +1898,13 @@ class TestBinWidthAndDimensionBias:
         assert not output_path.exists()
 
     def test_rejects_missing_embedding_bias_file(self, tmp_path, caplog):
-        """--rotation-embedding-bias pointing to a nonexistent file should fail."""
+        """
+        --rotation-embedding-bias pointing to a nonexistent file should fail.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            caplog: Pytest fixture for capturing log records.
+        """
         partner_pem = _partner_key_pem(tmp_path)
         output_path = tmp_path / "missing-bias.exchange.json"
 
@@ -1573,7 +1928,13 @@ class TestBinWidthAndDimensionBias:
         assert not output_path.exists()
 
     def test_rejects_invalid_json_in_embedding_bias_file(self, tmp_path, caplog):
-        """--rotation-embedding-bias with non-JSON file content should fail."""
+        """
+        --rotation-embedding-bias with non-JSON file content should fail.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            caplog: Pytest fixture for capturing log records.
+        """
         bias_file = tmp_path / "bad-bias.json"
         bias_file.write_text("not valid json", encoding="utf-8")
         partner_pem = _partner_key_pem(tmp_path)
@@ -1599,7 +1960,13 @@ class TestBinWidthAndDimensionBias:
         assert not output_path.exists()
 
     def test_rejects_embedding_bias_with_fewer_than_2_values(self, tmp_path, caplog):
-        """--rotation-embedding-bias JSON array with only 1 value should fail."""
+        """
+        --rotation-embedding-bias JSON array with only 1 value should fail.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            caplog: Pytest fixture for capturing log records.
+        """
         bias_file = tmp_path / "one-value.json"
         bias_file.write_text("[0.5]", encoding="utf-8")
         partner_pem = _partner_key_pem(tmp_path)

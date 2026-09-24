@@ -81,7 +81,15 @@ class TestPackageCommandZipOutput:
 
     @pytest.fixture
     def temp_dir(self, tmp_path: Path) -> Path:
-        """Create a temporary directory with a two-row CSV input."""
+        """
+        Create a temporary directory with a two-row CSV input.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+
+        Returns:
+            Temporary directory supplied by pytest for ZIP archive tests.
+        """
         input_csv = tmp_path / "input.csv"
         input_csv.write_text(
             "RecordId,FirstName,LastName,PostalCode,Sex,BirthDate,SocialSecurityNumber\n"
@@ -91,7 +99,16 @@ class TestPackageCommandZipOutput:
         return tmp_path
 
     def _create_exchange_config(self, temp_dir: Path, name: str = "pkg-zip") -> tuple[Path, Path]:
-        """Create an exchange config and return ``(exchange_config_path, private_key_path)``."""
+        """
+        Create an exchange config and return ``(exchange_config_path, private_key_path)``.
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+            name: Name identifying the item being processed.
+
+        Returns:
+            Created an exchange config and return ``(exchange_config_path, private_key_path)``.
+        """
         _, partner_public_pem = generate_key_pair("P-256")
         partner_public_key_path = temp_dir / f"{name}.partner.public.pem"
         partner_public_key_path.write_bytes(partner_public_pem)
@@ -120,7 +137,12 @@ class TestPackageCommandZipOutput:
     # ------------------------------------------------------------------
 
     def test_package_creates_zip_file(self, temp_dir: Path):
-        """package command with a .zip output path must create a ZIP file."""
+        """
+        package command with a .zip output path must create a ZIP file.
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+        """
         exchange_config, private_key = self._create_exchange_config(temp_dir)
         zip_path = temp_dir / "output.zip"
 
@@ -151,7 +173,12 @@ class TestPackageCommandZipOutput:
         assert configure.call_args.kwargs["configured_num_threads"] == ML1InferenceConfig.DEFAULT_NUM_THREADS
 
     def test_custom_tokenization_disables_ml1_and_omits_custom_ml1_rule(self, temp_dir: Path):
-        """Custom tokenization must not produce built-in or explicitly configured ML1 output."""
+        """
+        Custom tokenization must not produce built-in or explicitly configured ML1 output.
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+        """
         exchange_config, private_key = self._create_exchange_config(temp_dir, "custom-tokenization")
         config_path = temp_dir / "tokenization-config.yaml"
         config_path.write_text(
@@ -211,7 +238,12 @@ token_rules:
             )
 
     def test_zip_contains_parquet_and_metadata(self, temp_dir: Path):
-        """The ZIP must contain a Parquet token file and a metadata JSON file."""
+        """
+        The ZIP must contain a Parquet token file and a metadata JSON file.
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+        """
         exchange_config, private_key = self._create_exchange_config(temp_dir)
         zip_path = temp_dir / "output.zip"
 
@@ -237,7 +269,12 @@ token_rules:
         assert "output.metadata.json" in names
 
     def test_embedded_parquet_has_token_rows(self, temp_dir: Path):
-        """The Parquet inside the ZIP must contain token rows for the two input records."""
+        """
+        The Parquet inside the ZIP must contain token rows for the two input records.
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+        """
         exchange_config, private_key = self._create_exchange_config(temp_dir)
         zip_path = temp_dir / "output.zip"
 
@@ -266,7 +303,12 @@ token_rules:
         assert "rec-002" in record_ids
 
     def test_embedded_metadata_has_expected_keys(self, temp_dir: Path):
-        """The metadata JSON inside the ZIP must contain all standard metadata keys."""
+        """
+        The metadata JSON inside the ZIP must contain all standard metadata keys.
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+        """
         exchange_config, private_key = self._create_exchange_config(temp_dir)
         zip_path = temp_dir / "output.zip"
 
@@ -291,7 +333,12 @@ token_rules:
         assert set(metadata) == EXPECTED_METADATA_KEYS
 
     def test_no_sibling_metadata_file_written(self, temp_dir: Path):
-        """When output is a ZIP, no sibling .metadata.json should be written alongside it."""
+        """
+        When output is a ZIP, no sibling .metadata.json should be written alongside it.
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+        """
         exchange_config, private_key = self._create_exchange_config(temp_dir)
         zip_path = temp_dir / "output.zip"
 
@@ -314,7 +361,12 @@ token_rules:
         assert not sibling_metadata.exists(), "Metadata must be embedded inside the ZIP, not written as a sibling file"
 
     def test_embedded_metadata_row_count(self, temp_dir: Path):
-        """TotalRows in the embedded metadata must match the input row count."""
+        """
+        TotalRows in the embedded metadata must match the input row count.
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+        """
         exchange_config, private_key = self._create_exchange_config(temp_dir)
         zip_path = temp_dir / "output.zip"
 
@@ -348,7 +400,14 @@ token_rules:
     def test_package_applies_exchange_rotation_configuration(
         self, temp_dir: Path, rotation_iv: bytes, expected_iv: str
     ):
-        """Package must configure ML1 rotation exactly as tokenize does before processing."""
+        """
+        Package must configure ML1 rotation exactly as tokenize does before processing.
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+            rotation_iv: Byte sequence containing the rotation iv used to exercise the behavior under test.
+            expected_iv: Expected iv used to check the actual result.
+        """
         exchange = SimpleNamespace(
             path=temp_dir / "test.exchange.json",
             hashing_secret=b"hashing-secret",
@@ -406,7 +465,13 @@ token_rules:
         ],
     )
     def test_tokenize_applies_exchange_rotation_iv_encoding(self, rotation_iv: bytes, expected_iv: str):
-        """Tokenize must use the same IV conversion as package."""
+        """
+        Tokenize must use the same IV conversion as package.
+
+        Args:
+            rotation_iv: Byte sequence containing the rotation iv used to exercise the behavior under test.
+            expected_iv: Expected iv used to check the actual result.
+        """
         exchange = SimpleNamespace(
             rotation_iv=rotation_iv,
             rotation_count=2,
@@ -423,7 +488,12 @@ token_rules:
     # ------------------------------------------------------------------
 
     def test_unsupported_input_type_rejected(self, temp_dir: Path):
-        """An unsupported input extension must cause a non-zero exit code."""
+        """
+        An unsupported input extension must cause a non-zero exit code.
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+        """
         exchange_config, private_key = self._create_exchange_config(temp_dir)
         bad_input = temp_dir / "input.json"
         bad_input.write_text("{}")

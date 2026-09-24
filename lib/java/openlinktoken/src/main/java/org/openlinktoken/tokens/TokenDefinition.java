@@ -35,16 +35,28 @@ public class TokenDefinition implements BaseTokenDefinition {
         this.definitions = TokenRegistry.loadAllTokens();
     }
 
+    /**
+     * Returns the version of the built-in token definitions.
+     *
+     * @return the definition version, {@code "2.0"}
+     */
     @Override
     public String getVersion() {
         return "2.0";
     }
 
+    /** {@inheritDoc} */
     @Override
     public Set<String> getTokenIdentifiers() {
         return definitions.keySet();
     }
 
+    /**
+     * Returns the attribute expressions for a token identifier.
+     *
+     * @param tokenId the token identifier
+     * @return the expressions for the identifier, or {@code null} if it is not registered
+     */
     @Override
     public List<AttributeExpression> getTokenDefinition(String tokenId) {
         return definitions.get(tokenId);

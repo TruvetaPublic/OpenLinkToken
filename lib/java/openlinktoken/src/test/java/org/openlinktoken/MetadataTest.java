@@ -14,11 +14,13 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+/** Tests metadata initialization and secret-hash behavior. */
 class MetadataTest {
 
     private static final String PRIMARY_SECRET_DIGEST = "PrimarySecretDigest";
     private static final String SECONDARY_SECRET_DIGEST = "SecondarySecretDigest";
 
+    /** Verifies initialization adds only the standard platform and version metadata. */
     @Test
     void testInitializeOnly() {
         Metadata metadata = new Metadata();
@@ -33,6 +35,7 @@ class MetadataTest {
         assertEquals(Metadata.DEFAULT_VERSION, result.get(Metadata.VERSION));
     }
 
+    /** Verifies a custom secret is stored under its requested digest key. */
     @Test
     void testAddHashedSecretWithCustomKey() {
         Metadata metadata = new Metadata();
@@ -45,6 +48,7 @@ class MetadataTest {
         assertNotNull(result.get(PRIMARY_SECRET_DIGEST));
     }
 
+    /** Verifies adding a second custom secret does not create the primary digest entry. */
     @Test
     void testAddHashedSecretWithSecondCustomKey() {
         Metadata metadata = new Metadata();
@@ -58,6 +62,7 @@ class MetadataTest {
         assertNotNull(result.get(SECONDARY_SECRET_DIGEST));
     }
 
+    /** Verifies two custom secrets are stored as distinct digest entries. */
     @Test
     void testAddHashedSecretWithBothCustomKeys() {
         Metadata metadata = new Metadata();
@@ -73,6 +78,7 @@ class MetadataTest {
         assertNotEquals(result.get(PRIMARY_SECRET_DIGEST), result.get(SECONDARY_SECRET_DIGEST));
     }
 
+    /** Verifies null secrets are omitted from metadata. */
     @Test
     void testAddHashedSecretWithNullSecrets() {
         Metadata metadata = new Metadata();
@@ -85,6 +91,7 @@ class MetadataTest {
         assertFalse(result.containsKey(SECONDARY_SECRET_DIGEST));
     }
 
+    /** Verifies empty secrets are omitted from metadata. */
     @Test
     void testAddHashedSecretWithEmptySecrets() {
         Metadata metadata = new Metadata();
@@ -97,6 +104,7 @@ class MetadataTest {
         assertFalse(result.containsKey(SECONDARY_SECRET_DIGEST));
     }
 
+    /** Verifies secure hashing returns a repeatable 64-character digest for nonempty input. */
     @Test
     void testCalculateSecureHashWithValidInput() {
         String input = "test-input";
@@ -110,6 +118,7 @@ class MetadataTest {
         assertEquals(hash, hash2);
     }
 
+    /** Verifies secure hashing matches the known SHA-256 digest for {@code hello}. */
     @Test
     void testCalculateSecureHashWithKnownValue() {
         String input = "hello";
@@ -119,6 +128,7 @@ class MetadataTest {
         assertEquals(expectedHash, actualHash);
     }
 
+    /** Verifies different input strings produce different secure hashes. */
     @Test
     void testCalculateSecureHashWithDifferentInputs() {
         String input1 = "input1";
@@ -130,18 +140,21 @@ class MetadataTest {
         assertNotEquals(hash1, hash2);
     }
 
+    /** Verifies null input has no secure hash. */
     @Test
     void testCalculateSecureHashWithNullInput() {
         String hash = Metadata.calculateSecureHash((String) null);
         assertNull(hash);
     }
 
+    /** Verifies empty input has no secure hash. */
     @Test
     void testCalculateSecureHashWithEmptyInput() {
         String hash = Metadata.calculateSecureHash("");
         assertNull(hash);
     }
 
+    /** Verifies Unicode input produces a repeatable secure hash. */
     @Test
     void testCalculateSecureHashWithUnicodeInput() {
         String input = "こんにちは";
@@ -154,6 +167,7 @@ class MetadataTest {
         assertEquals(hash, hash2);
     }
 
+    /** Verifies a raw secret byte array is stored using its byte-based digest. */
     @Test
     void testAddHashedSecretWithByteArray() {
         Metadata metadata = new Metadata();
@@ -166,6 +180,7 @@ class MetadataTest {
         assertEquals(Metadata.calculateSecureHash(rawSecret), result.get(PRIMARY_SECRET_DIGEST));
     }
 
+    /** Verifies raw-byte hashing matches an independently calculated SHA-256 digest. */
     @Test
     void testCalculateSecureHashWithRawBytes() throws Exception {
         byte[] input = new byte[] { (byte) 0xff, 0x00, 'h', 'i' };
@@ -184,12 +199,14 @@ class MetadataTest {
         assertEquals(expectedHash.toString(), Metadata.calculateSecureHash(input));
     }
 
+    /** Verifies legacy secret-hash constants are absent from {@link Metadata}. */
     @Test
     void testMetadataNoLongerDefinesSecretHashConstants() {
         assertThrows(NoSuchFieldException.class, () -> Metadata.class.getDeclaredField("HASHING_SECRET_HASH"));
         assertThrows(NoSuchFieldException.class, () -> Metadata.class.getDeclaredField("ENCRYPTION_SECRET_HASH"));
     }
 
+    /** Verifies the hash-calculation exception retains its message and cause. */
     @Test
     void testHashCalculationExceptionCreation() {
         String message = "Test message";

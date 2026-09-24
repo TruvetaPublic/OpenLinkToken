@@ -147,11 +147,12 @@ class TokenizationConfigLoader:
         attributes: Dict[str, AttributeMappingEntry],
         file_path: str,
     ) -> Dict[str, list]:
-        """Parse token rules and ensure each referenced field exists in attributes.
+        """
+        Parse token rules and ensure each referenced field exists in attributes.
 
         Args:
             raw_token_rules: Raw token_rules section from the YAML payload.
-            attributes: Parsed attributes used to validate referenced field ids.
+            attributes: Configured field-to-attribute mappings used to resolve fields referenced by token rules.
             file_path: Source path used for validation error context.
 
         Returns:
@@ -205,7 +206,15 @@ class TokenizationConfigLoader:
 
     @staticmethod
     def _validate_expression(expression: str, token_id: str, index: int, file_path: str) -> None:
-        """Raise ValueError if expression contains an unrecognised operator."""
+        """
+        Raise ValueError if expression contains an unrecognised operator.
+
+        Args:
+            expression: String containing the expression used to validate.
+            token_id: Identifier of the token or rule to process.
+            index: Position of the item in the sequence.
+            file_path: Filesystem path to the file handled by the operation.
+        """
         _KNOWN_OPERATORS = {"T", "U", "S", "D", "M", "R"}
         _OPERATOR_PATTERN = re.compile(r"\s*(?P<op>[A-Za-z]+)(?:\([^)]*\))?", re.IGNORECASE)
         for part in expression.split("|"):

@@ -31,7 +31,9 @@ from openlinktoken_pyspark.overlap_analyzer import OpenLinkTokenOverlapAnalyzer
 
 
 class TestTokenBuilder:
-    """Tests for TokenBuilder."""
+    """
+    Test TokenBuilder helpers for configuring and generating tokens.
+    """
 
     def test_build_simple_token(self):
         """Test building a simple custom token."""
@@ -65,7 +67,9 @@ class TestTokenBuilder:
 
 
 class TestCustomTokenDefinition:
-    """Tests for CustomTokenDefinition."""
+    """
+    Test construction and use of custom token definitions.
+    """
 
     def test_add_single_token(self):
         """Test adding a single token to definition."""
@@ -115,7 +119,12 @@ class TestCreateTokenGenerator:
         assert generator is not None
 
     def test_create_from_exchange_config_matches_direct_secrets(self, tmp_path):
-        """Exchange-config generator helper should match direct-secret output."""
+        """
+        Exchange-config generator helper should match direct-secret output.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         exchange_config_path, private_key_path, _ = _write_exchange_config(tmp_path)
         resolved_exchange = resolve_exchange_config_inputs(exchange_config_path, private_key_path=private_key_path)
 
@@ -136,7 +145,12 @@ class TestCreateTokenGenerator:
             assert analyzer._decrypt_token(generated_token) == analyzer._decrypt_token(expected_tokens[token_id])
 
     def test_create_from_exchange_config_accepts_direct_exchange_config_and_private_key_values(self, tmp_path):
-        """Direct exchange-config JSON and private-key PEM values should configure the helper."""
+        """
+        Direct exchange-config JSON and private-key PEM values should configure the helper.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         exchange_config_path, private_key_path, _ = _write_exchange_config(tmp_path)
         resolved_exchange = resolve_exchange_config_inputs(exchange_config_path, private_key_path=private_key_path)
 
@@ -178,7 +192,13 @@ class TestQuickToken:
         assert generator is not None
 
     def test_quick_token_from_exchange_config_matches_direct_secrets(self, tmp_path, monkeypatch):
-        """Exchange-config quick-token helper should match direct-secret output."""
+        """
+        Exchange-config quick-token helper should match direct-secret output.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
+        """
         exchange_config_path, _, sender_private_pem = _write_exchange_config(tmp_path)
         monkeypatch.setenv("OLT_TEST_PRIVATE_KEY", sender_private_pem.decode("utf-8"))
         resolved_exchange = resolve_exchange_config_inputs(
@@ -207,7 +227,12 @@ class TestQuickToken:
             assert analyzer._decrypt_token(generated_token) == analyzer._decrypt_token(expected_tokens[token_id])
 
     def test_quick_token_from_exchange_config_accepts_direct_exchange_config_and_private_key_values(self, tmp_path):
-        """Direct exchange-config JSON and private-key PEM values should work in quick-token helpers."""
+        """
+        Direct exchange-config JSON and private-key PEM values should work in quick-token helpers.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+        """
         exchange_config_path, private_key_path, _ = _write_exchange_config(tmp_path)
         resolved_exchange = resolve_exchange_config_inputs(exchange_config_path, private_key_path=private_key_path)
 
@@ -268,7 +293,12 @@ class TestExpressionHelp:
 
 
 def _sample_person_attributes():
-    """Build a representative attribute map for token-generation tests."""
+    """
+    Build a representative attribute map for token-generation tests.
+
+    Returns:
+        Built a representative attribute map for token-generation tests.
+    """
     return {
         FirstNameAttribute: "Alice",
         LastNameAttribute: "Wonderland",
@@ -279,7 +309,15 @@ def _sample_person_attributes():
 
 
 def _write_exchange_config(tmp_path: Path) -> tuple[Path, Path, bytes]:
-    """Create a test exchange config and matching sender private key file."""
+    """
+    Create a test exchange config and matching sender private key file.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+
+    Returns:
+        Created a test exchange config and matching sender private key file.
+    """
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     _, recipient_public_pem = generate_key_pair("P-256")
     exchange_config_path = tmp_path / "test.exchange.json"

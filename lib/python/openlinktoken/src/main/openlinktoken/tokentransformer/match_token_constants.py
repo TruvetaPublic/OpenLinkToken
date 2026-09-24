@@ -44,12 +44,28 @@ HEADER_KEY_KEY_ID = "kid"
 
 
 def is_supported_v1_token(token: str) -> bool:
-    """Return True when the token starts with a recognized V1 JWE prefix."""
+    """
+    Return True when the token starts with a recognized V1 JWE prefix.
+
+    Args:
+        token: Token value to inspect, transform, or compare.
+
+    Returns:
+        True when the supported v1 token condition holds; otherwise, False.
+    """
     return any(token.startswith(prefix) for prefix in SUPPORTED_V1_TOKEN_PREFIXES)
 
 
 def strip_supported_v1_token_prefix(token: str) -> str:
-    """Strip the recognized V1 JWE prefix from a token and return the JWE body."""
+    """
+    Strip the recognized V1 JWE prefix from a token and return the JWE body.
+
+    Args:
+        token: Token value to inspect, transform, or compare.
+
+    Returns:
+        Compact JWE token string after the supported V1 prefix is removed.
+    """
     for prefix in SUPPORTED_V1_TOKEN_PREFIXES:
         if token.startswith(prefix):
             return token[len(prefix) :]

@@ -11,8 +11,10 @@ import org.junit.jupiter.api.Test;
 import org.openlinktoken.attributes.general.StringAttribute;
 import org.openlinktoken.attributes.person.LastNameAttribute;
 
+/** Tests default field registration and custom field lookup. */
 class FieldRegistryTest {
 
+    /** Verifies the default registry contains the built-in field identifiers. */
     @Test
     void testCreateDefaultLoadsBuiltInAttributes() {
         var registry = FieldRegistry.createDefault();
@@ -22,6 +24,7 @@ class FieldRegistryTest {
         assertTrue(registry.getFieldIds().contains("String"));
     }
 
+    /** Verifies lookup returns the registered attribute instance. */
     @Test
     void testGetAttributeReturnsRegisteredInstance() {
         var registry = FieldRegistry.createDefault();
@@ -30,6 +33,7 @@ class FieldRegistryTest {
         assertEquals("FirstName", attribute.get().getName());
     }
 
+    /** Verifies an unknown field identifier has no registered attribute. */
     @Test
     void testGetAttributeReturnsEmptyForUnknownField() {
         var registry = FieldRegistry.createDefault();
@@ -37,6 +41,7 @@ class FieldRegistryTest {
         assertFalse(attribute.isPresent());
     }
 
+    /** Verifies field lookup returns its identifier and attribute class. */
     @Test
     void testGetFieldReturnsAttributeField() {
         var registry = FieldRegistry.createDefault();
@@ -46,6 +51,7 @@ class FieldRegistryTest {
         assertEquals(LastNameAttribute.class, field.get().getAttributeClass());
     }
 
+    /** Verifies the builder can register multiple custom fields for one attribute instance. */
     @Test
     void testBuilderRegistersCustomField() {
         var attribute = new StringAttribute();
@@ -65,6 +71,7 @@ class FieldRegistryTest {
         assertEquals(attribute, fatherAttr.get());
     }
 
+    /** Verifies building from defaults preserves the built-in fields. */
     @Test
     void testBuilderFromDefaultsIncludesBuiltIns() {
         var registry = FieldRegistry.Builder.fromDefaults().build();
@@ -72,6 +79,7 @@ class FieldRegistryTest {
         assertTrue(registry.getFieldIds().contains("LastName"));
     }
 
+    /** Verifies multiple field identifiers can share one attribute type and instance. */
     @Test
     void testMultipleFieldsSameAttributeType() {
         var stringAttr = new StringAttribute();

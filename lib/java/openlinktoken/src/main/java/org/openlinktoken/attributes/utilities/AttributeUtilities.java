@@ -138,22 +138,24 @@ public class AttributeUtilities {
             "NotAvailable" // Placeholder for data not available (no spaces)
     );
 
+    /** Prevents instantiation of this utility class. */
     private AttributeUtilities() {
         throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
     }
 
     /**
-     * Removes diacritic marks from the given string.
+     * Transliterates selected Latin extended characters and removes diacritic marks.
      *
      * This method performs the following steps:
      * 1. Trims the input string
      * 2. Normalizes the string using NFD form, which separates characters from
-     * their diacritical marks
-     * 3. Removes all diacritical marks using a predefined regular expression
-     * pattern
+     *    their diacritical marks
+     * 3. Removes all combining marks using a predefined regular expression
+     *    pattern
      *
      * @param value The string from which to remove diacritical marks
      * @return A new string with all diacritical marks removed
+     * @throws NullPointerException if {@code value} is {@code null}
      */
     public static String normalizeDiacritics(String value) {
         String trimmedValue = value.trim();

@@ -101,6 +101,12 @@ class TestUSPostalCodeAttribute:
         results = []
 
         def normalize_postal_code():
+            """
+            Normalize postal code.
+
+            Returns:
+                Normalized postal code.
+            """
             return self.us_postal_code_attribute.normalize(test_postal_code)
 
         with ThreadPoolExecutor(max_workers=thread_count) as executor:

@@ -19,11 +19,13 @@ import org.openlinktoken.tokentransformer.EncryptTokenTransformer;
 import org.openlinktoken.tokentransformer.HashTokenTransformer;
 import org.openlinktoken.tokentransformer.TokenTransformer;
 
+/** Tests pass-through tokenization, transformer ordering, and error propagation. */
 class PassthroughTokenizerTest {
     private TokenTransformer hashTransformerMock;
     private TokenTransformer encryptTransformerMock;
     private PassthroughTokenizer tokenizer;
 
+    /** Creates a tokenizer with mocked hash and encryption transformers. */
     @BeforeEach
     void setUp() {
         // Mocking TokenTransformer implementations (Hash and Encrypt)
@@ -39,6 +41,7 @@ class PassthroughTokenizerTest {
         tokenizer = new PassthroughTokenizer(transformers);
     }
 
+    /** Verifies null, empty, and whitespace-only input produces the blank token. */
     @Test
     void testTokenize_NullOrEmptyInput_ReturnsEmptyString() throws Exception {
         String resultNull = tokenizer.tokenize(null); // Test for null input
@@ -51,6 +54,7 @@ class PassthroughTokenizerTest {
         assertEquals(Token.BLANK, resultBlank);
     }
 
+    /** Verifies nonempty input is passed through the configured transformers. */
     @Test
     void testTokenize_ValidInput_ReturnsUnchangedValue() throws Exception {
         String inputValue = "test-input";
@@ -68,6 +72,7 @@ class PassthroughTokenizerTest {
         assertEquals("encrypted-token", result); // Check the final result after applying the transformers
     }
 
+    /** Verifies a tokenizer without transformers returns the original input. */
     @Test
     void testTokenize_ValidInput_NoTransformers_ReturnsOriginalValue() throws Exception {
         String inputValue = "test-input";
@@ -79,6 +84,7 @@ class PassthroughTokenizerTest {
         assertEquals(inputValue, result); // Verify that the result is the original value unchanged
     }
 
+    /** Verifies an exception from a transformer propagates from tokenization. */
     @Test
     void testTokenize_ValidInput_TransformerThrowsException() throws Exception {
         String inputValue = "test-input";
@@ -94,6 +100,7 @@ class PassthroughTokenizerTest {
         assertEquals("Transform error", exception.getMessage());
     }
 
+    /** Verifies multiple transformers receive each preceding transformer's output. */
     @Test
     void testTokenize_MultipleTransformers_AppliesInOrder() throws Exception {
         String inputValue = "original-value";
@@ -113,6 +120,7 @@ class PassthroughTokenizerTest {
         assertEquals(afterSecondTransform, result);
     }
 
+    /** Verifies special characters pass through unchanged when no transformers are configured. */
     @Test
     void testTokenize_SpecialCharacters_ReturnsUnchanged() throws Exception {
         String inputValue = "special!@#$%^&*()_+-=[]{}|;':\",./<>?";
@@ -124,6 +132,7 @@ class PassthroughTokenizerTest {
         assertEquals(inputValue, result); // Special characters should pass through unchanged
     }
 
+    /** Verifies Unicode characters pass through unchanged when no transformers are configured. */
     @Test
     void testTokenize_UnicodeCharacters_ReturnsUnchanged() throws Exception {
         String inputValue = "Hello 世界 🌍";

@@ -116,7 +116,12 @@ def test_inspector_rejects_invalid_protected_header() -> None:
 
 
 def main() -> int:
-    """Run the inspector tests as a simple executable script."""
+    """
+    Run the inspector tests as a simple executable script.
+
+    Returns:
+        Run the inspector tests as a simple executable script.
+    """
     tests = [
         test_inspector_help_lists_exchange_config,
         test_inspector_prints_decoded_protected_header,

@@ -17,7 +17,12 @@ PROGRAM = "print_exchange_envelope.py"
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments for exchange envelope inspection."""
+    """
+    Parse command-line arguments for exchange envelope inspection.
+
+    Returns:
+        Parsed command-line arguments for exchange envelope inspection.
+    """
     parser = argparse.ArgumentParser(
         prog=PROGRAM,
         description="Print an initiate-exchange JWE envelope, decode its protected header, and decrypt its payload.",
@@ -47,7 +52,17 @@ def inspect_exchange_envelope(
     private_key_path: Path | None,
     private_key_stdin: bool = False,
 ) -> dict[str, Any]:
-    """Load an exchange envelope and add decoded header and decrypted payload views."""
+    """
+    Load an exchange envelope and add decoded header and decrypted payload views.
+
+    Args:
+        exchange_config_path: Path to the exchange-config file to load.
+        private_key_path: Path to the private-key PEM file.
+        private_key_stdin: Whether to private key stdin.
+
+    Returns:
+        Loaded an exchange envelope and add decoded header and decrypted payload views.
+    """
     exchange_config = load_exchange_config(exchange_config_path)
     rendered_envelope = dict(exchange_config)
     rendered_envelope["protectedDecoded"] = _decode_protected_header(exchange_config["protected"])
@@ -57,7 +72,15 @@ def inspect_exchange_envelope(
 
 
 def _decode_protected_header(protected_header: str) -> dict[str, Any]:
-    """Decode the base64url-protected JOSE header into a JSON object."""
+    """
+    Decode the base64url-protected JOSE header into a JSON object.
+
+    Args:
+        protected_header: String containing the protected header used to decode.
+
+    Returns:
+        Decoded the base64url-protected JOSE header into a JSON object.
+    """
     padding = "=" * (-len(protected_header) % 4)
     try:
         protected_header_bytes = base64.urlsafe_b64decode(protected_header + padding)
@@ -71,7 +94,12 @@ def _decode_protected_header(protected_header: str) -> dict[str, Any]:
 
 
 def main() -> int:
-    """Run the helper and print the rendered envelope JSON."""
+    """
+    Run the helper and print the rendered envelope JSON.
+
+    Returns:
+        Run the helper and print the rendered envelope JSON.
+    """
     args = parse_args()
     exchange_config_path = Path(args.exchange_config).expanduser()
     private_key_path = Path(args.private_key).expanduser() if args.private_key is not None else None

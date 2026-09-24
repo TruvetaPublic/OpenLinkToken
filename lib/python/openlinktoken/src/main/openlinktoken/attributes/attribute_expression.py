@@ -94,12 +94,12 @@ class AttributeExpression:
         Create an error for failed expression evaluation.
 
         Args:
-            value: The value being processed.
+            value: Attribute value whose expression evaluation failed.
             expression: The expression being applied.
             inner_exception: The exception that occurred.
 
         Returns:
-            The error with a detailed message.
+            ValueError describing the failed expression and input value.
         """
         message = f"Unable to evaluate expression [{expression}] over value [{value}]."
         if inner_exception:
@@ -112,11 +112,11 @@ class AttributeExpression:
         Evaluate a single expression on the given value.
 
         Args:
-            value: The value to process.
+            value: Current attribute value to transform with the expression.
             expression: The expression to apply.
 
         Returns:
-            The processed value.
+            Attribute value after applying the requested expression.
         """
         if value is None or expression is None:
             raise cls._eval_error(value, expression)
@@ -159,7 +159,7 @@ class AttributeExpression:
         Substring expression S(start, end).
 
         Args:
-            value: The value to process.
+            value: Attribute value from which the expression extracts a substring.
             expression: The expression being applied.
             args: The arguments for the substring operation.
 
@@ -182,7 +182,7 @@ class AttributeExpression:
         Replace expression R(oldString, newString).
 
         Args:
-            value: The value to process.
+            value: Attribute value in which the expression replaces matching text.
             expression: The expression being applied.
             args: The arguments for the replace operation.
 
@@ -209,7 +209,7 @@ class AttributeExpression:
         RegEx match M(regex).
 
         Args:
-            value: The value to process.
+            value: Attribute value searched for matches to the expression's regular expression.
             expression: The expression being applied.
             args: The arguments for the match operation.
 
@@ -235,7 +235,7 @@ class AttributeExpression:
         If the date is not in the supported formats, an exception will be thrown.
 
         Args:
-            value: The value to process.
+            value: Date string to parse and format as ``yyyy-MM-dd``.
             expression: The expression being applied.
 
         Returns:

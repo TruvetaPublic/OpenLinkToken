@@ -25,7 +25,16 @@ from openlinktoken_cli.util.ec_key_utils import generate_key_pair
 
 
 def _generate_exchange_fixture(tmp_path: Path, hashing_secret: str) -> tuple[Path, Path, Path]:
-    """Generate an exchange config plus sender and recipient private key paths."""
+    """
+    Generate an exchange config plus sender and recipient private key paths.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+        hashing_secret: Secret used to generate the hashing.
+
+    Returns:
+        Generated an exchange config plus sender and recipient private key paths.
+    """
     recipient_private_pem, recipient_public_pem = generate_key_pair("P-256")
     recipient_private_key_path = tmp_path / "recipient.private.pem"
     recipient_public_key_path = tmp_path / "recipient.public.pem"
@@ -207,7 +216,12 @@ def test_rejects_private_key_that_matches_no_recipient() -> None:
 
 
 def main() -> int:
-    """Run the validator tests as a simple executable script."""
+    """
+    Run the validator tests as a simple executable script.
+
+    Returns:
+        Run the validator tests as a simple executable script.
+    """
     tests = [
         test_sender_private_key_decrypts_generated_exchange,
         test_recipient_private_key_decrypts_generated_exchange,

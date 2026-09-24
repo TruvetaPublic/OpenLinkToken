@@ -46,7 +46,7 @@ class PersonAttributesParquetWriter(PersonAttributesWriter):
         Write attributes to the Parquet file.
 
         Args:
-            attributes: A map of person attributes.
+            attributes: Person-attribute values to write to the Parquet output.
 
         Raises:
             IOError: If an I/O error occurs.

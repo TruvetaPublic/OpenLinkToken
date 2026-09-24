@@ -93,7 +93,12 @@ def test_build_exchange_envelope_round_trips_for_either_private_key():
 
 
 def test_resolve_private_key_by_kid_uses_matching_public_key_basename(tmp_path: Path):
-    """Kid resolution maps a matching public key file back to its private key PEM."""
+    """
+    Kid resolution maps a matching public key file back to its private key PEM.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+    """
     openlinktoken_dir = tmp_path / ".openlinktoken"
     openlinktoken_dir.mkdir()
 
@@ -116,7 +121,12 @@ def test_resolve_private_key_by_kid_uses_matching_public_key_basename(tmp_path: 
 
 
 def test_resolve_exchange_config_decodes_hashing_secret_and_identifies_sender_role(tmp_path: Path):
-    """Resolved exchange configs expose raw hashing-secret bytes and the active participant role."""
+    """
+    Resolved exchange configs expose raw hashing-secret bytes and the active participant role.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+    """
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     _, recipient_public_pem = generate_key_pair("P-256")
     exchange_config_path = tmp_path / "exchange.exchange.json"
@@ -152,7 +162,12 @@ def test_resolve_exchange_config_decodes_hashing_secret_and_identifies_sender_ro
 
 
 def test_derive_transport_encryption_key_matches_for_both_participants(tmp_path: Path):
-    """Sender and recipient should derive the same 32-byte transport key from the same config."""
+    """
+    Sender and recipient should derive the same 32-byte transport key from the same config.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+    """
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     recipient_private_pem, recipient_public_pem = generate_key_pair("P-256")
     exchange_config_path = tmp_path / "exchange.exchange.json"
@@ -181,7 +196,12 @@ def test_derive_transport_encryption_key_matches_for_both_participants(tmp_path:
 
 
 def test_load_exchange_config_rejects_future_v2_exchange_config(tmp_path: Path):
-    """Exchange-config version 2 should fail validation during load."""
+    """
+    Exchange-config version 2 should fail validation during load.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+    """
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     _, recipient_public_pem = generate_key_pair("P-256")
     payload = {
@@ -227,7 +247,12 @@ def test_load_exchange_config_rejects_future_v2_exchange_config(tmp_path: Path):
 
 
 def test_resolve_exchange_config_private_key_reads_explicit_private_key_path(tmp_path: Path):
-    """Explicit private-key paths should be read directly without keyring lookup."""
+    """
+    Explicit private-key paths should be read directly without keyring lookup.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+    """
     exchange_config_path, sender_private_pem = _write_current_exchange_config(tmp_path)
     loaded_exchange = load_exchange_config(exchange_config_path)
     private_key_path = tmp_path / "provided.private.pem"
@@ -239,7 +264,13 @@ def test_resolve_exchange_config_private_key_reads_explicit_private_key_path(tmp
 
 
 def test_resolve_exchange_config_private_key_reads_private_key_env(tmp_path: Path, monkeypatch):
-    """Named environment variables should supply private-key PEM bytes."""
+    """
+    Named environment variables should supply private-key PEM bytes.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+        monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
+    """
     exchange_config_path, sender_private_pem = _write_current_exchange_config(tmp_path)
     loaded_exchange = load_exchange_config(exchange_config_path)
     monkeypatch.setenv("OLT_TEST_PRIVATE_KEY", sender_private_pem.decode("utf-8"))
@@ -253,7 +284,13 @@ def test_resolve_exchange_config_private_key_reads_private_key_env(tmp_path: Pat
 
 
 def test_resolve_exchange_config_private_key_falls_back_to_olt_kid_lookup(tmp_path: Path, monkeypatch):
-    """Recipient kids should resolve against ~/.openlinktoken when no path or env is supplied."""
+    """
+    Recipient kids should resolve against ~/.openlinktoken when no path or env is supplied.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+        monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
+    """
     exchange_config_path, sender_private_pem = _write_current_exchange_config(tmp_path)
     loaded_exchange = load_exchange_config(exchange_config_path)
 
@@ -265,7 +302,13 @@ def test_resolve_exchange_config_private_key_falls_back_to_olt_kid_lookup(tmp_pa
 
 
 def test_resolve_exchange_config_inputs_loads_and_decrypts_from_private_key_env(tmp_path: Path, monkeypatch):
-    """Convenience helpers should load the config, resolve the private key, and decrypt the payload."""
+    """
+    Convenience helpers should load the config, resolve the private key, and decrypt the payload.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+        monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
+    """
     exchange_config_path, sender_private_pem = _write_current_exchange_config(tmp_path)
     monkeypatch.setenv("OLT_TEST_PRIVATE_KEY", sender_private_pem.decode("utf-8"))
 
@@ -281,7 +324,12 @@ def test_resolve_exchange_config_inputs_loads_and_decrypts_from_private_key_env(
 
 
 def test_resolve_exchange_config_inputs_accepts_direct_exchange_config_and_private_key_values(tmp_path: Path):
-    """Direct exchange-config JSON and private-key PEM values should be accepted without temp files or env vars."""
+    """
+    Direct exchange-config JSON and private-key PEM values should be accepted without temp files or env vars.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+    """
     exchange_config_path, sender_private_pem = _write_current_exchange_config(tmp_path)
 
     resolved_exchange = resolve_exchange_config_inputs(
@@ -296,7 +344,15 @@ def test_resolve_exchange_config_inputs_accepts_direct_exchange_config_and_priva
 
 
 def _write_current_exchange_config(tmp_path: Path) -> tuple[Path, bytes]:
-    """Create a version 1 exchange config plus matching ~/.openlinktoken sender key material."""
+    """
+    Create a version 1 exchange config plus matching ~/.openlinktoken sender key material.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+
+    Returns:
+        Created a version 1 exchange config plus matching ~/.openlinktoken sender key material.
+    """
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     _, recipient_public_pem = generate_key_pair("P-256")
     exchange_config_path = tmp_path / "current.exchange.json"
@@ -332,26 +388,46 @@ def test_default_exchange_config_path_returns_date_based_path():
 
 
 def test_load_exchange_config_rejects_both_path_and_value(tmp_path: Path):
-    """Providing both a path and a direct value must raise ValueError."""
+    """
+    Providing both a path and a direct value must raise ValueError.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+    """
     config_path = tmp_path / "config.exchange.json"
     with pytest.raises(ValueError, match="Cannot combine"):
         load_exchange_config(exchange_config_path=config_path, exchange_config_value={"version": 1})
 
 
 def test_load_exchange_config_rejects_nonexistent_path(tmp_path: Path):
-    """A path pointing to a nonexistent file must raise FileNotFoundError."""
+    """
+    A path pointing to a nonexistent file must raise FileNotFoundError.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+    """
     with pytest.raises(FileNotFoundError, match="was not found"):
         load_exchange_config(exchange_config_path=tmp_path / "missing.exchange.json")
 
 
 def test_load_exchange_config_rejects_non_file_path(tmp_path: Path):
-    """A path pointing to a directory instead of a file must raise OSError."""
+    """
+    A path pointing to a directory instead of a file must raise OSError.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+    """
     with pytest.raises(OSError, match="is not a readable file"):
         load_exchange_config(exchange_config_path=tmp_path)
 
 
 def test_load_exchange_config_rejects_invalid_json(tmp_path: Path):
-    """A file with malformed JSON must raise ValueError."""
+    """
+    A file with malformed JSON must raise ValueError.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+    """
     bad_file = tmp_path / "bad.exchange.json"
     bad_file.write_text("not-json", encoding="utf-8")
     with pytest.raises(ValueError, match="is not valid JSON"):
@@ -359,7 +435,12 @@ def test_load_exchange_config_rejects_invalid_json(tmp_path: Path):
 
 
 def test_resolve_exchange_config_private_key_rejects_multiple_inputs(tmp_path: Path):
-    """Combining path, env, and value inputs must raise ValueError."""
+    """
+    Combining path, env, and value inputs must raise ValueError.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+    """
     exchange_config_path, _ = _write_current_exchange_config(tmp_path)
     loaded = load_exchange_config(exchange_config_path)
     with pytest.raises(ValueError, match="Cannot combine"):
@@ -371,7 +452,12 @@ def test_resolve_exchange_config_private_key_rejects_multiple_inputs(tmp_path: P
 
 
 def test_read_private_key_env_rejects_missing_var(tmp_path: Path):
-    """A missing or empty environment variable must raise ValueError."""
+    """
+    A missing or empty environment variable must raise ValueError.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+    """
     exchange_config_path, _ = _write_current_exchange_config(tmp_path)
     loaded = load_exchange_config(exchange_config_path)
     with pytest.raises(ValueError, match="does not contain non-empty private key data"):
@@ -383,7 +469,12 @@ def test_read_private_key_env_rejects_missing_var(tmp_path: Path):
 
 
 def test_read_private_key_path_rejects_nonexistent(tmp_path: Path):
-    """A private key path that doesn't exist must raise FileNotFoundError."""
+    """
+    A private key path that doesn't exist must raise FileNotFoundError.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+    """
     exchange_config_path, _ = _write_current_exchange_config(tmp_path)
     loaded = load_exchange_config(exchange_config_path)
     with pytest.raises(FileNotFoundError, match="not found"):
@@ -391,13 +482,23 @@ def test_read_private_key_path_rejects_nonexistent(tmp_path: Path):
 
 
 def test_parse_exchange_config_value_rejects_non_object_json(tmp_path: Path):
-    """A JSON array instead of an object must be rejected as exchange config value."""
+    """
+    A JSON array instead of an object must be rejected as exchange config value.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+    """
     with pytest.raises(ValueError, match="must decode to a JSON object"):
         load_exchange_config(exchange_config_value="[1,2,3]")
 
 
 def test_resolve_exchange_config_exposes_rotation_iv_and_count(tmp_path: Path):
-    """Resolved exchange configs expose rotation_iv and rotation_count from the payload."""
+    """
+    Resolved exchange configs expose rotation_iv and rotation_count from the payload.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+    """
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     _, recipient_public_pem = generate_key_pair("P-256")
     exchange_config_path = tmp_path / "rotation.exchange.json"
@@ -434,7 +535,13 @@ def test_resolve_exchange_config_exposes_rotation_iv_and_count(tmp_path: Path):
     ],
 )
 def test_decode_rotation_iv_handles_optional_and_valid_values(payload, expected):
-    """Rotation IV decoding supports absent values and valid base64url payloads."""
+    """
+    Rotation IV decoding supports absent values and valid base64url payloads.
+
+    Args:
+        payload: Structured payload to parse, validate, or encrypt.
+        expected: Expected result against which the operation is checked.
+    """
     assert _decode_rotation_iv(payload) == expected
 
 
@@ -452,19 +559,34 @@ def test_decode_rotation_iv_rejects_invalid_base64():
 
 @pytest.mark.parametrize("value", [None, 0])
 def test_decode_rotation_count_defaults_to_zero(value):
-    """Missing and explicit zero rotation counts disable rotation."""
+    """
+    Missing and explicit zero rotation counts disable rotation.
+
+    Args:
+        value: rotationCount value under test, either None or zero.
+    """
     assert _decode_rotation_count({"rotationCount": value}) == 0
 
 
 @pytest.mark.parametrize("value", [1, 50])
 def test_decode_rotation_count_accepts_positive_integers(value):
-    """Positive integer rotation counts are preserved."""
+    """
+    Positive integer rotation counts are preserved.
+
+    Args:
+        value: Positive integer rotationCount value from the exchange configuration.
+    """
     assert _decode_rotation_count({"rotationCount": value}) == value
 
 
 @pytest.mark.parametrize("value", [-1, "1", True])
 def test_decode_rotation_count_rejects_invalid_values(value):
-    """Rotation counts reject non-positive, non-integer, and boolean values."""
+    """
+    Rotation counts reject non-positive, non-integer, and boolean values.
+
+    Args:
+        value: Invalid rotationCount value to reject.
+    """
     with pytest.raises(ValueError, match="invalid rotationCount"):
         _decode_rotation_count({"rotationCount": value})
 
@@ -476,13 +598,23 @@ def test_decode_bin_width_defaults_when_missing():
 
 @pytest.mark.parametrize("value", [0.1, 1])
 def test_decode_bin_width_accepts_positive_numbers(value):
-    """Positive numeric bin widths are normalized to floats."""
+    """
+    Positive numeric bin widths are normalized to floats.
+
+    Args:
+        value: Positive numeric binWidth value from the exchange configuration.
+    """
     assert _decode_bin_width({"binWidth": value}) == float(value)
 
 
 @pytest.mark.parametrize("value", [0, -0.1, "0.1", True])
 def test_decode_bin_width_rejects_invalid_values(value):
-    """Bin widths reject non-positive, non-numeric, and boolean values."""
+    """
+    Bin widths reject non-positive, non-numeric, and boolean values.
+
+    Args:
+        value: Invalid binWidth value to reject.
+    """
     with pytest.raises(ValueError, match="invalid binWidth"):
         _decode_bin_width({"binWidth": value})
 
@@ -506,13 +638,23 @@ def test_decode_dimension_bias_converts_numeric_values_to_float():
     ],
 )
 def test_decode_dimension_bias_rejects_invalid_values(value):
-    """Dimension bias requires a list containing only numeric values."""
+    """
+    Dimension bias requires a list containing only numeric values.
+
+    Args:
+        value: Invalid dimensionBias value to reject.
+    """
     with pytest.raises(ValueError, match="dimensionBias"):
         _decode_dimension_bias({"dimensionBias": value})
 
 
 def test_resolve_loaded_exchange_config_missing_rotation_iv_disables_rotation(tmp_path: Path):
-    """A payload without rotationIv resolves successfully with rotation_iv=b'' (rotation disabled)."""
+    """
+    A payload without rotationIv resolves successfully with rotation_iv=b'' (rotation disabled).
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+    """
     from openlinktoken.exchange_config import resolve_loaded_exchange_config
     from openlinktoken.exchange_jwe import decrypt_exchange_envelope
 
@@ -564,7 +706,12 @@ def test_resolve_loaded_exchange_config_missing_rotation_iv_disables_rotation(tm
 
 
 def test_resolve_loaded_exchange_config_zero_rotation_count_disables_rotation(tmp_path: Path):
-    """A payload with rotationCount of zero resolves successfully with rotation_count=0 (rotation disabled)."""
+    """
+    A payload with rotationCount of zero resolves successfully with rotation_count=0 (rotation disabled).
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+    """
     from openlinktoken.exchange_config import resolve_loaded_exchange_config
     from openlinktoken.exchange_jwe import decrypt_exchange_envelope
 

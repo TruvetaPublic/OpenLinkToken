@@ -30,9 +30,19 @@ class T4Token(Token):
         ]
 
     def get_identifier(self) -> str:
-        """Get the unique identifier for the token."""
+        """
+        Get the unique identifier for the token.
+
+        Returns:
+            The unique identifier for the token.
+        """
         return self.ID
 
     def get_definition(self) -> List[AttributeExpression]:
-        """Get the list of attribute expressions that define the token."""
+        """
+        Get the list of attribute expressions that define the token.
+
+        Returns:
+            The list of attribute expressions that define the token.
+        """
         return self._definition

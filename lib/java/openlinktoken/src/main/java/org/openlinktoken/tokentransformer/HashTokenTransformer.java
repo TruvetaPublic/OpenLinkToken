@@ -62,6 +62,7 @@ public class HashTokenTransformer implements TokenTransformer {
      * <p>
      * The token is transformed using HMAC SHA256 algorithm.
      *
+     * @param token the token to hash
      * @return hashed token in <code>base64</code> format.
      *
      * @throws java.lang.IllegalArgumentException <code>null</code> or blank token
@@ -83,11 +84,24 @@ public class HashTokenTransformer implements TokenTransformer {
         }
     }
 
+    /**
+     * Writes the persistent hashing secret used to rebuild the transient MAC after deserialization.
+     *
+     * @param oos the object output stream
+     * @throws IOException if serialization fails
+     */
     private void writeObject(ObjectOutputStream oos) throws IOException {
         oos.defaultWriteObject(); // Serializes hashingSecret
     }
 
     // Custom deserialization
+    /**
+     * Restores the hashing secret and reconstructs the transient MAC state.
+     *
+     * @param ois the object input stream
+     * @throws IOException if deserialization or MAC reconstruction fails
+     * @throws ClassNotFoundException if a serialized class cannot be found
+     */
     private void readObject(ObjectInputStream ois)
             throws IOException, ClassNotFoundException {
         ois.defaultReadObject(); // Deserializes hashingSecret
@@ -98,6 +112,12 @@ public class HashTokenTransformer implements TokenTransformer {
         }
     }
 
+    /**
+     * Initializes the HMAC and Base64 encoder, or clears them when no secret is configured.
+     *
+     * @throws NoSuchAlgorithmException if HMAC-SHA256 is unavailable
+     * @throws InvalidKeyException if the configured secret cannot initialize the MAC
+     */
     private void rebuildMac() throws NoSuchAlgorithmException, InvalidKeyException {
         if (this.hashingSecret == null || this.hashingSecret.length == 0) {
             this.mac = null;

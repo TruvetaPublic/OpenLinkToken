@@ -27,6 +27,7 @@ public class T3Token implements Token {
 
     private final ArrayList<AttributeExpression> definition = new ArrayList<>();
 
+    /** Builds the attribute-expression definition for token T3. */
     public T3Token() {
         definition.add(new AttributeExpression(FieldIds.LAST_NAME.getFieldId(), LastNameAttribute.class, "T|U"));
         definition.add(new AttributeExpression(FieldIds.FIRST_NAME.getFieldId(), FirstNameAttribute.class, "T|U"));
@@ -34,11 +35,13 @@ public class T3Token implements Token {
         definition.add(new AttributeExpression(FieldIds.BIRTH_DATE.getFieldId(), BirthDateAttribute.class, "T|D"));
     }
 
+    /** {@inheritDoc} */
     @Override
     public String getIdentifier() {
         return ID;
     }
 
+    /** {@inheritDoc} */
     @Override
     public ArrayList<AttributeExpression> getDefinition() {
         return definition;

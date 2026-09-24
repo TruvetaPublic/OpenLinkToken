@@ -15,19 +15,39 @@ class TestAgeAttribute:
 
     @pytest.fixture
     def age_attribute(self):
-        """Create a default AgeAttribute."""
+        """
+        Create a default AgeAttribute.
+
+        Returns:
+            Created a default AgeAttribute.
+        """
         return AgeAttribute()
 
     def test_get_name_should_return_age(self, age_attribute):
-        """Test that getName returns 'Age'."""
+        """
+        Test that getName returns 'Age'.
+
+        Args:
+            age_attribute: Age attribute instance supplied to the token definition.
+        """
         assert age_attribute.get_name() == "Age"
 
     def test_get_aliases_should_return_age_alias(self, age_attribute):
-        """Test that getAliases returns ['Age']."""
+        """
+        Test that getAliases returns ['Age'].
+
+        Args:
+            age_attribute: Age attribute instance supplied to the token definition.
+        """
         assert age_attribute.get_aliases() == ["Age"]
 
     def test_normalize_valid_age_should_normalize_to_integer(self, age_attribute):
-        """Test normalization of valid age values."""
+        """
+        Test normalization of valid age values.
+
+        Args:
+            age_attribute: Age attribute instance supplied to the token definition.
+        """
         assert age_attribute.normalize("25") == "25"
         assert age_attribute.normalize("0") == "0"
         assert age_attribute.normalize("120") == "120"
@@ -35,7 +55,12 @@ class TestAgeAttribute:
         assert age_attribute.normalize("100") == "100"
 
     def test_normalize_invalid_age_format_should_raise_exception(self, age_attribute):
-        """Test that invalid age formats raise exceptions."""
+        """
+        Test that invalid age formats raise exceptions.
+
+        Args:
+            age_attribute: Age attribute instance supplied to the token definition.
+        """
         with pytest.raises(ValueError):
             age_attribute.normalize("25.5")
         with pytest.raises(ValueError):
@@ -46,7 +71,12 @@ class TestAgeAttribute:
             age_attribute.normalize(None)
 
     def test_validate_valid_age_should_return_true(self, age_attribute):
-        """Test validation of valid age values."""
+        """
+        Test validation of valid age values.
+
+        Args:
+            age_attribute: Age attribute instance supplied to the token definition.
+        """
         assert age_attribute.validate("0") is True
         assert age_attribute.validate("25") is True
         assert age_attribute.validate("120") is True
@@ -54,7 +84,12 @@ class TestAgeAttribute:
         assert age_attribute.validate("  50  ") is True
 
     def test_validate_invalid_age_should_return_false(self, age_attribute):
-        """Test validation of invalid age values."""
+        """
+        Test validation of invalid age values.
+
+        Args:
+            age_attribute: Age attribute instance supplied to the token definition.
+        """
         # Out of range
         assert age_attribute.validate("-1") is False
         assert age_attribute.validate("121") is False
@@ -68,7 +103,12 @@ class TestAgeAttribute:
         assert age_attribute.validate(None) is False
 
     def test_normalize_thread_safety(self, age_attribute):
-        """Test thread safety of normalize method with barrier-style synchronization."""
+        """
+        Test thread safety of normalize method with barrier-style synchronization.
+
+        Args:
+            age_attribute: Age attribute instance supplied to the token definition.
+        """
         thread_count = 100
         test_age = "  42  "
         results = []
@@ -77,6 +117,9 @@ class TestAgeAttribute:
         start_event = threading.Event()
 
         def normalize_value():
+            """
+            Normalize value.
+            """
             try:
                 # Wait for the signal to start
                 start_event.wait(timeout=10)
@@ -105,7 +148,12 @@ class TestAgeAttribute:
             assert result == "42"
 
     def test_serialization(self, age_attribute):
-        """Test serialization and deserialization of the attribute."""
+        """
+        Test serialization and deserialization of the attribute.
+
+        Args:
+            age_attribute: Age attribute instance supplied to the token definition.
+        """
         # Serialize the attribute
         serialized_data = pickle.dumps(age_attribute)
 
@@ -129,7 +177,12 @@ class TestAgeAttribute:
             )
 
     def test_validate_boundary_values_should_validate_correctly(self, age_attribute):
-        """Test boundary value validation."""
+        """
+        Test boundary value validation.
+
+        Args:
+            age_attribute: Age attribute instance supplied to the token definition.
+        """
         # Lower boundary
         assert age_attribute.validate("0") is True
         assert age_attribute.validate("-1") is False

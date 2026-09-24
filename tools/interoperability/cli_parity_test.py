@@ -20,7 +20,12 @@ RESET = "\033[0m"
 
 
 def find_repo_root():
-    """Find the repository root directory."""
+    """
+    Find the repository root directory.
+
+    Returns:
+        Found the repository root directory.
+    """
     current = Path(__file__).resolve()
     while current != current.parent:
         if (current / ".git").exists():
@@ -30,7 +35,15 @@ def find_repo_root():
 
 
 def run_python_cli(*args):
-    """Run Python CLI and return output."""
+    """
+    Run Python CLI and return output.
+
+    Args:
+        args: Additional positional arguments to pass to the command or wrapped operation.
+
+    Returns:
+        Run Python CLI and return output.
+    """
     repo_root = find_repo_root()
     cli_dir = repo_root / "lib/python/openlinktoken-cli"
 
@@ -143,7 +156,12 @@ def test_version_flag():
 
 
 def main():
-    """Run all CLI parity tests."""
+    """
+    Run all CLI parity tests.
+
+    Returns:
+        Run all CLI parity tests.
+    """
     print(f"\n{YELLOW}{'=' * 70}{RESET}")
     print(f"{YELLOW}Open Link Token Python CLI Tests{RESET}")
     print(f"{YELLOW}{'=' * 70}{RESET}")

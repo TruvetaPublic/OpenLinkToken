@@ -43,6 +43,9 @@ class ExtensionRegistry:
 
         Uses the ``OLT_EXTENSIONS_DIR`` environment variable when set;
         otherwise defaults to ``~/.openlinktoken/extensions/``.
+
+        Returns:
+            The base directory for installed extensions.
         """
         env_override = os.environ.get("OLT_EXTENSIONS_DIR")
         if env_override:
@@ -54,7 +57,12 @@ class ExtensionRegistry:
 
     @staticmethod
     def get_registry_path() -> Path:
-        """Return the full path to the registry JSON file."""
+        """
+        Return the full path to the registry JSON file.
+
+        Returns:
+            The full path to the registry JSON file.
+        """
         return ExtensionRegistry.get_extensions_dir() / "registry.json"
 
     @staticmethod
@@ -63,6 +71,9 @@ class ExtensionRegistry:
         Load and return the registry contents.
 
         Returns an empty dict if the registry file does not exist or cannot be parsed.
+
+        Returns:
+            Loaded and return the registry contents.
         """
         registry_path = ExtensionRegistry.get_registry_path()
         if not registry_path.exists():
@@ -124,7 +135,14 @@ class ExtensionRegistry:
 
     @staticmethod
     def update_state(name: str, *, disabled: bool, error: Optional[str] = None) -> None:
-        """Persist the loader state for an installed extension atomically."""
+        """
+        Persist the loader state for an installed extension atomically.
+
+        Args:
+            name: Name identifying the item being processed.
+            disabled: Whether to disabled.
+            error: String containing the error used to update.
+        """
         registry = ExtensionRegistry.load()
         if name not in registry:
             return
@@ -136,7 +154,16 @@ class ExtensionRegistry:
 
     @staticmethod
     def replace_extension(name: str, metadata: dict[str, Any]) -> dict[str, Any]:
-        """Return a registry copy with *name* replaced, without writing it."""
+        """
+        Return a registry copy with *name* replaced, without writing it.
+
+        Args:
+            name: Name identifying the item being processed.
+            metadata: Metadata to validate, normalize, or serialize.
+
+        Returns:
+            A registry copy with *name* replaced, without writing it.
+        """
         registry = ExtensionRegistry.load()
         registry[name] = metadata
         return registry

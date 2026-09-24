@@ -53,6 +53,8 @@ public class TokenGenerator implements Serializable {
 
     /**
      * Returns the service-loaded inference provider, if one was discovered at class initialization.
+     *
+     * @return the discovered provider, or an empty optional if none was found
      */
     private static Optional<InferenceSignatureProvider> findProvider() {
         return PROVIDER;
@@ -75,7 +77,7 @@ public class TokenGenerator implements Serializable {
      * Initializes the token generator with an explicit tokenizer.
      *
      * @param tokenDefinition      the token definition.
-     * @param tokenizer            optional tokenizer implementation. Use
+     * @param tokenizer            the tokenizer implementation. Use
      *                             {@link PassthroughTokenizer} for plain mode.
      */
     public TokenGenerator(BaseTokenDefinition tokenDefinition, Tokenizer tokenizer) {
@@ -114,6 +116,7 @@ public class TokenGenerator implements Serializable {
      *
      * @return the normalized token signature, or {@code null} when required data is missing
      *         or invalid
+     * @throws IllegalArgumentException if {@code personAttributes} is {@code null}
      */
     @Deprecated(since = "2.1.0", forRemoval = false)
     protected String getTokenSignature(String tokenId, Map<Class<? extends Attribute>, String> personAttributes,
@@ -211,6 +214,8 @@ public class TokenGenerator implements Serializable {
     /**
      * Apply a pre-computed inference signature as a token in the result.
      *
+     * <p>If tokenization fails, the rule is recorded with {@link Token#BLANK}.
+     *
      * @param result    the token generator result to update
      * @param tokenId   the token identifier (e.g. {@code "ML1"})
      * @param signature the pre-computed hex-encoded signature string
@@ -254,18 +259,15 @@ public class TokenGenerator implements Serializable {
         return signatures;
     }
 
-    /*
-     * Get token for a given token identifier.
+    /**
+     * Gets a token for an identifier using the legacy class-keyed attribute map.
      *
-     * @param tokenId the token identifier.
-     *
-     * @param personAttributes the person attributes map.
-     *
-     * @param result the token generator result.
-     *
-     * @return the token using the token definition for the given token identifier.
-     *
-     * @throws TokenGenerationException in case of failure to generate the token.
+     * @param tokenId the token identifier
+     * @param personAttributes the person attributes keyed by attribute class
+     * @param result the result object that receives invalid attribute names
+     * @return the generated token, or {@code null} if required data is missing or invalid
+     * @throws TokenGenerationException if tokenization fails
+     * @deprecated Use field-ID-keyed attributes with {@link #getAllTokensViaFieldId(Map)}.
      */
     @Deprecated(since = "2.1.0", forRemoval = false)
     protected String getToken(String tokenId, Map<Class<? extends Attribute>, String> personAttributes,
@@ -287,7 +289,8 @@ public class TokenGenerator implements Serializable {
      *
      * @param result     the token generator result to update
      * @param tokenId    the token identifier key to store the result under
-     * @param tokenValue the pre-hashed token value, or {@code null}/blank to record blank
+     * @param tokenValue the pre-hashed token value, or {@code null} or {@link Token#BLANK}
+     *                   to record a blank token
      */
     public void storeRawToken(TokenGeneratorResult result, String tokenId, String tokenValue) {
         if (tokenValue == null || Token.BLANK.equals(tokenValue)) {
@@ -311,6 +314,8 @@ public class TokenGenerator implements Serializable {
     /**
      * Keeps encryption and other post-hash transformations while preventing a pre-hashed value
      * from being hashed again.
+     *
+     * @return the configured transformers other than hash transformers
      */
     private List<TokenTransformer> encryptOnlyTransformers() {
         return tokenizer.getTokenTransformerList().stream()
@@ -320,6 +325,9 @@ public class TokenGenerator implements Serializable {
 
     /**
      * Checks whether the discovered provider owns this token and is enabled for use.
+     *
+     * @param tokenId the token identifier to check
+     * @return {@code true} if the active provider owns the identifier
      */
     private boolean hasActiveInferenceProvider(String tokenId) {
         Optional<InferenceSignatureProvider> provider = findProvider();
@@ -329,6 +337,10 @@ public class TokenGenerator implements Serializable {
     /**
      * Delegates signature generation to the active provider while converting provider failures
      * into a missing signature so normal token generation can continue.
+     *
+     * @param tokenId the token identifier owned by the provider
+     * @param personAttributes the field-ID-keyed values for one record
+     * @return the generated signature, or {@code null} if no active provider succeeds
      */
     private String getInferenceSignature(String tokenId, Map<String, String> personAttributes) {
         Optional<InferenceSignatureProvider> provider = findProvider();
@@ -345,6 +357,12 @@ public class TokenGenerator implements Serializable {
 
     /**
      * Applies the appropriate tokenizer and records blank output for the originating token rule.
+     *
+     * @param tokenId the token identifier associated with the signature
+     * @param signature the token signature to tokenize
+     * @param result the result object that receives blank-token information
+     * @return the token produced by the selected tokenizer
+     * @throws TokenGenerationException if tokenization fails
      */
     private String tokenizeSignature(String tokenId, String signature, TokenGeneratorResult result)
             throws TokenGenerationException {
@@ -364,6 +382,9 @@ public class TokenGenerator implements Serializable {
 
     /**
      * Adapts the legacy class-keyed input to the field-keyed form used by inference providers.
+     *
+     * @param personAttributes the person attributes keyed by attribute class
+     * @return a field-ID-keyed map containing attributes known to this generator
      */
     private Map<String, String> toFieldIdMap(Map<Class<? extends Attribute>, String> personAttributes) {
         var fields = new HashMap<String, String>();
@@ -434,6 +455,7 @@ public class TokenGenerator implements Serializable {
      * @param result           the token generator result.
      *
      * @return the token signature, or null if required fields are missing or invalid.
+     * @throws IllegalArgumentException if {@code personAttributes} is {@code null}
      */
     protected String getTokenSignatureViaFieldId(String tokenId, Map<String, String> personAttributes,
             TokenGeneratorResult result) {
@@ -559,6 +581,9 @@ public class TokenGenerator implements Serializable {
     /**
      * Resolves an expression's explicit field ID, retaining the attribute-name fallback for
      * definitions created through the legacy class-based API.
+     *
+     * @param expression the attribute expression whose field ID is needed
+     * @return its explicit field ID, the legacy attribute-name fallback, or {@code null} if unresolved
      */
     private String resolveFieldId(AttributeExpression expression) {
         if (expression.getFieldId() != null) {
@@ -572,6 +597,10 @@ public class TokenGenerator implements Serializable {
     /**
      * Resolves the attribute registered for a field, falling back to the expression's class
      * when the custom field registry has no entry.
+     *
+     * @param expression the expression that identifies the attribute class
+     * @param resolvedFieldId the field ID to look up
+     * @return the registered attribute, the class-based fallback, or {@code null} if neither is available
      */
     private Attribute resolveAttribute(AttributeExpression expression, String resolvedFieldId) {
         // Try field registry first

@@ -21,7 +21,15 @@ class TestAutoOutputCommands:
 
     @pytest.fixture
     def temp_dir(self, tmp_path):
-        """Create temporary directory with test input CSV."""
+        """
+        Create temporary directory with test input CSV.
+
+        Args:
+            tmp_path: Temporary directory supplied by pytest for files created by the test.
+
+        Returns:
+            Temporary directory supplied by pytest for ZIP archive tests.
+        """
         input_csv = tmp_path / "input.csv"
         csv_content = (
             "RecordId,FirstName,LastName,PostalCode,Sex,BirthDate,SocialSecurityNumber\n"
@@ -32,7 +40,16 @@ class TestAutoOutputCommands:
         return tmp_path
 
     def _create_exchange_config(self, temp_dir: Path, name: str = "test-exchange") -> tuple[Path, Path]:
-        """Create an exchange config and return ``(exchange_config_path, private_key_path)``."""
+        """
+        Create an exchange config and return ``(exchange_config_path, private_key_path)``.
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+            name: Name identifying the item being processed.
+
+        Returns:
+            Created an exchange config and return ``(exchange_config_path, private_key_path)``.
+        """
         _, partner_public_pem = generate_key_pair("P-256")
         partner_public_key_path = temp_dir / f"{name}.partner.public.pem"
         partner_public_key_path.write_bytes(partner_public_pem)
@@ -62,7 +79,12 @@ class TestAutoOutputCommands:
     # ------------------------------------------------------------------
 
     def test_tokenize_auto_output_csv(self, temp_dir):
-        """Test tokenize with auto-generated .csv output (suffix '_tokenized')."""
+        """
+        Test tokenize with auto-generated .csv output (suffix '_tokenized').
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+        """
         input_csv = temp_dir / "input.csv"
         exchange_config, private_key = self._create_exchange_config(temp_dir, "tokenize-auto")
 
@@ -82,7 +104,12 @@ class TestAutoOutputCommands:
         assert (temp_dir / "input_tokenized.metadata.json").exists()
 
     def test_tokenize_explicit_output_override(self, temp_dir):
-        """Test that explicit --output override still works for tokenize."""
+        """
+        Test that explicit --output override still works for tokenize.
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+        """
         input_csv = temp_dir / "input.csv"
         custom_output = temp_dir / "manual_output.parquet"
         exchange_config, private_key = self._create_exchange_config(temp_dir, "tokenize-override")
@@ -106,7 +133,12 @@ class TestAutoOutputCommands:
     # ------------------------------------------------------------------
 
     def test_encrypt_auto_output_csv(self, temp_dir):
-        """Test encrypt with auto-generated .csv output (suffix '_encrypted')."""
+        """
+        Test encrypt with auto-generated .csv output (suffix '_encrypted').
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+        """
         input_csv = temp_dir / "hashed.csv"
         input_csv.write_text("RecordId,RuleId,Token\ntest-001,T1,abc\n")
         exchange_config, private_key = self._create_exchange_config(temp_dir, "encrypt-auto")
@@ -128,7 +160,12 @@ class TestAutoOutputCommands:
         assert expected_output.exists()
 
     def test_encrypt_explicit_output_override(self, temp_dir):
-        """Test that explicit --output override still works for encrypt."""
+        """
+        Test that explicit --output override still works for encrypt.
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+        """
         input_csv = temp_dir / "hashed.csv"
         input_csv.write_text("RecordId,RuleId,Token\ntest-001,T1,abc\n")
         exchange_config, private_key = self._create_exchange_config(temp_dir, "encrypt-override")
@@ -153,7 +190,12 @@ class TestAutoOutputCommands:
 
     # ------------------------------------------------------------------
     def test_decrypt_auto_output_csv(self, temp_dir):
-        """Test decrypt with auto-generated .csv output (suffix '_decrypted')."""
+        """
+        Test decrypt with auto-generated .csv output (suffix '_decrypted').
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+        """
         input_csv = temp_dir / "encrypted.csv"
         input_csv.write_text("RecordId,RuleId,Token\ntest-001,T1,abc\n")
         exchange_config, private_key = self._create_exchange_config(temp_dir, "decrypt-auto")
@@ -179,7 +221,12 @@ class TestAutoOutputCommands:
     # ------------------------------------------------------------------
 
     def test_package_auto_output_zip(self, temp_dir):
-        """Test package with auto-generated .zip output (even if input is CSV)."""
+        """
+        Test package with auto-generated .zip output (even if input is CSV).
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+        """
         input_csv = temp_dir / "input.csv"
         exchange_config, private_key = self._create_exchange_config(temp_dir, "package-auto")
 
@@ -201,7 +248,12 @@ class TestAutoOutputCommands:
         assert expected_output.exists()
 
     def test_decrypt_explicit_output_override(self, temp_dir):
-        """Test that explicit --output override still works for decrypt."""
+        """
+        Test that explicit --output override still works for decrypt.
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+        """
         input_csv = temp_dir / "encrypted.csv"
         input_csv.write_text("RecordId,RuleId,Token\ntest-001,T1,abc\n")
         exchange_config, private_key = self._create_exchange_config(temp_dir, "decrypt-override")
@@ -225,7 +277,12 @@ class TestAutoOutputCommands:
         assert custom_output.exists()
 
     def test_package_explicit_output_override(self, temp_dir):
-        """Test that explicit --output override still works for package."""
+        """
+        Test that explicit --output override still works for package.
+
+        Args:
+            temp_dir: Directory used to store temporary input and output files.
+        """
         input_csv = temp_dir / "input.csv"
         exchange_config, private_key = self._create_exchange_config(temp_dir, "package-override")
 

@@ -29,6 +29,9 @@ import org.openlinktoken.core.ai.tokentransformer.rotation.RotationMatrixGenerat
  */
 public final class RotationMatrixInteropHarness {
 
+    /**
+     * Prevents instances of this command-line harness.
+     */
     private RotationMatrixInteropHarness() {
     }
 
@@ -104,6 +107,12 @@ public final class RotationMatrixInteropHarness {
         return Double.toString(value);
     }
 
+    /**
+     * Escapes the backslashes and quotes needed to place a string in a JSON value.
+     *
+     * @param s string value to escape
+     * @return escaped string content without surrounding quotes
+     */
     private static String jsonEscape(String s) {
         return s.replace("\\", "\\\\").replace("\"", "\\\"");
     }

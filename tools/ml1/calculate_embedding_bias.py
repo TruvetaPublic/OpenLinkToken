@@ -20,7 +20,16 @@ def calculate_embedding_bias(
     sample_size: int,
     seed: int,
 ) -> None:
-    """Calculate the per-dimension median of valid sampled embeddings."""
+    """
+    Calculate the per-dimension median of valid sampled embeddings.
+
+    Args:
+        input_path: Path to the input file to read.
+        output_path: Destination path for the generated output file.
+        dimension: Numeric dimension value used to calculate.
+        sample_size: Sample size used as input.
+        seed: Numeric seed value used to calculate.
+    """
     if dimension <= 0 or sample_size <= 0:
         raise ValueError("dimension and sample_size must be positive")
 
@@ -46,7 +55,12 @@ def calculate_embedding_bias(
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments."""
+    """
+    Parse command-line arguments.
+
+    Returns:
+        Parsed command-line arguments.
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, required=True, help="Input .npy embedding file")
     parser.add_argument("--output", type=Path, required=True, help="Output JSON bias file")

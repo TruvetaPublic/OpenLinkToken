@@ -103,19 +103,40 @@ class SocialSecurityNumberAttribute(BaseAttribute):
     }
 
     def __init__(self):
+        """
+        Initialize the instance.
+        """
         validation_rules = [NotInValidator(self.INVALID_SSNS), RegexValidator(self.SSN_REGEX)]
         super().__init__(validation_rules)
 
     def get_name(self) -> str:
+        """
+        Retrieve name.
+
+        Returns:
+            The name.
+        """
         return self.NAME
 
     def get_aliases(self) -> List[str]:
+        """
+        Retrieve aliases.
+
+        Returns:
+            The aliases.
+        """
         return self.ALIASES.copy()
 
     def normalize(self, original_value: str) -> str:
         """
         Normalize the social security number value. Remove any dashes and format the
         value as xxx-xx-xxxx. If not possible return the original but trimmed value.
+
+        Args:
+            original_value: String containing the original value used to normalize.
+
+        Returns:
+            Normalized the social security number value. Remove any dashes and format the.
         """
         if not original_value:
             return original_value
@@ -142,13 +163,29 @@ class SocialSecurityNumberAttribute(BaseAttribute):
         return self._format_with_dashes(normalized_value)
 
     def _pad_with_zeros(self, ssn: str) -> str:
-        """Pad SSN with leading zeros if between 7-8 digits."""
+        """
+        Pad SSN with leading zeros if between 7-8 digits.
+
+        Args:
+            ssn: Social Security number string to pad with leading zeroes when its length is valid.
+
+        Returns:
+            SSN string padded to the required length when it contains seven or eight digits.
+        """
         if self.MIN_SSN_LENGTH <= len(ssn) < self.SSN_LENGTH:
             return self.SSN_FORMAT.format(int(ssn))
         return ssn
 
     def _format_with_dashes(self, value: str) -> str:
-        """Format 9-digit SSN with dashes (123-45-6789)."""
+        """
+        Format 9-digit SSN with dashes (123-45-6789).
+
+        Args:
+            value: Nine-digit SSN to format with standard hyphen separators.
+
+        Returns:
+            Formatted 9-digit SSN with dashes (123-45-6789).
+        """
         if len(value) == self.SSN_LENGTH:
             area_number = value[:3]
             group_number = value[3:5]

@@ -23,7 +23,12 @@ PROGRAM = "inspect_exchange_config.py"
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments."""
+    """
+    Parse command-line arguments.
+
+    Returns:
+        Parsed command-line arguments.
+    """
     parser = argparse.ArgumentParser(
         prog=PROGRAM,
         description=(
@@ -59,13 +64,26 @@ def parse_args() -> argparse.Namespace:
 
 
 def _decode_base64url(value: str) -> bytes:
-    """Decode an unpadded base64url string."""
+    """
+    Decode an unpadded base64url string.
+
+    Args:
+        value: Base64url-encoded text to decode.
+
+    Returns:
+        Decoded an unpadded base64url string.
+    """
     padding = "=" * (-len(value) % 4)
     return base64.urlsafe_b64decode(value + padding)
 
 
 def _print_summary(exchange: ResolvedExchangeConfig) -> None:
-    """Print a human-readable summary of the resolved exchange config."""
+    """
+    Print a human-readable summary of the resolved exchange config.
+
+    Args:
+        exchange: Exchange value to print.
+    """
     p = exchange.payload
 
     print("Exchange Config Summary")
@@ -106,7 +124,12 @@ def _print_summary(exchange: ResolvedExchangeConfig) -> None:
 
 
 def main() -> int:
-    """Decrypt an exchange config and print its contents."""
+    """
+    Decrypt an exchange config and print its contents.
+
+    Returns:
+        Decrypted an exchange config and print its contents.
+    """
     args = parse_args()
 
     try:

@@ -94,7 +94,13 @@ class TestRecordIdAttribute:
         ],
     )
     def test_validate_parametrized(self, test_value, expected_valid):
-        """Parametrized test for validation with various inputs."""
+        """
+        Parametrized test for validation with various inputs.
+
+        Args:
+            test_value: Record identifier to validate.
+            expected_valid: Whether the record identifier should pass validation.
+        """
         assert self.record_id_attribute.validate(test_value) == expected_valid
 
     @pytest.mark.parametrize(
@@ -112,7 +118,13 @@ class TestRecordIdAttribute:
         ],
     )
     def test_normalize_parametrized(self, test_value, expected_normalized):
-        """Parametrized test for normalization with various inputs."""
+        """
+        Parametrized test for normalization with various inputs.
+
+        Args:
+            test_value: Record identifier to normalize.
+            expected_normalized: Expected normalized record identifier.
+        """
         assert self.record_id_attribute.normalize(test_value) == expected_normalized
 
     def test_aliases_immutability(self):

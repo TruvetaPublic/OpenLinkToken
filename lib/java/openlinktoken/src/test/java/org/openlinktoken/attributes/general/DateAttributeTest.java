@@ -21,25 +21,30 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+/** Tests date names, normalization, validation, serialization, and concurrency. */
 class DateAttributeTest {
 
     private DateAttribute dateAttribute;
 
+    /** Creates a fresh date attribute for each test. */
     @BeforeEach
     void setUp() {
         dateAttribute = new DateAttribute();
     }
 
+    /** Verifies the attribute reports the {@code Date} name. */
     @Test
     void getName_ShouldReturnDate() {
         assertEquals("Date", dateAttribute.getName());
     }
 
+    /** Verifies the date attribute exposes its expected alias. */
     @Test
     void getAliases_ShouldReturnDateAlias() {
         assertArrayEquals(new String[] { "Date" }, dateAttribute.getAliases());
     }
 
+    /** Verifies supported date formats normalize to ISO local-date form. */
     @Test
     void normalize_ValidDateFormats_ShouldNormalizeToYYYYMMDD() {
         assertEquals("2023-10-26", dateAttribute.normalize("2023-10-26"));
@@ -49,6 +54,7 @@ class DateAttributeTest {
         assertEquals("2023-10-26", dateAttribute.normalize("26.10.2023"));
     }
 
+    /** Verifies ISO-8601 timestamps normalize to their calendar date. */
     @Test
     void normalize_ISO8601Timestamps_ShouldNormalizeToYYYYMMDD() {
         assertEquals("1972-08-18", dateAttribute.normalize("1972-08-18T00:00:00.000Z"));
@@ -58,6 +64,7 @@ class DateAttributeTest {
         assertEquals("2023-10-26", dateAttribute.normalize("2023-10-26T12:34:56-08:00"));
     }
 
+    /** Verifies an unsupported date format raises an informative argument error. */
     @Test
     void normalize_InvalidDateFormat_ShouldThrowIllegalArgumentException() {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
@@ -66,6 +73,7 @@ class DateAttributeTest {
         assertEquals("Invalid date format: 20231026", exception.getMessage());
     }
 
+    /** Verifies supported date formats pass validation. */
     @Test
     void validate_ValidDate_ShouldReturnTrue() {
         assertTrue(dateAttribute.validate("2023-10-26"));
@@ -75,6 +83,7 @@ class DateAttributeTest {
         assertTrue(dateAttribute.validate("26.10.2023"));
     }
 
+    /** Verifies supported ISO-8601 timestamps pass validation. */
     @Test
     void validate_ISO8601Timestamps_ShouldReturnTrue() {
         assertTrue(dateAttribute.validate("1972-08-18T00:00:00.000Z"));
@@ -84,6 +93,7 @@ class DateAttributeTest {
         assertTrue(dateAttribute.validate("2023-10-26T12:34:56-08:00"));
     }
 
+    /** Verifies malformed, null, and empty dates fail validation. */
     @Test
     void validate_InvalidDate_ShouldReturnFalse() {
         assertFalse(dateAttribute.validate("20231026"));
@@ -93,6 +103,7 @@ class DateAttributeTest {
         assertFalse(dateAttribute.validate(""));
     }
 
+    /** Verifies concurrent date normalization returns the same result for every thread. */
     @Test
     void normalize_ThreadSafety() throws InterruptedException {
         final int threadCount = 100;
@@ -130,6 +141,7 @@ class DateAttributeTest {
         }
     }
 
+    /** Verifies serialization preserves the attribute's date behavior. */
     @Test
     void testSerialization() throws Exception {
         // Serialize the attribute
@@ -179,6 +191,7 @@ class DateAttributeTest {
         }
     }
 
+    /** Verifies generic dates after today remain normalizable. */
     @Test
     void normalize_FutureDates_ShouldNormalize() {
         // Unlike BirthDate, generic Date should allow future dates
@@ -186,6 +199,7 @@ class DateAttributeTest {
         assertEquals("2050-01-01", dateAttribute.normalize("01/01/2050"));
     }
 
+    /** Verifies historical dates remain normalizable. */
     @Test
     void normalize_HistoricalDates_ShouldNormalize() {
         // Generic Date should allow any historical dates

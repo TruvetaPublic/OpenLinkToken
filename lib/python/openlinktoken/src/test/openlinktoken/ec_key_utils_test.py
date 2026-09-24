@@ -67,7 +67,12 @@ def test_fingerprint_to_kid_rejects_empty_fingerprint():
 
 
 def test_ensure_directory_rejects_symlink(tmp_path: Path):
-    """A symlinked directory path must raise OSError."""
+    """
+    A symlinked directory path must raise OSError.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+    """
     real_dir = tmp_path / "real"
     real_dir.mkdir()
     link_dir = tmp_path / "link"
@@ -78,7 +83,12 @@ def test_ensure_directory_rejects_symlink(tmp_path: Path):
 
 
 def test_ensure_directory_rejects_non_directory(tmp_path: Path):
-    """A path that exists as a regular file must raise NotADirectoryError."""
+    """
+    A path that exists as a regular file must raise NotADirectoryError.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+    """
     file_path = tmp_path / "not_a_dir"
     file_path.write_text("content")
 
@@ -87,14 +97,24 @@ def test_ensure_directory_rejects_non_directory(tmp_path: Path):
 
 
 def test_ensure_directory_creates_missing_directory(tmp_path: Path):
-    """Missing directories should be created with 0o700 permissions."""
+    """
+    Missing directories should be created with 0o700 permissions.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+    """
     target = tmp_path / "new_dir"
     ensure_directory(target)
     assert target.is_dir()
 
 
 def test_write_key_rejects_symlink(tmp_path: Path):
-    """A symlinked key file path must raise OSError."""
+    """
+    A symlinked key file path must raise OSError.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+    """
     real_file = tmp_path / "real.pem"
     real_file.write_bytes(b"content")
     link_file = tmp_path / "link.pem"
@@ -105,7 +125,12 @@ def test_write_key_rejects_symlink(tmp_path: Path):
 
 
 def test_write_key_writes_pem_bytes(tmp_path: Path):
-    """PEM bytes should be written to the specified path with the specified permissions."""
+    """
+    PEM bytes should be written to the specified path with the specified permissions.
+
+    Args:
+        tmp_path: Temporary directory supplied by pytest for files created by the test.
+    """
     key_path = tmp_path / "test.pem"
     pem_bytes = b"-----BEGIN PRIVATE KEY-----\ntest\n-----END PRIVATE KEY-----\n"
     write_key(key_path, pem_bytes, 0o600)

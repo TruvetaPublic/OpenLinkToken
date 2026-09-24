@@ -21,25 +21,30 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+/** Tests Canadian postal-code normalization, validation, and serialization. */
 class CanadianPostalCodeAttributeTest {
     private CanadianPostalCodeAttribute canadianPostalCodeAttribute;
 
+    /** Creates a three-character-prefix Canadian postal-code attribute for each test. */
     @BeforeEach
     void setUp() {
         canadianPostalCodeAttribute = new CanadianPostalCodeAttribute(3);
     }
 
+    /** Verifies the attribute reports the {@code CanadianPostalCode} name. */
     @Test
     void getName_ShouldReturnCanadianPostalCode() {
         assertEquals("CanadianPostalCode", canadianPostalCodeAttribute.getName());
     }
 
+    /** Verifies both supported Canadian postal-code aliases are exposed. */
     @Test
     void getAliases_ShouldReturnCanadianZipCodeAliases() {
         String[] expectedAliases = { "CanadianPostalCode", "CanadianZipCode" };
         assertArrayEquals(expectedAliases, canadianPostalCodeAttribute.getAliases());
     }
 
+    /** Verifies full Canadian postal codes normalize to uppercase with one internal space. */
     @Test
     void normalize_ShouldHandleCanadianPostalCodes() {
         assertEquals("K1B 0A6", canadianPostalCodeAttribute.normalize("K1B0A6"));
@@ -52,6 +57,7 @@ class CanadianPostalCodeAttributeTest {
         assertEquals("N2L 3G1", canadianPostalCodeAttribute.normalize("N2L3G1"));
     }
 
+    /** Verifies standard full Canadian postal-code forms pass validation. */
     @Test
     void validate_ShouldReturnTrueForValidCanadianPostalCodes() {
         assertTrue(canadianPostalCodeAttribute.validate("K1B 0A7"));
@@ -67,6 +73,7 @@ class CanadianPostalCodeAttributeTest {
         assertTrue(canadianPostalCodeAttribute.validate("N2L 3G1"));
     }
 
+    /** Verifies malformed, placeholder, and U.S. postal codes fail Canadian validation. */
     @Test
     void validate_ShouldReturnFalseForInvalidCanadianPostalCodes() {
         assertFalse(canadianPostalCodeAttribute.validate(null), "Null value should not be allowed");
@@ -98,6 +105,7 @@ class CanadianPostalCodeAttributeTest {
         assertFalse(canadianPostalCodeAttribute.validate("12345-6789"), "US ZIP code should not validate");
     }
 
+    /** Verifies leading, trailing, and internal whitespace is normalized consistently. */
     @Test
     void normalize_ShouldHandleWhitespace() {
         // Test different types of whitespace for Canadian postal codes
@@ -111,6 +119,7 @@ class CanadianPostalCodeAttributeTest {
         assertEquals("K1B 0A7", canadianPostalCodeAttribute.normalize("  K1B   0A7  "), "Multiple spaces");
     }
 
+    /** Verifies concurrent Canadian postal-code normalization is consistent. */
     @Test
     void normalize_ThreadSafety() throws InterruptedException {
         final int threadCount = 100;
@@ -146,6 +155,7 @@ class CanadianPostalCodeAttributeTest {
         }
     }
 
+    /** Verifies null, empty, and non-Canadian inputs follow their expected normalization paths. */
     @Test
     void normalize_ShouldHandleEdgeCases() {
         // Test null and empty values
@@ -159,6 +169,7 @@ class CanadianPostalCodeAttributeTest {
         assertEquals("invalid", canadianPostalCodeAttribute.normalize("invalid"));
     }
 
+    /** Verifies three-character postal prefixes are padded to a full code. */
     @Test
     void normalize_ShouldPadZip3ToFullPostalCode() {
         // Test Canadian ZIP-3 padding with " 000" (using valid, non-placeholder codes)
@@ -177,6 +188,7 @@ class CanadianPostalCodeAttributeTest {
         assertEquals("L5N 000", canadianPostalCodeAttribute.normalize("L5N"));
     }
 
+    /** Verifies valid Canadian three-character postal prefixes pass validation. */
     @Test
     void validate_ShouldReturnTrueForValidZip3() {
         // Canadian ZIP-3 codes should be valid (will be padded during normalization)
@@ -197,6 +209,7 @@ class CanadianPostalCodeAttributeTest {
         assertTrue(canadianPostalCodeAttribute.validate("L5N"));
     }
 
+    /** Verifies invalid Canadian prefixes are rejected while other prefixes remain accepted. */
     @Test
     void validate_ShouldReturnFalseForInvalidZip3() {
         // These ZIP-3 codes are invalid as per requirements
@@ -214,6 +227,7 @@ class CanadianPostalCodeAttributeTest {
         assertTrue(canadianPostalCodeAttribute.validate("C2C"), "C2C should be valid");
     }
 
+    /** Verifies four- and five-character Canadian postal-code prefixes are padded. */
     @Test
     void normalize_ShouldPadPartialCanadianPostalCodes() {
         // Test 4-character partial postal code padding (e.g., "A1A1" → "A1A 1A0")
@@ -235,6 +249,7 @@ class CanadianPostalCodeAttributeTest {
         assertEquals("H3Z 2Y0", canadianPostalCodeAttribute.normalize("H3Z2Y"));
     }
 
+    /** Verifies supported four- and five-character Canadian postal-code prefixes pass validation. */
     @Test
     void validate_ShouldReturnTrueForPartialCanadianPostalCodes() {
         // 4-character partial postal codes should be valid (will be padded during normalization)
@@ -256,6 +271,7 @@ class CanadianPostalCodeAttributeTest {
         assertTrue(canadianPostalCodeAttribute.validate("H3Z2Y"));
     }
 
+    /** Verifies partial postal codes with invalid three-character prefixes fail validation. */
     @Test
     void validate_ShouldReturnFalseForInvalidPartialCanadianPostalCodes() {
         // These partial postal codes start with invalid ZIP-3 prefixes
@@ -273,6 +289,7 @@ class CanadianPostalCodeAttributeTest {
         assertTrue(canadianPostalCodeAttribute.validate("M5V3L"), "M5V3L should be valid");
     }
 
+    /** Verifies serialization preserves Canadian postal-code behavior. */
     @Test
     void testSerialization() throws Exception {
         // Serialize the attribute
@@ -321,6 +338,7 @@ class CanadianPostalCodeAttributeTest {
         }
     }
 
+    /** Verifies validation and normalization remain stable when applied repeatedly. */
     @Test
     void validate_IdempotencyShouldBeStable() {
         // Test that validation is idempotent: validate(x) == validate(normalize(x))
