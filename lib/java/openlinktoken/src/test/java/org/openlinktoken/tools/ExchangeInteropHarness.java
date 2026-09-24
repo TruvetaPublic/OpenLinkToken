@@ -147,23 +147,23 @@ public final class ExchangeInteropHarness {
         byte[] privateKey = Files.readAllBytes(Path.of(args[3]));
         byte[] plaintext;
         byte[] transportKey = null;
+        ExchangeConfig.ResolvedExchangeConfig resolved;
 
         if (suite.getExchangeConfigVersion() == 1) {
             plaintext = ExchangeJwe.decryptExchangeEnvelope(envelope, privateKey);
-            ExchangeConfig.ResolvedExchangeConfig resolved =
-                    ExchangeConfig.resolveExchangeConfig(envelope, privateKey);
+            resolved = ExchangeConfig.resolveExchangeConfig(envelope, privateKey);
             transportKey = resolved.transportEncryptionKey();
         } else {
             ExchangeKeyBundle privateBundle = ExchangeKeyBundle.fromJson(privateKey, true);
             ExchangeKem.DecryptionResult result = ExchangeKem.decryptExchangeEnvelopeV2(envelope, privateBundle);
-            ExchangeConfig.ResolvedExchangeConfig resolved =
-                    ExchangeConfig.resolveExchangeConfig(envelope, privateBundle);
+            resolved = ExchangeConfig.resolveExchangeConfig(envelope, privateBundle);
             plaintext = result.getPlaintext();
             transportKey = resolved.transportEncryptionKey();
         }
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("version", suite.getExchangeConfigVersion());
+        result.put("cryptoSuite", resolved.cryptoSuite().getSuiteId());
         result.put("payload", JSON.readValue(plaintext, OBJECT_TYPE));
         result.put(
                 "transportKey",

@@ -115,6 +115,30 @@ class TestOpenLinkTokenProcessor:
         assert payload["rid"] == "ring-from-config"
         assert payload["ppid"]
 
+    def test_from_exchange_config_supports_every_crypto_suite(self, spark, sample_data, exchange_config_case):
+        """The processor resolves each exchange suite and uses its digest and MAC algorithms."""
+        exchange = resolve_exchange_config_inputs(
+            exchange_config_case.exchange_config_path,
+            private_key_path=exchange_config_case.private_key_path,
+        )
+        processor = OpenLinkTokenProcessor.from_exchange_config(
+            exchange_config_path=exchange_config_case.exchange_config_path,
+            private_key_path=exchange_config_case.private_key_path,
+            ring_id="ring-all-suites",
+        )
+
+        assert exchange.crypto_suite == exchange_config_case.crypto_suite
+        assert processor.crypto_suite == exchange_config_case.crypto_suite
+        assert processor.encryption_key == derive_transport_encryption_key(exchange)
+
+        result_df = processor.process_dataframe(spark.createDataFrame(sample_data))
+        tokens = [row.Token for row in result_df.collect()]
+
+        assert tokens
+        payload = _decrypt_v1_payload(tokens[0], processor.encryption_key)
+        assert payload["hash_alg"] == exchange_config_case.crypto_suite.token_digest_algorithm
+        assert payload["mac_alg"] == exchange_config_case.crypto_suite.token_mac_algorithm
+
     def test_from_exchange_config_accepts_direct_exchange_config_and_private_key_values(
         self,
         spark,

@@ -141,7 +141,8 @@ public final class ExchangeConfig implements Serializable {
         }
 
         Map<String, Object> payload = readJsonObject(plaintext);
-        DecodedPayload decoded = decodePayload(payload, VERSION_ONE);
+        CryptoSuite cryptoSuite = ExchangeJwe.resolveCryptoSuite(exchangeConfig.config());
+        DecodedPayload decoded = decodePayload(payload, VERSION_ONE, cryptoSuite);
         String role = resolveV1Role(privatePem, payload);
         return new ResolvedExchangeConfig(
                 exchangeConfig.path(),
@@ -511,11 +512,16 @@ public final class ExchangeConfig implements Serializable {
     }
 
     private static DecodedPayload decodePayload(Map<String, Object> payload, int version) {
+        return decodePayload(payload, version, null);
+    }
+
+    private static DecodedPayload decodePayload(
+            Map<String, Object> payload, int version, CryptoSuite protectedV1Suite) {
         if (payload == null) {
             throw new IllegalArgumentException("Exchange config decrypted to an invalid payload.");
         }
 
-        CryptoSuite suite = resolvePayloadSuite(payload, version);
+        CryptoSuite suite = resolvePayloadSuite(payload, version, protectedV1Suite);
         requireText(payload.get("exchangeName"), "exchangeName");
         requireText(payload.get("createdAt"), "createdAt");
         requireText(payload.get("exchangeId"), "exchangeId");
@@ -543,12 +549,17 @@ public final class ExchangeConfig implements Serializable {
                 dimensionBias);
     }
 
-    private static CryptoSuite resolvePayloadSuite(Map<String, Object> payload, int version) {
-        Object value = payload.get("cryptoSuite");
+    private static CryptoSuite resolvePayloadSuite(
+            Map<String, Object> payload, int version, CryptoSuite protectedV1Suite) {
         CryptoSuite suite;
-        if (version == VERSION_ONE && value == null) {
-            suite = CryptoSuite.defaultSuite();
+        if (version == VERSION_ONE) {
+            if (payload.containsKey("cryptoSuite")) {
+                throw new IllegalArgumentException(
+                        "Version 1 exchange payload must not contain cryptoSuite; suite selection belongs in the protected header.");
+            }
+            suite = protectedV1Suite == null ? CryptoSuite.defaultSuite() : protectedV1Suite;
         } else {
+            Object value = payload.get("cryptoSuite");
             String suiteId = requireText(value, "cryptoSuite");
             try {
                 suite = CryptoSuite.fromId(suiteId);
@@ -557,15 +568,16 @@ public final class ExchangeConfig implements Serializable {
             }
         }
 
-        if (version == VERSION_ONE && suite != CryptoSuite.defaultSuite()) {
-            throw new IllegalArgumentException(
-                    "Legacy version-one exchange configs only support the default crypto suite '"
-                            + CryptoSuite.defaultSuite().getSuiteId()
-                            + "'.");
-        }
         if (suite.getExchangeConfigVersion() != version) {
             throw new IllegalArgumentException(
                     "Exchange config version " + version + " does not match suite '" + suite.getSuiteId() + "'.");
+        }
+        if (version == VERSION_ONE
+                && !CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH.equals(suite.getExchangeKeyAgreement())) {
+            throw new IllegalArgumentException(
+                    "Version 1 exchange configs require an ECDH crypto suite; suite '"
+                            + suite.getSuiteId()
+                            + "' is incompatible.");
         }
         return suite;
     }

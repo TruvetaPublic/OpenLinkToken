@@ -210,10 +210,11 @@ def create_token_generator_from_exchange_config(
     Args:
         exchange_config_path: Optional exchange-config path. Uses the default path when omitted.
         exchange_config_value: Optional in-memory exchange-config JSON or decoded mapping.
-        private_key_path: Optional private-key PEM path.
-        private_key_env: Optional environment-variable name containing private-key PEM text.
-        private_key_value: Optional in-memory private-key PEM text or bytes.
+        private_key_path: Optional v1 private-key PEM path or v2 private key-bundle JSON path.
+        private_key_env: Optional environment variable containing v1 private-key PEM or v2 private key-bundle JSON.
+        private_key_value: Optional in-memory v1 private-key PEM or v2 private key-bundle JSON.
         token_definition: Optional custom token definition. If None, uses default tokens.
+        crypto_suite: Optional suite to verify against the suite resolved from the exchange config.
 
     Returns:
         A configured TokenGenerator instance using the exchange hashing secret and transport key.
@@ -298,9 +299,9 @@ def quick_token_from_exchange_config(
         attributes: List of (attribute_name, expression) tuples.
         exchange_config_path: Optional exchange-config path. Uses the default path when omitted.
         exchange_config_value: Optional in-memory exchange-config JSON or decoded mapping.
-        private_key_path: Optional private-key PEM path.
-        private_key_env: Optional environment-variable name containing private-key PEM text.
-        private_key_value: Optional in-memory private-key PEM text or bytes.
+        private_key_path: Optional v1 private-key PEM path or v2 private key-bundle JSON path.
+        private_key_env: Optional environment variable containing v1 private-key PEM or v2 private key-bundle JSON.
+        private_key_value: Optional in-memory v1 private-key PEM or v2 private key-bundle JSON.
 
     Returns:
         A TokenGenerator configured with the custom token and exchange-derived secrets.

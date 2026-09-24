@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 from jwcrypto import jwe, jwk
+from jwcrypto.common import InvalidJWEData
 
 from openlinktoken.crypto.crypto_suite import CryptoSuite
 from openlinktoken.ec_key_utils import fingerprint_to_kid, generate_key_pair, public_key_fingerprint
@@ -32,6 +33,7 @@ from openlinktoken.exchange_jwe import (
     build_exchange_envelope,
     decrypt_exchange_envelope,
     resolve_private_key_by_kid,
+    resolve_v1_exchange_crypto_suite,
 )
 from openlinktoken.exchange_kem import build_exchange_envelope_v2
 from openlinktoken.exchange_key_bundle import generate_exchange_key_bundle
@@ -88,6 +90,9 @@ def test_build_exchange_envelope_round_trips_for_either_private_key():
         "binWidth": 0.05,
         "dimensionBias": [0.1, -0.2],
     }
+    protected_header = _decode_protected_header(envelope)
+    assert "cryptoSuite" not in protected_header
+    assert "crit" not in protected_header
 
     recipient_headers = [entry["header"] for entry in envelope["recipients"]]
     assert envelope["version"] == 1
@@ -97,26 +102,31 @@ def test_build_exchange_envelope_round_trips_for_either_private_key():
     }
 
 
-def test_build_legacy_exchange_rejects_non_default_suite():
-    """Legacy top-level-version-1 envelopes must not silently encode another suite."""
-    _, sender_public_pem = generate_key_pair("P-256")
+def test_build_v1_sha3_exchange_marks_suite_in_critical_protected_header():
+    """The non-default v1 suite is authenticated in the protected header, not payload."""
+    sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     _, recipient_public_pem = generate_key_pair("P-256")
 
-    with pytest.raises(ValueError, match="suite-sha3-v1.*version 1|version 1.*suite-sha3-v1"):
-        build_exchange_envelope(
-            exchange_name="legacy-suite",
-            hashing_secret=b"shared-hashing-secret",
-            sender_public_pem=sender_public_pem,
-            recipient_public_pem=recipient_public_pem,
-            curve="P-256",
-            created_at="2026-03-11T00:00:00Z",
-            exchange_id="exchange-legacy-suite",
-            crypto_suite=CryptoSuite.from_id("suite-sha3-v1"),
-        )
+    envelope = build_exchange_envelope(
+        exchange_name="legacy-suite",
+        hashing_secret=b"shared-hashing-secret",
+        sender_public_pem=sender_public_pem,
+        recipient_public_pem=recipient_public_pem,
+        curve="P-256",
+        created_at="2026-03-11T00:00:00Z",
+        exchange_id="exchange-legacy-suite",
+        crypto_suite=CryptoSuite.from_id("suite-sha3-v1"),
+    )
+    protected_header = _decode_protected_header(envelope)
+    payload = json.loads(decrypt_exchange_envelope(envelope, sender_private_pem))
+
+    assert protected_header["cryptoSuite"] == "suite-sha3-v1"
+    assert protected_header["crit"] == ["cryptoSuite"]
+    assert "cryptoSuite" not in payload
 
 
-def test_resolve_legacy_exchange_rejects_non_default_suite(monkeypatch):
-    """Legacy readers must reject a v1 payload that declares a non-default suite."""
+def test_resolve_v1_exchange_rejects_payload_suite_marker(monkeypatch):
+    """Version-one suite identity must not be selected from encrypted payload data."""
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     _, recipient_public_pem = generate_key_pair("P-256")
     envelope = build_exchange_envelope(
@@ -129,15 +139,130 @@ def test_resolve_legacy_exchange_rejects_non_default_suite(monkeypatch):
         exchange_id="exchange-legacy-suite",
     )
     payload = json.loads(decrypt_exchange_envelope(envelope, sender_private_pem))
-    payload["cryptoSuite"] = "suite-sha3-v1"
-    loaded = load_exchange_config(exchange_config_value={"version": 1})
+    payload["cryptoSuite"] = "suite-sha256-v1"
+    loaded = load_exchange_config(exchange_config_value=envelope)
     monkeypatch.setattr(
         "openlinktoken.exchange_config.decrypt_exchange_envelope",
         lambda _config, _private_key: json.dumps(payload),
     )
 
-    with pytest.raises(ValueError, match="Legacy version 1.*suite-sha3-v1"):
+    with pytest.raises(ValueError, match="Version 1.*cryptoSuite.*protected header"):
         resolve_loaded_exchange_config(loaded, sender_private_pem)
+
+
+def test_resolve_v1_sha3_exchange_uses_protected_suite_marker():
+    """The authenticated v1 suite marker selects SHA3 when resolving an exchange."""
+    sender_private_pem, sender_public_pem = generate_key_pair("P-256")
+    _, recipient_public_pem = generate_key_pair("P-256")
+    envelope = build_exchange_envelope(
+        exchange_name="legacy-suite",
+        hashing_secret=b"shared-hashing-secret",
+        sender_public_pem=sender_public_pem,
+        recipient_public_pem=recipient_public_pem,
+        curve="P-256",
+        created_at="2026-03-11T00:00:00Z",
+        exchange_id="exchange-legacy-suite",
+        crypto_suite=CryptoSuite.from_id("suite-sha3-v1"),
+    )
+
+    resolved = resolve_loaded_exchange_config(
+        load_exchange_config(exchange_config_value=envelope),
+        sender_private_pem,
+    )
+
+    assert resolved.version == 1
+    assert resolved.crypto_suite == CryptoSuite.from_id("suite-sha3-v1")
+
+
+@pytest.mark.parametrize(
+    ("protected_header", "unprotected_header", "message"),
+    [
+        pytest.param(
+            {"cryptoSuite": "suite-sha3-v1"},
+            None,
+            "listed in the protected crit header",
+            id="noncritical",
+        ),
+        pytest.param(
+            {},
+            {"cryptoSuite": "suite-sha3-v1"},
+            "only in the protected header",
+            id="unprotected",
+        ),
+        pytest.param(
+            {"cryptoSuite": "suite-sha3-v1", "crit": "cryptoSuite"},
+            None,
+            "crit must be an array of strings",
+            id="malformed-crit",
+        ),
+    ],
+)
+def test_resolve_v1_crypto_suite_rejects_noncritical_or_unprotected_markers(
+    protected_header: dict[str, object],
+    unprotected_header: dict[str, object] | None,
+    message: str,
+):
+    """A v1 suite marker is accepted only as a protected critical parameter."""
+    with pytest.raises(ValueError, match=message):
+        resolve_v1_exchange_crypto_suite(_v1_header_config(protected_header, unprotected_header))
+
+
+@pytest.mark.parametrize(
+    ("suite_id", "message"),
+    [
+        pytest.param("suite-unregistered-v1", "Unknown crypto suite", id="unknown"),
+        pytest.param("suite-pq-v1", "incompatible with version 1 ECDH", id="version-two"),
+    ],
+)
+def test_resolve_v1_crypto_suite_rejects_unknown_or_incompatible_suites(suite_id: str, message: str):
+    """Only registered version-one ECDH suites can be selected by a v1 envelope."""
+    header = {"cryptoSuite": suite_id, "crit": ["cryptoSuite"]}
+
+    with pytest.raises(ValueError, match=message):
+        resolve_v1_exchange_crypto_suite(_v1_header_config(header))
+
+
+def test_default_jwcrypto_reader_rejects_unknown_critical_suite_extension():
+    """A reader without the cryptoSuite extension fails closed on a SHA3 v1 envelope."""
+    sender_private_pem, sender_public_pem = generate_key_pair("P-256")
+    _, recipient_public_pem = generate_key_pair("P-256")
+    envelope = build_exchange_envelope(
+        exchange_name="legacy-suite",
+        hashing_secret=b"shared-hashing-secret",
+        sender_public_pem=sender_public_pem,
+        recipient_public_pem=recipient_public_pem,
+        curve="P-256",
+        created_at="2026-03-11T00:00:00Z",
+        exchange_id="exchange-legacy-suite",
+        crypto_suite=CryptoSuite.from_id("suite-sha3-v1"),
+    )
+    reader = jwe.JWE()
+    reader.deserialize(json.dumps(envelope))
+
+    with pytest.raises(InvalidJWEData):
+        reader.decrypt(jwk.JWK.from_pem(sender_private_pem))
+
+
+def _v1_header_config(
+    protected_header: dict[str, object],
+    unprotected_header: dict[str, object] | None = None,
+) -> dict[str, object]:
+    """Build the envelope header fields consumed by v1 suite resolution."""
+    protected = base64.urlsafe_b64encode(json.dumps(protected_header).encode("utf-8")).decode("ascii").rstrip("=")
+    config: dict[str, object] = {"version": 1, "protected": protected}
+    if unprotected_header is not None:
+        config["unprotected"] = unprotected_header
+    return config
+
+
+def _decode_protected_header(envelope: dict[str, object]) -> dict[str, object]:
+    """Decode a JWE general-JSON protected header for wire-format assertions."""
+    protected = envelope["protected"]
+    assert isinstance(protected, str)
+    protected_bytes = base64.urlsafe_b64decode(protected + "=" * (-len(protected) % 4))
+    header = json.loads(protected_bytes)
+    assert isinstance(header, dict)
+    return header
 
 
 def test_resolve_private_key_by_kid_uses_matching_public_key_basename(tmp_path: Path):

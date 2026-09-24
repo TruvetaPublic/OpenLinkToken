@@ -66,9 +66,9 @@ class OpenLinkTokenOverlapAnalyzer:
         Args:
             exchange_config_path: Optional exchange-config path. Uses the default path when omitted.
             exchange_config_value: Optional in-memory exchange-config JSON or decoded mapping.
-            private_key_path: Optional private-key PEM path.
-            private_key_env: Optional environment-variable name containing private-key PEM text.
-            private_key_value: Optional in-memory private-key PEM text or bytes.
+            private_key_path: Optional v1 private-key PEM path or v2 private key-bundle JSON path.
+            private_key_env: Optional environment variable containing v1 private-key PEM or v2 private key-bundle JSON.
+            private_key_value: Optional in-memory v1 private-key PEM or v2 private key-bundle JSON.
 
         Returns:
             An overlap analyzer configured with the exchange-derived transport key.

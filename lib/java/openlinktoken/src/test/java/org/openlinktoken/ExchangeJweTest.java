@@ -41,6 +41,8 @@ class ExchangeJweTest {
         assertEquals(ExchangeJwe.CONTENT_TYPE, protectedHeader.get("cty"));
         assertEquals(ExchangeJwe.ENCRYPTION, protectedHeader.get("enc"));
         assertFalse(protectedHeader.containsKey("alg"));
+        assertFalse(protectedHeader.containsKey("cryptoSuite"));
+        assertFalse(protectedHeader.containsKey("crit"));
 
         List<?> recipients = (List<?>) envelope.get("recipients");
         assertEquals(2, recipients.size());
@@ -92,27 +94,78 @@ class ExchangeJweTest {
     }
 
     /**
-     * Verifies the legacy envelope builder rejects a non-default crypto suite.
+     * Verifies suite identity cannot be supplied inside a legacy exchange payload.
      */
     @Test
-    void rejectsNonDefaultLegacySuite() {
+    void rejectsCryptoSuiteInLegacyPayload() {
         KeyMaterial keys = generateKeyMaterial();
+        Map<String, Object> payload = ExchangeJsonTestSupport.readObject(
+                ExchangeJwe.decryptExchangeEnvelope(buildEnvelope(keys), keys.senderPrivatePem));
+        payload.put("cryptoSuite", CryptoSuite.defaultSuite().getSuiteId());
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> ExchangeJwe.buildExchangeEnvelope(
-                        "legacy-suite",
-                        HASHING_SECRET,
-                        keys.senderPublicPem,
-                        keys.recipientPublicPem,
-                        "P-256",
-                        "2026-03-11T00:00:00Z",
-                        "exchange-legacy-suite",
-                        ROTATION_IV,
-                        0,
-                        0.05,
-                        List.of(),
-                        CryptoSuite.SUITE_SHA3_V1));
+                () -> ExchangeJwe.parseExchangePayload(ExchangeJsonTestSupport.writeObject(payload)));
+    }
+
+    /**
+     * Verifies a non-default v1 suite is authenticated in a critical protected-header parameter.
+     */
+    @Test
+    void buildsAndDecryptsSha3LegacySuiteWithCriticalHeader() {
+        KeyMaterial keys = generateKeyMaterial();
+
+        Map<String, Object> envelope = ExchangeJwe.buildExchangeEnvelope(
+                "legacy-suite",
+                HASHING_SECRET,
+                keys.senderPublicPem,
+                keys.recipientPublicPem,
+                "P-256",
+                "2026-03-11T00:00:00Z",
+                "exchange-legacy-suite",
+                ROTATION_IV,
+                0,
+                0.05,
+                List.of(),
+                CryptoSuite.SUITE_SHA3_V1);
+
+        Map<String, Object> protectedHeader = readProtectedHeader(envelope);
+        assertEquals("suite-sha3-v1", protectedHeader.get("cryptoSuite"));
+        assertEquals(List.of("cryptoSuite"), protectedHeader.get("crit"));
+
+        Map<String, Object> payload = ExchangeJsonTestSupport.readObject(
+                ExchangeJwe.decryptExchangeEnvelope(envelope, keys.senderPrivatePem));
+        assertFalse(payload.containsKey("cryptoSuite"));
+    }
+
+    /**
+     * Verifies suite metadata is rejected unless it is critical and protected.
+     */
+    @Test
+    void rejectsMalformedOrUnprotectedSuiteHeaders() {
+        KeyMaterial keys = generateKeyMaterial();
+
+        Map<String, Object> unmarkedSuite = buildEnvelope(keys);
+        Map<String, Object> unmarkedSuiteHeader = readProtectedHeader(unmarkedSuite);
+        unmarkedSuiteHeader.put("cryptoSuite", "suite-sha3-v1");
+        updateProtectedHeader(unmarkedSuite, unmarkedSuiteHeader);
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> ExchangeJwe.decryptExchangeEnvelope(unmarkedSuite, keys.senderPrivatePem));
+
+        Map<String, Object> missingSuite = buildEnvelope(keys);
+        Map<String, Object> missingSuiteHeader = readProtectedHeader(missingSuite);
+        missingSuiteHeader.put("crit", List.of("cryptoSuite"));
+        updateProtectedHeader(missingSuite, missingSuiteHeader);
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> ExchangeJwe.decryptExchangeEnvelope(missingSuite, keys.senderPrivatePem));
+
+        Map<String, Object> unprotectedSuite = buildEnvelope(keys);
+        unprotectedSuite.put("unprotected", Map.of("cryptoSuite", "suite-sha3-v1"));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> ExchangeJwe.decryptExchangeEnvelope(unprotectedSuite, keys.senderPrivatePem));
     }
 
     /**
@@ -270,6 +323,13 @@ class ExchangeJweTest {
     private static Map<String, Object> readProtectedHeader(Map<String, Object> envelope) {
         return ExchangeJsonTestSupport.readObject(
                 Base64.getUrlDecoder().decode((String) envelope.get("protected")));
+    }
+
+    private static void updateProtectedHeader(Map<String, Object> envelope, Map<String, Object> protectedHeader) {
+        envelope.put(
+                "protected",
+                Base64.getUrlEncoder().withoutPadding().encodeToString(
+                        ExchangeJsonTestSupport.writeObject(protectedHeader)));
     }
 
     private static KeyMaterial generateKeyMaterial() {

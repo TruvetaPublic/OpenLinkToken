@@ -150,6 +150,29 @@ class TestOpenLinkTokenOverlapAnalyzerInit:
 
         assert analyzer._decrypt_token(v1_encrypted) == plaintext
 
+    def test_from_exchange_config_supports_every_crypto_suite(self, exchange_config_case):
+        """The analyzer derives the correct transport key for each exchange suite."""
+        exchange = resolve_exchange_config_inputs(
+            exchange_config_case.exchange_config_path,
+            private_key_path=exchange_config_case.private_key_path,
+        )
+        transport_key = derive_transport_encryption_key(exchange)
+        analyzer = OpenLinkTokenOverlapAnalyzer.from_exchange_config(
+            exchange_config_path=exchange_config_case.exchange_config_path,
+            private_key_path=exchange_config_case.private_key_path,
+        )
+        plaintext = "deterministic-hash-value"
+        legacy_encrypted = EncryptTokenTransformer(transport_key).transform(plaintext)
+        v1_encrypted = JweMatchTokenFormatter(
+            encryption_key=transport_key,
+            ring_id="ring-test",
+            rule_id="T1",
+        ).transform(legacy_encrypted)
+
+        assert exchange.crypto_suite == exchange_config_case.crypto_suite
+        assert analyzer.encryption_key == transport_key
+        assert analyzer._decrypt_token(v1_encrypted) == plaintext
+
 
 class TestAnalyzeOverlap:
     """Tests for overlap analysis functionality."""

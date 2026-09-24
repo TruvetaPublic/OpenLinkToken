@@ -16,6 +16,7 @@ import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -80,6 +81,7 @@ public final class ExchangeJwe implements Serializable {
     public static final String EXCHANGE_JWE_RECIPIENT_ALGORITHM = RECIPIENT_ALGORITHM;
 
     private static final String BASE64URL_ENCODING = "base64url";
+    private static final String CRYPTO_SUITE_HEADER = "cryptoSuite";
     private static final JWEAlgorithm RECIPIENT_JWE_ALGORITHM = JWEAlgorithm.ECDH_ES_A256KW;
     private static final TypeReference<Map<String, Object>> JSON_OBJECT_TYPE = new TypeReference<>() {
     };
@@ -169,12 +171,11 @@ public final class ExchangeJwe implements Serializable {
     }
 
     /**
-     * Builds a two-recipient legacy exchange envelope.
+     * Builds a two-recipient version-one exchange envelope.
      *
-     * <p>Version-one envelopes intentionally accept only the registered
-     * default suite. The suite is not encoded in the unauthenticated
-     * top-level marker, so accepting another suite would make the marker
-     * ambiguous to legacy consumers.</p>
+     * <p>Non-default v1 suites are identified by a critical {@code cryptoSuite}
+     * parameter in the authenticated protected header. The default suite keeps
+     * the legacy header and payload shape.</p>
      *
      * @param exchangeName exchange name
      * @param hashingSecret raw hashing secret bytes
@@ -204,7 +205,7 @@ public final class ExchangeJwe implements Serializable {
             double binWidth,
             List<Double> dimensionBias,
             CryptoSuite cryptoSuite) {
-        requireDefaultSuite(cryptoSuite);
+        CryptoSuite resolvedSuite = requireV1Suite(cryptoSuite);
         ExchangePayload payload = new ExchangePayload(
                 requireText(exchangeName, "exchangeName"),
                 requireBytes(hashingSecret, "hashingSecret", true),
@@ -217,7 +218,7 @@ public final class ExchangeJwe implements Serializable {
                 rotationCount,
                 binWidth,
                 dimensionBias == null ? List.of() : dimensionBias);
-        return encryptPayload(payload);
+        return encryptPayload(payload, resolvedSuite);
     }
 
     /**
@@ -233,7 +234,7 @@ public final class ExchangeJwe implements Serializable {
         Map<String, Object> envelope = copyObject(exchangeConfig, "exchangeConfig");
         validateVersion(envelope);
         JWEObjectJSON jwe = parseJwe(envelope);
-        validateJwe(jwe);
+        validateJweAndResolveSuite(jwe, envelope);
 
         ECPrivateKey privateKey = EcKeyUtils.privateKeyFromPem(requireBytes(privatePem, "privatePem", true));
         String curve = EcKeyUtils.curveName(privateKey);
@@ -246,7 +247,7 @@ public final class ExchangeJwe implements Serializable {
                 .build();
 
         try {
-            jwe.decrypt(new MultiDecrypter(privateJwk));
+            jwe.decrypt(new MultiDecrypter(privateJwk, Set.of(CRYPTO_SUITE_HEADER)));
             byte[] payload = jwe.getPayload().toBytes();
             parseExchangePayload(payload);
             return payload;
@@ -308,21 +309,33 @@ public final class ExchangeJwe implements Serializable {
         return payloadFromMapping(payload);
     }
 
+    static CryptoSuite resolveCryptoSuite(Map<String, ?> exchangeConfig) {
+        Map<String, Object> envelope = copyObject(exchangeConfig, "exchangeConfig");
+        validateVersion(envelope);
+        return validateJweAndResolveSuite(parseJwe(envelope), envelope);
+    }
+
     /**
      * Encrypts a validated exchange payload for its sender and recipient.
      *
      * @param payload exchange payload to encrypt
+     * @param cryptoSuite crypto suite authenticated by the protected header
      * @return the serialized general JWE envelope
      */
-    private static Map<String, Object> encryptPayload(ExchangePayload payload) {
+    private static Map<String, Object> encryptPayload(ExchangePayload payload, CryptoSuite cryptoSuite) {
         ECPublicKey senderPublicKey = EcKeyUtils.publicKeyFromPem(payload.senderPublicPem());
         ECPublicKey recipientPublicKey = EcKeyUtils.publicKeyFromPem(payload.recipientPublicPem());
         validateCurve(payload.curve(), senderPublicKey, recipientPublicKey);
 
-        JWEHeader protectedHeader = new JWEHeader.Builder(EncryptionMethod.A256GCM)
+        JWEHeader.Builder protectedHeaderBuilder = new JWEHeader.Builder(EncryptionMethod.A256GCM)
                 .type(new JOSEObjectType(TYPE))
-                .contentType(CONTENT_TYPE)
-                .build();
+                .contentType(CONTENT_TYPE);
+        if (!CryptoSuite.defaultSuite().equals(cryptoSuite)) {
+            protectedHeaderBuilder
+                    .customParam(CRYPTO_SUITE_HEADER, cryptoSuite.getSuiteId())
+                    .criticalParams(Set.of(CRYPTO_SUITE_HEADER));
+        }
+        JWEHeader protectedHeader = protectedHeaderBuilder.build();
         JWK senderJwk = toRecipientJwk(senderPublicKey, payload.senderPublicPem());
         JWK recipientJwk = toRecipientJwk(recipientPublicKey, payload.recipientPublicPem());
 
@@ -357,7 +370,7 @@ public final class ExchangeJwe implements Serializable {
         }
     }
 
-    private static void validateJwe(JWEObjectJSON jwe) {
+    private static CryptoSuite validateJweAndResolveSuite(JWEObjectJSON jwe, Map<String, Object> envelope) {
         JWEHeader header = jwe.getHeader();
         if (header.getType() == null || !TYPE.equals(header.getType().getType())) {
             throw new ExchangeJweException("Exchange envelope has an unsupported protected typ.");
@@ -371,6 +384,8 @@ public final class ExchangeJwe implements Serializable {
         if (header.getAlgorithm() != null) {
             throw new ExchangeJweException("Exchange envelope must keep alg in each recipient header.");
         }
+        rejectUnprotectedSuiteMarker(envelope);
+        CryptoSuite cryptoSuite = resolveProtectedHeaderSuite(header);
         if (jwe.getRecipients().size() != 2) {
             throw new ExchangeJweException("Exchange envelope must contain exactly two recipients.");
         }
@@ -392,6 +407,57 @@ public final class ExchangeJwe implements Serializable {
                 throw new ExchangeJweException("Exchange recipient is missing its EC epk.");
             }
         }
+        return cryptoSuite;
+    }
+
+    private static CryptoSuite resolveProtectedHeaderSuite(JWEHeader protectedHeader) {
+        Set<String> criticalParams = protectedHeader.getCriticalParams();
+        if (criticalParams == null) {
+            criticalParams = Set.of();
+        }
+        boolean hasSuiteMarker = protectedHeader.getIncludedParams().contains(CRYPTO_SUITE_HEADER);
+        if (!hasSuiteMarker) {
+            if (!criticalParams.isEmpty()) {
+                throw new ExchangeJweException("Exchange envelope has an unsupported critical protected parameter.");
+            }
+            return CryptoSuite.defaultSuite();
+        }
+
+        Object suiteValue = protectedHeader.getCustomParam(CRYPTO_SUITE_HEADER);
+        if (!(suiteValue instanceof String suiteId) || suiteId.isBlank()) {
+            throw new ExchangeJweException("Protected-header cryptoSuite must be a non-empty string.");
+        }
+        if (!Set.of(CRYPTO_SUITE_HEADER).equals(criticalParams)) {
+            throw new ExchangeJweException("Protected-header cryptoSuite must be the only critical parameter.");
+        }
+
+        CryptoSuite suite = CryptoSuite.fromId(suiteId);
+        if (suite.getExchangeConfigVersion() != VERSION
+                || !CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH.equals(suite.getExchangeKeyAgreement())) {
+            throw new ExchangeJweException(
+                    "Crypto suite '" + suite.getSuiteId() + "' is incompatible with version 1 ECDH exchange.");
+        }
+        return suite;
+    }
+
+    private static void rejectUnprotectedSuiteMarker(Map<String, Object> envelope) {
+        if (containsSuiteMarker(envelope.get("unprotected"))) {
+            throw new ExchangeJweException("Version 1 cryptoSuite must appear only in the protected header.");
+        }
+
+        Object recipientsValue = envelope.get("recipients");
+        if (recipientsValue instanceof List<?> recipients) {
+            for (Object recipientValue : recipients) {
+                if (recipientValue instanceof Map<?, ?> recipient
+                        && containsSuiteMarker(recipient.get("header"))) {
+                    throw new ExchangeJweException("Version 1 cryptoSuite must appear only in the protected header.");
+                }
+            }
+        }
+    }
+
+    private static boolean containsSuiteMarker(Object value) {
+        return value instanceof Map<?, ?> header && header.containsKey(CRYPTO_SUITE_HEADER);
     }
 
     private static JWEHeader joinRecipientHeader(JWEHeader protectedHeader, JWEObjectJSON.Recipient recipient) {
@@ -435,12 +501,9 @@ public final class ExchangeJwe implements Serializable {
      * @return the validated exchange payload
      */
     private static ExchangePayload payloadFromMapping(Map<String, Object> mapping) {
-        Object suite = mapping.get("cryptoSuite");
-        if (suite != null && !CryptoSuite.defaultSuite().getSuiteId().equals(requireText(suite, "cryptoSuite"))) {
+        if (mapping.containsKey(CRYPTO_SUITE_HEADER)) {
             throw new ExchangeJweException(
-                    "Legacy version 1 exchange envelopes only support the default crypto suite '"
-                            + CryptoSuite.defaultSuite().getSuiteId()
-                            + "'.");
+                    "Version 1 exchange payload must not contain cryptoSuite; suite selection belongs in the protected header.");
         }
 
         String hashingSecretEncoding = requireText(mapping.get("hashingSecretEncoding"), "hashingSecretEncoding");
@@ -506,18 +569,18 @@ public final class ExchangeJwe implements Serializable {
         }
     }
 
-    private static void requireDefaultSuite(CryptoSuite suite) {
-        CryptoSuite resolvedSuite = suite == null ? CryptoSuite.defaultSuite() : suite;
-        if (!CryptoSuite.defaultSuite().getSuiteId().equals(resolvedSuite.getSuiteId())
-                || resolvedSuite.getExchangeConfigVersion() != VERSION
-                || !CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH.equals(resolvedSuite.getExchangeKeyAgreement())) {
+    private static CryptoSuite requireV1Suite(CryptoSuite suite) {
+        CryptoSuite selectedSuite = suite == null
+                ? CryptoSuite.defaultSuite()
+                : CryptoSuite.fromId(suite.getSuiteId());
+        if (selectedSuite.getExchangeConfigVersion() != VERSION
+                || !CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH.equals(selectedSuite.getExchangeKeyAgreement())) {
             throw new ExchangeJweException(
-                    "Legacy version 1 exchange envelopes only support the default crypto suite '"
-                            + CryptoSuite.defaultSuite().getSuiteId()
-                            + "'; suite '"
-                            + resolvedSuite.getSuiteId()
+                    "Version 1 exchange envelopes require a registered v1 ECDH suite; suite '"
+                            + selectedSuite.getSuiteId()
                             + "' cannot be encoded.");
         }
+        return selectedSuite;
     }
 
     private static void validateCurve(String curve, ECPublicKey senderPublicKey, ECPublicKey recipientPublicKey) {

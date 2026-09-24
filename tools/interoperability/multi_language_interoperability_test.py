@@ -36,12 +36,11 @@ from openlinktoken.exchange_config import (  # noqa: E402
     derive_transport_encryption_key,
     resolve_exchange_config,
 )
-from openlinktoken.exchange_jwe import build_exchange_envelope, decrypt_exchange_envelope  # noqa: E402
+from openlinktoken.exchange_jwe import build_exchange_envelope  # noqa: E402
 from openlinktoken.exchange_kem import (  # noqa: E402
     build_exchange_envelope_v2,
-    decrypt_exchange_envelope_v2,
 )
-from openlinktoken.exchange_key_bundle import ExchangeKeyBundle, generate_exchange_key_bundle  # noqa: E402
+from openlinktoken.exchange_key_bundle import generate_exchange_key_bundle  # noqa: E402
 
 # These fixture values are intentionally kept aligned with the Java
 # TokenGeneratorIntegrationTest so this interop job verifies the same
@@ -495,16 +494,14 @@ class TestTokenCompatibility:
 
     @staticmethod
     def _exchange_suites() -> tuple[CryptoSuite, ...]:
-        """Return the legacy default suite and all registered version-2 suites."""
-        return tuple(
-            suite for suite in CryptoSuite.all() if suite == CryptoSuite.default() or suite.exchange_config_version == 2
-        )
+        """Return every registered suite supported by an exchange envelope."""
+        return CryptoSuite.all()
 
     @staticmethod
     def _build_python_exchange(
         crypto_suite: CryptoSuite,
         output_dir: Path,
-    ) -> tuple[Path, Path, dict[str, Any]]:
+    ) -> tuple[Path, Path]:
         """Build a Python exchange envelope and persist its sender key material."""
         output_dir.mkdir(parents=True, exist_ok=True)
         exchange_name = f"interop-exchange-{crypto_suite.suite_id}"
@@ -549,30 +546,23 @@ class TestTokenCompatibility:
             private_key_path.write_bytes(sender_bundle.to_json(include_private=True))
 
         envelope_path.write_text(json.dumps(envelope, sort_keys=True), encoding="utf-8")
-        return envelope_path, private_key_path, envelope
+        return envelope_path, private_key_path
 
     @staticmethod
     def _decrypt_python_exchange(
         crypto_suite: CryptoSuite,
-        envelope: dict[str, Any],
         private_key_path: Path,
         envelope_path: Path,
     ) -> Dict[str, Any]:
-        """Decrypt an exchange envelope with the matching Python helper."""
-        if crypto_suite.exchange_config_version == 1:
-            plaintext = decrypt_exchange_envelope(envelope, private_key_path.read_bytes())
-            resolved = resolve_exchange_config(envelope_path, private_key_path.read_bytes())
-            transport_key = derive_transport_encryption_key(resolved)
-        else:
-            private_bundle = ExchangeKeyBundle.from_json(private_key_path.read_bytes(), require_private=True)
-            plaintext, transport_key = decrypt_exchange_envelope_v2(envelope, private_bundle)
-
+        """Resolve an envelope with Python and report the suite identified by its reader."""
+        resolved = resolve_exchange_config(envelope_path, private_key_path.read_bytes())
+        assert resolved.crypto_suite == crypto_suite
+        transport_key = derive_transport_encryption_key(resolved)
         return {
-            "version": crypto_suite.exchange_config_version,
-            "payload": json.loads(plaintext),
-            "transportKey": (
-                None if transport_key is None else base64.urlsafe_b64encode(transport_key).decode("ascii").rstrip("=")
-            ),
+            "version": resolved.version,
+            "cryptoSuite": resolved.crypto_suite.suite_id,
+            "payload": dict(resolved.payload),
+            "transportKey": base64.urlsafe_b64encode(transport_key).decode("ascii").rstrip("="),
         }
 
     @staticmethod
@@ -583,6 +573,7 @@ class TestTokenCompatibility:
     ) -> None:
         """Compare only deterministic decrypted fields, never randomized JWE members."""
         assert actual["version"] == expected["version"] == crypto_suite.exchange_config_version
+        assert actual["cryptoSuite"] == expected["cryptoSuite"] == crypto_suite.suite_id
         assert actual["payload"] == expected["payload"]
         assert actual["transportKey"] == expected["transportKey"]
 
@@ -591,6 +582,7 @@ class TestTokenCompatibility:
             assert actual["payload"][field_name] == expected["payload"][field_name]
 
         if crypto_suite.exchange_config_version == 1:
+            assert "cryptoSuite" not in actual["payload"]
             key_fields = ("senderKeyFingerprint", "recipientKeyFingerprint")
         else:
             assert actual["payload"]["cryptoSuite"] == expected["payload"]["cryptoSuite"] == crypto_suite.suite_id
@@ -604,7 +596,7 @@ class TestTokenCompatibility:
             assert actual["payload"][field_name] == expected["payload"][field_name]
 
     def test_java_python_exchange_envelopes_interoperate(self):
-        """Compare Java and Python decryption for legacy and version-two exchanges."""
+        """Compare Java and Python decryption for every registered exchange suite."""
         print("\nTesting Java/Python exchange envelope interoperability")
         print("-" * 30)
 
@@ -613,13 +605,12 @@ class TestTokenCompatibility:
             temp_path = Path(temp_dir)
             for crypto_suite in self._exchange_suites():
                 python_dir = temp_path / f"python_{crypto_suite.suite_id}"
-                python_envelope_path, python_private_key, python_envelope = self._build_python_exchange(
+                python_envelope_path, python_private_key = self._build_python_exchange(
                     crypto_suite,
                     python_dir,
                 )
                 python_result = self._decrypt_python_exchange(
                     crypto_suite,
-                    python_envelope,
                     python_private_key,
                     python_envelope_path,
                 )
@@ -633,11 +624,8 @@ class TestTokenCompatibility:
 
                 java_dir = temp_path / f"java_{crypto_suite.suite_id}"
                 java_envelope_path, java_private_key = java_exchange.build(crypto_suite, java_dir)
-                with java_envelope_path.open("r", encoding="utf-8") as file_handle:
-                    java_envelope = json.load(file_handle)
                 python_result = self._decrypt_python_exchange(
                     crypto_suite,
-                    java_envelope,
                     java_private_key,
                     java_envelope_path,
                 )
@@ -714,11 +702,7 @@ class TestTokenCompatibility:
 
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
-            for crypto_suite in (
-                suite
-                for suite in CryptoSuite.all()
-                if suite == CryptoSuite.default() or suite.exchange_config_version == 2
-            ):
+            for crypto_suite in CryptoSuite.all():
                 java_output = temp_path / f"java_{crypto_suite.suite_id}.csv"
                 python_output = temp_path / f"python_{crypto_suite.suite_id}.csv"
 

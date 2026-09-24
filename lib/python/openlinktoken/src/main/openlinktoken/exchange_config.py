@@ -20,7 +20,11 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 from openlinktoken.crypto.crypto_suite import CryptoSuite
 from openlinktoken.ec_key_utils import derive_public_key_from_private_pem, public_key_fingerprint
-from openlinktoken.exchange_jwe import decrypt_exchange_envelope, resolve_private_key_by_kid
+from openlinktoken.exchange_jwe import (
+    decrypt_exchange_envelope,
+    resolve_private_key_by_kid,
+    resolve_v1_exchange_crypto_suite,
+)
 from openlinktoken.exchange_kem import (
     EXCHANGE_V2_CONTENT_TYPE,
     EXCHANGE_V2_ENCRYPTION,
@@ -175,6 +179,7 @@ def resolve_loaded_exchange_config(
 ) -> ResolvedExchangeConfig:
     """Decrypt a validated exchange-config envelope using the provided private key material."""
     transport_encryption_key = None
+    v1_crypto_suite = None
     try:
         if exchange_config.version == 2:
             payload_bytes, transport_encryption_key = decrypt_exchange_envelope_v2(
@@ -184,18 +189,21 @@ def resolve_loaded_exchange_config(
             payload = json.loads(payload_bytes)
         else:
             payload = json.loads(decrypt_exchange_envelope(exchange_config.config, private_key_pem))
+            v1_crypto_suite = resolve_v1_exchange_crypto_suite(exchange_config.config)
     except Exception as error:
         raise ValueError(f"Failed to decrypt exchange config '{exchange_config.path}': {error}") from error
 
     if not isinstance(payload, dict):
         raise ValueError(f"Exchange config '{exchange_config.path}' decrypted to an invalid payload.")
 
-    crypto_suite = CryptoSuite.from_id(payload.get("cryptoSuite", CryptoSuite.default().suite_id))
-    if exchange_config.version == 1 and crypto_suite != CryptoSuite.default():
-        raise ValueError(
-            f"Legacy version 1 exchange configs only support the default crypto suite "
-            f"'{CryptoSuite.default().suite_id}'; found '{crypto_suite.suite_id}'."
-        )
+    if exchange_config.version == 1:
+        if "cryptoSuite" in payload:
+            raise ValueError(
+                "Version 1 exchange payload must not contain cryptoSuite; select suites in the protected header."
+            )
+        crypto_suite = v1_crypto_suite or CryptoSuite.default()
+    else:
+        crypto_suite = CryptoSuite.from_id(payload.get("cryptoSuite"))
     if crypto_suite.exchange_config_version != exchange_config.version:
         raise ValueError(
             f"Exchange config version {exchange_config.version} does not match suite '{crypto_suite.suite_id}'."
