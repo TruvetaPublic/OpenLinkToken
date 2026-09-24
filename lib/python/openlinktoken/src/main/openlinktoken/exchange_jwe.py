@@ -12,7 +12,7 @@ from typing import Any, Mapping
 
 from jwcrypto import jwe, jwk
 
-from openlinktoken.crypto_suite import CryptoSuite
+from openlinktoken.crypto.crypto_suite import CryptoSuite
 from openlinktoken.ec_key_utils import fingerprint_to_kid, public_key_fingerprint
 
 EXCHANGE_JWE_VERSION = 1

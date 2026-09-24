@@ -7,7 +7,7 @@ from copy import deepcopy
 import pytest
 from jwcrypto import jwe, jwk
 
-from openlinktoken.crypto_suite import CryptoSuite
+from openlinktoken.crypto.crypto_suite import CryptoSuite
 from openlinktoken.exchange_config import (
     derive_transport_encryption_key,
     load_exchange_config,

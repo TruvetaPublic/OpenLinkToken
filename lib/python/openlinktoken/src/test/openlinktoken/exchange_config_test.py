@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from jwcrypto import jwe, jwk
 
-from openlinktoken.crypto_suite import CryptoSuite
+from openlinktoken.crypto.crypto_suite import CryptoSuite
 from openlinktoken.ec_key_utils import fingerprint_to_kid, generate_key_pair, public_key_fingerprint
 from openlinktoken.exchange_config import (
     _decode_bin_width,

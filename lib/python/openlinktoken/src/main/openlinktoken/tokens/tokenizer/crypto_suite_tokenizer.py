@@ -2,7 +2,7 @@
 
 from typing import List
 
-from openlinktoken.crypto_suite import CryptoSuite
+from openlinktoken.crypto.crypto_suite import CryptoSuite
 from openlinktoken.tokens.token import Token
 from openlinktoken.tokens.tokenizer.token_digest import TokenDigest
 from openlinktoken.tokens.tokenizer.token_digest_factory import TokenDigestFactory

@@ -8,7 +8,7 @@ from typing import Optional, Union
 
 from jwcrypto import jwe, jwk
 
-from openlinktoken.crypto_suite import CryptoSuite
+from openlinktoken.crypto.crypto_suite import CryptoSuite
 from openlinktoken.tokentransformer.match_token_constants import (
     HEADER_KEY_ALGORITHM,
     HEADER_KEY_ENCRYPTION,

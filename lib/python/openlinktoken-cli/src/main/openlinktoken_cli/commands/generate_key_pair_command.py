@@ -78,7 +78,7 @@ class GenerateKeyPairCommand:
             Exit code (0 for success, non-zero for errors).
 
         """
-        from openlinktoken.crypto_suite import CryptoSuite
+        from openlinktoken.crypto.crypto_suite import CryptoSuite
         from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
         from openlinktoken_cli.util.ec_key_utils import (
             SUPPORTED_CURVES,

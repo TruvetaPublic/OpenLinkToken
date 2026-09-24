@@ -7,7 +7,7 @@ import logging
 import threading
 from typing import Union
 
-from openlinktoken.crypto_suite import CryptoSuite
+from openlinktoken.crypto.crypto_suite import CryptoSuite
 from openlinktoken.tokentransformer.token_transformer import TokenTransformer
 
 logger = logging.getLogger(__name__)

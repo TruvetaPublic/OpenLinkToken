@@ -7,7 +7,7 @@ from typing import Dict, List, Optional, Set, Type
 from openlinktoken.attributes.attribute import Attribute
 from openlinktoken.attributes.attribute_loader import AttributeLoader
 from openlinktoken.attributes.field_registry import FieldRegistry
-from openlinktoken.crypto_suite import CryptoSuite
+from openlinktoken.crypto.crypto_suite import CryptoSuite
 from openlinktoken.tokens.base_token_definition import BaseTokenDefinition
 from openlinktoken.tokens.inference_batch_result import InferenceBatchResult  # noqa: F401
 from openlinktoken.tokens.inference_signature_provider import InferenceSignatureProvider
