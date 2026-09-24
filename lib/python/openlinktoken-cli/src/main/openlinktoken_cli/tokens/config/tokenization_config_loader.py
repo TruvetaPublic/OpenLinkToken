@@ -147,12 +147,11 @@ class TokenizationConfigLoader:
         attributes: Dict[str, AttributeMappingEntry],
         file_path: str,
     ) -> Dict[str, list]:
-        """
-        Parse token rules and ensure each referenced field exists in attributes.
+        """Parse token rules and ensure each referenced field exists in attributes.
 
         Args:
             raw_token_rules: Raw token_rules section from the YAML payload.
-            attributes: Configured field-to-attribute mappings used to resolve fields referenced by token rules.
+            attributes: Parsed attributes used to validate referenced field ids.
             file_path: Source path used for validation error context.
 
         Returns:

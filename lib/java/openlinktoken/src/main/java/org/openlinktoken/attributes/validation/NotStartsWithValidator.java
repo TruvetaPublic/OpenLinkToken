@@ -25,10 +25,7 @@ public final class NotStartsWithValidator implements SerializableAttributeValida
 
     /**
      * Validates that the attribute value does not start with any of the invalid
-     * prefixes after trimming leading and trailing whitespace.
-     *
-     * @param value the value to validate
-     * @return {@code true} if the value is non-null and has no configured invalid prefix
+     * prefixes.
      */
     @Override
     public boolean eval(String value) {

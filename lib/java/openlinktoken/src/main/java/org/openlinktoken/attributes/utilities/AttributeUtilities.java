@@ -144,18 +144,17 @@ public class AttributeUtilities {
     }
 
     /**
-     * Transliterates selected Latin extended characters and removes diacritic marks.
+     * Removes diacritic marks from the given string.
      *
      * This method performs the following steps:
      * 1. Trims the input string
      * 2. Normalizes the string using NFD form, which separates characters from
-     *    their diacritical marks
-     * 3. Removes all combining marks using a predefined regular expression
-     *    pattern
+     * their diacritical marks
+     * 3. Removes all diacritical marks using a predefined regular expression
+     * pattern
      *
      * @param value The string from which to remove diacritical marks
      * @return A new string with all diacritical marks removed
-     * @throws NullPointerException if {@code value} is {@code null}
      */
     public static String normalizeDiacritics(String value) {
         String trimmedValue = value.trim();

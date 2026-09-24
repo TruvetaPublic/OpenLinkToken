@@ -16,51 +16,26 @@ class TestBirthYearAttribute:
 
     @pytest.fixture
     def birth_year_attribute(self):
-        """
-        Create a default BirthYearAttribute.
-
-        Returns:
-            Created a default BirthYearAttribute.
-        """
+        """Create a default BirthYearAttribute."""
         return BirthYearAttribute()
 
     def test_get_name_should_return_birth_year(self, birth_year_attribute):
-        """
-        Test that getName returns 'BirthYear'.
-
-        Args:
-            birth_year_attribute: Birth-year attribute instance supplied to the token definition.
-        """
+        """Test that getName returns 'BirthYear'."""
         assert birth_year_attribute.get_name() == "BirthYear"
 
     def test_get_aliases_should_return_birth_year_and_year_of_birth_aliases(self, birth_year_attribute):
-        """
-        Test that getAliases returns ['BirthYear', 'YearOfBirth'].
-
-        Args:
-            birth_year_attribute: Birth-year attribute instance supplied to the token definition.
-        """
+        """Test that getAliases returns ['BirthYear', 'YearOfBirth']."""
         assert birth_year_attribute.get_aliases() == ["BirthYear", "YearOfBirth"]
 
     def test_normalize_valid_year_should_normalize_to_integer(self, birth_year_attribute):
-        """
-        Test normalization of valid year values.
-
-        Args:
-            birth_year_attribute: Birth-year attribute instance supplied to the token definition.
-        """
+        """Test normalization of valid year values."""
         assert birth_year_attribute.normalize("1990") == "1990"
         assert birth_year_attribute.normalize("2000") == "2000"
         assert birth_year_attribute.normalize("  1950  ") == "1950"
         assert birth_year_attribute.normalize("2020") == "2020"
 
     def test_normalize_invalid_year_format_should_raise_exception(self, birth_year_attribute):
-        """
-        Test that invalid year formats raise exceptions.
-
-        Args:
-            birth_year_attribute: Birth-year attribute instance supplied to the token definition.
-        """
+        """Test that invalid year formats raise exceptions."""
         with pytest.raises(ValueError):
             birth_year_attribute.normalize("90")
         with pytest.raises(ValueError):
@@ -71,12 +46,7 @@ class TestBirthYearAttribute:
             birth_year_attribute.normalize(None)
 
     def test_validate_valid_year_should_return_true(self, birth_year_attribute):
-        """
-        Test validation of valid year values.
-
-        Args:
-            birth_year_attribute: Birth-year attribute instance supplied to the token definition.
-        """
+        """Test validation of valid year values."""
         assert birth_year_attribute.validate("1910") is True
         assert birth_year_attribute.validate("1990") is True
         assert birth_year_attribute.validate("2000") is True
@@ -84,12 +54,7 @@ class TestBirthYearAttribute:
         assert birth_year_attribute.validate("  1980  ") is True
 
     def test_validate_invalid_year_should_return_false(self, birth_year_attribute):
-        """
-        Test validation of invalid year values.
-
-        Args:
-            birth_year_attribute: Birth-year attribute instance supplied to the token definition.
-        """
+        """Test validation of invalid year values."""
         # Out of range
         assert birth_year_attribute.validate("1899") is False
         assert birth_year_attribute.validate(str(date.today().year + 1)) is False
@@ -103,12 +68,7 @@ class TestBirthYearAttribute:
         assert birth_year_attribute.validate(None) is False
 
     def test_normalize_thread_safety(self, birth_year_attribute):
-        """
-        Test thread safety of normalize method with barrier-style synchronization.
-
-        Args:
-            birth_year_attribute: Birth-year attribute instance supplied to the token definition.
-        """
+        """Test thread safety of normalize method with barrier-style synchronization."""
         thread_count = 100
         test_year = "  1990  "
         results = []
@@ -117,9 +77,6 @@ class TestBirthYearAttribute:
         start_event = threading.Event()
 
         def normalize_value():
-            """
-            Normalize value.
-            """
             try:
                 # Wait for the signal to start
                 start_event.wait(timeout=10)
@@ -148,12 +105,7 @@ class TestBirthYearAttribute:
             assert result == "1990"
 
     def test_serialization(self, birth_year_attribute):
-        """
-        Test serialization and deserialization of the attribute.
-
-        Args:
-            birth_year_attribute: Birth-year attribute instance supplied to the token definition.
-        """
+        """Test serialization and deserialization of the attribute."""
         # Serialize the attribute
         serialized_data = pickle.dumps(birth_year_attribute)
 
@@ -179,12 +131,7 @@ class TestBirthYearAttribute:
             )
 
     def test_validate_boundary_values_should_validate_correctly(self, birth_year_attribute):
-        """
-        Test boundary value validation.
-
-        Args:
-            birth_year_attribute: Birth-year attribute instance supplied to the token definition.
-        """
+        """Test boundary value validation."""
         current_year = date.today().year
 
         # Lower boundary

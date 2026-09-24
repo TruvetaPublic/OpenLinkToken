@@ -63,13 +63,7 @@ class TestAttributeUtilities:
         ],
     )
     def test_normalize_diacritics_transliterates_latin_extended_characters(self, value, expected):
-        """
-        normalize_diacritics should transliterate Latin Extended characters before NFD.
-
-        Args:
-            value: Latin Extended text to transliterate into its ASCII equivalent.
-            expected: Expected result against which the operation is checked.
-        """
+        """normalize_diacritics should transliterate Latin Extended characters before NFD."""
         assert AttributeUtilities.normalize_diacritics(value) == expected
 
     @pytest.mark.parametrize(
@@ -83,13 +77,7 @@ class TestAttributeUtilities:
         ],
     )
     def test_normalize_diacritics_handles_real_name_examples(self, value, expected):
-        """
-        normalize_diacritics should preserve ASCII equivalents in representative names.
-
-        Args:
-            value: Representative personal name to normalize to its ASCII equivalent.
-            expected: Expected result against which the operation is checked.
-        """
+        """normalize_diacritics should preserve ASCII equivalents in representative names."""
         assert AttributeUtilities.normalize_diacritics(value) == expected
 
     def test_cannot_instantiate(self):

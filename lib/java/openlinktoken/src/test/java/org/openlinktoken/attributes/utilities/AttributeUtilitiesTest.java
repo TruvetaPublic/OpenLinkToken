@@ -4,10 +4,8 @@ package org.openlinktoken.attributes.utilities;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 
-/** Tests Latin Extended character transliteration used by attribute normalization. */
 class AttributeUtilitiesTest {
 
-    /** Verifies the supported Latin Extended characters map to their expected ASCII forms. */
     @Test
     void normalizeDiacritics_ShouldTransliterateLatinExtendedCharacters() {
         String[][] cases = {
@@ -65,7 +63,6 @@ class AttributeUtilitiesTest {
         }
     }
 
-    /** Verifies transliteration on representative names and combining-mark input. */
     @Test
     void normalizeDiacritics_ShouldHandleRealNameExamples() {
         String[][] cases = {

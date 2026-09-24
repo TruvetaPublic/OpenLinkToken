@@ -51,23 +51,12 @@ class TestLastNameAttribute:
         ],
     )
     def test_normalize_should_transliterate_latin_extended_last_names(self, value, expected):
-        """
-        Test normalization of last names that rely on Latin Extended transliteration.
-
-        Args:
-            value: Latin Extended last name used to verify transliteration.
-            expected: Expected result against which the operation is checked.
-        """
+        """Test normalization of last names that rely on Latin Extended transliteration."""
         assert self.last_name_attribute.normalize(value) == expected
 
     @pytest.mark.parametrize("value", ["Øst", "Đỗ", "Œberg"])
     def test_validate_should_accept_latin_extended_last_names(self, value):
-        """
-        Test validation acceptance for last names that rely on Latin Extended transliteration.
-
-        Args:
-            value: Latin Extended last name whose validation is being checked.
-        """
+        """Test validation acceptance for last names that rely on Latin Extended transliteration."""
         assert self.last_name_attribute.validate(value) is True
         assert self.last_name_attribute.validate(self.last_name_attribute.normalize(value)) is True
 
@@ -201,12 +190,7 @@ class TestLastNameAttribute:
         results = []
 
         def normalize_name():
-            """
-            Function to be executed by each thread.
-
-            Returns:
-                Normalized name.
-            """
+            """Function to be executed by each thread."""
             try:
                 result = self.last_name_attribute.normalize(test_name)
                 return result

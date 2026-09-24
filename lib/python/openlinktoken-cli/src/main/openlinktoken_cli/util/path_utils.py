@@ -4,8 +4,7 @@ from pathlib import Path
 
 
 def get_auto_output_path(input_path: str, subcommand: str) -> str:
-    """
-    Generate an automatic output filename from the input path and subcommand.
+    """Generate an automatic output filename from the input path and subcommand.
 
     Args:
         input_path: The original input file path (e.g., 'data.csv').

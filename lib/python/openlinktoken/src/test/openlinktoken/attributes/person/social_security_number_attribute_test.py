@@ -142,12 +142,7 @@ class TestSocialSecurityNumberAttribute:
         results = []
 
         def normalize_ssn():
-            """
-            Function to be executed by each thread.
-
-            Returns:
-                Normalized ssn.
-            """
+            """Function to be executed by each thread."""
             try:
                 result = self.ssn_attribute.normalize(test_ssn)
                 return result

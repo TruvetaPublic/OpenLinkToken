@@ -19,16 +19,7 @@ _NEWER_TAG = f"v{_NEWER_VERSION}"
 
 
 def _make_release(tag: str = _NEWER_TAG, assets: list | None = None) -> dict:
-    """
-    Build a minimal GitHub release JSON object.
-
-    Args:
-        tag: GitHub release tag identifying the version to retrieve.
-        assets: Sequence of assets values to process.
-
-    Returns:
-        Built a minimal GitHub release JSON object.
-    """
+    """Build a minimal GitHub release JSON object."""
     if assets is None:
         assets = [
             {
@@ -52,17 +43,6 @@ def _make_args(
     dry_run: bool = False,
     yes: bool = True,
 ) -> MagicMock:
-    """
-    Create a mock argument namespace populated from the supplied keyword values.
-
-    Args:
-        target_version: Requested release version for the update.
-        dry_run: Whether to dry run.
-        yes: Whether to yes.
-
-    Returns:
-        Mock argument namespace populated with the supplied keyword attributes.
-    """
     args = MagicMock()
     args.target_version = target_version
     args.dry_run = dry_run
@@ -79,9 +59,6 @@ class TestFindAsset:
     """Tests for platform asset selection."""
 
     def test_linux_x86_64(self):
-        """
-        Verify that linux x86 64.
-        """
         release = _make_release(assets=[{"name": "openlinktoken-v2.1.0-linux-x86_64", "browser_download_url": "u"}])
         with patch("platform.system", return_value="Linux"), patch("platform.machine", return_value="x86_64"):
             asset = UpdateCommand._find_asset(release)
@@ -111,9 +88,6 @@ class TestFindAsset:
         assert asset["name"] == "olt-cli-2.1.0-macos-x86_64.zip"
 
     def test_no_matching_asset_returns_none(self):
-        """
-        Verify that no matching asset returns none.
-        """
         release = _make_release(
             assets=[{"name": "openlinktoken-v2.1.0-windows-x86_64.exe", "browser_download_url": "u"}]
         )
@@ -141,17 +115,7 @@ class TestFindAsset:
 
 
 class TestDryRun:
-    """
-    Test update-command dry-run behavior without changing installed files.
-    """
-
     def test_dry_run_prints_would_update(self, capsys):
-        """
-        Verify that dry run prints would update.
-
-        Args:
-            capsys: Pytest fixture for capturing standard output and standard error.
-        """
         release = _make_release()
         args = _make_args(dry_run=True)
         with (
@@ -167,9 +131,6 @@ class TestDryRun:
         assert _NEWER_TAG in captured.out
 
     def test_dry_run_no_download(self):
-        """
-        Verify that dry run no download.
-        """
         release = _make_release()
         args = _make_args(dry_run=True)
         with (
@@ -189,17 +150,7 @@ class TestDryRun:
 
 
 class TestAssetNotFound:
-    """
-    Test update handling when a release asset cannot be found.
-    """
-
     def test_returns_nonzero_when_no_asset(self, capsys):
-        """
-        Verify that the operation returns nonzero when no asset.
-
-        Args:
-            capsys: Pytest fixture for capturing standard output and standard error.
-        """
         release = _make_release(assets=[])
         args = _make_args()
         with (
@@ -219,17 +170,7 @@ class TestAssetNotFound:
 
 
 class TestAlreadyUpToDate:
-    """
-    Test skipping an update when the installed version is current.
-    """
-
     def test_up_to_date_message(self, capsys):
-        """
-        Verify that up to date message.
-
-        Args:
-            capsys: Pytest fixture for capturing standard output and standard error.
-        """
         from openlinktoken.metadata import Metadata
 
         current_ver = Metadata.DEFAULT_VERSION
@@ -255,18 +196,7 @@ class TestAlreadyUpToDate:
 
 
 class TestChecksumMismatch:
-    """
-    Test rejection of downloaded assets with an incorrect checksum.
-    """
-
     def test_checksum_mismatch_returns_nonzero(self, tmp_path, capsys):
-        """
-        Verify that checksum mismatch returns nonzero.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-            capsys: Pytest fixture for capturing standard output and standard error.
-        """
         release = _make_release()
         fake_binary = tmp_path / f"openlinktoken-{_NEWER_TAG}-linux-x86_64"
         fake_binary.write_bytes(b"fake binary content")
@@ -286,12 +216,6 @@ class TestChecksumMismatch:
         assert "Checksum verification failed" in capsys.readouterr().err
 
     def test_checksum_ok_proceeds(self, tmp_path):
-        """
-        Verify that checksum ok proceeds.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-        """
         release = _make_release()
         checksum = "aabbccdd" * 8  # 64 hex chars
 
@@ -316,17 +240,7 @@ class TestChecksumMismatch:
 
 
 class TestReplaceBinary:
-    """
-    Test replacing the installed executable during an update.
-    """
-
     def test_uses_path_binary_when_found(self, tmp_path):
-        """
-        Verify that the operation uses path binary when found.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-        """
         src = tmp_path / "new_binary"
         src.write_bytes(b"new content")
         target = tmp_path / "olt"
@@ -339,13 +253,6 @@ class TestReplaceBinary:
         assert target.read_bytes() == b"new content"
 
     def test_does_not_overwrite_python_interpreter(self, tmp_path, capsys):
-        """
-        Verify that the operation does not overwrite python interpreter.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-            capsys: Pytest fixture for capturing standard output and standard error.
-        """
         src = tmp_path / "new_binary"
         src.write_bytes(b"new content")
 
@@ -360,12 +267,6 @@ class TestReplaceBinary:
         assert "Unable to locate" in capsys.readouterr().err
 
     def test_argv0_fallback_when_name_matches(self, tmp_path):
-        """
-        Verify that argv0 fallback when name matches.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-        """
         src = tmp_path / "new_binary"
         src.write_bytes(b"new content")
         fake_entrypoint = tmp_path / "olt"
@@ -381,13 +282,6 @@ class TestReplaceBinary:
         assert fake_entrypoint.read_bytes() == b"new content"
 
     def test_permission_error_returns_nonzero(self, tmp_path, capsys):
-        """
-        Verify that permission error returns nonzero.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-            capsys: Pytest fixture for capturing standard output and standard error.
-        """
         src = tmp_path / "new_binary"
         src.write_bytes(b"content")
         target = tmp_path / "olt"
@@ -408,17 +302,7 @@ class TestReplaceBinary:
 
 
 class TestNetworkErrorHandling:
-    """
-    Test update behavior when network requests fail.
-    """
-
     def test_returns_nonzero_when_release_fetch_fails(self, capsys):
-        """
-        Verify that the operation returns nonzero when release fetch fails.
-
-        Args:
-            capsys: Pytest fixture for capturing standard output and standard error.
-        """
         args = _make_args()
         with patch.object(UpdateCommand, "_fetch_latest_release", return_value=None):
             rc = UpdateCommand.execute(args)

@@ -86,9 +86,8 @@ public final class AttributeExpression implements Serializable {
      * of the attribute expression.
      *
      * @param value the attribute value
-     * @return the value after applying the expression pipeline; null or blank input yields
-     *         an empty string, and a missing pipeline leaves a nonblank value unchanged
-     * @throws IllegalArgumentException if an expression is invalid or cannot be evaluated
+     *
+     * @return the effective value after applying the attribute expression
      */
     public String getEffectiveValue(String value) {
 

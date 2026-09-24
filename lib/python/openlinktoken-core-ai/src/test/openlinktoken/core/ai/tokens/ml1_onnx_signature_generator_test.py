@@ -25,24 +25,11 @@ def test_empty_signatures_and_embeddings_are_empty():
 
 
 def test_final_inference_batch_is_not_padded(monkeypatch):
-    """
-    The final dynamic ONNX batch should contain only real input rows.
-
-    Args:
-        monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
-    """
+    """The final dynamic ONNX batch should contain only real input rows."""
     batch_sizes = []
 
     def fake_run_batch(cls, rows):
-        """
-        Capture the requested batch size without starting an ONNX session.
-
-        Args:
-            rows: Rows to run.
-
-        Returns:
-            Tuple containing the values produced by the operation.
-        """
+        """Capture the requested batch size without starting an ONNX session."""
         batch_sizes.append(len(rows))
         return np.zeros((len(rows), 2), dtype=np.float32), 0.0
 
@@ -61,23 +48,10 @@ def test_final_inference_batch_is_not_padded(monkeypatch):
 
 
 def test_rotated_inference_can_skip_unused_raw_serialization(monkeypatch):
-    """
-    Batched callers can request embeddings without serializing discarded raw signatures.
-
-    Args:
-        monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
-    """
+    """Batched callers can request embeddings without serializing discarded raw signatures."""
 
     def fake_run_batch(cls, rows):
-        """
-        Return one deterministic embedding per requested row.
-
-        Args:
-            rows: Rows to run.
-
-        Returns:
-            Tuple containing the values produced by the operation.
-        """
+        """Return one deterministic embedding per requested row."""
         return np.zeros((len(rows), 2), dtype=np.float32), 0.0
 
     monkeypatch.setattr(ML1OnnxSignatureGenerator, "_initialize_if_needed", classmethod(lambda cls: None))
@@ -112,12 +86,7 @@ def test_serialize_embedding_uses_float32_big_endian_bytes():
 
 
 def test_macos_uses_cpu_for_the_large_ml1_model(monkeypatch):
-    """
-    macOS should avoid CoreML's unsafe memory growth for the ML1 model.
-
-    Args:
-        monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
-    """
+    """macOS should avoid CoreML's unsafe memory growth for the ML1 model."""
     monkeypatch.setattr(platform, "system", lambda: "Darwin")
     monkeypatch.setattr(
         ort,
@@ -129,12 +98,7 @@ def test_macos_uses_cpu_for_the_large_ml1_model(monkeypatch):
 
 
 def test_cuda_is_preferred_when_available(monkeypatch):
-    """
-    NVIDIA CUDA should be selected before the CPU fallback.
-
-    Args:
-        monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
-    """
+    """NVIDIA CUDA should be selected before the CPU fallback."""
     monkeypatch.setattr(platform, "system", lambda: "Linux")
     monkeypatch.setattr(
         "openlinktoken.core.ai.tokens.ml1_onnx_signature_generator._nvidia_device_available",
@@ -150,12 +114,7 @@ def test_cuda_is_preferred_when_available(monkeypatch):
 
 
 def test_cuda_falls_back_to_cpu_without_nvidia_device(monkeypatch):
-    """
-    A GPU wheel without a visible NVIDIA device should use CPU directly.
-
-    Args:
-        monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
-    """
+    """A GPU wheel without a visible NVIDIA device should use CPU directly."""
     monkeypatch.setattr(platform, "system", lambda: "Linux")
     monkeypatch.setattr(
         "openlinktoken.core.ai.tokens.ml1_onnx_signature_generator._nvidia_device_available",
@@ -180,12 +139,7 @@ def test_cuda_preloads_bundled_runtime_libraries():
 
 
 def test_coreml_loads_external_model_data_from_memory(tmp_path):
-    """
-    CoreML sessions should avoid the external-data file-path loading bug.
-
-    Args:
-        tmp_path: Temporary directory supplied by pytest for files created by the test.
-    """
+    """CoreML sessions should avoid the external-data file-path loading bug."""
     model_path = tmp_path / "model.onnx"
     external_data_path = Path(f"{model_path}.data")
     model_path.write_bytes(b"model")
@@ -210,12 +164,7 @@ def test_coreml_loads_external_model_data_from_memory(tmp_path):
 
 
 def test_coreml_disables_matmul_add_fusion(tmp_path):
-    """
-    CoreML should not inline large MatMul weights into its compiled model.
-
-    Args:
-        tmp_path: Temporary directory supplied by pytest for files created by the test.
-    """
+    """CoreML should not inline large MatMul weights into its compiled model."""
     model_path = tmp_path / "model.onnx"
     model_path.touch()
     session_options = ort.SessionOptions()
@@ -232,12 +181,7 @@ def test_coreml_disables_matmul_add_fusion(tmp_path):
 
 
 def test_explicit_filesystem_paths_resolve_directly(tmp_path):
-    """
-    Configured local paths should resolve directly.
-
-    Args:
-        tmp_path: Temporary directory supplied by pytest for files created by the test.
-    """
+    """Configured local paths should resolve directly."""
     model_path = tmp_path / "model.onnx"
     model_path.touch()
 
@@ -245,23 +189,13 @@ def test_explicit_filesystem_paths_resolve_directly(tmp_path):
 
 
 def test_missing_explicit_path_has_clear_error(tmp_path):
-    """
-    Missing explicit paths should fail before ONNX initialization.
-
-    Args:
-        tmp_path: Temporary directory supplied by pytest for files created by the test.
-    """
+    """Missing explicit paths should fail before ONNX initialization."""
     with pytest.raises(FileNotFoundError, match="Configured ML1 asset path does not exist"):
         ML1OnnxSignatureGenerator._resolve_path(str(tmp_path / "missing.onnx"))
 
 
 def test_missing_default_assets_require_local_placement(monkeypatch):
-    """
-    Missing default assets should explain the required local placement.
-
-    Args:
-        monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
-    """
+    """Missing default assets should explain the required local placement."""
     monkeypatch.setattr(
         ML1OnnxSignatureGenerator,
         "_find_local_asset",
@@ -273,13 +207,7 @@ def test_missing_default_assets_require_local_placement(monkeypatch):
 
 
 def test_bundled_package_assets_are_used(monkeypatch, tmp_path):
-    """
-    Bundled package assets should be used directly.
-
-    Args:
-        monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
-        tmp_path: Temporary directory supplied by pytest for files created by the test.
-    """
+    """Bundled package assets should be used directly."""
     tokenizer_path = tmp_path / "tokenizer.json"
     tokenizer_path.touch()
     monkeypatch.setattr(

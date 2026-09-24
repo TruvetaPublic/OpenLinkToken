@@ -14,18 +14,15 @@ import java.time.Year;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/** Tests birth-year range validation and serialization. */
 class YearRangeValidatorTest {
 
     private YearRangeValidator validator;
 
-    /** Creates a default year-range validator for each test. */
     @BeforeEach
     void setUp() {
         validator = new YearRangeValidator();
     }
 
-    /** Verifies years from the minimum through the current year pass validation. */
     @Test
     void eval_ValidYears_ShouldReturnTrue() {
         int currentYear = Year.now().getValue();
@@ -38,7 +35,6 @@ class YearRangeValidatorTest {
         assertTrue(validator.eval("  1980  "), "Year with whitespace should be valid");
     }
 
-    /** Verifies out-of-range, future, and malformed years fail validation. */
     @Test
     void eval_InvalidYears_ShouldReturnFalse() {
         int currentYear = Year.now().getValue();
@@ -58,7 +54,6 @@ class YearRangeValidatorTest {
         assertFalse(validator.eval("   "), "Whitespace only should be invalid");
     }
 
-    /** Verifies the minimum and current-year boundaries are inclusive. */
     @Test
     void eval_BoundaryValues_ShouldValidateCorrectly() {
         int currentYear = Year.now().getValue();
@@ -72,7 +67,6 @@ class YearRangeValidatorTest {
         assertFalse(validator.eval(String.valueOf(currentYear + 1)), "Above upper boundary should be invalid");
     }
 
-    /** Verifies serialization preserves year-range validation results. */
     @Test
     void testSerialization() throws Exception {
         // Serialize the validator

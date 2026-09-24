@@ -123,14 +123,6 @@ class TestSHA256Tokenizer:
         assert result == result2
 
     def _calculate_sha256(self, input_str: str) -> str:
-        """
-        Utility method to calculate SHA-256 hash for a given input string.
-
-        Args:
-            input_str: String containing the input str used to calculate.
-
-        Returns:
-            Calculated sha256.
-        """
+        """Utility method to calculate SHA-256 hash for a given input string."""
         hash_object = hashlib.sha256(input_str.encode("utf-8"))
         return hash_object.hexdigest()

@@ -22,15 +22,6 @@ class TestProgressIndicator:
 
     @staticmethod
     def _rendered_lines(rendered: str) -> list[str]:
-        """
-        Strip ANSI escape sequences and split rendered terminal output into display lines.
-
-        Args:
-            rendered: Rendered terminal output to strip of ANSI codes and split into lines.
-
-        Returns:
-            Display lines with ANSI escape sequences and carriage returns removed.
-        """
         normalized = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", rendered).replace("\r", "")
         return normalized.splitlines()
 
@@ -100,15 +91,6 @@ class TestProgressIndicator:
         writes: list[str] = []
 
         def _write(text: str) -> int:
-            """
-            Write the requested value.
-
-            Args:
-                text: Text to write.
-
-            Returns:
-                Written the requested value.
-            """
             writes.append(text)
             pi._running.clear()
             return len(text)
@@ -136,15 +118,6 @@ class TestProgressIndicator:
         writes: list[str] = []
 
         def _write(text: str) -> int:
-            """
-            Write the requested value.
-
-            Args:
-                text: Text to write.
-
-            Returns:
-                Written the requested value.
-            """
             writes.append(text)
             pi._running.clear()
             return len(text)
@@ -172,15 +145,6 @@ class TestProgressIndicator:
         writes: list[str] = []
 
         def _write(text: str) -> int:
-            """
-            Write the requested value.
-
-            Args:
-                text: Text to write.
-
-            Returns:
-                Written the requested value.
-            """
             writes.append(text)
             pi._running.clear()
             return len(text)
@@ -234,38 +198,14 @@ class TestProgressIndicator:
         wait_timeouts: list[float] = []
 
         def _wait(timeout: float) -> bool:
-            """
-            Wait for the requested value.
-
-            Args:
-                timeout: Numeric timeout value used to wait for.
-
-            Returns:
-                True when the check succeeds; otherwise, False.
-            """
             wait_timeouts.append(timeout)
             clock[0] += timeout
             return False
 
         def _perf_counter() -> float:
-            """
-            Return the current value of the test clock.
-
-            Returns:
-                Current simulated time value in seconds.
-            """
             return clock[0]
 
         def _write(text: str) -> int:
-            """
-            Write the requested value.
-
-            Args:
-                text: Text to write.
-
-            Returns:
-                Written the requested value.
-            """
             writes.append(text)
             if len(writes) == 3:
                 pi._running.clear()
@@ -294,17 +234,7 @@ class TestProgressIndicator:
         pi._running.set()
 
         class TestProvider:
-            """
-            Test provider that adds extension metrics to the progress display.
-            """
-
             def get_metrics(self) -> list[tuple[str, str, str]]:
-                """
-                Retrieve metrics.
-
-                Returns:
-                    The metrics.
-                """
                 return [("matched", "1,042", "rows"), ("errors", "3", "")]
 
         pi._stats_providers.append(TestProvider())
@@ -312,15 +242,6 @@ class TestProgressIndicator:
         writes: list[str] = []
 
         def _write(text: str) -> int:
-            """
-            Write the requested value.
-
-            Args:
-                text: Text to write.
-
-            Returns:
-                Written the requested value.
-            """
             writes.append(text)
             pi._running.clear()
             return len(text)
@@ -344,17 +265,7 @@ class TestProgressIndicator:
         """Objects implementing get_metrics() should satisfy StatsProvider protocol."""
 
         class ValidProvider:
-            """
-            Provider supplying valid metrics for StatsProvider protocol checks.
-            """
-
             def get_metrics(self) -> list[tuple[str, str, str]]:
-                """
-                Retrieve metrics.
-
-                Returns:
-                    The metrics.
-                """
                 return [("test", "42", "items")]
 
         assert isinstance(ValidProvider(), StatsProvider)
@@ -530,17 +441,7 @@ class TestCliRunReporter:
                 reporter = CliRunReporter("test")
 
                 class MockProvider:
-                    """
-                    Mock metrics provider used to verify progress-status rendering.
-                    """
-
                     def get_metrics(self) -> list[tuple[str, str, str]]:
-                        """
-                        Retrieve metrics.
-
-                        Returns:
-                            The metrics.
-                        """
                         return [("custom", "99", "items")]
 
                 provider = MockProvider()
@@ -584,15 +485,6 @@ class TestProgressIndicatorLiveRedraw:
         writes: list[str] = []
 
         def _write(text: str) -> int:
-            """
-            Write the requested value.
-
-            Args:
-                text: Text to write.
-
-            Returns:
-                Written the requested value.
-            """
             writes.append(text)
             pi._running.clear()
             return len(text)
@@ -600,15 +492,6 @@ class TestProgressIndicatorLiveRedraw:
         sleep_durations: list[float] = []
 
         def _fake_wait(timeout: float) -> bool:
-            """
-            Wait for fake.
-
-            Args:
-                timeout: Numeric timeout value used to wait for.
-
-            Returns:
-                True when the check succeeds; otherwise, False.
-            """
             sleep_durations.append(timeout)
             return True  # simulate event triggered immediately
 
@@ -633,13 +516,7 @@ class TestCliRunReporterElapsed:
     """Tests for elapsed-duration tracking and reporting."""
 
     def test_elapsed_seconds_stored_after_context_exit(self, tmp_path, monkeypatch):
-        """
-        CliRunReporter stores _elapsed_seconds after the with-block exits.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
-        """
+        """CliRunReporter stores _elapsed_seconds after the with-block exits."""
         monkeypatch.setattr(
             "openlinktoken_cli.util.app_paths.get_openlinktoken_home",
             lambda: tmp_path,
@@ -652,14 +529,7 @@ class TestCliRunReporterElapsed:
         assert reporter._elapsed_seconds >= 0.0
 
     def test_finish_success_includes_elapsed_duration(self, tmp_path, monkeypatch, capsys):
-        """
-        finish_success prints elapsed duration in the completion summary.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
-            capsys: Pytest fixture for capturing standard output and standard error.
-        """
+        """finish_success prints elapsed duration in the completion summary."""
         monkeypatch.setattr(
             "openlinktoken_cli.util.app_paths.get_openlinktoken_home",
             lambda: tmp_path,
@@ -674,13 +544,7 @@ class TestCliRunReporterElapsed:
         )
 
     def test_elapsed_logged_to_file_before_handler_detaches(self, tmp_path, monkeypatch):
-        """
-        Elapsed completion message is written to the log file during __exit__.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
-        """
+        """Elapsed completion message is written to the log file during __exit__."""
         monkeypatch.setattr(
             "openlinktoken_cli.util.app_paths.get_openlinktoken_home",
             lambda: tmp_path,
@@ -695,13 +559,7 @@ class TestCliRunReporterElapsed:
         assert "duration" in log_text.lower(), f"Expected duration in log, got:\n{log_text}"
 
     def test_file_logging_restores_root_logger_level(self, tmp_path, monkeypatch):
-        """
-        Attaching per-run logging should not change the caller's root logger level.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
-        """
+        """Attaching per-run logging should not change the caller's root logger level."""
         monkeypatch.setattr(
             "openlinktoken_cli.util.app_paths.get_openlinktoken_home",
             lambda: tmp_path,
@@ -718,13 +576,7 @@ class TestCliRunReporterElapsed:
             root_logger.setLevel(original_level)
 
     def test_file_logging_restores_root_logger_level_after_exception(self, tmp_path, monkeypatch):
-        """
-        Root logger restoration should also happen when a run raises an exception.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
-        """
+        """Root logger restoration should also happen when a run raises an exception."""
         monkeypatch.setattr(
             "openlinktoken_cli.util.app_paths.get_openlinktoken_home",
             lambda: tmp_path,

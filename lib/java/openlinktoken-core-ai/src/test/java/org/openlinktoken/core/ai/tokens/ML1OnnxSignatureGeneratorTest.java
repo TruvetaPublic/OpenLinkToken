@@ -23,9 +23,6 @@ class ML1OnnxSignatureGeneratorTest {
 
     private String originalUserHome;
 
-    /**
-     * Restores the original home-directory property after a test changes it.
-     */
     @AfterEach
     void restoreUserHome() {
         if (originalUserHome != null) {
@@ -33,9 +30,6 @@ class ML1OnnxSignatureGeneratorTest {
         }
     }
 
-    /**
-     * Verifies that a null inference batch produces an empty signatures-and-embeddings result.
-     */
     @Test
     void nullBatchReturnsEmptyResult() {
         ML1OnnxSignatureGenerator.GenerationResult result =
@@ -45,17 +39,11 @@ class ML1OnnxSignatureGeneratorTest {
         assertTrue(result.embeddings().isEmpty());
     }
 
-    /**
-     * Verifies that an empty inference batch produces no signatures.
-     */
     @Test
     void emptyBatchReturnsEmptySignatures() {
         assertTrue(ML1OnnxSignatureGenerator.generateSignatures(List.of()).isEmpty());
     }
 
-    /**
-     * Verifies that a bundled tokenizer path resolves from the source checkout.
-     */
     @Test
     void sourceCheckoutResolutionFindsTokenizerWithoutClasspathEmbedding() {
         Path resolved = ML1OnnxSignatureGenerator.resolvePath("classpath:/inferencing/ml1/tokenizer.json");
@@ -65,9 +53,6 @@ class ML1OnnxSignatureGeneratorTest {
                 Path.of("resources", "inferencing", "ml1", "tokenizer.json").toString()));
     }
 
-    /**
-     * Verifies that a missing explicit asset path reports why resolution failed.
-     */
     @Test
     void missingExplicitPathHasClearError() {
         IllegalStateException error = assertThrows(
@@ -77,9 +62,6 @@ class ML1OnnxSignatureGeneratorTest {
         assertTrue(error.getMessage().contains("Configured ML1 asset path does not exist"));
     }
 
-    /**
-     * Verifies that a missing classpath asset explains where local assets belong.
-     */
     @Test
     void missingClasspathAssetExplainsLocalPlacement() {
         IllegalStateException error = assertThrows(
@@ -90,11 +72,6 @@ class ML1OnnxSignatureGeneratorTest {
         assertTrue(error.getMessage().contains("inferencing/ml1"));
     }
 
-    /**
-     * Verifies that {@code ~/} paths use the configured user-home directory.
-     *
-     * @throws Exception if the temporary model file cannot be created
-     */
     @Test
     void expandsHomeDirectoryForExplicitPaths() throws Exception {
         originalUserHome = System.getProperty("user.home");

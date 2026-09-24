@@ -67,11 +67,10 @@ class GenerateKeyPairCommand:
 
     @staticmethod
     def execute(args) -> int:
-        """
-        Execute the generate-key-pair command.
+        """Execute the generate-key-pair command.
 
         Args:
-            args: Parsed command-line options for this command.
+            args: Parsed command-line arguments.
 
         Returns:
             Exit code (0 for success, non-zero for errors).

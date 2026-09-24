@@ -33,7 +33,6 @@ public final class AttributeField implements Serializable {
      *
      * @param fieldId        unique field identifier (e.g., "LastName", "MotherLastName")
      * @param attributeClass the attribute class providing normalization and validation behavior
-     * @throws NullPointerException if either argument is {@code null}
      */
     public AttributeField(String fieldId, Class<? extends Attribute> attributeClass) {
         this.fieldId = Objects.requireNonNull(fieldId, "fieldId must not be null");

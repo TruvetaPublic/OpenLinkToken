@@ -23,12 +23,7 @@ class TestGenerateKeyPairCommandUnit:
 
     @pytest.mark.parametrize("curve", SUPPORTED_CURVES)
     def test_generate_key_pair_supported_curves(self, curve):
-        """
-        generate_key_pair returns valid PEM bytes for all supported curves.
-
-        Args:
-            curve: Elliptic-curve name used to generate the key pair.
-        """
+        """generate_key_pair returns valid PEM bytes for all supported curves."""
         private_pem, public_pem = GenerateKeyPairCommand.generate_key_pair(curve)
 
         assert private_pem.startswith(b"-----BEGIN PRIVATE KEY-----"), (
@@ -54,12 +49,7 @@ class TestGenerateKeyPairCommandUnit:
     # -------------------------------------------------------------------------
 
     def test_ensure_directory_creates_with_700(self, tmp_path):
-        """
-        _ensure_directory creates the directory with owner-only permissions.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-        """
+        """_ensure_directory creates the directory with owner-only permissions."""
         target = tmp_path / "dot_olt"
         GenerateKeyPairCommand._ensure_directory(target)
 
@@ -69,23 +59,13 @@ class TestGenerateKeyPairCommandUnit:
             assert mode == 0o700, f"Expected 700 but got {oct(mode)}"
 
     def test_ensure_directory_is_idempotent(self, tmp_path):
-        """
-        _ensure_directory does not raise when called on an existing directory.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-        """
+        """_ensure_directory does not raise when called on an existing directory."""
         target = tmp_path / "existing_dir"
         target.mkdir()
         GenerateKeyPairCommand._ensure_directory(target)  # Must not raise
 
     def test_ensure_directory_rejects_symlink(self, tmp_path):
-        """
-        _ensure_directory rejects symlink targets.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-        """
+        """_ensure_directory rejects symlink targets."""
         target = tmp_path / "dir-link"
         target.symlink_to(tmp_path, target_is_directory=True)
 
@@ -93,12 +73,7 @@ class TestGenerateKeyPairCommandUnit:
             GenerateKeyPairCommand._ensure_directory(target)
 
     def test_ensure_directory_tightens_existing_permissions(self, tmp_path):
-        """
-        _ensure_directory resets an existing directory to owner-only permissions on POSIX.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-        """
+        """_ensure_directory resets an existing directory to owner-only permissions on POSIX."""
         if sys.platform == "win32":
             pytest.skip("POSIX permission test skipped on Windows")
 
@@ -116,12 +91,7 @@ class TestGenerateKeyPairCommandUnit:
     # -------------------------------------------------------------------------
 
     def test_write_key_creates_file_with_correct_content(self, tmp_path):
-        """
-        _write_key writes the supplied bytes to the target path.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-        """
+        """_write_key writes the supplied bytes to the target path."""
         path = tmp_path / "key.pem"
         content = b"-----BEGIN PRIVATE KEY-----\nABC\n-----END PRIVATE KEY-----\n"
         GenerateKeyPairCommand._write_key(path, content, 0o600)
@@ -129,12 +99,7 @@ class TestGenerateKeyPairCommandUnit:
         assert path.read_bytes() == content
 
     def test_write_key_sets_private_permissions(self, tmp_path):
-        """
-        _write_key sets 600 permissions for private keys on POSIX.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-        """
+        """_write_key sets 600 permissions for private keys on POSIX."""
         if sys.platform == "win32":
             pytest.skip("POSIX permission test skipped on Windows")
 
@@ -145,12 +110,7 @@ class TestGenerateKeyPairCommandUnit:
         assert mode == 0o600, f"Expected 600 but got {oct(mode)}"
 
     def test_write_key_sets_public_permissions(self, tmp_path):
-        """
-        _write_key sets 644 permissions for public keys on POSIX.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-        """
+        """_write_key sets 644 permissions for public keys on POSIX."""
         if sys.platform == "win32":
             pytest.skip("POSIX permission test skipped on Windows")
 
@@ -161,12 +121,7 @@ class TestGenerateKeyPairCommandUnit:
         assert mode == 0o644, f"Expected 644 but got {oct(mode)}"
 
     def test_write_key_rejects_symlink_path(self, tmp_path):
-        """
-        _write_key rejects symlink targets to avoid writing through links.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-        """
+        """_write_key rejects symlink targets to avoid writing through links."""
         target = tmp_path / "real.pem"
         target.write_text("original")
         link_path = tmp_path / "linked.pem"
@@ -185,13 +140,7 @@ class TestGenerateKeyPairCommandIntegration:
 
     @pytest.mark.parametrize("curve", SUPPORTED_CURVES)
     def test_all_supported_curves(self, tmp_path, curve):
-        """
-        generate-key-pair succeeds for every supported --curve value.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-            curve: Elliptic-curve name used to generate the key pair.
-        """
+        """generate-key-pair succeeds for every supported --curve value."""
         key_name = f"test-{curve.replace('-', '').lower()}"
         with patch.dict(os.environ, {}):
             with patch("pathlib.Path.home", return_value=tmp_path):
@@ -215,12 +164,7 @@ class TestGenerateKeyPairCommandIntegration:
     # -------------------------------------------------------------------------
 
     def test_default_name_uses_iso_date(self, tmp_path):
-        """
-        When --name is omitted, files are named openlinktoken-<YYYY-MM-DD>.*.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-        """
+        """When --name is omitted, files are named openlinktoken-<YYYY-MM-DD>.*."""
         with patch("pathlib.Path.home", return_value=tmp_path):
             exit_code = OpenLinkTokenCommand.execute(["generate-key-pair"])
 
@@ -234,12 +178,7 @@ class TestGenerateKeyPairCommandIntegration:
     # -------------------------------------------------------------------------
 
     def test_default_curve_is_p256(self, tmp_path):
-        """
-        When --curve is omitted, P-256 is used (PKCS#8 PEM is produced).
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-        """
+        """When --curve is omitted, P-256 is used (PKCS#8 PEM is produced)."""
         key_name = "default-curve"
         with patch("pathlib.Path.home", return_value=tmp_path):
             exit_code = OpenLinkTokenCommand.execute(["generate-key-pair", "--name", key_name])
@@ -254,12 +193,7 @@ class TestGenerateKeyPairCommandIntegration:
     # -------------------------------------------------------------------------
 
     def test_fails_when_key_already_exists(self, tmp_path):
-        """
-        Second run without --force must exit non-zero.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-        """
+        """Second run without --force must exit non-zero."""
         key_name = "existing-key"
         with patch("pathlib.Path.home", return_value=tmp_path):
             first = OpenLinkTokenCommand.execute(["generate-key-pair", "--name", key_name])
@@ -269,12 +203,7 @@ class TestGenerateKeyPairCommandIntegration:
         assert second != 0, "Second run without --force must fail"
 
     def test_force_overwrites_existing_keys(self, tmp_path):
-        """
-        --force allows overwriting existing key files.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-        """
+        """--force allows overwriting existing key files."""
         key_name = "force-key"
         with patch("pathlib.Path.home", return_value=tmp_path):
             OpenLinkTokenCommand.execute(["generate-key-pair", "--name", key_name])
@@ -290,12 +219,7 @@ class TestGenerateKeyPairCommandIntegration:
     # -------------------------------------------------------------------------
 
     def test_unsupported_curve_exits_nonzero(self, tmp_path):
-        """
-        Unsupported --curve value must produce a non-zero exit code.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-        """
+        """Unsupported --curve value must produce a non-zero exit code."""
         with patch("pathlib.Path.home", return_value=tmp_path):
             exit_code = OpenLinkTokenCommand.execute(["generate-key-pair", "--curve", "P-192"])
 
@@ -303,13 +227,7 @@ class TestGenerateKeyPairCommandIntegration:
 
     @pytest.mark.parametrize("invalid_name", ["../escape", "nested/key", r"nested\\key", "C:\\temp\\key"])
     def test_invalid_name_exits_nonzero(self, tmp_path, invalid_name):
-        """
-        Unsafe key basenames must be rejected.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-            invalid_name: Name of the invalid.
-        """
+        """Unsafe key basenames must be rejected."""
         with patch("pathlib.Path.home", return_value=tmp_path):
             exit_code = OpenLinkTokenCommand.execute(["generate-key-pair", "--name", invalid_name])
 
@@ -324,12 +242,7 @@ class TestGenerateKeyPairCommandIntegration:
     # -------------------------------------------------------------------------
 
     def test_directory_created_with_700_permissions(self, tmp_path):
-        """
-        ~/.openlinktoken/ is created with 700 permissions.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-        """
+        """~/.openlinktoken/ is created with 700 permissions."""
         if sys.platform == "win32":
             pytest.skip("POSIX permission test skipped on Windows")
 
@@ -342,12 +255,7 @@ class TestGenerateKeyPairCommandIntegration:
         assert mode == 0o700, f"Directory must have 700 permissions but got {oct(mode)}"
 
     def test_private_key_has_600_permissions(self, tmp_path):
-        """
-        Private key file is written with 600 permissions.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-        """
+        """Private key file is written with 600 permissions."""
         if sys.platform == "win32":
             pytest.skip("POSIX permission test skipped on Windows")
 
@@ -360,12 +268,7 @@ class TestGenerateKeyPairCommandIntegration:
         assert mode == 0o600, f"Private key must have 600 permissions but got {oct(mode)}"
 
     def test_public_key_has_644_permissions(self, tmp_path):
-        """
-        Public key file is written with 644 permissions.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-        """
+        """Public key file is written with 644 permissions."""
         if sys.platform == "win32":
             pytest.skip("POSIX permission test skipped on Windows")
 
@@ -382,13 +285,7 @@ class TestGenerateKeyPairCommandIntegration:
     # -------------------------------------------------------------------------
 
     def test_output_paths_printed_to_stdout(self, tmp_path, capsys):
-        """
-        Both key file paths are printed to stdout on success.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-            capsys: Pytest fixture for capturing standard output and standard error.
-        """
+        """Both key file paths are printed to stdout on success."""
         key_name = "stdout-test"
         with patch("pathlib.Path.home", return_value=tmp_path):
             OpenLinkTokenCommand.execute(["generate-key-pair", "--name", key_name])

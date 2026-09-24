@@ -14,38 +14,32 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
-/** Tests exact-value exclusion and serialization for {@link NotInValidator}. */
 class NotInValidatorTest {
 
-    /** Verifies a null value is rejected. */
     @Test
     void testNullValue() {
         NotInValidator validator = new NotInValidator(Collections.singleton("invalid"));
         assertFalse(validator.eval(null), "Null value should not be allowed");
     }
 
-    /** Verifies an empty exclusion set allows an ordinary value. */
     @Test
     void testEmptyInvalidValues() {
         NotInValidator validator = new NotInValidator(Collections.emptySet());
         assertTrue(validator.eval("value"), "Empty sets should allow any value");
     }
 
-    /** Verifies a value outside the exclusion set is accepted. */
     @Test
     void testValueNotInInvalidList() {
         NotInValidator validator = new NotInValidator(Collections.singleton("invalid"));
         assertTrue(validator.eval("valid"), "Values not in the invalid list should be allowed");
     }
 
-    /** Verifies a value in the exclusion set is rejected. */
     @Test
     void testValueInInvalidList() {
         NotInValidator validator = new NotInValidator(Collections.singleton("invalid"));
         assertFalse(validator.eval("invalid"), "Values in the invalid list should not be allowed");
     }
 
-    /** Verifies each value in a multi-entry exclusion set is rejected. */
     @Test
     void testMultipleInvalidValues() {
         NotInValidator validator = new NotInValidator(Set.of("invalid1", "invalid2", "invalid3"));
@@ -55,7 +49,6 @@ class NotInValidatorTest {
         assertFalse(validator.eval("invalid3"));
     }
 
-    /** Verifies serialization preserves the excluded values and validation behavior. */
     @Test
     void testSerialization() throws Exception {
         NotInValidator validator = new NotInValidator(Set.of("invalid1", "invalid2"));

@@ -6,10 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import org.junit.jupiter.api.Test;
 
-/** Tests the values exposed for AES-GCM encryption configuration. */
 class EncryptionConstantsTest {
 
-    /** Verifies required encryption constants are present. */
     @Test
     void testEncryptionConstantsExist() {
         assertNotNull(EncryptionConstants.AES);
@@ -17,7 +15,6 @@ class EncryptionConstantsTest {
         assertNotNull(EncryptionConstants.IV_SIZE);
     }
 
-    /** Verifies the cipher, key, IV, and authentication-tag constants have expected values. */
     @Test
     void testEncryptionConstantsValues() {
         assertEquals("AES", EncryptionConstants.AES);

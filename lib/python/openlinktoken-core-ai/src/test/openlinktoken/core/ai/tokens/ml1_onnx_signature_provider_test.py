@@ -15,17 +15,9 @@ from openlinktoken.tokens.token_generator_result import TokenGeneratorResult
 
 @pytest.fixture(autouse=True)
 def reset_runtime_config():
-    """
-    Restore process-wide ML1 and rotation settings after each test.
-
-    Yields:
-        None; control passes to the test before ML1 and rotation defaults are restored.
-    """
+    """Restore process-wide ML1 and rotation settings after each test."""
 
     def restore():
-        """
-        Restore the original ML1 or rotation configuration after the test.
-        """
         ML1InferenceConfig.configure(
             True,
             ML1InferenceConfig.DEFAULT_MODEL_PATH,
@@ -129,12 +121,7 @@ def test_build_ml1_payload_records_invalid_field():
 
 @pytest.mark.parametrize("enabled", [True, False])
 def test_provider_enabled_state_matches_configuration(enabled):
-    """
-    Provider enablement should reflect the process-wide ML1 configuration.
-
-    Args:
-        enabled: Enabled value to exercise the behavior under test.
-    """
+    """Provider enablement should reflect the process-wide ML1 configuration."""
     ML1InferenceConfig.configure(
         enabled,
         ML1InferenceConfig.DEFAULT_MODEL_PATH,

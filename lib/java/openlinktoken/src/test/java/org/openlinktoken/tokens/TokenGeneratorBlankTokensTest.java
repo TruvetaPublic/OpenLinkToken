@@ -24,12 +24,10 @@ import org.openlinktoken.attributes.person.PostalCodeAttribute;
 import org.openlinktoken.tokens.tokenizer.SHA256Tokenizer;
 import org.openlinktoken.tokentransformer.NoOperationTokenTransformer;
 
-/** Tests blank-token tracking for missing, invalid, valid, and initial token results. */
 class TokenGeneratorBlankTokensTest {
 
     private TokenGenerator tokenGenerator;
 
-    /** Creates a token generator with the test tokenizer pipeline. */
     @BeforeEach
     void setUp() {
         tokenGenerator = new TokenGenerator(new TokenDefinition(),
@@ -37,7 +35,6 @@ class TokenGeneratorBlankTokensTest {
                         java.util.Collections.singletonList(new NoOperationTokenTransformer())));
     }
 
-    /** Verifies a missing postal code marks T2 as blank. */
     @Test
     void testBlankTokensTracking_WithInvalidAttributes() {
         // Create person attributes with missing postal code (required for T2)
@@ -63,7 +60,6 @@ class TokenGeneratorBlankTokensTest {
         assertEquals(Token.BLANK, result.getTokens().get("T2"));
     }
 
-    /** Verifies an invalid Social Security number marks T4 as blank. */
     @Test
     void testBlankTokensTracking_WithInvalidSSN() {
         // Create person attributes with invalid SSN (required for T4)
@@ -89,7 +85,6 @@ class TokenGeneratorBlankTokensTest {
         assertEquals(Token.BLANK, result.getTokens().get("T4"));
     }
 
-    /** Verifies valid person attributes produce tokens without blank-token markers. */
     @Test
     void testBlankTokensTracking_WithValidAttributes() {
         // Create person attributes with all valid data
@@ -117,7 +112,6 @@ class TokenGeneratorBlankTokensTest {
         }
     }
 
-    /** Verifies a new token result starts with no blank-token markers. */
     @Test
     void testBlankTokensTracking_InitialState() {
         TokenGeneratorResult result = new TokenGeneratorResult();

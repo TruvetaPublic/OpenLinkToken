@@ -30,66 +30,24 @@ class TestPersonAttributesProcessor:
     """Test cases for PersonAttributesProcessor."""
 
     def test_batched_ml1_does_not_run_single_row_inference(self, monkeypatch):
-        """
-        Batched ML1 processing invokes only the provider batch API.
-
-        Args:
-            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
-        """
+        """Batched ML1 processing invokes only the provider batch API."""
 
         class CountingProvider:
-            """
-            Provider that counts single-row and batched inference calls for processor tests.
-            """
-
             def __init__(self):
-                """
-                Initialize the instance.
-                """
                 self.single_calls = 0
                 self.batch_calls = 0
 
             def get_token_id(self):
-                """
-                Retrieve token id.
-
-                Returns:
-                    The token id.
-                """
                 return "ML1"
 
             def is_enabled(self):
-                """
-                Determine whether enabled.
-
-                Returns:
-                    Boolean result of the operation.
-                """
                 return True
 
             def generate_signature(self, row):
-                """
-                Generate signature.
-
-                Args:
-                    row: Row value to generate.
-
-                Returns:
-                    Generated signature.
-                """
                 self.single_calls += 1
                 return "single"
 
             def generate_batch(self, rows):
-                """
-                Generate batch.
-
-                Args:
-                    rows: Rows to generate.
-
-                Returns:
-                    Generated batch.
-                """
                 self.batch_calls += 1
                 return InferenceBatchResult(["batch"] * len(rows))
 
@@ -117,17 +75,9 @@ class TestPersonAttributesProcessor:
         assert provider.batch_calls == 1
 
     def test_flush_pending_rows_uses_precomputed_ml1_signatures(self, monkeypatch):
-        """
-        Flushing applies supplied ML1 signatures without performing inference.
-
-        Args:
-            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
-        """
+        """Flushing applies supplied ML1 signatures without performing inference."""
 
         def fail_provider_lookup():
-            """
-            Raise an assertion if token generation attempts to discover an inference provider.
-            """
             raise AssertionError("flush must not discover or invoke the inference provider")
 
         monkeypatch.setattr(TokenGenerator, "get_inference_provider", fail_provider_lookup)
@@ -475,46 +425,16 @@ class TestPersonAttributesProcessor:
         assert summary.invalid_attributes_by_type["Sex"] == 1
 
     def test_batched_ml1_progress_callback_fires_after_each_batch_flush(self, monkeypatch):
-        """
-        Progress callback fires once per flushed batch so counts reflect written records.
-
-        Args:
-            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
-        """
+        """Progress callback fires once per flushed batch so counts reflect written records."""
 
         class StubProvider:
-            """
-            Fixed inference-signature provider used by processor tests.
-            """
-
             def get_token_id(self):
-                """
-                Retrieve token id.
-
-                Returns:
-                    The token id.
-                """
                 return "ML1"
 
             def is_enabled(self):
-                """
-                Determine whether enabled.
-
-                Returns:
-                    Boolean result of the operation.
-                """
                 return True
 
             def generate_batch(self, rows):
-                """
-                Generate batch.
-
-                Args:
-                    rows: Rows to generate.
-
-                Returns:
-                    Generated batch.
-                """
                 return InferenceBatchResult(["sig"] * len(rows))
 
         monkeypatch.setattr(token_generator_module, "_inference_provider", StubProvider())
@@ -550,12 +470,7 @@ class TestPersonAttributesProcessor:
         assert callback_counts == [2, 4], f"Expected [2, 4] (one call per flush), got {callback_counts}"
 
     def test_non_ml1_progress_callback_fires_every_ten_rows(self, monkeypatch):
-        """
-        Non-ML1 progress callback continues to fire at the existing per-row interval.
-
-        Args:
-            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
-        """
+        """Non-ML1 progress callback continues to fire at the existing per-row interval."""
         callback_counts: list[int] = []
 
         reader_rows = [{"RecordId": str(i)} for i in range(25)]

@@ -11,15 +11,6 @@ from openlinktoken_cli.extension.extension_manifest import (
 
 
 def _bootstrap_manifest(**extension_overrides):
-    """
-    Build a valid bootstrap manifest fixture with the supplied extension overrides.
-
-    Args:
-        extension_overrides: Manifest extension fields that override the fixture defaults.
-
-    Returns:
-        Bootstrap manifest mapping with the requested extension-field overrides.
-    """
     extension = {
         "name": "demo",
         "version": "1.0.0",
@@ -36,9 +27,6 @@ def _bootstrap_manifest(**extension_overrides):
 
 
 def test_parse_bootstrap_manifest_returns_normalized_artifact():
-    """
-    Verify that parse bootstrap manifest returns normalized artifact.
-    """
     manifest = parse_manifest(_bootstrap_manifest(), expected_name="demo")
 
     assert manifest.name == "demo"
@@ -48,9 +36,6 @@ def test_parse_bootstrap_manifest_returns_normalized_artifact():
 
 
 def test_parse_update_manifest_rejects_signature_only_artifact():
-    """
-    Verify that parse update manifest rejects signature only artifact.
-    """
     manifest = {
         "schema_version": 1,
         "extension": "demo",
@@ -69,9 +54,6 @@ def test_parse_update_manifest_rejects_signature_only_artifact():
 
 
 def test_parse_manifest_rejects_non_https_url_without_local_install():
-    """
-    Verify that parse manifest rejects non https url without local install.
-    """
     with pytest.raises(ManifestValidationError, match="HTTPS"):
         parse_manifest(
             _bootstrap_manifest(artifact_url="http://example.com/demo.whl"),
@@ -80,9 +62,6 @@ def test_parse_manifest_rejects_non_https_url_without_local_install():
 
 
 def test_parse_manifest_accepts_file_url_only_for_explicit_local_install():
-    """
-    Verify that parse manifest accepts file url only for explicit local install.
-    """
     manifest = parse_manifest(
         _bootstrap_manifest(artifact_url="file:///tmp/demo.whl", sha256=None),
         expected_name="demo",
@@ -93,9 +72,6 @@ def test_parse_manifest_accepts_file_url_only_for_explicit_local_install():
 
 
 def test_parse_manifest_rejects_unknown_signature_fields():
-    """
-    Verify that parse manifest rejects unknown signature fields.
-    """
     with pytest.raises(ManifestValidationError, match="signature"):
         parse_manifest(
             _bootstrap_manifest(

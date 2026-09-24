@@ -36,15 +36,7 @@ class TestTokenizeCommandDemoMode:
 
     @pytest.fixture
     def temp_dir(self, tmp_path: Path) -> Path:
-        """
-        Create a temporary directory with a two-row CSV input.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-
-        Returns:
-            Temporary directory supplied by pytest for ZIP archive tests.
-        """
+        """Create a temporary directory with a two-row CSV input."""
         input_csv = tmp_path / "input.csv"
         input_csv.write_text(
             "RecordId,FirstName,LastName,PostalCode,Sex,BirthDate,SocialSecurityNumber\n"
@@ -54,16 +46,7 @@ class TestTokenizeCommandDemoMode:
         return tmp_path
 
     def _create_exchange_config(self, temp_dir: Path, name: str = "demo-mode") -> tuple[Path, Path]:
-        """
-        Create an exchange config and return ``(exchange_config_path, private_key_path)``.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-            name: Name identifying the item being processed.
-
-        Returns:
-            Created an exchange config and return ``(exchange_config_path, private_key_path)``.
-        """
+        """Create an exchange config and return ``(exchange_config_path, private_key_path)``."""
         _, partner_public_pem = generate_key_pair("P-256")
         partner_public_key_path = temp_dir / f"{name}.partner.public.pem"
         partner_public_key_path.write_bytes(partner_public_pem)
@@ -92,12 +75,7 @@ class TestTokenizeCommandDemoMode:
     # ------------------------------------------------------------------
 
     def test_demo_mode_succeeds_without_exchange_config(self, temp_dir: Path):
-        """
-        Demo mode should not require an exchange config.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Demo mode should not require an exchange config."""
         args = [
             "tokenize",
             "-i",
@@ -112,12 +90,7 @@ class TestTokenizeCommandDemoMode:
         assert exit_code == 0
 
     def test_demo_mode_uses_default_ml1_thread_count_when_omitted(self, temp_dir: Path):
-        """
-        Omitting the ML1 thread option should configure the detected default.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Omitting the ML1 thread option should configure the detected default."""
         args = [
             "tokenize",
             "-i",
@@ -144,13 +117,7 @@ class TestTokenizeCommandDemoMode:
     def test_demo_mode_accepts_bare_csv_paths_from_working_directory(
         self, temp_dir: Path, monkeypatch: pytest.MonkeyPatch
     ):
-        """
-        Bare CSV filenames should resolve relative to the working directory.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
-        """
+        """Bare CSV filenames should resolve relative to the working directory."""
         monkeypatch.chdir(temp_dir)
 
         exit_code = OpenLinkTokenCommand.execute(
@@ -173,13 +140,7 @@ class TestTokenizeCommandDemoMode:
     def test_demo_mode_accepts_bare_parquet_output_path_from_working_directory(
         self, temp_dir: Path, monkeypatch: pytest.MonkeyPatch
     ):
-        """
-        Bare Parquet output filenames should resolve relative to the working directory.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
-        """
+        """Bare Parquet output filenames should resolve relative to the working directory."""
         monkeypatch.chdir(temp_dir)
 
         exit_code = OpenLinkTokenCommand.execute(
@@ -200,12 +161,7 @@ class TestTokenizeCommandDemoMode:
         assert (temp_dir / "output.metadata.json").exists()
 
     def test_default_mode_fails_without_exchange_config(self, temp_dir: Path):
-        """
-        Default mode must reject execution when no exchange config can be resolved.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Default mode must reject execution when no exchange config can be resolved."""
         original_cwd = Path.cwd()
         try:
             os.chdir(temp_dir)
@@ -224,12 +180,7 @@ class TestTokenizeCommandDemoMode:
         assert exit_code != 0
 
     def test_demo_mode_accepts_exchange_config(self, temp_dir: Path):
-        """
-        Demo mode should accept --exchange-config for optional rotation settings.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Demo mode should accept --exchange-config for optional rotation settings."""
         exchange_config, private_key = self._create_exchange_config(temp_dir, "demo-with-config")
         args = [
             "tokenize",
@@ -249,12 +200,7 @@ class TestTokenizeCommandDemoMode:
         assert exit_code == 0
 
     def test_demo_mode_rejects_hash_record_ids(self, temp_dir: Path):
-        """
-        Demo mode should reject --hash-record-ids.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Demo mode should reject --hash-record-ids."""
         exit_code = OpenLinkTokenCommand.execute(
             [
                 "tokenize",
@@ -271,12 +217,7 @@ class TestTokenizeCommandDemoMode:
         assert exit_code != 0
 
     def test_default_mode_succeeds_with_exchange_config(self, temp_dir: Path):
-        """
-        Default mode should succeed when the exchange config is provided.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Default mode should succeed when the exchange config is provided."""
         exchange_config, private_key = self._create_exchange_config(temp_dir, "normal-mode")
         args = [
             "tokenize",
@@ -300,12 +241,7 @@ class TestTokenizeCommandDemoMode:
     # ------------------------------------------------------------------
 
     def test_default_mode_fails_with_missing_private_key(self, temp_dir: Path):
-        """
-        Default mode must reject an unreadable private key reference.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Default mode must reject an unreadable private key reference."""
         exchange_config, _ = self._create_exchange_config(temp_dir, "missing-private-key")
         args = [
             "tokenize",
@@ -324,12 +260,7 @@ class TestTokenizeCommandDemoMode:
         assert exit_code != 0
 
     def test_invalid_input_type_rejected(self, temp_dir: Path):
-        """
-        An unsupported input extension should be rejected by auto-detection.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """An unsupported input extension should be rejected by auto-detection."""
         bad_input = temp_dir / "input.json"
         bad_input.write_text('{"k":"v"}')
         args = [
@@ -353,9 +284,6 @@ class TestTokenizeCommandDemoMode:
         Demo tokens use PassthroughTokenizer so they are never 44-char HMAC base64.
         Multi-attribute rules (T1-T4) produce pipe-separated signatures; at least
         one such token must appear in the output.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
         """
         output_csv = temp_dir / "output.csv"
         OpenLinkTokenCommand.execute(
@@ -384,12 +312,7 @@ class TestTokenizeCommandDemoMode:
             )
 
     def test_default_mode_tokens_are_44_char_hmac_base64(self, temp_dir: Path):
-        """
-        Default-mode tokens are HMAC-SHA256 base64, always exactly 44 characters.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Default-mode tokens are HMAC-SHA256 base64, always exactly 44 characters."""
         output_csv = temp_dir / "output.csv"
         exchange_config, private_key = self._create_exchange_config(temp_dir, "normal-token-shape")
         OpenLinkTokenCommand.execute(
@@ -418,12 +341,7 @@ class TestTokenizeCommandDemoMode:
             )
 
     def test_demo_and_default_mode_produce_different_tokens(self, temp_dir: Path):
-        """
-        Demo-mode and default-mode outputs must differ for the same input.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Demo-mode and default-mode outputs must differ for the same input."""
         demo_output = temp_dir / "demo_output.csv"
         normal_output = temp_dir / "normal_output.csv"
         exchange_config, private_key = self._create_exchange_config(temp_dir, "demo-vs-normal")
@@ -464,12 +382,7 @@ class TestTokenizeCommandDemoMode:
     # ------------------------------------------------------------------
 
     def test_demo_mode_metadata_contains_only_core_fields(self, temp_dir: Path):
-        """
-        Demo mode metadata should contain only the shared metadata fields and counters.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Demo mode metadata should contain only the shared metadata fields and counters."""
         OpenLinkTokenCommand.execute(
             [
                 "tokenize",
@@ -487,12 +400,7 @@ class TestTokenizeCommandDemoMode:
         assert set(metadata) == EXPECTED_METADATA_KEYS
 
     def test_default_mode_metadata_contains_only_core_fields(self, temp_dir: Path):
-        """
-        Default mode metadata should contain only the shared metadata fields and counters.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Default mode metadata should contain only the shared metadata fields and counters."""
         exchange_config, private_key = self._create_exchange_config(temp_dir, "metadata-normal")
         OpenLinkTokenCommand.execute(
             [
@@ -515,12 +423,7 @@ class TestTokenizeCommandDemoMode:
         assert set(metadata) == EXPECTED_METADATA_KEYS
 
     def test_demo_mode_metadata_contains_processing_counters(self, temp_dir: Path):
-        """
-        Demo mode metadata must still record row and attribute statistics.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Demo mode metadata must still record row and attribute statistics."""
         OpenLinkTokenCommand.execute(
             [
                 "tokenize",
@@ -538,12 +441,7 @@ class TestTokenizeCommandDemoMode:
         assert metadata.get("TotalRows") == 2, f"Expected TotalRows=2 but got {metadata.get('TotalRows')}"
 
     def test_custom_tokenization_disables_ml1_and_omits_custom_ml1_rule(self, temp_dir: Path):
-        """
-        Custom tokenization must not produce built-in or explicitly configured ML1 output.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Custom tokenization must not produce built-in or explicitly configured ML1 output."""
         config_path = temp_dir / "tokenization-config.yaml"
         config_path.write_text(
             """
@@ -603,15 +501,11 @@ token_rules:
 
 
 def _extract_tokens(csv_path: Path, exclude_rule_ids: set[str] | None = None) -> list[str]:
-    """
-    Return non-blank, non-sentinel token values from the Token column of a CSV.
+    """Return non-blank, non-sentinel token values from the Token column of a CSV.
 
     Args:
         csv_path: Path to the CSV file to read.
         exclude_rule_ids: Optional set of RuleId values to skip (e.g. ``{"ML1"}``).
-
-    Returns:
-        Extracted tokens.
     """
     lines = csv_path.read_text().splitlines()
     if not lines:
@@ -640,13 +534,5 @@ def _extract_tokens(csv_path: Path, exclude_rule_ids: set[str] | None = None) ->
 
 
 def _read_metadata(path: Path) -> dict:
-    """
-    Read and parse a metadata JSON file.
-
-    Args:
-        path: Path to the sidecar metadata file containing tokenization details.
-
-    Returns:
-        Read and parse a metadata JSON file.
-    """
+    """Read and parse a metadata JSON file."""
     return json.loads(path.read_text())

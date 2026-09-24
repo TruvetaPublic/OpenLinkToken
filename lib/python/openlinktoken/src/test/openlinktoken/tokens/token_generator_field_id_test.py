@@ -17,9 +17,6 @@ class _MultiFieldTokenDefinition(BaseTokenDefinition):
     """Token definition with multiple StringAttribute fields for testing."""
 
     def __init__(self):
-        """
-        Initialize the instance.
-        """
         self._definitions = {
             "T_MULTI": [
                 AttributeExpression.of("MotherLastName", StringAttribute, "T|U"),
@@ -34,33 +31,12 @@ class _MultiFieldTokenDefinition(BaseTokenDefinition):
         }
 
     def get_version(self):
-        """
-        Retrieve version.
-
-        Returns:
-            The version.
-        """
         return "test"
 
     def get_token_identifiers(self):
-        """
-        Retrieve token identifiers.
-
-        Returns:
-            The token identifiers.
-        """
         return set(self._definitions.keys())
 
     def get_token_definition(self, token_id):
-        """
-        Retrieve token definition.
-
-        Args:
-            token_id: Identifier of the token or rule to process.
-
-        Returns:
-            The token definition.
-        """
         return self._definitions.get(token_id, [])
 
 

@@ -21,30 +21,25 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/** Tests age names, integer normalization, valid ranges, and serialization. */
 class AgeAttributeTest {
 
     private AgeAttribute ageAttribute;
 
-    /** Creates a fresh age attribute for each test. */
     @BeforeEach
     void setUp() {
         ageAttribute = new AgeAttribute();
     }
 
-    /** Verifies the attribute reports the {@code Age} name. */
     @Test
     void getName_ShouldReturnAge() {
         assertEquals("Age", ageAttribute.getName());
     }
 
-    /** Verifies the age attribute exposes its expected alias. */
     @Test
     void getAliases_ShouldReturnAgeAlias() {
         assertArrayEquals(new String[] { "Age" }, ageAttribute.getAliases());
     }
 
-    /** Verifies valid ages normalize to trimmed integer strings. */
     @Test
     void normalize_ValidAge_ShouldNormalizeToInteger() {
         assertEquals("25", ageAttribute.normalize("25"));
@@ -54,7 +49,6 @@ class AgeAttributeTest {
         assertEquals("100", ageAttribute.normalize("100"));
     }
 
-    /** Verifies malformed, null, and blank ages are rejected during normalization. */
     @Test
     void normalize_InvalidAgeFormat_ShouldThrowIllegalArgumentException() {
         assertThrows(IllegalArgumentException.class, () -> {
@@ -71,7 +65,6 @@ class AgeAttributeTest {
         });
     }
 
-    /** Verifies ages from zero through the maximum accepted age pass validation. */
     @Test
     void validate_ValidAge_ShouldReturnTrue() {
         assertTrue(ageAttribute.validate("0"));
@@ -81,7 +74,6 @@ class AgeAttributeTest {
         assertTrue(ageAttribute.validate("  50  "));
     }
 
-    /** Verifies out-of-range and malformed ages fail validation. */
     @Test
     void validate_InvalidAge_ShouldReturnFalse() {
         // Out of range
@@ -97,7 +89,6 @@ class AgeAttributeTest {
         assertFalse(ageAttribute.validate(null));
     }
 
-    /** Verifies concurrent age normalization returns the same value for every thread. */
     @Test
     void normalize_ThreadSafety() throws InterruptedException {
         final int threadCount = 100;
@@ -135,7 +126,6 @@ class AgeAttributeTest {
         }
     }
 
-    /** Verifies serialization preserves age normalization and validation behavior. */
     @Test
     void testSerialization() throws Exception {
         // Serialize the attribute
@@ -184,7 +174,6 @@ class AgeAttributeTest {
         }
     }
 
-    /** Verifies the inclusive lower and upper age boundaries. */
     @Test
     void validate_BoundaryValues_ShouldValidateCorrectly() {
         // Lower boundary

@@ -29,10 +29,6 @@ RESOURCES_DIR = REPO_ROOT / "resources" / "mockdata"
 
 
 class TestPersonAttributesProcessorIntegration:
-    """
-    Test end-to-end processing of person attributes.
-    """
-
     def setup_method(self):
         """Set up test fixtures."""
         self.ml1_inference_patch = patch(
@@ -156,16 +152,7 @@ class TestPersonAttributesProcessorIntegration:
 
     @staticmethod
     def write_overlap_subsets(output_dir: Path, row_count: int) -> tuple[Path, Path]:
-        """
-        Write matching subsets of the overlap fixtures for a fast integration test.
-
-        Args:
-            output_dir: Directory used for the output.
-            row_count: Number of row items.
-
-        Returns:
-            Written matching subsets of the overlap fixtures for a fast integration test.
-        """
+        """Write matching subsets of the overlap fixtures for a fast integration test."""
         fixture_rows = []
         for fixture_name in ("test_overlap1.csv", "test_overlap2.csv"):
             with (RESOURCES_DIR / fixture_name).open(newline="") as input_file:
@@ -359,13 +346,7 @@ class TestPersonAttributesProcessorIntegration:
                     os.remove(temp_file)
 
     def create_test_csv_file(self, file_path: str, person_attributes: Dict[str, str]):
-        """
-        Helper method to create a test CSV file with specified person attributes.
-
-        Args:
-            file_path: Filesystem path to the file handled by the operation.
-            person_attributes: Mapping of person-attribute identifiers to their input values.
-        """
+        """Helper method to create a test CSV file with specified person attributes."""
         with PersonAttributesCSVWriter(file_path) as writer:
             record = {"RecordId": "TEST_RECORD_001"}
             record.update(person_attributes)
@@ -374,16 +355,7 @@ class TestPersonAttributesProcessorIntegration:
     def read_csv_from_person_attributes_processor(
         self, input_csv_file_path: str, token_transformers: List
     ) -> List[Dict[str, str]]:
-        """
-        Read CSV file through PersonAttributesProcessor and return results.
-
-        Args:
-            input_csv_file_path: Path to the input csv file to read.
-            token_transformers: Sequence of token transformers values to read.
-
-        Returns:
-            Read CSV file through PersonAttributesProcessor and return results.
-        """
+        """Read CSV file through PersonAttributesProcessor and return results."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as temp_file:
             tmp_output_file = temp_file.name
 
@@ -410,15 +382,7 @@ class TestPersonAttributesProcessorIntegration:
                 os.remove(tmp_output_file)
 
     def group_records_ids_with_same_ssn(self, input_csv_file_path: str) -> Dict[str, List[str]]:
-        """
-        Returns Map of SSN -> List of RecordIds.
-
-        Args:
-            input_csv_file_path: Path to the input csv file to read.
-
-        Returns:
-            Mapping produced by group records ids with same ssn.
-        """
+        """Returns Map of SSN -> List of RecordIds."""
         ssn_to_record_ids_map = {}
 
         with PersonAttributesCSVReader(input_csv_file_path) as reader:
@@ -433,30 +397,14 @@ class TestPersonAttributesProcessorIntegration:
         return ssn_to_record_ids_map
 
     def hash_token(self, no_op_token: str) -> str:
-        """
-        Hash a token using HMAC-SHA256. Blank tokens pass through unchanged, mirroring encrypt behavior.
-
-        Args:
-            no_op_token: No op token value to hash.
-
-        Returns:
-            Hashed a token using HMAC-SHA256. Blank tokens pass through unchanged, mirroring encrypt behavior.
-        """
+        """Hash a token using HMAC-SHA256. Blank tokens pass through unchanged, mirroring encrypt behavior."""
         if no_op_token == Token.BLANK:
             return Token.BLANK
         mac = hmac.new(self.hash_key.encode("utf-8"), no_op_token.encode("utf-8"), hashlib.sha256)
         return base64.b64encode(mac.digest()).decode("utf-8")
 
     def decrypt_token(self, encrypted_token: str) -> str:
-        """
-        Decrypt an encrypted token.
-
-        Args:
-            encrypted_token: Encrypted token value to decrypt.
-
-        Returns:
-            Decrypted an encrypted token.
-        """
+        """Decrypt an encrypted token."""
         if encrypted_token == Token.BLANK:
             # blank tokens don't get encrypted
             return Token.BLANK

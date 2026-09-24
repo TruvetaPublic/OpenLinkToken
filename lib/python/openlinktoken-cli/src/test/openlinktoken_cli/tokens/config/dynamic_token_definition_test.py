@@ -10,14 +10,7 @@ from openlinktoken_cli.tokens.config.tokenization_config import (
 
 
 class TestDynamicTokenDefinition:
-    """
-    Test creation and validation of dynamic token definitions.
-    """
-
     def test_builds_token_definitions_from_config(self):
-        """
-        Verify that builds token definitions from config.
-        """
         config = TokenizationConfig(
             column_mappings={
                 "FamilyName": AttributeMappingEntry(column_name="family_nm", type="LastName"),
@@ -49,9 +42,6 @@ class TestDynamicTokenDefinition:
         assert t1_definition[1].expressions == "T|S(0,1)|U"
 
     def test_excludes_ml1_rule_from_custom_token_definitions(self):
-        """
-        Verify that excludes ml1 rule from custom token definitions.
-        """
         config = TokenizationConfig(
             column_mappings={
                 "FirstName": AttributeMappingEntry(column_name="given_nm", type="GivenName"),

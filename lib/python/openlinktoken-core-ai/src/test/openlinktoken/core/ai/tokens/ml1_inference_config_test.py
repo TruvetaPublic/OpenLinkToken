@@ -5,17 +5,9 @@ from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig
 
 @pytest.fixture(autouse=True)
 def reset_config():
-    """
-    Restore process-wide ML1 settings after each test.
-
-    Yields:
-        None; control passes to the test before the original ML1 defaults are restored.
-    """
+    """Restore process-wide ML1 settings after each test."""
 
     def restore():
-        """
-        Restore the original ML1 or rotation configuration after the test.
-        """
         ML1InferenceConfig.configure(
             True,
             ML1InferenceConfig.DEFAULT_MODEL_PATH,
@@ -47,13 +39,6 @@ def test_blank_paths_use_defaults():
     [(0, 1, 1), (1, 0, 1), (1, 1, 0), (1, 1, -1)],
 )
 def test_non_positive_numeric_values_raise(sequence_length, batch_size, thread_count):
-    """
-    Non-positive ML1 numeric settings should be rejected.
-
-    Args:
-        sequence_length: Sequence length value to exercise the behavior under test.
-        batch_size: Batch size value to exercise the behavior under test.
-        thread_count: Number of thread items.
-    """
+    """Non-positive ML1 numeric settings should be rejected."""
     with pytest.raises(ValueError):
         ML1InferenceConfig.configure(True, "", "", sequence_length, batch_size, thread_count)

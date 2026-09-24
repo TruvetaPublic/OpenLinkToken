@@ -44,8 +44,7 @@ public final class RotationEmbeddingTransformer implements EmbeddingTransformer 
      * @param minVal        quantizer lower bound
      * @param maxVal        quantizer upper bound
      * @param binWidth      quantizer bin width; must be &gt; 0
-     * @throws IllegalArgumentException if the IV is null or blank, a count, dimension, or bin width is outside
-     *                                  its valid range, or the bias is null or has the wrong length
+     * @throws IllegalArgumentException if any parameter is invalid
      */
     public RotationEmbeddingTransformer(
             String iv,

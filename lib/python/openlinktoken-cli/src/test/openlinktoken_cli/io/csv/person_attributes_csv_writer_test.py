@@ -81,13 +81,7 @@ class TestPersonAttributesCSVWriter:
             assert record2 == "456,Jane Smith"
 
     def test_write_basename_output_path_in_current_directory(self, tmp_path, monkeypatch):
-        """
-        Test that a basename-only output path writes to the current directory.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
-        """
+        """Test that a basename-only output path writes to the current directory."""
         monkeypatch.chdir(tmp_path)
         writer = PersonAttributesCSVWriter("output.csv")
 

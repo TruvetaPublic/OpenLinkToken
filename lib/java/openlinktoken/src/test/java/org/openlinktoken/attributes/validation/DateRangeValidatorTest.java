@@ -14,19 +14,16 @@ import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/** Tests date-range validation across formats, bounds, leap days, and serialization. */
 class DateRangeValidatorTest {
 
     private DateRangeValidator validator;
 
-    /** Creates a validator with the minimum birth-date bound for each test. */
     @BeforeEach
     void setUp() {
         // Create a validator with the minimum date set to 1910-01-01 (previously used as the lower bound for birth dates)
         validator = new DateRangeValidator(LocalDate.of(1910, 1, 1), true);
     }
 
-    /** Verifies dates from the minimum through today pass the default range. */
     @Test
     void eval_ValidDatesWithinRange_ShouldReturnTrue() {
         // Test boundary dates that should be valid
@@ -45,7 +42,6 @@ class DateRangeValidatorTest {
         assertTrue(validator.eval("01-01-2020"));
     }
 
-    /** Verifies dates earlier than the configured minimum fail validation. */
     @Test
     void eval_DatesBeforeMinimum_ShouldReturnFalse() {
         // Test dates before 1910-01-01
@@ -57,7 +53,6 @@ class DateRangeValidatorTest {
         assertFalse(validator.eval("1850-06-15"));
     }
 
-    /** Verifies dates after today fail the default birth-date range. */
     @Test
     void eval_DatesAfterToday_ShouldReturnFalse() {
         // Test dates after today
@@ -71,7 +66,6 @@ class DateRangeValidatorTest {
         assertFalse(validator.eval("2050-12-25"));
     }
 
-    /** Verifies malformed and impossible calendar dates fail validation. */
     @Test
     void eval_InvalidDateFormats_ShouldReturnFalse() {
         // Test invalid date formats
@@ -83,7 +77,6 @@ class DateRangeValidatorTest {
         assertFalse(validator.eval("abc-def-ghi"));
     }
 
-    /** Verifies null, empty, and whitespace-only inputs fail validation. */
     @Test
     void eval_NullAndEmptyValues_ShouldReturnFalse() {
         assertFalse(validator.eval(null));
@@ -92,7 +85,6 @@ class DateRangeValidatorTest {
         assertFalse(validator.eval("\t\n"));
     }
 
-    /** Verifies each supported date format represents an accepted date. */
     @Test
     void eval_VariousDateFormats_ShouldWorkCorrectly() {
         // Test all supported formats for the same date
@@ -103,7 +95,6 @@ class DateRangeValidatorTest {
         assertTrue(validator.eval("15.07.1995")); // dd.MM.yyyy
     }
 
-    /** Verifies valid leap days pass while non-leap-year February 29 dates fail. */
     @Test
     void eval_LeapYearDates_ShouldWorkCorrectly() {
         // Test valid leap year dates
@@ -115,7 +106,6 @@ class DateRangeValidatorTest {
         assertFalse(validator.eval("2001-02-29")); // 2001 is not a leap year
     }
 
-    /** Verifies serialization preserves date-range validation behavior. */
     @Test
     void serialization_ShouldPreserveValidationBehavior() throws Exception {
         // Serialize the validator
@@ -150,7 +140,6 @@ class DateRangeValidatorTest {
         }
     }
 
-    /** Verifies dates at and around the default range boundaries. */
     @Test
     void eval_EdgeCaseDates_ShouldWorkCorrectly() {
         LocalDate today = LocalDate.now();
@@ -165,7 +154,6 @@ class DateRangeValidatorTest {
         assertFalse(validator.eval(dayBeforeMinDate.toString())); // Day before minimum should be invalid
     }
 
-    /** Verifies both inclusive bounds are enforced for a custom date range. */
     @Test
     void customRange_WithFixedMinAndMax_ShouldValidateCorrectly() {
         // Test with a fixed date range
@@ -183,7 +171,6 @@ class DateRangeValidatorTest {
         assertFalse(customValidator.eval("2024-01-01"));
     }
 
-    /** Verifies a custom minimum bound accepts all later parseable dates. */
     @Test
     void customRange_WithOnlyMinDate_ShouldValidateCorrectly() {
         // Test with only a minimum date (no maximum)
@@ -199,7 +186,6 @@ class DateRangeValidatorTest {
         assertFalse(customValidator.eval("1999-12-31"));
     }
 
-    /** Verifies a custom maximum bound accepts all earlier parseable dates. */
     @Test
     void customRange_WithOnlyMaxDate_ShouldValidateCorrectly() {
         // Test with only a maximum date (no minimum)
@@ -215,7 +201,6 @@ class DateRangeValidatorTest {
         assertFalse(customValidator.eval("2021-01-01"));
     }
 
-    /** Verifies a validator with no bounds checks only date parseability. */
     @Test
     void customRange_WithNoBounds_ShouldOnlyValidateParseable() {
         // Test with no bounds (only validates parseability)
