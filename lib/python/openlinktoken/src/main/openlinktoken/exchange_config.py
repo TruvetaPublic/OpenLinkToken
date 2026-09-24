@@ -229,11 +229,11 @@ def resolve_loaded_exchange_config(
     Decrypt and resolve a validated exchange-config envelope.
 
     Args:
-        exchange_config: Loaded exchange config envelope to decrypt.
-        private_key_pem: Private-key material as PEM bytes, text, or a v2 key bundle mapping.
+        exchange_config: Validated exchange envelope and its source path.
+        private_key_pem: Matching v1 private-key PEM or v2 key bundle as bytes, text, or a mapping.
 
     Returns:
-        Resolved exchange config, including its payload and any transport key from v2 decryption.
+        Resolved exchange metadata, decrypted payload, selected suite, and v2 transport key when applicable.
     """
     transport_encryption_key = None
     v1_crypto_suite = None

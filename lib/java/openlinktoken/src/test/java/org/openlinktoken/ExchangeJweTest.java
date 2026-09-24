@@ -26,6 +26,8 @@ class ExchangeJweTest {
 
     /**
      * Verifies a version-one envelope matches the Python-compatible shape and decrypts for both recipients.
+     *
+     * <p>Takes no arguments and returns no value.</p>
      */
     @Test
     void buildsPythonCompatibleEnvelopeAndDecryptsForEitherRecipient() {
@@ -95,6 +97,8 @@ class ExchangeJweTest {
 
     /**
      * Verifies suite identity cannot be supplied inside a legacy exchange payload.
+     *
+     * <p>Takes no arguments and returns no value.</p>
      */
     @Test
     void rejectsCryptoSuiteInLegacyPayload() {
@@ -110,6 +114,8 @@ class ExchangeJweTest {
 
     /**
      * Verifies a non-default v1 suite is authenticated in a critical protected-header parameter.
+     *
+     * <p>Takes no arguments and returns no value.</p>
      */
     @Test
     void buildsAndDecryptsSha3LegacySuiteWithCriticalHeader() {
@@ -140,6 +146,8 @@ class ExchangeJweTest {
 
     /**
      * Verifies suite metadata is rejected unless it is critical and protected.
+     *
+     * <p>Takes no arguments and returns no value.</p>
      */
     @Test
     void rejectsMalformedOrUnprotectedSuiteHeaders() {
@@ -325,6 +333,12 @@ class ExchangeJweTest {
                 Base64.getUrlDecoder().decode((String) envelope.get("protected")));
     }
 
+    /**
+     * Replaces the encoded protected header in a JWE envelope; returns no value.
+     *
+     * @param envelope mutable general JSON JWE envelope
+     * @param protectedHeader replacement protected-header fields
+     */
     private static void updateProtectedHeader(Map<String, Object> envelope, Map<String, Object> protectedHeader) {
         envelope.put(
                 "protected",

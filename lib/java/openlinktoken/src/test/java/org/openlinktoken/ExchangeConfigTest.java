@@ -118,6 +118,8 @@ class ExchangeConfigTest {
 
     /**
      * Verifies a version-one SHA3 suite resolves from the authenticated header, not the payload.
+     *
+     * <p>Takes no arguments and returns no value.</p>
      */
     @Test
     void resolvesV1Sha3FromCriticalHeaderWithoutPayloadSuite() {
@@ -285,10 +287,25 @@ class ExchangeConfigTest {
                 () -> resolved.payload().put("unexpected", true));
     }
 
+    /**
+     * Builds a default-suite version-one exchange envelope for the supplied test keys.
+     *
+     * @param keys sender and recipient key material
+     * @param rotationCount number of rotation matrices in the payload
+     * @return a JSON-compatible version-one exchange envelope
+     */
     private static Map<String, Object> buildV1Envelope(V1Keys keys, int rotationCount) {
         return buildV1Envelope(keys, rotationCount, CryptoSuite.defaultSuite());
     }
 
+    /**
+     * Builds a version-one exchange envelope for the supplied test keys and suite.
+     *
+     * @param keys sender and recipient key material
+     * @param rotationCount number of rotation matrices in the payload
+     * @param cryptoSuite crypto suite to encode in the envelope
+     * @return a JSON-compatible version-one exchange envelope
+     */
     private static Map<String, Object> buildV1Envelope(
             V1Keys keys, int rotationCount, CryptoSuite cryptoSuite) {
         return ExchangeJwe.buildExchangeEnvelope(

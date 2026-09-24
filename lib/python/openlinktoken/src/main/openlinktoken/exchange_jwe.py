@@ -44,21 +44,21 @@ def build_exchange_envelope(
     Build a multi-recipient JWE exchange envelope.
 
     Args:
-        exchange_name: Name of the exchange.
-        hashing_secret: Secret used to generate deterministic token hashes.
-        sender_public_pem: PEM-encoded sender public key.
-        recipient_public_pem: PEM-encoded recipient public key.
-        curve: Elliptic curve used to generate the key pair.
-        created_at: Timestamp when the exchange was created.
-        exchange_id: Identifier used to derive the transport key.
-        rotation_iv: Initialization vector for token rotation, if enabled.
-        rotation_count: Number of token rotations to apply.
-        bin_width: Width of the tokenization bin.
-        dimension_bias: Per-dimension bias values for token rotation.
-        crypto_suite: Suite identifier to include when it is not the default suite.
+        exchange_name: Human-readable name for the exchange.
+        hashing_secret: Secret bytes used to derive token hashes.
+        sender_public_pem: Sender's public EC key in PEM format.
+        recipient_public_pem: Recipient's public EC key in PEM format.
+        curve: Open Link Token curve name shared by both public keys.
+        created_at: Exchange creation timestamp.
+        exchange_id: Stable identifier for this exchange.
+        rotation_iv: Optional rotation-matrix initialization vector.
+        rotation_count: Optional number of rotation matrices.
+        bin_width: Optional rotation quantization bin width.
+        dimension_bias: Optional rotation dimension-bias values.
+        crypto_suite: Optional registered v1 ECDH suite; defaults to the default suite.
 
     Returns:
-        A serialized multi-recipient JWE exchange envelope.
+        A serialized general-JSON JWE exchange envelope.
     """
     selected_suite = crypto_suite or CryptoSuite.default()
     registered_suite = CryptoSuite.from_id(selected_suite.suite_id)
@@ -124,11 +124,11 @@ def decrypt_exchange_envelope(exchange_config: Mapping[str, Any], private_pem: b
     Decrypt a version-one exchange JWE envelope with a matching private key.
 
     Args:
-        exchange_config: Version-one exchange envelope to decrypt.
-        private_pem: PEM-encoded private key bytes.
+        exchange_config: General-JSON version-one JWE exchange envelope.
+        private_pem: Matching recipient private key in PEM format.
 
     Returns:
-        The decrypted exchange payload bytes.
+        Decrypted UTF-8 JSON payload bytes.
 
     Raises:
         ValueError: If the protected suite marker is malformed or incompatible with version one.
@@ -142,13 +142,13 @@ def decrypt_exchange_envelope(exchange_config: Mapping[str, Any], private_pem: b
 
 def resolve_v1_exchange_crypto_suite(exchange_config: Mapping[str, Any]) -> CryptoSuite:
     """
-    Resolve the registered v1 suite from its authenticated protected-header marker.
+    Resolve a v1 suite from its authenticated critical protected-header marker.
 
     Args:
-        exchange_config: Version-one JWE exchange envelope to inspect.
+        exchange_config: General-JSON version-one JWE exchange envelope.
 
     Returns:
-        The registered v1 suite declared by the protected header, or the default suite if absent.
+        The registered version-one ECDH suite selected by the envelope, or the default if absent.
 
     Raises:
         ValueError: If the suite marker is malformed, unprotected, or incompatible with version one.
@@ -228,10 +228,10 @@ def _decode_protected_header(value: Any) -> dict[str, Any]:
     Decode a JWE protected header from unpadded base64url JSON.
 
     Args:
-        value: Base64url-encoded protected-header value.
+        value: Unpadded base64url text containing a JSON protected header.
 
     Returns:
-        The decoded protected-header fields.
+        The decoded protected-header mapping.
 
     Raises:
         ValueError: If the value is missing, malformed, or not a JSON object.
@@ -256,10 +256,10 @@ def _has_unprotected_suite_marker(exchange_config: Mapping[str, Any]) -> bool:
     Check whether the crypto-suite marker appears in an unprotected JWE header.
 
     Args:
-        exchange_config: Exchange envelope whose unprotected headers are inspected.
+        exchange_config: General-JSON JWE exchange envelope.
 
     Returns:
-        Whether any shared or recipient unprotected header contains the marker.
+        ``True`` if an unprotected header contains ``cryptoSuite``; otherwise ``False``.
     """
     for header_name in ("unprotected", "header"):
         header = exchange_config.get(header_name)

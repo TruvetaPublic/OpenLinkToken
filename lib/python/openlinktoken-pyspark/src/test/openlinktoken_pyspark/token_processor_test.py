@@ -116,7 +116,16 @@ class TestOpenLinkTokenProcessor:
         assert payload["ppid"]
 
     def test_from_exchange_config_supports_every_crypto_suite(self, spark, sample_data, exchange_config_case):
-        """The processor resolves each exchange suite and uses its digest and MAC algorithms."""
+        """The processor resolves each exchange suite and uses its digest and MAC algorithms.
+
+        Args:
+            spark: Spark session fixture used to create DataFrames.
+            sample_data: Input person-record DataFrame fixture.
+            exchange_config_case: Real exchange and private-key fixture for the current suite.
+
+        Returns:
+            None.
+        """
         exchange = resolve_exchange_config_inputs(
             exchange_config_case.exchange_config_path,
             private_key_path=exchange_config_case.private_key_path,

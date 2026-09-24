@@ -8,7 +8,15 @@ from openlinktoken.tokentransformer.token_transformer import TokenTransformer
 
 
 class SHA256Tokenizer(CryptoSuiteTokenizer):
-    """Backward-compatible name for the suite-aware tokenizer."""
+    """Backward-compatible name for the suite-aware tokenizer.
+
+    Args:
+        token_transformer_list: Token transformations to apply after digesting.
+        crypto_suite: Suite that selects the digest; defaults to SHA256 v1.
+
+    Returns:
+        A tokenizer configured with the selected suite and transformers.
+    """
 
     def __init__(
         self,
@@ -19,8 +27,11 @@ class SHA256Tokenizer(CryptoSuiteTokenizer):
         Initialize the compatibility wrapper with the selected suite.
 
         Args:
-            token_transformer_list: A list of token transformers.
-            crypto_suite: The suite selecting the token digest. Defaults to SHA-256.
+            token_transformer_list: Token transformations to apply after digesting.
+            crypto_suite: Suite that selects the digest; defaults to SHA256 v1.
+
+        Returns:
+            None.
         """
         selected_suite = crypto_suite if crypto_suite is not None else CryptoSuite.SUITE_SHA256_V1
         super().__init__(token_transformer_list, selected_suite)
