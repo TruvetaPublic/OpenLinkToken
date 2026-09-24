@@ -33,7 +33,6 @@ import org.openlinktoken.tokens.tokenizer.Tokenizer;
 import org.openlinktoken.tokentransformer.HashTokenTransformer;
 import org.openlinktoken.tokentransformer.TokenTransformer;
 
-/** Tests token generation, signature validation, inference, and tokenization errors. */
 class TokenGeneratorTest {
     @Mock
     private Tokenizer tokenizer;
@@ -44,7 +43,6 @@ class TokenGeneratorTest {
     @InjectMocks
     private TokenGenerator tokenGenerator;
 
-    /** Creates a token generator with mocked definition and tokenizer dependencies. */
     @BeforeEach
     void setUp() {
         tokenDefinition = mock(BaseTokenDefinition.class);
@@ -54,7 +52,6 @@ class TokenGeneratorTest {
 
     }
 
-    /** Verifies token definitions are evaluated and each valid signature is tokenized. */
     @Test
     void testGetAllTokens_validTokensWithExpressions() throws Exception {
         when(tokenDefinition.getTokenIdentifiers()).thenReturn(Set.of("token1",
@@ -86,7 +83,6 @@ class TokenGeneratorTest {
         assertEquals("hashedToken", tokens.get("token2"));
     }
 
-    /** Verifies a missing required attribute prevents token generation. */
     @Test
     void testGetAllTokens_invalidAttribute_skipsTokenGeneration() {
         when(tokenDefinition.getTokenIdentifiers()).thenReturn(Set.of("token1"));
@@ -107,7 +103,6 @@ class TokenGeneratorTest {
         assertTrue(tokens.isEmpty(), "Expected no tokens to be generated due to validation failure");
     }
 
-    /** Verifies an empty field-ID definition produces no tokenization call. */
     @Test
     void testGetAllTokensViaFieldId_emptyDefinition_skipsTokenization() throws Exception {
         when(tokenDefinition.getTokenIdentifiers()).thenReturn(Set.of("token1"));
@@ -119,7 +114,6 @@ class TokenGeneratorTest {
         verify(tokenizer, never()).tokenize(anyString());
     }
 
-    /** Verifies an inference provider can generate a token when the rule has no attribute expressions. */
     @Test
     void testFieldIdInferenceProviderHandlesEmptyDefinition() {
         when(tokenDefinition.getTokenIdentifiers()).thenReturn(Set.of("ML1"));
@@ -133,7 +127,6 @@ class TokenGeneratorTest {
         assertTrue(result.getBlankTokensByRule().isEmpty());
     }
 
-    /** Verifies excluding an inference rule omits it while ordinary rules still generate tokens. */
     @Test
     void testFieldIdExclusionSkipsInferenceProvider() throws Exception {
         when(tokenDefinition.getTokenIdentifiers()).thenReturn(Set.of("ML1", "token1"));
@@ -149,7 +142,6 @@ class TokenGeneratorTest {
         assertEquals(Map.of("token1", "ordinary-token"), result.getTokens());
     }
 
-    /** Verifies inference results are included and missing inference data is tracked as blank. */
     @Test
     void testFieldIdInferenceProviderTracksBlank() throws Exception {
         when(tokenDefinition.getTokenIdentifiers()).thenReturn(Set.of("ML1"));
@@ -167,7 +159,6 @@ class TokenGeneratorTest {
         assertTrue(blankResult.getBlankTokensByRule().contains("ML1"));
     }
 
-    /** Verifies the deprecated class-keyed signature API adapts to field-ID inference. */
     @Test
     void testDeprecatedClassKeyedInferenceApiAdaptsToFieldIds() {
         when(tokenDefinition.getTokenIdentifiers()).thenReturn(Set.of("ML1"));
@@ -179,7 +170,6 @@ class TokenGeneratorTest {
         assertEquals("Smith-provider", signatures.get("ML1"));
     }
 
-    /** Verifies tokenization failures leave the generated token map empty. */
     @Test
     void testGetAllTokens_errorInTokenGeneration_logsError() throws Exception {
         when(tokenDefinition.getTokenIdentifiers()).thenReturn(Set.of("token1"));
@@ -202,7 +192,6 @@ class TokenGeneratorTest {
         assertTrue(tokens.isEmpty(), "Expected no tokens to be generated due to tokenization error");
     }
 
-    /** Verifies a valid token signature joins normalized attribute values in definition order. */
     @Test
     void testGetTokenSignature_validSignature() {
         AttributeExpression attrExpr1 = new AttributeExpression(FirstNameAttribute.class, "U");
@@ -224,7 +213,6 @@ class TokenGeneratorTest {
         assertEquals("JOHN|SMITH", signature);
     }
 
-    /** Verifies signature generation rejects a null person-attribute map. */
     @Test
     void testGetTokenSignature_nullPersonAttributes() {
         assertThrows(IllegalArgumentException.class, () -> {
@@ -232,7 +220,6 @@ class TokenGeneratorTest {
         });
     }
 
-    /** Verifies signature generation returns null when a required attribute is missing. */
     @Test
     void testGetTokenSignature_missingRequiredAttribute() {
         AttributeExpression attrExpr = new AttributeExpression(FirstNameAttribute.class, "U");
@@ -250,7 +237,6 @@ class TokenGeneratorTest {
         assertNull(signature);
     }
 
-    /** Verifies signature generation returns null when a required attribute value is invalid. */
     @Test
     void testGetTokenSignature_invalidAttributeValue() {
         AttributeExpression attrExpr = new AttributeExpression(FirstNameAttribute.class, "U");
@@ -268,7 +254,6 @@ class TokenGeneratorTest {
         assertNull(signature);
     }
 
-    /** Verifies a valid token signature is transformed into the tokenizer's result. */
     @Test
     void testGetToken_validInput_returnsHashedToken() throws Exception {
         AttributeExpression attrExpr = new AttributeExpression(FirstNameAttribute.class, "U");
@@ -287,7 +272,6 @@ class TokenGeneratorTest {
         assertEquals("hashedToken123", token);
     }
 
-    /** Verifies token generation returns null when its required signature is unavailable. */
     @Test
     void testGetToken_nullSignature_returnsNull() throws TokenGenerationException {
         AttributeExpression attrExpr = new AttributeExpression(FirstNameAttribute.class, "U");
@@ -305,7 +289,6 @@ class TokenGeneratorTest {
         assertNull(token);
     }
 
-    /** Verifies tokenization failures are surfaced as token-generation exceptions. */
     @Test
     void testGetToken_tokenizationError_throwsException() throws Exception {
         AttributeExpression attrExpr = new AttributeExpression(FirstNameAttribute.class, "U");
@@ -323,7 +306,6 @@ class TokenGeneratorTest {
         });
     }
 
-    /** Verifies raw tokens pass through non-hash transformers when using a passthrough tokenizer. */
     @Test
     void storeRawToken_appliesNonHashTransformersWithPassthroughTokenizer() {
         TokenTransformer encryptTransformer = token -> "encrypted:" + token;

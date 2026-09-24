@@ -41,9 +41,6 @@ public abstract class BaseAttribute implements SerializableAttribute {
 
     /**
      * Validates the attribute value against a set of validation rules.
-     *
-     * @param value the value to validate
-     * @return {@code true} if every configured rule accepts the value
      */
     @Override
     public boolean validate(String value) {

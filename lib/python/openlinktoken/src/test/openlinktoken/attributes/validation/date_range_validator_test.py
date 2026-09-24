@@ -15,21 +15,11 @@ class TestDateRangeValidator:
 
     @pytest.fixture
     def validator(self):
-        """
-        Create a validator with minimum date set to 1910-01-01.
-
-        Returns:
-            Created a validator with minimum date set to 1910-01-01.
-        """
+        """Create a validator with minimum date set to 1910-01-01."""
         return DateRangeValidator(min_date=date(1910, 1, 1), use_current_as_max=True)
 
     def test_eval_valid_dates_within_range_should_return_true(self, validator):
-        """
-        Test boundary dates that should be valid.
-
-        Args:
-            validator: Validator used to check the supplied value.
-        """
+        """Test boundary dates that should be valid."""
         # Minimum valid date
         assert validator.eval("1910-01-01") is True
         assert validator.eval("01/01/1910") is True
@@ -46,12 +36,7 @@ class TestDateRangeValidator:
         assert validator.eval("01-01-2020") is True
 
     def test_eval_dates_before_minimum_should_return_false(self, validator):
-        """
-        Test dates before 1910-01-01.
-
-        Args:
-            validator: Validator used to check the supplied value.
-        """
+        """Test dates before 1910-01-01."""
         assert validator.eval("1909-12-31") is False
         assert validator.eval("12/31/1909") is False
         assert validator.eval("1900-01-01") is False
@@ -60,12 +45,7 @@ class TestDateRangeValidator:
         assert validator.eval("1850-06-15") is False
 
     def test_eval_dates_after_today_should_return_false(self, validator):
-        """
-        Test dates after today.
-
-        Args:
-            validator: Validator used to check the supplied value.
-        """
+        """Test dates after today."""
         from datetime import timedelta
 
         tomorrow = date.today() + timedelta(days=1)
@@ -78,12 +58,7 @@ class TestDateRangeValidator:
         assert validator.eval("2050-12-25") is False
 
     def test_eval_invalid_date_formats_should_return_false(self, validator):
-        """
-        Test invalid date formats.
-
-        Args:
-            validator: Validator used to check the supplied value.
-        """
+        """Test invalid date formats."""
         assert validator.eval("20231026") is False  # No separators
         assert validator.eval("2023-13-01") is False  # Invalid month
         assert validator.eval("2023-02-30") is False  # Invalid day for February
@@ -92,24 +67,14 @@ class TestDateRangeValidator:
         assert validator.eval("abc-def-ghi") is False
 
     def test_eval_null_and_empty_values_should_return_false(self, validator):
-        """
-        Test null and empty values.
-
-        Args:
-            validator: Validator used to check the supplied value.
-        """
+        """Test null and empty values."""
         assert validator.eval(None) is False
         assert validator.eval("") is False
         assert validator.eval("   ") is False  # Whitespace only
         assert validator.eval("\t\n") is False
 
     def test_eval_various_date_formats_should_work_correctly(self, validator):
-        """
-        Test all supported formats for the same date.
-
-        Args:
-            validator: Validator used to check the supplied value.
-        """
+        """Test all supported formats for the same date."""
         assert validator.eval("1995-07-15") is True  # yyyy-MM-dd
         assert validator.eval("1995/07/15") is True  # yyyy/MM/dd
         assert validator.eval("07/15/1995") is True  # MM/dd/yyyy
@@ -117,12 +82,7 @@ class TestDateRangeValidator:
         assert validator.eval("15.07.1995") is True  # dd.MM.yyyy
 
     def test_eval_leap_year_dates_should_work_correctly(self, validator):
-        """
-        Test leap year validation.
-
-        Args:
-            validator: Validator used to check the supplied value.
-        """
+        """Test leap year validation."""
         # Valid leap year dates
         assert validator.eval("2000-02-29") is True  # Year 2000 is a leap year
         assert validator.eval("1996-02-29") is True  # 1996 is a leap year
@@ -132,12 +92,7 @@ class TestDateRangeValidator:
         assert validator.eval("2001-02-29") is False  # 2001 is not a leap year
 
     def test_serialization_should_preserve_validation_behavior(self, validator):
-        """
-        Test serialization and deserialization of the validator.
-
-        Args:
-            validator: Validator used to check the supplied value.
-        """
+        """Test serialization and deserialization of the validator."""
         # Serialize the validator
         serialized_data = pickle.dumps(validator)
 
@@ -164,12 +119,7 @@ class TestDateRangeValidator:
             )
 
     def test_eval_edge_case_dates_should_work_correctly(self, validator):
-        """
-        Test edge cases around boundaries.
-
-        Args:
-            validator: Validator used to check the supplied value.
-        """
+        """Test edge cases around boundaries."""
         today = date.today()
         from datetime import timedelta
 

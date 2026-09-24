@@ -9,24 +9,15 @@ class TestResolveRingId:
     """Unit tests for resolve_ring_id()."""
 
     def test_none_returns_uuid(self):
-        """
-        Verify that none returns uuid.
-        """
         assert resolve_ring_id(None) is not None
         assert len(resolve_ring_id(None)) == 36  # standard UUID format with dashes
 
     def test_empty_string_returns_fresh_uuid(self):
-        """
-        Verify that empty string returns fresh uuid.
-        """
         result = resolve_ring_id("")
         assert result is not None
         assert len(result) == 36
 
     def test_blank_string_returns_fresh_uuid(self):
-        """
-        Verify that blank string returns fresh uuid.
-        """
         result = resolve_ring_id("    ")
         assert result is not None
         assert len(result) == 36

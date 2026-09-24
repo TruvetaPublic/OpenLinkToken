@@ -231,7 +231,7 @@ class OpenLinkTokenCommand:
         Useful for testing or when embedding the CLI in another application.
 
         Args:
-            args: Command-line argument list to pass to the CLI parser.
+            args: Command-line arguments as a list
 
         Returns:
             Exit code (0 for success, non-zero for errors)

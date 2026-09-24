@@ -27,12 +27,7 @@ class TestPassthroughTokenizer:
         self.tokenizer = PassthroughTokenizer(transformers)
 
     def test_tokenize_null_or_empty_input_returns_empty_string(self, setup):
-        """
-        Test that None or empty input returns EMPTY constant.
-
-        Args:
-            setup: Fixture that initializes the tokenizer and its transformer mocks.
-        """
+        """Test that None or empty input returns EMPTY constant."""
         result_none = self.tokenizer.tokenize(None)  # Test for None input
         assert result_none == PassthroughTokenizer.EMPTY
 
@@ -43,12 +38,7 @@ class TestPassthroughTokenizer:
         assert result_blank == PassthroughTokenizer.EMPTY
 
     def test_tokenize_valid_input_returns_unchanged_value(self, setup):
-        """
-        Test that valid input is passed through with transformers applied.
-
-        Args:
-            setup: Fixture that initializes the tokenizer and its transformer mocks.
-        """
+        """Test that valid input is passed through with transformers applied."""
         input_value = "test-input"
 
         # Mock the transformations to simulate behavior of TokenTransformers
@@ -64,12 +54,7 @@ class TestPassthroughTokenizer:
         assert result == "encrypted-token"  # Check the final result after applying transformers
 
     def test_get_token_transformer_list_returns_configured_transformers(self, setup):
-        """
-        Configured transformers should be available to callers that bypass hashing.
-
-        Args:
-            setup: Fixture that initializes the tokenizer and its transformer mocks.
-        """
+        """Configured transformers should be available to callers that bypass hashing."""
         assert self.tokenizer.get_token_transformer_list() == [
             self.hash_transformer_mock,
             self.encrypt_transformer_mock,
@@ -86,12 +71,7 @@ class TestPassthroughTokenizer:
         assert result == input_value  # Verify that the result is the original value unchanged
 
     def test_tokenize_valid_input_transformer_throws_exception(self, setup):
-        """
-        Test that transformer exceptions are propagated.
-
-        Args:
-            setup: Fixture that initializes the tokenizer and its transformer mocks.
-        """
+        """Test that transformer exceptions are propagated."""
         input_value = "test-input"
 
         # Mock the first transformer to throw an exception
@@ -104,12 +84,7 @@ class TestPassthroughTokenizer:
         assert str(exc_info.value) == "Transform error"
 
     def test_tokenize_multiple_transformers_applies_in_order(self, setup):
-        """
-        Test that multiple transformers are applied in sequence.
-
-        Args:
-            setup: Fixture that initializes the tokenizer and its transformer mocks.
-        """
+        """Test that multiple transformers are applied in sequence."""
         input_value = "original-value"
         after_first_transform = "after-first"
         after_second_transform = "after-second"

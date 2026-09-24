@@ -13,18 +13,15 @@ import java.io.ObjectOutputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/** Tests age-range validation, boundary handling, and serialization. */
 class AgeRangeValidatorTest {
 
     private AgeRangeValidator validator;
 
-    /** Creates a default age-range validator for each test. */
     @BeforeEach
     void setUp() {
         validator = new AgeRangeValidator();
     }
 
-    /** Verifies representative in-range integer ages pass validation. */
     @Test
     void eval_ValidAges_ShouldReturnTrue() {
         assertTrue(validator.eval("0"), "Age 0 should be valid");
@@ -34,7 +31,6 @@ class AgeRangeValidatorTest {
         assertTrue(validator.eval("  42  "), "Age with whitespace should be valid");
     }
 
-    /** Verifies out-of-range and malformed ages fail validation. */
     @Test
     void eval_InvalidAges_ShouldReturnFalse() {
         // Out of range
@@ -52,7 +48,6 @@ class AgeRangeValidatorTest {
         assertFalse(validator.eval("   "), "Whitespace only should be invalid");
     }
 
-    /** Verifies the inclusive minimum and maximum age boundaries. */
     @Test
     void eval_BoundaryValues_ShouldValidateCorrectly() {
         // Lower boundary
@@ -64,7 +59,6 @@ class AgeRangeValidatorTest {
         assertFalse(validator.eval("121"), "Above upper boundary (121) should be invalid");
     }
 
-    /** Verifies serialization preserves age-range validation results. */
     @Test
     void testSerialization() throws Exception {
         // Serialize the validator

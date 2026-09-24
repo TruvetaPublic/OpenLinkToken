@@ -19,24 +19,20 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/** Tests last-name normalization and validation across scripts, suffixes, and placeholders. */
 class LastNameAttributeTest {
 
     private LastNameAttribute lastNameAttribute;
 
-    /** Creates a fresh last-name attribute for each test. */
     @BeforeEach
     void setUp() {
         lastNameAttribute = new LastNameAttribute();
     }
 
-    /** Verifies the attribute reports the {@code LastName} name. */
     @Test
     void getName_ShouldReturnLastName() {
         assertEquals("LastName", lastNameAttribute.getName());
     }
 
-    /** Verifies both supported last-name aliases are exposed. */
     @Test
     void getAliases_ShouldReturnLastNameAndSurname() {
         String[] expectedAliases = { "LastName", "Surname" };
@@ -44,14 +40,12 @@ class LastNameAttributeTest {
         assertArrayEquals(expectedAliases, actualAliases);
     }
 
-    /** Verifies an ordinary last name is retained during normalization. */
     @Test
     void normalize_ShouldProcessLastName() {
         String input = "Doe";
         assertEquals("Doe", lastNameAttribute.normalize(input), "Last name should be properly normalized");
     }
 
-    /** Verifies common accented last names normalize without diacritics. */
     @Test
     void normalize_Accent() {
         String name1 = "Gómez";
@@ -64,7 +58,6 @@ class LastNameAttributeTest {
         assertEquals("Mader", lastNameAttribute.normalize(name4));
     }
 
-    /** Verifies Latin Extended last names are transliterated to ASCII letters. */
     @Test
     void normalize_ShouldTransliterateLatinExtendedLastNames() {
         assertEquals("Ost", lastNameAttribute.normalize("Øst"));
@@ -72,7 +65,6 @@ class LastNameAttributeTest {
         assertEquals("OEberg", lastNameAttribute.normalize("Œberg"));
     }
 
-    /** Verifies Latin Extended last names and their normalized forms pass validation. */
     @Test
     void validate_ShouldAcceptLatinExtendedLastNames() {
         assertTrue(lastNameAttribute.validate("Øst"));
@@ -83,7 +75,6 @@ class LastNameAttributeTest {
         assertTrue(lastNameAttribute.validate(lastNameAttribute.normalize("Œberg")));
     }
 
-    /** Verifies longer names and eligible two-character names pass validation. */
     @Test
     void validate_ShouldReturnTrueForValidLastNames_Part1() {
         // Names with 3+ characters
@@ -98,7 +89,6 @@ class LastNameAttributeTest {
         assertTrue(lastNameAttribute.validate("Im"), "2-character name with a vowel should be allowed");
     }
 
-    /** Verifies additional two-character names and case variants of {@code Ng} pass validation. */
     @Test
     void validate_ShouldReturnTrueForValidLastNames_Part2() {
         // More 2-character names with at least one vowel
@@ -112,7 +102,6 @@ class LastNameAttributeTest {
         assertTrue(lastNameAttribute.validate("NG"), "NG should be allowed as a special case (case insensitive)");
     }
 
-    /** Verifies null, blank, single-character, and ineligible two-character names fail validation. */
     @Test
     void validate_ShouldReturnFalseForInvalidLastNames() {
         // Null or empty
@@ -129,7 +118,6 @@ class LastNameAttributeTest {
         assertFalse(lastNameAttribute.validate("Xz"), "2-character name with no vowels should not beallowed");
     }
 
-    /** Verifies common placeholder last names fail validation. */
     @Test
     void validate_ShouldReturnFalseForBasicPlaceholderValues() {
         // Test basic placeholder values
@@ -141,7 +129,6 @@ class LastNameAttributeTest {
         assertFalse(lastNameAttribute.validate("Anonymous"), "Anonymous should not be allowed");
     }
 
-    /** Verifies healthcare-specific placeholder last names fail validation. */
     @Test
     void validate_ShouldReturnFalseForMedicalPlaceholderValues() {
         // Test medical/healthcare specific placeholders
@@ -152,7 +139,6 @@ class LastNameAttributeTest {
         assertFalse(lastNameAttribute.validate("<masked>"), "<masked> should not be allowed");
     }
 
-    /** Verifies automation and test placeholders fail validation. */
     @Test
     void validate_ShouldReturnFalseForTestingPlaceholderValues() {
         // Test automation/testing specific placeholders
@@ -161,7 +147,6 @@ class LastNameAttributeTest {
         assertFalse(lastNameAttribute.validate("zzztrash"), "zzztrash should not be allowed");
     }
 
-    /** Verifies missing and unavailable data placeholders fail validation. */
     @Test
     void validate_ShouldReturnFalseForDataAvailabilityPlaceholders() {
         // Test data availability placeholders
@@ -171,7 +156,6 @@ class LastNameAttributeTest {
         assertFalse(lastNameAttribute.validate("NotAvailable"), "NotAvailable should not be allowed");
     }
 
-    /** Verifies placeholder matching is case-insensitive. */
     @Test
     void validate_ShouldReturnFalseForCaseInsensitivePlaceholders() {
         // Test case insensitivity (NotInValidator uses equalsIgnoreCase)
@@ -186,7 +170,6 @@ class LastNameAttributeTest {
         assertFalse(lastNameAttribute.validate("missing"), "missing (lowercase) should not be allowed");
     }
 
-    /** Verifies common multi-part, accented, and hyphenated last names pass validation. */
     @Test
     void validate_ShouldReturnTrueForValidCommonLastNames() {
         // Common legitimate last names (all 3+ characters)
@@ -199,7 +182,6 @@ class LastNameAttributeTest {
         assertTrue(lastNameAttribute.validate("De La Cruz"), "De La Cruz should be allowed");
     }
 
-    /** Verifies representative two-character last names with vowels pass validation. */
     @Test
     void validate_ShouldReturnTrueForTwoCharacterLastNames() {
         // Two-character last names with vowels
@@ -208,7 +190,6 @@ class LastNameAttributeTest {
         assertTrue(lastNameAttribute.validate("Xu"), "Xu should be allowed (2 chars with vowel)");
     }
 
-    /** Verifies trimmed two-character names pass the special validation rules. */
     @Test
     void validate_ShouldReturnTrueForEdgeCases() {
         // Edge cases for validation rule
@@ -217,7 +198,6 @@ class LastNameAttributeTest {
         assertTrue(lastNameAttribute.validate(" Ai "), "Ai with spaces should be allowed");
     }
 
-    /** Verifies legitimate last names resembling placeholders remain valid. */
     @Test
     void validate_ShouldReturnTrueForLastNamesCloseToPlaceholders() {
         // Test last names that might be similar to placeholders but are legitimate
@@ -227,7 +207,6 @@ class LastNameAttributeTest {
         assertTrue(lastNameAttribute.validate("Anderson"), "Anderson should be allowed (different from Anonymous)");
     }
 
-    /** Verifies concurrent normalization produces the same transliterated last name. */
     @Test
     void normalize_ThreadSafety() throws InterruptedException {
         final int threadCount = 100;
@@ -265,7 +244,6 @@ class LastNameAttributeTest {
         }
     }
 
-    /** Verifies recognized generational suffixes are removed from last names. */
     @Test
     void normalize_ShouldRemoveGenerationalSuffixes() {
         // Test various generational suffix formats
@@ -301,7 +279,6 @@ class LastNameAttributeTest {
         assertEquals("Young", lastNameAttribute.normalize("Young Sr"));
     }
 
-    /** Verifies punctuation, digits, and separators are removed from normalized last names. */
     @Test
     void normalize_ShouldRemoveSpecialCharacters() {
         // Test removal of dashes, spaces, and other non-alphanumeric characters
@@ -326,7 +303,6 @@ class LastNameAttributeTest {
         assertEquals("Tet", lastNameAttribute.normalize("Te$t123"));
     }
 
-    /** Verifies suffix removal and special-character cleanup work together. */
     @Test
     void normalize_ShouldHandleGenerationalSuffixesAndSpecialCharacters() {
         // Test combination of generational suffixes and special characters
@@ -341,7 +317,6 @@ class LastNameAttributeTest {
         assertEquals("RodriguezOBrien", lastNameAttribute.normalize("Rodríguez O'Brien III"));
     }
 
-    /** Verifies normalization handles combined accents, punctuation, and suffixes. */
     @Test
     void normalize_ShouldHandleComplexCombinations() {
         // Test names with accents, special characters, and suffixes all together
@@ -355,7 +330,6 @@ class LastNameAttributeTest {
         assertEquals("ComplexName", lastNameAttribute.normalize("Cömplex-Nâme123 Senior"));
     }
 
-    /** Verifies serialization preserves last-name normalization and validation behavior. */
     @Test
     void testSerialization() throws Exception {
         // Serialize the attribute
@@ -406,7 +380,6 @@ class LastNameAttributeTest {
         }
     }
 
-    /** Verifies {@code Ng} and two-character names with vowels pass validation. */
     @Test
     void validate_ShouldAcceptSpecialCaseNgAndTwoLetterNamesWithVowels() {
         // Special case: Ng (case variations)
@@ -437,7 +410,6 @@ class LastNameAttributeTest {
         assertTrue(lastNameAttribute.validate("  Wu  "), "Wu with spaces should be allowed");
     }
 
-    /** Verifies two-character names without vowels and single-letter names are rejected. */
     @Test
     void validate_ShouldRejectTwoLetterNamesWithoutVowelsAndSingleLetters() {
         // Two-letter names without vowels (should be rejected)
@@ -452,7 +424,6 @@ class LastNameAttributeTest {
         assertFalse(lastNameAttribute.validate("  B  "), "Single letter B with spaces should not be allowed");
     }
 
-    /** Verifies validation and normalization remain stable when applied repeatedly. */
     @Test
     void validate_IdempotencyShouldBeStable() {
         // Test that validation is idempotent: validate(x) == validate(normalize(x))
@@ -489,7 +460,6 @@ class LastNameAttributeTest {
         }
     }
 
-    /** Verifies validation agrees for representative values and their normalized forms. */
     @Test
     void validate_NormalizedValuesShouldPassValidation() {
         // Specific test for the idempotency requirement
@@ -518,7 +488,6 @@ class LastNameAttributeTest {
         assertTrue(valid2, "A.I. should be valid (normalizes to 2 vowels)");
     }
 
-    /** Verifies inputs that normalize to placeholder last names are rejected. */
     @Test
     void validate_ShouldRejectValuesNormalizingToPlaceholders() {
         // Test that values which normalize to placeholder values are rejected

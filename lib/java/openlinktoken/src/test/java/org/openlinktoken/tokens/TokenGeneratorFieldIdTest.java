@@ -20,12 +20,10 @@ import org.openlinktoken.attributes.person.LastNameAttribute;
 import org.openlinktoken.attributes.person.SexAttribute;
 import org.openlinktoken.tokens.tokenizer.PassthroughTokenizer;
 
-/** Tests field-ID token generation with shared attribute types and legacy expressions. */
 class TokenGeneratorFieldIdTest {
 
     private TokenGenerator tokenGenerator;
 
-    /** Registers custom fields and creates the test token definitions. */
     @BeforeEach
     void setUp() {
         var stringAttr = new StringAttribute();
@@ -45,24 +43,16 @@ class TokenGeneratorFieldIdTest {
                             new AttributeExpression(FirstNameAttribute.class, "T|S(0,1)|U"),
                             new AttributeExpression(SexAttribute.class, "T|U")));
 
-            /** Returns the version label for these test token definitions. */
             @Override
             public String getVersion() {
                 return "test";
             }
 
-            /** Returns the identifiers backed by the configured test definitions. */
             @Override
             public Set<String> getTokenIdentifiers() {
                 return defs.keySet();
             }
 
-            /**
-             * Looks up the expressions configured for a token identifier.
-             *
-             * @param tokenId identifier to look up
-             * @return its expressions, or {@code null} when no definition is configured
-             */
             @Override
             public List<AttributeExpression> getTokenDefinition(String tokenId) {
                 return defs.get(tokenId);
@@ -72,7 +62,6 @@ class TokenGeneratorFieldIdTest {
         tokenGenerator = new TokenGenerator(tokenDefinition, new PassthroughTokenizer(List.of()), registry);
     }
 
-    /** Verifies two fields using the same attribute type contribute to one token. */
     @Test
     void testMultiFieldSameTypeGeneratesToken() {
         Map<String, String> person = Map.of(
@@ -85,7 +74,6 @@ class TokenGeneratorFieldIdTest {
         assertEquals("GARCIA|LOPEZ|A", result.getTokens().get("T_MULTI"));
     }
 
-    /** Verifies a missing custom field produces a blank token. */
     @Test
     void testMultiFieldMissingFieldSkipsToken() {
         Map<String, String> person = Map.of(
@@ -97,7 +85,6 @@ class TokenGeneratorFieldIdTest {
         assertEquals(Token.BLANK, result.getTokens().get("T_MULTI"));
     }
 
-    /** Verifies legacy class-based expressions work through the field-ID API. */
     @Test
     void testLegacyExpressionsWorkWithFieldIdApi() {
         Map<String, String> person = Map.of(
@@ -110,7 +97,6 @@ class TokenGeneratorFieldIdTest {
         assertEquals("SMITH|J|MALE", result.getTokens().get("T_LEGACY"));
     }
 
-    /** Verifies field-ID signature generation handles both custom and legacy definitions. */
     @Test
     void testSignaturesByFieldId() {
         Map<String, String> person = Map.of(
@@ -127,7 +113,6 @@ class TokenGeneratorFieldIdTest {
         assertEquals("SMITH|A|FEMALE", signatures.get("T_LEGACY"));
     }
 
-    /** Verifies invalid custom-field values are recorded and produce a blank token. */
     @Test
     void testInvalidAttributeTracked() {
         Map<String, String> person = Map.of(

@@ -62,7 +62,6 @@ public class HashTokenTransformer implements TokenTransformer {
      * <p>
      * The token is transformed using HMAC SHA256 algorithm.
      *
-     * @param token the token to hash
      * @return hashed token in <code>base64</code> format.
      *
      * @throws java.lang.IllegalArgumentException <code>null</code> or blank token

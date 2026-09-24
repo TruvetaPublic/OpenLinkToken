@@ -8,10 +8,8 @@ import org.junit.jupiter.api.Test;
 import org.openlinktoken.attributes.general.RecordIdAttribute;
 import org.openlinktoken.attributes.person.LastNameAttribute;
 
-/** Tests discovery of built-in attribute implementations. */
 class AttributeLoaderTest {
 
-    /** Verifies loading includes representative general and person attributes. */
     @Test
     void loadAttributes_ShouldLoadAttributes() {
         var attributesSet = AttributeLoader.load();

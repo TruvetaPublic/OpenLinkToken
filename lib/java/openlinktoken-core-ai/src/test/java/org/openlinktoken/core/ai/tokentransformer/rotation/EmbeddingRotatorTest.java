@@ -21,9 +21,6 @@ class EmbeddingRotatorTest {
      * Build a trivial 2×2 rotation matrix for angle θ (in radians):
      *   [[ cos θ, -sin θ ],
      *    [ sin θ,  cos θ ]]
-     *
-     * @param theta rotation angle in radians
-     * @return 2×2 rotation matrix for the angle
      */
     private static double[][] rotation2d(double theta) {
         double c = Math.cos(theta);
@@ -31,9 +28,6 @@ class EmbeddingRotatorTest {
         return new double[][] { { c, -s }, { s, c } };
     }
 
-    /**
-     * Verifies that rotation produces one projection for each supplied matrix.
-     */
     @Test
     void testResultListSizeEqualsMatrixCount() {
         List<double[][]> matrices = RotationMatrixGenerator.generate("test-iv", 5, 4);
@@ -45,9 +39,6 @@ class EmbeddingRotatorTest {
         assertEquals(5, result.size());
     }
 
-    /**
-     * Verifies that every projection contains exactly {@code k} values.
-     */
     @Test
     void testEachResultHasLengthK() {
         int k = 3;
@@ -62,9 +53,6 @@ class EmbeddingRotatorTest {
         }
     }
 
-    /**
-     * Verifies that a zero bias leaves direct matrix projection unchanged.
-     */
     @Test
     void testZeroBiasOutputMatchesDirectProjection() {
         double[][] r = rotation2d(Math.PI / 4.0); // 45-degree rotation
@@ -79,9 +67,6 @@ class EmbeddingRotatorTest {
         assertEquals(sin45, projected[1], TOLERANCE);
     }
 
-    /**
-     * Verifies that the configured bias is subtracted before rotation.
-     */
     @Test
     void testNonZeroBiasIsSubtracted() {
         double[][] r = new double[][] { { 1.0, 0.0 }, { 0.0, 1.0 } }; // identity
@@ -96,9 +81,6 @@ class EmbeddingRotatorTest {
         assertEquals(3.0f, projected[1], (float) TOLERANCE);
     }
 
-    /**
-     * Verifies that bias subtraction is performed in double precision before casting.
-     */
     @Test
     void testDoublePrecisionBiasIsPreservedBeforeOutputCast() {
         double[][] identity = { { 1.0, 0.0 }, { 0.0, 1.0 } };
@@ -111,9 +93,6 @@ class EmbeddingRotatorTest {
         assertEquals(0.0f, result.get(0)[1]);
     }
 
-    /**
-     * Verifies the projected vector for a known 45-degree two-dimensional rotation.
-     */
     @Test
     void testKnown2dRotation45Degrees() {
         double[][] r = rotation2d(Math.PI / 4.0);
@@ -128,9 +107,6 @@ class EmbeddingRotatorTest {
         assertEquals(Math.sqrt(2.0), projected[1], TOLERANCE);
     }
 
-    /**
-     * Verifies that an orthogonal rotation preserves the embedding's vector length.
-     */
     @Test
     void testRotationPreservesVectorLength() {
         List<double[][]> matrices = RotationMatrixGenerator.generate("length-test-iv", 3, 8);
@@ -156,9 +132,6 @@ class EmbeddingRotatorTest {
         }
     }
 
-    /**
-     * Verifies that a bias with a different length from the embedding is rejected.
-     */
     @Test
     void testBiasLengthMismatchThrows() {
         List<double[][]> matrices = RotationMatrixGenerator.generate("test-iv", 1, 4);
@@ -169,9 +142,6 @@ class EmbeddingRotatorTest {
                 () -> EmbeddingRotator.rotate(embedding, matrices, wrongBias, 4));
     }
 
-    /**
-     * Verifies that requesting more rows than a matrix provides is rejected.
-     */
     @Test
     void testKExceedsMatrixRowsThrows() {
         List<double[][]> matrices = RotationMatrixGenerator.generate("test-iv", 1, 4);
@@ -182,9 +152,6 @@ class EmbeddingRotatorTest {
                 () -> EmbeddingRotator.rotate(embedding, matrices, bias, 5)); // k=5 > N=4
     }
 
-    /**
-     * Verifies that projection uses only the first {@code k} matrix rows.
-     */
     @Test
     void testOnlyFirstKRowsUsed() {
         // 4×4 identity matrix; k=2 should yield first 2 rows applied to embedding
@@ -205,9 +172,6 @@ class EmbeddingRotatorTest {
         assertEquals(7.0f, projected[1], (float) TOLERANCE);
     }
 
-    /**
-     * Verifies that the sentinel returns the leading bias-centered embedding values.
-     */
     @Test
     void testSentinelPassThrough() {
         // The [[-1]] sentinel should return the first k values of x_centered directly.
@@ -225,9 +189,6 @@ class EmbeddingRotatorTest {
         assertEquals(3.0f, result.get(1)[1], (float) TOLERANCE);
     }
 
-    /**
-     * Verifies that the sentinel works when it is the only matrix.
-     */
     @Test
     void testSentinelAsOnlyEntry() {
         // Sentinel works when it is the only entry in the matrices list.
@@ -240,9 +201,6 @@ class EmbeddingRotatorTest {
         assertEquals(20.0f, result.get(0)[1], (float) TOLERANCE);
     }
 
-    /**
-     * Verifies that only a one-element matrix containing {@code -1.0} is recognized as the sentinel.
-     */
     @Test
     void testIsSentinelDetectsCorrectly() {
         assertTrue(EmbeddingRotator.isSentinel(new double[][] { { -1.0 } }));
@@ -251,9 +209,6 @@ class EmbeddingRotatorTest {
         assertFalse(EmbeddingRotator.isSentinel(new double[][] { { -1.0 }, { 0.0 } }));
     }
 
-    /**
-     * Verifies that distinct rotation matrices can produce distinct projections.
-     */
     @Test
     void testMultipleMatricesProduceDifferentResults() {
         List<double[][]> matrices = RotationMatrixGenerator.generate("multi-test-iv", 3, 4);

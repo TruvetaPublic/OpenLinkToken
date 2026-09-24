@@ -12,7 +12,9 @@ import com.nimbusds.jose.JWEObject;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
-/** Tests JWE formatter validation, token framing, headers, and nullable inputs. */
+/**
+ * Unit tests for {@link JweMatchTokenFormatter}.
+ */
 class JweMatchTokenFormatterTest {
 
     private static final String TEST_ENCRYPTION_KEY = "12345678901234567890123456789012"; // 32 chars
@@ -20,7 +22,6 @@ class JweMatchTokenFormatterTest {
     private static final String TEST_RULE_ID = "T1";
     private static final String TEST_TOKEN = "dGVzdC10b2tlbi1wcGlk"; // base64-encoded test token
 
-    /** Verifies construction succeeds with a valid string key and required metadata. */
     @Test
     void testConstructorWithValidParameters() throws JOSEException {
         JweMatchTokenFormatter formatter = new JweMatchTokenFormatter(
@@ -31,7 +32,6 @@ class JweMatchTokenFormatterTest {
         assertNotNull(formatter);
     }
 
-    /** Verifies construction accepts a valid raw 32-byte encryption key. */
     @Test
     void testConstructorWithRaw32ByteKey() throws JOSEException {
         JweMatchTokenFormatter formatter = new JweMatchTokenFormatter(
@@ -42,7 +42,6 @@ class JweMatchTokenFormatterTest {
         assertNotNull(formatter);
     }
 
-    /** Verifies construction rejects a null encryption key. */
     @Test
     void testConstructorWithNullEncryptionKey() {
         assertThrows(IllegalArgumentException.class, () -> {
@@ -50,7 +49,6 @@ class JweMatchTokenFormatterTest {
         });
     }
 
-    /** Verifies construction rejects a key with the wrong byte length. */
     @Test
     void testConstructorWithInvalidKeyLength() {
         assertThrows(IllegalArgumentException.class, () -> {
@@ -58,7 +56,6 @@ class JweMatchTokenFormatterTest {
         });
     }
 
-    /** Verifies construction rejects a 32-character non-ASCII key whose UTF-8 length is not 32 bytes. */
     @Test
     void testConstructorWithNonAscii32CharacterKey() {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
@@ -67,7 +64,6 @@ class JweMatchTokenFormatterTest {
         assertEquals("Encryption key must be exactly 32 bytes (256 bits)", exception.getMessage());
     }
 
-    /** Verifies construction rejects a null key-ring identifier. */
     @Test
     void testConstructorWithNullRingId() {
         assertThrows(IllegalArgumentException.class, () -> {
@@ -75,7 +71,6 @@ class JweMatchTokenFormatterTest {
         });
     }
 
-    /** Verifies construction rejects a null rule identifier. */
     @Test
     void testConstructorWithNullRuleId() {
         assertThrows(IllegalArgumentException.class, () -> {
@@ -83,7 +78,6 @@ class JweMatchTokenFormatterTest {
         });
     }
 
-    /** Verifies transformation emits the versioned prefix and compact five-part JWE. */
     @Test
     void testTransformCreatesValidJweToken() throws Exception {
         JweMatchTokenFormatter formatter = new JweMatchTokenFormatter(
@@ -103,7 +97,6 @@ class JweMatchTokenFormatterTest {
         assertEquals(5, parts.length, "JWE compact serialization should have 5 parts");
     }
 
-    /** Verifies transforming a null token returns null. */
     @Test
     void testTransformWithNullToken() throws Exception {
         JweMatchTokenFormatter formatter = new JweMatchTokenFormatter(
@@ -116,7 +109,6 @@ class JweMatchTokenFormatterTest {
         assertNull(result);
     }
 
-    /** Verifies transforming an empty token preserves the empty value. */
     @Test
     void testTransformWithEmptyToken() throws Exception {
         JweMatchTokenFormatter formatter = new JweMatchTokenFormatter(
@@ -129,7 +121,6 @@ class JweMatchTokenFormatterTest {
         assertEquals("", result);
     }
 
-    /** Verifies the compact JWE header contains the expected algorithm and key metadata. */
     @Test
     void testJweHeaderContainsCorrectMetadata() throws Exception {
         JweMatchTokenFormatter formatter = new JweMatchTokenFormatter(
@@ -151,7 +142,6 @@ class JweMatchTokenFormatterTest {
         assertEquals(TEST_RING_ID, jweObject.getHeader().getKeyID());
     }
 
-    /** Verifies formatter construction succeeds when the issuer is omitted. */
     @Test
     void testDefaultIssuer() throws Exception {
         JweMatchTokenFormatter formatter = new JweMatchTokenFormatter(

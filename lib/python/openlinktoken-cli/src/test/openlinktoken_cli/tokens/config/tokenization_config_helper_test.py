@@ -10,17 +10,7 @@ from openlinktoken_cli.tokens.config.tokenization_config_helper import Tokenizat
 
 
 class TestTokenizationConfigHelper:
-    """
-    Test helper functions for tokenization configuration.
-    """
-
     def test_build_configured_input_attribute_map_warns_when_resolver_misses_entry(self, caplog):
-        """
-        Verify that build configured input attribute map warns when resolver misses entry.
-
-        Args:
-            caplog: Pytest fixture for capturing log records.
-        """
         config = TokenizationConfig(
             column_mappings={
                 "FirstName": AttributeMappingEntry(column_name="given_nm", type="GivenName"),
@@ -38,9 +28,6 @@ class TestTokenizationConfigHelper:
         assert "has no field id registered" in caplog.text
 
     def test_create_reader_csv_applies_attribute_map(self):
-        """
-        Verify that create reader csv applies attribute map.
-        """
         config = TokenizationConfig(
             column_mappings={"FirstName": AttributeMappingEntry(column_name="given_nm", type="GivenName")},
             token_rules={},
@@ -66,9 +53,6 @@ class TestTokenizationConfigHelper:
         mock_reader_cls.assert_called_once_with("input.csv", attribute_map={"given_nm": FirstNameAttribute})
 
     def test_create_reader_parquet_applies_attribute_map(self):
-        """
-        Verify that create reader parquet applies attribute map.
-        """
         config = TokenizationConfig(
             column_mappings={"FirstName": AttributeMappingEntry(column_name="given_nm", type="GivenName")},
             token_rules={},
@@ -94,8 +78,5 @@ class TestTokenizationConfigHelper:
         mock_reader_cls.assert_called_once_with("input.parquet", attribute_map={"given_nm": FirstNameAttribute})
 
     def test_create_reader_raises_for_unsupported_type(self):
-        """
-        Verify that create reader raises for unsupported type.
-        """
         with pytest.raises(ValueError, match="Unsupported input type"):
             TokenizationConfigHelper.create_reader("input.unknown", "json")

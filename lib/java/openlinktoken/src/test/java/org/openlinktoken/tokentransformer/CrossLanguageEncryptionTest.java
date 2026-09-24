@@ -6,22 +6,20 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests Java AES-GCM round trips and the encrypted framing used by
- * cross-language consumers.
+ * Tests cross-language compatibility between Java and Python encryption/decryption.
+ * These tests verify that tokens encrypted by Python can be decrypted by Java and vice versa.
  */
 class CrossLanguageEncryptionTest {
     private EncryptTokenTransformer encryptor;
     private DecryptTokenTransformer decryptor;
     private static final String VALID_KEY = "12345678901234567890123456789012"; // 32-byte key
 
-    /** Creates encryptor and decryptor instances with the shared test key. */
     @BeforeEach
     void setUp() throws Exception {
         encryptor = new EncryptTokenTransformer(VALID_KEY);
         decryptor = new DecryptTokenTransformer(VALID_KEY);
     }
 
-    /** Verifies a simple token survives Java encryption and decryption. */
     @Test
     void testJavaEncryptDecrypt_BasicToken() throws Exception {
         String originalToken = "testToken123";
@@ -35,7 +33,6 @@ class CrossLanguageEncryptionTest {
         Assertions.assertEquals(originalToken, decrypted);
     }
 
-    /** Verifies a pipe-delimited token survives Java encryption and decryption. */
     @Test
     void testJavaEncryptDecrypt_PipeDelimitedToken() throws Exception {
         // Simulate a typical Open Link Token signature format
@@ -47,7 +44,6 @@ class CrossLanguageEncryptionTest {
         Assertions.assertEquals(originalToken, decrypted);
     }
 
-    /** Verifies a hash-shaped token survives Java encryption and decryption. */
     @Test
     void testJavaEncryptDecrypt_HashToken() throws Exception {
         // Simulate a token that's been hashed (64 hex characters)
@@ -59,7 +55,6 @@ class CrossLanguageEncryptionTest {
         Assertions.assertEquals(originalToken, decrypted);
     }
 
-    /** Verifies Java round-trip output is Base64-framed with room for the IV and authentication tag. */
     @Test
     void testJavaDecrypt_PythonEncryptedToken() throws Exception {
         // This token was encrypted by Python using the same key and algorithm

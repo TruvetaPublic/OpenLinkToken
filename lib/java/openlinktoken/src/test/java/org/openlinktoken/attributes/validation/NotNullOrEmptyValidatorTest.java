@@ -12,10 +12,8 @@ import java.io.ObjectOutputStream;
 
 import org.junit.jupiter.api.Test;
 
-/** Tests acceptance of nonblank values and rejection of null or whitespace-only values. */
 class NotNullOrEmptyValidatorTest {
 
-    /** Verifies representative nonblank values pass validation. */
     @Test
     void validTests() {
         var validator = new NotNullOrEmptyValidator();
@@ -36,7 +34,6 @@ class NotNullOrEmptyValidatorTest {
         assertTrue(result);
     }
 
-    /** Verifies null, empty, and whitespace-only values fail validation. */
     @Test
     void invalidTests() {
         var validator = new NotNullOrEmptyValidator();
@@ -55,7 +52,6 @@ class NotNullOrEmptyValidatorTest {
         assertFalse(result, "Carriage return value should not be allowed");
     }
 
-    /** Verifies serialization preserves null-or-empty validation behavior. */
     @Test
     void serialization_ShouldPreserveState() throws Exception {
         // Test serialization and deserialization

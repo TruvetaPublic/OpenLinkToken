@@ -18,15 +18,11 @@ public interface InferenceSignatureProvider {
 
     /**
      * Return the token identifier this provider handles (e.g. {@code "ML1"}).
-     *
-     * @return the token identifier owned by this provider
      */
     String getTokenId();
 
     /**
      * Return whether this provider is currently enabled and configured.
-     *
-     * @return {@code true} if the provider is ready to generate signatures
      */
     boolean isEnabled();
 

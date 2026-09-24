@@ -10,7 +10,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * Rejects attribute values that match a configured invalid value, ignoring case.
+ * A Validator that asserts that the attribute values is
+ * <b>NOT IN</b> the list of invalid values.
  */
 @AllArgsConstructor
 @Getter
@@ -25,9 +26,6 @@ public final class NotInValidator implements SerializableAttributeValidator {
     /**
      * Validates that the attribute value is not in the list of invalid values
      * independent of case.
-     *
-     * @param value the value to validate
-     * @return {@code true} if the value is non-null and is not in the invalid-value set
      */
     @Override
     public boolean eval(String value) {

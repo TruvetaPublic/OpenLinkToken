@@ -91,6 +91,7 @@ public final class ML1InferenceConfig {
     }
 
     /**
+    /**
      * Return whether ML1 inference is enabled.
      *
      * @return {@code true} when ML1 inference should be available

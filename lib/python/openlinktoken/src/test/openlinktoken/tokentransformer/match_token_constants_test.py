@@ -19,12 +19,7 @@ class TestMatchTokenConstants:
 
     @pytest.mark.parametrize("prefix", [V1_TOKEN_PREFIX])
     def test_is_supported_v1_token_accepts_supported_prefixes(self, prefix):
-        """
-        The canonical V1 prefix should be recognized.
-
-        Args:
-            prefix: Prefix value to exercise the behavior under test.
-        """
+        """The canonical V1 prefix should be recognized."""
         assert is_supported_v1_token(f"{prefix}header.payload.tag")
 
     def test_is_supported_v1_token_rejects_unsupported_prefixes(self):
@@ -33,12 +28,7 @@ class TestMatchTokenConstants:
 
     @pytest.mark.parametrize("prefix", [V1_TOKEN_PREFIX])
     def test_strip_supported_v1_token_prefix_returns_compact_jwe_body(self, prefix):
-        """
-        Prefix stripping should return the JWE body for the accepted format.
-
-        Args:
-            prefix: Prefix value to exercise the behavior under test.
-        """
+        """Prefix stripping should return the JWE body for the accepted format."""
         token_body = "header.encrypted-key.iv.ciphertext.tag"
 
         assert strip_supported_v1_token_prefix(f"{prefix}{token_body}") == token_body

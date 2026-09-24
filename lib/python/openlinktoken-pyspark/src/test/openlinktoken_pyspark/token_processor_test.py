@@ -31,12 +31,7 @@ from openlinktoken_pyspark import token_processor as token_processor_module
 
 @pytest.fixture(scope="module")
 def spark():
-    """
-    Create a Spark session for testing.
-
-    Yields:
-        Active local SparkSession used by the test; the fixture stops it afterward.
-    """
+    """Create a Spark session for testing."""
     spark = (
         SparkSession.builder.appName("OpenLinkTokenTest")
         .master("local[2]")
@@ -49,12 +44,7 @@ def spark():
 
 @pytest.fixture
 def sample_data():
-    """
-    Sample person data for testing.
-
-    Returns:
-        Collection of values produced by the operation.
-    """
+    """Sample person data for testing."""
     return [
         {
             "RecordId": "891dda6c-961f-4154-8541-b48fe18ee620",
@@ -87,13 +77,7 @@ class TestOpenLinkTokenProcessor:
         assert processor.encryption_key == "Secret-Encryption-Key-Goes-Here."
 
     def test_initialization_accepts_bytes_secrets(self, spark, sample_data):
-        """
-        Test that processor stores and uses raw byte secrets.
-
-        Args:
-            spark: Spark session used to create and inspect DataFrames.
-            sample_data: Representative input data used by the test.
-        """
+        """Test that processor stores and uses raw byte secrets."""
         hashing_secret = b"HashingKey"
         encryption_key = b"12345678901234567890123456789012"
         processor = OpenLinkTokenProcessor(hashing_secret=hashing_secret, encryption_key=encryption_key)
@@ -108,14 +92,7 @@ class TestOpenLinkTokenProcessor:
         assert any(token.startswith("olt.V1.") for token in tokens)
 
     def test_from_exchange_config_resolves_bytes_and_uses_derived_transport_key(self, spark, sample_data, tmp_path):
-        """
-        Test exchange-config factory resolves byte secrets and emits olt.V1 tokens with the derived key.
-
-        Args:
-            spark: Spark session used to create and inspect DataFrames.
-            sample_data: Representative input data used by the test.
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-        """
+        """Test exchange-config factory resolves byte secrets and emits olt.V1 tokens with the derived key."""
         exchange_config_path, private_key_path = _write_exchange_config(tmp_path)
         exchange = resolve_exchange_config_inputs(exchange_config_path, private_key_path=private_key_path)
 
@@ -145,14 +122,7 @@ class TestOpenLinkTokenProcessor:
         sample_data,
         tmp_path,
     ):
-        """
-        Direct exchange-config JSON and private-key PEM values should configure the processor.
-
-        Args:
-            spark: Spark session used to create and inspect DataFrames.
-            sample_data: Representative input data used by the test.
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-        """
+        """Direct exchange-config JSON and private-key PEM values should configure the processor."""
         exchange_config_path, private_key_path = _write_exchange_config(tmp_path)
         exchange = resolve_exchange_config_inputs(exchange_config_path, private_key_path=private_key_path)
 
@@ -174,27 +144,12 @@ class TestOpenLinkTokenProcessor:
         assert payload["ppid"]
 
     def test_from_exchange_config_derives_transport_key_without_version_fallback(self, monkeypatch):
-        """
-        Test exchange-config factory always derives the transport key for resolved configs.
-
-        Args:
-            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
-        """
+        """Test exchange-config factory always derives the transport key for resolved configs."""
         resolved_exchange = SimpleNamespace(version=1, hashing_secret=b"resolved-hashing-secret")
         derived_transport_key = b"12345678901234567890123456789012"
         derive_call_count = 0
 
         def fake_resolve_exchange_config_inputs(*args, **kwargs):
-            """
-            Resolve fake exchange config inputs.
-
-            Args:
-                args: Additional positional arguments to pass to the command or wrapped operation.
-                kwargs: Additional keyword arguments to pass to the wrapped operation.
-
-            Returns:
-                Resolved fake exchange config inputs.
-            """
             assert kwargs == {
                 "exchange_config_path": "config.json",
                 "exchange_config_value": None,
@@ -205,15 +160,6 @@ class TestOpenLinkTokenProcessor:
             return resolved_exchange
 
         def fake_derive_transport_encryption_key(exchange):
-            """
-            Derive fake transport encryption key.
-
-            Args:
-                exchange: Exchange value to derive.
-
-            Returns:
-                Derived fake transport encryption key.
-            """
             nonlocal derive_call_count
             derive_call_count += 1
             assert exchange is resolved_exchange
@@ -242,12 +188,7 @@ class TestOpenLinkTokenProcessor:
         assert processor.encryption_key == derived_transport_key
 
     def test_from_exchange_config_rejects_future_exchange_config_versions(self, tmp_path):
-        """
-        Test exchange-config factory rejects unsupported version 2 exchange configs.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-        """
+        """Test exchange-config factory rejects unsupported version 2 exchange configs."""
         exchange_config_path, private_key_path = _write_future_exchange_config(tmp_path)
 
         with pytest.raises(ValueError, match="Unsupported exchange config version '2'. Supported versions: 1."):
@@ -292,13 +233,7 @@ class TestOpenLinkTokenProcessor:
             OpenLinkTokenProcessor("HashingKey", b"   ")
 
     def test_process_dataframe_with_valid_data(self, spark, sample_data):
-        """
-        Test processing a DataFrame with valid data and olt.V1 encrypted output.
-
-        Args:
-            spark: Spark session used to create and inspect DataFrames.
-            sample_data: Representative input data used by the test.
-        """
+        """Test processing a DataFrame with valid data and olt.V1 encrypted output."""
         processor = OpenLinkTokenProcessor("HashingKey", "Secret-Encryption-Key-Goes-Here.")
 
         # Create DataFrame
@@ -326,12 +261,7 @@ class TestOpenLinkTokenProcessor:
         assert any(row.Token.startswith("olt.V1.") for row in results if row.Token)
 
     def test_process_dataframe_with_alternative_column_names(self, spark):
-        """
-        Test processing with alternative column names.
-
-        Args:
-            spark: Spark session used to create and inspect DataFrames.
-        """
+        """Test processing with alternative column names."""
         processor = OpenLinkTokenProcessor("HashingKey", "Secret-Encryption-Key-Goes-Here.")
 
         # Create DataFrame with alternative column names
@@ -356,12 +286,7 @@ class TestOpenLinkTokenProcessor:
         assert result_df.count() > 0
 
     def test_process_dataframe_with_missing_required_column(self, spark):
-        """
-        Test that processing fails with missing required columns.
-
-        Args:
-            spark: Spark session used to create and inspect DataFrames.
-        """
+        """Test that processing fails with missing required columns."""
         processor = OpenLinkTokenProcessor("HashingKey", "Secret-Encryption-Key-Goes-Here.")
 
         # Create DataFrame missing SocialSecurityNumber
@@ -390,14 +315,9 @@ class TestOpenLinkTokenProcessor:
             processor.process_dataframe(None)
 
     def test_tokens_are_consistent(self, spark, sample_data):
-        """
-        Test that the same input produces the same underlying hashed tokens.
+        """Test that the same input produces the same underlying hashed tokens.
 
         Encrypted token ciphertext differs due to random IV; decrypt before comparison.
-
-        Args:
-            spark: Spark session used to create and inspect DataFrames.
-            sample_data: Representative input data used by the test.
         """
         encryption_key = "Secret-Encryption-Key-Goes-Here."
         processor = OpenLinkTokenProcessor("HashingKey", encryption_key)
@@ -413,13 +333,7 @@ class TestOpenLinkTokenProcessor:
         assert decrypted1 == decrypted2
 
     def test_different_secrets_produce_different_tokens(self, spark, sample_data):
-        """
-        Different hashing secrets should yield different decrypted hashed tokens.
-
-        Args:
-            spark: Spark session used to create and inspect DataFrames.
-            sample_data: Representative input data used by the test.
-        """
+        """Different hashing secrets should yield different decrypted hashed tokens."""
         key1 = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"  # 32 chars
         key2 = "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"  # 32 chars
         processor1 = OpenLinkTokenProcessor("HashingKey1", key1)
@@ -436,12 +350,7 @@ class TestOpenLinkTokenProcessor:
         assert decrypted1 != decrypted2
 
     def test_column_mapping(self, spark):
-        """
-        Test that column mapping works correctly.
-
-        Args:
-            spark: Spark session used to create and inspect DataFrames.
-        """
+        """Test that column mapping works correctly."""
         processor = OpenLinkTokenProcessor("HashingKey", "Secret-Encryption-Key-Goes-Here.")
 
         # Create DataFrame with various column names
@@ -472,12 +381,7 @@ class TestOpenLinkTokenProcessor:
         assert mapping["SocialSecurityNumber"] == "SocialSecurityNumber"
 
     def test_validation_with_empty_dataframe(self, spark):
-        """
-        Test validation with an empty DataFrame.
-
-        Args:
-            spark: Spark session used to create and inspect DataFrames.
-        """
+        """Test validation with an empty DataFrame."""
         processor = OpenLinkTokenProcessor("HashingKey", "Secret-Encryption-Key-Goes-Here.")
 
         # Create empty DataFrame with correct schema
@@ -503,18 +407,19 @@ class TestOpenLinkTokenProcessor:
         assert result.count() == 0
 
     def test_custom_token_definition(self, spark, sample_data):
-        """
-        Test using custom token definition with processor.
-
-        Args:
-            spark: Spark session used to create and inspect DataFrames.
-            sample_data: Representative input data used by the test.
-        """
+        """Test using custom token definition with processor."""
         from openlinktoken_pyspark.notebook_helpers import CustomTokenDefinition, TokenBuilder
 
         # Create a custom ML1 token
         ml1_token = (
-            TokenBuilder("ML1").add("last_name", "T|U").add("first_name", "T|U").add("birth_date", "T|D").build()
+            TokenBuilder("ML1")
+            .add("last_name", "T|U")
+            .add("first_name", "T|U")
+            .add(
+                "birth_date",
+                "T|D",
+            )
+            .build()
         )
 
         custom_definition = CustomTokenDefinition().add_token(ml1_token)
@@ -541,13 +446,7 @@ class TestOpenLinkTokenProcessor:
         assert result.count() == len(sample_data)  # One ML1 token per record
 
     def test_multiple_custom_tokens(self, spark, sample_data):
-        """
-        Test using multiple custom tokens.
-
-        Args:
-            spark: Spark session used to create and inspect DataFrames.
-            sample_data: Representative input data used by the test.
-        """
+        """Test using multiple custom tokens."""
         from openlinktoken_pyspark.notebook_helpers import CustomTokenDefinition, TokenBuilder
 
         # Create two custom tokens
@@ -580,12 +479,7 @@ class TestOpenLinkTokenProcessor:
         assert result.count() == len(sample_data) * 2
 
     def test_init_with_both_secrets_none(self, spark):
-        """
-        Test initialization with both secrets None (plain passthrough mode).
-
-        Args:
-            spark: Spark session used to create and inspect DataFrames.
-        """
+        """Test initialization with both secrets None (plain passthrough mode)."""
         # Both None is allowed - produces plain concatenated tokens
         processor = OpenLinkTokenProcessor(hashing_secret=None, encryption_key=None)
 
@@ -614,13 +508,7 @@ class TestOpenLinkTokenProcessor:
             )
 
     def test_passthrough_tokenizer_with_encryption_only(self, spark, sample_data):
-        """
-        Test processor with encryption but no hashing (passthrough tokenizer).
-
-        Args:
-            spark: Spark session used to create and inspect DataFrames.
-            sample_data: Representative input data used by the test.
-        """
+        """Test processor with encryption but no hashing (passthrough tokenizer)."""
         processor = OpenLinkTokenProcessor(hashing_secret=None, encryption_key="12345678901234567890123456789012")
 
         df = spark.createDataFrame(sample_data)
@@ -634,12 +522,7 @@ class TestOpenLinkTokenProcessor:
         assert token_sample.startswith("olt.V1.")
 
     def test_process_with_bad_data_handles_errors(self, spark):
-        """
-        Test that processor handles bad data gracefully by returning empty token lists.
-
-        Args:
-            spark: Spark session used to create and inspect DataFrames.
-        """
+        """Test that processor handles bad data gracefully by returning empty token lists."""
         processor = OpenLinkTokenProcessor("HashingKey", "12345678901234567890123456789012")
 
         # Create DataFrame with invalid data that will fail token generation
@@ -663,15 +546,7 @@ class TestOpenLinkTokenProcessor:
 
 
 def _write_exchange_config(tmp_path: Path) -> tuple[Path, Path]:
-    """
-    Write a current exchange config plus matching sender private key file.
-
-    Args:
-        tmp_path: Temporary directory supplied by pytest for files created by the test.
-
-    Returns:
-        Written a current exchange config plus matching sender private key file.
-    """
+    """Write a current exchange config plus matching sender private key file."""
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     _, recipient_public_pem = generate_key_pair("P-256")
     exchange_config_path = tmp_path / "current.exchange.json"
@@ -695,15 +570,7 @@ def _write_exchange_config(tmp_path: Path) -> tuple[Path, Path]:
 
 
 def _write_future_exchange_config(tmp_path: Path) -> tuple[Path, Path]:
-    """
-    Write an unsupported version 2 exchange config plus matching sender private key file.
-
-    Args:
-        tmp_path: Temporary directory supplied by pytest for files created by the test.
-
-    Returns:
-        Written an unsupported version 2 exchange config plus matching sender private key file.
-    """
+    """Write an unsupported version 2 exchange config plus matching sender private key file."""
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     _, recipient_public_pem = generate_key_pair("P-256")
     payload = {
@@ -748,16 +615,7 @@ def _write_future_exchange_config(tmp_path: Path) -> tuple[Path, Path]:
 
 
 def _decrypt_v1_payload(token: str, encryption_key: bytes) -> dict[str, object]:
-    """
-    Decrypt an olt.V1 token payload using raw AES key bytes.
-
-    Args:
-        token: Token value to inspect, transform, or compare.
-        encryption_key: Key used to encrypt or decrypt the payload.
-
-    Returns:
-        Decrypted an olt.V1 token payload using raw AES key bytes.
-    """
+    """Decrypt an olt.V1 token payload using raw AES key bytes."""
     token_body = token.removeprefix("olt.V1.")
     key_b64 = base64.urlsafe_b64encode(encryption_key).decode("utf-8").rstrip("=")
     jwk_key = jwk.JWK(kty="oct", k=key_b64)

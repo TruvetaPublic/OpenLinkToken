@@ -21,12 +21,7 @@ from openlinktoken.tokentransformer.token_transformer import TokenTransformer
 
 @pytest.fixture(autouse=True)
 def reset_inference_provider_cache():
-    """
-    Isolate lazy provider discovery between tests.
-
-    Yields:
-        None; control passes to the test with provider discovery reset.
-    """
+    """Isolate lazy provider discovery between tests."""
     token_generator_module._inference_provider = None
     token_generator_module._provider_discovered = False
     yield
@@ -257,15 +252,6 @@ class TestTokenGenerator:
 
         # First token succeeds, second throws error
         def mock_get_definition(token_id):
-            """
-            Retrieve mock definition.
-
-            Args:
-                token_id: Identifier of the token or rule to process.
-
-            Returns:
-                The mock definition.
-            """
             if token_id == "token1":
                 return [AttributeExpression(FirstNameAttribute, "U")]
             else:
@@ -306,38 +292,13 @@ class TestTokenGenerator:
         """A registered inference provider is loaded once and then cached."""
 
         class Provider:
-            """
-            Inference-signature provider used to exercise token generation.
-            """
-
             def get_token_id(self):
-                """
-                Retrieve token id.
-
-                Returns:
-                    The token id.
-                """
                 return "ML1"
 
             def is_enabled(self):
-                """
-                Determine whether enabled.
-
-                Returns:
-                    Boolean result of the operation.
-                """
                 return True
 
             def generate_signature(self, person_attributes):
-                """
-                Generate signature.
-
-                Args:
-                    person_attributes: Mapping of person-attribute identifiers to their input values.
-
-                Returns:
-                    Generated signature.
-                """
                 return "provider-signature"
 
         entry_point = Mock()
@@ -371,38 +332,13 @@ class TestTokenGenerator:
         """Disabled inference providers fall back to standard definitions."""
 
         class Provider:
-            """
-            Inference-signature provider used to exercise token generation.
-            """
-
             def get_token_id(self):
-                """
-                Retrieve token id.
-
-                Returns:
-                    The token id.
-                """
                 return "ML1"
 
             def is_enabled(self):
-                """
-                Determine whether enabled.
-
-                Returns:
-                    Boolean result of the operation.
-                """
                 return False
 
             def generate_signature(self, person_attributes):
-                """
-                Generate signature.
-
-                Args:
-                    person_attributes: Mapping of person-attribute identifiers to their input values.
-
-                Returns:
-                    Generated signature.
-                """
                 return "unused"
 
         token_generator_module._inference_provider = Provider()
@@ -421,38 +357,13 @@ class TestTokenGenerator:
         """An enabled provider handles its matching token identifier."""
 
         class Provider:
-            """
-            Inference-signature provider used to exercise token generation.
-            """
-
             def get_token_id(self):
-                """
-                Retrieve token id.
-
-                Returns:
-                    The token id.
-                """
                 return "ML1"
 
             def is_enabled(self):
-                """
-                Determine whether enabled.
-
-                Returns:
-                    Boolean result of the operation.
-                """
                 return True
 
             def generate_signature(self, person_attributes):
-                """
-                Generate signature.
-
-                Args:
-                    person_attributes: Mapping of person-attribute identifiers to their input values.
-
-                Returns:
-                    Generated signature.
-                """
                 return "provider-signature"
 
         token_generator_module._inference_provider = Provider()
@@ -471,38 +382,13 @@ class TestTokenGenerator:
         """Field-ID APIs invoke enabled providers even without an attribute definition."""
 
         class Provider:
-            """
-            Inference-signature provider used to exercise token generation.
-            """
-
             def get_token_id(self):
-                """
-                Retrieve token id.
-
-                Returns:
-                    The token id.
-                """
                 return "ML1"
 
             def is_enabled(self):
-                """
-                Determine whether enabled.
-
-                Returns:
-                    Boolean result of the operation.
-                """
                 return True
 
             def generate_signature(self, person_attributes):
-                """
-                Generate signature.
-
-                Args:
-                    person_attributes: Mapping of person-attribute identifiers to their input values.
-
-                Returns:
-                    Generated signature.
-                """
                 return f"{person_attributes['LastName']}-provider"
 
         token_generator_module._inference_provider = Provider()
@@ -522,35 +408,13 @@ class TestTokenGenerator:
         """Field-ID exclusion skips provider dispatch while retaining ordinary tokens."""
 
         class Provider:
-            """
-            Inference-signature provider used to exercise token generation.
-            """
-
             def get_token_id(self):
-                """
-                Retrieve token id.
-
-                Returns:
-                    The token id.
-                """
                 return "ML1"
 
             def is_enabled(self):
-                """
-                Determine whether enabled.
-
-                Returns:
-                    Boolean result of the operation.
-                """
                 return True
 
             def generate_signature(self, person_attributes):
-                """
-                Generate signature.
-
-                Args:
-                    person_attributes: Mapping of person-attribute identifiers to their input values.
-                """
                 raise AssertionError("excluded provider must not be called")
 
         token_generator_module._inference_provider = Provider()
@@ -572,38 +436,13 @@ class TestTokenGenerator:
         """Provider signatures bypass hashing while missing values become tracked blanks."""
 
         class Provider:
-            """
-            Inference-signature provider used to exercise token generation.
-            """
-
             def get_token_id(self):
-                """
-                Retrieve token id.
-
-                Returns:
-                    The token id.
-                """
                 return "ML1"
 
             def is_enabled(self):
-                """
-                Determine whether enabled.
-
-                Returns:
-                    Boolean result of the operation.
-                """
                 return True
 
             def generate_signature(self, person_attributes):
-                """
-                Generate signature.
-
-                Args:
-                    person_attributes: Mapping of person-attribute identifiers to their input values.
-
-                Returns:
-                    Generated signature.
-                """
                 return person_attributes.get("LastName")
 
         token_generator_module._inference_provider = Provider()
@@ -624,38 +463,13 @@ class TestTokenGenerator:
         """Deprecated class-keyed APIs adapt canonical attribute names for providers."""
 
         class Provider:
-            """
-            Inference-signature provider used to exercise token generation.
-            """
-
             def get_token_id(self):
-                """
-                Retrieve token id.
-
-                Returns:
-                    The token id.
-                """
                 return "ML1"
 
             def is_enabled(self):
-                """
-                Determine whether enabled.
-
-                Returns:
-                    Boolean result of the operation.
-                """
                 return True
 
             def generate_signature(self, person_attributes):
-                """
-                Generate signature.
-
-                Args:
-                    person_attributes: Mapping of person-attribute identifiers to their input values.
-
-                Returns:
-                    Generated signature.
-                """
                 return f"{person_attributes['LastName']}-provider"
 
         token_generator_module._inference_provider = Provider()
@@ -668,43 +482,16 @@ class TestTokenGenerator:
         assert signatures == {"ML1": "Smith-provider"}
 
     def test_inference_provider_error_returns_none(self, caplog):
-        """
-        Provider errors are logged and converted to a missing signature.
-
-        Args:
-            caplog: Pytest fixture for capturing log records.
-        """
+        """Provider errors are logged and converted to a missing signature."""
 
         class Provider:
-            """
-            Inference-signature provider used to exercise token generation.
-            """
-
             def get_token_id(self):
-                """
-                Retrieve token id.
-
-                Returns:
-                    The token id.
-                """
                 return "ML1"
 
             def is_enabled(self):
-                """
-                Determine whether enabled.
-
-                Returns:
-                    Boolean result of the operation.
-                """
                 return True
 
             def generate_signature(self, person_attributes):
-                """
-                Generate signature.
-
-                Args:
-                    person_attributes: Mapping of person-attribute identifiers to their input values.
-                """
                 raise RuntimeError("provider failed")
 
         token_generator_module._inference_provider = Provider()

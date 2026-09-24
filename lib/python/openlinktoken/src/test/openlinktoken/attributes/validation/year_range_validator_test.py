@@ -15,21 +15,11 @@ class TestYearRangeValidator:
 
     @pytest.fixture
     def validator(self):
-        """
-        Create a default YearRangeValidator.
-
-        Returns:
-            Created a default YearRangeValidator.
-        """
+        """Create a default YearRangeValidator."""
         return YearRangeValidator()
 
     def test_eval_valid_years_should_return_true(self, validator):
-        """
-        Test valid year values.
-
-        Args:
-            validator: Validator used to check the supplied value.
-        """
+        """Test valid year values."""
         current_year = date.today().year
 
         assert validator.eval("1910") is True, "Year 1910 should be valid"
@@ -40,12 +30,7 @@ class TestYearRangeValidator:
         assert validator.eval("  1980  ") is True, "Year with whitespace should be valid"
 
     def test_eval_invalid_years_should_return_false(self, validator):
-        """
-        Test invalid year values.
-
-        Args:
-            validator: Validator used to check the supplied value.
-        """
+        """Test invalid year values."""
         current_year = date.today().year
 
         # Out of range
@@ -63,12 +48,7 @@ class TestYearRangeValidator:
         assert validator.eval("   ") is False, "Whitespace only should be invalid"
 
     def test_eval_boundary_values_should_validate_correctly(self, validator):
-        """
-        Test boundary values.
-
-        Args:
-            validator: Validator used to check the supplied value.
-        """
+        """Test boundary values."""
         current_year = date.today().year
 
         # Lower boundary
@@ -80,12 +60,7 @@ class TestYearRangeValidator:
         assert validator.eval(str(current_year + 1)) is False, "Above upper boundary should be invalid"
 
     def test_serialization(self, validator):
-        """
-        Test serialization and deserialization of the validator.
-
-        Args:
-            validator: Validator used to check the supplied value.
-        """
+        """Test serialization and deserialization of the validator."""
         # Serialize the validator
         serialized_data = pickle.dumps(validator)
 

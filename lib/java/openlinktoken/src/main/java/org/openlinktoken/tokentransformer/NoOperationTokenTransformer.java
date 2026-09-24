@@ -12,9 +12,6 @@ public class NoOperationTokenTransformer implements TokenTransformer {
      * No operation token transformer.
      * <p>
      * Does not transform the token in any ways.
-     *
-     * @param token the token to return unchanged
-     * @return the same token value
      */
     @Override
     public String transform(String token) {

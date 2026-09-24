@@ -268,9 +268,9 @@ def quick_token(
 
     Args:
         token_id: The identifier for the new token (e.g., "ML1").
-        attributes: List of (attribute_name, expression) pairs that define the custom token.
-        hashing_secret: Secret used as the HMAC-SHA256 key for hashing token signatures.
-        encryption_key: 32-byte AES-256 key used to encrypt the generated token.
+        attributes: List of (attribute_name, expression) tuples.
+        hashing_secret: The secret used for HMAC-SHA256 hashing.
+        encryption_key: The 32-character key used for AES-256 encryption.
 
     Returns:
         A TokenGenerator configured with the custom token.
@@ -313,12 +313,12 @@ def quick_token_from_exchange_config(
 
     Args:
         token_id: The identifier for the new token (e.g., "ML1").
-        attributes: List of (attribute_name, expression) pairs that define the custom token.
-        exchange_config_path: Optional exchange-config path; the default date-based path is used when omitted.
-        exchange_config_value: Optional in-memory exchange-config JSON text or decoded mapping.
-        private_key_path: Optional path to the private-key PEM file.
-        private_key_env: Optional environment-variable name containing the private-key PEM.
-        private_key_value: Optional private-key PEM supplied directly as text or bytes.
+        attributes: List of (attribute_name, expression) tuples.
+        exchange_config_path: Optional exchange-config path. Uses the default path when omitted.
+        exchange_config_value: Optional in-memory exchange-config JSON or decoded mapping.
+        private_key_path: Optional private-key PEM path.
+        private_key_env: Optional environment-variable name containing private-key PEM text.
+        private_key_value: Optional in-memory private-key PEM text or bytes.
 
     Returns:
         A TokenGenerator configured with the custom token and exchange-derived secrets.

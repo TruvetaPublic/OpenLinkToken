@@ -18,7 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Decrypts tokens produced with AES-256 GCM.
+ * Transforms the token using AES-256 symmetric decryption.
  *
  * @see <a href=https://datatracker.ietf.org/doc/html/rfc3826>AES</a>
  */
@@ -30,10 +30,15 @@ public class DecryptTokenTransformer implements TokenTransformer {
     private final SecretKeySpec secretKey;
 
     /**
-     * Stores an AES-256 decryption key encoded as UTF-8.
+     * Initializes the underlying cipher (AES) with the decryption secret.
      *
-     * @param encryptionKey key text whose UTF-8 encoding is exactly 32 bytes
-     * @throws InvalidKeyException if the key is {@code null} or its UTF-8 encoding is not 32 bytes
+     * @param encryptionKey the encryption key. The UTF-8 encoded key material must be exactly 32 bytes long.
+     *
+     * @throws java.security.InvalidKeyException                invalid encryption
+     *                                                          key.
+     * @throws java.security.InvalidAlgorithmParameterException invalid encryption
+     *                                                          algorithm
+     *                                                          parameters.
      */
     public DecryptTokenTransformer(String encryptionKey)
             throws InvalidKeyException, InvalidAlgorithmParameterException {
@@ -41,10 +46,11 @@ public class DecryptTokenTransformer implements TokenTransformer {
     }
 
     /**
-     * Stores validated raw AES-256 decryption key material.
+     * Initializes the underlying cipher (AES) with raw decryption key material.
      *
-     * @param encryptionKey raw key material that must be exactly 32 bytes
-     * @throws InvalidKeyException if the key is {@code null} or not 32 bytes long
+     * @param encryptionKey the raw encryption key bytes. The key must be exactly 32 bytes long.
+     * @throws java.security.InvalidKeyException                invalid encryption key.
+     * @throws java.security.InvalidAlgorithmParameterException invalid encryption algorithm parameters.
      */
     public DecryptTokenTransformer(byte[] encryptionKey)
             throws InvalidKeyException, InvalidAlgorithmParameterException {
@@ -78,19 +84,34 @@ public class DecryptTokenTransformer implements TokenTransformer {
     }
 
     /**
-     * Decrypts a Base64 token containing the GCM initialization vector and ciphertext.
+     * Decryption token transformer.
+     * <p>
+     * Decrypts the token using AES-256 symmetric decryption algorithm.
      *
-     * @param token Base64 encoding of the initialization vector and ciphertext
-     * @return the decrypted token as UTF-8 text
-     * @throws NullPointerException if {@code token} is {@code null}
-     * @throws IllegalArgumentException if {@code token} is not valid Base64
-     * @throws IllegalStateException if the cipher cannot process the input in its current state
-     * @throws IllegalBlockSizeException if the cipher cannot process the ciphertext
-     * @throws BadPaddingException if GCM authentication fails
-     * @throws InvalidKeyException if the configured key is invalid
-     * @throws InvalidAlgorithmParameterException if the initialization vector cannot initialize GCM
-     * @throws NoSuchAlgorithmException if AES/GCM is unavailable
-     * @throws NoSuchPaddingException if the cipher transformation is unavailable
+     * @return the decrypted token string.
+     * @param token the encrypted token in base64 format.
+     * @throws java.lang.IllegalStateException        the underlying cipher
+     *                                                is in a wrong state.
+     * @throws javax.crypto.IllegalBlockSizeException if this cipher is a block
+     *                                                cipher,
+     *                                                no padding has been requested
+     *                                                (only in encryption mode), and
+     *                                                the total
+     *                                                input length of the data
+     *                                                processed by this cipher is
+     *                                                not a multiple of
+     *                                                block size; or if this
+     *                                                encryption algorithm is unable
+     *                                                to
+     *                                                process the input data
+     *                                                provided.
+     * @throws javax.crypto.BadPaddingException       invalid padding size.
+     * @throws InvalidAlgorithmParameterException     invalid encryption
+     * @throws InvalidKeyException                    invalid encryption key.
+     * @throws java.security.NoSuchAlgorithmException invalid encryption
+     *                                                algorithm/mode.
+     * @throws javax.crypto.NoSuchPaddingException    invalid encryption
+     *                                                algorithm padding.
      */
     @Override
     public String transform(String token)

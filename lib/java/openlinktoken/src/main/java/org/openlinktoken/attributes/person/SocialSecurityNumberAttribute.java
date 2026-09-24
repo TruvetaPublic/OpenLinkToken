@@ -136,10 +136,9 @@ public class SocialSecurityNumberAttribute extends BaseAttribute {
     }
 
     /**
-     * Validates the normalized SSN against the configured placeholder and format rules.
-     *
-     * @param value the SSN to validate
-     * @return {@code true} if the normalized SSN passes all configured rules
+     * Validates the social security number value.
+     * This method overrides the validate method from BaseAttribute
+     * to ensure that the value is normalized before validation.
      */
     @Override
     public boolean validate(String value) {
@@ -147,12 +146,10 @@ public class SocialSecurityNumberAttribute extends BaseAttribute {
     }
 
     /**
-     * Removes whitespace and dashes, discards a locale-specific decimal suffix, and formats
-     * valid seven-to-nine-digit values as {@code xxx-xx-xxxx}.
+     * Normalize the social security number value. Remove any dashes and format the
+     * value as xxx-xx-xxxx. If not possible return the original but trimmed value.
      *
-     * @param originalValue the SSN value to normalize
-     * @return the formatted SSN when the remaining value contains seven to nine digits;
-     *         otherwise, the original input
+     * @param originalValue the social security number value.
      */
     @Override
     public String normalize(String originalValue) {
@@ -214,9 +211,6 @@ public class SocialSecurityNumberAttribute extends BaseAttribute {
      * - First 3 digits: Area number
      * - Middle 2 digits: Group number
      * - Last 4 digits: Serial number
-     *
-     * @param value the nine-digit SSN
-     * @return the SSN formatted as {@code xxx-xx-xxxx}
      */
     private String formatWithDashes(String value) {
         String areaNumber = value.substring(0, 3);

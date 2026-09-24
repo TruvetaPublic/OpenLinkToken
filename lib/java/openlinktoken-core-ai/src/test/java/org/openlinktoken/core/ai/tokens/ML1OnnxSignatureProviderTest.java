@@ -27,27 +27,16 @@ class ML1OnnxSignatureProviderTest {
 
     private ML1OnnxSignatureProvider provider;
 
-    /**
-     * Verifies that the provider advertises the ML1 token identifier.
-     */
     @Test
     void getTokenId_matchesMl1TokenIdentifier() {
         assertEquals(ML1Token.TOKEN_ID, provider.getTokenId());
     }
 
-    /**
-     * Creates a provider for each test.
-     */
     @BeforeEach
     void setUp() {
         provider = new ML1OnnxSignatureProvider();
     }
 
-    /**
-     * Restores mutable inference and rotation state after each test.
-     *
-     * @throws Exception if the cached transformer cannot be reset reflectively
-     */
     @AfterEach
     void tearDown() throws Exception {
         RotationConfig.configure(
@@ -72,9 +61,6 @@ class ML1OnnxSignatureProviderTest {
     // ML1 payload construction and provider state
     // -----------------------------------------------------------------------
 
-    /**
-     * Verifies that payload fields are normalized and emitted in model order.
-     */
     @Test
     void buildMl1Payload_validAttributes_preservesFieldOrderAndNormalization() {
         Map<String, String> attrs = new HashMap<>();
@@ -92,9 +78,6 @@ class ML1OnnxSignatureProviderTest {
                 payload);
     }
 
-    /**
-     * Verifies that a payload is not built when a required field is absent.
-     */
     @Test
     void buildMl1Payload_missingRequiredField_returnsNull() {
         Map<String, String> attrs = new HashMap<>();
@@ -106,9 +89,6 @@ class ML1OnnxSignatureProviderTest {
         assertNull(provider.buildMl1Payload(attrs, new TokenGeneratorResult()));
     }
 
-    /**
-     * Verifies that invalid required fields are recorded before payload creation fails.
-     */
     @Test
     void buildMl1Payload_invalidRequiredField_recordsInvalidAttribute() {
         Map<String, String> attrs = new HashMap<>();
@@ -123,9 +103,6 @@ class ML1OnnxSignatureProviderTest {
         assertTrue(result.getInvalidAttributes().contains("Sex"), result.getInvalidAttributes().toString());
     }
 
-    /**
-     * Verifies that provider availability follows the inference configuration.
-     */
     @Test
     void isEnabled_reflectsInferenceConfiguration() {
         ML1InferenceConfig.configure(false, "", "", 128, 64, 1);
@@ -135,9 +112,6 @@ class ML1OnnxSignatureProviderTest {
         assertTrue(provider.isEnabled());
     }
 
-    /**
-     * Verifies that an all-invalid batch preserves one null signature per row.
-     */
     @Test
     void generateBatch_allInvalidRows_returnsNullForEachRow() {
         List<Map<String, String>> rows = List.of(Map.of(), Map.of());
@@ -151,9 +125,6 @@ class ML1OnnxSignatureProviderTest {
     // computeT1Signature
     // -----------------------------------------------------------------------
 
-    /**
-     * Verifies the T1 signature produced from valid person attributes.
-     */
     @Test
     void computeT1Signature_validAttributes_returnsExpectedSignature() {
         Map<String, String> attrs = new HashMap<>();
@@ -169,17 +140,11 @@ class ML1OnnxSignatureProviderTest {
         assertEquals("WRIGHT|R|FEMALE|1990-07-09", sig);
     }
 
-    /**
-     * Verifies that a null attribute map cannot produce a T1 signature.
-     */
     @Test
     void computeT1Signature_nullMap_returnsNull() {
         assertNull(provider.computeT1Signature(null));
     }
 
-    /**
-     * Verifies that a missing last name prevents T1 signature creation.
-     */
     @Test
     void computeT1Signature_missingLastName_returnsNull() {
         Map<String, String> attrs = new HashMap<>();
@@ -190,9 +155,6 @@ class ML1OnnxSignatureProviderTest {
         assertNull(provider.computeT1Signature(attrs));
     }
 
-    /**
-     * Verifies that a missing first name prevents T1 signature creation.
-     */
     @Test
     void computeT1Signature_missingFirstName_returnsNull() {
         Map<String, String> attrs = new HashMap<>();
@@ -203,9 +165,6 @@ class ML1OnnxSignatureProviderTest {
         assertNull(provider.computeT1Signature(attrs));
     }
 
-    /**
-     * Verifies that a missing sex value prevents T1 signature creation.
-     */
     @Test
     void computeT1Signature_missingSex_returnsNull() {
         Map<String, String> attrs = new HashMap<>();
@@ -216,9 +175,6 @@ class ML1OnnxSignatureProviderTest {
         assertNull(provider.computeT1Signature(attrs));
     }
 
-    /**
-     * Verifies that a missing birth date prevents T1 signature creation.
-     */
     @Test
     void computeT1Signature_missingBirthDate_returnsNull() {
         Map<String, String> attrs = new HashMap<>();
@@ -229,9 +185,6 @@ class ML1OnnxSignatureProviderTest {
         assertNull(provider.computeT1Signature(attrs));
     }
 
-    /**
-     * Verifies that an invalid birth date prevents T1 signature creation.
-     */
     @Test
     void computeT1Signature_invalidBirthDate_returnsNull() {
         Map<String, String> attrs = new HashMap<>();
@@ -243,9 +196,6 @@ class ML1OnnxSignatureProviderTest {
         assertNull(provider.computeT1Signature(attrs));
     }
 
-    /**
-     * Verifies that lowercase and padded attributes are normalized before composition.
-     */
     @Test
     void computeT1Signature_lowercaseInputsAreNormalized() {
         Map<String, String> attrs = new HashMap<>();
@@ -259,19 +209,11 @@ class ML1OnnxSignatureProviderTest {
         assertEquals("SMITH|A|MALE|2000-01-15", sig);
     }
 
-    /**
-     * Verifies that the configured default rotation IV matches the cross-language value.
-     */
     @Test
     void rotationConfig_defaultIv_matchesPythonParityValue() {
         assertEquals("openlinktoken-ml1-v1", RotationConfig.DEFAULT_IV);
     }
 
-    /**
-     * Verifies that the cached transformer uses the configured rotation parameters.
-     *
-     * @throws Exception if the transformer cannot be inspected reflectively
-     */
     @Test
     void getOrCreateTransformer_usesConfiguredRotationParameters() throws Exception {
         RotationConfig.configure(true, "", 3, 2, 0.25, -2.5, 2.5, new double[] { 1.5, -0.5, 0.0, 2.0 });
@@ -293,9 +235,6 @@ class ML1OnnxSignatureProviderTest {
     // hashRotationValues
     // -----------------------------------------------------------------------
 
-    /**
-     * Verifies that each rotation value produces a lowercase SHA-256 digest.
-     */
     @Test
     void hashRotationValues_returnsOneHexDigestPerInput() {
         List<String> rotationValues = List.of("94 104 96 97", "12 34 56 78");
@@ -309,9 +248,6 @@ class ML1OnnxSignatureProviderTest {
         }
     }
 
-    /**
-     * Verifies that hashing the same rotation values and key is deterministic.
-     */
     @Test
     void hashRotationValues_deterministicOutput() {
         List<String> rotationValues = List.of("94 104 96 97");
@@ -323,9 +259,6 @@ class ML1OnnxSignatureProviderTest {
         assertEquals(first, second, "Hash must be deterministic");
     }
 
-    /**
-     * Verifies that different T1 blocking keys produce different digests.
-     */
     @Test
     void hashRotationValues_differentKeysProduceDifferentDigests() {
         List<String> rotationValues = List.of("94 104 96 97");
@@ -336,9 +269,6 @@ class ML1OnnxSignatureProviderTest {
         assertTrue(!digest1.equals(digest2), "Different keys must produce different digests");
     }
 
-    /**
-     * Verifies the expected digest for the known rotation and blocking-key fixture.
-     */
     @Test
     void hashRotationValues_knownVector() {
         String rawT1 = "MEISTER|C|FEMALE|1989-05-25";
@@ -350,17 +280,11 @@ class ML1OnnxSignatureProviderTest {
                 provider.hashRotationValues(List.of("99 100 100 101"), blockingKey));
     }
 
-    /**
-     * Verifies that rotation values are not hashed without a blocking key.
-     */
     @Test
     void hashRotationValues_missingBlockingKey_returnsNull() {
         assertNull(provider.hashRotationValues(List.of("99 100 100 101"), null));
     }
 
-    /**
-     * Verifies that a missing blocking key yields the canonical blank token.
-     */
     @Test
     void buildRotationSignature_missingBlockingKey_returnsBlankToken() {
         assertEquals(
@@ -368,13 +292,6 @@ class ML1OnnxSignatureProviderTest {
                 provider.buildRotationSignature(List.of("99 100 100 101"), null));
     }
 
-    /**
-     * Invokes the provider's lazy transformer factory for test inspection.
-     *
-     * @param embeddingDim dimension of the embedding used to configure the transformer
-     * @return the cached rotation transformer
-     * @throws Exception if reflective lookup or invocation fails
-     */
     private static RotationEmbeddingTransformer getRotationTransformer(int embeddingDim) throws Exception {
         Method getOrCreateTransformer = ML1OnnxSignatureProvider.class.getDeclaredMethod(
                 "getOrCreateTransformer",
@@ -383,25 +300,12 @@ class ML1OnnxSignatureProviderTest {
         return (RotationEmbeddingTransformer) getOrCreateTransformer.invoke(null, embeddingDim);
     }
 
-    /**
-     * Reads a named field from an object for configuration assertions.
-     *
-     * @param target object that declares the field
-     * @param fieldName field to read
-     * @return the field's current value
-     * @throws Exception if the field cannot be accessed
-     */
     private static Object readField(Object target, String fieldName) throws Exception {
         Field field = target.getClass().getDeclaredField(fieldName);
         field.setAccessible(true);
         return field.get(target);
     }
 
-    /**
-     * Clears the provider's cached transformer between tests.
-     *
-     * @throws Exception if the cache field cannot be reset reflectively
-     */
     private static void resetRotationTransformer() throws Exception {
         Field transformerField = ML1OnnxSignatureProvider.class.getDeclaredField("rotationTransformer");
         transformerField.setAccessible(true);

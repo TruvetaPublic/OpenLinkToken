@@ -21,30 +21,25 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/** Tests U.S. ZIP-code normalization, validation, and serialization. */
 class USPostalCodeAttributeTest {
     private USPostalCodeAttribute usPostalCodeAttribute;
 
-    /** Creates a fresh U.S. postal-code attribute for each test. */
     @BeforeEach
     void setUp() {
         usPostalCodeAttribute = new USPostalCodeAttribute(3);
     }
 
-    /** Verifies the attribute reports the {@code USPostalCode} name. */
     @Test
     void getName_ShouldReturnUSPostalCode() {
         assertEquals("USPostalCode", usPostalCodeAttribute.getName());
     }
 
-    /** Verifies the supported U.S. ZIP-code aliases are exposed. */
     @Test
     void getAliases_ShouldReturnUSZipCodeAliases() {
         String[] expectedAliases = { "USPostalCode", "USZipCode" };
         assertArrayEquals(expectedAliases, usPostalCodeAttribute.getAliases());
     }
 
-    /** Verifies ZIP+4 input normalizes to its first five digits. */
     @Test
     void normalize_ShouldReturnFirst5Digits() {
         assertEquals("10001", usPostalCodeAttribute.normalize("10001-6789"));
@@ -56,7 +51,6 @@ class USPostalCodeAttributeTest {
         assertEquals("65201", usPostalCodeAttribute.normalize("652016789"));
     }
 
-    /** Verifies outer whitespace is removed from U.S. ZIP-code input. */
     @Test
     void normalize_ShouldHandleWhitespace() {
         // Test different types of whitespace for US ZIP codes
@@ -71,7 +65,6 @@ class USPostalCodeAttributeTest {
         assertEquals("10001", usPostalCodeAttribute.normalize("  10   001  "), "Multiple spaces");
     }
 
-    /** Verifies supported five-digit and ZIP+4 values pass validation. */
     @Test
     void validate_ShouldReturnTrueForValidUSZipCodes() {
         assertTrue(usPostalCodeAttribute.validate("95123 "));
@@ -87,14 +80,12 @@ class USPostalCodeAttributeTest {
         assertTrue(usPostalCodeAttribute.validate("902101234"));
     }
 
-    /** Verifies null and empty ZIP-code values fail validation. */
     @Test
     void validate_ShouldReturnFalseForNullAndEmpty() {
         assertFalse(usPostalCodeAttribute.validate(null), "Null value should not be allowed");
         assertFalse(usPostalCodeAttribute.validate(""), "Empty value should not be allowed");
     }
 
-    /** Verifies malformed U.S. ZIP-code formats fail validation. */
     @Test
     void validate_ShouldReturnFalseForInvalidFormats() {
         assertFalse(usPostalCodeAttribute.validate("12"), "Too short postal code should not be allowed");
@@ -104,7 +95,6 @@ class USPostalCodeAttributeTest {
         assertFalse(usPostalCodeAttribute.validate("K1A 0A6"), "Canadian postal code should not validate");
     }
 
-    /** Verifies reserved placeholder ZIP codes fail validation. */
     @Test
     void validate_ShouldReturnFalseForPlaceholderZipCodes() {
         assertFalse(usPostalCodeAttribute.validate("12345"), "Invalid postal code should not be allowed");
@@ -122,7 +112,6 @@ class USPostalCodeAttributeTest {
         assertFalse(usPostalCodeAttribute.validate("99999"), "Invalid postal code should not be allowed");
     }
 
-    /** Verifies concurrent ZIP-code normalization returns consistent values. */
     @Test
     void normalize_ThreadSafety() throws InterruptedException {
         final int threadCount = 100;
@@ -158,7 +147,6 @@ class USPostalCodeAttributeTest {
         }
     }
 
-    /** Verifies null, short, and ZIP+4 values follow expected normalization behavior. */
     @Test
     void normalize_ShouldHandleEdgeCases() {
         // Test short postal codes (less than 3 characters) - should return trimmed original
@@ -180,7 +168,6 @@ class USPostalCodeAttributeTest {
         assertEquals("k1a0a7", usPostalCodeAttribute.normalize("k1a0a7"));
     }
 
-    /** Verifies three-digit ZIP prefixes are padded with two zeroes. */
     @Test
     void normalize_ShouldPadZip3ToZip5() {
         // Test ZIP-3 padding with "00"
@@ -194,7 +181,6 @@ class USPostalCodeAttributeTest {
         assertEquals("60600", usPostalCodeAttribute.normalize("606"));
     }
 
-    /** Verifies valid three-digit ZIP prefixes pass validation. */
     @Test
     void validate_ShouldReturnTrueForValidZip3() {
         // US ZIP-3 codes should be valid (will be padded during normalization)
@@ -211,7 +197,6 @@ class USPostalCodeAttributeTest {
         assertTrue(usPostalCodeAttribute.validate("606"));
     }
 
-    /** Verifies three-digit ZIP prefixes that normalize to invalid ZIP codes fail validation. */
     @Test
     void validate_ShouldReturnFalseForInvalidZip3ThatWouldBeInvalid() {
         // These ZIP-3 codes are invalid as per requirements
@@ -226,7 +211,6 @@ class USPostalCodeAttributeTest {
         assertTrue(usPostalCodeAttribute.validate("987"), "987 should be valid");
     }
 
-    /** Verifies four-digit ZIP prefixes are padded to five digits. */
     @Test
     void normalize_ShouldPadZip4ToZip5() {
         // Test ZIP-4 padding with "0"
@@ -239,7 +223,6 @@ class USPostalCodeAttributeTest {
         assertEquals("30300", usPostalCodeAttribute.normalize("3030"));
     }
 
-    /** Verifies valid four-digit ZIP prefixes pass validation. */
     @Test
     void validate_ShouldReturnTrueForValidZip4() {
         // US ZIP-4 codes should be valid (will be padded during normalization)
@@ -255,7 +238,6 @@ class USPostalCodeAttributeTest {
         assertTrue(usPostalCodeAttribute.validate("6060"));
     }
 
-    /** Verifies four-digit ZIP prefixes that normalize to invalid ZIP codes fail validation. */
     @Test
     void validate_ShouldReturnFalseForInvalidZip4ThatWouldBeInvalid() {
         // These ZIP-4 codes start with invalid ZIP-3 prefixes
@@ -270,7 +252,6 @@ class USPostalCodeAttributeTest {
         assertTrue(usPostalCodeAttribute.validate("9876"), "9876 should be valid");
     }
 
-    /** Verifies serialization preserves U.S. ZIP-code behavior. */
     @Test
     void testSerialization() throws Exception {
         // Serialize the attribute

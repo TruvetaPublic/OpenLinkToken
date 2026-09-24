@@ -50,7 +50,6 @@ public class JweMatchTokenFormatter implements TokenTransformer {
      * @param ruleId the token rule identifier (e.g., "T1", "T2", etc.)
      * @param issuer the issuer identifier (optional, defaults to "org.openlinktoken")
      * @throws JOSEException if the encrypter cannot be initialized
-     * @throws IllegalArgumentException if the key is invalid or the ring ID or rule ID is null or empty
      */
     public JweMatchTokenFormatter(String encryptionKey, String ringId, String ruleId, String issuer)
             throws JOSEException {
@@ -65,7 +64,6 @@ public class JweMatchTokenFormatter implements TokenTransformer {
      * @param ruleId the token rule identifier (e.g., "T1", "T2", etc.)
      * @param issuer the issuer identifier (optional, defaults to "org.openlinktoken")
      * @throws JOSEException if the encrypter cannot be initialized
-     * @throws IllegalArgumentException if the key is not 32 bytes or the ring ID or rule ID is null or empty
      */
     public JweMatchTokenFormatter(byte[] encryptionKey, String ringId, String ruleId, String issuer)
             throws JOSEException {
@@ -141,7 +139,6 @@ public class JweMatchTokenFormatter implements TokenTransformer {
      * <p>
      * The input token should be the base64-encoded HMAC output from previous transformers.
      * This method wraps it in a JWE structure with metadata and prepends the "olt.V1." prefix.
-     * Null or blank values are returned unchanged.
      *
      * @param token the privacy-protected identifier (PPID) to wrap in JWE format
      * @return the formatted match token: olt.V1.&lt;JWE compact serialization&gt;

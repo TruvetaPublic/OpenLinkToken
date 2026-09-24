@@ -22,9 +22,6 @@ class RotationEmbeddingTransformerTest {
 
     private static final String IV = "rotation-embedding-test-iv-2024";
 
-    /**
-     * Verifies that the transformer emits one token for each configured rotation.
-     */
     @Test
     void testTransformReturnsRotationCountTokens() {
         int rotationCount = 4;
@@ -38,9 +35,6 @@ class RotationEmbeddingTransformerTest {
         assertEquals(rotationCount, tokens.size());
     }
 
-    /**
-     * Verifies that each token is a non-empty sequence of space-separated integers.
-     */
     @Test
     void testEachTokenIsNonEmptySpaceSeparatedIntegers() {
         RotationEmbeddingTransformer transformer =
@@ -57,9 +51,6 @@ class RotationEmbeddingTransformerTest {
         }
     }
 
-    /**
-     * Verifies that repeated transforms return identical tokens after matrix caching.
-     */
     @Test
     void testMatrixCachingProducesIdenticalResults() {
         RotationEmbeddingTransformer transformer =
@@ -73,9 +64,6 @@ class RotationEmbeddingTransformerTest {
         assertEquals(first, second, "Calling transform() twice must return identical results");
     }
 
-    /**
-     * Verifies the configured token count and projected dimension for a reduced projection.
-     */
     @Test
     void testDimension4HashDimension2RotationCount3() {
         int rotationCount = 3;
@@ -100,11 +88,6 @@ class RotationEmbeddingTransformerTest {
         }
     }
 
-    /**
-     * Verifies that cached matrices retain only the requested leading rows.
-     *
-     * @throws ReflectiveOperationException if the cached matrices cannot be inspected
-     */
     @Test
     @SuppressWarnings("unchecked")
     void testTransformerRetainsOnlyLeadingRotationRows() throws ReflectiveOperationException {
@@ -133,9 +116,6 @@ class RotationEmbeddingTransformerTest {
         }
     }
 
-    /**
-     * Verifies the reduced-dimension output against the standard rotation parity fixture.
-     */
     @Test
     void testHashDimensionMatchesStandardFullRotationParityFixture() {
         // Token[0] is the [[-1]] sentinel pass-through; token[1] is the first actual rotation.
@@ -150,11 +130,6 @@ class RotationEmbeddingTransformerTest {
         assertEquals(List.of("102 94 107", "95 126 103"), tokens);
     }
 
-    /**
-     * Verifies that concurrent first use produces the same tokens without errors.
-     *
-     * @throws InterruptedException if the test thread is interrupted while awaiting workers
-     */
     @Test
     void testThreadSafetyProducesConsistentResults() throws InterruptedException {
         int threadCount = 20;
@@ -194,9 +169,6 @@ class RotationEmbeddingTransformerTest {
         }
     }
 
-    /**
-     * Verifies that the defaults factory uses zero bias.
-     */
     @Test
     void testWithDefaultsCreatesZeroBias() {
         // A zero-bias transformer applied to the zero vector should project to zero,
@@ -217,27 +189,18 @@ class RotationEmbeddingTransformerTest {
         }
     }
 
-    /**
-     * Verifies that a null initialization vector is rejected.
-     */
     @Test
     void testConstructorValidationNullIvThrows() {
         assertThrows(IllegalArgumentException.class,
                 () -> RotationEmbeddingTransformer.withDefaults(null, 2, 4, 2));
     }
 
-    /**
-     * Verifies that a non-positive rotation count is rejected.
-     */
     @Test
     void testConstructorValidationZeroRotationCountThrows() {
         assertThrows(IllegalArgumentException.class,
                 () -> RotationEmbeddingTransformer.withDefaults(IV, 0, 4, 2));
     }
 
-    /**
-     * Verifies that a hash dimension larger than the matrix dimension is rejected.
-     */
     @Test
     void testConstructorValidationHashDimensionExceedsDimensionThrows() {
         assertThrows(IllegalArgumentException.class,

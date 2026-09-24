@@ -71,15 +71,7 @@ class TestOpenLinkTokenCommand:
 
     @pytest.fixture
     def temp_dir(self, tmp_path):
-        """
-        Create temporary directory with test input CSV.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-
-        Returns:
-            Temporary directory supplied by pytest for ZIP archive tests.
-        """
+        """Create temporary directory with test input CSV."""
         input_csv = tmp_path / "input.csv"
         csv_content = (
             "RecordId,FirstName,LastName,PostalCode,Sex,BirthDate,SocialSecurityNumber\n"
@@ -90,16 +82,7 @@ class TestOpenLinkTokenCommand:
         return tmp_path
 
     def _create_exchange_config(self, temp_dir: Path, name: str = "test-exchange") -> tuple[Path, Path]:
-        """
-        Create an exchange config and return ``(exchange_config_path, private_key_path)``.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-            name: Name identifying the item being processed.
-
-        Returns:
-            Created an exchange config and return ``(exchange_config_path, private_key_path)``.
-        """
+        """Create an exchange config and return ``(exchange_config_path, private_key_path)``."""
         _, partner_public_pem = generate_key_pair("P-256")
         partner_public_key_path = temp_dir / f"{name}.partner.public.pem"
         partner_public_key_path.write_bytes(partner_public_pem)
@@ -125,12 +108,7 @@ class TestOpenLinkTokenCommand:
         return exchange_config_path, private_key_path
 
     def test_package_command_csv_to_csv(self, temp_dir):
-        """
-        Test package command (tokenize + encrypt) with CSV input/output.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Test package command (tokenize + encrypt) with CSV input/output."""
         input_csv = temp_dir / "input.csv"
         output_csv = temp_dir / "output.csv"
         exchange_config, private_key = self._create_exchange_config(temp_dir, "package-csv")
@@ -168,12 +146,7 @@ class TestOpenLinkTokenCommand:
         }
 
     def test_package_command_csv_to_parquet(self, temp_dir):
-        """
-        Test package command with CSV input and Parquet output.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Test package command with CSV input and Parquet output."""
         input_csv = temp_dir / "input.csv"
         output_parquet = temp_dir / "output.parquet"
         exchange_config, private_key = self._create_exchange_config(temp_dir, "package-parquet")
@@ -197,12 +170,7 @@ class TestOpenLinkTokenCommand:
         assert output_parquet.stat().st_size > 0, "Output Parquet should not be empty"
 
     def test_package_command_csv_to_zip(self, temp_dir):
-        """
-        Test package command with ZIP output bundles tokens, metadata, and exchange config.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Test package command with ZIP output bundles tokens, metadata, and exchange config."""
         input_csv = temp_dir / "input.csv"
         output_zip = temp_dir / "output.zip"
         exchange_config, private_key = self._create_exchange_config(temp_dir, "package-zip")
@@ -242,12 +210,7 @@ class TestOpenLinkTokenCommand:
         assert not (temp_dir / "output.metadata.json").exists(), "Metadata should not appear next to the zip"
 
     def test_tokenize_command(self, temp_dir):
-        """
-        Test tokenize command (hash-only, no encryption).
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Test tokenize command (hash-only, no encryption)."""
         input_csv = temp_dir / "input.csv"
         output_csv = temp_dir / "output.csv"
         exchange_config, private_key = self._create_exchange_config(temp_dir, "tokenize")
@@ -271,12 +234,7 @@ class TestOpenLinkTokenCommand:
         assert output_csv.stat().st_size > 0, "Output CSV should not be empty"
 
     def test_encrypt_command_csv_to_zip(self, temp_dir):
-        """
-        Test encrypt command with ZIP output bundles encrypted tokens and exchange config.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Test encrypt command with ZIP output bundles encrypted tokens and exchange config."""
         input_csv = temp_dir / "input.csv"
         hashed_csv = temp_dir / "hashed.csv"
         output_zip = temp_dir / "output.zip"
@@ -327,12 +285,7 @@ class TestOpenLinkTokenCommand:
             assert len(archive.read("encrypt-zip.exchange.json")) > 0, "Exchange config inside ZIP should not be empty"
 
     def test_encrypt_command_sets_total_rows_for_progress(self, temp_dir):
-        """
-        Encrypt should precompute total rows so the progress reporter can show percentages and ETA.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Encrypt should precompute total rows so the progress reporter can show percentages and ETA."""
         input_csv = temp_dir / "input.csv"
         hashed_csv = temp_dir / "hashed.csv"
         output_csv = temp_dir / "encrypted.csv"
@@ -372,12 +325,7 @@ class TestOpenLinkTokenCommand:
         set_total_rows.assert_called_once_with(11)
 
     def test_decrypt_command(self, temp_dir):
-        """
-        Test decrypt command.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Test decrypt command."""
         input_csv = temp_dir / "input.csv"
         output_csv = temp_dir / "output.csv"
         decrypted_csv = temp_dir / "decrypted.csv"
@@ -417,12 +365,7 @@ class TestOpenLinkTokenCommand:
         assert decrypted_csv.stat().st_size > 0, "Decrypted CSV should not be empty"
 
     def test_output_type_defaults_to_input_type(self, temp_dir):
-        """
-        Test that output type defaults to input type when not specified.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Test that output type defaults to input type when not specified."""
         input_csv = temp_dir / "input.csv"
         output_csv = temp_dir / "output.csv"
         exchange_config, private_key = self._create_exchange_config(temp_dir, "default-output-type")
@@ -449,12 +392,7 @@ class TestOpenLinkTokenCommand:
         assert "RecordId" in content, "Output should contain CSV headers"
 
     def test_parquet_input_to_parquet_output(self, temp_dir):
-        """
-        Test Parquet input to Parquet output.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Test Parquet input to Parquet output."""
         input_csv = temp_dir / "input.csv"
         temp_parquet = temp_dir / "temp.parquet"
         output_parquet = temp_dir / "output2.parquet"
@@ -491,12 +429,7 @@ class TestOpenLinkTokenCommand:
         assert exit_code == 0, "Command should execute successfully"
 
     def test_decrypt_csv_to_parquet(self, temp_dir):
-        """
-        Test decrypting CSV to Parquet format.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Test decrypting CSV to Parquet format."""
         input_csv = temp_dir / "input.csv"
         output_csv = temp_dir / "output.csv"
         decrypted_parquet = temp_dir / "decrypted.parquet"
@@ -536,12 +469,7 @@ class TestOpenLinkTokenCommand:
     # ===== Negative Test Cases =====
 
     def test_missing_required_parameter_exchange_config(self, temp_dir):
-        """
-        Test that missing exchange-config input is caught.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Test that missing exchange-config input is caught."""
         input_csv = temp_dir / "input.csv"
         output_csv = temp_dir / "output.csv"
         original_cwd = Path.cwd()
@@ -563,12 +491,7 @@ class TestOpenLinkTokenCommand:
         assert exit_code != 0, "Command should fail with missing required parameter"
 
     def test_missing_required_parameter_exchange_config_for_encrypt(self, temp_dir):
-        """
-        Test that encrypt fails when no exchange config can be resolved.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Test that encrypt fails when no exchange config can be resolved."""
         input_csv = temp_dir / "input.csv"
         output_csv = temp_dir / "output.csv"
 
@@ -585,12 +508,7 @@ class TestOpenLinkTokenCommand:
         assert exit_code != 0, "Command should fail with missing required parameter"
 
     def test_missing_required_parameter_input(self, temp_dir):
-        """
-        Test that missing input parameter is caught.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Test that missing input parameter is caught."""
         output_csv = temp_dir / "output.csv"
         exchange_config, private_key = self._create_exchange_config(temp_dir, "missing-input")
 
@@ -609,12 +527,7 @@ class TestOpenLinkTokenCommand:
         assert exit_code != 0, "Command should fail with missing required parameter"
 
     def test_missing_required_parameter_output(self, temp_dir):
-        """
-        Test that missing output parameter generates auto-named file and succeeds.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Test that missing output parameter generates auto-named file and succeeds."""
         input_csv = temp_dir / "input.csv"
         exchange_config, private_key = self._create_exchange_config(temp_dir, "missing-output")
 
@@ -633,12 +546,7 @@ class TestOpenLinkTokenCommand:
         assert exit_code == 0, "Command should succeed with auto-generated output"
 
     def test_invalid_input_type(self, temp_dir):
-        """
-        Test that unsupported input file extension is caught.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Test that unsupported input file extension is caught."""
         unsupported_file = temp_dir / "input.txt"  # .txt is not supported
         unsupported_file.write_text("some data")
         output_csv = temp_dir / "output.csv"
@@ -660,12 +568,7 @@ class TestOpenLinkTokenCommand:
         assert exit_code != 0, "Command should fail with unsupported input extension"
 
     def test_invalid_output_type(self, temp_dir):
-        """
-        Test that unsupported output file extension is caught.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Test that unsupported output file extension is caught."""
         input_csv = temp_dir / "input.csv"
         unsupported_output = temp_dir / "output.txt"  # .txt is not supported
         exchange_config, private_key = self._create_exchange_config(temp_dir, "invalid-output-type")
@@ -686,12 +589,7 @@ class TestOpenLinkTokenCommand:
         assert exit_code != 0, "Command should fail with unsupported output extension"
 
     def test_non_existent_input_file(self, temp_dir):
-        """
-        Test that non-existent input file is caught.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Test that non-existent input file is caught."""
         nonexistent_file = temp_dir / "nonexistent.csv"
         output_csv = temp_dir / "output.csv"
         exchange_config, private_key = self._create_exchange_config(temp_dir, "missing-input-file")
@@ -712,12 +610,7 @@ class TestOpenLinkTokenCommand:
         assert exit_code != 0, "Command should fail with non-existent input file"
 
     def test_package_command_missing_exchange_config(self, temp_dir):
-        """
-        Test that package command fails when no exchange config can be resolved.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Test that package command fails when no exchange config can be resolved."""
         input_csv = temp_dir / "input.csv"
         output_csv = temp_dir / "output.csv"
         original_cwd = Path.cwd()
@@ -739,12 +632,7 @@ class TestOpenLinkTokenCommand:
         assert exit_code != 0, "Command should fail with missing required parameters"
 
     def test_invalid_subcommand(self, temp_dir):
-        """
-        Test that invalid subcommand is caught.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Test that invalid subcommand is caught."""
         input_csv = temp_dir / "input.csv"
         output_csv = temp_dir / "output.csv"
 
@@ -760,14 +648,7 @@ class TestOpenLinkTokenCommand:
         assert exit_code != 0, "Command should fail with invalid subcommand"
 
     def test_unexpected_command_error_writes_reference_log(self, tmp_path, capsys, monkeypatch):
-        """
-        Unexpected command failures should write a referenceable traceback log.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-            capsys: Pytest fixture for capturing standard output and standard error.
-            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
-        """
+        """Unexpected command failures should write a referenceable traceback log."""
         monkeypatch.setattr("sys.stderr.isatty", lambda: True)
         with patch(
             "openlinktoken_cli.commands.tokenize_command.TokenizeCommand.execute",
@@ -799,14 +680,7 @@ class TestOpenLinkTokenCommand:
         assert "RuntimeError: boom" in log_files[0].read_text()
 
     def test_package_command_success_summary_references_run_log(self, temp_dir, capsys, monkeypatch):
-        """
-        Successful package runs should print a summary and point at the detailed log.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-            capsys: Pytest fixture for capturing standard output and standard error.
-            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
-        """
+        """Successful package runs should print a summary and point at the detailed log."""
         input_csv = temp_dir / "input.csv"
         output_csv = temp_dir / "output.csv"
         exchange_config, private_key = self._create_exchange_config(temp_dir, "package-summary")
@@ -845,13 +719,7 @@ class TestOpenLinkTokenCommand:
         assert "Processed a total of 2 records" in log_files[0].read_text()
 
     def test_tokenize_command_allows_basename_output_path_in_current_directory(self, tmp_path, monkeypatch):
-        """
-        Tokenize should support basename-only output paths in the current directory.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
-        """
+        """Tokenize should support basename-only output paths in the current directory."""
         input_csv = tmp_path / "input.csv"
         input_csv.write_text(
             "RecordId,FirstName,LastName,PostalCode,Sex,BirthDate,SocialSecurityNumber\n"
@@ -879,14 +747,7 @@ class TestOpenLinkTokenCommand:
         assert (tmp_path / "output.metadata.json").exists()
 
     def test_tokenize_unexpected_processing_error_writes_reference_log(self, tmp_path, capsys, monkeypatch):
-        """
-        Unexpected tokenize failures should archive the traceback and print a reference.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-            capsys: Pytest fixture for capturing standard output and standard error.
-            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
-        """
+        """Unexpected tokenize failures should archive the traceback and print a reference."""
         monkeypatch.setattr("sys.stderr.isatty", lambda: True)
         input_csv = tmp_path / "input.csv"
         input_csv.write_text(
@@ -927,14 +788,7 @@ class TestOpenLinkTokenCommand:
         assert "RuntimeError: boom" in log_files[0].read_text()
 
     def test_tokenize_unexpected_processing_error_reuses_run_log(self, tmp_path, capsys, monkeypatch):
-        """
-        Processing failures should append the traceback to the same per-run log file.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-            capsys: Pytest fixture for capturing standard output and standard error.
-            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
-        """
+        """Processing failures should append the traceback to the same per-run log file."""
         monkeypatch.setattr("sys.stderr.isatty", lambda: True)
         input_csv = tmp_path / "input.csv"
         input_csv.write_text(
@@ -974,14 +828,7 @@ class TestOpenLinkTokenCommand:
         assert "RuntimeError: boom" in log_files[0].read_text()
 
     def test_package_missing_exchange_config_writes_reference_log(self, tmp_path, monkeypatch, capsys):
-        """
-        Handled package errors should still print the archived traceback location.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
-            capsys: Pytest fixture for capturing standard output and standard error.
-        """
+        """Handled package errors should still print the archived traceback location."""
         monkeypatch.setattr("sys.stderr.isatty", lambda: True)
         input_csv = tmp_path / "sample.csv"
         input_csv.write_text(
@@ -1016,13 +863,7 @@ class TestOpenLinkTokenCommand:
         assert "FileNotFoundError" in log_files[0].read_text()
 
     def test_help_shows_banner_for_interactive_runs(self, monkeypatch, capsys):
-        """
-        Interactive help output should include the Open Link Token banner.
-
-        Args:
-            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
-            capsys: Pytest fixture for capturing standard output and standard error.
-        """
+        """Interactive help output should include the Open Link Token banner."""
         monkeypatch.setattr("sys.stdout.isatty", lambda: True)
 
         exit_code = OpenLinkTokenCommand.execute(["--help"])
@@ -1034,13 +875,7 @@ class TestOpenLinkTokenCommand:
             assert "usage: olt" in captured.out
 
     def test_bare_invocation_shows_banner_for_interactive_runs(self, monkeypatch, capsys):
-        """
-        Interactive top-level invocation should include the banner before help output.
-
-        Args:
-            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
-            capsys: Pytest fixture for capturing standard output and standard error.
-        """
+        """Interactive top-level invocation should include the banner before help output."""
         monkeypatch.setattr("sys.stdout.isatty", lambda: True)
 
         with patch("openlinktoken_cli.commands.open_link_token_command.start_version_check") as mock_version_check:
@@ -1054,13 +889,7 @@ class TestOpenLinkTokenCommand:
         mock_version_check.return_value.wait_and_notify.assert_called_once()
 
     def test_help_subcommand_shows_banner_for_interactive_runs(self, monkeypatch, capsys):
-        """
-        Interactive help subcommand output should include the Open Link Token banner.
-
-        Args:
-            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
-            capsys: Pytest fixture for capturing standard output and standard error.
-        """
+        """Interactive help subcommand output should include the Open Link Token banner."""
         monkeypatch.setattr("sys.stdout.isatty", lambda: True)
 
         exit_code = OpenLinkTokenCommand.execute(["help"])
@@ -1072,13 +901,7 @@ class TestOpenLinkTokenCommand:
             assert "usage: olt" in captured.out
 
     def test_version_does_not_show_banner_for_interactive_runs(self, monkeypatch, capsys):
-        """
-        Interactive non-help output should not include the Open Link Token banner.
-
-        Args:
-            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
-            capsys: Pytest fixture for capturing standard output and standard error.
-        """
+        """Interactive non-help output should not include the Open Link Token banner."""
         monkeypatch.setattr("sys.stdout.isatty", lambda: True)
 
         exit_code = OpenLinkTokenCommand.execute(["--version"])
@@ -1090,14 +913,7 @@ class TestOpenLinkTokenCommand:
 
     @pytest.mark.parametrize("cmd", ["tokenize", "encrypt", "decrypt", "package", "initiate-exchange"])
     def test_subcommand_without_args_shows_banner(self, monkeypatch, capsys, cmd):
-        """
-        Banner should appear when a subcommand requiring args is invoked with no args.
-
-        Args:
-            monkeypatch: Pytest fixture for temporarily patching environment variables and process state.
-            capsys: Pytest fixture for capturing standard output and standard error.
-            cmd: Cmd value to exercise the behavior under test.
-        """
+        """Banner should appear when a subcommand requiring args is invoked with no args."""
         monkeypatch.setattr("sys.stdout.isatty", lambda: True)
 
         exit_code = OpenLinkTokenCommand.execute([cmd])
@@ -1110,13 +926,7 @@ class TestOpenLinkTokenCommand:
 
     @pytest.mark.parametrize("cmd", ["tokenize", "encrypt", "decrypt", "package", "initiate-exchange"])
     def test_subcommand_without_args_shows_subcommand_help(self, capsys, cmd):
-        """
-        Subcommand help should be printed when a subcommand requiring args is invoked with no args.
-
-        Args:
-            capsys: Pytest fixture for capturing standard output and standard error.
-            cmd: Cmd value to exercise the behavior under test.
-        """
+        """Subcommand help should be printed when a subcommand requiring args is invoked with no args."""
         exit_code = OpenLinkTokenCommand.execute([cmd])
 
         captured = capsys.readouterr()
@@ -1124,12 +934,7 @@ class TestOpenLinkTokenCommand:
         assert cmd in captured.out, f"Help output for '{cmd}' should mention the command name"
 
     def test_help_output_does_not_contain_curly_brace_subcommand_list(self, capsys):
-        """
-        The main help output must not contain the redundant {cmd1,cmd2,...} listing.
-
-        Args:
-            capsys: Pytest fixture for capturing standard output and standard error.
-        """
+        """The main help output must not contain the redundant {cmd1,cmd2,...} listing."""
         exit_code = OpenLinkTokenCommand.execute([])
 
         captured = capsys.readouterr()
@@ -1142,12 +947,7 @@ class TestOpenLinkTokenCommand:
     # ===== Hash Record IDs Tests =====
 
     def test_tokenize_command_hash_record_ids_output_contains_hashed_ids(self, temp_dir):
-        """
-        Output token file must contain hashed (not original) RecordId values.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Output token file must contain hashed (not original) RecordId values."""
         input_csv = temp_dir / "input.csv"
         output_csv = temp_dir / "output.csv"
         exchange_config, private_key = self._create_exchange_config(temp_dir, "tokenize-hash-record-ids")
@@ -1183,12 +983,7 @@ class TestOpenLinkTokenCommand:
             assert len(record_id) == 64, f"Hashed record ID must be 64 chars, got: {record_id!r}"
 
     def test_tokenize_command_without_hash_record_ids_output_contains_original_ids(self, temp_dir):
-        """
-        Without --hash-record-ids the output must contain the original record IDs.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """Without --hash-record-ids the output must contain the original record IDs."""
         input_csv = temp_dir / "input.csv"
         output_csv = temp_dir / "output.csv"
         exchange_config, private_key = self._create_exchange_config(temp_dir, "tokenize-record-ids-original")
@@ -1212,12 +1007,7 @@ class TestOpenLinkTokenCommand:
         assert "test-002" in content, "Output should contain original record IDs"
 
     def test_package_command_hash_record_ids_output_contains_hashed_ids(self, temp_dir):
-        """
-        --hash-record-ids on package must produce hashed (not original) RecordId values.
-
-        Args:
-            temp_dir: Directory used to store temporary input and output files.
-        """
+        """--hash-record-ids on package must produce hashed (not original) RecordId values."""
         input_csv = temp_dir / "input.csv"
         output_csv = temp_dir / "output.csv"
         exchange_config, private_key = self._create_exchange_config(temp_dir, "package-hash-record-ids")
@@ -1248,13 +1038,7 @@ class TestInitiateExchangeViaMain:
 
     @pytest.mark.parametrize("command", ["tokenize", "package", "encrypt", "decrypt"])
     def test_consumer_help_uses_exchange_config_contract(self, command, capsys):
-        """
-        Consumer command help should advertise exchange-config inputs instead of plaintext secrets.
-
-        Args:
-            command: Command value to exercise the behavior under test.
-            capsys: Pytest fixture for capturing standard output and standard error.
-        """
+        """Consumer command help should advertise exchange-config inputs instead of plaintext secrets."""
         exit_code = OpenLinkTokenCommand.execute([command, "--help"])
 
         captured = capsys.readouterr()
@@ -1267,23 +1051,13 @@ class TestInitiateExchangeViaMain:
         assert "--encryptionkey" not in captured.out
 
     def test_initiate_exchange_appears_in_help(self, capsys):
-        """
-        initiate-exchange is listed in the top-level help output.
-
-        Args:
-            capsys: Pytest fixture for capturing standard output and standard error.
-        """
+        """initiate-exchange is listed in the top-level help output."""
         OpenLinkTokenCommand.execute(["--help"])
         captured = capsys.readouterr()
         assert "initiate-exchange" in captured.out
 
     def test_initiate_exchange_help_describes_sender_private_key_without_embedding(self, capsys):
-        """
-        Subcommand help should prefer --sender-private-key without implying embedding.
-
-        Args:
-            capsys: Pytest fixture for capturing standard output and standard error.
-        """
+        """Subcommand help should prefer --sender-private-key without implying embedding."""
         exit_code = OpenLinkTokenCommand.execute(["initiate-exchange", "--help"])
 
         captured = capsys.readouterr()
@@ -1293,12 +1067,7 @@ class TestInitiateExchangeViaMain:
         assert "Reuse an existing sender private key PEM" in captured.out
 
     def test_initiate_exchange_help_lists_public_key_stdin(self, capsys):
-        """
-        Subcommand help should advertise --public-key-stdin as an input alternative.
-
-        Args:
-            capsys: Pytest fixture for capturing standard output and standard error.
-        """
+        """Subcommand help should advertise --public-key-stdin as an input alternative."""
         exit_code = OpenLinkTokenCommand.execute(["initiate-exchange", "--help"])
 
         captured = capsys.readouterr()
@@ -1306,12 +1075,7 @@ class TestInitiateExchangeViaMain:
         assert "--public-key-stdin" in captured.out
 
     def test_initiate_exchange_help_lists_env_key_references(self, capsys):
-        """
-        Subcommand help should advertise env-var references for both partner and sender keys.
-
-        Args:
-            capsys: Pytest fixture for capturing standard output and standard error.
-        """
+        """Subcommand help should advertise env-var references for both partner and sender keys."""
         exit_code = OpenLinkTokenCommand.execute(["initiate-exchange", "--help"])
 
         captured = capsys.readouterr()
@@ -1320,12 +1084,7 @@ class TestInitiateExchangeViaMain:
         assert "--sender-private-key-env" in captured.out
 
     def test_initiate_exchange_help_lists_safe_hashing_secret_inputs(self, capsys):
-        """
-        Subcommand help should advertise non-argv hashing-secret input modes.
-
-        Args:
-            capsys: Pytest fixture for capturing standard output and standard error.
-        """
+        """Subcommand help should advertise non-argv hashing-secret input modes."""
         exit_code = OpenLinkTokenCommand.execute(["initiate-exchange", "--help"])
 
         captured = capsys.readouterr()
@@ -1334,12 +1093,7 @@ class TestInitiateExchangeViaMain:
         assert "--hashingsecret-stdin" in captured.out
 
     def test_initiate_exchange_succeeds_with_valid_inputs(self, tmp_path):
-        """
-        initiate-exchange returns 0 for a complete valid invocation.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-        """
+        """initiate-exchange returns 0 for a complete valid invocation."""
         from unittest.mock import patch
 
         from openlinktoken_cli.util.ec_key_utils import generate_key_pair
@@ -1366,12 +1120,7 @@ class TestInitiateExchangeViaMain:
         assert output_path.exists()
 
     def test_initiate_exchange_missing_public_key_fails(self, tmp_path):
-        """
-        initiate-exchange exits non-zero when --public-key is omitted.
-
-        Args:
-            tmp_path: Temporary directory supplied by pytest for files created by the test.
-        """
+        """initiate-exchange exits non-zero when --public-key is omitted."""
         from unittest.mock import patch
 
         with patch("pathlib.Path.home", return_value=tmp_path):
@@ -1384,15 +1133,9 @@ class TestStartupVersionCheckPolicy:
     """Tests for startup version-check behavior by parsed subcommand."""
 
     def test_should_start_version_check_false_for_update_command(self):
-        """
-        Verify that should start version check false for update command.
-        """
         parsed_args = type("ParsedArgs", (), {"command": "update"})
         assert not OpenLinkTokenCommand._should_start_version_check(parsed_args)
 
     def test_should_start_version_check_true_for_non_update_command(self):
-        """
-        Verify that should start version check true for non update command.
-        """
         parsed_args = type("ParsedArgs", (), {"command": "tokenize"})
         assert OpenLinkTokenCommand._should_start_version_check(parsed_args)

@@ -30,10 +30,7 @@ public final class RegexValidator implements SerializableAttributeValidator {
     }
 
     /**
-     * Validates that the non-null value fully matches the compiled pattern.
-     *
-     * @param value the value to validate
-     * @return {@code true} if the value fully matches the pattern
+     * Validates that the value matches the regex pattern.
      */
     @Override
     public boolean eval(String value) {

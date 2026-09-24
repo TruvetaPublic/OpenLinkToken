@@ -21,37 +21,31 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/** Tests combined U.S. and Canadian postal-code normalization and validation. */
 class PostalCodeAttributeTest {
     private PostalCodeAttribute postalCodeAttribute;
 
-    /** Creates a fresh postal-code attribute for each test. */
     @BeforeEach
     void setUp() {
         postalCodeAttribute = new PostalCodeAttribute();
     }
 
-    /** Verifies the attribute reports the {@code PostalCode} name. */
     @Test
     void getName_ShouldReturnPostalCode() {
         assertEquals("PostalCode", postalCodeAttribute.getName());
     }
 
-    /** Verifies supported postal-code and ZIP aliases are exposed. */
     @Test
     void getAliases_ShouldReturnPostalCodeAndZipCode() {
         String[] expectedAliases = { "PostalCode", "ZipCode", "ZIP3", "ZIP4", "ZIP5" };
         assertArrayEquals(expectedAliases, postalCodeAttribute.getAliases());
     }
 
-    /** Verifies U.S. ZIP+4 input normalizes to its five-digit prefix. */
     @Test
     void normalize_ShouldReturnFirst5Digits() {
         assertEquals("10001", postalCodeAttribute.normalize("10001-6789"));
         assertEquals("10001", postalCodeAttribute.normalize("10001"));
     }
 
-    /** Verifies full Canadian postal-code inputs normalize to canonical form. */
     @Test
     void normalize_ShouldHandleCanadianPostalCodes() {
         assertEquals("K1B 0A6", postalCodeAttribute.normalize("K1B0A6"));
@@ -62,7 +56,6 @@ class PostalCodeAttributeTest {
         assertEquals("T2X 1V4", postalCodeAttribute.normalize("t2x1v4"));
     }
 
-    /** Verifies valid U.S. ZIP and ZIP+4 values pass validation. */
     @Test
     void validate_ShouldReturnTrueForValidPostalCodes() {
         assertTrue(postalCodeAttribute.validate("95123 "));
@@ -72,7 +65,6 @@ class PostalCodeAttributeTest {
         assertTrue(postalCodeAttribute.validate("65201-6789"));
     }
 
-    /** Verifies valid Canadian postal codes pass validation. */
     @Test
     void validate_ShouldReturnTrueForValidCanadianPostalCodes() {
         assertTrue(postalCodeAttribute.validate("K1B 0A7"));
@@ -86,7 +78,6 @@ class PostalCodeAttributeTest {
         assertTrue(postalCodeAttribute.validate("  K1B0A7  "));
     }
 
-    /** Verifies normalization trims outer whitespace from postal-code input. */
     @Test
     void normalize_ShouldHandleWhitespace() {
         PostalCodeAttribute attribute = new PostalCodeAttribute();
@@ -99,7 +90,6 @@ class PostalCodeAttributeTest {
         assertEquals("10   001", attribute.normalize("  10   001  "), "Multiple spaces");
     }
 
-    /** Verifies normalization preserves whitespace embedded within postal-code input. */
     @Test
     void normalize_ShouldNotHandleInnerWhitespace() {
         PostalCodeAttribute attribute = new PostalCodeAttribute();
@@ -113,7 +103,6 @@ class PostalCodeAttributeTest {
                 "Inner space should not be normalized for Canadian postal code");
     }
 
-    /** Verifies null, malformed, and invalid U.S. or Canadian postal codes fail validation. */
     @Test
     void validate_ShouldReturnFalseForInvalidPostalCodes() {
         assertFalse(postalCodeAttribute.validate(null), "Null value should not be allowed");
@@ -135,7 +124,6 @@ class PostalCodeAttributeTest {
                 "Invalid Canadian postal code format should not be allowed");
     }
 
-    /** Verifies concurrent postal-code normalization returns consistent results. */
     @Test
     void normalize_ThreadSafety() throws InterruptedException {
         final int threadCount = 100;
@@ -173,7 +161,6 @@ class PostalCodeAttributeTest {
         }
     }
 
-    /** Verifies short, null, empty, and ZIP+4 inputs follow expected normalization behavior. */
     @Test
     void normalize_ShouldHandleEdgeCases() {
         // Test short postal codes (less than 3 characters)
@@ -193,7 +180,6 @@ class PostalCodeAttributeTest {
         assertEquals("10001", postalCodeAttribute.normalize("100016789"));
     }
 
-    /** Verifies three-digit U.S. ZIP prefixes are padded to five digits. */
     @Test
     void normalize_ShouldPadUsZip3ToZip5() {
         // Test US ZIP-3 padding with "00"
@@ -204,7 +190,6 @@ class PostalCodeAttributeTest {
         assertEquals("98000", postalCodeAttribute.normalize("980"));
     }
 
-    /** Verifies three-character Canadian prefixes are padded to a full postal code. */
     @Test
     void normalize_ShouldPadCanadianZip3ToFullPostalCode() {
         // Test Canadian ZIP-3 padding with " 000" (using valid, non-placeholder codes)
@@ -216,7 +201,6 @@ class PostalCodeAttributeTest {
         assertEquals("G1R 000", postalCodeAttribute.normalize("G1R"));
     }
 
-    /** Verifies valid U.S. and Canadian three-character prefixes pass validation. */
     @Test
     void validate_ShouldReturnTrueForValidZip3() {
         // US ZIP-3 codes should be valid (will be padded during normalization)
@@ -234,7 +218,6 @@ class PostalCodeAttributeTest {
         assertTrue(postalCodeAttribute.validate("G1R"));
     }
 
-    /** Verifies serialization preserves U.S. and Canadian postal-code behavior. */
     @Test
     void testSerialization() throws Exception {
         // Serialize the attribute
