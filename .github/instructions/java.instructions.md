@@ -13,7 +13,7 @@ applyTo: "**/*.java"
 
 ## Best practices
 
-- Add a Javadoc comment to every production class, interface, enum, record, method, and constructor, including private declarations. Test declarations are excluded.
+- In production Java code under `lib/`, add a Javadoc comment to every class, interface, enum, record, method, and constructor, including private declarations. Test declarations and Java files outside `lib/` are excluded.
 - **Imports**: Never use fully qualified class names in Java code. Add imports and use short class names.
 - **Lombok**: This codebase uses Lombok extensively. Use:
   - `@Builder` for immutable object construction (preferred over Java Records for complex objects)

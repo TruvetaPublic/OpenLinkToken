@@ -34,5 +34,6 @@ repos:
         name: Check Python class and function docstrings
         entry: python3 tools/check_python_docstrings.py
         language: system
+        files: ^lib/.*\.py$
         types: [python]
         exclude: '(^|/)(tests?|test_[^/]*|[^/]+_test)\.py$|(^|/)tests?/'

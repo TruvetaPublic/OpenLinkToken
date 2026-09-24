@@ -281,12 +281,7 @@ PHARMACY_PRESCRIPTION_TYPES = [
 
 
 def generate_ssn():
-    """
-    Generate a valid-looking SSN that passes Open Link Token validation.
-
-    Returns:
-        Generated a valid-looking SSN that passes Open Link Token validation.
-    """
+    """Generate a valid-looking SSN that passes Open Link Token validation."""
     # Avoid 000, 666, and 900-999 for area
     area = random.choice([str(i).zfill(3) for i in range(1, 900) if i != 666])
     # Avoid 00 for group
@@ -297,12 +292,7 @@ def generate_ssn():
 
 
 def generate_birthdate():
-    """
-    Generate a birthdate between 1910 and today (valid for Open Link Token).
-
-    Returns:
-        Generated a birthdate between 1910 and today (valid for Open Link Token).
-    """
+    """Generate a birthdate between 1910 and today (valid for Open Link Token)."""
     start_date = datetime(1950, 1, 1)
     end_date = datetime.now() - timedelta(days=365 * 18)  # At least 18 years old
     random_days = random.randint(0, (end_date - start_date).days)
@@ -311,12 +301,7 @@ def generate_birthdate():
 
 
 def generate_zipcode():
-    """
-    Generate a valid US ZIP code.
-
-    Returns:
-        Generated a valid US ZIP code.
-    """
+    """Generate a valid US ZIP code."""
     # Avoid placeholder values like 00000, 11111, etc.
     valid_zipcodes = []
     for i in range(10000, 99999):
@@ -327,12 +312,7 @@ def generate_zipcode():
 
 
 def generate_person():
-    """
-    Generate a person record with all required attributes.
-
-    Returns:
-        Generated a person record with all required attributes.
-    """
+    """Generate a person record with all required attributes."""
     person = {
         "RecordId": str(uuid.uuid4()),
         "FirstName": random.choice(SUPERHERO_FIRST_NAMES),
@@ -346,16 +326,7 @@ def generate_person():
 
 
 def generate_hospital_dataset(num_records, output_file):
-    """
-    Generate hospital dataset with additional hospital-specific columns.
-
-    Args:
-        num_records: Num records value to generate.
-        output_file: File to receive generated output.
-
-    Returns:
-        Generated hospital dataset with additional hospital-specific columns.
-    """
+    """Generate hospital dataset with additional hospital-specific columns."""
     print(f"Generating hospital dataset with {num_records} records...")
 
     with open(output_file, "w", newline="") as csvfile:
@@ -390,14 +361,7 @@ def generate_hospital_dataset(num_records, output_file):
 
 
 def generate_pharmacy_dataset(num_records, overlap_records, output_file):
-    """
-    Generate pharmacy dataset with overlapping records from hospital.
-
-    Args:
-        num_records: Num records value to generate.
-        overlap_records: Overlap records value to generate.
-        output_file: File to receive generated output.
-    """
+    """Generate pharmacy dataset with overlapping records from hospital."""
     print(f"Generating pharmacy dataset with {num_records} records (including {len(overlap_records)} overlapping)...")
 
     num_unique = num_records - len(overlap_records)

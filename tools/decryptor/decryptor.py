@@ -30,15 +30,7 @@ SUPPORTED_V1_TOKEN_PREFIXES = (V1_TOKEN_PREFIX,)
 
 
 def strip_supported_v1_token_prefix(token):
-    """
-    Strip the canonical or legacy V1 prefix from a token.
-
-    Args:
-        token: Token value to inspect, transform, or compare.
-
-    Returns:
-        Compact JWE token string after the supported V1 prefix is removed.
-    """
+    """Strip the canonical or legacy V1 prefix from a token."""
     for prefix in SUPPORTED_V1_TOKEN_PREFIXES:
         if token.startswith(prefix):
             return token[len(prefix) :]
@@ -47,18 +39,10 @@ def strip_supported_v1_token_prefix(token):
 
 
 def decrypt_v1_token(token, encryption_key):
-    """
-    Decrypt V1 JWE token and return the underlying token value.
+    """Decrypt V1 JWE token and return the underlying token value.
 
     V1 payloads currently store the legacy AES-GCM token in `ppid[0]`.
     For interoperability checks, attempt to unwrap that inner token too.
-
-    Args:
-        token: Token value to inspect, transform, or compare.
-        encryption_key: Key used to encrypt or decrypt the payload.
-
-    Returns:
-        Decrypted V1 JWE token and return the underlying token value.
     """
     if not JWE_SUPPORT:
         raise RuntimeError("jwcrypto library required for V1 token decryption. Install with: uv pip install jwcrypto")
@@ -97,16 +81,7 @@ def decrypt_v1_token(token, encryption_key):
 
 
 def decrypt_legacy_token(token, encryption_key):
-    """
-    Decrypt legacy base64-encoded AES-GCM token.
-
-    Args:
-        token: Token value to inspect, transform, or compare.
-        encryption_key: Key used to encrypt or decrypt the payload.
-
-    Returns:
-        Text decoded from the input byte sequence.
-    """
+    """Decrypt legacy base64-encoded AES-GCM token."""
     # decode the token first
     decoded_token = base64.b64decode(token)
 
@@ -124,11 +99,6 @@ def decrypt_tokens(key, input_file, output_file):
     """
     Decrypt tokens from CSV using AES-GCM.
     Supports both legacy base64 tokens and V1 JWE tokens (olt.V1.<JWE>).
-
-    Args:
-        key: Key used to look up the item.
-        input_file: File containing input data.
-        output_file: File to receive generated output.
     """
     with open(output_file, mode="w", encoding=UTF8, newline="") as outfile:
         columns = ["RuleId", "Token", "RecordId"]
@@ -158,12 +128,7 @@ def decrypt_tokens(key, input_file, output_file):
 
 
 def parse_args():
-    """
-    Parse command-line arguments for encryption key, input file, and output file.
-
-    Returns:
-        Parsed command-line arguments for encryption key, input file, and output file.
-    """
+    """Parse command-line arguments for encryption key, input file, and output file."""
     parser = argparse.ArgumentParser(
         prog=PROGRAM, description="Decrypts tokens from Open Link Token CSV files using AES-GCM encryption"
     )

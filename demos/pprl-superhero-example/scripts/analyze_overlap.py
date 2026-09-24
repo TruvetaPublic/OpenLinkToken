@@ -23,43 +23,18 @@ SUPPORTED_V1_TOKEN_PREFIXES = (V1_TOKEN_PREFIX,)
 
 
 def _to_key_bytes(encryption_key):
-    """
-    Return encryption key as raw bytes, accepting both str and bytes.
-
-    Args:
-        encryption_key: Key used to encrypt or decrypt the payload.
-
-    Returns:
-        Encryption key as raw bytes, accepting both str and bytes.
-    """
+    """Return encryption key as raw bytes, accepting both str and bytes."""
     return encryption_key if isinstance(encryption_key, bytes) else encryption_key.encode("utf-8")
 
 
 def _base64url_decode(value):
-    """
-    Decode base64url text with optional missing padding.
-
-    Args:
-        value: Base64url-encoded text to decode.
-
-    Returns:
-        Decoded bytes from the base64url-encoded input.
-    """
+    """Decode base64url text with optional missing padding."""
     padding = "=" * (-len(value) % 4)
     return base64.urlsafe_b64decode(value + padding)
 
 
 def decrypt_legacy_token(encrypted_token, encryption_key):
-    """
-    Decrypt legacy base64 token format (IV || ciphertext || tag).
-
-    Args:
-        encrypted_token: Encrypted token value to decrypt.
-        encryption_key: Key used to encrypt or decrypt the payload.
-
-    Returns:
-        Text decoded from the input byte sequence.
-    """
+    """Decrypt legacy base64 token format (IV || ciphertext || tag)."""
     message_bytes = base64.b64decode(encrypted_token)
     iv = message_bytes[:12]
     ciphertext_and_tag = message_bytes[12:]
@@ -70,16 +45,7 @@ def decrypt_legacy_token(encrypted_token, encryption_key):
 
 
 def decrypt_v1_token(v1_token, encryption_key):
-    """
-    Decrypt olt.V1 JWE token and return deterministic comparable token value.
-
-    Args:
-        v1_token: Version 1 token value to decrypt.
-        encryption_key: Key used to encrypt or decrypt the payload.
-
-    Returns:
-        Decrypted olt.V1 JWE token and return deterministic comparable token value.
-    """
+    """Decrypt olt.V1 JWE token and return deterministic comparable token value."""
     for prefix in SUPPORTED_V1_TOKEN_PREFIXES:
         if v1_token.startswith(prefix):
             jwe_compact = v1_token[len(prefix) :]
@@ -160,15 +126,7 @@ def load_tokens(csv_file, encryption_key):
 
 
 def load_metadata(json_file):
-    """
-    Load metadata from JSON file.
-
-    Args:
-        json_file: File containing or receiving the json.
-
-    Returns:
-        Python value deserialized from the JSON input.
-    """
+    """Load metadata from JSON file."""
     try:
         with open(json_file, "r") as f:
             return json.load(f)
@@ -177,18 +135,11 @@ def load_metadata(json_file):
 
 
 def load_metadata_any(json_files):
-    """
-    Load the first metadata JSON file that exists.
+    """Load the first metadata JSON file that exists.
 
     This demo historically used two naming conventions:
     - <output>.metadata.json
     - <output>.csv.metadata.json
-
-    Args:
-        json_files: Candidate JSON files to check for metadata.
-
-    Returns:
-        Loaded the first metadata JSON file that exists.
     """
     for json_file in json_files:
         metadata = load_metadata(json_file)
@@ -234,17 +185,7 @@ def find_matches(hospital_tokens, pharmacy_tokens, required_token_matches=5, mat
 
 
 def _matching_token_ids(token_ids, hospital_token_set, pharmacy_token_set):
-    """
-    Return token IDs whose decrypted values match across two records.
-
-    Args:
-        token_ids: Token identifiers to compare or look up.
-        hospital_token_set: Set of hospital token values to match.
-        pharmacy_token_set: Set of pharmacy token values to match.
-
-    Returns:
-        Token IDs whose decrypted values match across two records.
-    """
+    """Return token IDs whose decrypted values match across two records."""
     return [
         token_id
         for token_id in token_ids
@@ -255,13 +196,7 @@ def _matching_token_ids(token_ids, hospital_token_set, pharmacy_token_set):
 
 
 def analyze_token_distribution(tokens, dataset_name):
-    """
-    Analyze the distribution of tokens in a dataset.
-
-    Args:
-        tokens: Tokens to analyze.
-        dataset_name: Name of the dataset.
-    """
+    """Analyze the distribution of tokens in a dataset."""
     total_records = len(tokens)
     tokens_per_record = defaultdict(int)
 
@@ -276,12 +211,7 @@ def analyze_token_distribution(tokens, dataset_name):
 
 
 def print_match_summary(matches):
-    """
-    Print a summary of matching results.
-
-    Args:
-        matches: Matching record pairs to summarize or write.
-    """
+    """Print a summary of matching results."""
     print("=" * 70)
     print("MATCH SUMMARY")
     print("=" * 70)
@@ -315,13 +245,7 @@ def print_match_summary(matches):
 
 
 def save_matches_to_csv(matches, output_file):
-    """
-    Save matching results to CSV file.
-
-    Args:
-        matches: Matching record pairs to summarize or write.
-        output_file: File to receive generated output.
-    """
+    """Save matching results to CSV file."""
     with open(output_file, "w", newline="") as f:
         writer = csv.writer(f)
 
@@ -334,13 +258,7 @@ def save_matches_to_csv(matches, output_file):
 
 
 def print_metadata_summary(hospital_metadata, pharmacy_metadata):
-    """
-    Print summary of metadata from both datasets.
-
-    Args:
-        hospital_metadata: Metadata for the hospital item.
-        pharmacy_metadata: Metadata for the pharmacy item.
-    """
+    """Print summary of metadata from both datasets."""
     print()
     print("=" * 70)
     print("TOKENIZATION METADATA")
@@ -377,13 +295,6 @@ def _resolve_encryption_key(exchange_config_path, private_key_path):
     Derive the transport encryption key from an exchange config and private key.
 
     Falls back to raising an error with instructions if neither is provided.
-
-    Args:
-        exchange_config_path: Path to the exchange-config file to load.
-        private_key_path: Path to the private-key PEM file.
-
-    Returns:
-        Derived the transport encryption key from an exchange config and private key.
     """
     from openlinktoken.exchange_config import derive_transport_encryption_key, resolve_exchange_config_inputs
 
@@ -395,12 +306,7 @@ def _resolve_encryption_key(exchange_config_path, private_key_path):
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    """
-    Build the command-line parser for overlap analysis.
-
-    Returns:
-        Built the command-line parser for overlap analysis.
-    """
+    """Build the command-line parser for overlap analysis."""
     parser = argparse.ArgumentParser(
         description="Decrypt Open Link Token demo outputs and find matching record pairs.",
     )
@@ -422,16 +328,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def _resolve_output_path(output_argument: str | None, outputs_dir: Path) -> Path:
-    """
-    Resolve the CSV output path, defaulting relative names into outputs/.
-
-    Args:
-        output_argument: Optional path supplied through the command-line ``--output`` option.
-        outputs_dir: Directory under which relative output paths are resolved.
-
-    Returns:
-        Resolved the CSV output path, defaulting relative names into outputs/.
-    """
+    """Resolve the CSV output path, defaulting relative names into outputs/."""
     if not output_argument:
         return outputs_dir / "matching_records.csv"
 
@@ -442,12 +339,7 @@ def _resolve_output_path(output_argument: str | None, outputs_dir: Path) -> Path
 
 
 def main(argv: Sequence[str] | None = None):
-    """
-    Main function to analyze overlap between datasets.
-
-    Args:
-        argv: Sequence of argv values to process.
-    """
+    """Main function to analyze overlap between datasets."""
     args = _build_parser().parse_args(argv)
 
     print()
