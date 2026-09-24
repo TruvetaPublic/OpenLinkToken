@@ -43,7 +43,17 @@ def _get_inference_provider() -> Optional[InferenceSignatureProvider]:
 
 
 class TokenGenerator:
-    """Generates both the token signature and the token itself."""
+    """Generate token signatures and tokens from person attributes.
+
+    Args:
+        token_definition: Definitions describing each token and its attributes.
+        tokenizer: Tokenizer that tokenizes and transforms generated signatures.
+        field_registry: Optional registry for field-ID-based attribute lookup;
+            defaults to the registry of built-in attributes.
+
+    Returns:
+        A ``TokenGenerator`` initialized with the definitions and tokenizer.
+    """
 
     @classmethod
     def from_transformers(
@@ -55,12 +65,14 @@ class TokenGenerator:
         """Convenience constructor that creates a TokenGenerator with CryptoSuiteTokenizer.
 
         Args:
-            token_definition: The token definition.
-            token_transformer_list: A list of token transformers.
+            token_definition: Definitions describing each token and its attributes.
+            token_transformer_list: Transformers applied after tokenization.
+            crypto_suite: Optional suite selecting the tokenizer digest; defaults
+                to the backward-compatible SHA-256 suite.
 
         Returns:
-            A TokenGenerator instance with CryptoSuiteTokenizer.
-
+            A ``TokenGenerator`` using a ``CryptoSuiteTokenizer`` configured
+            with the supplied transformers and suite.
         """
         return cls(token_definition, CryptoSuiteTokenizer(token_transformer_list, crypto_suite=crypto_suite))
 
@@ -78,6 +90,8 @@ class TokenGenerator:
             field_registry: Optional custom field registry for field-ID-based lookups.
                 When None, a default registry is created from built-in attributes.
 
+        Returns:
+            None.
         """
         self.token_definition = token_definition
         self.attribute_instance_map: Dict[Type[Attribute], Attribute] = {}
@@ -103,7 +117,8 @@ class TokenGenerator:
             result: The token generator result.
 
         Returns:
-            The token signature using the token definition for the given token identifier.
+            The token signature, or ``None`` when the definition is missing or
+            required attributes are unavailable or invalid.
 
         """
         if person_attributes is None:
@@ -179,6 +194,16 @@ class TokenGenerator:
 
         .. deprecated::
             Use :meth:`get_all_tokens_via_field_id` with a field-ID-keyed map instead.
+
+        Args:
+            token_id: The token identifier.
+            person_attributes: Person attribute values keyed by attribute class.
+            result: The token generator result to update with invalid attributes
+                or blank-token information.
+
+        Returns:
+            The token string, or ``None`` when no token definition or active
+            provider exists, or tokenization returns no value.
         """
         signature = self._get_token_signature(token_id, person_attributes, result)
         logger.debug(f"Token signature for token id {token_id}: {signature}")
@@ -257,6 +282,8 @@ class TokenGenerator:
             token_id: The token identifier key to store the result under.
             signature: The precomputed signature string, or ``None`` for a blank token.
 
+        Returns:
+            None.
         """
         try:
             token = self.tokenizer.tokenize(signature)
@@ -280,6 +307,8 @@ class TokenGenerator:
             token_id: The token identifier key to store the result under.
             token_value: The pre-hashed token value, or ``None`` / blank to record a blank token.
 
+        Returns:
+            None.
         """
         all_transformers = self.tokenizer.get_token_transformer_list()
         encrypt_transformers = [t for t in all_transformers if not isinstance(t, HashTokenTransformer)]
@@ -307,6 +336,8 @@ class TokenGenerator:
             token_id_prefix: Prefix for derived token keys (e.g. ``"ML1-R"``).
             token_strings: Pre-computed token strings from the embedding transformer.
 
+        Returns:
+            None.
         """
         for i, token_string in enumerate(token_strings):
             result.tokens[f"{token_id_prefix}{i}"] = token_string
@@ -466,15 +497,41 @@ class TokenGenerator:
 
     @staticmethod
     def _has_active_provider_for_token(token_id: str, provider: Optional[InferenceSignatureProvider]) -> bool:
-        """Return whether the provider is enabled and serves the requested token."""
+        """Check whether an inference provider is enabled for the requested token.
+
+        Args:
+            token_id: Token identifier to check.
+            provider: Optional inference provider to inspect.
+
+        Returns:
+            ``True`` if the provider is present, enabled, and serves ``token_id``;
+            otherwise, ``False``.
+        """
         return provider is not None and provider.get_token_id() == token_id and provider.is_enabled()
 
     def _has_active_inference_provider(self, token_id: str) -> bool:
-        """Return whether the configured inference provider serves this token."""
+        """Check whether the configured inference provider serves a token.
+
+        Args:
+            token_id: Token identifier to check.
+
+        Returns:
+            ``True`` if an enabled provider serves ``token_id``; otherwise,
+            ``False``.
+        """
         return self._has_active_provider_for_token(token_id, _get_inference_provider())
 
     def _get_inference_signature(self, token_id: str, person_attributes: Dict[str, str]) -> Optional[str]:
-        """Generate an inference signature when the matching provider is active."""
+        """Generate an inference signature when a matching provider is active.
+
+        Args:
+            token_id: Token identifier requested from the provider.
+            person_attributes: Attribute values keyed by field ID.
+
+        Returns:
+            The generated signature, or ``None`` when no provider is active or
+            signature generation fails.
+        """
         provider = _get_inference_provider()
         if not self._has_active_provider_for_token(token_id, provider):
             return None
@@ -487,7 +544,16 @@ class TokenGenerator:
     def _tokenize_signature(
         self, token_id: str, signature: Optional[str], result: TokenGeneratorResult
     ) -> Optional[str]:
-        """Tokenize a signature and record blank-token results for the rule."""
+        """Tokenize a signature and record blank-token results for the rule.
+
+        Args:
+            token_id: Token identifier associated with the signature.
+            signature: Signature string to tokenize, or ``None`` when absent.
+            result: Token generator result to update with blank-token status.
+
+        Returns:
+            The token string, or ``None`` if the tokenizer returns no token.
+        """
         try:
             if self._has_active_inference_provider(token_id):
                 transformers = [
@@ -506,7 +572,14 @@ class TokenGenerator:
             raise TokenGenerationException("Error generating token", error)
 
     def _to_field_id_map(self, person_attributes: Dict[Type[Attribute], str]) -> Dict[str, str]:
-        """Convert class-keyed attributes to the field identifiers used by providers."""
+        """Convert class-keyed attributes to field IDs used by providers.
+
+        Args:
+            person_attributes: Attribute values keyed by attribute class.
+
+        Returns:
+            Attribute values keyed by each attribute's registered field ID.
+        """
         return {
             attribute.get_name(): value
             for attribute_class, value in person_attributes.items()

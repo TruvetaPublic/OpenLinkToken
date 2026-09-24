@@ -40,11 +40,25 @@ def _partner_key_pem(tmp_path: Path, curve: str = "P-256") -> Path:
 
 @pytest.fixture(autouse=True)
 def _reset_rotation_config():
-    """Keep static rotation settings isolated between CLI integration tests."""
+    """Keep static rotation settings isolated between CLI integration tests.
+
+    Args:
+        None.
+
+    Yields:
+        None. The fixture provides no value and restores the default rotation settings after the test.
+    """
     from openlinktoken.core.ai.tokens.rotation_config import RotationConfig
 
     def reset() -> None:
-        """Restore process-wide rotation settings to their test defaults."""
+        """Restore process-wide rotation settings to their test defaults.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+        """
         RotationConfig.configure(
             enable=True,
             rotation_iv=RotationConfig.DEFAULT_IV,
@@ -57,7 +71,14 @@ def _reset_rotation_config():
 
 
 def test_initiate_exchange_version_two_suite_round_trips(tmp_path: Path) -> None:
-    """The CLI creates a standard JWE JSON v2 envelope from public key bundles."""
+    """The CLI creates a standard JWE JSON v2 envelope from public key bundles.
+
+    Args:
+        tmp_path: Pytest temporary directory for the generated key bundles and exchange config.
+
+    Returns:
+        None.
+    """
     with patch("pathlib.Path.home", return_value=tmp_path):
         assert (
             OpenLinkTokenCommand.execute(
@@ -155,7 +176,14 @@ def test_initiate_exchange_sha3_v1_suite_round_trips(tmp_path: Path) -> None:
 
 
 def test_initiate_exchange_resolves_v1_public_key_from_base_path(tmp_path: Path) -> None:
-    """The selected v1 suite appends the PEM public-key suffix to the base path."""
+    """The selected v1 suite appends the PEM public-key suffix to the base path.
+
+    Args:
+        tmp_path: Pytest temporary directory for the public key and exchange config.
+
+    Returns:
+        None.
+    """
     with patch("pathlib.Path.home", return_value=tmp_path):
         key_dir = tmp_path / ".openlinktoken"
         key_dir.mkdir()
@@ -184,7 +212,14 @@ def test_initiate_exchange_resolves_v1_public_key_from_base_path(tmp_path: Path)
 
 
 def test_initiate_exchange_resolves_v2_public_key_from_base_path(tmp_path: Path) -> None:
-    """The selected v2 suite appends the JSON bundle suffix to the base path."""
+    """The selected v2 suite appends the JSON bundle suffix to the base path.
+
+    Args:
+        tmp_path: Pytest temporary directory for the generated bundle and exchange config.
+
+    Returns:
+        None.
+    """
     with patch("pathlib.Path.home", return_value=tmp_path):
         assert (
             OpenLinkTokenCommand.execute(
@@ -235,7 +270,18 @@ def test_initiate_exchange_rejects_short_kmac_secret_before_writing_config(
     secret_option: str,
     secret_value: str,
 ) -> None:
-    """All hashing-secret input paths reject an invalid KMAC key before writing v2 config."""
+    """All hashing-secret input paths reject an invalid KMAC key before writing v2 config.
+
+    Args:
+        tmp_path: Pytest temporary directory for the partner bundle and exchange config.
+        monkeypatch: Pytest fixture used to provide the environment-variable and stdin values.
+        capsys: Pytest output-capture fixture used to inspect the validation error.
+        secret_option: CLI option selecting the hashing-secret input source.
+        secret_value: Short secret text, or the environment-variable name containing it.
+
+    Returns:
+        None.
+    """
     partner_bundle = generate_exchange_key_bundle("suite-pq-shake-v1")
     partner_path = tmp_path / "partner.public.bundle.json"
     partner_path.write_bytes(partner_bundle.to_json())
@@ -274,7 +320,14 @@ def test_initiate_exchange_rejects_short_kmac_secret_before_writing_config(
 
 
 def test_initiate_exchange_shake_suite_flows_through_tokenize_and_package(tmp_path: Path) -> None:
-    """The post-quantum SHAKE suite flows through v2 exchange, tokenization, and packaging."""
+    """The post-quantum SHAKE suite flows through v2 exchange, tokenization, and packaging.
+
+    Args:
+        tmp_path: Pytest temporary directory for the exchange, keys, and CSV files.
+
+    Returns:
+        None.
+    """
     input_csv = tmp_path / "input.csv"
     input_csv.write_text(
         "RecordId,FirstName,LastName,PostalCode,Sex,BirthDate,SocialSecurityNumber\n"
@@ -391,7 +444,16 @@ def test_all_crypto_suites_flow_through_tokenize_and_package(
     tmp_path: Path,
     crypto_suite: CryptoSuite,
 ) -> None:
-    """Every supported exchange suite completes exchange, tokenization, and packaging."""
+    """Every supported exchange suite completes exchange, tokenization, and packaging.
+
+    Args:
+        tmp_path: Pytest temporary directory for the exchange, keys, and CSV files.
+        crypto_suite: Crypto suite supplied by each parameterized case; the case-ID
+            callback receives it and returns its ``suite_id``.
+
+    Returns:
+        None.
+    """
     input_csv = tmp_path / "input.csv"
     input_csv.write_text(
         "RecordId,FirstName,LastName,PostalCode,Sex,BirthDate,SocialSecurityNumber\n"
@@ -513,13 +575,27 @@ def test_all_crypto_suites_flow_through_tokenize_and_package(
 
 
 def _decode_base64url_json(encoded: str) -> dict:
-    """Decode a base64url JSON value with permissive padding restoration."""
+    """Decode a base64url JSON value with permissive padding restoration.
+
+    Args:
+        encoded: Base64url-encoded JSON text.
+
+    Returns:
+        The JSON value decoded from the input text.
+    """
     padding = "=" * (-len(encoded) % 4)
     return json.loads(base64.urlsafe_b64decode(encoded + padding))
 
 
 def _fingerprint_to_kid(public_pem: bytes) -> str:
-    """Convert a public-key fingerprint into the portable recipient kid format."""
+    """Convert a public-key fingerprint into the portable recipient kid format.
+
+    Args:
+        public_pem: Public-key PEM bytes to fingerprint.
+
+    Returns:
+        The fingerprint formatted as a JOSE recipient key identifier.
+    """
     fingerprint = public_key_fingerprint(public_pem).lower().replace(":", "-")
     return f"sha256:{fingerprint}"
 
@@ -536,7 +612,15 @@ def _assert_shared_jwe_header(config: dict) -> None:
 
 
 def _assert_v2_jwe_header(config: dict, suite_id: str) -> None:
-    """Assert the complete standard v2 protected and recipient contract."""
+    """Assert the complete standard v2 protected and recipient contract.
+
+    Args:
+        config: Serialized JWE JSON exchange object to validate.
+        suite_id: Crypto-suite identifier expected in the protected header.
+
+    Returns:
+        None.
+    """
     assert set(config) == {"protected", "recipients", "iv", "ciphertext", "tag"}
     protected = _decode_base64url_json(config["protected"])
     assert set(protected) == {"typ", "cty", "enc", "version", "cryptoSuite", "exchangeId"}
@@ -564,7 +648,16 @@ def _assert_v2_jwe_header(config: dict, suite_id: str) -> None:
 
 
 def _assert_recipient_headers(config: dict, curve: str, expected_kids: set[str]) -> None:
-    """Assert the recipient list uses the expected JOSE headers and key ids."""
+    """Assert the recipient list uses the expected JOSE headers and key ids.
+
+    Args:
+        config: Serialized JWE JSON exchange object containing the recipients.
+        curve: Elliptic curve expected in each ephemeral public key.
+        expected_kids: Recipient key identifiers expected in the headers.
+
+    Returns:
+        None.
+    """
     assert len(config["recipients"]) == 2
 
     recipient_headers = [entry["header"] for entry in config["recipients"]]
@@ -587,7 +680,14 @@ def _assert_recipient_headers(config: dict, curve: str, expected_kids: set[str])
 
 
 def _recipient_headers_by_kid(config: dict) -> dict[str, dict]:
-    """Return recipient headers indexed by recipient kid."""
+    """Return recipient headers indexed by recipient kid.
+
+    Args:
+        config: Serialized JWE JSON exchange object containing the recipients.
+
+    Returns:
+        A mapping from each recipient key identifier to its JOSE header.
+    """
     return {entry["header"]["kid"]: entry["header"] for entry in config["recipients"]}
 
 

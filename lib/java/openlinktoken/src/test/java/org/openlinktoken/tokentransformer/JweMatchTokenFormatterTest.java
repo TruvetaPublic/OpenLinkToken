@@ -34,6 +34,8 @@ class JweMatchTokenFormatterTest {
 
     /**
      * Verifies construction with valid string-key parameters.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testConstructorWithValidParameters() throws JOSEException {
@@ -47,6 +49,8 @@ class JweMatchTokenFormatterTest {
 
     /**
      * Verifies construction with valid raw key bytes.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testConstructorWithRaw32ByteKey() throws JOSEException {
@@ -60,6 +64,8 @@ class JweMatchTokenFormatterTest {
 
     /**
      * Verifies that a null encryption key is rejected.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testConstructorWithNullEncryptionKey() {
@@ -70,6 +76,8 @@ class JweMatchTokenFormatterTest {
 
     /**
      * Verifies that an incorrectly sized encryption key is rejected.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testConstructorWithInvalidKeyLength() {
@@ -80,6 +88,8 @@ class JweMatchTokenFormatterTest {
 
     /**
      * Verifies that a non-ASCII key is validated by its byte length.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testConstructorWithNonAscii32CharacterKey() {
@@ -91,6 +101,8 @@ class JweMatchTokenFormatterTest {
 
     /**
      * Verifies that a null ring identifier is rejected.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testConstructorWithNullRingId() {
@@ -101,6 +113,8 @@ class JweMatchTokenFormatterTest {
 
     /**
      * Verifies that a null rule identifier is rejected.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testConstructorWithNullRuleId() {
@@ -111,6 +125,8 @@ class JweMatchTokenFormatterTest {
 
     /**
      * Verifies the prefix and compact serialization shape of a JWE token.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testTransformCreatesValidJweToken() throws Exception {
@@ -133,6 +149,8 @@ class JweMatchTokenFormatterTest {
 
     /**
      * Verifies that a null token is returned unchanged.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testTransformWithNullToken() throws Exception {
@@ -148,6 +166,8 @@ class JweMatchTokenFormatterTest {
 
     /**
      * Verifies that an empty token is returned unchanged.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testTransformWithEmptyToken() throws Exception {
@@ -163,6 +183,8 @@ class JweMatchTokenFormatterTest {
 
     /**
      * Verifies that the JWE header contains the expected metadata.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testJweHeaderContainsCorrectMetadata() throws Exception {
@@ -187,6 +209,8 @@ class JweMatchTokenFormatterTest {
 
     /**
      * Verifies that the selected suite metadata is embedded in the payload.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testShakeSuiteMetadataIsEmbeddedInOltV1() throws Exception {
@@ -209,6 +233,8 @@ class JweMatchTokenFormatterTest {
 
     /**
      * Verifies that a null suite uses the backward-compatible token metadata.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testNullSuiteUsesDefaultMetadata() throws Exception {
@@ -231,6 +257,8 @@ class JweMatchTokenFormatterTest {
 
     /**
      * Verifies that the default-suite formatter rebuilds its encrypter after serialization.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testDefaultSuiteFormatterRoundTripsThroughSerialization() throws Exception {
@@ -250,6 +278,8 @@ class JweMatchTokenFormatterTest {
 
     /**
      * Verifies that an explicit-suite formatter restores its suite and encrypter after serialization.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testExplicitSuiteFormatterRoundTripsThroughSerialization() throws Exception {
@@ -270,6 +300,8 @@ class JweMatchTokenFormatterTest {
 
     /**
      * Verifies that a missing issuer uses the default issuer value.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testDefaultIssuer() throws Exception {
@@ -284,6 +316,14 @@ class JweMatchTokenFormatterTest {
         // The default issuer is set internally and will be verified in the decrypted payload
     }
 
+    /**
+     * Serializes and deserializes a JWE match-token formatter.
+     *
+     * @param formatter formatter to round-trip
+     * @return the deserialized formatter
+     * @throws IOException if writing or reading the serialized formatter fails
+     * @throws ClassNotFoundException if the formatter class cannot be resolved during deserialization
+     */
     private static JweMatchTokenFormatter serializeAndDeserialize(JweMatchTokenFormatter formatter)
             throws IOException, ClassNotFoundException {
         ByteArrayOutputStream serializedBytes = new ByteArrayOutputStream();
@@ -297,6 +337,13 @@ class JweMatchTokenFormatterTest {
         }
     }
 
+    /**
+     * Decrypts a formatted match token and returns its JSON payload.
+     *
+     * @param token formatted JWE match token
+     * @return the decrypted payload members
+     * @throws Exception if the token cannot be parsed or decrypted
+     */
     private static Map<String, Object> decryptPayload(String token) throws Exception {
         JWEObject jweObject = JWEObject.parse(token.substring("olt.V1.".length()));
         jweObject.decrypt(new DirectDecrypter(

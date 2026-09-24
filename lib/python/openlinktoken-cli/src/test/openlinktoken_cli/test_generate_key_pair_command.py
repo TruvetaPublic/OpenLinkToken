@@ -130,7 +130,11 @@ class TestGenerateKeyPairCommandUnit:
 
 
 class TestGenerateKeyPairCommandIntegration:
-    """Integration tests that exercise the full CLI path via OpenLinkTokenCommand.execute."""
+    """Integration tests that exercise the full CLI path via OpenLinkTokenCommand.execute.
+
+    Constructor:
+        Takes no arguments and returns a new ``TestGenerateKeyPairCommandIntegration`` instance.
+    """
 
     # -------------------------------------------------------------------------
     # Happy paths: all supported curves
@@ -158,7 +162,14 @@ class TestGenerateKeyPairCommandIntegration:
         assert (openlinktoken_dir / f"{key_name}.public.pem").exists()
 
     def test_version_two_suite_generates_private_and_public_bundles(self, tmp_path):
-        """Version-2 suites use JSON bundles with private material kept separate."""
+        """Version-2 suites use JSON bundles with private material kept separate.
+
+        Args:
+            tmp_path: Pytest temporary directory used as the user's home directory.
+
+        Returns:
+            None.
+        """
         with patch("pathlib.Path.home", return_value=tmp_path):
             exit_code = OpenLinkTokenCommand.execute(
                 [

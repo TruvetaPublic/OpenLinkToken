@@ -15,8 +15,16 @@ import java.security.interfaces.ECPublicKey;
 
 import org.junit.jupiter.api.Test;
 
+/**
+ * Tests EC key generation, encoding, derivation, and validation.
+ */
 class EcKeyUtilsTest {
 
+    /**
+     * Verifies supported named curves generate keys that round-trip through PEM.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
+     */
     @Test
     void generatesAndSerializesSupportedCurves() {
         for (String[] curve : new String[][] {{"P-256", "256"}, {"P-384", "384"}, {"P-521", "521"}}) {
@@ -39,6 +47,11 @@ class EcKeyUtilsTest {
         }
     }
 
+    /**
+     * Verifies a private PEM derives the matching public key and stable key identifier.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
+     */
     @Test
     void derivesPublicKeyAndStablePortableKidFromPrivatePem() {
         KeyPair keyPair = EcKeyUtils.generateKeyPair("P-256");
@@ -54,6 +67,11 @@ class EcKeyUtilsTest {
         assertEquals("sha256:" + fingerprint.toLowerCase().replace(':', '-'), EcKeyUtils.fingerprintToKid(fingerprint));
     }
 
+    /**
+     * Verifies private and public EC keys round-trip through DER encodings.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
+     */
     @Test
     void roundTripsPrivateAndPublicKeysThroughDer() {
         KeyPair keyPair = EcKeyUtils.generateKeyPair("P-384");
@@ -66,6 +84,11 @@ class EcKeyUtilsTest {
                 EcKeyUtils.publicKeyFromPem(EcKeyUtils.publicKeyToPem(keyPair.getPublic())));
     }
 
+    /**
+     * Verifies unsupported curves and malformed PEM are rejected.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
+     */
     @Test
     void rejectsUnsupportedCurvesAndMalformedPem() {
         assertThrows(IllegalArgumentException.class, () -> EcKeyUtils.generateKeyPair("P-255"));
@@ -73,6 +96,13 @@ class EcKeyUtilsTest {
         assertThrows(IllegalArgumentException.class, () -> EcKeyUtils.fingerprintToKid(" "));
     }
 
+    /**
+     * Verifies non-EC keys and malformed DER are rejected.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
+     *
+     * @throws GeneralSecurityException if RSA key generation is unavailable
+     */
     @Test
     void rejectsNonEcKeysAndMalformedDer() throws GeneralSecurityException {
         KeyPair rsa = KeyPairGenerator.getInstance("RSA").generateKeyPair();
@@ -90,6 +120,8 @@ class EcKeyUtilsTest {
 
     /**
      * Verifies null, empty, and malformed PEM inputs and null fingerprints are rejected.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void rejectsMalformedPemAndNullFingerprint() {
@@ -110,6 +142,8 @@ class EcKeyUtilsTest {
 
     /**
      * Verifies mutating private PEM input after derivation does not change the derived public PEM output.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void doesNotExposeMutablePemInputThroughDerivedOutput() {

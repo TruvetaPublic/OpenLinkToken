@@ -33,14 +33,28 @@ from openlinktoken.tokentransformer.jwe_match_token_formatter import JweMatchTok
 
 
 def _decode_protected_header(envelope: dict) -> dict:
-    """Decode a standard JWE protected header for assertions."""
+    """Decode a standard JWE protected header for assertions.
+
+    Args:
+        envelope: General-JSON JWE envelope containing a protected header.
+
+    Returns:
+        The decoded protected-header dictionary.
+    """
     protected = envelope["protected"]
     return json.loads(base64.urlsafe_b64decode(protected + "=" * (-len(protected) % 4)))
 
 
 @pytest.mark.parametrize("suite_id", ["suite-pq-v1", "suite-pq-shake-v1", "suite-pq-hybrid-v1"])
 def test_v2_exchange_round_trips_for_both_participants(suite_id):
-    """Pure and hybrid recipients recover the same payload and transport key."""
+    """Pure and hybrid recipients recover the same payload and transport key.
+
+    Args:
+        suite_id: Parameterized version-2 suite identifier for the exchange.
+
+    Returns:
+        None.
+    """
     sender = generate_exchange_key_bundle(suite_id)
     recipient = generate_exchange_key_bundle(suite_id)
     envelope = build_exchange_envelope_v2(
@@ -80,7 +94,14 @@ def test_v2_exchange_round_trips_for_both_participants(suite_id):
 
 
 def test_v2_exchange_rejects_short_kmac_hashing_secret():
-    """The v2 envelope boundary rejects KMAC secrets shorter than its required key size."""
+    """The v2 envelope boundary rejects undersized KMAC secrets.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     sender = generate_exchange_key_bundle("suite-pq-shake-v1")
     recipient = generate_exchange_key_bundle("suite-pq-shake-v1")
 
@@ -97,7 +118,14 @@ def test_v2_exchange_rejects_short_kmac_hashing_secret():
 
 @pytest.mark.parametrize("suite_id", ["suite-pq-v1", "suite-pq-shake-v1", "suite-pq-hybrid-v1"])
 def test_v2_transport_key_encrypts_and_decrypts_match_tokens(suite_id):
-    """The derived v2 transport key works with the standard match-token formatter."""
+    """The derived v2 transport key works with the match-token formatter.
+
+    Args:
+        suite_id: Parameterized version-2 suite identifier for the exchange.
+
+    Returns:
+        None.
+    """
     sender = generate_exchange_key_bundle(suite_id)
     recipient = generate_exchange_key_bundle(suite_id)
     envelope = build_exchange_envelope_v2(
@@ -127,7 +155,14 @@ def test_v2_transport_key_encrypts_and_decrypts_match_tokens(suite_id):
 
 
 def test_v2_exchange_resolves_suite_and_transport_key():
-    """The shared exchange-config resolver exposes v2 metadata to consumers."""
+    """The shared exchange-config resolver exposes v2 metadata to consumers.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     sender = generate_exchange_key_bundle("suite-pq-v1")
     recipient = generate_exchange_key_bundle("suite-pq-v1")
     envelope = build_exchange_envelope_v2(
@@ -150,7 +185,14 @@ def test_v2_exchange_resolves_suite_and_transport_key():
 
 
 def test_v2_exchange_rejects_tampered_recipient_algorithm():
-    """Recipient algorithms must remain bound to the protected suite."""
+    """Recipient algorithms must remain bound to the protected suite.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     sender = generate_exchange_key_bundle("suite-pq-v1")
     recipient = generate_exchange_key_bundle("suite-pq-v1")
     envelope = build_exchange_envelope_v2(
@@ -169,7 +211,14 @@ def test_v2_exchange_rejects_tampered_recipient_algorithm():
 
 
 def test_v2_exchange_rejects_wrong_private_bundle():
-    """A bundle for another recipient cannot unwrap this envelope."""
+    """A bundle for another recipient cannot unwrap this envelope.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     sender = generate_exchange_key_bundle("suite-pq-v1")
     recipient = generate_exchange_key_bundle("suite-pq-v1")
     unrelated = generate_exchange_key_bundle("suite-pq-v1")
@@ -187,7 +236,14 @@ def test_v2_exchange_rejects_wrong_private_bundle():
 
 
 def test_v2_exchange_rejects_wrong_protected_version():
-    """The protected version is authenticated and required for v2."""
+    """The protected version is authenticated and required for v2.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     sender = generate_exchange_key_bundle("suite-pq-v1")
     recipient = generate_exchange_key_bundle("suite-pq-v1")
     envelope = build_exchange_envelope_v2(
@@ -211,7 +267,14 @@ def test_v2_exchange_rejects_wrong_protected_version():
 
 
 def test_v2_exchange_rejects_v1_crypto_suite():
-    """Version-1 suites cannot be used in version-2 protected headers."""
+    """Version-1 suites cannot be used in version-2 protected headers.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     sender = generate_exchange_key_bundle("suite-pq-v1")
     recipient = generate_exchange_key_bundle("suite-pq-v1")
     envelope = build_exchange_envelope_v2(
@@ -235,7 +298,14 @@ def test_v2_exchange_rejects_v1_crypto_suite():
 
 
 def test_v2_exchange_rejects_missing_recipient_header():
-    """Standard JWE recipients must carry their JOSE header object."""
+    """Standard JWE recipients must carry their JOSE header object.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     sender = generate_exchange_key_bundle("suite-pq-v1")
     recipient = generate_exchange_key_bundle("suite-pq-v1")
     envelope = build_exchange_envelope_v2(
@@ -253,7 +323,14 @@ def test_v2_exchange_rejects_missing_recipient_header():
 
 
 def test_key_bundle_rejects_public_fingerprint_mismatch():
-    """A bundle must not accept a public key under another key's fingerprint."""
+    """A bundle must not accept a public key under another key's fingerprint.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     bundle = generate_exchange_key_bundle("suite-pq-v1").to_mapping(include_private=True)
     bundle["keys"]["mlkem"]["fingerprint"] = "00:" * 31 + "00"
 
@@ -262,7 +339,14 @@ def test_key_bundle_rejects_public_fingerprint_mismatch():
 
 
 def test_key_bundle_requires_private_material():
-    """Private-key consumers reject public-only bundles."""
+    """Private-key consumers reject public-only bundles.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     bundle = generate_exchange_key_bundle("suite-pq-v1")
 
     with pytest.raises(KeyBundleError, match="private material"):
@@ -270,7 +354,14 @@ def test_key_bundle_requires_private_material():
 
 
 def test_key_bundle_rejects_unsupported_version():
-    """Bundles with an unsupported version fail structural validation."""
+    """Bundles with an unsupported version fail structural validation.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     bundle = generate_exchange_key_bundle("suite-pq-v1").to_mapping(include_private=True)
     bundle["version"] = 2
 
@@ -279,7 +370,14 @@ def test_key_bundle_rejects_unsupported_version():
 
 
 def test_key_bundle_rejects_missing_keys_object():
-    """Bundles without a keys object fail structural validation."""
+    """Bundles without a keys object fail structural validation.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     bundle = generate_exchange_key_bundle("suite-pq-v1").to_mapping(include_private=True)
     del bundle["keys"]
 
@@ -288,13 +386,27 @@ def test_key_bundle_rejects_missing_keys_object():
 
 
 def test_key_bundle_rejects_non_v2_suite():
-    """Version-1 suites cannot generate version-2 key bundles."""
+    """Version-1 suites cannot generate version-2 key bundles.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     with pytest.raises(KeyBundleError, match="does not require a version-2 key bundle"):
         generate_exchange_key_bundle("suite-sha256-v1")
 
 
 def test_v2_exchange_rejects_invalid_build_inputs():
-    """The v2 facade validates suite, payload, and rotation settings before encryption."""
+    """The v2 facade validates suite, payload, and rotation settings.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     sender = generate_exchange_key_bundle("suite-pq-v1")
     recipient = generate_exchange_key_bundle("suite-pq-hybrid-v1")
     with pytest.raises(ValueError, match="same crypto suite"):
@@ -328,7 +440,14 @@ def test_v2_exchange_rejects_invalid_build_inputs():
 
 
 def test_v2_exchange_accepts_bundle_mapping_and_object_inputs():
-    """Private bundles can be supplied as mappings or already parsed objects."""
+    """Private bundles can be supplied as mappings or parsed objects.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     sender = generate_exchange_key_bundle("suite-pq-v1")
     recipient = generate_exchange_key_bundle("suite-pq-v1")
     envelope = build_exchange_envelope_v2("mapping-input", b"secret", sender, recipient, "now", "mapping-id")
@@ -343,7 +462,14 @@ def test_v2_exchange_accepts_bundle_mapping_and_object_inputs():
 
 
 def test_v2_exchange_payload_helpers_reject_malformed_values():
-    """Payload and protected-header helpers reject malformed or inconsistent values."""
+    """Payload and protected-header helpers reject malformed values.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     sender = generate_exchange_key_bundle("suite-pq-v1")
     recipient = generate_exchange_key_bundle("suite-pq-v1")
     envelope = build_exchange_envelope_v2("payload-test", b"secret", sender, recipient, "now", "payload-id")
@@ -386,7 +512,14 @@ def test_v2_exchange_payload_helpers_reject_malformed_values():
 
 
 def test_key_bundle_rejects_malformed_sections():
-    """Key bundles validate every encoded key section and key relationship."""
+    """Key bundles validate encoded key sections and key relationships.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     pure = generate_exchange_key_bundle("suite-pq-v1").to_mapping(include_private=True)
     invalid_pure_sections = (
         ({"mlkem": None}, "requires an mlkem"),
@@ -429,7 +562,14 @@ def test_key_bundle_rejects_malformed_sections():
 
 
 def test_key_bundle_rejects_invalid_json_kid_and_private_serialization():
-    """JSON, key identifiers, and private serialization boundaries are validated."""
+    """JSON, key identifiers, and private serialization are validated.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     bundle = generate_exchange_key_bundle("suite-pq-v1")
     mapping = bundle.to_mapping(include_private=True)
 
@@ -457,7 +597,14 @@ def test_key_bundle_rejects_invalid_json_kid_and_private_serialization():
 
 
 def test_private_bundle_resolution_finds_matching_kid(tmp_path):
-    """Private bundle discovery returns the matching bundle and rejects unknown IDs."""
+    """Private bundle discovery finds the matching ID and rejects unknown IDs.
+
+    Args:
+        tmp_path: Pytest temporary directory containing the test key bundles.
+
+    Returns:
+        None.
+    """
     bundle = generate_exchange_key_bundle("suite-pq-v1")
     matching_path = tmp_path / "matching.private.bundle.json"
     matching_path.write_bytes(bundle.to_json(include_private=True))

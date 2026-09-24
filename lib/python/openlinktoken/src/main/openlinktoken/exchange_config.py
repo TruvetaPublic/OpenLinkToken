@@ -49,7 +49,26 @@ class LoadedExchangeConfig:
 
 @dataclass(frozen=True)
 class ResolvedExchangeConfig:
-    """Resolved exchange-config inputs for consumer commands."""
+    """Decrypted exchange-config state supplied to consumer commands.
+
+    Args:
+        path: Path associated with the loaded exchange config.
+        version: Validated exchange-config version.
+        config: Validated encrypted exchange-config envelope.
+        payload: Decrypted exchange-config payload.
+        private_key_pem: Private-key PEM or private key-bundle bytes used to decrypt.
+        private_key_role: Whether the private key belongs to the sender or recipient.
+        hashing_secret: Decoded token-hashing secret.
+        rotation_iv: Decoded rotation initialization vector.
+        rotation_count: Number of configured rotation matrices.
+        bin_width: Tokenization bin width.
+        dimension_bias: Configured rotation dimension-bias values.
+        crypto_suite: Selected suite; defaults to the legacy suite.
+        transport_encryption_key: Optional derived transport key for v2 configs.
+
+    Returns:
+        An immutable ``ResolvedExchangeConfig`` containing the resolved inputs.
+    """
 
     path: Path
     version: int
@@ -75,7 +94,18 @@ def load_exchange_config(
     exchange_config_path: str | Path | None = None,
     exchange_config_value: str | bytes | Mapping[str, Any] | None = None,
 ) -> LoadedExchangeConfig:
-    """Load and validate an exchange-config envelope from disk or an in-memory value."""
+    """Load and validate an exchange-config envelope from disk or memory.
+
+    Args:
+        exchange_config_path: Optional path to a JSON exchange-config file;
+            when omitted, the date-based default path is used.
+        exchange_config_value: Optional JSON text, JSON bytes, or mapping to
+            use instead of reading a file.
+
+    Returns:
+        A ``LoadedExchangeConfig`` containing the validated envelope, source
+        path, and detected version.
+    """
     if exchange_config_path and exchange_config_value is not None:
         raise ValueError("Cannot combine an exchange config path and a direct exchange config value.")
 
@@ -108,7 +138,17 @@ def resolve_exchange_config(
     exchange_config_path: str | Path | None,
     private_key_pem: bytes | str | Mapping[str, Any],
 ) -> ResolvedExchangeConfig:
-    """Load, validate, and decrypt an exchange config using provided private key material."""
+    """Load, validate, and decrypt an exchange config using private-key material.
+
+    Args:
+        exchange_config_path: Path to the exchange-config JSON file, or
+            ``None`` to use the default path.
+        private_key_pem: Matching v1 private-key PEM or v2 private-key bundle,
+            supplied as bytes, text, or a mapping.
+
+    Returns:
+        A ``ResolvedExchangeConfig`` containing the decrypted exchange state.
+    """
     return resolve_loaded_exchange_config(load_exchange_config(exchange_config_path), private_key_pem)
 
 
@@ -141,7 +181,24 @@ def resolve_exchange_config_private_key(
     openlinktoken_dir: Path | None = None,
     environment: Mapping[str, str] | None = None,
 ) -> bytes:
-    """Resolve private-key material bytes for a loaded exchange config."""
+    """Resolve private-key material bytes for a loaded exchange config.
+
+    Args:
+        exchange_config: Validated envelope whose recipient identifiers guide
+            automatic key lookup.
+        private_key_path: Optional path to a private-key PEM or key-bundle file.
+        private_key_env: Optional environment-variable name containing private
+            key PEM or version-2 key-bundle JSON text.
+        private_key_value: Optional private-key PEM or key-bundle value supplied
+            directly as text or bytes.
+        openlinktoken_dir: Optional directory searched when no explicit key is
+            supplied; defaults to ``~/.openlinktoken``.
+        environment: Optional mapping used to resolve ``private_key_env``;
+            defaults to the process environment.
+
+    Returns:
+        Private-key PEM bytes or private key-bundle JSON bytes.
+    """
     provided_private_key_inputs = [
         private_key_path is not None,
         private_key_env is not None,
@@ -184,7 +241,8 @@ def resolve_loaded_exchange_config(
         private_key_pem: Matching v1 private-key PEM or v2 private-key bundle.
 
     Returns:
-        Resolved exchange metadata, secrets, and the selected crypto suite.
+        A ``ResolvedExchangeConfig`` with the decrypted metadata, secrets,
+        selected suite, and any v2 transport key.
     """
     transport_encryption_key = None
     v1_crypto_suite = None
@@ -235,7 +293,14 @@ def resolve_loaded_exchange_config(
 
 
 def derive_transport_encryption_key(exchange: ResolvedExchangeConfig) -> bytes:
-    """Derive the shared 32-byte transport key defined by the exchange config contract."""
+    """Get the 32-byte transport key defined by the exchange-config contract.
+
+    Args:
+        exchange: Resolved v1 or v2 exchange-config state.
+
+    Returns:
+        The 32-byte v1 ECDH-derived or v2 exchange-derived transport key.
+    """
     if exchange.version == EXCHANGE_V2_VERSION:
         transport_key = exchange.transport_encryption_key
         if not isinstance(transport_key, bytes) or len(transport_key) != 32:
@@ -327,7 +392,14 @@ def _parse_exchange_config_value(exchange_config_value: str | bytes | Mapping[st
 
 
 def _detect_exchange_config_version(exchange_config: Mapping[str, Any]) -> int:
-    """Detect v1 from its top-level marker or v2 from its protected header."""
+    """Detect the supported version marker in an exchange-config envelope.
+
+    Args:
+        exchange_config: Candidate exchange-config mapping.
+
+    Returns:
+        ``1`` for a top-level v1 marker or ``2`` for a valid protected v2 header.
+    """
     top_level_version = exchange_config.get("version")
     if top_level_version == 1:
         return 1
@@ -360,7 +432,14 @@ def _detect_exchange_config_version(exchange_config: Mapping[str, Any]) -> int:
 
 
 def _decode_protected_header(value: Any) -> dict[str, Any]:
-    """Decode a standard JWE protected header."""
+    """Decode a standard JWE protected header.
+
+    Args:
+        value: Unpadded base64url text containing the protected-header JSON.
+
+    Returns:
+        The decoded protected-header dictionary.
+    """
     if not isinstance(value, str) or not value:
         raise ValueError("Exchange config is missing its protected header.")
     try:
@@ -375,7 +454,16 @@ def _decode_protected_header(value: Any) -> dict[str, Any]:
 
 
 def _recipient_kids(exchange_config: Mapping[str, Any], version: int | None = None) -> list[str]:
-    """Extract recipient key identifiers from an exchange-config envelope."""
+    """Extract recipient key identifiers from an exchange-config envelope.
+
+    Args:
+        exchange_config: General-JSON JWE exchange-config mapping.
+        version: Optional config version used to select the recipient-header
+            layout.
+
+    Returns:
+        Recipient ``kid`` values in envelope order.
+    """
     recipients = exchange_config.get("recipients")
     if not isinstance(recipients, list) or not recipients:
         raise ValueError("Exchange config is missing recipient entries needed for private-key resolution.")
@@ -402,7 +490,16 @@ def _recipient_kids(exchange_config: Mapping[str, Any], version: int | None = No
 
 
 def _resolve_private_key_role(private_pem: bytes, payload: Mapping[str, Any]) -> str:
-    """Identify whether private material belongs to the sender or recipient."""
+    """Identify whether private material belongs to the sender or recipient.
+
+    Args:
+        private_pem: Private-key PEM or private key-bundle JSON bytes.
+        payload: Decrypted exchange-config payload containing public key
+            fingerprints or bundle identifiers.
+
+    Returns:
+        ``"sender"`` or ``"recipient"`` according to the matching key ID.
+    """
     if payload.get("senderKeyId") or payload.get("recipientKeyId"):
         bundle = ExchangeKeyBundle.from_json(private_pem, require_private=True)
         if bundle.kid == payload.get("senderKeyId"):
@@ -421,7 +518,14 @@ def _resolve_private_key_role(private_pem: bytes, payload: Mapping[str, Any]) ->
 
 
 def _decode_hashing_secret(payload: Mapping[str, Any]) -> bytes:
-    """Decode the payload's required base64url hashing secret."""
+    """Decode the payload's required base64url hashing secret.
+
+    Args:
+        payload: Decrypted exchange-config payload.
+
+    Returns:
+        The decoded hashing-secret bytes.
+    """
     encoding = payload.get("hashingSecretEncoding")
     value = payload.get("hashingSecret")
     if encoding != "base64url":
@@ -437,7 +541,14 @@ def _decode_hashing_secret(payload: Mapping[str, Any]) -> bytes:
 
 
 def _decode_rotation_iv(payload: Mapping[str, Any]) -> bytes:
-    """Decode the optional base64url rotation IV, defaulting to empty bytes."""
+    """Decode the optional base64url rotation IV.
+
+    Args:
+        payload: Decrypted exchange-config payload.
+
+    Returns:
+        The decoded rotation-IV bytes, or empty bytes when no IV is supplied.
+    """
     encoding = payload.get("rotationIvEncoding")
     value = payload.get("rotationIv")
     if value is None:
@@ -467,7 +578,14 @@ def rotation_iv_to_text(rotation_iv: bytes) -> str:
 
 
 def _decode_rotation_count(payload: Mapping[str, Any]) -> int:
-    """Validate and decode the optional non-negative rotation count."""
+    """Validate and decode the optional non-negative rotation count.
+
+    Args:
+        payload: Decrypted exchange-config payload.
+
+    Returns:
+        The configured rotation count, or zero when it is omitted.
+    """
     value = payload.get("rotationCount")
     if value is None or value == 0:
         return 0
@@ -477,7 +595,14 @@ def _decode_rotation_count(payload: Mapping[str, Any]) -> int:
 
 
 def _decode_bin_width(payload: Mapping[str, Any]) -> float:
-    """Validate and decode the positive tokenization bin width."""
+    """Validate and decode the positive tokenization bin width.
+
+    Args:
+        payload: Decrypted exchange-config payload.
+
+    Returns:
+        The configured positive bin width as a float, or ``0.05`` by default.
+    """
     value = payload.get("binWidth")
     if value is None:
         return 0.05
@@ -487,7 +612,14 @@ def _decode_bin_width(payload: Mapping[str, Any]) -> float:
 
 
 def _decode_dimension_bias(payload: Mapping[str, Any]) -> list[float]:
-    """Validate and decode the optional numeric dimension-bias list."""
+    """Validate and decode the optional numeric dimension-bias list.
+
+    Args:
+        payload: Decrypted exchange-config payload.
+
+    Returns:
+        The dimension-bias values as floats, or an empty list when omitted.
+    """
     value = payload.get("dimensionBias")
     if value is None:
         return []

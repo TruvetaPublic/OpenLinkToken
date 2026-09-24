@@ -94,7 +94,14 @@ def test_inspector_prints_decrypted_payload_with_private_key() -> None:
 
 
 def test_inspector_prints_standard_v2_jwe_with_private_bundle() -> None:
-    """The inspector preserves standard v2 JWE members and decoded metadata."""
+    """Check that the inspector preserves standard v2 JWE members and decoded metadata.
+
+    Args:
+        None; this function takes no arguments.
+
+    Returns:
+        None.
+    """
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_path = Path(temp_dir)
         exchange_config_path, _, recipient_private_bundle_path = _generate_v2_exchange_fixture(
@@ -154,7 +161,14 @@ def test_inspector_rejects_invalid_protected_header() -> None:
 
 
 def main() -> int:
-    """Run the inspector tests as a simple executable script."""
+    """Run the inspector tests as a simple executable script.
+
+    Args:
+        None; this function takes no arguments.
+
+    Returns:
+        Exit code 0 when all tests pass, or 1 when any test fails.
+    """
     tests = [
         test_inspector_help_lists_exchange_config,
         test_inspector_prints_decoded_protected_header,

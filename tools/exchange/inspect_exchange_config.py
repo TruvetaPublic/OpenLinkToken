@@ -23,7 +23,14 @@ PROGRAM = "inspect_exchange_config.py"
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments."""
+    """Parse command-line arguments.
+
+    Args:
+        None; this function takes no arguments.
+
+    Returns:
+        Parsed command-line arguments for the exchange config inspector.
+    """
     parser = argparse.ArgumentParser(
         prog=PROGRAM,
         description=(
@@ -68,7 +75,14 @@ def _decode_base64url(value: str) -> bytes:
 
 
 def _print_summary(exchange: ResolvedExchangeConfig) -> None:
-    """Print a human-readable summary of the resolved exchange config."""
+    """Print a human-readable summary of the resolved exchange config.
+
+    Args:
+        exchange: Resolved exchange configuration to summarize.
+
+    Returns:
+        None.
+    """
     p = exchange.payload
 
     print("Exchange Config Summary")

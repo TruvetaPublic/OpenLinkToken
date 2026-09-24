@@ -42,6 +42,16 @@ class OpenLinkTokenProcessor:
     This class provides a bridge between PySpark DataFrames and Open Link Token
     token generation functionality, enabling distributed token generation
     across a Spark cluster.
+
+    Args:
+        hashing_secret: Optional HMAC secret; ``None`` disables hashing.
+        encryption_key: Optional encryption key; ``None`` disables encryption.
+        token_definition: Optional custom definition; defaults to tokens T1-T5.
+        ring_id: Optional identifier for token wrapping; generated when omitted.
+        crypto_suite: Optional suite or suite ID; defaults to the registered default suite.
+
+    Returns:
+        An initialized ``OpenLinkTokenProcessor`` configured with the supplied token settings.
     """
 
     # Standard column mappings (column name -> attribute class)
@@ -51,6 +61,9 @@ class OpenLinkTokenProcessor:
     @classmethod
     def _build_column_mappings(cls) -> Dict[str, Type[Attribute]]:
         """Build column name to attribute class mappings dynamically from loaded attributes.
+
+        Args:
+            None; the class is supplied as the receiver.
 
         Returns:
             Dictionary mapping column names to their corresponding attribute classes.
@@ -87,6 +100,11 @@ class OpenLinkTokenProcessor:
                              Use this to pass custom tokens created with TokenBuilder or CustomTokenDefinition.
             ring_id: Optional ring identifier used in olt.V1 token wrapping when encryption is enabled.
                      If not provided and encryption is enabled, a UUID is generated per processor instance.
+            crypto_suite: Optional suite or suite ID for token hashing and MAC algorithms. If omitted, uses the
+                          registered default suite.
+
+        Returns:
+            None.
 
         Raises:
             ValueError: If secrets are empty or invalid
@@ -251,6 +269,19 @@ class OpenLinkTokenProcessor:
             Note: Coverage tracking cannot instrument code executed inside Spark
             worker processes, so this function is marked with pragma: no cover.
             The logic is tested indirectly through integration tests.
+
+            Args:
+                record_id_series: Record identifiers for the current batch.
+                first_name_series: First-name values for the current batch.
+                last_name_series: Last-name values for the current batch.
+                birth_date_series: Birth-date values for the current batch.
+                sex_series: Sex values for the current batch.
+                postal_code_series: Postal-code values for the current batch.
+                ssn_series: Social Security number values for the current batch.
+
+            Returns:
+                A pandas Series with one list of ``RuleId``/``Token`` mappings per input record.
+                Records that fail token generation receive an empty list.
             """
             # Initialize token transformers and tokenizer based on secrets
             token_transformer_list = []
@@ -397,6 +428,15 @@ class OpenLinkTokenProcessor:
         Raises a clear, actionable error instead of a low-level EOFError from
         the Python worker when PyArrow/Pandas are incompatible with PySpark.
 
+        Args:
+            None; this method takes no arguments.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If required dependencies are missing or incompatible.
+
         Note: Dependency validation is difficult to unit test without manipulating
         sys.modules or creating incompatible environments. Marked pragma: no cover.
         """
@@ -440,6 +480,9 @@ class OpenLinkTokenProcessor:
     def _get_required_attribute_groups(cls) -> Dict[str, list]:
         """Get required attribute groups with their column name variants.
 
+        Args:
+            None; the class is supplied as the receiver.
+
         Returns:
             Dictionary mapping attribute names to their column name variants.
 
@@ -469,6 +512,9 @@ class OpenLinkTokenProcessor:
 
         Args:
             df: DataFrame to validate
+
+        Returns:
+            None.
 
         Raises:
             ValueError: If required columns are missing

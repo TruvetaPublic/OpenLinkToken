@@ -30,7 +30,7 @@ public class DecryptTokenTransformer implements TokenTransformer {
     private final SecretKeySpec secretKey;
 
     /**
-     * Initializes the underlying cipher (AES) with the decryption secret.
+     * Creates a transformer and initializes its AES cipher from a string key.
      *
      * @param encryptionKey the encryption key. The UTF-8 encoded key material must be exactly 32 bytes long.
      *
@@ -44,7 +44,7 @@ public class DecryptTokenTransformer implements TokenTransformer {
     }
 
     /**
-     * Initializes the underlying cipher (AES) with raw decryption key material.
+     * Creates a transformer and initializes its AES cipher from raw key material.
      *
      * @param encryptionKey the raw encryption key bytes. The key must be exactly 32 bytes long.
      * @throws InvalidKeyException                invalid encryption key
@@ -87,8 +87,8 @@ public class DecryptTokenTransformer implements TokenTransformer {
      * <p>
      * Decrypts the token using AES-256 symmetric decryption algorithm.
      *
-     * @return the decrypted token string.
      * @param token the encrypted token in base64 format.
+     * @return the decrypted token string.
      * @throws IllegalArgumentException        if the token does not contain the
      *                                         required IV and authentication tag
      * @throws IllegalStateException        if the underlying cipher is in an

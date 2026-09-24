@@ -41,7 +41,14 @@ from openlinktoken.jwe_mlkem import (
 
 
 def _protected_header(suite_id: str) -> dict[str, object]:
-    """Build the protected header used by focused adapter tests."""
+    """Build the protected header used by adapter tests.
+
+    Args:
+        suite_id: Registered version-2 crypto-suite identifier.
+
+    Returns:
+        A protected-header mapping with the required version-2 fields.
+    """
     return {
         "typ": EXCHANGE_V2_TYPE,
         "cty": EXCHANGE_V2_CONTENT_TYPE,
@@ -53,12 +60,26 @@ def _protected_header(suite_id: str) -> dict[str, object]:
 
 
 def _decode(value: str) -> bytes:
-    """Decode unpadded base64url test values."""
+    """Decode unpadded base64url test values.
+
+    Args:
+        value: Base64url-encoded test value.
+
+    Returns:
+        The decoded bytes.
+    """
     return base64.urlsafe_b64decode(value + "=" * (-len(value) % 4))
 
 
 def test_v2_token_transport_key_uses_the_documented_hkdf_contract():
-    """The v2 transport key uses the CEK, exchange ID salt, and domain-separated info."""
+    """The v2 transport key uses the documented HKDF inputs.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     cek = bytes(range(32))
 
     transport_key = _derive_token_transport_key(cek, "exchange-id-a1")
@@ -77,7 +98,17 @@ def test_v2_token_transport_key_uses_the_documented_hkdf_contract():
     ],
 )
 def test_build_v2_jwe_uses_standard_general_json_shape(suite_id, expected_algorithm, has_epk):
-    """Every v2 suite serializes as a standard two-recipient JWE JSON object."""
+    """Every v2 suite serializes as a standard two-recipient JWE JSON object.
+
+    Args:
+        suite_id: Parameterized version-2 crypto-suite identifier.
+        expected_algorithm: JOSE key-management algorithm expected for the suite.
+        has_epk: Whether the recipient header is expected to contain an
+            ephemeral public key.
+
+    Returns:
+        None.
+    """
     sender = generate_exchange_key_bundle(suite_id)
     recipient = generate_exchange_key_bundle(suite_id)
     envelope = build_v2_jwe(
@@ -102,7 +133,14 @@ def test_build_v2_jwe_uses_standard_general_json_shape(suite_id, expected_algori
 
 @pytest.mark.parametrize("suite_id", ["suite-pq-v1", "suite-pq-shake-v1", "suite-pq-hybrid-v1"])
 def test_v2_jwe_round_trip_derives_transport_key_separately_from_cek(suite_id):
-    """Both recipients recover the plaintext and a CEK-derived transport key."""
+    """Both recipients recover the plaintext and a CEK-derived transport key.
+
+    Args:
+        suite_id: Parameterized version-2 crypto-suite identifier.
+
+    Returns:
+        None.
+    """
     sender = generate_exchange_key_bundle(suite_id)
     recipient = generate_exchange_key_bundle(suite_id)
     envelope = build_v2_jwe(b"adapter-plaintext", _protected_header(suite_id), [sender, recipient])
@@ -123,7 +161,14 @@ def test_v2_jwe_round_trip_derives_transport_key_separately_from_cek(suite_id):
 
 
 def test_custom_handlers_do_not_mutate_jwcrypto_registry():
-    """The adapter keeps custom algorithms local to each JWE object."""
+    """The adapter keeps custom algorithms local to each JWE object.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     registry_before = dict(jwa.JWA.algorithms_registry)
 
     sender = generate_exchange_key_bundle("suite-pq-v1")
@@ -134,7 +179,14 @@ def test_custom_handlers_do_not_mutate_jwcrypto_registry():
 
 
 def test_custom_handler_dispatch_respects_allowed_algorithms():
-    """Custom key-management handlers are dispatched per JWE instance."""
+    """Custom key-management handlers are dispatched per JWE instance.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     standard_algorithm = "RSA-OAEP-256"
     token = OpenLinkTokenJWE(algs=[PURE_KEM_ALGORITHM, standard_algorithm])
     assert token._jwa_keymgmt(PURE_KEM_ALGORITHM).algorithm == PURE_KEM_ALGORITHM
@@ -153,13 +205,32 @@ def test_custom_handler_dispatch_respects_allowed_algorithms():
     ],
 )
 def test_transport_key_derivation_rejects_invalid_inputs(cek, exchange_id, exception, message):
-    """Transport-key derivation validates CEK and exchange identity inputs."""
+    """Transport-key derivation validates its CEK and exchange identity inputs.
+
+    Args:
+        cek: Parameterized invalid content-encryption-key value.
+        exchange_id: Parameterized invalid exchange identifier.
+        exception: Expected exception class.
+        message: Expected error-message fragment.
+
+    Returns:
+        None.
+    """
     with pytest.raises(exception, match=message):
         _derive_token_transport_key(cek, exchange_id)
 
 
 def test_key_management_validates_sizes_and_wrap_errors(monkeypatch):
-    """The custom key-management adapter rejects malformed CEKs and wrapped keys."""
+    """The key-management adapter rejects malformed CEKs and wrapped keys.
+
+    Args:
+        monkeypatch: Pytest fixture used to replace key-wrap and unwrap callables
+            with callbacks that accept arbitrary positional arguments and raise
+            ``ValueError`` to exercise their error handling.
+
+    Returns:
+        None.
+    """
     sender = generate_exchange_key_bundle("suite-pq-v1")
     headers = {
         **_protected_header("suite-pq-v1"),
@@ -195,7 +266,14 @@ def test_key_management_validates_sizes_and_wrap_errors(monkeypatch):
 
 
 def test_protected_header_validation_rejects_invalid_context():
-    """Protected headers must contain only the authenticated v2 context."""
+    """Protected headers must contain the required authenticated v2 context.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     valid = _protected_header("suite-pq-v1")
     invalid_headers = (
         (None, "JSON object"),
@@ -214,7 +292,14 @@ def test_protected_header_validation_rejects_invalid_context():
 
 
 def test_recipient_and_ephemeral_key_validation_rejects_invalid_members():
-    """Recipient and hybrid ephemeral-key structures are strictly validated."""
+    """Recipient and hybrid ephemeral-key structures are strictly validated.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     sender = generate_exchange_key_bundle("suite-pq-v1")
     envelope = build_v2_jwe(
         b"validation", _protected_header("suite-pq-v1"), [sender, generate_exchange_key_bundle("suite-pq-v1")]
@@ -255,7 +340,14 @@ def test_recipient_and_ephemeral_key_validation_rejects_invalid_members():
 
 
 def test_key_and_curve_helpers_reject_invalid_material():
-    """Key-management helpers reject wrong suites, curves, and malformed keys."""
+    """Key-management helpers reject wrong suites, curves, and malformed keys.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     sender = generate_exchange_key_bundle("suite-pq-v1")
     headers = {
         **_protected_header("suite-pq-v1"),
@@ -297,12 +389,26 @@ def test_key_and_curve_helpers_reject_invalid_material():
 
 
 def _encode(value: bytes) -> str:
-    """Encode bytes as unpadded base64url test data."""
+    """Encode bytes as unpadded base64url test data.
+
+    Args:
+        value: Bytes to encode.
+
+    Returns:
+        Base64url text without padding.
+    """
     return base64.urlsafe_b64encode(value).decode("ascii").rstrip("=")
 
 
 def _valid_epk() -> dict[str, str]:
-    """Return a syntactically valid but intentionally replaceable P-256 JWK."""
+    """Return a valid but replaceable P-256 JWK for tests.
+
+    Args:
+        None.
+
+    Returns:
+        A mapping containing the coordinates of a P-256 public JWK.
+    """
     return {
         "kty": "EC",
         "crv": "P-256",

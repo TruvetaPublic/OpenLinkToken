@@ -68,6 +68,9 @@ public final class ExchangeConfig implements Serializable {
             "cryptoSuite",
             "exchangeId");
 
+    /**
+     * Creates the utility instance with no arguments.
+     */
     private ExchangeConfig() {
     }
 
@@ -410,17 +413,37 @@ public final class ExchangeConfig implements Serializable {
         }
     }
 
+    /**
+     * Loads and validates an exchange configuration from JSON bytes.
+     *
+     * @param json UTF-8 JSON object bytes
+     * @param path source path or the in-memory source marker
+     * @return the validated, versioned envelope
+     */
     private static LoadedExchangeConfig loadExchangeConfig(byte[] json, Path path) {
         Map<String, Object> config = readJsonObject(json);
         return loadExchangeConfig(config, path);
     }
 
+    /**
+     * Copies and validates a JSON-compatible exchange configuration.
+     *
+     * @param config exchange configuration values
+     * @param path source path or the in-memory source marker
+     * @return the validated, versioned envelope
+     */
     private static LoadedExchangeConfig loadExchangeConfig(Map<String, ?> config, Path path) {
         Map<String, Object> copy = copyJsonMap(config, "exchangeConfig");
         int version = detectVersion(copy);
         return new LoadedExchangeConfig(path, version, copy);
     }
 
+    /**
+     * Detects the envelope version from its top-level or protected-header marker.
+     *
+     * @param config exchange envelope fields
+     * @return the supported exchange configuration version
+     */
     private static int detectVersion(Map<String, Object> config) {
         Object topLevelVersion = config.get("version");
         if (numericEquals(topLevelVersion, VERSION_ONE)) {
@@ -450,6 +473,13 @@ public final class ExchangeConfig implements Serializable {
         return VERSION_TWO;
     }
 
+    /**
+     * Rejects conflicting version markers in a version-one envelope.
+     *
+     * <p>This method returns no value.</p>
+     *
+     * @param config exchange envelope fields
+     */
     private static void rejectAmbiguousVersionOne(Map<String, Object> config) {
         Object protectedValue = config.get("protected");
         if (!(protectedValue instanceof String value) || value.isEmpty()) {
@@ -490,6 +520,13 @@ public final class ExchangeConfig implements Serializable {
         }
     }
 
+    /**
+     * Validates required type, content, suite, and identifier fields.
+     *
+     * <p>This method returns no value.</p>
+     *
+     * @param protectedHeader decoded protected-header fields
+     */
     private static void validateProtectedHeader(Map<String, Object> protectedHeader) {
         if (!ExchangeKem.TYPE.equals(protectedHeader.get("typ"))) {
             throw new IllegalArgumentException("Version-two protected header has an unsupported typ.");
@@ -605,6 +642,13 @@ public final class ExchangeConfig implements Serializable {
         return suite;
     }
 
+    /**
+     * Identifies whether an EC private key belongs to the sender or recipient.
+     *
+     * @param privatePem unencrypted EC private-key PEM
+     * @param payload decrypted exchange payload fields
+     * @return {@code "sender"} or {@code "recipient"}
+     */
     private static String resolveV1Role(byte[] privatePem, Map<String, Object> payload) {
         byte[] publicPem = EcKeyUtils.derivePublicKeyFromPrivatePem(privatePem);
         String fingerprint = EcKeyUtils.publicKeyFingerprint(publicPem);
@@ -618,6 +662,13 @@ public final class ExchangeConfig implements Serializable {
         return sender ? "sender" : "recipient";
     }
 
+    /**
+     * Identifies whether a private key bundle belongs to the sender or recipient.
+     *
+     * @param privateBundle private exchange key bundle
+     * @param payload decrypted exchange payload fields
+     * @return {@code "sender"} or {@code "recipient"}
+     */
     private static String resolveV2Role(ExchangeKeyBundle privateBundle, Map<String, Object> payload) {
         String senderKeyId = requireText(payload.get("senderKeyId"), "senderKeyId");
         String recipientKeyId = requireText(payload.get("recipientKeyId"), "recipientKeyId");
@@ -672,6 +723,12 @@ public final class ExchangeConfig implements Serializable {
         }
     }
 
+    /**
+     * Decodes the optional rotation initialization vector from a payload.
+     *
+     * @param payload decrypted exchange payload fields
+     * @return the decoded rotation IV, or an empty byte array when absent
+     */
     private static byte[] decodeRotationIv(Map<String, Object> payload) {
         Object value = payload.get("rotationIv");
         if (value == null) {
@@ -685,6 +742,12 @@ public final class ExchangeConfig implements Serializable {
         return text.isEmpty() ? new byte[0] : decodeBase64Url(text, "rotationIv");
     }
 
+    /**
+     * Decodes and validates the optional rotation count.
+     *
+     * @param payload decrypted exchange payload fields
+     * @return the rotation count, or zero when absent
+     */
     private static int decodeRotationCount(Map<String, Object> payload) {
         Object value = payload.get("rotationCount");
         if (value == null || numericEquals(value, 0)) {
@@ -702,6 +765,12 @@ public final class ExchangeConfig implements Serializable {
         return (int) count;
     }
 
+    /**
+     * Decodes and validates the optional rotation quantization width.
+     *
+     * @param payload decrypted exchange payload fields
+     * @return the bin width, or {@code 0.05} when absent
+     */
     private static double decodeBinWidth(Map<String, Object> payload) {
         Object value = payload.get("binWidth");
         if (value == null) {
@@ -716,6 +785,12 @@ public final class ExchangeConfig implements Serializable {
         return number.doubleValue();
     }
 
+    /**
+     * Decodes the optional finite dimension-bias values.
+     *
+     * @param payload decrypted exchange payload fields
+     * @return an immutable bias list, or an empty list when absent
+     */
     private static List<Double> decodeDimensionBias(Map<String, Object> payload) {
         Object value = payload.get("dimensionBias");
         if (value == null) {
@@ -736,6 +811,14 @@ public final class ExchangeConfig implements Serializable {
         return List.copyOf(result);
     }
 
+    /**
+     * Derives a 32-byte key with HKDF-SHA256.
+     *
+     * @param input input keying material
+     * @param salt HKDF salt
+     * @param info HKDF context information
+     * @return the derived 32-byte key
+     */
     private static byte[] hkdfSha256(byte[] input, byte[] salt, byte[] info) {
         try {
             HKDFBytesGenerator generator = new HKDFBytesGenerator(new SHA256Digest());
@@ -748,6 +831,15 @@ public final class ExchangeConfig implements Serializable {
         }
     }
 
+    /**
+     * Checks that a loaded envelope has the expected version.
+     *
+     * <p>This method returns no value.</p>
+     *
+     * @param exchangeConfig loaded exchange configuration
+     * @param expectedVersion required exchange configuration version
+     * @param keyDescription description of the key required for that version
+     */
     private static void requireVersion(
             LoadedExchangeConfig exchangeConfig,
             int expectedVersion,
@@ -762,6 +854,13 @@ public final class ExchangeConfig implements Serializable {
         }
     }
 
+    /**
+     * Requires a JSON object value and returns a defensive copy.
+     *
+     * @param value candidate JSON value
+     * @param fieldName field name used in validation errors
+     * @return a mutable copy of the string-keyed mapping
+     */
     private static Map<String, Object> requireMapping(Object value, String fieldName) {
         if (!(value instanceof Map<?, ?> mapping)) {
             throw new IllegalArgumentException("Exchange config payload is missing " + fieldName + ".");
@@ -769,6 +868,13 @@ public final class ExchangeConfig implements Serializable {
         return copyJsonMap(mapping, fieldName);
     }
 
+    /**
+     * Requires a non-empty string value.
+     *
+     * @param value candidate value
+     * @param fieldName field name used in validation errors
+     * @return the validated string
+     */
     private static String requireText(Object value, String fieldName) {
         if (!(value instanceof String text) || text.isBlank()) {
             throw new IllegalArgumentException(fieldName + " must be a non-empty string.");
@@ -776,6 +882,13 @@ public final class ExchangeConfig implements Serializable {
         return text;
     }
 
+    /**
+     * Requires a string value while allowing it to be empty.
+     *
+     * @param value candidate value
+     * @param fieldName field name used in validation errors
+     * @return the validated string
+     */
     private static String requireTextAllowEmpty(Object value, String fieldName) {
         if (!(value instanceof String text)) {
             throw new IllegalArgumentException(fieldName + " must be a string.");
@@ -783,6 +896,14 @@ public final class ExchangeConfig implements Serializable {
         return text;
     }
 
+    /**
+     * Validates and defensively copies byte-array input.
+     *
+     * @param value candidate bytes
+     * @param fieldName field name used in validation errors
+     * @param nonEmpty whether the byte array must contain at least one byte
+     * @return a defensive copy of the validated bytes
+     */
     private static byte[] requireBytes(byte[] value, String fieldName, boolean nonEmpty) {
         if (value == null || (nonEmpty && value.length == 0)) {
             throw new IllegalArgumentException(fieldName + " must not be empty.");
@@ -790,6 +911,12 @@ public final class ExchangeConfig implements Serializable {
         return Arrays.copyOf(value, value.length);
     }
 
+    /**
+     * Checks whether a value is one of the supported integral number types.
+     *
+     * @param value candidate value
+     * @return {@code true} if the value is an integral number
+     */
     private static boolean isIntegralNumber(Object value) {
         return value instanceof Byte
                 || value instanceof Short
@@ -798,12 +925,26 @@ public final class ExchangeConfig implements Serializable {
                 || value instanceof BigInteger;
     }
 
+    /**
+     * Checks whether a numeric value equals an expected integer.
+     *
+     * @param value candidate value
+     * @param expected expected integer
+     * @return {@code true} if the finite numeric value equals the expected integer
+     */
     private static boolean numericEquals(Object value, int expected) {
         return value instanceof Number number
                 && Double.isFinite(number.doubleValue())
                 && number.doubleValue() == expected;
     }
 
+    /**
+     * Validates and recursively copies a JSON-compatible mapping.
+     *
+     * @param value candidate mapping
+     * @param fieldName field name used in validation errors
+     * @return an immutable mapping with copied JSON-compatible values
+     */
     private static Map<String, Object> copyJsonMap(Map<?, ?> value, String fieldName) {
         if (value == null) {
             throw new IllegalArgumentException(fieldName + " must be a JSON object.");
@@ -818,6 +959,13 @@ public final class ExchangeConfig implements Serializable {
         return Collections.unmodifiableMap(copy);
     }
 
+    /**
+     * Recursively copies a JSON-compatible value and rejects unsupported objects.
+     *
+     * @param value candidate JSON value
+     * @param fieldName field path used in validation errors
+     * @return the copied scalar, byte array, immutable list, or immutable mapping
+     */
     private static Object copyJsonValue(Object value, String fieldName) {
         if (value instanceof Map<?, ?> mapping) {
             return copyJsonMap(mapping, fieldName);
@@ -838,10 +986,26 @@ public final class ExchangeConfig implements Serializable {
         throw new IllegalArgumentException(fieldName + " contains an unsupported JSON value.");
     }
 
+    /**
+     * Returns a defensive copy of nullable byte-array input.
+     *
+     * @param value source byte array, or {@code null}
+     * @return a defensive copy, or {@code null} when the input is {@code null}
+     */
     private static byte[] copy(byte[] value) {
         return value == null ? null : Arrays.copyOf(value, value.length);
     }
 
+    /**
+     * Holds validated payload fields decoded from an exchange envelope.
+     *
+     * @param cryptoSuite validated crypto suite
+     * @param hashingSecret decoded hashing secret
+     * @param rotationIv decoded rotation IV
+     * @param rotationCount validated rotation count
+     * @param binWidth validated rotation quantization width
+     * @param dimensionBias validated dimension-bias values
+     */
     private record DecodedPayload(
             CryptoSuite cryptoSuite,
             byte[] hashingSecret,
@@ -861,7 +1025,11 @@ public final class ExchangeConfig implements Serializable {
     public record LoadedExchangeConfig(Path path, int version, Map<String, Object> config) implements Serializable {
 
         /**
-         * Canonicalizes and defensively copies the loaded envelope.
+         * Constructs a loaded envelope and defensively copies its mapping.
+         *
+         * @param path source path or the in-memory source marker
+         * @param version detected exchange configuration version
+         * @param config JSON-compatible envelope fields
          */
         public LoadedExchangeConfig {
             path = Objects.requireNonNull(path, "Exchange config path must not be null.");
@@ -871,6 +1039,13 @@ public final class ExchangeConfig implements Serializable {
             config = copyJsonMap(config, "exchangeConfig");
         }
 
+        /**
+         * Replaces this record with its serializable form.
+         *
+         * <p>This method accepts no arguments.</p>
+         *
+         * @return the serialization replacement object
+         */
         private Object writeReplace() {
             return new LoadedExchangeConfigSerializedForm(path.toString(), version, config);
         }
@@ -911,7 +1086,22 @@ public final class ExchangeConfig implements Serializable {
             byte[] transportEncryptionKey) implements Serializable {
 
         /**
-         * Canonicalizes and defensively copies mutable resolved values.
+         * Constructs a resolved exchange state and defensively copies mutable values.
+         *
+         * @param path source path or the in-memory source marker
+         * @param version exchange configuration version
+         * @param config encrypted envelope fields
+         * @param payload decrypted payload fields
+         * @param privateKeyPem EC private-key PEM for version one
+         * @param privateKeyBundle private key bundle for version two
+         * @param privateKeyRole sender or recipient
+         * @param cryptoSuite validated crypto suite
+         * @param hashingSecret decoded hashing secret
+         * @param rotationIv decoded rotation IV
+         * @param rotationCount validated rotation count
+         * @param binWidth validated positive bin width
+         * @param dimensionBias validated dimension-bias values
+         * @param transportEncryptionKey version-two transport key, or {@code null} for version one
          */
         public ResolvedExchangeConfig {
             path = Objects.requireNonNull(path, "Exchange config path must not be null.");
@@ -937,6 +1127,13 @@ public final class ExchangeConfig implements Serializable {
             transportEncryptionKey = copy(transportEncryptionKey);
         }
 
+        /**
+         * Replaces this record with its serializable form.
+         *
+         * <p>This method accepts no arguments.</p>
+         *
+         * @return the serialization replacement object
+         */
         private Object writeReplace() {
             return new ResolvedExchangeConfigSerializedForm(
                     path.toString(),
@@ -955,16 +1152,37 @@ public final class ExchangeConfig implements Serializable {
                     transportEncryptionKey);
         }
 
+        /**
+         * Returns a defensive copy of the version-one private-key PEM.
+         *
+         * <p>This method accepts no arguments.</p>
+         *
+         * @return the private-key PEM, or {@code null} for version two
+         */
         @Override
         public byte[] privateKeyPem() {
             return copy(privateKeyPem);
         }
 
+        /**
+         * Returns a defensive copy of the hashing secret.
+         *
+         * <p>This method accepts no arguments.</p>
+         *
+         * @return the hashing secret bytes
+         */
         @Override
         public byte[] hashingSecret() {
             return copy(hashingSecret);
         }
 
+        /**
+         * Returns a defensive copy of the rotation IV.
+         *
+         * <p>This method accepts no arguments.</p>
+         *
+         * @return the rotation IV bytes
+         */
         @Override
         public byte[] rotationIv() {
             return copy(rotationIv);
@@ -973,6 +1191,8 @@ public final class ExchangeConfig implements Serializable {
         /**
          * Returns the transport key, deriving the version-one key on demand.
          *
+         * <p>This method accepts no arguments.</p>
+         *
          * @return a defensive copy of the 32-byte transport key
          */
         @Override
@@ -980,11 +1200,21 @@ public final class ExchangeConfig implements Serializable {
             return deriveTransportEncryptionKey(this);
         }
 
+        /**
+         * Returns a defensive copy of the stored version-two transport key.
+         *
+         * <p>This method accepts no arguments.</p>
+         *
+         * @return the stored transport key, or {@code null} for version one
+         */
         private byte[] storedTransportEncryptionKey() {
             return copy(transportEncryptionKey);
         }
     }
 
+    /**
+     * Stores the serialized fields of a loaded exchange configuration.
+     */
     private static final class LoadedExchangeConfigSerializedForm implements Serializable {
         private static final long serialVersionUID = 1L;
 
@@ -992,17 +1222,34 @@ public final class ExchangeConfig implements Serializable {
         private final int version;
         private final Map<String, Object> config;
 
+        /**
+         * Constructs a serialized loaded-configuration form.
+         *
+         * @param path source path text
+         * @param version exchange configuration version
+         * @param config immutable envelope fields
+         */
         private LoadedExchangeConfigSerializedForm(String path, int version, Map<String, Object> config) {
             this.path = path;
             this.version = version;
             this.config = config;
         }
 
+        /**
+         * Restores the loaded exchange configuration.
+         *
+         * <p>This method accepts no arguments.</p>
+         *
+         * @return the reconstructed loaded configuration
+         */
         private Object readResolve() {
             return new LoadedExchangeConfig(Path.of(path), version, config);
         }
     }
 
+    /**
+     * Stores the serialized fields of a resolved exchange configuration.
+     */
     private static final class ResolvedExchangeConfigSerializedForm implements Serializable {
         private static final long serialVersionUID = 1L;
 
@@ -1021,6 +1268,24 @@ public final class ExchangeConfig implements Serializable {
         private final List<Double> dimensionBias;
         private final byte[] transportEncryptionKey;
 
+        /**
+         * Constructs a serialized resolved-configuration form.
+         *
+         * @param path source path text
+         * @param version exchange configuration version
+         * @param config encrypted envelope fields
+         * @param payload decrypted payload fields
+         * @param privateKeyPem EC private-key PEM for version one
+         * @param privateKeyBundle private key bundle for version two
+         * @param privateKeyRole sender or recipient
+         * @param cryptoSuite validated crypto suite
+         * @param hashingSecret decoded hashing secret
+         * @param rotationIv decoded rotation IV
+         * @param rotationCount validated rotation count
+         * @param binWidth validated bin width
+         * @param dimensionBias validated dimension-bias values
+         * @param transportEncryptionKey version-two transport key, or {@code null} for version one
+         */
         private ResolvedExchangeConfigSerializedForm(
                 String path,
                 int version,
@@ -1052,6 +1317,13 @@ public final class ExchangeConfig implements Serializable {
             this.transportEncryptionKey = transportEncryptionKey;
         }
 
+        /**
+         * Restores the resolved exchange configuration.
+         *
+         * <p>This method accepts no arguments.</p>
+         *
+         * @return the reconstructed resolved configuration
+         */
         private Object readResolve() {
             return new ResolvedExchangeConfig(
                     Path.of(path),

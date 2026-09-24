@@ -38,6 +38,12 @@ ATTRIBUTE_MAP = {
 class TokenBuilder:
     """A fluent builder for creating custom tokens with minimal code.
 
+    Args:
+        token_id: Identifier supplied to the constructor.
+
+    Returns:
+        A ``TokenBuilder`` initialized with ``token_id`` and no attribute expressions.
+
     Example:
         >>> token = TokenBuilder("ML1") \\
         ...     .add("last_name", "T|U") \\
@@ -54,6 +60,9 @@ class TokenBuilder:
 
         Args:
             token_id: The identifier for the token (e.g., "ML1", "T7").
+
+        Returns:
+            None.
 
         """
         self.token_id = token_id
@@ -86,6 +95,9 @@ class TokenBuilder:
     def build(self) -> Token:
         """Build the custom token.
 
+        Args:
+            None; this method takes no arguments.
+
         Returns:
             A Token instance with the configured expressions.
 
@@ -94,20 +106,48 @@ class TokenBuilder:
         expressions = self.expressions
 
         class CustomToken(Token):
-            """Dynamically created custom token."""
+            """Token class created by ``TokenBuilder.build`` using captured settings.
+
+            Args:
+                None; the generated token constructor takes no arguments.
+
+            Returns:
+                A token instance containing the captured identifier and expressions.
+            """
 
             ID = token_id
 
             def __init__(self):
-                """Initialize the generated token with its configured expressions."""
+                """Initialize the generated token with its configured expressions.
+
+                Args:
+                    None; this constructor takes no arguments.
+
+                Returns:
+                    None.
+                """
                 self._definition = expressions
 
             def get_identifier(self):
-                """Return the identifier captured when the token was built."""
+                """Return the identifier captured when the token was built.
+
+                Args:
+                    None; this method takes no arguments.
+
+                Returns:
+                    The custom token identifier as a string.
+                """
                 return self.ID
 
             def get_definition(self):
-                """Return the token expressions captured when the token was built."""
+                """Return the token expressions captured when the token was built.
+
+                Args:
+                    None; this method takes no arguments.
+
+                Returns:
+                    The list of configured ``AttributeExpression`` objects.
+                """
                 return self._definition
 
         return CustomToken()
@@ -115,6 +155,12 @@ class TokenBuilder:
 
 class CustomTokenDefinition(BaseTokenDefinition):
     """A custom token definition that can include multiple custom tokens.
+
+    Args:
+        None; the constructor takes no arguments.
+
+    Returns:
+        An empty ``CustomTokenDefinition`` ready to receive tokens.
 
     Example:
         >>> definition = CustomTokenDefinition()
@@ -124,7 +170,14 @@ class CustomTokenDefinition(BaseTokenDefinition):
     """
 
     def __init__(self):
-        """Initialize an empty custom token definition."""
+        """Initialize an empty custom token definition.
+
+        Args:
+            None; this constructor takes no arguments.
+
+        Returns:
+            None.
+        """
         self.tokens: Dict[str, Token] = {}
 
     def add_token(self, token: Token) -> "CustomTokenDefinition":
@@ -166,9 +219,10 @@ def create_token_generator(
     """Create a token generator with the specified secrets and token definition.
 
     Args:
-        hashing_secret: The secret used for HMAC-SHA256 hashing.
+        hashing_secret: Optional text or byte secret for HMAC-SHA256 hashing; ``None`` disables hashing.
         encryption_key: The 32-character key used for AES-256 encryption.
         token_definition: Optional custom token definition. If None, uses default tokens.
+        crypto_suite: Optional crypto suite or suite ID; defaults to the registered default suite.
 
     Returns:
         A configured TokenGenerator instance.
@@ -328,6 +382,9 @@ def quick_token_from_exchange_config(
 def list_attributes() -> Dict[str, Type[Attribute]]:
     """Get a dictionary of available attribute names and their classes.
 
+    Args:
+        None; this function takes no arguments.
+
     Returns:
         Dictionary mapping attribute names to their classes.
 
@@ -342,6 +399,9 @@ def list_attributes() -> Dict[str, Type[Attribute]]:
 
 def expression_help() -> str:
     """Get help text about expression syntax.
+
+    Args:
+        None; this function takes no arguments.
 
     Returns:
         A string describing the expression syntax.

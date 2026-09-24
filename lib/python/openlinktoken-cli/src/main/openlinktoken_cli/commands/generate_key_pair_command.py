@@ -14,14 +14,26 @@ SUPPORTED_CURVES = ["P-256", "P-384", "P-521"]
 class GenerateKeyPairCommand:
     """Generate an ECDH key pair or version-2 crypto-suite key bundle.
 
-    Private key:  ~/.openlinktoken/<name>.private.pem  (PEM PKCS#8, permissions 600)
-    Public key:   ~/.openlinktoken/<name>.public.pem   (PEM SubjectPublicKeyInfo, permissions 644)
+    Default ECDH private key:  ~/.openlinktoken/<name>.private.pem  (PEM PKCS#8, permissions 600)
+    Default ECDH public key:   ~/.openlinktoken/<name>.public.pem   (PEM SubjectPublicKeyInfo, permissions 644)
+    Version-2 private bundle:  ~/.openlinktoken/<name>.private.bundle.json (permissions 600)
+    Version-2 public bundle:   ~/.openlinktoken/<name>.public.bundle.json  (permissions 644)
     Directory:    ~/.openlinktoken/                     (created with permissions 700 if absent)
+
+    Constructor:
+        Takes no arguments and returns a new ``GenerateKeyPairCommand`` instance.
     """
 
     @staticmethod
     def register_subcommand(subparsers) -> None:
-        """Register the generate-key-pair subcommand with the argument parser."""
+        """Register the generate-key-pair subcommand with the argument parser.
+
+        Args:
+            subparsers: Argument-parser subparsers collection to receive the command.
+
+        Returns:
+            None.
+        """
         parser = subparsers.add_parser(
             "generate-key-pair",
             help="Generate an ECDH key pair or version-2 JSON key bundle in ~/.openlinktoken/",
@@ -72,11 +84,10 @@ class GenerateKeyPairCommand:
         """Execute the generate-key-pair command.
 
         Args:
-            args: Parsed command-line arguments.
+            args: Parsed CLI namespace containing the key name, curve, crypto suite, and overwrite option.
 
         Returns:
-            Exit code (0 for success, non-zero for errors).
-
+            ``0`` when key files are generated, or ``1`` when validation or file-system errors occur.
         """
         from openlinktoken.crypto.crypto_suite import CryptoSuite
         from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message

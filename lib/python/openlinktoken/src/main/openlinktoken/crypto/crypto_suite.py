@@ -6,12 +6,31 @@ from typing import ClassVar
 
 
 class CryptoSuiteError(ValueError):
-    """Raised when a crypto suite identifier or combination is not supported."""
+    """Raised when a crypto suite identifier or combination is not supported.
+
+    Args:
+        message: Explanation of the unsupported identifier or suite combination.
+
+    Returns:
+        A ``CryptoSuiteError`` instance carrying the validation failure.
+    """
 
 
 @dataclass(frozen=True)
 class CryptoSuite:
-    """Immutable contract for token primitives and exchange key establishment."""
+    """Immutable contract for token primitives and exchange key establishment.
+
+    Args:
+        suite_id: Stable identifier used to select this registered suite.
+        token_digest_algorithm: Digest algorithm used to tokenize signatures.
+        token_mac_algorithm: Keyed MAC algorithm used to hash tokens.
+        token_content_encryption: Content-encryption algorithm for match tokens.
+        exchange_key_agreement: Key-agreement algorithm used by exchanges.
+        exchange_config_version: Exchange-config version required by this suite.
+
+    Returns:
+        A frozen ``CryptoSuite`` instance describing the supplied algorithms.
+    """
 
     TOKEN_DIGEST_SHA256: ClassVar[str] = "SHA-256"
     TOKEN_DIGEST_SHA3_256: ClassVar[str] = "SHA3-256"
@@ -42,7 +61,17 @@ class CryptoSuite:
 
     @classmethod
     def from_id(cls, suite_id: str) -> "CryptoSuite":
-        """Resolve a registered suite identifier or raise a validation error."""
+        """Resolve a registered suite identifier.
+
+        Args:
+            suite_id: Stable identifier of a registered crypto suite.
+
+        Returns:
+            The ``CryptoSuite`` registered under ``suite_id``.
+
+        Raises:
+            CryptoSuiteError: If ``suite_id`` is blank or is not registered.
+        """
         if not isinstance(suite_id, str) or not suite_id.strip():
             raise CryptoSuiteError("Crypto suite ID must be a non-empty string.")
 
@@ -54,26 +83,68 @@ class CryptoSuite:
 
     @classmethod
     def default(cls) -> "CryptoSuite":
-        """Return the backward-compatible default suite."""
+        """Return the backward-compatible default suite.
+
+        Args:
+            None.
+
+        Returns:
+            The registered SHA-256 v1 ``CryptoSuite``.
+        """
         return cls.SUITE_SHA256_V1
 
     @classmethod
     def all(cls) -> tuple["CryptoSuite", ...]:
-        """Return all registered suites in stable identifier order."""
+        """Return all registered suites in stable identifier order.
+
+        Args:
+            None.
+
+        Returns:
+            A tuple containing every registered ``CryptoSuite``.
+        """
         return tuple(cls._REGISTRY.values())
 
     @property
     def is_post_quantum(self) -> bool:
-        """Return whether the exchange agreement includes ML-KEM."""
+        """Return whether the exchange agreement includes ML-KEM.
+
+        Args:
+            None.
+
+        Returns:
+            ``True`` when the suite uses an ML-KEM exchange agreement;
+            otherwise, ``False``.
+        """
         return self.EXCHANGE_KEY_AGREEMENT_MLKEM_PREFIX in self.exchange_key_agreement
 
     @property
     def minimum_mac_key_length(self) -> int:
-        """Return the minimum hashing-secret length required by this suite's MAC."""
+        """Return the minimum hashing-secret length required by this suite's MAC.
+
+        Args:
+            None.
+
+        Returns:
+            The minimum key length in bytes, or zero when the MAC has no
+            suite-specific minimum.
+        """
         return 32 if self.token_mac_algorithm.startswith(self.TOKEN_MAC_KMAC256_PREFIX) else 0
 
     def validate_hashing_secret(self, hashing_secret: bytes) -> bytes:
-        """Validate and return hashing-secret bytes for this suite's MAC."""
+        """Validate and return hashing-secret bytes for this suite's MAC.
+
+        Args:
+            hashing_secret: Secret bytes used by the suite's token MAC.
+
+        Returns:
+            The same bytes after confirming they meet the suite's key-length
+            requirement.
+
+        Raises:
+            TypeError: If ``hashing_secret`` is not ``bytes``.
+            CryptoSuiteError: If the secret is shorter than the suite requires.
+        """
         if not isinstance(hashing_secret, bytes):
             raise TypeError(f"Crypto suite '{self.suite_id}' requires hashing secret bytes.")
 
@@ -88,7 +159,17 @@ class CryptoSuite:
         return hashing_secret
 
     def validate(self) -> "CryptoSuite":
-        """Validate the suite's internal algorithm and version combination."""
+        """Validate the suite's internal algorithm and version combination.
+
+        Args:
+            None.
+
+        Returns:
+            This ``CryptoSuite`` instance when its algorithms and version agree.
+
+        Raises:
+            CryptoSuiteError: If an algorithm or exchange version is unsupported.
+        """
         if self.token_content_encryption != self.TOKEN_CONTENT_ENCRYPTION_A256GCM:
             raise CryptoSuiteError(f"Unsupported token content encryption '{self.token_content_encryption}'.")
         if self.exchange_config_version == 1 and self.exchange_key_agreement != self.EXCHANGE_KEY_AGREEMENT_ECDH:

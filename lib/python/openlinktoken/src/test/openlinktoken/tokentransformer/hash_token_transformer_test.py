@@ -12,7 +12,14 @@ from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTrans
 
 
 class TestHashTokenTransformer:
-    """Test cases for HashTokenTransformer."""
+    """Test suite-selected token MAC behavior and validation.
+
+    Args:
+        None.
+
+    Returns:
+        A ``TestHashTokenTransformer`` instance for pytest to collect.
+    """
 
     VALID_SECRET = "sampleSecret"
     VALID_TOKEN = "sampleToken"
@@ -119,7 +126,14 @@ class TestHashTokenTransformer:
         assert expected_hashed_token == hashed_token
 
     def test_sha3_suite_matches_fixed_vector(self):
-        """The SHA3 suite produces the cross-language HS3-256 vector."""
+        """The SHA3 suite produces the cross-language HS3-256 vector.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+        """
         transformer = HashTokenTransformer("sampleSecret", CryptoSuite.from_id("suite-sha3-v1"))
 
         assert (
@@ -128,7 +142,14 @@ class TestHashTokenTransformer:
         )
 
     def test_shake_suite_uses_kmac256_with_32_byte_output(self):
-        """The SHAKE suite uses standardized KMAC256 output."""
+        """The SHAKE suite uses standardized KMAC256 output.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+        """
         from Crypto.Hash import KMAC256
 
         secret = b"0123456789abcdef0123456789abcdef"
@@ -138,7 +159,14 @@ class TestHashTokenTransformer:
         assert base64.b64decode(transformer.transform("person")) == expected
 
     def test_shake_suite_rejects_short_secret_with_suite_requirement(self):
-        """The transformer retains KMAC key validation with suite-specific guidance."""
+        """The transformer enforces the KMAC key length required by its suite.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+        """
         transformer = HashTokenTransformer(b"x" * 31, CryptoSuite.from_id("suite-pq-shake-v1"))
 
         with pytest.raises(ValueError, match="suite-pq-shake-v1.*KMAC256.*32 bytes"):

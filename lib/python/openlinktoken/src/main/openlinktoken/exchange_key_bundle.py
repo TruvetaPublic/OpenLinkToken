@@ -24,16 +24,38 @@ EC_ALGORITHM = "ECDH-P256"
 
 
 class KeyBundleError(ValueError):
-    """Raised when a key bundle is malformed or does not match its suite."""
+    """Raised when a key bundle is malformed or does not match its suite.
+
+    Args:
+        message: Explanation of the key-bundle validation failure.
+
+    Returns:
+        A ``KeyBundleError`` instance carrying the validation failure.
+    """
 
 
 def _encode(value: bytes) -> str:
-    """Encode bytes as unpadded base64url text for bundle fields."""
+    """Encode bytes as unpadded base64url text for bundle fields.
+
+    Args:
+        value: Bytes to encode.
+
+    Returns:
+        The base64url-encoded ASCII text without padding.
+    """
     return base64.urlsafe_b64encode(value).decode("ascii").rstrip("=")
 
 
 def _decode(value: Any, field_name: str) -> bytes:
-    """Decode a required base64url field and raise a bundle-specific error."""
+    """Decode a required base64url field.
+
+    Args:
+        value: Base64url text from a key-bundle field.
+        field_name: Field name included in validation errors.
+
+    Returns:
+        The decoded field bytes.
+    """
     if not isinstance(value, str) or not value:
         raise KeyBundleError(f"{field_name} must be a non-empty base64url string.")
     try:
@@ -44,19 +66,44 @@ def _decode(value: Any, field_name: str) -> bytes:
 
 
 def _sha256_fingerprint(value: bytes) -> str:
-    """Return an uppercase, colon-delimited SHA-256 fingerprint."""
+    """Return an uppercase, colon-delimited SHA-256 fingerprint.
+
+    Args:
+        value: Public key material to fingerprint.
+
+    Returns:
+        The SHA-256 fingerprint in uppercase colon-delimited hexadecimal form.
+    """
     digest = hashlib.sha256(value).hexdigest().upper()
     return ":".join(digest[index : index + 2] for index in range(0, len(digest), 2))
 
 
 def _fingerprint_to_kid(fingerprint: str) -> str:
-    """Convert a display fingerprint into the bundle's stable key identifier."""
+    """Convert a display fingerprint into the bundle's stable key identifier.
+
+    Args:
+        fingerprint: Colon-delimited SHA-256 fingerprint.
+
+    Returns:
+        The lowercase ``sha256:`` key identifier.
+    """
     return f"sha256:{fingerprint.lower().replace(':', '-')}"
 
 
 @dataclass(frozen=True)
 class ExchangeKeyBundle:
-    """Validated key material with private values kept local to the participant."""
+    """Key material for a version-2 exchange, with private values kept local.
+
+    Args:
+        suite: Crypto suite selecting the key-agreement algorithms.
+        mlkem_public_key: Optional ML-KEM public key bytes.
+        mlkem_private_seed: Optional local ML-KEM private seed bytes.
+        ec_public_pem: Optional P-256 public key in PEM format.
+        ec_private_pem: Optional local P-256 private key in PEM format.
+
+    Returns:
+        A frozen ``ExchangeKeyBundle`` containing the supplied key material.
+    """
 
     suite: CryptoSuite
     mlkem_public_key: bytes | None = None
@@ -66,7 +113,15 @@ class ExchangeKeyBundle:
 
     @property
     def kid(self) -> str:
-        """Return a stable identifier for the complete public key bundle."""
+        """Return a stable identifier for the complete public key bundle.
+
+        Args:
+            None.
+
+        Returns:
+            The ``sha256:`` key identifier derived from this bundle's suite and
+            public keys.
+        """
         fingerprint_input = b"openlinktoken:key-bundle:v1:" + self.suite.suite_id.encode("ascii")
         if self.mlkem_public_key is not None:
             fingerprint_input += b":mlkem:" + self.mlkem_public_key
@@ -81,7 +136,15 @@ class ExchangeKeyBundle:
 
     @property
     def has_private_material(self) -> bool:
-        """Return whether the bundle contains all private material required by its suite."""
+        """Return whether the bundle has all private material for its suite.
+
+        Args:
+            None.
+
+        Returns:
+            ``True`` when all private keys required by the exchange suite are
+            present; otherwise, ``False``.
+        """
         mlkem_private = self.mlkem_private_seed is not None
         ec_private = self.ec_private_pem is not None
         if self.suite.exchange_key_agreement == CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM768:
@@ -91,7 +154,16 @@ class ExchangeKeyBundle:
         return False
 
     def to_mapping(self, include_private: bool = False) -> dict[str, Any]:
-        """Serialize this bundle into its explicit JSON-compatible mapping."""
+        """Serialize this bundle into its JSON-compatible mapping.
+
+        Args:
+            include_private: Whether to include available local private-key
+                material in the mapping.
+
+        Returns:
+            A mapping containing the bundle version, type, suite, key ID, and
+            encoded key sections.
+        """
         keys: dict[str, Any] = {}
         if self.mlkem_public_key is not None:
             mlkem_section: dict[str, Any] = {
@@ -137,12 +209,29 @@ class ExchangeKeyBundle:
         }
 
     def to_json(self, include_private: bool = False) -> bytes:
-        """Serialize this bundle as deterministic UTF-8 JSON."""
+        """Serialize this bundle as deterministic UTF-8 JSON.
+
+        Args:
+            include_private: Whether to include available local private-key
+                material in the JSON.
+
+        Returns:
+            Deterministically formatted UTF-8 JSON bytes.
+        """
         return json.dumps(self.to_mapping(include_private), sort_keys=True, separators=(",", ":")).encode("utf-8")
 
     @classmethod
     def from_json(cls, value: bytes | str, require_private: bool = False) -> "ExchangeKeyBundle":
-        """Parse and validate a JSON key bundle."""
+        """Parse and validate a JSON key bundle.
+
+        Args:
+            value: UTF-8 JSON bytes or JSON text describing the bundle.
+            require_private: Whether the parsed bundle must contain all private
+                key material required by its suite.
+
+        Returns:
+            The validated ``ExchangeKeyBundle`` represented by the JSON.
+        """
         try:
             raw = value.decode("utf-8") if isinstance(value, bytes) else value
             mapping = json.loads(raw)
@@ -154,7 +243,17 @@ class ExchangeKeyBundle:
 
     @classmethod
     def from_mapping(cls, mapping: Mapping[str, Any], require_private: bool = False) -> "ExchangeKeyBundle":
-        """Parse and validate a JSON-compatible key bundle mapping."""
+        """Parse and validate a JSON-compatible key-bundle mapping.
+
+        Args:
+            mapping: Mapping containing the bundle version, suite, key ID, and
+                encoded key sections.
+            require_private: Whether the bundle must contain all required
+                private key material.
+
+        Returns:
+            The validated ``ExchangeKeyBundle`` represented by the mapping.
+        """
         if mapping.get("version") != BUNDLE_VERSION or mapping.get("type") != BUNDLE_TYPE:
             raise KeyBundleError("Unsupported or missing key-bundle version/type.")
         suite = CryptoSuite.from_id(mapping.get("suite"))
@@ -225,7 +324,15 @@ class ExchangeKeyBundle:
 
 
 def generate_exchange_key_bundle(suite_id: str) -> ExchangeKeyBundle:
-    """Generate a validated private key bundle for a version-2 exchange suite."""
+    """Generate a private key bundle for a version-2 exchange suite.
+
+    Args:
+        suite_id: Registered version-2 crypto-suite identifier.
+
+    Returns:
+        A validated ``ExchangeKeyBundle`` containing generated private and
+        public key material.
+    """
     suite = CryptoSuite.from_id(suite_id)
     if suite.exchange_config_version != 2:
         raise KeyBundleError(f"Suite '{suite_id}' does not require a version-2 key bundle.")
@@ -262,7 +369,15 @@ def generate_exchange_key_bundle(suite_id: str) -> ExchangeKeyBundle:
 
 
 def resolve_private_bundle_by_kid(directory: Path, kid: str) -> bytes:
-    """Find a private JSON key bundle whose public material matches ``kid``."""
+    """Find a private JSON key bundle whose public material matches ``kid``.
+
+    Args:
+        directory: Directory containing private key-bundle JSON files.
+        kid: Recipient key identifier to match.
+
+    Returns:
+        The matching private key-bundle JSON bytes.
+    """
     for path in sorted(directory.glob("*.private.bundle.json")):
         bundle = ExchangeKeyBundle.from_json(path.read_bytes(), require_private=True)
         if bundle.kid == kid:
@@ -271,7 +386,14 @@ def resolve_private_bundle_by_kid(directory: Path, kid: str) -> bytes:
 
 
 def _validate_ec_public_key(public_pem: bytes) -> None:
-    """Validate that PEM bytes contain a P-256 public key."""
+    """Validate that PEM bytes contain a P-256 public key.
+
+    Args:
+        public_pem: Candidate public-key PEM bytes.
+
+    Returns:
+        None.
+    """
     try:
         public_key = serialization.load_pem_public_key(public_pem)
     except (ValueError, TypeError) as error:
@@ -281,7 +403,15 @@ def _validate_ec_public_key(public_pem: bytes) -> None:
 
 
 def _validate_ec_private_key(private_pem: bytes, public_pem: bytes) -> None:
-    """Validate a P-256 private key and its correspondence to the public key."""
+    """Validate a P-256 private key and its correspondence to the public key.
+
+    Args:
+        private_pem: Candidate private-key PEM bytes.
+        public_pem: Expected corresponding public-key PEM bytes.
+
+    Returns:
+        None.
+    """
     try:
         private_key = serialization.load_pem_private_key(private_pem, password=None)
     except (ValueError, TypeError) as error:

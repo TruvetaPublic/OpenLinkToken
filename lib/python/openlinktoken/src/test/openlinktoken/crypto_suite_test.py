@@ -8,13 +8,27 @@ from openlinktoken.crypto.crypto_suite import CryptoSuiteError as ModuleCryptoSu
 
 
 def test_crypto_package_reexports_canonical_suite_registry():
-    """The crypto package exposes the canonical suite types."""
+    """The crypto package exposes the canonical suite types.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     assert ModuleCryptoSuite is CryptoSuite
     assert ModuleCryptoSuiteError is CryptoSuiteError
 
 
 def test_public_constants_are_registered_suites():
-    """Each public suite constant resolves through the canonical registry."""
+    """Each public suite constant resolves through the canonical registry.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     assert CryptoSuite.SUITE_SHA256_V1 is CryptoSuite.from_id("suite-sha256-v1")
     assert CryptoSuite.SUITE_SHA3_V1 is CryptoSuite.from_id("suite-sha3-v1")
     assert CryptoSuite.SUITE_PQ_SHAKE_V1 is CryptoSuite.from_id("suite-pq-shake-v1")
@@ -24,7 +38,14 @@ def test_public_constants_are_registered_suites():
 
 
 def test_registered_suites_have_expected_contracts():
-    """Every public suite ID resolves to its exact algorithm contract."""
+    """Every public suite ID resolves to its exact algorithm contract.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     assert [suite.suite_id for suite in CryptoSuite.all()] == [
         "suite-sha256-v1",
         "suite-sha3-v1",
@@ -40,7 +61,14 @@ def test_registered_suites_have_expected_contracts():
 
 
 def test_algorithm_identifiers_are_stable_constants():
-    """Suite algorithm identifiers are exposed as shared constants."""
+    """Suite algorithm identifiers are exposed as shared constants.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     assert CryptoSuite.TOKEN_DIGEST_SHA256 == "SHA-256"
     assert CryptoSuite.TOKEN_DIGEST_SHA3_256 == "SHA3-256"
     assert CryptoSuite.TOKEN_DIGEST_SHAKE256_256 == "SHAKE256-256"
@@ -56,7 +84,14 @@ def test_algorithm_identifiers_are_stable_constants():
 
 
 def test_shake_suite_declares_fixed_output_and_kmac():
-    """SHAKE suite records explicit output lengths for digest and MAC."""
+    """SHAKE suite records explicit output lengths for digest and MAC.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     suite = CryptoSuite.from_id("suite-pq-shake-v1")
 
     assert suite.token_digest_algorithm == "SHAKE256-256"
@@ -67,7 +102,14 @@ def test_shake_suite_declares_fixed_output_and_kmac():
 
 
 def test_kmac_suite_rejects_hashing_secrets_shorter_than_32_bytes():
-    """KMAC suites require a suite-specific minimum hashing-secret length."""
+    """KMAC suites require a suite-specific minimum hashing-secret length.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     suite = CryptoSuite.from_id("suite-pq-shake-v1")
 
     with pytest.raises(CryptoSuiteError, match="suite-pq-shake-v1.*32 bytes"):
@@ -75,14 +117,28 @@ def test_kmac_suite_rejects_hashing_secrets_shorter_than_32_bytes():
 
 
 def test_hashing_secret_validation_accepts_valid_default_and_kmac_secrets():
-    """Valid hashing secrets remain accepted for both default and KMAC suites."""
+    """Valid hashing secrets remain accepted for default and KMAC suites.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     assert CryptoSuite.default().validate_hashing_secret(b"x") == b"x"
     kmac_secret = b"x" * 32
     assert CryptoSuite.from_id("suite-pq-shake-v1").validate_hashing_secret(kmac_secret) == kmac_secret
 
 
 def test_default_suite_preserves_legacy_contract():
-    """The default suite remains the existing SHA-256/HMAC-SHA256 ECDH profile."""
+    """The default suite remains the existing SHA-256/HMAC-SHA256 ECDH profile.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     suite = CryptoSuite.default()
 
     assert suite.token_digest_algorithm == "SHA-256"
@@ -95,7 +151,14 @@ def test_default_suite_preserves_legacy_contract():
 
 @pytest.mark.parametrize("suite_id", ["", "unknown", None])
 def test_unknown_suite_ids_fail_closed(suite_id):
-    """Unknown or malformed IDs must not silently fall back to the default."""
+    """Unknown or malformed IDs must not silently fall back to the default.
+
+    Args:
+        suite_id: Parameterized blank, unknown, or ``None`` suite identifier.
+
+    Returns:
+        None.
+    """
     with pytest.raises(CryptoSuiteError):
         CryptoSuite.from_id(suite_id)
 
@@ -110,7 +173,15 @@ def test_unknown_suite_ids_fail_closed(suite_id):
     ],
 )
 def test_invalid_suite_contracts_fail_validation(overrides, message):
-    """Invalid algorithm and exchange-version combinations fail closed."""
+    """Invalid algorithm and exchange-version combinations fail closed.
+
+    Args:
+        overrides: Suite fields changed to form an invalid contract.
+        message: Expected validation-error message fragment.
+
+    Returns:
+        None.
+    """
     suite = CryptoSuite(
         suite_id="test-suite",
         token_digest_algorithm="SHA-256",

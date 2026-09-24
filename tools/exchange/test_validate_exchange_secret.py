@@ -55,7 +55,15 @@ def _generate_exchange_fixture(tmp_path: Path, hashing_secret: str) -> tuple[Pat
 
 
 def _generate_v2_exchange_fixture(tmp_path: Path, hashing_secret: str) -> tuple[Path, Path, Path]:
-    """Generate a standard v2 JWE config plus sender and recipient private bundles."""
+    """Generate a standard v2 JWE config and sender and recipient private bundles.
+
+    Args:
+        tmp_path: Temporary directory in which to create the exchange and key bundles.
+        hashing_secret: Plaintext hashing secret to encrypt in the exchange.
+
+    Returns:
+        Paths to the exchange config, sender private bundle, and recipient private bundle.
+    """
     with patch("pathlib.Path.home", return_value=tmp_path):
         assert (
             OpenLinkTokenCommand.execute(
@@ -114,7 +122,14 @@ def test_sender_private_key_decrypts_generated_exchange() -> None:
 
 
 def test_v2_sender_private_bundle_decrypts_generated_exchange() -> None:
-    """The sender-side v2 private bundle can recover the hashing secret."""
+    """Check that the sender-side v2 private bundle recovers the hashing secret.
+
+    Args:
+        None; this function takes no arguments.
+
+    Returns:
+        None.
+    """
     with tempfile.TemporaryDirectory() as temp_dir:
         tmp_path = Path(temp_dir)
         expected_secret = "shared-v2-secret"
@@ -126,7 +141,14 @@ def test_v2_sender_private_bundle_decrypts_generated_exchange() -> None:
 
 
 def test_v2_recipient_private_bundle_decrypts_generated_exchange() -> None:
-    """The recipient-side v2 private bundle can recover the hashing secret."""
+    """Check that the recipient-side v2 private bundle recovers the hashing secret.
+
+    Args:
+        None; this function takes no arguments.
+
+    Returns:
+        None.
+    """
     with tempfile.TemporaryDirectory() as temp_dir:
         tmp_path = Path(temp_dir)
         expected_secret = "shared-v2-secret"
@@ -140,7 +162,14 @@ def test_v2_recipient_private_bundle_decrypts_generated_exchange() -> None:
 
 
 def test_validator_accepts_v2_private_bundle_from_stdin() -> None:
-    """The validator can read a v2 JSON private bundle from stdin."""
+    """Check that the validator reads a v2 JSON private bundle from stdin.
+
+    Args:
+        None; this function takes no arguments.
+
+    Returns:
+        None.
+    """
     with tempfile.TemporaryDirectory() as temp_dir:
         tmp_path = Path(temp_dir)
         expected_secret = "shared-v2-secret"
@@ -170,7 +199,14 @@ def test_validator_accepts_v2_private_bundle_from_stdin() -> None:
 
 
 def test_v2_private_bundle_is_auto_resolved_by_recipient_kid() -> None:
-    """The validator can locate a v2 private bundle from the local kid mapping."""
+    """Check that the validator locates a v2 private bundle from the local kid mapping.
+
+    Args:
+        None; this function takes no arguments.
+
+    Returns:
+        None.
+    """
     with tempfile.TemporaryDirectory() as temp_dir:
         tmp_path = Path(temp_dir)
         expected_secret = "auto-resolved-v2-secret"
@@ -323,7 +359,14 @@ def test_rejects_private_key_that_matches_no_recipient() -> None:
 
 
 def main() -> int:
-    """Run the validator tests as a simple executable script."""
+    """Run the validator tests as a simple executable script.
+
+    Args:
+        None; this function takes no arguments.
+
+    Returns:
+        Exit code 0 when all tests pass, or 1 when any test fails.
+    """
     tests = [
         test_sender_private_key_decrypts_generated_exchange,
         test_v2_sender_private_bundle_decrypts_generated_exchange,

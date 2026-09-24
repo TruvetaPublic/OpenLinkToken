@@ -44,6 +44,9 @@ class TokenizeCommand:
     pipe-separated attribute signature strings. No secret is needed, making it easy
     to explore the output without managing secrets. Demo-mode output is
     **not** suitable for production or cross-organisation exchange.
+
+    Constructor:
+        Takes no arguments and returns a new ``TokenizeCommand`` instance.
     """
 
     _MODE_DEFAULT = "default"
@@ -52,7 +55,14 @@ class TokenizeCommand:
 
     @staticmethod
     def register_subcommand(subparsers):
-        """Register the tokenize subcommand with the argument parser."""
+        """Register the tokenize subcommand with the argument parser.
+
+        Args:
+            subparsers: Argument-parser subparsers collection to receive the command.
+
+        Returns:
+            None.
+        """
         parser = subparsers.add_parser(
             "tokenize",
             help="Generate tokens from person attributes (--mode default|hash-only|demo)",
@@ -186,7 +196,15 @@ class TokenizeCommand:
 
     @staticmethod
     def execute(args):
-        """Execute the tokenize command."""
+        """Execute the tokenize command.
+
+        Args:
+            args: Parsed CLI namespace containing input/output paths, mode, exchange credentials, and tokenization
+                options.
+
+        Returns:
+            ``0`` when tokenization completes, or ``1`` when validation or processing fails.
+        """
         from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig
         from openlinktoken.core.ai.tokens.rotation_config import RotationConfig
         from openlinktoken_cli.tokens.config.tokenization_config_helper import TokenizationConfigHelper
@@ -423,7 +441,22 @@ class TokenizeCommand:
         progress_callback=None,
         crypto_suite=None,
     ) -> tuple[PersonAttributesProcessingSummary, str]:
-        """Process tokens in normal mode using the exchange config's crypto suite."""
+        """Process tokens in normal mode using the exchange config's crypto suite.
+
+        Args:
+            input_path: Path to the source person-attribute data.
+            output_path: Destination path for tokenized output.
+            input_type: Detected input file format.
+            output_type: Selected output file format.
+            hashing_secret: Secret used by the crypto-suite hash transformer.
+            hash_record_ids: Whether to hash record IDs before writing output.
+            tokenization_config_path: Optional path to a custom tokenization configuration.
+            progress_callback: Optional callback for reporting record-processing progress.
+            crypto_suite: Crypto suite selecting the token digest and MAC, or ``None`` for the default.
+
+        Returns:
+            A tuple containing the processing summary and the metadata file path.
+        """
         from openlinktoken.metadata import Metadata
         from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
         from openlinktoken_cli.io.json.metadata_json_writer import MetadataJsonWriter
@@ -583,7 +616,19 @@ class TokenizeCommand:
         hash_record_ids: bool,
         crypto_suite=None,
     ) -> list[str]:
-        """Build the human-readable completion summary for a tokenize run."""
+        """Build the human-readable completion summary for a tokenize run.
+
+        Args:
+            output_path: Path to the tokenized output.
+            metadata_path: Path to the generated metadata file.
+            summary: Processing counters for the completed run.
+            mode: Tokenization mode used for the run.
+            hash_record_ids: Whether record IDs were hashed in the output.
+            crypto_suite: Optional suite used to select the default-mode digest and MAC labels.
+
+        Returns:
+            The completion-summary lines in display order.
+        """
         from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
 
         mode_labels = {

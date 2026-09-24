@@ -131,6 +131,13 @@ class RotationEmbeddingTransformerTest {
         assertEquals(List.of("102 94 107", "95 126 103"), tokens);
     }
 
+    /**
+     * Verifies concurrent transformations produce consistent results.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
+     *
+     * @throws InterruptedException if the test thread is interrupted while awaiting worker threads
+     */
     @Test
     void testThreadSafetyProducesConsistentResults() throws InterruptedException {
         int threadCount = 20;

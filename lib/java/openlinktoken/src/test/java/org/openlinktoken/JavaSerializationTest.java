@@ -30,12 +30,17 @@ import org.openlinktoken.tokentransformer.DecryptTokenTransformer;
 import org.openlinktoken.tokentransformer.HashTokenTransformer;
 import org.openlinktoken.tokentransformer.JweMatchTokenFormatter;
 
+/**
+ * Tests serialization of the new exchange and crypto-suite production types.
+ */
 class JavaSerializationTest {
 
     private static final byte[] HASHING_SECRET = "0123456789abcdef0123456789abcdef".getBytes(StandardCharsets.UTF_8);
 
     /**
      * Verifies every registered production type in the exchange and token paths implements {@link Serializable}.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      *
      * @throws ClassNotFoundException if a production type cannot be loaded
      */
@@ -78,6 +83,8 @@ class JavaSerializationTest {
     /**
      * Verifies loaded and resolved configurations preserve their paths, maps, and secret byte arrays after
      * serialization.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      *
      * @throws Exception if configuration serialization or deserialization fails
      */
@@ -126,6 +133,8 @@ class JavaSerializationTest {
     /**
      * Verifies crypto suites retain canonical identity and hybrid key bundles preserve their private key material.
      *
+     * <p>This test method accepts no arguments and returns no value.</p>
+     *
      * @throws Exception if suite or key-bundle serialization fails
      */
     @Test
@@ -149,6 +158,8 @@ class JavaSerializationTest {
 
     /**
      * Verifies exchange payloads and version-two decryption results preserve their secret and key bytes.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      *
      * @throws Exception if an exchange value cannot be serialized or deserialized
      */
@@ -197,6 +208,8 @@ class JavaSerializationTest {
 
     /**
      * Verifies a serialized suite tokenizer produces the same token with its digest and secret transformer.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      *
      * @throws Exception if tokenizer serialization or deserialization fails
      */

@@ -52,6 +52,9 @@ class PersonAttributesProcessor:
     This class is used to read person attributes from input source,
     generate tokens for each person record and write the tokens back
     to the output data source.
+
+    Constructor:
+        Takes no arguments and returns a new ``PersonAttributesProcessor`` instance.
     """
 
     TOTAL_ROWS = "TotalRows"
@@ -60,7 +63,14 @@ class PersonAttributesProcessor:
     BLANK_TOKENS_BY_RULE_KEY = "BlankTokensByRule"
 
     def __init__(self):
-        """Private constructor to prevent instantiation."""
+        """Initialize a processor instance without storing instance state.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+        """
 
     @staticmethod
     def process(
@@ -77,8 +87,7 @@ class PersonAttributesProcessor:
     ) -> PersonAttributesProcessingSummary:
         """Read person attributes, generate tokens, and write the result.
 
-        The tokens can be optionally
-        transformed before writing and wrapped in JWE format if ring ID is provided.
+        Tokens can optionally be transformed before writing and wrapped in JWE format when a ring ID is provided.
         Record IDs are SHA-256 hashed in the output when hash_record_ids is True.
 
         Args:
@@ -90,7 +99,12 @@ class PersonAttributesProcessor:
             ring_id: Optional ring ID for JWE wrapping (None to skip JWE).
             hash_record_ids: When True, each record ID is SHA-256 hashed before writing
                              to the output. This is a one-way operation with no traceability.
+            token_definition: Optional token definition; the default definition is used when omitted.
+            progress_callback: Optional callback for reporting row-processing progress.
+            crypto_suite: Optional crypto-suite object or suite ID string selecting the token digest and MAC.
 
+        Returns:
+            A summary containing row, invalid-attribute, and blank-token counts.
         """
         token_definition = token_definition or TokenDefinition()
         selected_suite = CryptoSuite.from_id(crypto_suite) if isinstance(crypto_suite, str) else crypto_suite
@@ -126,7 +140,11 @@ class PersonAttributesProcessor:
             writer: The writer initialized with the output data source.
             tokenizer: The tokenizer to use (e.g. SHA256Tokenizer or PassthroughTokenizer).
             metadata_map: Optional metadata map to update with processing statistics.
+            token_definition: Optional token definition; the default definition is used when omitted.
+            progress_callback: Optional callback for reporting row-processing progress.
 
+        Returns:
+            A summary containing row, invalid-attribute, and blank-token counts.
         """
         token_definition = token_definition or TokenDefinition()
         return PersonAttributesProcessor._process_with_tokenizer(
@@ -162,7 +180,11 @@ class PersonAttributesProcessor:
             encryption_key: Optional encryption key for JWE wrapping.
             ring_id: Optional ring ID for JWE wrapping.
             hash_record_ids: When True, each record ID is SHA-256 hashed before writing.
+            progress_callback: Optional callback for reporting row-processing progress.
+            crypto_suite: Optional crypto-suite object selecting the JWE token format.
 
+        Returns:
+            A summary containing row, invalid-attribute, and blank-token counts.
         """
         field_registry = getattr(token_definition, "field_registry", None)
         token_generator = TokenGenerator(token_definition, tokenizer, field_registry=field_registry)
@@ -260,6 +282,8 @@ class PersonAttributesProcessor:
             jwe_formatters: Optional cached JWE formatters.
             hash_record_ids: When True, each record ID is SHA-256 hashed before writing.
 
+        Returns:
+            None.
         """
         # Sort token IDs for consistent output
         token_ids = sorted(token_generator_result.tokens.keys())
@@ -311,7 +335,18 @@ class PersonAttributesProcessor:
         ring_id: str,
         crypto_suite: CryptoSuite | None = None,
     ) -> Dict[str, JweMatchTokenFormatter]:
-        """Initialize per-token JWE formatters when encryption is configured."""
+        """Initialize per-token JWE formatters when encryption is configured.
+
+        Args:
+            token_definition: Token definition containing the token identifiers to format.
+            encryption_key: Key used to encrypt formatted tokens.
+            ring_id: Ring identifier included in each formatted token.
+            crypto_suite: Optional crypto suite selecting the JWE token format.
+
+        Returns:
+            A mapping from token identifiers to initialized JWE formatters.
+            The mapping is empty when encryption is disabled.
+        """
         jwe_formatters: Dict[str, JweMatchTokenFormatter] = {}
         if not (encryption_key and ring_id):
             return jwe_formatters
@@ -573,8 +608,7 @@ class PersonAttributesProcessor:
             invalid_attribute_count: Dictionary to track invalid attribute counts.
 
         Returns:
-            True when the row contains one or more invalid attributes.
-
+            ``True`` when invalid attributes are present, or ``False`` otherwise.
         """
         if token_generator_result.invalid_attributes:
             logger.info(f"Invalid Attributes for row {row_counter:,}: {token_generator_result.invalid_attributes}")
@@ -598,6 +632,8 @@ class PersonAttributesProcessor:
             row_counter: The current row number.
             blank_token_count_by_rule: Dictionary to track blank token counts by rule.
 
+        Returns:
+            None.
         """
         if token_generator_result.blank_tokens_by_rule:
             logger.debug(f"Blank tokens for row {row_counter:,}: {token_generator_result.blank_tokens_by_rule}")

@@ -22,6 +22,8 @@ import org.openlinktoken.tokens.tokenizer.TokenDigestFactory;
 class CryptoSuiteTest {
     /**
      * Verifies that each registered suite is exposed as a canonical public constant.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void publicConstantsAreRegisteredSuites() {
@@ -34,6 +36,8 @@ class CryptoSuiteTest {
 
     /**
      * Verifies that suite definitions are not exposed through a public constructor.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      *
      * @throws NoSuchMethodException if the suite constructor is missing
      */
@@ -52,6 +56,8 @@ class CryptoSuiteTest {
 
     /**
      * Verifies that every registered suite satisfies its internal contract.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void registeredSuitesValidateTheirContracts() {
@@ -60,6 +66,8 @@ class CryptoSuiteTest {
 
     /**
      * Verifies the algorithms and versions declared by the registered suites.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void registeredSuitesHaveExpectedContracts() {
@@ -86,6 +94,8 @@ class CryptoSuiteTest {
 
     /**
      * Verifies that suite algorithm identifiers are exposed as stable constants.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void algorithmIdentifiersAreStableConstants() {
@@ -105,6 +115,8 @@ class CryptoSuiteTest {
 
     /**
      * Verifies that unknown or blank suite identifiers are rejected.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void unknownSuiteIdsFailClosed() {
@@ -115,6 +127,8 @@ class CryptoSuiteTest {
 
     /**
      * Verifies that invalid algorithm and exchange-version combinations fail during construction.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void invalidSuiteContractsFailDuringConstruction() {
@@ -142,6 +156,8 @@ class CryptoSuiteTest {
 
     /**
      * Verifies suite-based digest selection rejects a suite with an unsupported digest identifier.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void tokenDigestFactoryRejectsUnsupportedSuiteDigest() {
@@ -160,6 +176,16 @@ class CryptoSuiteTest {
         assertInstanceOf(NoSuchAlgorithmException.class, exception.getCause());
     }
 
+    /**
+     * Asserts that invalid suite components fail validation with the expected message.
+     *
+     * <p>This method returns no value.</p>
+     *
+     * @param tokenContentEncryption token content-encryption algorithm
+     * @param exchangeKeyAgreement exchange key-agreement mechanism
+     * @param exchangeConfigVersion exchange configuration version
+     * @param expectedMessage expected validation message
+     */
     private static void assertInvalidSuite(
             String tokenContentEncryption,
             String exchangeKeyAgreement,

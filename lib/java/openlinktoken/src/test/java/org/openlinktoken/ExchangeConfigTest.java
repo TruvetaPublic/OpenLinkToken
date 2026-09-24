@@ -20,6 +20,9 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.openlinktoken.crypto.CryptoSuite;
 
+/**
+ * Tests loading, resolution, and validation of versioned exchange configurations.
+ */
 class ExchangeConfigTest {
 
     private static final byte[] HASHING_SECRET = "shared-hashing-secret".getBytes(StandardCharsets.UTF_8);
@@ -27,6 +30,8 @@ class ExchangeConfigTest {
 
     /**
      * Verifies a version-one configuration can be loaded and resolved from a map, JSON bytes, text, or file.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      *
      * @throws Exception if the temporary configuration file cannot be created or read
      */
@@ -61,6 +66,8 @@ class ExchangeConfigTest {
     /**
      * Verifies null, malformed, missing, and unsupported configuration inputs are rejected.
      *
+     * <p>This test method accepts no arguments and returns no value.</p>
+     *
      * @throws Exception if the temporary missing-path fixture cannot be created
      */
     @Test
@@ -86,6 +93,8 @@ class ExchangeConfigTest {
 
     /**
      * Verifies both version-one recipient roles derive the same transport key and payload settings.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void resolvesV1ForBothRolesAndDerivesSharedTransportKey() {
@@ -137,6 +146,8 @@ class ExchangeConfigTest {
 
     /**
      * Verifies both version-two recipient roles resolve the authenticated KEM transport key.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void resolvesV2ForBothRolesAndReturnsKemTransportKey() {
@@ -178,6 +189,8 @@ class ExchangeConfigTest {
 
     /**
      * Verifies unsupported, missing, and ambiguous version markers are rejected.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void rejectsMalformedUnsupportedAndAmbiguousVersions() {
@@ -221,6 +234,8 @@ class ExchangeConfigTest {
 
     /**
      * Verifies invalid payload values and private keys unrelated to either supported version are rejected.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void rejectsInvalidPayloadValuesAndWrongPrivateKeys() {
@@ -255,6 +270,8 @@ class ExchangeConfigTest {
 
     /**
      * Verifies loaded and resolved configurations do not expose mutable maps or byte-array state.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void keepsLoadedAndResolvedValuesDefensive() {
@@ -323,6 +340,13 @@ class ExchangeConfigTest {
                 cryptoSuite);
     }
 
+    /**
+     * Generates P-256 private and public PEMs for the test participants.
+     *
+     * <p>This method accepts no arguments.</p>
+     *
+     * @return the sender and recipient key material
+     */
     private static V1Keys generateV1Keys() {
         KeyPair sender = EcKeyUtils.generateKeyPair("P-256");
         KeyPair recipient = EcKeyUtils.generateKeyPair("P-256");
@@ -333,6 +357,14 @@ class ExchangeConfigTest {
                 EcKeyUtils.publicKeyToPem(recipient.getPublic()));
     }
 
+    /**
+     * Holds sender and recipient key material for version-one tests.
+     *
+     * @param senderPrivatePem sender private-key PEM
+     * @param senderPublicPem sender public-key PEM
+     * @param recipientPrivatePem recipient private-key PEM
+     * @param recipientPublicPem recipient public-key PEM
+     */
     private record V1Keys(
             byte[] senderPrivatePem,
             byte[] senderPublicPem,

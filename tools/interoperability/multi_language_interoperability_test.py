@@ -80,19 +80,40 @@ EXCHANGE_DIMENSION_BIAS = [0.1, -0.2]
 
 
 class InteroperabilityTooling:
-    """Shared paths and test credentials for interoperability checks."""
+    """Provide shared paths and test credentials for interoperability checks.
+
+    Args:
+        None; the constructor takes no arguments.
+
+    Returns:
+        An instance initialized with the repository root and sample CSV path.
+    """
 
     HASHING_KEY = "TestHashingKey123456789012345678"
     JAVA_MAIN_CLASS = "org.openlinktoken.tools.TokenizeInteropHarness"
 
     def __init__(self):
-        """Initialize shared repository paths used by interoperability tools."""
+        """Initialize shared repository paths used by interoperability tools.
+
+        Args:
+            None; this initializer takes no arguments beyond ``self``.
+
+        Returns:
+            None.
+        """
         self.project_root = PROJECT_ROOT
         self.sample_csv = self.project_root / "resources/interoperability_sample.csv"
 
 
 class PythonCLI(InteroperabilityTooling):
-    """Command-line wrapper for the Python Open Link Token CLI."""
+    """Wrap the Python Open Link Token CLI for interoperability checks.
+
+    Args:
+        None; the inherited constructor takes no arguments.
+
+    Returns:
+        A Python CLI wrapper initialized with shared repository paths.
+    """
 
     @staticmethod
     def _python_executable() -> str:
@@ -154,7 +175,16 @@ class PythonCLI(InteroperabilityTooling):
         crypto_suite: CryptoSuite = CryptoSuite.default(),
         rotation_iv: str | None = None,
     ) -> tuple[Path, Path]:
-        """Create exchange artifacts for the current CLI tokenize contract."""
+        """Create exchange artifacts for the current CLI tokenize contract.
+
+        Args:
+            workspace_root: Directory in which to create the exchange and local keys.
+            crypto_suite: Suite used to generate the keys and exchange config; defaults to the default suite.
+            rotation_iv: Optional rotation IV to include in the exchange config.
+
+        Returns:
+            Paths to the generated exchange config and sender private key.
+        """
         suite_suffix = crypto_suite.suite_id.replace("-", "_")
         recipient_name = f"interop-recipient-{suite_suffix}"
         sender_name = f"interop-sender-{suite_suffix}"
@@ -200,7 +230,17 @@ class PythonCLI(InteroperabilityTooling):
         crypto_suite: CryptoSuite = CryptoSuite.default(),
         enable_inferencing: bool = False,
     ) -> subprocess.CompletedProcess:
-        """Run the Python CLI `tokenize` command and write CSV output."""
+        """Run the Python CLI `tokenize` command and write CSV output.
+
+        Args:
+            input_file: CSV file to tokenize.
+            output_file: Destination path for the tokenized CSV.
+            crypto_suite: Suite used for the exchange and tokenization; defaults to the default suite.
+            enable_inferencing: Whether to enable inference and include its rotation IV.
+
+        Returns:
+            Completed subprocess result for the Python CLI invocation.
+        """
         workspace_root = output_file.parent
         exchange_config, private_key = self._bootstrap_exchange_config(
             workspace_root,
@@ -228,7 +268,14 @@ class PythonCLI(InteroperabilityTooling):
 
 
 class JavaLibraryHarness(InteroperabilityTooling):
-    """Runs a thin Java harness built on the Java core library API."""
+    """Run a thin Java harness built on the Java core library API.
+
+    Args:
+        None; the inherited constructor takes no arguments.
+
+    Returns:
+        A Java library harness initialized with shared repository paths.
+    """
 
     def generate_tokenized_output(
         self,
@@ -236,7 +283,16 @@ class JavaLibraryHarness(InteroperabilityTooling):
         output_file: Path,
         crypto_suite: CryptoSuite = CryptoSuite.default(),
     ) -> subprocess.CompletedProcess:
-        """Run the Java harness that emits tokenize-compatible CSV output."""
+        """Run the Java harness that emits tokenize-compatible CSV output.
+
+        Args:
+            input_file: CSV file to tokenize.
+            output_file: Destination path for the tokenized CSV.
+            crypto_suite: Suite used for tokenization; defaults to the default suite.
+
+        Returns:
+            Completed subprocess result for the Java harness invocation.
+        """
         cmd = [
             "mvn",
             "-pl",
@@ -266,17 +322,38 @@ class JavaLibraryHarness(InteroperabilityTooling):
 
 
 class JavaExchangeHarness(InteroperabilityTooling):
-    """Runs the test-only Java exchange envelope harness."""
+    """Run the test-only Java exchange envelope harness.
+
+    Args:
+        None; the constructor takes no arguments.
+
+    Returns:
+        A harness instance configured to compile the Java test harness on first use.
+    """
 
     JAVA_MAIN_CLASS = "org.openlinktoken.tools.ExchangeInteropHarness"
 
     def __init__(self):
-        """Initialize the harness and defer compilation until it is first used."""
+        """Initialize the harness and defer compilation until it is first used.
+
+        Args:
+            None; this initializer takes no arguments beyond ``self``.
+
+        Returns:
+            None.
+        """
         super().__init__()
         self._compiled = False
 
     def _ensure_compiled(self) -> None:
-        """Compile the Java test harness once for the exchange parity checks."""
+        """Compile the Java test harness once for the exchange parity checks.
+
+        Args:
+            None; this method takes no caller-supplied arguments.
+
+        Returns:
+            None.
+        """
         if self._compiled:
             return
 
@@ -301,7 +378,14 @@ class JavaExchangeHarness(InteroperabilityTooling):
         self._compiled = True
 
     def _run(self, *args: str) -> subprocess.CompletedProcess:
-        """Run the compiled Java exchange harness through Maven."""
+        """Run the compiled Java exchange harness through Maven.
+
+        Args:
+            args: String arguments passed to the Java exchange harness.
+
+        Returns:
+            Completed subprocess result for the Java harness invocation.
+        """
         self._ensure_compiled()
         exec_args = " ".join(str(argument) for argument in args)
         result = subprocess.run(
@@ -325,7 +409,15 @@ class JavaExchangeHarness(InteroperabilityTooling):
         return result
 
     def build(self, crypto_suite: CryptoSuite, output_dir: Path) -> tuple[Path, Path]:
-        """Build a Java envelope and return its envelope and sender key paths."""
+        """Build a Java envelope and return its envelope and sender key paths.
+
+        Args:
+            crypto_suite: Suite used to build the exchange envelope.
+            output_dir: Directory in which to write the envelope and private key.
+
+        Returns:
+            Paths to the exchange envelope and matching sender private key.
+        """
         self._run("build", crypto_suite.suite_id, str(output_dir))
         private_name = (
             "sender.private.pem" if crypto_suite.exchange_config_version == 1 else "sender.private.bundle.json"
@@ -339,7 +431,17 @@ class JavaExchangeHarness(InteroperabilityTooling):
         private_key: Path,
         output_file: Path,
     ) -> Dict[str, Any]:
-        """Decrypt an envelope with Java and load its normalized result."""
+        """Decrypt an envelope with Java and load its normalized result.
+
+        Args:
+            crypto_suite: Suite used to decrypt the exchange envelope.
+            exchange_config: Path to the serialized exchange envelope.
+            private_key: Path to the matching sender private key.
+            output_file: Path where the Java harness writes the normalized result.
+
+        Returns:
+            Normalized exchange result loaded from the Java harness output.
+        """
         self._run(
             "decrypt",
             crypto_suite.suite_id,
@@ -475,7 +577,14 @@ class TokenValidator:
 
 
 class TestTokenCompatibility:
-    """Test token parity between the Java core library and the Python CLI."""
+    """Test token parity between the Java core library and the Python CLI.
+
+    Args:
+        None; the constructor takes no arguments.
+
+    Returns:
+        A test case instance.
+    """
 
     def setup_method(self):
         """Set up environment for each method."""
@@ -497,7 +606,7 @@ class TestTokenCompatibility:
         """Return every registered suite supported by an exchange envelope.
 
         Args:
-            None.
+            None; this method takes no arguments.
 
         Returns:
             All registered exchange crypto suites.
@@ -632,7 +741,7 @@ class TestTokenCompatibility:
         """Compare Java and Python decryption for every registered exchange suite.
 
         Args:
-            None.
+            None; this method takes no caller-supplied arguments.
 
         Returns:
             None.
@@ -739,7 +848,7 @@ class TestTokenCompatibility:
         """Compare Java and Python token output for every registered crypto suite.
 
         Args:
-            None.
+            None; this method takes no caller-supplied arguments.
 
         Returns:
             None.

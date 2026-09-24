@@ -309,6 +309,8 @@ class TokenGeneratorTest {
     /**
      * Verifies non-hash transformers receive and transform raw token values using a passthrough tokenizer.
      *
+     * <p>This test method accepts no arguments and returns no value.</p>
+     *
      * @throws Exception if the token generator encounters a checked transformation failure
      */
     @Test
@@ -326,6 +328,8 @@ class TokenGeneratorTest {
 
     /**
      * Verifies class-keyed attributes produce raw signatures while requested legacy rules are excluded.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      *
      * @throws Exception if token generation fails
      */
@@ -347,6 +351,8 @@ class TokenGeneratorTest {
 
     /**
      * Verifies invalid class-keyed attributes are returned as invalid attribute names.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void reportsInvalidClassKeyedAttributes() {
@@ -361,6 +367,8 @@ class TokenGeneratorTest {
 
     /**
      * Verifies embedding-derived tokens and precomputed signatures are stored with blank fallbacks.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      *
      * @throws Exception if tokenization fails unexpectedly
      */
@@ -387,6 +395,8 @@ class TokenGeneratorTest {
 
     /**
      * Verifies null, blank, and transformation-failing raw tokens are stored as blank tokens.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void storesNullBlankAndFailedRawTokensAsBlank() {

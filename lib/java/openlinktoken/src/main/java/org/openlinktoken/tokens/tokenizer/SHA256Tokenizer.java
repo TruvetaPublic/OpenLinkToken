@@ -12,7 +12,7 @@ import org.openlinktoken.tokentransformer.TokenTransformer;
 public final class SHA256Tokenizer extends CryptoSuiteTokenizer {
 
     /**
-     * Initializes the tokenizer.
+     * Creates the backward-compatible SHA-256 tokenizer with the supplied transformers.
      *
      * @param tokenTransformerList a list of token transformers.
      */
@@ -21,7 +21,7 @@ public final class SHA256Tokenizer extends CryptoSuiteTokenizer {
     }
 
     /**
-     * Initializes the tokenizer with an explicit crypto suite.
+     * Creates a tokenizer with an explicit crypto suite.
      *
      * @param tokenTransformerList a list of token transformers
      * @param cryptoSuite the suite selecting the token digest

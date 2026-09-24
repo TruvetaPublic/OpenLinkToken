@@ -67,7 +67,14 @@ def sample_data():
 
 
 class TestOpenLinkTokenProcessor:
-    """Tests for OpenLinkTokenProcessor class."""
+    """Tests for OpenLinkTokenProcessor class.
+
+    Args:
+        None; pytest creates this test class without constructor arguments.
+
+    Returns:
+        A test-case instance used by pytest to run the test methods.
+    """
 
     def test_initialization_with_valid_secrets(self):
         """Test that processor initializes with valid secrets."""
@@ -120,7 +127,7 @@ class TestOpenLinkTokenProcessor:
 
         Args:
             spark: Spark session fixture used to create DataFrames.
-            sample_data: Input person-record DataFrame fixture.
+            sample_data: Person-record mappings used to create an input DataFrame.
             exchange_config_case: Real exchange and private-key fixture for the current suite.
 
         Returns:
@@ -176,7 +183,14 @@ class TestOpenLinkTokenProcessor:
         assert payload["ppid"]
 
     def test_from_exchange_config_derives_transport_key_without_version_fallback(self, monkeypatch):
-        """Test exchange-config factory always derives the transport key for resolved configs."""
+        """Verify the factory derives the transport key for each resolved exchange.
+
+        Args:
+            monkeypatch: Pytest fixture used to replace exchange resolution and key derivation.
+
+        Returns:
+            None.
+        """
         resolved_exchange = SimpleNamespace(
             version=1,
             hashing_secret=b"resolved-hashing-secret",
@@ -186,7 +200,15 @@ class TestOpenLinkTokenProcessor:
         derive_call_count = 0
 
         def fake_resolve_exchange_config_inputs(*args, **kwargs):
-            """Return the resolved exchange fixture while asserting forwarded inputs."""
+            """Return the resolved exchange fixture after checking forwarded inputs.
+
+            Args:
+                *args: Positional resolver inputs, which this stub does not use.
+                **kwargs: Keyword resolver inputs to verify against the expected values.
+
+            Returns:
+                The resolved exchange fixture.
+            """
             assert kwargs == {
                 "exchange_config_path": "config.json",
                 "exchange_config_value": None,
@@ -197,7 +219,14 @@ class TestOpenLinkTokenProcessor:
             return resolved_exchange
 
         def fake_derive_transport_encryption_key(exchange):
-            """Return the fixture transport key and verify the resolved exchange."""
+            """Return the fixture transport key after verifying the resolved exchange.
+
+            Args:
+                exchange: Exchange object whose identity is checked against the fixture.
+
+            Returns:
+                The fixture's derived transport encryption key as bytes.
+            """
             nonlocal derive_call_count
             derive_call_count += 1
             assert exchange is resolved_exchange
@@ -226,7 +255,14 @@ class TestOpenLinkTokenProcessor:
         assert processor.encryption_key == derived_transport_key
 
     def test_from_exchange_config_rejects_future_exchange_config_versions(self, tmp_path):
-        """Test exchange-config factory rejects unsupported future exchange config versions."""
+        """Verify the factory rejects unsupported future exchange-config versions.
+
+        Args:
+            tmp_path: Temporary directory used for the exchange config and private key.
+
+        Returns:
+            None.
+        """
         exchange_config_path, private_key_path = _write_future_exchange_config(tmp_path)
 
         with pytest.raises(ValueError, match="Unsupported exchange config version '3'. Supported versions: 1, 2."):
@@ -445,7 +481,15 @@ class TestOpenLinkTokenProcessor:
         assert result.count() == 0
 
     def test_custom_token_definition(self, spark, sample_data):
-        """Test using custom token definition with processor."""
+        """Test using a custom token definition with the processor.
+
+        Args:
+            spark: Spark session fixture used to create and process the DataFrame.
+            sample_data: Person-record mappings used to create the input DataFrame.
+
+        Returns:
+            None.
+        """
         from openlinktoken_pyspark.notebook_helpers import CustomTokenDefinition, TokenBuilder
 
         # Create a custom ML1 token
@@ -603,7 +647,14 @@ def _write_exchange_config(tmp_path: Path) -> tuple[Path, Path]:
 
 
 def _write_future_exchange_config(tmp_path: Path) -> tuple[Path, Path]:
-    """Write an unsupported version 3 exchange config plus matching sender private key file."""
+    """Write a future-version exchange config and its matching sender private key.
+
+    Args:
+        tmp_path: Temporary directory in which to write the config and key files.
+
+    Returns:
+        Paths to the future-version exchange config and matching sender private key.
+    """
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     _, recipient_public_pem = generate_key_pair("P-256")
     payload = {

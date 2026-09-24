@@ -38,7 +38,7 @@ public class HashTokenTransformer implements TokenTransformer {
     private String macAlgorithm;
 
     /**
-     * Initializes the underlying MAC with the secret key.
+     * Creates a transformer and initializes its MAC from a string secret.
      *
      * @param hashingSecret the cryptographic secret key.
      *
@@ -51,7 +51,7 @@ public class HashTokenTransformer implements TokenTransformer {
     }
 
     /**
-     * Initializes the underlying MAC with raw key bytes.
+     * Creates a transformer and initializes its MAC from raw secret bytes.
      *
      * @param hashingSecret the cryptographic secret key bytes.
      * @throws NoSuchAlgorithmException invalid HMAC algorithm
@@ -63,7 +63,7 @@ public class HashTokenTransformer implements TokenTransformer {
     }
 
     /**
-     * Initializes the underlying MAC using an explicit crypto suite.
+     * Creates a transformer using the MAC selected by an explicit crypto suite.
      *
      * @param hashingSecret the cryptographic secret key bytes
      * @param cryptoSuite the suite selecting the keyed MAC
@@ -84,6 +84,7 @@ public class HashTokenTransformer implements TokenTransformer {
      * The token is transformed using the MAC selected by the configured crypto
      * suite.
      *
+     * @param token token value to transform
      * @return hashed token in <code>base64</code> format.
      *
      * @throws IllegalArgumentException if a {@code null} or blank token is
@@ -117,6 +118,8 @@ public class HashTokenTransformer implements TokenTransformer {
     /**
      * Writes the serializable state while omitting transient MAC instances.
      *
+     * <p>This method returns no value.</p>
+     *
      * @param oos the object stream receiving the transformer state
      * @throws IOException if the state cannot be written
      */
@@ -126,6 +129,8 @@ public class HashTokenTransformer implements TokenTransformer {
 
     /**
      * Restores the serializable state and rebuilds transient cryptographic state.
+     *
+     * <p>This method returns no value.</p>
      *
      * @param ois the object stream containing the transformer state
      * @throws IOException if the state cannot be read or the MAC cannot be rebuilt
@@ -143,6 +148,8 @@ public class HashTokenTransformer implements TokenTransformer {
 
     /**
      * Recreates the MAC and Base64 encoder after construction or deserialization.
+     *
+     * <p>This method accepts no arguments and returns no value.</p>
      *
      * @throws NoSuchAlgorithmException if the configured MAC is unavailable
      * @throws InvalidKeyException if the hashing secret is invalid

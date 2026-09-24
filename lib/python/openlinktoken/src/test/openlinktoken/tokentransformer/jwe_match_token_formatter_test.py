@@ -12,7 +12,15 @@ from openlinktoken.tokentransformer.jwe_match_token_formatter import JweMatchTok
 
 
 class TestJweMatchTokenFormatter(unittest.TestCase):
-    """Unit tests for JweMatchTokenFormatter."""
+    """Test match-token formatting and its JWE metadata.
+
+    Args:
+        methodName: Name of the test method selected by ``unittest``; defaults
+            to ``"runTest"`` when no method is specified.
+
+    Returns:
+        An initialized ``TestJweMatchTokenFormatter`` test case.
+    """
 
     TEST_ENCRYPTION_KEY = "12345678901234567890123456789012"  # 32 chars
     TEST_RING_ID = "test-ring-2026"
@@ -168,7 +176,14 @@ class TestJweMatchTokenFormatter(unittest.TestCase):
         self.assertEqual("org.openlinktoken", formatter.issuer)
 
     def test_sha3_suite_metadata_is_embedded_in_olt_v1(self):
-        """SHA3 metadata is profile-driven while the token prefix stays olt.V1."""
+        """SHA3 metadata is profile-driven while the token prefix stays ``olt.V1``.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+        """
         formatter = JweMatchTokenFormatter(
             self.TEST_ENCRYPTION_KEY,
             self.TEST_RING_ID,
@@ -190,7 +205,14 @@ class TestJweMatchTokenFormatter(unittest.TestCase):
         self.assertEqual("HS3-256", payload["mac_alg"])
 
     def test_shake_suite_metadata_is_embedded_in_olt_v1(self):
-        """SHAKE metadata records the fixed digest and MAC output lengths."""
+        """SHAKE metadata records fixed digest and MAC output lengths.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+        """
         formatter = JweMatchTokenFormatter(
             self.TEST_ENCRYPTION_KEY,
             self.TEST_RING_ID,

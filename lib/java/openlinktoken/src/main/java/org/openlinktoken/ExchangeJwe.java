@@ -89,6 +89,9 @@ public final class ExchangeJwe implements Serializable {
             .configure(DeserializationFeature.FAIL_ON_TRAILING_TOKENS, true)
             .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
 
+    /**
+     * Creates the utility instance with no arguments.
+     */
     private ExchangeJwe() {
     }
 
@@ -358,6 +361,13 @@ public final class ExchangeJwe implements Serializable {
         }
     }
 
+    /**
+     * Creates a recipient JWK from its public key and PEM representation.
+     *
+     * @param publicKey EC public key
+     * @param publicPem SubjectPublicKeyInfo PEM bytes
+     * @return the JWK with the exchange key identifier and algorithm
+     */
     private static JWK toRecipientJwk(ECPublicKey publicKey, byte[] publicPem) {
         String kid = EcKeyUtils.fingerprintToKid(EcKeyUtils.publicKeyFingerprint(publicPem));
         return new ECKey.Builder(Curve.parse(EcKeyUtils.curveName(publicKey)), publicKey)
@@ -366,6 +376,12 @@ public final class ExchangeJwe implements Serializable {
                 .build();
     }
 
+    /**
+     * Parses a general JWE after removing the exchange-specific version marker.
+     *
+     * @param envelope exchange envelope fields
+     * @return the parsed general JWE object
+     */
     private static JWEObjectJSON parseJwe(Map<String, Object> envelope) {
         Map<String, Object> joseObject = new LinkedHashMap<>(envelope);
         joseObject.remove("version");
@@ -490,6 +506,13 @@ public final class ExchangeJwe implements Serializable {
         return value instanceof Map<?, ?> header && header.containsKey(CRYPTO_SUITE_HEADER);
     }
 
+    /**
+     * Joins a recipient header with its authenticated protected header.
+     *
+     * @param protectedHeader authenticated protected JWE header
+     * @param recipient general-JWE recipient
+     * @return the joined recipient header
+     */
     private static JWEHeader joinRecipientHeader(JWEHeader protectedHeader, JWEObjectJSON.Recipient recipient) {
         try {
             return (JWEHeader) protectedHeader.join(recipient.getUnprotectedHeader());
@@ -593,6 +616,13 @@ public final class ExchangeJwe implements Serializable {
         return payload;
     }
 
+    /**
+     * Requires the legacy top-level exchange version marker.
+     *
+     * <p>This method returns no value.</p>
+     *
+     * @param envelope exchange envelope fields
+     */
     private static void validateVersion(Map<String, Object> envelope) {
         if (!Integer.valueOf(VERSION).equals(envelope.get("version"))) {
             throw new ExchangeJweException("Exchange envelope must declare top-level version 1.");
@@ -619,6 +649,15 @@ public final class ExchangeJwe implements Serializable {
         return selectedSuite;
     }
 
+    /**
+     * Validates that both public keys use the selected supported curve.
+     *
+     * <p>This method returns no value.</p>
+     *
+     * @param curve Open Link Token curve name
+     * @param senderPublicKey sender EC public key
+     * @param recipientPublicKey recipient EC public key
+     */
     private static void validateCurve(String curve, ECPublicKey senderPublicKey, ECPublicKey recipientPublicKey) {
         if (!EcKeyUtils.SUPPORTED_CURVES.contains(curve)) {
             throw new ExchangeJweException("Unsupported curve '" + curve + "'.");
@@ -629,6 +668,13 @@ public final class ExchangeJwe implements Serializable {
         }
     }
 
+    /**
+     * Validates and shallow-copies a JSON object mapping.
+     *
+     * @param value source mapping
+     * @param fieldName field name used in validation errors
+     * @return a mutable copy of the mapping
+     */
     private static Map<String, Object> copyObject(Map<String, ?> value, String fieldName) {
         if (value == null) {
             throw new ExchangeJweException(fieldName + " must be a JSON object.");
@@ -640,6 +686,13 @@ public final class ExchangeJwe implements Serializable {
         return copy;
     }
 
+    /**
+     * Requires a non-empty text value.
+     *
+     * @param value candidate value
+     * @param fieldName field name used in validation errors
+     * @return the validated text
+     */
     private static String requireText(Object value, String fieldName) {
         if (!(value instanceof String text) || text.isBlank()) {
             throw new ExchangeJweException(fieldName + " must be a non-empty string.");
@@ -647,6 +700,13 @@ public final class ExchangeJwe implements Serializable {
         return text;
     }
 
+    /**
+     * Requires a text value while allowing it to be empty.
+     *
+     * @param value candidate value
+     * @param fieldName field name used in validation errors
+     * @return the validated text
+     */
     private static String requireTextAllowEmpty(Object value, String fieldName) {
         if (!(value instanceof String text)) {
             throw new ExchangeJweException(fieldName + " must be a string.");
@@ -654,6 +714,14 @@ public final class ExchangeJwe implements Serializable {
         return text;
     }
 
+    /**
+     * Validates and defensively copies byte-array input.
+     *
+     * @param value candidate bytes
+     * @param fieldName field name used in validation errors
+     * @param nonEmpty whether the value must contain at least one byte
+     * @return a defensive copy of the validated bytes
+     */
     private static byte[] requireBytes(byte[] value, String fieldName, boolean nonEmpty) {
         if (value == null || (nonEmpty && value.length == 0)) {
             throw new ExchangeJweException(fieldName + " must not be empty.");
@@ -661,6 +729,13 @@ public final class ExchangeJwe implements Serializable {
         return Arrays.copyOf(value, value.length);
     }
 
+    /**
+     * Requires an integral numeric value within the integer range.
+     *
+     * @param value candidate value
+     * @param fieldName field name used in validation errors
+     * @return the validated integer
+     */
     private static int requireInteger(Object value, String fieldName) {
         if (!(value instanceof Number number)
                 || number.doubleValue() != Math.rint(number.doubleValue())
@@ -671,6 +746,13 @@ public final class ExchangeJwe implements Serializable {
         return number.intValue();
     }
 
+    /**
+     * Requires a finite numeric value.
+     *
+     * @param value candidate value
+     * @param fieldName field name used in validation errors
+     * @return the validated finite number
+     */
     private static double requireNumber(Object value, String fieldName) {
         if (!(value instanceof Number number) || !Double.isFinite(number.doubleValue())) {
             throw new ExchangeJweException(fieldName + " must be a finite number.");
@@ -678,6 +760,13 @@ public final class ExchangeJwe implements Serializable {
         return number.doubleValue();
     }
 
+    /**
+     * Requires a list whose elements are finite numbers.
+     *
+     * @param value candidate list
+     * @param fieldName field name used in validation errors
+     * @return the validated numeric values
+     */
     private static List<Double> requireNumbers(Object value, String fieldName) {
         if (!(value instanceof List<?> values)) {
             throw new ExchangeJweException(fieldName + " must be an array of numbers.");
@@ -718,7 +807,19 @@ public final class ExchangeJwe implements Serializable {
             List<Double> dimensionBias) implements Serializable {
 
         /**
-         * Canonicalizes mutable payload values.
+         * Constructs and validates an exchange payload, copying mutable values.
+         *
+         * @param exchangeName exchange name
+         * @param hashingSecret raw hashing secret bytes
+         * @param senderPublicPem sender public EC key PEM
+         * @param recipientPublicPem recipient public EC key PEM
+         * @param curve Open Link Token curve name
+         * @param createdAt exchange creation timestamp
+         * @param exchangeId stable exchange identifier
+         * @param rotationIv raw rotation-matrix initialization vector
+         * @param rotationCount number of rotation matrices
+         * @param binWidth rotation quantization bin width
+         * @param dimensionBias rotation dimension-bias values
          */
         public ExchangePayload {
             exchangeName = requireText(exchangeName, "exchangeName");
@@ -738,21 +839,49 @@ public final class ExchangeJwe implements Serializable {
             }
         }
 
+        /**
+         * Returns a defensive copy of the hashing secret.
+         *
+         * <p>This method accepts no arguments.</p>
+         *
+         * @return the raw hashing secret bytes
+         */
         @Override
         public byte[] hashingSecret() {
             return Arrays.copyOf(hashingSecret, hashingSecret.length);
         }
 
+        /**
+         * Returns a defensive copy of the sender public-key PEM.
+         *
+         * <p>This method accepts no arguments.</p>
+         *
+         * @return the sender SubjectPublicKeyInfo PEM bytes
+         */
         @Override
         public byte[] senderPublicPem() {
             return Arrays.copyOf(senderPublicPem, senderPublicPem.length);
         }
 
+        /**
+         * Returns a defensive copy of the recipient public-key PEM.
+         *
+         * <p>This method accepts no arguments.</p>
+         *
+         * @return the recipient SubjectPublicKeyInfo PEM bytes
+         */
         @Override
         public byte[] recipientPublicPem() {
             return Arrays.copyOf(recipientPublicPem, recipientPublicPem.length);
         }
 
+        /**
+         * Returns a defensive copy of the rotation IV.
+         *
+         * <p>This method accepts no arguments.</p>
+         *
+         * @return the raw rotation initialization vector
+         */
         @Override
         public byte[] rotationIv() {
             return Arrays.copyOf(rotationIv, rotationIv.length);
@@ -760,6 +889,8 @@ public final class ExchangeJwe implements Serializable {
 
         /**
          * Returns the sender public key PEM bytes under the wire-oriented name.
+         *
+         * <p>This method accepts no arguments.</p>
          *
          * @return sender public key PEM bytes
          */
@@ -769,6 +900,8 @@ public final class ExchangeJwe implements Serializable {
 
         /**
          * Returns the recipient public key PEM bytes under the wire-oriented name.
+         *
+         * <p>This method accepts no arguments.</p>
          *
          * @return recipient public key PEM bytes
          */
@@ -783,10 +916,21 @@ public final class ExchangeJwe implements Serializable {
     public static final class ExchangeJweException extends IllegalArgumentException {
         private static final long serialVersionUID = 1L;
 
+        /**
+         * Creates an exchange exception with a detail message.
+         *
+         * @param message exception detail message
+         */
         private ExchangeJweException(String message) {
             super(message);
         }
 
+        /**
+         * Creates an exchange exception with a detail message and cause.
+         *
+         * @param message exception detail message
+         * @param cause underlying cause
+         */
         private ExchangeJweException(String message, Throwable cause) {
             super(message, cause);
         }

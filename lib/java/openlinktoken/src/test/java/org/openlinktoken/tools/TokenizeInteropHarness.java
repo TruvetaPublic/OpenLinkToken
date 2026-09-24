@@ -43,13 +43,15 @@ public final class TokenizeInteropHarness {
     private static final String TOKEN_COLUMN = "Token";
 
     /**
-     * Prevents instantiation of this command-line harness.
+     * Creates the private harness instance with no arguments.
      */
     private TokenizeInteropHarness() {
     }
 
     /**
      * Generates tokenize-compatible CSV output using Java library APIs.
+     *
+     * <p>This method returns no value.</p>
      *
      * @param args input CSV path, output CSV path, hashing secret, and optional crypto suite ID.
      * @throws Exception if the harness cannot read input or write output.
@@ -154,6 +156,8 @@ public final class TokenizeInteropHarness {
 
     /**
      * Adds a supported attribute when its CSV column is present.
+     *
+     * <p>This method returns no value.</p>
      *
      * @param personAttributes the attribute map being populated
      * @param headerIndexes the CSV header-to-index mapping

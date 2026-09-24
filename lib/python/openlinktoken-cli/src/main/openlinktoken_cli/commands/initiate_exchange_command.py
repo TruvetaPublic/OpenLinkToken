@@ -33,11 +33,21 @@ class InitiateExchangeCommand:
      3. Generate a random hashing secret (or accept one provided by the caller).
      4. Encrypt the exchange payload into a multi-recipient standard JWE JSON object.
      5. Write the versioned exchange config envelope to the requested output path.
+
+    Constructor:
+        Takes no arguments and returns a new ``InitiateExchangeCommand`` instance.
     """
 
     @staticmethod
     def register_subcommand(subparsers) -> None:
-        """Register the initiate-exchange subcommand with the argument parser."""
+        """Register the initiate-exchange subcommand with the argument parser.
+
+        Args:
+            subparsers: Argument-parser subparsers collection to receive the command.
+
+        Returns:
+            None.
+        """
         parser = subparsers.add_parser(
             "initiate-exchange",
             help="Initiate a configured key exchange and produce an encrypted exchange config envelope",
@@ -238,11 +248,11 @@ class InitiateExchangeCommand:
         """Execute the initiate-exchange command.
 
         Args:
-            args: Parsed command-line arguments.
+            args: Parsed CLI namespace with the suite, partner-key source, exchange name/output, hashing-secret,
+                and rotation inputs; it also contains optional curve, sender-key, and overwrite settings.
 
         Returns:
-            Exit code (0 for success, non-zero for errors).
-
+            ``0`` when the exchange config is written, or ``1`` when validation or I/O errors occur.
         """
         from openlinktoken.exchange_jwe import build_exchange_envelope
         from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
@@ -543,7 +553,16 @@ class InitiateExchangeCommand:
         public_key_base_path_str: Optional[str],
         exchange_config_version: int,
     ) -> str:
-        """Resolve a suite-specific public-key filename from an optional base path."""
+        """Resolve the partner public-key path for the selected exchange-config version.
+
+        Args:
+            public_key_path_str: Explicit partner public-key file path.
+            public_key_base_path_str: Optional key-file base path; when provided, a version-specific suffix is added.
+            exchange_config_version: Exchange-config version selecting the public-key file format.
+
+        Returns:
+            The explicit path, or the base path with the version-specific public-key suffix.
+        """
         if public_key_base_path_str is None:
             return public_key_path_str
 
@@ -573,7 +592,32 @@ class InitiateExchangeCommand:
         local_private_key_path_str: Optional[str],
         sender_private_key_env_name: Optional[str],
     ) -> int:
-        """Create a standard JWE JSON version-2 exchange using validated key bundles."""
+        """Create a standard JWE JSON version-2 exchange using validated key bundles.
+
+        Args:
+            crypto_suite: Validated crypto suite used for the exchange and secret validation.
+            name: Exchange name used to identify the exchange and default output paths.
+            public_key_path_str: Partner public-key bundle path when a stream or environment source is not selected.
+            public_key_stdin: Whether to read the partner public-key bundle from standard input.
+            public_key_env_name: Optional environment-variable name containing the partner public-key bundle.
+            output_path_str: Optional exchange-config output path; ``None`` selects the default path.
+            hashing_secret: Optional caller-provided hashing secret.
+            hashing_secret_stdin: Whether to read the hashing secret from standard input.
+            hashing_secret_env_name: Optional environment-variable name containing the hashing secret.
+            rotation_iv: Optional caller-provided rotation IV.
+            rotation_iv_stdin: Whether to read the rotation IV from standard input.
+            rotation_iv_env_name: Optional environment-variable name containing the rotation IV.
+            rotation_count: Number of rotation matrices to include in the exchange config.
+            bin_width: Quantization bin width for rotation-based token generation.
+            embedding_dimension: Embedding dimension used when no bias file is provided.
+            embedding_bias: Optional path to a JSON file containing the embedding bias values.
+            force: Whether to overwrite existing key bundles or exchange config.
+            local_private_key_path_str: Optional sender private-key bundle path.
+            sender_private_key_env_name: Optional environment-variable name containing the sender private-key bundle.
+
+        Returns:
+            ``0`` when the version-2 exchange config is written, or ``1`` when an error occurs.
+        """
         from openlinktoken.exchange_kem import build_exchange_envelope_v2
         from openlinktoken.exchange_key_bundle import ExchangeKeyBundle, generate_exchange_key_bundle
         from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
@@ -716,10 +760,10 @@ class InitiateExchangeCommand:
             hashing_secret: Caller-supplied secret string, or ``None`` to auto-generate.
             hashing_secret_stdin: When true, read the hashing secret bytes from stdin.
             hashing_secret_env_name: Environment variable name containing the hashing secret.
+            crypto_suite: Suite used to validate the secret, or ``None`` to use the default suite.
 
         Returns:
             The hashing secret as raw bytes.
-
         """
         selected_suite = crypto_suite or CryptoSuite.default()
         if hashing_secret_stdin:
@@ -826,9 +870,11 @@ class InitiateExchangeCommand:
             config:    Dict to serialize.
             overwrite: When ``False``, raise ``FileExistsError`` if the file already exists.
 
+        Returns:
+            None.
+
         Raises:
             FileExistsError: If the file exists and ``overwrite`` is ``False``.
-
         """
         if path.is_symlink():
             raise OSError(f"Exchange config path {path} must not be a symbolic link.")
