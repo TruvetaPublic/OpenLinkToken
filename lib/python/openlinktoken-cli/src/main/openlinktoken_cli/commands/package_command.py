@@ -58,7 +58,11 @@ def derive_transport_encryption_key(exchange: Any) -> bytes:
 
 class PackageCommand:
     """Package command - combines tokenize and encrypt in one command.
+
     This is the default workflow: hash + encrypt.
+
+    Constructor:
+        Takes no arguments and returns a new ``PackageCommand`` instance.
     """
 
     @staticmethod
@@ -188,14 +192,13 @@ class PackageCommand:
 
     @staticmethod
     def execute(args):
-        """
-        Execute the package command.
+        """Execute the package command.
 
         Args:
-            args: Parsed command-line options for this command.
+            args: Parsed CLI namespace containing the input/output paths, exchange credentials, and packaging options.
 
         Returns:
-            Integer exit status: 0 on success and 1 when the command reports an error.
+            ``0`` when tokenization and encryption complete, or ``1`` when validation or processing fails.
         """
         from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig
         from openlinktoken.core.ai.tokens.rotation_config import RotationConfig
@@ -381,23 +384,23 @@ class PackageCommand:
         progress_callback=None,
         crypto_suite=None,
     ) -> tuple[PersonAttributesProcessingSummary, str]:
-        """
-        Process tokens from person attributes.
+        """Tokenize and encrypt person-attribute records, then write metadata.
 
         Args:
-            input_path: Path to the input file to read.
-            output_path: Destination path for the generated output file.
-            input_type: Detected format of the input file, such as CSV or Parquet.
-            output_type: Format to use for the output file, such as CSV or Parquet.
-            hashing_secret: Secret used as the HMAC-SHA256 key for token hashing.
-            encryption_key: Key used to encrypt or decrypt the payload.
-            ring_id: Identifier of the key or token ring to retrieve.
-            hash_record_ids: Whether record identifiers should be hashed in the output.
-            tokenization_config_path: Filesystem path to the tokenization config handled by the operation.
-            progress_callback: Callback invoked with updates as processing advances.
+            input_path: Path to the source person-attribute data.
+            output_path: Destination path for tokenized and encrypted output.
+            input_type: Detected input file format.
+            output_type: Selected output file format.
+            hashing_secret: Secret used by the crypto-suite hash transformer.
+            encryption_key: Transport key used by the encryption transformer.
+            ring_id: Ring identifier included in encrypted tokens.
+            hash_record_ids: Whether to hash record IDs before writing output.
+            tokenization_config_path: Optional path to a custom tokenization configuration.
+            progress_callback: Optional callback for reporting record-processing progress.
+            crypto_suite: Crypto suite selecting the token digest and MAC, or ``None`` for the default.
 
         Returns:
-            Processed tokens from person attributes.
+            A tuple containing the processing summary and the metadata file path.
         """
         from openlinktoken.metadata import Metadata
         from openlinktoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer

@@ -21,6 +21,8 @@ class DecryptTokenTransformerTest {
 
     /**
      * Creates matching encryptor and decryptor instances for each test.
+     *
+     * <p>This setup method accepts no arguments and returns no value.</p>
      */
     @BeforeEach
     void setUp() throws Exception {
@@ -30,6 +32,8 @@ class DecryptTokenTransformerTest {
 
     /**
      * Verifies that a serialized decryptor can decrypt an encrypted token.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testSerializable() throws Exception {
@@ -49,6 +53,8 @@ class DecryptTokenTransformerTest {
 
     /**
      * Verifies construction with a valid string key.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testConstructor_ValidKey_Success() throws Exception {
@@ -58,6 +64,8 @@ class DecryptTokenTransformerTest {
 
     /**
      * Verifies construction with valid raw key bytes.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testConstructor_Raw32ByteKey_Success() throws Exception {
@@ -67,6 +75,8 @@ class DecryptTokenTransformerTest {
 
     /**
      * Verifies that a short key is rejected.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testConstructor_InvalidKeyLength_ThrowsIllegalArgumentException() {
@@ -78,6 +88,8 @@ class DecryptTokenTransformerTest {
 
     /**
      * Verifies that a non-ASCII string with too many UTF-8 bytes is rejected.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testConstructor_NonAscii32CharacterKey_ThrowsInvalidKeyException() {
@@ -91,6 +103,8 @@ class DecryptTokenTransformerTest {
 
     /**
      * Verifies decryption of a valid encrypted token.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testTransform_ValidEncryptedToken_ReturnsDecryptedToken() throws Exception {
@@ -107,6 +121,8 @@ class DecryptTokenTransformerTest {
 
     /**
      * Verifies decryption of multiple independently encrypted tokens.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testTransform_MultipleTokens_DecryptsCorrectly() throws Exception {
@@ -132,6 +148,8 @@ class DecryptTokenTransformerTest {
 
     /**
      * Verifies that repeated encryption of the same token remains decryptable.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testTransform_SameTokenEncryptedTwice_BothDecryptCorrectly() throws Exception {
@@ -154,6 +172,8 @@ class DecryptTokenTransformerTest {
 
     /**
      * Verifies decryption of tokens containing special characters.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testTransform_SpecialCharacters_DecryptsCorrectly() throws Exception {
@@ -167,6 +187,8 @@ class DecryptTokenTransformerTest {
 
     /**
      * Verifies decryption of tokens containing Unicode characters.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testTransform_UnicodeCharacters_DecryptsCorrectly() throws Exception {
@@ -180,6 +202,8 @@ class DecryptTokenTransformerTest {
 
     /**
      * Verifies that decrypting with a different key fails.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testTransform_WrongKey_ThrowsException() throws Exception {
@@ -199,6 +223,8 @@ class DecryptTokenTransformerTest {
 
     /**
      * Verifies that a token without an authentication tag is rejected.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testTransform_TokenWithoutIvOrTag_ThrowsIllegalArgumentException() {

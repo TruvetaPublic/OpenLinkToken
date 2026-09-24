@@ -38,7 +38,7 @@ public class HashTokenTransformer implements TokenTransformer {
     private String macAlgorithm;
 
     /**
-     * Initializes the underlying MAC with the secret key.
+     * Creates a transformer and initializes its MAC from a string secret.
      *
      * @param hashingSecret the cryptographic secret key.
      *
@@ -51,7 +51,7 @@ public class HashTokenTransformer implements TokenTransformer {
     }
 
     /**
-     * Initializes the underlying MAC with raw key bytes.
+     * Creates a transformer and initializes its MAC from raw secret bytes.
      *
      * @param hashingSecret the cryptographic secret key bytes.
      * @throws NoSuchAlgorithmException invalid HMAC algorithm
@@ -63,7 +63,7 @@ public class HashTokenTransformer implements TokenTransformer {
     }
 
     /**
-     * Initializes the underlying MAC using an explicit crypto suite.
+     * Creates a transformer using the MAC selected by an explicit crypto suite.
      *
      * @param hashingSecret the cryptographic secret key bytes
      * @param cryptoSuite the suite selecting the keyed MAC
@@ -84,6 +84,7 @@ public class HashTokenTransformer implements TokenTransformer {
      * The token is transformed using the MAC selected by the configured crypto
      * suite.
      *
+     * @param token token value to transform
      * @return hashed token in <code>base64</code> format.
      *
      * @throws IllegalArgumentException if a {@code null} or blank token is
@@ -117,8 +118,10 @@ public class HashTokenTransformer implements TokenTransformer {
     /**
      * Serializes the hashing secret and suite needed to rebuild transient MAC state.
      *
-     * @param oos the object output stream
-     * @throws IOException if serialization fails
+     * <p>This method returns no value.</p>
+     *
+     * @param oos the object stream receiving the transformer state
+     * @throws IOException if the state cannot be written
      */
     private void writeObject(ObjectOutputStream oos) throws IOException {
         oos.defaultWriteObject(); // Serializes hashingSecret
@@ -127,8 +130,10 @@ public class HashTokenTransformer implements TokenTransformer {
     /**
      * Restores the serialized configuration and reconstructs suite-selected MAC state.
      *
-     * @param ois the object input stream
-     * @throws IOException if the state cannot be read or the MAC cannot be rebuilt
+     * <p>This method returns no value.</p>
+     *
+     * @param ois the object stream containing the transformer state
+     * @throws IOException if the state cannot be read or the MAC can not be rebuilt
      * @throws ClassNotFoundException if a serialized class cannot be found
      */
     private void readObject(ObjectInputStream ois)
@@ -145,7 +150,9 @@ public class HashTokenTransformer implements TokenTransformer {
      * Initializes the suite-selected MAC and Base64 encoder, or clears them when
      * no secret is configured.
      *
-     * @throws NoSuchAlgorithmException if the suite-selected MAC is unavailable
+     * <p>This method accepts no arguments and returns no value.</p>
+     *
+     * @throws NoSuchAlgorithmException if the configured MAC is unavailable
      * @throws InvalidKeyException if the hashing secret is invalid
      */
     private void rebuildMac() throws NoSuchAlgorithmException, InvalidKeyException {

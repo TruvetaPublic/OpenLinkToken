@@ -99,7 +99,14 @@ class TestCustomTokenDefinition:
 
 
 class TestCreateTokenGenerator:
-    """Tests for create_token_generator helper."""
+    """Tests for create_token_generator helper.
+
+    Args:
+        None; pytest creates this test class without constructor arguments.
+
+    Returns:
+        A test-case instance used by pytest to run the test methods.
+    """
 
     def test_create_with_default_definition(self):
         """Test creating a generator with default token definition."""
@@ -189,7 +196,14 @@ class TestCreateTokenGenerator:
 
 
 class TestQuickToken:
-    """Tests for quick_token convenience function."""
+    """Tests for quick_token convenience function.
+
+    Args:
+        None; pytest creates this test class without constructor arguments.
+
+    Returns:
+        A test-case instance used by pytest to run the test methods.
+    """
 
     def test_quick_token_creation(self):
         """Test creating a quick token with attribute list."""

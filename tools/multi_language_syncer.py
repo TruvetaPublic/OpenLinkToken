@@ -15,7 +15,15 @@ from pathlib import Path
 
 
 class MultiLanguageSyncer:
-    """Syncer that handles Java and Python implementations"""
+    """Synchronize files shared by the Java and Python implementations.
+
+    Args:
+        mapping_file: Path to the mapping JSON file, defaulting to
+            ``tools/multi-language-mapping.json``.
+
+    Returns:
+        A synchronizer with mappings loaded and active languages discovered.
+    """
 
     # Language configuration
     LANGUAGES = {

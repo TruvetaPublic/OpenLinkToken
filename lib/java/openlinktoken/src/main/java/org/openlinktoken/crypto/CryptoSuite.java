@@ -144,7 +144,9 @@ public final class CryptoSuite implements Serializable {
     }
 
     /**
-     * Validate the internal algorithm and exchange-version contract.
+     * Validates the internal algorithm and exchange-version contract.
+     *
+     * <p>This method accepts no arguments.</p>
      *
      * @return this validated suite
      */
@@ -188,6 +190,8 @@ public final class CryptoSuite implements Serializable {
     /**
      * Replaces a deserialized suite with its canonical registered instance.
      *
+     * <p>This method accepts no arguments.</p>
+     *
      * @return the registered suite matching this instance's identifier
      * @throws InvalidObjectException if this instance's identifier is not registered
      */
@@ -202,7 +206,9 @@ public final class CryptoSuite implements Serializable {
     }
 
     /**
-     * Return the backward-compatible default suite.
+     * Returns the backward-compatible default suite.
+     *
+     * <p>This method accepts no arguments.</p>
      *
      * @return the default suite
      */
@@ -211,7 +217,9 @@ public final class CryptoSuite implements Serializable {
     }
 
     /**
-     * Return all registered suites.
+     * Returns all registered suites.
+     *
+     * <p>This method accepts no arguments.</p>
      *
      * @return an immutable list of suites
      */
@@ -222,6 +230,8 @@ public final class CryptoSuite implements Serializable {
     /**
      * Returns the stable identifier for this suite.
      *
+     * <p>This method accepts no arguments.</p>
+     *
      * @return the suite identifier
      */
     public String getSuiteId() {
@@ -230,6 +240,8 @@ public final class CryptoSuite implements Serializable {
 
     /**
      * Returns the digest algorithm used to tokenize values.
+     *
+     * <p>This method accepts no arguments.</p>
      *
      * @return the token digest algorithm
      */
@@ -240,6 +252,8 @@ public final class CryptoSuite implements Serializable {
     /**
      * Returns the keyed MAC algorithm used to transform tokens.
      *
+     * <p>This method accepts no arguments.</p>
+     *
      * @return the token MAC algorithm
      */
     public String getTokenMacAlgorithm() {
@@ -248,6 +262,8 @@ public final class CryptoSuite implements Serializable {
 
     /**
      * Returns the content-encryption algorithm used for match tokens.
+     *
+     * <p>This method accepts no arguments.</p>
      *
      * @return the token content-encryption algorithm
      */
@@ -258,6 +274,8 @@ public final class CryptoSuite implements Serializable {
     /**
      * Returns the key-agreement mechanism used for exchanges.
      *
+     * <p>This method accepts no arguments.</p>
+     *
      * @return the exchange key-agreement mechanism
      */
     public String getExchangeKeyAgreement() {
@@ -267,6 +285,8 @@ public final class CryptoSuite implements Serializable {
     /**
      * Returns the exchange configuration version required by this suite.
      *
+     * <p>This method accepts no arguments.</p>
+     *
      * @return the exchange configuration version
      */
     public int getExchangeConfigVersion() {
@@ -275,6 +295,8 @@ public final class CryptoSuite implements Serializable {
 
     /**
      * Indicates whether this suite uses a post-quantum key-agreement mechanism.
+     *
+     * <p>This method accepts no arguments.</p>
      *
      * @return {@code true} when the suite uses ML-KEM
      */

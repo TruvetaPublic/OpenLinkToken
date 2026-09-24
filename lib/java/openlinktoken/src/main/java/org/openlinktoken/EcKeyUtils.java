@@ -331,6 +331,12 @@ public final class EcKeyUtils implements Serializable {
         return result.toString();
     }
 
+    /**
+     * Derives the EC public key corresponding to a private key.
+     *
+     * @param privateKey the EC private key
+     * @return the corresponding EC public key
+     */
     private static PublicKey derivePublicKey(ECPrivateKey privateKey) {
         String curve = curveName(privateKey);
         ECNamedCurveParameterSpec namedSpec = ECNamedCurveTable.getParameterSpec(JCA_CURVE_NAMES.get(curve));
@@ -346,6 +352,13 @@ public final class EcKeyUtils implements Serializable {
         }
     }
 
+    /**
+     * Validates and defensively copies DER-encoded key bytes.
+     *
+     * @param value DER-encoded key bytes
+     * @param keyName key name used in validation errors
+     * @return a defensive copy of the DER bytes
+     */
     private static byte[] copyDer(byte[] value, String keyName) {
         if (value == null || value.length == 0) {
             throw new IllegalArgumentException(keyName + " DER must not be empty.");
@@ -353,6 +366,12 @@ public final class EcKeyUtils implements Serializable {
         return Arrays.copyOf(value, value.length);
     }
 
+    /**
+     * Returns the supported Open Link Token curve name for EC parameters.
+     *
+     * @param parameters EC parameters to identify
+     * @return the matching Open Link Token curve name
+     */
     private static String curveName(ECParameterSpec parameters) {
         for (String curve : SUPPORTED_CURVES) {
             ECNamedCurveParameterSpec namedSpec = ECNamedCurveTable.getParameterSpec(JCA_CURVE_NAMES.get(curve));
@@ -363,6 +382,13 @@ public final class EcKeyUtils implements Serializable {
         throw new IllegalArgumentException("Unsupported EC curve.");
     }
 
+    /**
+     * Compares Java and Bouncy Castle representations of a named curve.
+     *
+     * @param javaSpec Java EC parameters
+     * @param bcSpec Bouncy Castle named-curve parameters
+     * @return {@code true} if both parameter sets describe the same curve
+     */
     private static boolean matches(ECParameterSpec javaSpec, ECNamedCurveParameterSpec bcSpec) {
         if (!(javaSpec.getCurve().getField() instanceof ECFieldFp javaField)) {
             return false;

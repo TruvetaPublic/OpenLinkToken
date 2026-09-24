@@ -19,7 +19,14 @@ from test_validate_exchange_secret import _generate_exchange_fixture, _generate_
 
 
 def test_inspector_help_lists_key_inputs() -> None:
-    """The inspector help text advertises path and environment key inputs."""
+    """Check that the inspector help advertises path and environment key inputs.
+
+    Args:
+        None; this function takes no arguments.
+
+    Returns:
+        None.
+    """
     completed = subprocess.run(
         [sys.executable, str(INSPECTOR_SCRIPT), "--help"],
         capture_output=True,
@@ -35,7 +42,14 @@ def test_inspector_help_lists_key_inputs() -> None:
 
 
 def test_inspector_prints_v1_summary() -> None:
-    """The summary includes v1 metadata and the resolved private-key role."""
+    """Check that the summary includes v1 metadata and the resolved private-key role.
+
+    Args:
+        None; this function takes no arguments.
+
+    Returns:
+        None.
+    """
     with tempfile.TemporaryDirectory() as temp_dir:
         tmp_path = Path(temp_dir)
         exchange_config_path, _, recipient_private_key_path = _generate_exchange_fixture(tmp_path, "shared-secret")
@@ -63,7 +77,14 @@ def test_inspector_prints_v1_summary() -> None:
 
 
 def test_inspector_prints_v2_summary() -> None:
-    """The summary includes v2 suite and bundle identifiers."""
+    """Check that the summary includes v2 suite and bundle identifiers.
+
+    Args:
+        None; this function takes no arguments.
+
+    Returns:
+        None.
+    """
     with tempfile.TemporaryDirectory() as temp_dir:
         tmp_path = Path(temp_dir)
         exchange_config_path, _, recipient_private_bundle_path = _generate_v2_exchange_fixture(
@@ -93,7 +114,14 @@ def test_inspector_prints_v2_summary() -> None:
 
 
 def test_inspector_outputs_v2_payload_as_json() -> None:
-    """The JSON output contains the decrypted v2 payload."""
+    """Check that JSON output contains the decrypted v2 payload.
+
+    Args:
+        None; this function takes no arguments.
+
+    Returns:
+        None.
+    """
     with tempfile.TemporaryDirectory() as temp_dir:
         tmp_path = Path(temp_dir)
         exchange_config_path, _, recipient_private_bundle_path = _generate_v2_exchange_fixture(
@@ -122,7 +150,14 @@ def test_inspector_outputs_v2_payload_as_json() -> None:
 
 
 def main() -> int:
-    """Run the inspection tests as a simple executable script."""
+    """Run the inspection tests as a simple executable script.
+
+    Args:
+        None; this function takes no arguments.
+
+    Returns:
+        Exit code 0 when all tests pass, or 1 when any test fails.
+    """
     tests = [
         test_inspector_help_lists_key_inputs,
         test_inspector_prints_v1_summary,

@@ -17,7 +17,14 @@ PROGRAM = "print_exchange_envelope.py"
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments for exchange envelope inspection."""
+    """Parse command-line arguments for exchange envelope inspection.
+
+    Args:
+        None; this function takes no arguments.
+
+    Returns:
+        Parsed command-line arguments for the envelope inspector.
+    """
     parser = argparse.ArgumentParser(
         prog=PROGRAM,
         description="Print an initiate-exchange JWE JSON object, decode its protected header, and decrypt its payload.",

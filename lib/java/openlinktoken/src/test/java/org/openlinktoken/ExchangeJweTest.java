@@ -19,6 +19,9 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.openlinktoken.crypto.CryptoSuite;
 
+/**
+ * Tests construction, validation, and decryption of version-one exchange JWEs.
+ */
 class ExchangeJweTest {
 
     private static final byte[] HASHING_SECRET = "shared-hashing-secret".getBytes(StandardCharsets.UTF_8);
@@ -78,6 +81,8 @@ class ExchangeJweTest {
 
     /**
      * Verifies secret, IV, and protected-header fields use unpadded base64url encoding.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void emitsUnpaddedBase64UrlPayloadFields() {
@@ -178,6 +183,8 @@ class ExchangeJweTest {
 
     /**
      * Verifies malformed JSON and envelopes missing required structural fields are rejected.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void rejectsMalformedEnvelopeJsonAndStructure() {
@@ -203,6 +210,8 @@ class ExchangeJweTest {
 
     /**
      * Verifies omitted rotation options resolve to their documented defaults.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void buildsDefaultPayloadOptions() {
@@ -227,6 +236,8 @@ class ExchangeJweTest {
 
     /**
      * Verifies invalid UTF-8 and malformed version-one payload fields are rejected.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void rejectsMalformedUtf8AndInvalidPayloadFields() {
@@ -265,6 +276,8 @@ class ExchangeJweTest {
 
     /**
      * Verifies ciphertext tampering and unrelated private keys cannot decrypt an envelope.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void rejectsTamperedCiphertextAndUnrelatedPrivateKey() {
@@ -284,6 +297,8 @@ class ExchangeJweTest {
 
     /**
      * Verifies an unsupported protected content-encryption value is rejected before decryption.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void rejectsTamperedProtectedHeaderBeforeDecryption() {
@@ -320,6 +335,8 @@ class ExchangeJweTest {
     /**
      * Verifies a mapping with invalid payload fields fails JSON payload validation.
      *
+     * <p>This method returns no value.</p>
+     *
      * @param payload invalid exchange payload fields
      */
     private static void assertInvalidPayload(Map<String, Object> payload) {
@@ -346,6 +363,13 @@ class ExchangeJweTest {
                         ExchangeJsonTestSupport.writeObject(protectedHeader)));
     }
 
+    /**
+     * Generates P-256 private and public PEMs for the test participants.
+     *
+     * <p>This method accepts no arguments.</p>
+     *
+     * @return the sender and recipient key material
+     */
     private static KeyMaterial generateKeyMaterial() {
         KeyPair sender = EcKeyUtils.generateKeyPair("P-256");
         KeyPair recipient = EcKeyUtils.generateKeyPair("P-256");
@@ -356,12 +380,26 @@ class ExchangeJweTest {
                 EcKeyUtils.publicKeyToPem(recipient.getPublic()));
     }
 
+    /**
+     * Flips one byte in an unpadded base64url value.
+     *
+     * @param value canonical base64url text
+     * @return the mutated unpadded base64url text
+     */
     private static String mutateBase64Url(String value) {
         byte[] decoded = Base64.getUrlDecoder().decode(value);
         decoded[0] ^= 0x01;
         return Base64.getUrlEncoder().withoutPadding().encodeToString(decoded);
     }
 
+    /**
+     * Holds version-one sender and recipient key material for the tests.
+     *
+     * @param senderPrivatePem sender private-key PEM
+     * @param senderPublicPem sender public-key PEM
+     * @param recipientPrivatePem recipient private-key PEM
+     * @param recipientPublicPem recipient public-key PEM
+     */
     private record KeyMaterial(
             byte[] senderPrivatePem,
             byte[] senderPublicPem,

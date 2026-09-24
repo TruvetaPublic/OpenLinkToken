@@ -24,7 +24,9 @@ final class ExchangeJsonTestSupport {
             .configure(DeserializationFeature.FAIL_ON_TRAILING_TOKENS, true)
             .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
 
-    /** Prevents instantiation. */
+    /**
+     * Constructs the test JSON helper with no arguments; private visibility prevents caller instantiation.
+     */
     private ExchangeJsonTestSupport() {
     }
 

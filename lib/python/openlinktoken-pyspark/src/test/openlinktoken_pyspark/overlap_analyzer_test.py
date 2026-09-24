@@ -68,7 +68,14 @@ def sample_tokens_df2(spark):
 
 
 class TestOpenLinkTokenOverlapAnalyzerInit:
-    """Tests for OpenLinkTokenOverlapAnalyzer initialization."""
+    """Tests for OpenLinkTokenOverlapAnalyzer initialization.
+
+    Args:
+        None; pytest creates this test class without constructor arguments.
+
+    Returns:
+        A test-case instance used by pytest to run the test methods.
+    """
 
     def test_init_valid_key(self, encryption_key):
         """Test initialization with valid encryption key."""

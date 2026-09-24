@@ -74,7 +74,7 @@ public class TokenGenerator implements Serializable {
     }
 
     /**
-     * Initializes the token generator with a configured crypto suite.
+     * Creates a token generator configured with a crypto suite.
      *
      * @param tokenDefinition      the token definition.
      * @param tokenTransformerList a list of token transformers.

@@ -18,6 +18,9 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
+/**
+ * Tests version-two ML-KEM exchange construction, decryption, and validation.
+ */
 class ExchangeKemTest {
 
     private static final List<String> V2_SUITES = List.of(
@@ -27,6 +30,8 @@ class ExchangeKemTest {
 
     /**
      * Verifies each version-two suite encrypts and decrypts equivalent payloads for both recipients.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void buildsAndDecryptsEveryV2SuiteForBothRecipients() {
@@ -97,6 +102,8 @@ class ExchangeKemTest {
 
     /**
      * Verifies the derived token transport key differs from the JWE content key and depends on the exchange ID.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void derivesTransportKeySeparatelyFromTheJweCek() {
@@ -124,6 +131,8 @@ class ExchangeKemTest {
 
     /**
      * Verifies direct JWE construction rejects missing, mismatched, duplicate, or unsupported inputs.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void rejectsInvalidDirectJweBuildInputs() {
@@ -162,6 +171,8 @@ class ExchangeKemTest {
 
     /**
      * Verifies malformed JWE members and unsupported content parameters are rejected during decryption.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void rejectsMalformedJweMembersAndContentParameters() {
@@ -213,6 +224,8 @@ class ExchangeKemTest {
 
     /**
      * Verifies malformed hybrid ephemeral keys and tampered wrapped content keys are rejected.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void rejectsMalformedHybridEphemeralKeysAndWrappedContentKeys() {
@@ -253,6 +266,8 @@ class ExchangeKemTest {
 
     /**
      * Verifies ciphertext/header tampering, wrong suites or keys, and short recipient keys are rejected.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void rejectsTamperingWrongSuiteWrongKeyAndRecipientLength() {
@@ -306,6 +321,8 @@ class ExchangeKemTest {
 
     /**
      * Verifies mismatched suites and invalid exchange names, counts, or KMAC secrets are rejected.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void rejectsMismatchedSuitesAndInvalidExchangeInputs() {
@@ -358,6 +375,11 @@ class ExchangeKemTest {
      * Verifies an empty hashing secret remains valid for non-KMAC version-two suites.
      */
     @Test
+    /**
+     * Verifies non-KMAC suites preserve support for an empty hashing secret.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
+     */
     void preservesNonKmacEmptyHashingSecretBehavior() {
         ExchangeKeyBundle sender = ExchangeKeyBundle.generate("suite-pq-v1");
         ExchangeKeyBundle recipient = ExchangeKeyBundle.generate("suite-pq-v1");
@@ -374,6 +396,12 @@ class ExchangeKemTest {
         assertEquals("", payload.get("hashingSecret"));
     }
 
+    /**
+     * Returns the recipient mappings from an exchange envelope.
+     *
+     * @param envelope exchange envelope
+     * @return the recipient entries as mutable mappings
+     */
     @SuppressWarnings("unchecked")
     private static List<Map<String, Object>> recipients(Map<String, Object> envelope) {
         return (List<Map<String, Object>>) envelope.get("recipients");
@@ -427,6 +455,8 @@ class ExchangeKemTest {
     /**
      * Replaces the first recipient's header in a mutable envelope.
      *
+     * <p>This method returns no value.</p>
+     *
      * @param envelope envelope to update
      * @param header replacement recipient header
      */
@@ -448,24 +478,54 @@ class ExchangeKemTest {
         return copy;
     }
 
+    /**
+     * Decodes unpadded base64url text.
+     *
+     * @param value encoded text
+     * @return decoded bytes
+     */
     private static byte[] decode(String value) {
         return Base64.getUrlDecoder().decode(value);
     }
 
+    /**
+     * Encodes bytes as unpadded base64url text.
+     *
+     * @param value bytes to encode
+     * @return unpadded base64url text
+     */
     private static String encode(byte[] value) {
         return Base64.getUrlEncoder().withoutPadding().encodeToString(value);
     }
 
+    /**
+     * Flips one bit in a base64url-encoded value.
+     *
+     * @param value canonical base64url text
+     * @return the mutated unpadded base64url text
+     */
     private static String mutateBase64(String value) {
         byte[] decoded = decode(value);
         decoded[0] ^= 0x01;
         return encode(decoded);
     }
 
+    /**
+     * Encodes test byte arrays as lowercase hexadecimal strings.
+     */
     private static final class Hex {
+        /**
+         * Creates the hexadecimal helper with no arguments.
+         */
         private Hex() {
         }
 
+        /**
+         * Encodes bytes as lowercase hexadecimal text.
+         *
+         * @param value bytes to encode
+         * @return lowercase hexadecimal text
+         */
         private static String encode(byte[] value) {
             StringBuilder result = new StringBuilder(value.length * 2);
             for (byte item : value) {
@@ -475,10 +535,22 @@ class ExchangeKemTest {
         }
     }
 
+    /**
+     * Creates fixed sets of expected JSON member names for tests.
+     */
     private static final class SetOf {
+        /**
+         * Creates the set helper with no arguments.
+         */
         private SetOf() {
         }
 
+        /**
+         * Creates a set from the supplied member names.
+         *
+         * @param values member names
+         * @return an immutable set of the supplied names
+         */
         private static Set<String> members(String... values) {
             return Set.of(values);
         }

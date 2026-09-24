@@ -30,6 +30,8 @@ class HashTokenTransformerTest {
 
     /**
      * Creates the default-suite transformer used by the baseline tests.
+     *
+     * <p>This setup method accepts no arguments and returns no value.</p>
      */
     @BeforeEach
     void setup() throws NoSuchAlgorithmException, InvalidKeyException {
@@ -38,6 +40,8 @@ class HashTokenTransformerTest {
 
     /**
      * Verifies that a serialized transformer rebuilds its transient MAC state.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testSerializable() throws Exception {
@@ -59,6 +63,8 @@ class HashTokenTransformerTest {
 
     /**
      * Verifies hashing with the default HMAC-SHA-256 suite.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testTransform_ValidToken_ReturnsHashedToken() throws Exception {
@@ -76,6 +82,8 @@ class HashTokenTransformerTest {
 
     /**
      * Verifies that null tokens are rejected.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testTransform_NullToken_ThrowsIllegalArgumentException() {
@@ -87,6 +95,8 @@ class HashTokenTransformerTest {
 
     /**
      * Verifies the behavior of a transformer initialized with a null secret.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testConstructor_NullSecret_InitializesWithNullMac() throws Exception {
@@ -98,6 +108,8 @@ class HashTokenTransformerTest {
 
     /**
      * Verifies the behavior of a transformer initialized with a blank secret.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testConstructor_BlankSecret_InitializesWithNullMac() throws Exception {
@@ -109,6 +121,8 @@ class HashTokenTransformerTest {
 
     /**
      * Verifies that hashing the same token repeatedly is deterministic.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testTransform_ValidTokenMultipleTimes_ReturnsConsistentHash() throws Exception {
@@ -119,6 +133,8 @@ class HashTokenTransformerTest {
 
     /**
      * Verifies hashing with raw secret bytes.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testTransform_RawByteSecret_ReturnsExpectedHash() throws Exception {
@@ -137,6 +153,8 @@ class HashTokenTransformerTest {
 
     /**
      * Verifies that a null suite uses the backward-compatible HMAC-SHA-256 suite.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testNullSuiteUsesDefaultMac() throws Exception {
@@ -148,6 +166,8 @@ class HashTokenTransformerTest {
 
     /**
      * Verifies the fixed vector for the SHA-3 suite.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testTransform_Sha3Suite_ReturnsFixedVector() throws Exception {
@@ -161,6 +181,8 @@ class HashTokenTransformerTest {
 
     /**
      * Verifies the fixed vector for the SHAKE and KMAC suite.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testTransform_ShakeSuite_ReturnsFixedVector() throws Exception {

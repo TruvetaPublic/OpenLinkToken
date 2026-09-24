@@ -31,13 +31,15 @@ public final class ExchangeInteropHarness {
     private static final String CREATED_AT = "2026-03-12T00:00:00Z";
 
     /**
-     * Prevents instantiation of this command-line harness.
+     * Creates the private harness instance with no arguments.
      */
     private ExchangeInteropHarness() {
     }
 
     /**
      * Builds or decrypts an exchange envelope.
+     *
+     * <p>This method returns no value.</p>
      *
      * @param args {@code build <suite-id> <output-dir>} or
      *        {@code decrypt <suite-id> <envelope.json> <private-key> <result.json>}
@@ -56,6 +58,8 @@ public final class ExchangeInteropHarness {
 
     /**
      * Generates a suite-specific envelope and sender private key for Python to decrypt.
+     *
+     * <p>This method returns no value.</p>
      *
      * @param args command-line arguments
      * @throws Exception if an artifact cannot be written
@@ -78,6 +82,8 @@ public final class ExchangeInteropHarness {
 
     /**
      * Generates a legacy ECDH envelope using the public v1 exchange API.
+     *
+     * <p>This method returns no value.</p>
      *
      * @param suite the legacy suite
      * @param outputDirectory destination directory
@@ -106,6 +112,8 @@ public final class ExchangeInteropHarness {
 
     /**
      * Generates a pure or hybrid ML-KEM envelope using the public v2 exchange API.
+     *
+     * <p>This method returns no value.</p>
      *
      * @param suite the version-two suite
      * @param outputDirectory destination directory
@@ -176,6 +184,8 @@ public final class ExchangeInteropHarness {
 
     /**
      * Writes a JSON-compatible value using UTF-8.
+     *
+     * <p>This method returns no value.</p>
      *
      * @param path destination path
      * @param value value to serialize

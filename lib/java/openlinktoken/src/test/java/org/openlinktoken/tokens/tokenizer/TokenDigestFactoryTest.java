@@ -19,6 +19,8 @@ class TokenDigestFactoryTest {
 
     /**
      * Verifies each registered digest suite selects its dedicated implementation.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void factorySelectsDigestImplementationForEachSuite() {
@@ -35,6 +37,8 @@ class TokenDigestFactoryTest {
 
     /**
      * Verifies the dedicated implementations against standard digest vectors.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      *
      * @throws Exception if a standard digest is unavailable
      */
@@ -56,6 +60,8 @@ class TokenDigestFactoryTest {
 
     /**
      * Verifies unsupported digest identifiers fail at factory selection.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void factoryRejectsUnsupportedDigestAlgorithm() {
@@ -66,6 +72,8 @@ class TokenDigestFactoryTest {
 
     /**
      * Verifies a null suite input is rejected by suite-based digest selection.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void factoryRejectsNullSuite() {

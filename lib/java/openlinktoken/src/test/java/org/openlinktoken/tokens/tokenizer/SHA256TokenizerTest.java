@@ -34,6 +34,8 @@ class SHA256TokenizerTest {
 
     /**
      * Creates a tokenizer with mocked transformers for each test.
+     *
+     * <p>This setup method accepts no arguments and returns no value.</p>
      */
     @BeforeEach
     void setUp() {
@@ -52,6 +54,8 @@ class SHA256TokenizerTest {
 
     /**
      * Verifies that null and blank inputs return the empty token.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testTokenize_NullOrEmptyInput_ReturnsEmptyString() throws Exception {
@@ -67,6 +71,8 @@ class SHA256TokenizerTest {
 
     /**
      * Verifies that a digest is passed through each configured transformer.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testTokenize_ValidInput_ReturnsHashedToken() throws Exception {
@@ -89,6 +95,8 @@ class SHA256TokenizerTest {
 
     /**
      * Verifies that tokenization returns the raw digest when no transformers exist.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testTokenize_ValidInput_NoTransformers_ReturnsRawHash() throws Exception {
@@ -105,6 +113,8 @@ class SHA256TokenizerTest {
 
     /**
      * Verifies that the no-suite constructor remains explicitly SHA-256 based.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void noSuiteConstructorUsesSha256Suite() throws Exception {
@@ -117,6 +127,8 @@ class SHA256TokenizerTest {
 
     /**
      * Verifies that transformer failures are propagated to the caller.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testTokenize_ValidInput_TransformerThrowsException() throws Exception {
@@ -135,6 +147,8 @@ class SHA256TokenizerTest {
 
     /**
      * Verifies the fixed vector for the SHA-3 suite.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testTokenize_Sha3Suite_ReturnsFixedVector() throws Exception {
@@ -147,6 +161,8 @@ class SHA256TokenizerTest {
 
     /**
      * Verifies the fixed vector for the SHAKE suite.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void testTokenize_ShakeSuite_ReturnsFixedVector() throws Exception {

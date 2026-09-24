@@ -33,6 +33,12 @@ class OpenLinkTokenOverlapAnalyzer:
     This class helps identify records that match between two datasets using
     encrypted tokens. It supports flexible matching rules based on specific
     token types (T1-T5 or custom tokens).
+
+    Args:
+        encryption_key: AES-256 key used to decrypt tokens for comparison.
+
+    Returns:
+        An analyzer initialized with the normalized encryption key.
     """
 
     def __init__(self, encryption_key: Union[str, bytes]):
@@ -42,6 +48,9 @@ class OpenLinkTokenOverlapAnalyzer:
         Args:
             encryption_key: The same AES-256 encryption key used to encrypt tokens.
                             Required to decrypt tokens for comparison.
+
+        Returns:
+            None.
 
         Raises:
             ValueError: If encryption key is empty or invalid length

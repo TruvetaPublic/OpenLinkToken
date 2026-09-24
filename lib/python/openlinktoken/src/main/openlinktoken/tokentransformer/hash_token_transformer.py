@@ -17,6 +17,15 @@ class HashTokenTransformer(TokenTransformer):
     """Transform the token using a cryptographic hash function and secret key.
 
     See: https://datatracker.ietf.org/doc/html/rfc4868 (HMACSHA256)
+
+    Args:
+        hashing_secret: Optional MAC key as UTF-8 text or raw bytes. Empty or
+            ``None`` values create a transformer without an available MAC.
+        crypto_suite: Optional suite selecting the keyed MAC; defaults to the
+            backward-compatible HMAC-SHA256 suite.
+
+    Returns:
+        A ``HashTokenTransformer`` configured with the selected MAC.
     """
 
     def __init__(
@@ -24,18 +33,19 @@ class HashTokenTransformer(TokenTransformer):
         hashing_secret: Union[str, bytes, None],
         crypto_suite: CryptoSuite | None = None,
     ):
-        """Initializes the underlying MAC with the secret key.
+        """Initialize the underlying MAC with the secret key.
 
         Accepts a ``str`` (encoded to UTF-8), raw ``bytes``, or ``None`` / empty
         to create a no-op transformer (``transform`` will raise ``RuntimeError``).
 
         Args:
-            hashing_secret: The cryptographic secret key.
-            crypto_suite: The suite selecting the keyed MAC. Defaults to HMAC-SHA256.
+            hashing_secret: Optional MAC key as UTF-8 text or raw bytes. Empty
+                or ``None`` values leave the MAC unavailable.
+            crypto_suite: Optional suite selecting the keyed MAC; defaults to
+                HMAC-SHA256.
 
-        Raises:
-            ValueError: If the hashing secret is None or empty.
-
+        Returns:
+            None.
         """
         self._lock = threading.Lock()
         self.crypto_suite = crypto_suite or CryptoSuite.default()
@@ -50,9 +60,9 @@ class HashTokenTransformer(TokenTransformer):
             self._mac_available = True
 
     def transform(self, token: str) -> str:
-        """Hash token transformer.
+        """Hash a token with the suite-selected keyed MAC.
 
-        The token is transformed using the suite-selected HMAC algorithm.
+        The MAC output is encoded as standard base64 text.
 
         Args:
             token: The token to be transformed.
@@ -62,6 +72,8 @@ class HashTokenTransformer(TokenTransformer):
 
         Raises:
             ValueError: If token is None or blank.
+            ValueError: If the selected MAC algorithm is unsupported or its
+                secret does not meet suite requirements.
             RuntimeError: If the HMAC is not initialized properly.
 
         """

@@ -47,7 +47,7 @@ public class JweMatchTokenFormatter implements TokenTransformer {
     private transient DirectEncrypter encrypter;
 
     /**
-     * Initializes the JWE match token formatter.
+     * Creates a JWE match-token formatter with a UTF-8 string key.
      *
      * @param encryptionKey the encryption key (must be 32 bytes for AES-256)
      * @param ringId the ring identifier for key management
@@ -62,7 +62,7 @@ public class JweMatchTokenFormatter implements TokenTransformer {
     }
 
     /**
-     * Initializes the JWE match token formatter using raw encryption key bytes.
+     * Creates a JWE match-token formatter with raw encryption key bytes.
      *
      * @param encryptionKey the raw encryption key (must be exactly 32 bytes for AES-256)
      * @param ringId the ring identifier for key management
@@ -76,7 +76,7 @@ public class JweMatchTokenFormatter implements TokenTransformer {
     }
 
     /**
-     * Initializes the JWE formatter with an explicit crypto suite.
+     * Creates a JWE formatter with an explicit crypto suite.
      *
      * @param encryptionKey the raw encryption key
      * @param ringId the key ring identifier
@@ -112,8 +112,10 @@ public class JweMatchTokenFormatter implements TokenTransformer {
     /**
      * Serializes the formatter's persistent configuration; the encrypter is transient.
      *
-     * @param oos the object output stream
-     * @throws IOException if serialization fails
+     * <p>This method returns no value.</p>
+     *
+     * @param oos the object stream receiving the formatter state
+     * @throws IOException if the formatter state cannot be written
      */
     private void writeObject(ObjectOutputStream oos) throws IOException {
         oos.defaultWriteObject();
@@ -122,9 +124,11 @@ public class JweMatchTokenFormatter implements TokenTransformer {
     /**
      * Restores the formatter configuration and recreates its transient encrypter.
      *
-     * @param ois the object input stream
-     * @throws IOException if deserialization or encrypter reconstruction fails
-     * @throws ClassNotFoundException if a serialized class cannot be found
+     * <p>This method returns no value.</p>
+     *
+     * @param ois the object stream containing the formatter state
+     * @throws IOException if the formatter state or encrypter cannot be restored
+     * @throws ClassNotFoundException if a serialized class cannot be resolved
      */
     private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
         ois.defaultReadObject();

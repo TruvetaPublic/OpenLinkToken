@@ -316,6 +316,8 @@ public final class ExchangeKeyBundle implements Serializable {
     /**
      * Serializes this bundle without private material.
      *
+     * <p>This method accepts no arguments.</p>
+     *
      * @return a mutable JSON-compatible mapping
      */
     public Map<String, Object> toMapping() {
@@ -371,6 +373,8 @@ public final class ExchangeKeyBundle implements Serializable {
     /**
      * Serializes this bundle without private material.
      *
+     * <p>This method accepts no arguments.</p>
+     *
      * @return deterministic UTF-8 JSON
      */
     public byte[] toJson() {
@@ -390,6 +394,8 @@ public final class ExchangeKeyBundle implements Serializable {
     /**
      * Returns the crypto suite.
      *
+     * <p>This method accepts no arguments.</p>
+     *
      * @return the immutable suite
      */
     public CryptoSuite getSuite() {
@@ -398,6 +404,8 @@ public final class ExchangeKeyBundle implements Serializable {
 
     /**
      * Returns a copy of the raw ML-KEM public key.
+     *
+     * <p>This method accepts no arguments.</p>
      *
      * @return the public key, or {@code null} when absent
      */
@@ -408,6 +416,8 @@ public final class ExchangeKeyBundle implements Serializable {
     /**
      * Returns a copy of the raw ML-KEM private seed.
      *
+     * <p>This method accepts no arguments.</p>
+     *
      * @return the private seed, or {@code null} when absent
      */
     public byte[] getMlkemPrivateSeed() {
@@ -416,6 +426,8 @@ public final class ExchangeKeyBundle implements Serializable {
 
     /**
      * Returns a copy of the EC public key PEM.
+     *
+     * <p>This method accepts no arguments.</p>
      *
      * @return the public key, or {@code null} for a pure ML-KEM suite
      */
@@ -426,6 +438,8 @@ public final class ExchangeKeyBundle implements Serializable {
     /**
      * Returns a copy of the EC private key PEM.
      *
+     * <p>This method accepts no arguments.</p>
+     *
      * @return the private key, or {@code null} when absent
      */
     public byte[] getEcPrivatePem() {
@@ -434,6 +448,8 @@ public final class ExchangeKeyBundle implements Serializable {
 
     /**
      * Returns the stable public-material identifier.
+     *
+     * <p>This method accepts no arguments.</p>
      *
      * @return the portable key identifier
      */
@@ -444,6 +460,8 @@ public final class ExchangeKeyBundle implements Serializable {
     /**
      * Returns whether this bundle contains an EC key section.
      *
+     * <p>This method accepts no arguments.</p>
+     *
      * @return true for the hybrid profile
      */
     public boolean hasEcKey() {
@@ -452,6 +470,8 @@ public final class ExchangeKeyBundle implements Serializable {
 
     /**
      * Returns whether all private material required by the suite is present.
+     *
+     * <p>This method accepts no arguments.</p>
      *
      * @return true when the bundle can be used for private-key operations
      */
@@ -462,12 +482,25 @@ public final class ExchangeKeyBundle implements Serializable {
         return mlkemPrivateSeed != null;
     }
 
+    /**
+     * Generates an ML-KEM-768 key pair.
+     *
+     * <p>This method accepts no arguments.</p>
+     *
+     * @return the generated public and private key parameters
+     */
     private static AsymmetricCipherKeyPair generateMlKemKeyPair() {
         MLKEMKeyPairGenerator generator = new MLKEMKeyPairGenerator();
         generator.init(new MLKEMKeyGenerationParameters(new SecureRandom(), MLKEMParameters.ml_kem_768));
         return generator.generateKeyPair();
     }
 
+    /**
+     * Requires a registered suite that uses version-two exchange key bundles.
+     *
+     * @param suite candidate crypto suite
+     * @return the validated version-two suite
+     */
     private static CryptoSuite requireVersionTwoSuite(CryptoSuite suite) {
         if (suite == null) {
             throw new KeyBundleException("Crypto suite must not be null.");
@@ -479,10 +512,21 @@ public final class ExchangeKeyBundle implements Serializable {
         return suite;
     }
 
+    /**
+     * Checks whether a suite uses an ML-KEM key-agreement mechanism.
+     *
+     * @param suite crypto suite to inspect
+     * @return {@code true} if the suite uses ML-KEM
+     */
     private static boolean usesMlKem(CryptoSuite suite) {
         return suite.getExchangeKeyAgreement().contains(CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM_PREFIX);
     }
 
+    /**
+     * Validates that the stored public and optional private keys match the suite.
+     *
+     * <p>This method accepts no arguments and returns no value.</p>
+     */
     private void validateKeyMaterial() {
         if (mlkemPublicKey == null || mlkemPublicKey.length != MLKEM_PUBLIC_KEY_SIZE) {
             throw new KeyBundleException("mlkem.publicKey must be " + MLKEM_PUBLIC_KEY_SIZE + " bytes.");
@@ -542,6 +586,8 @@ public final class ExchangeKeyBundle implements Serializable {
     /**
      * Derives the stable key identifier from this bundle's suite and public keys.
      *
+     * <p>This method accepts no arguments.</p>
+     *
      * @return the suite-bound key identifier
      */
     private String calculateKid() {
@@ -567,6 +613,14 @@ public final class ExchangeKeyBundle implements Serializable {
         return EcKeyUtils.fingerprintToKid(fingerprint(fingerprintInput));
     }
 
+    /**
+     * Retrieves a named key section from a mapping.
+     *
+     * @param keys key sections mapping
+     * @param name requested section name
+     * @param message validation message when the section is absent or invalid
+     * @return the requested mapping section
+     */
     private static Map<?, ?> section(Map<?, ?> keys, String name, String message) {
         Object value = keys.get(name);
         if (!(value instanceof Map<?, ?> section)) {
@@ -575,6 +629,14 @@ public final class ExchangeKeyBundle implements Serializable {
         return section;
     }
 
+    /**
+     * Rejects key sections that are not supported by the selected suite.
+     *
+     * <p>This method returns no value.</p>
+     *
+     * @param keys key sections mapping
+     * @param suite selected crypto suite
+     */
     private static void validateKeySections(Map<?, ?> keys, CryptoSuite suite) {
         boolean hybrid = CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH_MLKEM768.equals(suite.getExchangeKeyAgreement());
         for (Object key : keys.keySet()) {
@@ -584,6 +646,15 @@ public final class ExchangeKeyBundle implements Serializable {
         }
     }
 
+    /**
+     * Rejects fields not allowed in a key section.
+     *
+     * <p>This method returns no value.</p>
+     *
+     * @param section key-section mapping
+     * @param allowedKeys allowed field names
+     * @param sectionName section name used in validation errors
+     */
     private static void validateSectionKeys(Map<?, ?> section, Set<String> allowedKeys, String sectionName) {
         for (Object key : section.keySet()) {
             if (!(key instanceof String) || !allowedKeys.contains(key)) {
@@ -593,6 +664,13 @@ public final class ExchangeKeyBundle implements Serializable {
         }
     }
 
+    /**
+     * Requires a non-empty string field value.
+     *
+     * @param value candidate field value
+     * @param fieldName field name used in validation errors
+     * @return the validated string
+     */
     private static String stringValue(Object value, String fieldName) {
         if (!(value instanceof String string) || string.isBlank()) {
             throw new KeyBundleException(fieldName + " must be a non-empty string.");
@@ -723,12 +801,27 @@ public final class ExchangeKeyBundle implements Serializable {
         return result.toString();
     }
 
+    /**
+     * Requires two values to be equal.
+     *
+     * <p>This method returns no value.</p>
+     *
+     * @param actual actual value
+     * @param expected expected value
+     * @param message validation message when the values differ
+     */
     private static void requireEquals(Object actual, Object expected, String message) {
         if (!Objects.equals(actual, expected)) {
             throw new KeyBundleException(message);
         }
     }
 
+    /**
+     * Returns a defensive copy of nullable byte-array input.
+     *
+     * @param value source byte array, or {@code null}
+     * @return a defensive copy, or {@code null} when the input is {@code null}
+     */
     private static byte[] copy(byte[] value) {
         return value == null ? null : Arrays.copyOf(value, value.length);
     }
@@ -739,15 +832,32 @@ public final class ExchangeKeyBundle implements Serializable {
     public static final class KeyBundleException extends IllegalArgumentException {
         private static final long serialVersionUID = 1L;
 
+        /**
+         * Creates a key-bundle exception with a detail message.
+         *
+         * @param message exception detail message
+         */
         private KeyBundleException(String message) {
             super(message);
         }
 
+        /**
+         * Creates a key-bundle exception with a detail message and cause.
+         *
+         * @param message exception detail message
+         * @param cause underlying cause
+         */
         private KeyBundleException(String message, Throwable cause) {
             super(message, cause);
         }
     }
 
+    /**
+     * Compares this bundle with another object for equality.
+     *
+     * @param object candidate object to compare
+     * @return {@code true} if both objects contain the same suite and key material
+     */
     @Override
     public boolean equals(Object object) {
         if (this == object) {
@@ -763,6 +873,13 @@ public final class ExchangeKeyBundle implements Serializable {
                 && Arrays.equals(ecPrivatePem, other.ecPrivatePem);
     }
 
+    /**
+     * Computes a hash code from this bundle's suite and key material.
+     *
+     * <p>This method accepts no arguments.</p>
+     *
+     * @return the bundle hash code
+     */
     @Override
     public int hashCode() {
         int result = Objects.hash(suite);

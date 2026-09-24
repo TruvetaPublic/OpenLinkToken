@@ -26,8 +26,10 @@ class ExchangeConfigCase:
         private_key_path: Path to the matching private-key material.
         private_key_value: PEM or key-bundle JSON text for resolving the exchange.
 
-    Returns:
-        An immutable ``ExchangeConfigCase`` containing the exchange and key inputs.
+        The dataclass-generated ``__init__`` accepts the listed fields and returns ``None``.
+
+        Returns:
+            An immutable ``ExchangeConfigCase`` containing the exchange and key inputs.
     """
 
     crypto_suite: CryptoSuite
@@ -42,6 +44,8 @@ def exchange_config_case(
     tmp_path_factory: pytest.TempPathFactory,
 ) -> ExchangeConfigCase:
     """Create a valid real exchange configuration for each registered suite.
+
+    The parameter-ID callable receives each suite and returns its ``suite_id``.
 
     Args:
         request: Parameterized pytest request whose parameter is the current suite.

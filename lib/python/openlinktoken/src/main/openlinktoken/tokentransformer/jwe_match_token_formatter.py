@@ -35,6 +35,19 @@ class JweMatchTokenFormatter(TokenTransformer):
     and cryptographic agility.
 
     See RFC 7516 - JSON Web Encryption (JWE)
+
+    Args:
+        encryption_key: AES-256 key as UTF-8 text or bytes; it must contain
+            exactly 32 bytes.
+        ring_id: Ring identifier included in the JWE metadata.
+        rule_id: Token rule identifier included in the JWE metadata.
+        issuer: Optional issuer identifier; defaults to
+            ``"org.openlinktoken"``.
+        crypto_suite: Optional suite whose digest and MAC identifiers are
+            embedded in the token; defaults to the legacy suite.
+
+    Returns:
+        A ``JweMatchTokenFormatter`` configured to encrypt match tokens.
     """
 
     def __init__(
@@ -56,6 +69,9 @@ class JweMatchTokenFormatter(TokenTransformer):
             rule_id: The token rule identifier (e.g., "T1", "T2", etc.).
             issuer: The issuer identifier (optional, defaults to "org.openlinktoken").
             crypto_suite: The suite whose digest and MAC metadata is embedded in the token.
+
+        Returns:
+            None.
 
         Raises:
             ValueError: If encryption_key, ring_id, or rule_id are invalid.
@@ -92,7 +108,8 @@ class JweMatchTokenFormatter(TokenTransformer):
             token: The privacy-protected identifier (PPID) to wrap in JWE format
 
         Returns:
-            The formatted match token: olt.V1.<JWE compact serialization>
+            The formatted ``olt.V1.<JWE>`` match token, or the original value
+            unchanged when the input is blank.
 
         Raises:
             Exception: If JWE encryption or serialization fails

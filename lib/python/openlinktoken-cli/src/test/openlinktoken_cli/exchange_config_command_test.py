@@ -20,10 +20,22 @@ from openlinktoken_cli.util.exchange_config import default_exchange_config_path
 
 
 class TestExchangeConfigCommands:
-    """Focused command tests for exchange-config-driven secret resolution."""
+    """Focused command tests for exchange-config-driven secret resolution.
+
+    Constructor:
+        Takes no arguments and returns a new ``TestExchangeConfigCommands`` instance.
+    """
 
     def test_tokenize_rejects_future_v3_exchange_config(self, tmp_path: Path, caplog) -> None:
-        """Tokenize should reject unsupported future configs during exchange-config loading."""
+        """Tokenize should reject unsupported future configs during exchange-config loading.
+
+        Args:
+            tmp_path: Pytest temporary directory for the input and exchange-config files.
+            caplog: Pytest log capture fixture used to inspect the unsupported-version error.
+
+        Returns:
+            None.
+        """
         input_csv = _write_input_csv(tmp_path)
         output_csv = tmp_path / "output.csv"
         exchange_config_path, private_key_path = _write_future_v3_exchange_config(tmp_path)
@@ -46,7 +58,15 @@ class TestExchangeConfigCommands:
         assert "Unsupported exchange config version '3'. Supported versions: 1, 2." in caplog.text
 
     def test_encrypt_rejects_future_v3_exchange_config(self, tmp_path: Path, caplog) -> None:
-        """Encrypt should reject unsupported future configs during exchange-config loading."""
+        """Encrypt should reject unsupported future configs during exchange-config loading.
+
+        Args:
+            tmp_path: Pytest temporary directory for the input and exchange-config files.
+            caplog: Pytest log capture fixture used to inspect the unsupported-version error.
+
+        Returns:
+            None.
+        """
         input_csv = _write_tokenized_csv(tmp_path)
         output_csv = tmp_path / "encrypted.csv"
         exchange_config_path, private_key_path = _write_future_v3_exchange_config(tmp_path)
@@ -176,7 +196,14 @@ class TestExchangeConfigCommands:
 
 
 def _write_input_csv(tmp_path: Path) -> Path:
-    """Create the small person-attribute CSV used by command integration tests."""
+    """Create the small person-attribute CSV used by command integration tests.
+
+    Args:
+        tmp_path: Directory in which to create the input CSV.
+
+    Returns:
+        Path to the created input CSV.
+    """
     input_csv = tmp_path / "input.csv"
     input_csv.write_text(
         "RecordId,FirstName,LastName,PostalCode,Sex,BirthDate,SocialSecurityNumber\n"
@@ -187,7 +214,14 @@ def _write_input_csv(tmp_path: Path) -> Path:
 
 
 def _write_tokenized_csv(tmp_path: Path) -> Path:
-    """Create a representative tokenized CSV for encryption tests."""
+    """Create a representative tokenized CSV for encryption tests.
+
+    Args:
+        tmp_path: Directory in which to create the tokenized CSV.
+
+    Returns:
+        Path to the created tokenized CSV.
+    """
     tokenized_csv = tmp_path / "tokenized.csv"
     tokenized_csv.write_text(
         "RecordId,RuleNumber,RuleExpression,RuleWeight,RuleCount,Token\ntest-001,1,T1,1.0,1,SGVsbG9Ub2tlbg==\n",
@@ -197,7 +231,15 @@ def _write_tokenized_csv(tmp_path: Path) -> Path:
 
 
 def _write_current_exchange_config(exchange_config_path: Path, tmp_path: Path) -> Path:
-    """Write a legacy exchange config and return its matching private-key path."""
+    """Write a legacy exchange config and return its matching private-key path.
+
+    Args:
+        exchange_config_path: Destination path for the serialized exchange config.
+        tmp_path: Directory in which to create the sender key files.
+
+    Returns:
+        Path to the sender private-key PEM matching the config.
+    """
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     _, recipient_public_pem = generate_key_pair("P-256")
     config = build_exchange_envelope(
@@ -219,7 +261,14 @@ def _write_current_exchange_config(exchange_config_path: Path, tmp_path: Path) -
 
 
 def _write_future_v3_exchange_config(tmp_path: Path) -> tuple[Path, Path]:
-    """Create an unsupported v3 envelope and return its path and private key."""
+    """Create an unsupported v3 envelope and return its path and private key.
+
+    Args:
+        tmp_path: Directory in which to create the exchange config and sender key files.
+
+    Returns:
+        A tuple containing the exchange-config path and matching sender private-key path.
+    """
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     _, recipient_public_pem = generate_key_pair("P-256")
     payload = {

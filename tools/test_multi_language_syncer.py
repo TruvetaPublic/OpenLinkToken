@@ -7,7 +7,14 @@ def test_python_cli_is_not_an_active_sync_language():
 
 
 def test_python_crypto_suite_module_maps_to_java_crypto_package():
-    """Asserts the Python crypto-suite source maps to the Java crypto package path."""
+    """Check that the Python crypto-suite source maps to the Java crypto package path.
+
+    Args:
+        None; this function takes no arguments.
+
+    Returns:
+        None.
+    """
     syncer = MultiLanguageSyncer()
 
     corresponding = syncer.get_corresponding_files(
@@ -19,7 +26,14 @@ def test_python_crypto_suite_module_maps_to_java_crypto_package():
 
 
 def test_java_crypto_suite_module_maps_to_python_crypto_package():
-    """Asserts the Java crypto-suite source maps to the Python crypto package path."""
+    """Check that the Java crypto-suite source maps to the Python crypto package path.
+
+    Args:
+        None; this function takes no arguments.
+
+    Returns:
+        None.
+    """
     syncer = MultiLanguageSyncer()
 
     corresponding = syncer.get_corresponding_files(
@@ -49,6 +63,9 @@ def test_python_digest_modules_map_to_java_acronym_names(source_file, expected_j
     Args:
         source_file: Python digest module path.
         expected_java_file: Expected Java class path for the module.
+
+    Returns:
+        None.
     """
     syncer = MultiLanguageSyncer()
 

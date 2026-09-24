@@ -14,7 +14,7 @@ public final class TokenDigestFactory implements Serializable {
 
 
     /**
-     * Prevents construction of this factory.
+     * Constructs this factory with no arguments; private visibility keeps it non-instantiable to callers.
      */
     private TokenDigestFactory() {
     }

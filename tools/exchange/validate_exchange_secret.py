@@ -37,7 +37,14 @@ PROGRAM = "validate_exchange_secret.py"
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments for exchange validation."""
+    """Parse command-line arguments for exchange validation.
+
+    Args:
+        None; this function takes no arguments.
+
+    Returns:
+        Parsed command-line arguments for the exchange validator.
+    """
     parser = argparse.ArgumentParser(
         prog=PROGRAM,
         description="Decrypt an initiate-exchange JWE envelope with either matching private key.",
@@ -72,7 +79,16 @@ def decrypt_exchange_secret(
     private_key_path: Path | None,
     private_key_stdin: bool = False,
 ) -> bytes:
-    """Recover the plaintext hashing secret bytes from a JWE exchange config."""
+    """Recover the plaintext hashing secret bytes from a JWE exchange config.
+
+    Args:
+        exchange_config_path: Path to the JWE exchange config.
+        private_key_path: Optional path to matching private-key material.
+        private_key_stdin: Whether to read private-key material from stdin.
+
+    Returns:
+        Decrypted hashing secret bytes.
+    """
     exchange_config = load_exchange_config(exchange_config_path)
     private_material = resolve_private_key_pem(
         exchange_config,
@@ -84,7 +100,14 @@ def decrypt_exchange_secret(
 
 
 def load_exchange_config(exchange_config_path: Path) -> dict[str, Any]:
-    """Load and validate an exchange config through the shared resolver."""
+    """Load and validate an exchange config through the shared resolver.
+
+    Args:
+        exchange_config_path: Path to the exchange config JSON file.
+
+    Returns:
+        The validated exchange config as a dictionary.
+    """
     return dict(load_shared_exchange_config(exchange_config_path).config)
 
 
@@ -93,7 +116,16 @@ def resolve_private_key_pem(
     private_key_path: Path | None,
     private_key_stdin: bool = False,
 ) -> bytes:
-    """Return caller-supplied private material or resolve it by recipient kid."""
+    """Return caller-supplied private material or resolve it by recipient kid.
+
+    Args:
+        exchange_config: Validated exchange config whose recipient keys are targeted.
+        private_key_path: Optional path to caller-supplied private-key material.
+        private_key_stdin: Whether to read caller-supplied private-key material from stdin.
+
+    Returns:
+        Private-key material bytes supplied by the caller or resolved locally.
+    """
     if private_key_path is not None and private_key_stdin:
         raise ValueError("Use either --private-key or --private-key-stdin, not both.")
 
@@ -121,7 +153,15 @@ def resolve_private_key_pem(
 
 
 def _require_recipient_key(exchange_config: dict[str, Any], private_material: bytes) -> None:
-    """Reject direct key material that cannot target a listed recipient."""
+    """Reject direct key material that cannot target a listed recipient.
+
+    Args:
+        exchange_config: Exchange config containing the allowed recipient identifiers.
+        private_material: PEM or JSON-bundle private-key bytes to validate.
+
+    Returns:
+        None.
+    """
     if _kid_for_private_key(private_material) not in _recipient_kids(exchange_config):
         raise ValueError("Provided private key does not match any JWE recipient entry in the exchange config.")
 
@@ -147,7 +187,14 @@ def _recipient_kids(exchange_config: dict[str, Any]) -> list[str]:
 
 
 def _kid_for_private_key(private_pem: bytes) -> str:
-    """Derive the key identifier for PEM or JSON-bundle private material."""
+    """Derive the key identifier for PEM or JSON-bundle private material.
+
+    Args:
+        private_pem: PEM or JSON-bundle private-key material.
+
+    Returns:
+        Key identifier derived from the corresponding public key.
+    """
     try:
         return ExchangeKeyBundle.from_json(private_pem, require_private=True).kid
     except (KeyBundleError, UnicodeDecodeError, json.JSONDecodeError):
@@ -157,7 +204,15 @@ def _kid_for_private_key(private_pem: bytes) -> str:
 
 
 def decrypt_exchange_payload(exchange_config: dict[str, Any], private_pem: bytes) -> dict[str, Any]:
-    """Decrypt the exchange envelope and parse the payload JSON."""
+    """Decrypt the exchange envelope and parse the payload JSON.
+
+    Args:
+        exchange_config: Exchange envelope to decrypt.
+        private_pem: PEM or JSON-bundle private-key material for a listed recipient.
+
+    Returns:
+        Decrypted exchange payload as a dictionary.
+    """
     loaded_exchange = load_shared_exchange_config(exchange_config_value=exchange_config)
     try:
         if loaded_exchange.version == 2:

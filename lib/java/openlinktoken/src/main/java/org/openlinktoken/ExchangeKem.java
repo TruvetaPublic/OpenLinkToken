@@ -67,6 +67,9 @@ public final class ExchangeKem implements Serializable {
             .configure(DeserializationFeature.FAIL_ON_TRAILING_TOKENS, true)
             .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
 
+    /**
+     * Creates the utility instance with no arguments.
+     */
     private ExchangeKem() {
     }
 
@@ -247,6 +250,14 @@ public final class ExchangeKem implements Serializable {
         return decryptExchangeEnvelopeV2(exchangeConfig, privateBundle).getPlaintext();
     }
 
+    /**
+     * Validates the hashing secret required by the selected suite.
+     *
+     * <p>This method returns no value.</p>
+     *
+     * @param hashingSecret raw hashing secret bytes
+     * @param suite selected crypto suite
+     */
     private static void validateHashingSecret(byte[] hashingSecret, CryptoSuite suite) {
         if (hashingSecret == null) {
             throw new IllegalArgumentException("Hashing secret must be bytes.");
@@ -275,6 +286,15 @@ public final class ExchangeKem implements Serializable {
         }
     }
 
+    /**
+     * Validates payload suite, exchange identity, and recipient key bundles.
+     *
+     * <p>This method returns no value.</p>
+     *
+     * @param payload decrypted exchange payload fields
+     * @param suite suite authenticated by the protected header
+     * @param protectedHeader authenticated protected-header fields
+     */
     private static void validatePayload(
             Map<String, Object> payload,
             CryptoSuite suite,
@@ -294,6 +314,13 @@ public final class ExchangeKem implements Serializable {
         validatePayloadBundle(payload, "recipientKeyBundle", recipientKeyId, suite);
     }
 
+    /**
+     * Requires a non-empty string field in an exchange payload.
+     *
+     * @param payload payload fields
+     * @param fieldName required field name
+     * @return the validated string value
+     */
     private static String requiredPayloadString(Map<String, Object> payload, String fieldName) {
         Object value = payload.get(fieldName);
         if (!(value instanceof String string) || string.isEmpty()) {
@@ -302,6 +329,16 @@ public final class ExchangeKem implements Serializable {
         return string;
     }
 
+    /**
+     * Validates that a payload key bundle matches its authenticated suite and identifier.
+     *
+     * <p>This method returns no value.</p>
+     *
+     * @param payload payload fields
+     * @param fieldName key-bundle field name
+     * @param expectedKid authenticated key identifier
+     * @param suite authenticated crypto suite
+     */
     private static void validatePayloadBundle(
             Map<String, Object> payload,
             String fieldName,
@@ -396,6 +433,12 @@ public final class ExchangeKem implements Serializable {
         private final byte[] plaintext;
         private final byte[] transportKey;
 
+        /**
+         * Creates a decryption result with defensive copies of both byte arrays.
+         *
+         * @param plaintext authenticated exchange payload bytes
+         * @param transportKey derived token transport key
+         */
         private DecryptionResult(byte[] plaintext, byte[] transportKey) {
             this.plaintext = Arrays.copyOf(plaintext, plaintext.length);
             this.transportKey = Arrays.copyOf(transportKey, transportKey.length);
@@ -403,6 +446,8 @@ public final class ExchangeKem implements Serializable {
 
         /**
          * Returns a copy of the decrypted exchange payload.
+         *
+         * <p>This method accepts no arguments.</p>
          *
          * @return UTF-8 JSON payload bytes
          */
@@ -413,6 +458,8 @@ public final class ExchangeKem implements Serializable {
         /**
          * Returns a copy of the decrypted exchange payload.
          *
+         * <p>This method accepts no arguments.</p>
+         *
          * @return UTF-8 JSON payload bytes
          */
         public byte[] plaintext() {
@@ -422,6 +469,8 @@ public final class ExchangeKem implements Serializable {
         /**
          * Returns a copy of the v2 token transport key.
          *
+         * <p>This method accepts no arguments.</p>
+         *
          * @return the 32-byte transport key
          */
         public byte[] getTransportKey() {
@@ -430,6 +479,8 @@ public final class ExchangeKem implements Serializable {
 
         /**
          * Returns a copy of the v2 token transport key.
+         *
+         * <p>This method accepts no arguments.</p>
          *
          * @return the 32-byte transport key
          */

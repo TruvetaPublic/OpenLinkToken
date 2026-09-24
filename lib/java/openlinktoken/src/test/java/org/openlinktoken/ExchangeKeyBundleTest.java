@@ -13,8 +13,16 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.openlinktoken.crypto.CryptoSuite;
 
+/**
+ * Tests key-bundle generation, serialization, validation, and defensive copying.
+ */
 class ExchangeKeyBundleTest {
 
+    /**
+     * Verifies pure ML-KEM bundles generate and round-trip their public and private key material.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
+     */
     @Test
     void generatesAndRoundTripsPureMlKemBundle() {
         ExchangeKeyBundle bundle = ExchangeKeyBundle.generate("suite-pq-v1");
@@ -35,6 +43,11 @@ class ExchangeKeyBundleTest {
         assertArrayEquals(bundle.getMlkemPrivateSeed(), restored.getMlkemPrivateSeed());
     }
 
+    /**
+     * Verifies hybrid bundles include P-256 material alongside ML-KEM keys.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
+     */
     @Test
     void generatesHybridBundleWithP256Material() {
         ExchangeKeyBundle bundle = ExchangeKeyBundle.generate("suite-pq-hybrid-v1");
@@ -48,6 +61,11 @@ class ExchangeKeyBundleTest {
         assertTrue(new String(bundle.getEcPrivatePem()).contains("BEGIN PRIVATE KEY"));
     }
 
+    /**
+     * Verifies public-only bundles are rejected when private material is required.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
+     */
     @Test
     void rejectsPublicOnlyBundleWhenPrivateMaterialIsRequired() {
         ExchangeKeyBundle bundle = ExchangeKeyBundle.generate("suite-pq-v1");
@@ -57,6 +75,11 @@ class ExchangeKeyBundleTest {
                 () -> ExchangeKeyBundle.fromMapping(bundle.toMapping(), true));
     }
 
+    /**
+     * Verifies tampered fingerprints and key identifiers are rejected.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
+     */
     @Test
     void rejectsTamperedPublicFingerprintAndKeyId() {
         ExchangeKeyBundle bundle = ExchangeKeyBundle.generate("suite-pq-v1");
@@ -76,6 +99,11 @@ class ExchangeKeyBundleTest {
                 () -> ExchangeKeyBundle.fromMapping(validMapping, true));
     }
 
+    /**
+     * Verifies version-one suites and malformed envelopes are rejected.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
+     */
     @Test
     void rejectsVersionOneSuiteAndMalformedEnvelope() {
         assertThrows(
@@ -92,6 +120,11 @@ class ExchangeKeyBundleTest {
                 () -> ExchangeKeyBundle.fromJson("{\"version\":1}".getBytes(), false));
     }
 
+    /**
+     * Verifies trailing JSON tokens are rejected.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
+     */
     @Test
     void rejectsTrailingJsonTokens() {
         ExchangeKeyBundle bundle = ExchangeKeyBundle.generate("suite-pq-v1");
@@ -106,6 +139,11 @@ class ExchangeKeyBundleTest {
                 () -> ExchangeKeyBundle.fromJson(withTrailingObject));
     }
 
+    /**
+     * Verifies invalid UTF-8 JSON bytes are rejected.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
+     */
     @Test
     void rejectsInvalidUtf8Json() {
         byte[] invalidUtf8 = new byte[] {
@@ -117,6 +155,11 @@ class ExchangeKeyBundleTest {
                 () -> ExchangeKeyBundle.fromJson(invalidUtf8));
     }
 
+    /**
+     * Verifies a pure ML-KEM bundle rejects an EC key section.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
+     */
     @Test
     void rejectsEcSectionForPureMlKemBundle() {
         ExchangeKeyBundle bundle = ExchangeKeyBundle.generate("suite-pq-v1");
@@ -129,6 +172,11 @@ class ExchangeKeyBundleTest {
                 () -> ExchangeKeyBundle.fromMapping(mapping));
     }
 
+    /**
+     * Verifies an orphan private-key encoding field is rejected.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
+     */
     @Test
     void rejectsOrphanPrivateEncodingField() {
         ExchangeKeyBundle bundle = ExchangeKeyBundle.generate("suite-pq-v1");
@@ -142,6 +190,11 @@ class ExchangeKeyBundleTest {
                 () -> ExchangeKeyBundle.fromMapping(mapping));
     }
 
+    /**
+     * Verifies equivalent EC PEM line endings preserve the key identifier.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
+     */
     @Test
     void acceptsEquivalentEcPemFormatting() {
         ExchangeKeyBundle bundle = ExchangeKeyBundle.generate("suite-pq-hybrid-v1");
@@ -156,6 +209,11 @@ class ExchangeKeyBundleTest {
         assertEquals(bundle.getKid(), restored.getKid());
     }
 
+    /**
+     * Verifies key-material getters return defensive copies.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
+     */
     @Test
     void returnsDefensiveCopiesOfKeyMaterial() {
         ExchangeKeyBundle bundle = ExchangeKeyBundle.generate("suite-pq-v1");

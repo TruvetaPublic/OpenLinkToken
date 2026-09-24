@@ -143,7 +143,9 @@ def test_resolve_v1_exchange_rejects_payload_suite_marker(monkeypatch):
     """Version-one suite identity must not be selected from encrypted payload data.
 
     Args:
-        monkeypatch: Pytest fixture for replacing the payload-decryption function.
+        monkeypatch: Pytest fixture for replacing the payload-decryption function
+            with a callback that accepts the config and private key, ignores them,
+            and returns the tampered payload as JSON text.
 
     Returns:
         None.
@@ -421,7 +423,14 @@ def test_derive_transport_encryption_key_matches_for_both_participants(tmp_path:
 
 
 def test_load_exchange_config_rejects_unknown_exchange_config_version(tmp_path: Path):
-    """Exchange-config versions outside the supported v1/v2 set fail validation during load."""
+    """Exchange-config versions outside the supported v1/v2 set fail during load.
+
+    Args:
+        tmp_path: Pytest temporary directory for the invalid exchange-config file.
+
+    Returns:
+        None.
+    """
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     _, recipient_public_pem = generate_key_pair("P-256")
     payload = {
@@ -468,7 +477,14 @@ def test_load_exchange_config_rejects_unknown_exchange_config_version(tmp_path: 
 
 @pytest.mark.parametrize("suite_id", ["suite-pq-v1", "suite-pq-shake-v1", "suite-pq-hybrid-v1"])
 def test_load_exchange_config_detects_v2_from_protected_header(suite_id):
-    """Standard v2 configs detect their authenticated version without a top-level marker."""
+    """Standard v2 configs detect their version from the protected header.
+
+    Args:
+        suite_id: Parameterized version-2 crypto-suite identifier.
+
+    Returns:
+        None.
+    """
     sender = generate_exchange_key_bundle(suite_id)
     recipient = generate_exchange_key_bundle(suite_id)
     envelope = build_exchange_envelope_v2(
@@ -487,7 +503,14 @@ def test_load_exchange_config_detects_v2_from_protected_header(suite_id):
 
 
 def test_resolve_v2_exchange_exposes_same_transport_key_for_both_private_bundles():
-    """Both v2 participants resolve the authenticated transport key."""
+    """Both v2 participants resolve the authenticated transport key.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     sender = generate_exchange_key_bundle("suite-pq-v1")
     recipient = generate_exchange_key_bundle("suite-pq-v1")
     envelope = build_exchange_envelope_v2(
@@ -516,7 +539,14 @@ def test_resolve_v2_exchange_exposes_same_transport_key_for_both_private_bundles
 
 
 def test_derive_v2_transport_key_rejects_invalid_cached_key():
-    """The v2 consumer API exposes only a complete 32-byte derived key."""
+    """The v2 consumer API exposes only a complete 32-byte derived key.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     sender = generate_exchange_key_bundle("suite-pq-v1")
     recipient = generate_exchange_key_bundle("suite-pq-v1")
     envelope = build_exchange_envelope_v2(
@@ -537,7 +567,14 @@ def test_derive_v2_transport_key_rejects_invalid_cached_key():
 
 
 def test_resolve_v2_exchange_rejects_tampered_protected_exchange_id():
-    """Changing the protected exchange ID invalidates authenticated resolution."""
+    """Changing the protected exchange ID invalidates authenticated resolution.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     sender = generate_exchange_key_bundle("suite-pq-v1")
     recipient = generate_exchange_key_bundle("suite-pq-v1")
     envelope = build_exchange_envelope_v2(

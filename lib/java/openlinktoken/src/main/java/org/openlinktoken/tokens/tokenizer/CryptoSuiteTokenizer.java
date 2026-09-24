@@ -29,7 +29,7 @@ public class CryptoSuiteTokenizer implements Tokenizer {
     private transient TokenDigest tokenDigest;
 
     /**
-     * Initializes the tokenizer with the backward-compatible default suite.
+     * Creates a tokenizer with the backward-compatible default suite.
      *
      * @param tokenTransformerList a list of token transformers
      */
@@ -38,7 +38,7 @@ public class CryptoSuiteTokenizer implements Tokenizer {
     }
 
     /**
-     * Initializes the tokenizer with an explicit crypto suite.
+     * Creates a tokenizer with an explicit crypto suite.
      *
      * @param tokenTransformerList a list of token transformers
      * @param cryptoSuite the suite selecting the token digest
@@ -52,6 +52,8 @@ public class CryptoSuiteTokenizer implements Tokenizer {
 
     /**
      * Restores the tokenizer and rebuilds its transient digest implementation.
+     *
+     * <p>This method returns no value.</p>
      *
      * @param ois the object stream containing the tokenizer state
      * @throws IOException if the digest cannot be reconstructed
@@ -91,6 +93,8 @@ public class CryptoSuiteTokenizer implements Tokenizer {
 
     /**
      * Returns the transformer list applied after digesting.
+     *
+     * <p>This method accepts no arguments.</p>
      *
      * @return an unmodifiable view of the transformer list
      */

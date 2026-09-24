@@ -45,9 +45,35 @@ _JWE_MEMBERS = {"protected", "recipients", "iv", "ciphertext", "tag"}
 
 
 class OpenLinkTokenJWE(jwe.JWE):
-    """JWE object with per-instance dispatch for the custom exchange algorithms."""
+    """JWE object with per-instance dispatch for custom exchange algorithms.
+
+    The constructor follows ``jwcrypto.jwe.JWE`` and accepts its standard
+    initialization inputs.
+
+    Args:
+        plaintext: Optional plaintext bytes to encrypt.
+        protected: Optional protected JWE header.
+        unprotected: Optional unprotected JWE header.
+        aad: Optional additional authenticated data.
+        algs: Optional set of algorithms allowed for this JWE object.
+        recipient: Optional initial recipient key or recipient object.
+        header: Optional initial recipient-specific header.
+        header_registry: Optional registry of recognized JOSE header parameters.
+
+    Returns:
+        An ``OpenLinkTokenJWE`` initialized with the supplied JWE state.
+    """
 
     def _jwa_keymgmt(self, name: str):
+        """Select a key-management handler for a JOSE algorithm.
+
+        Args:
+            name: JOSE key-management algorithm identifier.
+
+        Returns:
+            The local ML-KEM handler for an allowed custom algorithm, or the
+            handler selected by ``jwcrypto.jwe.JWE`` for other algorithms.
+        """
         if name in {PURE_KEM_ALGORITHM, HYBRID_KEM_ALGORITHM}:
             allowed = self._allowed_algs
             if allowed is None or name not in allowed:
@@ -57,9 +83,24 @@ class OpenLinkTokenJWE(jwe.JWE):
 
 
 class _MLKEMKeyManagement:
-    """Implement the recipient key-management contract used by jwcrypto.JWE."""
+    """Implement recipient key management for the custom ML-KEM algorithms.
+
+    Args:
+        algorithm: JOSE key-management algorithm handled by this instance.
+
+    Returns:
+        An ``_MLKEMKeyManagement`` instance configured for ``algorithm``.
+    """
 
     def __init__(self, algorithm: str) -> None:
+        """Initialize the handler for one key-management algorithm.
+
+        Args:
+            algorithm: JOSE key-management algorithm handled by this instance.
+
+        Returns:
+            None.
+        """
         self.algorithm = algorithm
 
     def wrap(
@@ -69,7 +110,19 @@ class _MLKEMKeyManagement:
         cek: bytes | None,
         headers: Mapping[str, Any],
     ) -> dict[str, Any]:
-        """Encapsulate a recipient key and AES-KW-wrap the JWE CEK."""
+        """Encapsulate a recipient key and AES-KW-wrap the JWE CEK.
+
+        Args:
+            key: Recipient's public version-2 exchange key bundle.
+            bitsize: Requested content-encryption-key size in bits.
+            cek: Optional content-encryption key bytes to wrap.
+            headers: JOSE header values containing the authenticated exchange
+                context and recipient key ID.
+
+        Returns:
+            A key-management result containing the CEK, combined ML-KEM and
+            AES-KW encrypted key, and an ephemeral-key header for hybrid suites.
+        """
         _validate_key_and_headers(key, headers, self.algorithm, require_private=False)
         if bitsize != CEK_SIZE * 8:
             raise ValueError(f"Version-2 JWE requires a {CEK_SIZE * 8}-bit CEK, got {bitsize}.")
@@ -100,7 +153,18 @@ class _MLKEMKeyManagement:
         encrypted_key: bytes,
         headers: Mapping[str, Any],
     ) -> bytes:
-        """Decapsulate a recipient key and AES-KW-unwrap the JWE CEK."""
+        """Decapsulate a recipient key and AES-KW-unwrap the JWE CEK.
+
+        Args:
+            key: Recipient's private version-2 exchange key bundle.
+            bitsize: Expected content-encryption-key size in bits.
+            encrypted_key: Combined ML-KEM ciphertext and AES-KW-wrapped CEK.
+            headers: JOSE header values containing the authenticated exchange
+                context and recipient key ID.
+
+        Returns:
+            The unwrapped content-encryption key bytes.
+        """
         _validate_key_and_headers(key, headers, self.algorithm, require_private=True)
         if bitsize != CEK_SIZE * 8:
             raise ValueError(f"Version-2 JWE requires a {CEK_SIZE * 8}-bit CEK, got {bitsize}.")
@@ -127,7 +191,16 @@ def build_v2_jwe(
     protected_header: Mapping[str, Any],
     recipients: Sequence[ExchangeKeyBundle],
 ) -> dict[str, Any]:
-    """Build a standard general JWE JSON object for a version-2 exchange."""
+    """Build a standard general JWE JSON object for a version-2 exchange.
+
+    Args:
+        plaintext: Exchange payload bytes to encrypt.
+        protected_header: Authenticated version-2 JWE protected-header values.
+        recipients: Public key bundles for the exchange recipients.
+
+    Returns:
+        The serialized general-JSON JWE mapping.
+    """
     if not isinstance(plaintext, bytes):
         raise TypeError("JWE plaintext must be bytes.")
     _validate_protected_header(protected_header)
@@ -161,7 +234,16 @@ def decrypt_v2_jwe(
     envelope: Mapping[str, Any],
     private_bundle: ExchangeKeyBundle,
 ) -> tuple[bytes, bytes]:
-    """Decrypt a standard version-2 JWE and derive its token transport key."""
+    """Decrypt a version-2 JWE and derive its token transport key.
+
+    Args:
+        envelope: Standard general-JSON version-2 JWE mapping.
+        private_bundle: Matching private version-2 exchange key bundle.
+
+    Returns:
+        A pair containing the decrypted payload bytes and 32-byte token
+        transport key.
+    """
     if not isinstance(private_bundle, ExchangeKeyBundle):
         raise TypeError("Version-2 decryption requires an ExchangeKeyBundle.")
     if set(envelope) != _JWE_MEMBERS:
@@ -199,7 +281,15 @@ def decrypt_v2_jwe(
 
 
 def _derive_token_transport_key(cek: bytes, exchange_id: str) -> bytes:
-    """Derive the v2 token transport key from the internal JWE CEK."""
+    """Derive the v2 token transport key from the internal JWE CEK.
+
+    Args:
+        cek: 32-byte JWE content-encryption key.
+        exchange_id: Non-empty exchange identifier used as the HKDF salt.
+
+    Returns:
+        The 32-byte HKDF-derived token transport key.
+    """
     if not isinstance(cek, bytes):
         raise TypeError("Version-2 JWE CEK must be bytes.")
     if len(cek) != CEK_SIZE:
@@ -216,7 +306,14 @@ def _derive_token_transport_key(cek: bytes, exchange_id: str) -> bytes:
 
 
 def _validate_protected_header(protected_header: Mapping[str, Any]) -> None:
-    """Validate the authenticated protected-header fields required by v2."""
+    """Validate the authenticated protected-header fields required by v2.
+
+    Args:
+        protected_header: Candidate version-2 protected-header mapping.
+
+    Returns:
+        None.
+    """
     if not isinstance(protected_header, Mapping):
         raise ValueError("Version-2 protected header must be a JSON object.")
     missing = _REQUIRED_PROTECTED_FIELDS - set(protected_header)
@@ -239,7 +336,15 @@ def _validate_protected_header(protected_header: Mapping[str, Any]) -> None:
 
 
 def _validate_recipient(recipient: Any, algorithm: str) -> None:
-    """Validate a standard v2 recipient member before invoking jwcrypto."""
+    """Validate a standard v2 recipient member before invoking jwcrypto.
+
+    Args:
+        recipient: Candidate general-JSON JWE recipient mapping.
+        algorithm: Key-management algorithm required by the protected suite.
+
+    Returns:
+        None.
+    """
     if not isinstance(recipient, Mapping) or set(recipient) != {"header", "encrypted_key"}:
         raise ValueError("Version-2 recipients must contain only header and encrypted_key.")
     header = recipient["header"]
@@ -262,7 +367,14 @@ def _validate_recipient(recipient: Any, algorithm: str) -> None:
 
 
 def _decode_protected_header(value: Any) -> dict[str, Any]:
-    """Decode the base64url protected header from a standard JWE object."""
+    """Decode the base64url protected header from a standard JWE object.
+
+    Args:
+        value: Unpadded base64url text from the JWE ``protected`` member.
+
+    Returns:
+        The decoded protected-header dictionary.
+    """
     protected_bytes = _decode_base64url(value, "protected")
     try:
         protected_header = json.loads(protected_bytes)
@@ -274,7 +386,15 @@ def _decode_protected_header(value: Any) -> dict[str, Any]:
 
 
 def _decode_base64url(value: Any, field_name: str) -> bytes:
-    """Decode an unpadded base64url field with strict input validation."""
+    """Decode an unpadded base64url field with strict input validation.
+
+    Args:
+        value: Base64url text to decode.
+        field_name: Field name included in validation errors.
+
+    Returns:
+        The decoded field bytes.
+    """
     if not isinstance(value, str) or not value:
         raise ValueError(f"{field_name} must be non-empty base64url data.")
     try:
@@ -285,7 +405,14 @@ def _decode_base64url(value: Any, field_name: str) -> bytes:
 
 
 def _algorithm_for_suite(suite: CryptoSuite) -> str:
-    """Return the custom JOSE key-management algorithm for a suite."""
+    """Return the custom JOSE key-management algorithm for a suite.
+
+    Args:
+        suite: Validated crypto suite selecting version-2 key agreement.
+
+    Returns:
+        The pure ML-KEM or hybrid ECDH-plus-ML-KEM JOSE algorithm identifier.
+    """
     if suite.exchange_config_version != EXCHANGE_V2_VERSION:
         raise ValueError(f"Suite '{suite.suite_id}' does not use exchange configuration version 2.")
     if suite.exchange_key_agreement == CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM768:
@@ -301,7 +428,17 @@ def _validate_key_and_headers(
     algorithm: str,
     require_private: bool,
 ) -> None:
-    """Validate bundle material and JOSE context before key management."""
+    """Validate bundle material and JOSE context before key management.
+
+    Args:
+        key: Exchange key bundle supplied to the key-management handler.
+        headers: JOSE protected and recipient header values.
+        algorithm: Key-management algorithm selected for the recipient.
+        require_private: Whether the bundle must include private key material.
+
+    Returns:
+        None.
+    """
     if not isinstance(key, ExchangeKeyBundle):
         raise ValueError("Version-2 custom algorithms require an ExchangeKeyBundle.")
     _validate_header_context(headers, algorithm)
@@ -324,7 +461,15 @@ def _validate_key_and_headers(
 
 
 def _validate_header_context(headers: Mapping[str, Any], algorithm: str) -> None:
-    """Validate the shared protected context visible to a key-management handler."""
+    """Validate the JOSE context visible to a key-management handler.
+
+    Args:
+        headers: Combined header values supplied to the handler.
+        algorithm: Key-management algorithm selected for the recipient.
+
+    Returns:
+        None.
+    """
     if headers.get("alg") != algorithm:
         raise ValueError("Recipient algorithm does not match the selected handler.")
     if headers.get("enc") != EXCHANGE_V2_ENCRYPTION:
@@ -343,7 +488,16 @@ def _encapsulate(
     bundle: ExchangeKeyBundle,
     algorithm: str,
 ) -> tuple[bytes, bytes, dict[str, Any] | None]:
-    """Encapsulate ML-KEM and optional ephemeral ECDH material."""
+    """Encapsulate ML-KEM and optional ephemeral ECDH material.
+
+    Args:
+        bundle: Recipient's public exchange key bundle.
+        algorithm: Pure or hybrid key-management algorithm to use.
+
+    Returns:
+        A tuple containing the combined shared secret, ML-KEM ciphertext, and
+        optional ephemeral P-256 public JWK for a hybrid suite.
+    """
     mlkem_public = mlkem.MLKEM768PublicKey.from_public_bytes(bundle.mlkem_public_key or b"")
     mlkem_shared_secret, mlkem_ciphertext = mlkem_public.encapsulate()
     if len(mlkem_ciphertext) != MLKEM_CIPHERTEXT_SIZE:
@@ -364,7 +518,17 @@ def _decapsulate(
     mlkem_ciphertext: bytes,
     headers: Mapping[str, Any],
 ) -> bytes:
-    """Decapsulate ML-KEM and optional ephemeral ECDH material."""
+    """Decapsulate ML-KEM and optional ephemeral ECDH material.
+
+    Args:
+        bundle: Recipient's private exchange key bundle.
+        algorithm: Pure or hybrid key-management algorithm to use.
+        mlkem_ciphertext: ML-KEM ciphertext produced during encapsulation.
+        headers: JOSE header values containing any hybrid ephemeral key.
+
+    Returns:
+        The combined shared secret bytes.
+    """
     mlkem_private = mlkem.MLKEM768PrivateKey.from_seed_bytes(bundle.mlkem_private_seed or b"")
     mlkem_shared_secret = mlkem_private.decapsulate(mlkem_ciphertext)
     if algorithm == PURE_KEM_ALGORITHM:
@@ -376,7 +540,15 @@ def _decapsulate(
 
 
 def _derive_recipient_kek(shared_secret: bytes, headers: Mapping[str, Any]) -> bytes:
-    """Derive the AES-KW KEK from the authenticated exchange context."""
+    """Derive the AES-KW key-encryption key from the exchange context.
+
+    Args:
+        shared_secret: Shared secret produced by the recipient key agreement.
+        headers: Authenticated exchange and recipient header values.
+
+    Returns:
+        The derived AES-KW key-encryption key bytes.
+    """
     info = ":".join(
         (
             "openlinktoken",
@@ -396,7 +568,14 @@ def _derive_recipient_kek(shared_secret: bytes, headers: Mapping[str, Any]) -> b
 
 
 def _serialize_ephemeral_public_key(public_key: ec.EllipticCurvePublicKey) -> dict[str, str]:
-    """Serialize an ephemeral P-256 public key into a JOSE EC JWK."""
+    """Serialize an ephemeral P-256 public key into a JOSE EC JWK.
+
+    Args:
+        public_key: Ephemeral P-256 elliptic-curve public key.
+
+    Returns:
+        An EC JWK mapping containing the curve and encoded coordinates.
+    """
     numbers = public_key.public_numbers()
     return {
         "kty": "EC",
@@ -407,7 +586,14 @@ def _serialize_ephemeral_public_key(public_key: ec.EllipticCurvePublicKey) -> di
 
 
 def _validate_epk(value: Any) -> None:
-    """Validate a hybrid recipient's ephemeral P-256 JWK."""
+    """Validate a hybrid recipient's ephemeral P-256 JWK.
+
+    Args:
+        value: Candidate ephemeral public-key JWK mapping.
+
+    Returns:
+        None.
+    """
     if not isinstance(value, Mapping):
         raise ValueError("Hybrid recipients require a P-256 epk.")
     if value.get("kty") != "EC" or value.get("crv") != "P-256":
@@ -421,7 +607,14 @@ def _validate_epk(value: Any) -> None:
 
 
 def _load_ephemeral_public_key(value: Any) -> ec.EllipticCurvePublicKey:
-    """Load and validate an ephemeral P-256 public key from a JOSE JWK."""
+    """Load and validate an ephemeral P-256 public key from a JOSE JWK.
+
+    Args:
+        value: Ephemeral public-key JWK mapping.
+
+    Returns:
+        The validated P-256 elliptic-curve public key.
+    """
     _validate_epk(value)
     x = int.from_bytes(_decode_base64url(value["x"], "recipient epk.x"), "big")
     y = int.from_bytes(_decode_base64url(value["y"], "recipient epk.y"), "big")
@@ -432,7 +625,14 @@ def _load_ephemeral_public_key(value: Any) -> ec.EllipticCurvePublicKey:
 
 
 def _load_ec_public_key(value: bytes | None) -> ec.EllipticCurvePublicKey:
-    """Load a P-256 public key from a bundle."""
+    """Load a P-256 public key from a bundle.
+
+    Args:
+        value: Public-key PEM bytes, or ``None`` when the key is absent.
+
+    Returns:
+        The validated P-256 elliptic-curve public key.
+    """
     if value is None:
         raise ValueError("Exchange key bundle is missing its EC public key.")
     try:
@@ -445,7 +645,14 @@ def _load_ec_public_key(value: bytes | None) -> ec.EllipticCurvePublicKey:
 
 
 def _load_ec_private_key(value: bytes | None) -> ec.EllipticCurvePrivateKey:
-    """Load a P-256 private key from a bundle."""
+    """Load a P-256 private key from a bundle.
+
+    Args:
+        value: Private-key PEM bytes, or ``None`` when the key is absent.
+
+    Returns:
+        The validated P-256 elliptic-curve private key.
+    """
     if value is None:
         raise ValueError("Exchange key bundle is missing its EC private key.")
     try:
@@ -458,5 +665,12 @@ def _load_ec_private_key(value: bytes | None) -> ec.EllipticCurvePrivateKey:
 
 
 def _encode_base64url(value: bytes) -> str:
-    """Encode bytes as unpadded base64url text."""
+    """Encode bytes as unpadded base64url text.
+
+    Args:
+        value: Bytes to encode.
+
+    Returns:
+        The base64url-encoded ASCII text without padding.
+    """
     return base64.urlsafe_b64encode(value).decode("ascii").rstrip("=")

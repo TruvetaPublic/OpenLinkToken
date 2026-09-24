@@ -91,6 +91,9 @@ final class JweMlkem implements Serializable {
             .configure(DeserializationFeature.FAIL_ON_TRAILING_TOKENS, true)
             .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
 
+    /**
+     * Creates the utility instance with no arguments.
+     */
     private JweMlkem() {
     }
 
@@ -148,6 +151,13 @@ final class JweMlkem implements Serializable {
         return result;
     }
 
+    /**
+     * Decrypts a version-two JWE for the matching private key bundle.
+     *
+     * @param envelope general JWE JSON fields
+     * @param privateBundle recipient private key bundle
+     * @return decrypted payload, transport key, content key, and protected header
+     */
     static Decryption decrypt(Map<String, ?> envelope, ExchangeKeyBundle privateBundle) {
         validateTopLevel(envelope);
         if (privateBundle == null) {
@@ -223,6 +233,13 @@ final class JweMlkem implements Serializable {
         return new Decryption(plaintext, transportKey, cek, protectedHeader);
     }
 
+    /**
+     * Derives the separate token transport key from the JWE content key and exchange ID.
+     *
+     * @param cek 32-byte JWE content-encryption key
+     * @param exchangeId authenticated exchange identifier
+     * @return the derived 32-byte token transport key
+     */
     static byte[] deriveTokenTransportKey(byte[] cek, String exchangeId) {
         if (cek == null || cek.length != CEK_SIZE) {
             throw new IllegalArgumentException("Version-2 JWE CEK must be " + CEK_SIZE + " bytes.");
@@ -237,6 +254,15 @@ final class JweMlkem implements Serializable {
                 CEK_SIZE);
     }
 
+    /**
+     * Creates a recipient entry containing the encapsulated and wrapped content key.
+     *
+     * @param bundle recipient public key bundle
+     * @param algorithm recipient key-management algorithm
+     * @param protectedHeader authenticated protected-header fields
+     * @param cek content-encryption key to wrap
+     * @return the serialized recipient header and encrypted key
+     */
     private static Map<String, Object> buildRecipient(
             ExchangeKeyBundle bundle,
             String algorithm,
@@ -265,6 +291,13 @@ final class JweMlkem implements Serializable {
         return result;
     }
 
+    /**
+     * Encapsulates a shared secret for a pure or hybrid ML-KEM recipient.
+     *
+     * @param bundle recipient public key bundle
+     * @param algorithm recipient key-management algorithm
+     * @return the shared secret, ML-KEM ciphertext, and optional ephemeral public key
+     */
     private static Encapsulation encapsulate(ExchangeKeyBundle bundle, String algorithm) {
         MLKEMPublicKeyParameters publicKey;
         try {
@@ -300,6 +333,15 @@ final class JweMlkem implements Serializable {
                 serializeEphemeralPublicKey((ECPublicKey) ephemeral.getPublic()));
     }
 
+    /**
+     * Decapsulates the recipient secret and, for a hybrid suite, combines it with ECDH.
+     *
+     * @param bundle recipient private key bundle
+     * @param algorithm recipient key-management algorithm
+     * @param encryptedKey combined ML-KEM ciphertext and wrapped content key
+     * @param recipientHeader recipient-specific protected fields
+     * @return the derived shared secret
+     */
     private static byte[] decapsulate(
             ExchangeKeyBundle bundle,
             String algorithm,
@@ -336,6 +378,15 @@ final class JweMlkem implements Serializable {
         return concatenate(deriveEcdhSecret(privateEc, ephemeralPublic), mlkemSecret);
     }
 
+    /**
+     * Derives the recipient key-encryption key using the exchange context.
+     *
+     * @param sharedSecret encapsulated or hybrid shared secret
+     * @param protectedHeader authenticated protected-header fields
+     * @param algorithm recipient key-management algorithm
+     * @param kid recipient key identifier
+     * @return the derived AES key-encryption key
+     */
     private static byte[] deriveRecipientKek(
             byte[] sharedSecret,
             Map<String, Object> protectedHeader,
@@ -356,6 +407,13 @@ final class JweMlkem implements Serializable {
                 CEK_SIZE);
     }
 
+    /**
+     * Wraps the content-encryption key with the derived key-encryption key.
+     *
+     * @param kek AES key-encryption key
+     * @param cek content-encryption key
+     * @return the wrapped content-encryption key
+     */
     private static byte[] wrap(byte[] kek, byte[] cek) {
         try {
             AESWrapEngine wrapper = new AESWrapEngine();
@@ -366,6 +424,13 @@ final class JweMlkem implements Serializable {
         }
     }
 
+    /**
+     * Unwraps and validates the content-encryption key.
+     *
+     * @param kek AES key-encryption key
+     * @param wrappedCek wrapped content-encryption key
+     * @return the unwrapped 32-byte content-encryption key
+     */
     private static byte[] unwrap(byte[] kek, byte[] wrappedCek) {
         try {
             AESWrapEngine wrapper = new AESWrapEngine();
@@ -382,6 +447,15 @@ final class JweMlkem implements Serializable {
         }
     }
 
+    /**
+     * Derives key bytes with HKDF-SHA256.
+     *
+     * @param input input keying material
+     * @param salt HKDF salt
+     * @param info HKDF context information
+     * @param length requested output length in bytes
+     * @return the derived key bytes
+     */
     private static byte[] hkdf(byte[] input, byte[] salt, byte[] info, int length) {
         try {
             HKDFBytesGenerator generator = new HKDFBytesGenerator(new SHA256Digest());
@@ -394,6 +468,15 @@ final class JweMlkem implements Serializable {
         }
     }
 
+    /**
+     * Encrypts plaintext with AES-256-GCM and authenticates the protected header.
+     *
+     * @param plaintext plaintext bytes
+     * @param cek 32-byte content-encryption key
+     * @param iv GCM initialization vector
+     * @param protectedValue encoded protected-header value used as additional authenticated data
+     * @return ciphertext followed by the authentication tag
+     */
     private static byte[] encryptContent(byte[] plaintext, byte[] cek, byte[] iv, String protectedValue) {
         try {
             Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
@@ -408,6 +491,15 @@ final class JweMlkem implements Serializable {
         }
     }
 
+    /**
+     * Decrypts authenticated AES-256-GCM content.
+     *
+     * @param encrypted ciphertext followed by the authentication tag
+     * @param cek 32-byte content-encryption key
+     * @param iv GCM initialization vector
+     * @param protectedValue encoded protected-header value used as additional authenticated data
+     * @return decrypted plaintext bytes
+     */
     private static byte[] decryptContent(byte[] encrypted, byte[] cek, byte[] iv, String protectedValue) {
         try {
             Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
@@ -422,6 +514,13 @@ final class JweMlkem implements Serializable {
         }
     }
 
+    /**
+     * Derives an ECDH shared secret for hybrid key establishment.
+     *
+     * @param privateKey local EC private key
+     * @param publicKey peer EC public key
+     * @return the derived ECDH shared secret
+     */
     private static byte[] deriveEcdhSecret(PrivateKey privateKey, PublicKey publicKey) {
         try {
             KeyAgreement agreement = KeyAgreement.getInstance("ECDH");
@@ -433,6 +532,12 @@ final class JweMlkem implements Serializable {
         }
     }
 
+    /**
+     * Serializes a P-256 ephemeral public key as a JWK mapping.
+     *
+     * @param publicKey ephemeral EC public key
+     * @return the public-key JWK fields
+     */
     private static Map<String, Object> serializeEphemeralPublicKey(ECPublicKey publicKey) {
         Map<String, Object> epk = new LinkedHashMap<>();
         epk.put("kty", "EC");
@@ -442,6 +547,13 @@ final class JweMlkem implements Serializable {
         return epk;
     }
 
+    /**
+     * Parses and validates a P-256 ephemeral public key from a JWK mapping.
+     *
+     * @param value candidate ephemeral JWK value
+     * @param parameters EC parameters for the recipient private key
+     * @return the parsed ephemeral EC public key
+     */
     private static PublicKey parseEphemeralPublicKey(Object value, ECParameterSpec parameters) {
         Map<String, Object> epk = mapValue(value, "Hybrid recipient epk");
         if (!"EC".equals(epk.get("kty")) || !"P-256".equals(epk.get("crv"))) {
@@ -468,6 +580,13 @@ final class JweMlkem implements Serializable {
         }
     }
 
+    /**
+     * Validates and copies a serialized recipient entry.
+     *
+     * @param value candidate recipient value
+     * @param algorithm required recipient key-management algorithm
+     * @return the validated recipient mapping
+     */
     private static Map<String, Object> validateRecipient(Object value, String algorithm) {
         Map<String, Object> recipient = mapValue(value, "Version-2 recipient");
         if (!recipient.keySet().equals(Set.of("header", "encrypted_key"))) {
@@ -497,6 +616,13 @@ final class JweMlkem implements Serializable {
         return recipient;
     }
 
+    /**
+     * Validates the public-only P-256 ephemeral key fields.
+     *
+     * <p>This method returns no value.</p>
+     *
+     * @param value candidate ephemeral JWK value
+     */
     private static void validateEphemeralPublicKey(Object value) {
         Map<String, Object> epk = mapValue(value, "Hybrid recipient epk");
         if (!"EC".equals(epk.get("kty")) || !"P-256".equals(epk.get("crv"))) {
@@ -512,6 +638,13 @@ final class JweMlkem implements Serializable {
         }
     }
 
+    /**
+     * Requires the envelope to contain exactly the general-JWE members.
+     *
+     * <p>This method returns no value.</p>
+     *
+     * @param envelope candidate envelope mapping
+     */
     private static void validateTopLevel(Map<String, ?> envelope) {
         if (envelope == null || !new HashSet<>(envelope.keySet()).equals(JWE_MEMBERS)) {
             throw new IllegalArgumentException(
@@ -519,6 +652,13 @@ final class JweMlkem implements Serializable {
         }
     }
 
+    /**
+     * Validates the required authenticated version-two protected-header fields.
+     *
+     * <p>This method returns no value.</p>
+     *
+     * @param header candidate protected-header mapping
+     */
     private static void validateProtectedHeader(Map<String, ?> header) {
         if (header == null) {
             throw new IllegalArgumentException("Version-2 protected header must be a JSON object.");
@@ -554,6 +694,12 @@ final class JweMlkem implements Serializable {
         }
     }
 
+    /**
+     * Resolves the registered suite named by a protected header.
+     *
+     * @param header validated protected-header fields
+     * @return the registered crypto suite
+     */
     private static CryptoSuite suiteForHeader(Map<String, ?> header) {
         try {
             return CryptoSuite.fromId((String) header.get("cryptoSuite"));
@@ -562,6 +708,12 @@ final class JweMlkem implements Serializable {
         }
     }
 
+    /**
+     * Selects the version-two recipient algorithm for a crypto suite.
+     *
+     * @param suite version-two crypto suite
+     * @return the pure or hybrid ML-KEM recipient algorithm identifier
+     */
     private static String algorithmForSuite(CryptoSuite suite) {
         if (suite.getExchangeConfigVersion() != EXCHANGE_V2_VERSION) {
             throw new IllegalArgumentException(
@@ -644,6 +796,13 @@ final class JweMlkem implements Serializable {
         }
     }
 
+    /**
+     * Copies a mapping whose keys are expected to be strings.
+     *
+     * @param value candidate mapping
+     * @param fieldName field name used in validation errors
+     * @return a mutable copy of the string-keyed mapping
+     */
     private static Map<String, Object> copyStringMap(Map<String, ?> value, String fieldName) {
         if (value == null) {
             throw new IllegalArgumentException(fieldName + " must be a JSON object.");
@@ -658,6 +817,13 @@ final class JweMlkem implements Serializable {
         return copy;
     }
 
+    /**
+     * Requires a mapping value with string keys.
+     *
+     * @param value candidate mapping value
+     * @param fieldName field name used in validation errors
+     * @return a mutable copy of the string-keyed mapping
+     */
     private static Map<String, Object> mapValue(Object value, String fieldName) {
         if (!(value instanceof Map<?, ?> map)) {
             throw new IllegalArgumentException(fieldName + " must be a JSON object.");
@@ -672,6 +838,13 @@ final class JweMlkem implements Serializable {
         return result;
     }
 
+    /**
+     * Requires a non-empty string value.
+     *
+     * @param value candidate value
+     * @param fieldName field name used in validation errors
+     * @return the validated string
+     */
     private static String stringValue(Object value, String fieldName) {
         if (!(value instanceof String string) || string.isEmpty()) {
             throw new IllegalArgumentException(fieldName + " must be a non-empty string.");
@@ -679,6 +852,13 @@ final class JweMlkem implements Serializable {
         return string;
     }
 
+    /**
+     * Requires a string value while allowing it to be empty.
+     *
+     * @param value candidate value
+     * @param fieldName field name used in validation errors
+     * @return the validated string
+     */
     private static String stringValueAllowEmpty(Object value, String fieldName) {
         if (!(value instanceof String string)) {
             throw new IllegalArgumentException(fieldName + " must be a string.");
@@ -723,12 +903,26 @@ final class JweMlkem implements Serializable {
         return Base64.getUrlEncoder().withoutPadding().encodeToString(value);
     }
 
+    /**
+     * Generates cryptographically random bytes.
+     *
+     * @param length requested output length in bytes
+     * @return the generated bytes
+     */
     private static byte[] randomBytes(int length) {
         byte[] value = new byte[length];
         RANDOM.nextBytes(value);
         return value;
     }
 
+    /**
+     * Encodes a positive integer into a fixed-width, big-endian byte array.
+     *
+     * @param value integer to encode
+     * @param length required output length in bytes
+     * @param fieldName field name used in validation errors
+     * @return the fixed-width encoded value
+     */
     private static byte[] toFixedLength(BigInteger value, int length, String fieldName) {
         byte[] encoded = value.toByteArray();
         int offset = encoded.length > 1 && encoded[0] == 0 ? 1 : 0;
@@ -740,6 +934,13 @@ final class JweMlkem implements Serializable {
         return result;
     }
 
+    /**
+     * Concatenates two byte arrays in order.
+     *
+     * @param first first byte sequence
+     * @param second second byte sequence
+     * @return the combined byte sequence
+     */
     private static byte[] concatenate(byte[] first, byte[] second) {
         byte[] result = new byte[first.length + second.length];
         System.arraycopy(first, 0, result, 0, first.length);
@@ -747,6 +948,9 @@ final class JweMlkem implements Serializable {
         return result;
     }
 
+    /**
+     * Holds decrypted JWE values required by exchange processing.
+     */
     static final class Decryption implements Serializable {
         private static final long serialVersionUID = 1L;
 
@@ -755,6 +959,14 @@ final class JweMlkem implements Serializable {
         private final byte[] cek;
         private final Map<String, Object> protectedHeader;
 
+        /**
+         * Creates a decryption result from plaintext, keys, and protected-header fields.
+         *
+         * @param plaintext decrypted exchange payload bytes
+         * @param transportKey derived token transport key
+         * @param cek JWE content-encryption key
+         * @param protectedHeader authenticated protected-header fields
+         */
         private Decryption(
                 byte[] plaintext,
                 byte[] transportKey,
@@ -766,23 +978,58 @@ final class JweMlkem implements Serializable {
             this.protectedHeader = protectedHeader;
         }
 
+        /**
+         * Returns a defensive copy of the decrypted plaintext.
+         *
+         * <p>This method accepts no arguments.</p>
+         *
+         * @return the decrypted payload bytes
+         */
         byte[] plaintext() {
             return Arrays.copyOf(plaintext, plaintext.length);
         }
 
+        /**
+         * Returns a defensive copy of the token transport key.
+         *
+         * <p>This method accepts no arguments.</p>
+         *
+         * @return the derived transport key
+         */
         byte[] transportKey() {
             return Arrays.copyOf(transportKey, transportKey.length);
         }
 
+        /**
+         * Returns a defensive copy of the JWE content-encryption key.
+         *
+         * <p>This method accepts no arguments.</p>
+         *
+         * @return the content-encryption key
+         */
         byte[] cek() {
             return Arrays.copyOf(cek, cek.length);
         }
 
+        /**
+         * Returns a mutable copy of the authenticated protected-header fields.
+         *
+         * <p>This method accepts no arguments.</p>
+         *
+         * @return a copy of the protected-header mapping
+         */
         Map<String, Object> protectedHeader() {
             return new LinkedHashMap<>(protectedHeader);
         }
     }
 
+    /**
+     * Holds a recipient's encapsulated secret and serialized key material.
+     *
+     * @param sharedSecret encapsulated shared secret
+     * @param ciphertext ML-KEM ciphertext
+     * @param epk ephemeral public-key fields, or {@code null} for pure ML-KEM
+     */
     private record Encapsulation(byte[] sharedSecret, byte[] ciphertext, Map<String, Object> epk)
             implements Serializable {
     }

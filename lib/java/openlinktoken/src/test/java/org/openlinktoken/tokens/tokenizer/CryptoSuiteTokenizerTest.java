@@ -21,6 +21,8 @@ class CryptoSuiteTokenizerTest {
 
     /**
      * Verifies that an omitted suite uses the backward-compatible SHA-256 digest.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void nullSuiteUsesDefaultDigest() throws Exception {
@@ -33,6 +35,8 @@ class CryptoSuiteTokenizerTest {
 
     /**
      * Verifies SHA-3 digest selection and hexadecimal serialization.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      *
      * @throws Exception if tokenization fails
      */
@@ -49,6 +53,8 @@ class CryptoSuiteTokenizerTest {
 
     /**
      * Verifies that the default-suite tokenizer rebuilds its digest after serialization.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void defaultSuiteTokenizerRoundTripsThroughSerialization() throws Exception {
@@ -61,6 +67,8 @@ class CryptoSuiteTokenizerTest {
 
     /**
      * Verifies that an explicit-suite tokenizer rebuilds its digest after serialization.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
     void explicitSuiteTokenizerRoundTripsThroughSerialization() throws Exception {
@@ -73,6 +81,14 @@ class CryptoSuiteTokenizerTest {
         assertEquals(tokenizer.tokenize("test-input"), deserializedTokenizer.tokenize("test-input"));
     }
 
+    /**
+     * Serializes and deserializes a suite-aware tokenizer.
+     *
+     * @param tokenizer tokenizer to round-trip
+     * @return the deserialized tokenizer
+     * @throws IOException if writing or reading the serialized tokenizer fails
+     * @throws ClassNotFoundException if the tokenizer class cannot be resolved during deserialization
+     */
     private static CryptoSuiteTokenizer serializeAndDeserialize(CryptoSuiteTokenizer tokenizer)
             throws IOException, ClassNotFoundException {
         ByteArrayOutputStream serializedBytes = new ByteArrayOutputStream();

@@ -31,7 +31,23 @@ def build_exchange_envelope_v2(
     bin_width: float = 0.05,
     dimension_bias: list[float] | None = None,
 ) -> dict[str, Any]:
-    """Build a version-2 exchange config as a standard general JWE JSON object."""
+    """Build a version-2 exchange config as a standard general JWE JSON object.
+
+    Args:
+        exchange_name: Human-readable name for the exchange.
+        hashing_secret: Secret bytes used to derive token hashes.
+        sender_bundle: Sender's public version-2 exchange key bundle.
+        recipient_bundle: Recipient's public version-2 exchange key bundle.
+        created_at: Exchange creation timestamp.
+        exchange_id: Stable identifier authenticated by the protected header.
+        rotation_iv: Optional rotation-matrix initialization vector.
+        rotation_count: Optional number of rotation matrices.
+        bin_width: Optional positive tokenization bin width.
+        dimension_bias: Optional rotation dimension-bias values.
+
+    Returns:
+        A standard general-JSON JWE mapping for the version-2 exchange.
+    """
     if sender_bundle.suite != recipient_bundle.suite:
         raise ValueError("Sender and recipient key bundles must use the same crypto suite.")
     suite = sender_bundle.suite
@@ -85,7 +101,17 @@ def decrypt_exchange_envelope_v2(
     exchange_config: Mapping[str, Any],
     private_bundle_value: bytes | str | Mapping[str, Any] | ExchangeKeyBundle,
 ) -> tuple[bytes, bytes]:
-    """Decrypt a standard version-2 exchange config and return plaintext plus transport key."""
+    """Decrypt a version-2 exchange config and return its plaintext and key.
+
+    Args:
+        exchange_config: Standard general-JSON version-2 JWE mapping.
+        private_bundle_value: Matching private key bundle as an object, mapping,
+            JSON text, or JSON bytes.
+
+    Returns:
+        A pair containing the decrypted payload bytes and the 32-byte transport
+        encryption key.
+    """
     private_bundle = _parse_private_bundle(private_bundle_value)
     plaintext, transport_key = decrypt_v2_jwe(exchange_config, private_bundle)
     protected_header = _decode_protected_header(exchange_config.get("protected"))
@@ -99,7 +125,16 @@ def decrypt_exchange_envelope(
     exchange_config: Mapping[str, Any],
     private_bundle_value: bytes | str | Mapping[str, Any] | ExchangeKeyBundle,
 ) -> bytes:
-    """Decrypt a version-2 exchange config and return only its plaintext."""
+    """Decrypt a version-2 exchange config and return only its plaintext.
+
+    Args:
+        exchange_config: Standard general-JSON version-2 JWE mapping.
+        private_bundle_value: Matching private key bundle as an object, mapping,
+            JSON text, or JSON bytes.
+
+    Returns:
+        The decrypted exchange payload bytes.
+    """
     plaintext, _ = decrypt_exchange_envelope_v2(exchange_config, private_bundle_value)
     return plaintext
 
@@ -107,7 +142,15 @@ def decrypt_exchange_envelope(
 def _parse_private_bundle(
     value: bytes | str | Mapping[str, Any] | ExchangeKeyBundle,
 ) -> ExchangeKeyBundle:
-    """Parse and validate private version-2 key material."""
+    """Parse private version-2 key material into a validated bundle.
+
+    Args:
+        value: Private key bundle as an existing bundle, mapping, JSON text, or
+            JSON bytes.
+
+    Returns:
+        An ``ExchangeKeyBundle`` containing the required private key material.
+    """
     if isinstance(value, ExchangeKeyBundle):
         bundle = value
     elif isinstance(value, Mapping):
@@ -118,7 +161,14 @@ def _parse_private_bundle(
 
 
 def _parse_payload(value: bytes) -> dict[str, Any]:
-    """Parse the decrypted exchange payload as a JSON object."""
+    """Parse the decrypted exchange payload as a JSON object.
+
+    Args:
+        value: Decrypted UTF-8 JSON payload bytes.
+
+    Returns:
+        The payload as a dictionary.
+    """
     try:
         payload = json.loads(value)
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
@@ -133,7 +183,16 @@ def _validate_payload(
     suite: CryptoSuite,
     protected_header: Mapping[str, Any],
 ) -> None:
-    """Validate payload identity fields against the authenticated protected header."""
+    """Validate payload identity fields against the authenticated header.
+
+    Args:
+        payload: Decrypted version-2 exchange payload.
+        suite: Crypto suite selected by the protected header.
+        protected_header: Authenticated JWE protected-header mapping.
+
+    Returns:
+        None.
+    """
     if payload.get("cryptoSuite") != suite.suite_id:
         raise ValueError("Version-2 exchange payload suite does not match the protected header.")
     if payload.get("exchangeId") != protected_header.get("exchangeId"):
@@ -156,7 +215,14 @@ def _validate_payload(
 
 
 def _decode_protected_header(value: Any) -> dict[str, Any]:
-    """Decode the protected header needed for payload consistency validation."""
+    """Decode the protected header needed for payload validation.
+
+    Args:
+        value: Unpadded base64url text containing the protected-header JSON.
+
+    Returns:
+        The decoded protected-header dictionary.
+    """
     protected_bytes = _decode(value, "protected")
     try:
         header = json.loads(protected_bytes)
@@ -168,17 +234,39 @@ def _decode_protected_header(value: Any) -> dict[str, Any]:
 
 
 def _canonical_json(value: Mapping[str, Any]) -> bytes:
-    """Serialize a mapping deterministically for the JWE plaintext."""
+    """Serialize a mapping deterministically for the JWE plaintext.
+
+    Args:
+        value: JSON-compatible mapping to serialize.
+
+    Returns:
+        UTF-8 JSON bytes with stable key order and separators.
+    """
     return json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
 def _encode(value: bytes) -> str:
-    """Encode bytes as unpadded base64url text."""
+    """Encode bytes as unpadded base64url text.
+
+    Args:
+        value: Bytes to encode.
+
+    Returns:
+        The base64url-encoded ASCII text without padding.
+    """
     return base64.urlsafe_b64encode(value).decode("ascii").rstrip("=")
 
 
 def _decode(value: Any, field_name: str) -> bytes:
-    """Decode a required base64url field."""
+    """Decode a required base64url field.
+
+    Args:
+        value: Base64url text from the exchange payload or JWE header.
+        field_name: Field name included in validation errors.
+
+    Returns:
+        The decoded field bytes.
+    """
     if not isinstance(value, str) or not value:
         raise ValueError(f"{field_name} must be non-empty base64url data.")
     try:
