@@ -4,6 +4,7 @@ import logging
 import os
 import re
 import threading
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
@@ -55,6 +56,39 @@ class TestProgressIndicator:
         """Very large throughput in M rows/s."""
         assert _format_throughput(1_000_000.0) == "1.0 M rows/s"
         assert _format_throughput(5_250_000.0) == "5.2 M rows/s"
+
+    def test_render_uses_ascii_spinner_when_stderr_cannot_encode_braille(self):
+        """Legacy stderr encodings should still render an animated progress line."""
+        stderr = SimpleNamespace(encoding="cp1252")
+        writes: list[str] = []
+
+        with patch("sys.stderr", stderr):
+            pi = _ProgressIndicator(use_color=False)
+            pi._start_time = 0.0
+            pi.update(stage="Working", done=1)
+            pi._running.set()
+
+            def _write(text: str) -> int:
+                text.encode(stderr.encoding)
+                writes.append(text)
+                pi._running.clear()
+                return len(text)
+
+            stderr.write = _write
+            stderr.flush = lambda: None
+            pi._update_event.wait = lambda timeout: True
+
+            with (
+                patch("shutil.get_terminal_size", return_value=os.terminal_size((160, 24))),
+                patch("time.perf_counter", return_value=5.0),
+            ):
+                pi._render()
+
+            assert pi._frames == pi._ASCII_FRAMES
+            assert self._rendered_lines(writes[0])[0].startswith("| Working")
+
+        with patch("sys.stderr", SimpleNamespace(encoding="utf-8")):
+            assert _ProgressIndicator()._frames == _ProgressIndicator._FRAMES
 
     def test_progress_indicator_start_stop(self):
         """Enabled progress indicator should start and stop cleanly."""
@@ -140,7 +174,9 @@ class TestProgressIndicator:
 
         assert writes
         rendered_lines = self._rendered_lines("".join(writes))
-        assert rendered_lines == ["⠋ Working | 100/200 rows (50.0%) | remaining 00:10 | 10.0 rows/s | elapsed 00:10"]
+        assert rendered_lines == [
+            f"{pi._frames[0]} Working | 100/200 rows (50.0%) | remaining 00:10 | 10.0 rows/s | elapsed 00:10"
+        ]
 
     def test_render_without_total_shows_placeholders(self):
         """When the total is unknown, the status line should show stable placeholders."""
@@ -166,7 +202,9 @@ class TestProgressIndicator:
 
         assert writes
         rendered_lines = self._rendered_lines("".join(writes))
-        assert rendered_lines == ["⠋ Working | 25/-- rows (--) | remaining -- | 5.0 rows/s | elapsed 00:05"]
+        assert rendered_lines == [
+            f"{pi._frames[0]} Working | 25/-- rows (--) | remaining -- | 5.0 rows/s | elapsed 00:05"
+        ]
 
     def test_render_keeps_progress_to_terminal_width(self):
         """The live progress line should fit within terminal width."""
@@ -257,7 +295,7 @@ class TestProgressIndicator:
         assert len(writes) == 3
         assert wait_timeouts[1:] == pytest.approx([0.05, 0.05])
         rendered_lines = [self._rendered_lines(write)[0] for write in writes]
-        assert [line[0] for line in rendered_lines] == ["⠋", "⠙", "⠹"]
+        assert [line[0] for line in rendered_lines] == list(pi._frames[:3])
 
     def test_render_with_stats_provider(self):
         """Extension stats providers should appear after core metrics in the status line."""

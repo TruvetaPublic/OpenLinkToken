@@ -9,6 +9,7 @@ import logging
 import mmap
 import os
 import platform
+import sys
 from pathlib import Path
 from threading import Lock
 from typing import Dict, List, Optional
@@ -25,7 +26,12 @@ _ACCELERATED_EXECUTION_PROVIDERS = {"CUDAExecutionProvider", "CoreMLExecutionPro
 
 @contextlib.contextmanager
 def _suppress_ort_stderr():
-    """Redirect C-level stderr to /dev/null to silence ORT native error messages."""
+    """Redirect C-level stderr when no interactive renderer shares the Windows console."""
+    isatty = getattr(sys.stderr, "isatty", None)
+    if os.name == "nt" and callable(isatty) and isatty():
+        yield
+        return
+
     devnull_fd = os.open(os.devnull, os.O_WRONLY)
     saved_fd = os.dup(2)
     os.dup2(devnull_fd, 2)
@@ -269,6 +275,7 @@ class ML1OnnxSignatureGenerator:
             resolved_tokenizer_path = cls._resolve_path(tokenizer_path)
 
             session_options = ort.SessionOptions()
+            session_options.log_severity_level = 4  # ORT Fatal level; avoid process-wide stderr redirection.
             session_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
             session_options.execution_mode = ort.ExecutionMode.ORT_PARALLEL
             session_options.enable_mem_pattern = True
