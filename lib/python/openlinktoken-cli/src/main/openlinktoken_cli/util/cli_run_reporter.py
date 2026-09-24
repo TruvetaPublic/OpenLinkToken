@@ -118,6 +118,7 @@ class _ProgressIndicator:
     _FRAMES = ("\u280b", "\u2819", "\u2839", "\u2838", "\u283c", "\u2834", "\u2826", "\u2827", "\u2807", "\u280f")
     _ASCII_FRAMES = ("|", "/", "-", "\\")
     _RENDER_INTERVAL_SECONDS = 0.05
+    _STOP_TIMEOUT_SECONDS = 0.5
     _ANSI_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
 
     def __init__(self, use_color: bool = True):
@@ -166,7 +167,13 @@ class _ProgressIndicator:
         self._running.clear()
         self._update_event.set()  # Wake the render thread so it exits without waiting
         if hasattr(self, "_thread") and self._thread.is_alive():
-            self._thread.join()
+            self._thread.join(timeout=self._STOP_TIMEOUT_SECONDS)
+            if self._thread.is_alive():
+                logging.getLogger(__name__).warning(
+                    "Progress renderer thread did not stop within %.1f seconds; leaving progress output uncleared",
+                    self._STOP_TIMEOUT_SECONDS,
+                )
+                return
         self._clear_block()
 
     def set_total_rows(self, total: int) -> None:
@@ -319,6 +326,8 @@ class _ProgressIndicator:
                     speed_parts,
                     elapsed_str,
                 )
+                if not self._running.is_set():
+                    break
                 self._write_render_block([line])
 
         except KeyboardInterrupt:

@@ -106,38 +106,53 @@ class TestProgressIndicator:
         pi.stop()
         assert not pi._thread.is_alive()
 
-    def test_stop_waits_for_render_thread_to_exit(self):
-        """Stopping the reporter must wait until its render thread has exited."""
+    def test_stop_is_bounded_when_stats_provider_blocks(self, caplog):
+        """A stalled stats provider must not block shutdown or render after stopping."""
         pi = _ProgressIndicator()
-        render_started = threading.Event()
-        finish_rendering = threading.Event()
+        metrics_started = threading.Event()
+        resume_metrics = threading.Event()
         stop_returned = threading.Event()
+        rendered_lines: list[list[str]] = []
+        cleared_lines: list[bool] = []
+        pi._last_render_line_count = 1
 
-        def _blocked_render() -> None:
-            render_started.set()
-            finish_rendering.wait()
+        class BlockingStatsProvider:
+            def get_metrics(self) -> list[tuple[str, str, str]]:
+                metrics_started.set()
+                resume_metrics.wait()
+                return []
+
+        pi._stats_providers.append(BlockingStatsProvider())
 
         def _stop() -> None:
             pi.stop()
             stop_returned.set()
 
-        pi._render = _blocked_render
-        pi.start()
-        stopper: threading.Thread | None = None
-        try:
-            assert render_started.wait(timeout=1)
+        with (
+            patch.object(_ProgressIndicator, "_STOP_TIMEOUT_SECONDS", 0.05),
+            patch.object(pi, "_write_render_block", side_effect=lambda lines: rendered_lines.append(lines)),
+            patch.object(pi, "_clear_block", side_effect=lambda: cleared_lines.append(True)),
+            caplog.at_level(logging.WARNING, logger="openlinktoken_cli.util.cli_run_reporter"),
+        ):
+            pi.start()
             stopper = threading.Thread(target=_stop)
-            stopper.start()
-            assert not stop_returned.wait(timeout=1)
-        finally:
-            finish_rendering.set()
-            if stopper is not None:
-                stopper.join(timeout=1)
-            else:
+            try:
+                assert metrics_started.wait(timeout=1)
+                stopper.start()
+                assert stop_returned.wait(timeout=1)
+                assert pi._thread.is_alive()
+                assert rendered_lines == []
+                assert cleared_lines == []
+            finally:
+                resume_metrics.set()
+                if stopper.ident is not None:
+                    stopper.join(timeout=1)
                 pi._thread.join(timeout=1)
 
-        assert stop_returned.is_set()
         assert not pi._thread.is_alive()
+        assert rendered_lines == []
+        assert cleared_lines == []
+        assert "Progress renderer thread did not stop" in caplog.text
 
     def test_progress_update_via_lock(self):
         """Updates via _lock should be visible immediately."""
