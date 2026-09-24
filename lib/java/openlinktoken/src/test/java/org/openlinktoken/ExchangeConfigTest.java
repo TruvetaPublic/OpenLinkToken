@@ -117,6 +117,23 @@ class ExchangeConfigTest {
     }
 
     /**
+     * Verifies a version-one SHA3 suite resolves from the authenticated header, not the payload.
+     */
+    @Test
+    void resolvesV1Sha3FromCriticalHeaderWithoutPayloadSuite() {
+        V1Keys keys = generateV1Keys();
+        Map<String, Object> envelope = buildV1Envelope(keys, 3, CryptoSuite.SUITE_SHA3_V1);
+
+        ExchangeConfig.ResolvedExchangeConfig resolved =
+                ExchangeConfig.resolveExchangeConfig(envelope, keys.senderPrivatePem());
+
+        assertEquals(1, resolved.version());
+        assertEquals(CryptoSuite.SUITE_SHA3_V1, resolved.cryptoSuite());
+        assertFalse(resolved.payload().containsKey("cryptoSuite"));
+        assertArrayEquals(HASHING_SECRET, resolved.hashingSecret());
+    }
+
+    /**
      * Verifies both version-two recipient roles resolve the authenticated KEM transport key.
      */
     @Test
@@ -269,6 +286,11 @@ class ExchangeConfigTest {
     }
 
     private static Map<String, Object> buildV1Envelope(V1Keys keys, int rotationCount) {
+        return buildV1Envelope(keys, rotationCount, CryptoSuite.defaultSuite());
+    }
+
+    private static Map<String, Object> buildV1Envelope(
+            V1Keys keys, int rotationCount, CryptoSuite cryptoSuite) {
         return ExchangeJwe.buildExchangeEnvelope(
                 "demo-exchange",
                 HASHING_SECRET,
@@ -281,7 +303,7 @@ class ExchangeConfigTest {
                 rotationCount,
                 0.05,
                 List.of(0.1, -0.2),
-                CryptoSuite.defaultSuite());
+                cryptoSuite);
     }
 
     private static V1Keys generateV1Keys() {

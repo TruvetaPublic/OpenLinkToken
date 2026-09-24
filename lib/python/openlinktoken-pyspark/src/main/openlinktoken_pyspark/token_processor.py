@@ -158,11 +158,12 @@ class OpenLinkTokenProcessor:
         Args:
             exchange_config_path: Optional path to the exchange config JSON file.
             exchange_config_value: Optional in-memory exchange config JSON or decoded mapping.
-            private_key_path: Optional path to the participant private key PEM.
-            private_key_env: Optional environment variable name containing private key PEM data.
-            private_key_value: Optional in-memory participant private key PEM text or bytes.
+            private_key_path: Optional participant private-key PEM path for v1 or private key-bundle JSON path for v2.
+            private_key_env: Optional environment variable containing v1 private-key PEM or v2 private key-bundle JSON.
+            private_key_value: Optional in-memory v1 private-key PEM or v2 private key-bundle JSON.
             token_definition: Optional custom token definition to use during processing.
             ring_id: Optional ring identifier for olt.V1 wrapping. If omitted, a UUID is generated.
+            crypto_suite: Optional suite to verify against the suite resolved from the exchange config.
 
         Returns:
             A processor configured with resolved hashing-secret bytes and the

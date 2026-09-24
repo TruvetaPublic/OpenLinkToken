@@ -104,6 +104,49 @@ def test_initiate_exchange_version_two_suite_round_trips(tmp_path: Path) -> None
     _assert_v2_jwe_header(config, "suite-pq-v1")
 
 
+def test_initiate_exchange_sha3_v1_suite_round_trips(tmp_path: Path) -> None:
+    """The CLI creates and resolves a v1 SHA3 envelope with a critical suite marker."""
+    key_dir = tmp_path / ".openlinktoken"
+    key_dir.mkdir()
+    partner_private_pem, partner_public_pem = generate_key_pair("P-256")
+    (key_dir / "partner.public.pem").write_bytes(partner_public_pem)
+    (key_dir / "partner.private.pem").write_bytes(partner_private_pem)
+
+    with patch("pathlib.Path.home", return_value=tmp_path):
+        assert (
+            OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--crypto-suite",
+                    "suite-sha3-v1",
+                    "--name",
+                    "sender",
+                    "--public-key",
+                    str(key_dir / "partner.public.pem"),
+                    "--output",
+                    str(tmp_path / "exchange.json"),
+                    "--force",
+                    "--rotation-embedding-dimension",
+                    "2",
+                ]
+            )
+            == 0
+        )
+
+        resolved = resolve_exchange_config_inputs(
+            exchange_config_path=tmp_path / "exchange.json",
+            private_key_path=key_dir / "partner.private.pem",
+        )
+        config = json.loads((tmp_path / "exchange.json").read_text(encoding="utf-8"))
+
+    protected_header = _decode_base64url_json(config["protected"])
+    assert resolved.version == 1
+    assert resolved.crypto_suite.suite_id == "suite-sha3-v1"
+    assert protected_header["cryptoSuite"] == "suite-sha3-v1"
+    assert protected_header["crit"] == ["cryptoSuite"]
+    assert "cryptoSuite" not in resolved.payload
+
+
 def test_initiate_exchange_resolves_v1_public_key_from_base_path(tmp_path: Path) -> None:
     """The selected v1 suite appends the PEM public-key suffix to the base path."""
     with patch("pathlib.Path.home", return_value=tmp_path):

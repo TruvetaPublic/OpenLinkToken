@@ -160,17 +160,21 @@ the protected `cryptoSuite`, `version`, and `exchangeId` before accepting it.
 
 ## Version 1
 
-Version 1 retains the existing ECDH/JWE exchange behavior and PEM key format.
-Legacy top-level-version-1 envelopes are default-suite-only and use
-`suite-sha256-v1`; the top-level marker is not a selector for a non-default
-suite. A non-default suite requires an authenticated, versioned exchange
-format. The implemented version 2 format above authenticates `version`,
-`cryptoSuite`, and `exchangeId` in the protected header for the post-quantum
-suites; no alternate version 1 wire format is defined here. The exchange
-config uses the standard JWE JSON members `protected`, `recipients`, `iv`,
-`ciphertext`, and `tag`. Its protected header and recipient algorithm are
-selected by the version 1 exchange implementation, normally
-`ECDH-ES+A256KW`.
+Version 1 uses ECDH/JWE and PEM key pairs for `suite-sha256-v1` and
+`suite-sha3-v1`. When `cryptoSuite` is absent from the protected header, readers
+resolve the legacy default `suite-sha256-v1`, so existing default-suite
+envelopes retain their original wire format. For `suite-sha3-v1`, the
+authenticated protected header contains `cryptoSuite: "suite-sha3-v1"` and
+`crit: ["cryptoSuite"]`. Suite identity is not added to the v1 payload or the
+top-level envelope. Readers reject unknown, incompatible, unprotected, or
+non-critical suite markers; older readers that do not recognize the critical
+parameter will reject these non-default v1 envelopes.
+
+The exchange config uses the standard JWE JSON members `protected`,
+`recipients`, `iv`, `ciphertext`, and `tag`. Its recipient algorithm remains
+`ECDH-ES+A256KW`. The post-quantum suites continue to use the version 2 format
+above, which authenticates `version`, `cryptoSuite`, and `exchangeId` in the
+protected header.
 
 Version 1 derives the token transport key with its existing
 `openlinktoken:token-encryption:v1` contract. Version 1 behavior is preserved
