@@ -11,7 +11,23 @@ from openlinktoken.core.ai.tokens.ml1_onnx_signature_generator import (
     ML1OnnxSignatureGenerator,
     _preload_cuda_libraries,
     _resolve_providers,
+    _suppress_ort_stderr,
 )
+
+
+def test_suppress_ort_stderr_does_not_redirect_windows_console(monkeypatch):
+    """Keep the Windows console handle intact while interactive progress is rendering."""
+    stderr = Mock()
+    stderr.isatty.return_value = True
+    dup2 = Mock()
+    monkeypatch.setattr("openlinktoken.core.ai.tokens.ml1_onnx_signature_generator.os.name", "nt")
+    monkeypatch.setattr("openlinktoken.core.ai.tokens.ml1_onnx_signature_generator.os.dup2", dup2)
+    monkeypatch.setattr("sys.stderr", stderr)
+
+    with _suppress_ort_stderr():
+        pass
+
+    dup2.assert_not_called()
 
 
 def test_empty_signatures_do_not_initialize_onnx():

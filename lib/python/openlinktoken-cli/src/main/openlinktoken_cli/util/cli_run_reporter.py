@@ -116,10 +116,13 @@ class _ProgressIndicator:
     """Internal progress indicator with spinner, percentage, ETA, and throughput."""
 
     _FRAMES = ("\u280b", "\u2819", "\u2839", "\u2838", "\u283c", "\u2834", "\u2826", "\u2827", "\u2807", "\u280f")
-    _RENDER_INTERVAL_SECONDS = 0.1
+    _ASCII_FRAMES = ("|", "/", "-", "\\")
+    _RENDER_INTERVAL_SECONDS = 0.05
+    _STOP_TIMEOUT_SECONDS = 0.5
     _ANSI_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
 
     def __init__(self, use_color: bool = True):
+        self._frames = self._select_frames()
         self._total_rows = 0
         self._done = 0
         self._stage = ""
@@ -138,6 +141,19 @@ class _ProgressIndicator:
             self._CYAN = ""
             self._RESET = ""
 
+    @classmethod
+    def _select_frames(cls) -> tuple[str, ...]:
+        """Use Braille spinner frames only when stderr can encode them."""
+        encoding = getattr(sys.stderr, "encoding", None)
+        if not encoding:
+            return cls._ASCII_FRAMES
+
+        try:
+            "".join(cls._FRAMES).encode(encoding)
+        except (LookupError, UnicodeEncodeError):
+            return cls._ASCII_FRAMES
+        return cls._FRAMES
+
     def start(self) -> None:
         """Start the background render thread."""
         self._start_time = time.perf_counter()
@@ -151,7 +167,13 @@ class _ProgressIndicator:
         self._running.clear()
         self._update_event.set()  # Wake the render thread so it exits without waiting
         if hasattr(self, "_thread") and self._thread.is_alive():
-            self._thread.join(timeout=self._RENDER_INTERVAL_SECONDS + 0.5)
+            self._thread.join(timeout=self._STOP_TIMEOUT_SECONDS)
+            if self._thread.is_alive():
+                logging.getLogger(__name__).warning(
+                    "Progress renderer thread did not stop within %.1f seconds; leaving progress output uncleared",
+                    self._STOP_TIMEOUT_SECONDS,
+                )
+                return
         self._clear_block()
 
     def set_total_rows(self, total: int) -> None:
@@ -263,9 +285,9 @@ class _ProgressIndicator:
                     next_frame_at = now + self._RENDER_INTERVAL_SECONDS
                 elif now >= next_frame_at:
                     frames_to_advance = int((now - next_frame_at) / self._RENDER_INTERVAL_SECONDS) + 1
-                    frame_index = (frame_index + frames_to_advance) % len(self._FRAMES)
+                    frame_index = (frame_index + frames_to_advance) % len(self._frames)
                     next_frame_at += frames_to_advance * self._RENDER_INTERVAL_SECONDS
-                frame = self._FRAMES[frame_index]
+                frame = self._frames[frame_index]
 
                 with self._lock:
                     stage = self._stage
@@ -304,6 +326,8 @@ class _ProgressIndicator:
                     speed_parts,
                     elapsed_str,
                 )
+                if not self._running.is_set():
+                    break
                 self._write_render_block([line])
 
         except KeyboardInterrupt:
