@@ -209,8 +209,9 @@ jobs:
               pull_number: context.payload.pull_request.number,
             })).data;
             if (pr.state !== 'open' || pr.user.login !== 'dependabot[bot]' || pr.base.ref !== 'develop' ||
-                pr.head.repo.full_name !== `${context.repo.owner}/${context.repo.repo}` || !pr.head.ref.startsWith('dependabot/')) {
-              throw new Error('PR is no longer an eligible same-repository Dependabot PR');
+                pr.head.repo.full_name !== `${context.repo.owner}/${context.repo.repo}` || !pr.head.ref.startsWith('dependabot/') ||
+                pr.head.sha !== context.payload.pull_request.head.sha) {
+              throw new Error('PR is no longer the same eligible Dependabot commit');
             }
             const changed = await github.paginate(github.rest.pulls.listFiles, {
               owner: context.repo.owner, repo: context.repo.repo,
@@ -222,7 +223,7 @@ jobs:
               'lib/python/openlinktoken-core-ai/pyproject.toml', 'lib/python/openlinktoken-pyspark/setup.py',
               'tools/interoperability/pyproject.toml', 'tools/interoperability/uv.lock',
             ]);
-            if (!changed.some(file => dependencyMetadata.has(file.filename) || file.filename.startsWith('lib/python/') && /\\/(pyproject\\.toml|setup\\.py|requirements\\.txt|dev-requirements\\.txt|uv\\.lock)$/.test(file.filename) || file.filename.startsWith('tools/') && file.filename.endsWith('requirements.txt'))) {
+            if (!changed.some(file => dependencyMetadata.has(file.filename) || file.filename.startsWith('lib/python/') && /\/(pyproject\.toml|setup\.py|requirements\.txt|dev-requirements\.txt|uv\.lock)$/.test(file.filename) || file.filename.startsWith('tools/') && file.filename.endsWith('requirements.txt'))) {
               throw new Error('PR does not change dependency metadata, lockfiles, or requirement exports');
             }
             core.setOutput('head-ref', pr.head.ref);
