@@ -1,0 +1,291 @@
+name: Regenerate Dependabot Requirements
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+    branches: [develop]
+    paths:
+      - ".github/dependabot.yml"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "lib/python/**/pyproject.toml"
+      - "lib/python/**/setup.py"
+      - "lib/python/**/requirements.txt"
+      - "lib/python/**/uv.lock"
+      - "tools/requirements.txt"
+      - "tools/interoperability/pyproject.toml"
+      - "tools/interoperability/uv.lock"
+      - "lib/python/dev-requirements.txt"
+      - "lib/python/openlinktoken/requirements.txt"
+      - "lib/python/openlinktoken-cli/requirements.txt"
+      - "lib/python/openlinktoken-core-ai/requirements.txt"
+      - "lib/python/openlinktoken-pyspark/requirements.txt"
+      - "tools/interoperability/requirements.txt"
+      - "!.github/workflows/dependabot-requirements-workflow.yml"
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: dependabot-requirements-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  regenerate:
+    if: >-
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'develop'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      changed: ${{ steps.exports.outputs.changed }}
+    steps:
+      - name: Check out Dependabot branch
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: source
+          persist-credentials: false
+          lfs: false
+          submodules: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Synchronize PySpark dependency pins
+        working-directory: source
+        run: |
+          python3 - <<'PY'
+          import re
+          import tomllib
+          from pathlib import Path
+
+          root = Path.cwd()
+          with (root / "pyproject.toml").open("rb") as file:
+              requirements = tomllib.load(file)["dependency-groups"]["tools"]
+          with (root / "lib/python/openlinktoken/pyproject.toml").open("rb") as file:
+              requirements += tomllib.load(file)["project"]["dependencies"]
+
+          versions = {
+              item.split("==", 1)[0].lower(): item.split("==", 1)[1]
+              for item in requirements
+              if "==" in item and item.split("==", 1)[0].lower() in {"jwcrypto", "pycryptodome"}
+          }
+          setup = root / "lib/python/openlinktoken-pyspark/setup.py"
+          source = setup.read_text(encoding="utf-8")
+          for package, version in versions.items():
+              source, count = re.subn(
+                  rf'(?m)^([ \t]*"{re.escape(package)}==)[^"]+(",?)$',
+                  rf"\g<1>{version}\g<2>",
+                  source,
+              )
+              if count != 1:
+                  raise SystemExit(f"Expected exactly one {package} pin, found {count}")
+          setup.write_text(source, encoding="utf-8")
+          PY
+
+      - name: Regenerate requirements
+        working-directory: source
+        run: |
+          set -euo pipefail
+          uv lock
+          uv export --only-group dev --no-hashes --format requirements.txt --output-file lib/python/dev-requirements.txt
+          uv export --only-group tools --no-hashes --format requirements.txt --output-file tools/requirements.txt
+          uv lock --project tools/interoperability/pyproject.toml
+          uv export --project tools/interoperability/pyproject.toml --no-hashes --format requirements.txt --output-file tools/interoperability/requirements.txt
+          uv export --package openlinktoken --no-dev --no-hashes --no-emit-project --output-file lib/python/openlinktoken/requirements.txt
+          uv export --package openlinktoken-cli --no-dev --no-hashes --output-file lib/python/openlinktoken-cli/requirements.txt
+          uv export --package openlinktoken-core-ai --no-dev --no-hashes --no-emit-workspace --output-file lib/python/openlinktoken-core-ai/requirements.txt
+          uv export --package openlinktoken-pyspark --no-dev --no-hashes --output-file lib/python/openlinktoken-pyspark/requirements.txt
+
+      - name: Collect changed allowlisted files
+        id: exports
+        working-directory: source
+        run: |
+          set -euo pipefail
+          allowed=(
+            lib/python/dev-requirements.txt
+            lib/python/openlinktoken/requirements.txt
+            lib/python/openlinktoken-cli/requirements.txt
+            lib/python/openlinktoken-core-ai/requirements.txt
+            lib/python/openlinktoken-pyspark/requirements.txt
+            lib/python/openlinktoken-pyspark/setup.py
+            tools/requirements.txt
+            tools/interoperability/requirements.txt
+          )
+          mkdir regenerated
+          { git diff --name-only -- "${allowed[@]}"; git diff --cached --name-only -- "${allowed[@]}"; } | sort -u | while IFS= read -r file; do
+            [[ -n "$file" ]] || continue
+            if [[ ! " ${allowed[*]} " == *" $file "* ]]; then
+              echo "Unexpected generated path: $file" >&2
+              exit 1
+            fi
+            mkdir -p "regenerated/$(dirname "$file")"
+            cp "$file" "regenerated/$file"
+          done
+          if [[ -z "$(find regenerated -type f -print -quit)" ]]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload generated requirements artifact
+        if: steps.exports.outputs.changed == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: dependabot-requirements-${{ github.event.pull_request.number }}
+          path: source/regenerated/
+          if-no-files-found: error
+          include-hidden-files: true
+
+  apply-exports:
+    needs: regenerate
+    if: >-
+      needs.regenerate.outputs.changed == 'true' &&
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'develop'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Check out trusted base branch
+        uses: actions/checkout@v7
+        with:
+          ref: develop
+          persist-credentials: false
+
+      - name: Download generated requirements artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: dependabot-requirements-${{ github.event.pull_request.number }}
+          path: regenerated
+
+      - name: Validate artifact and current pull request
+        id: pr-check
+        uses: actions/github-script@v9
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const fs = require('node:fs');
+            const path = require('node:path');
+            const allowed = new Set([
+              'lib/python/dev-requirements.txt',
+              'lib/python/openlinktoken/requirements.txt',
+              'lib/python/openlinktoken-cli/requirements.txt',
+              'lib/python/openlinktoken-core-ai/requirements.txt',
+              'lib/python/openlinktoken-pyspark/requirements.txt',
+              'lib/python/openlinktoken-pyspark/setup.py',
+              'tools/requirements.txt',
+              'tools/interoperability/requirements.txt',
+            ]);
+            const files = [];
+            function walk(dir = 'regenerated') {
+              for (const name of fs.readdirSync(dir)) {
+                const full = path.join(dir, name);
+                const stat = fs.lstatSync(full);
+                if (stat.isSymbolicLink()) throw new Error(`Symlink not allowed: ${full}`);
+                if (stat.isDirectory()) walk(full);
+                else if (stat.isFile()) files.push(path.relative('regenerated', full).split(path.sep).join('/'));
+              }
+            }
+            walk();
+            if (!files.length || files.some(file => !allowed.has(file))) throw new Error(`Unexpected artifact paths: ${files}`);
+            for (const file of files) {
+              if (fs.statSync(path.join('regenerated', file)).size > 5_000_000) throw new Error(`Artifact file too large: ${file}`);
+            }
+            const pr = (await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+            })).data;
+            if (pr.state !== 'open' || pr.user.login !== 'dependabot[bot]' || pr.base.ref !== 'develop' ||
+                pr.head.repo.full_name !== `${context.repo.owner}/${context.repo.repo}` || !pr.head.ref.startsWith('dependabot/') ||
+                pr.head.sha !== context.payload.pull_request.head.sha) {
+              throw new Error('PR is no longer the same eligible Dependabot commit');
+            }
+            const changed = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner, repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number, per_page: 100,
+            });
+            const dependencyMetadata = new Set([
+              '.github/dependabot.yml', 'pyproject.toml', 'uv.lock',
+              'lib/python/openlinktoken/pyproject.toml', 'lib/python/openlinktoken-cli/pyproject.toml',
+              'lib/python/openlinktoken-core-ai/pyproject.toml', 'lib/python/openlinktoken-pyspark/setup.py',
+              'tools/interoperability/pyproject.toml', 'tools/interoperability/uv.lock',
+            ]);
+            if (!changed.some(file => dependencyMetadata.has(file.filename) || file.filename.startsWith('lib/python/') && /\/(pyproject\.toml|setup\.py|requirements\.txt|dev-requirements\.txt|uv\.lock)$/.test(file.filename) || file.filename.startsWith('tools/') && file.filename.endsWith('requirements.txt'))) {
+              throw new Error('PR does not change dependency metadata, lockfiles, or requirement exports');
+            }
+            core.setOutput('head-ref', pr.head.ref);
+            core.setOutput('head-sha', pr.head.sha);
+
+      - name: Create release-bot token
+        id: app-token
+        if: steps.pr-check.outcome == 'success'
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.APP_TRUVETAPUBLIC_RELEASE_BOT_ID }}
+          private-key: ${{ secrets.APP_TRUVETAPUBLIC_RELEASE_BOT_SECRET }}
+          permission-contents: write
+
+      - name: Push allowlisted files with release-bot token
+        if: steps.pr-check.outcome == 'success'
+        uses: actions/github-script@v9
+        env:
+          VALIDATED_HEAD_SHA: ${{ steps.pr-check.outputs.head-sha }}
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            const fs = require('node:fs');
+            const { owner, repo } = context.repo;
+            const pullNumber = context.payload.pull_request.number;
+            const allowed = [
+              'lib/python/dev-requirements.txt',
+              'lib/python/openlinktoken/requirements.txt',
+              'lib/python/openlinktoken-cli/requirements.txt',
+              'lib/python/openlinktoken-core-ai/requirements.txt',
+              'lib/python/openlinktoken-pyspark/requirements.txt',
+              'lib/python/openlinktoken-pyspark/setup.py',
+              'tools/requirements.txt',
+              'tools/interoperability/requirements.txt',
+            ];
+            const pr = (await github.rest.pulls.get({ owner, repo, pull_number: pullNumber })).data;
+            if (pr.state !== 'open' || pr.user.login !== 'dependabot[bot]' || pr.base.ref !== 'develop' ||
+                pr.head.repo.full_name !== `${owner}/${repo}` || !pr.head.ref.startsWith('dependabot/') ||
+                pr.head.sha !== process.env.VALIDATED_HEAD_SHA) {
+              throw new Error('PR changed after artifact validation; refusing to apply stale requirements');
+            }
+            const current = (await github.rest.git.getCommit({ owner, repo, commit_sha: pr.head.sha })).data;
+            const tree = [];
+            for (const file of allowed) {
+              const source = `regenerated/${file}`;
+              if (!fs.existsSync(source)) continue;
+              const content = fs.readFileSync(source);
+              const existing = await github.rest.repos.getContent({ owner, repo, path: file, ref: pr.head.sha }).catch(error => {
+                if (error.status === 404) return null;
+                throw error;
+              });
+              if (existing?.data?.sha) {
+                const blob = await github.rest.git.getBlob({ owner, repo, file_sha: existing.data.sha });
+                if (Buffer.from(blob.data.content, 'base64').equals(content)) continue;
+              }
+              const created = await github.rest.git.createBlob({ owner, repo, content: content.toString('utf8'), encoding: 'utf-8' });
+              tree.push({ path: file, mode: '100644', type: 'blob', sha: created.data.sha });
+            }
+            if (!tree.length) return;
+            const nextTree = await github.rest.git.createTree({ owner, repo, base_tree: current.tree.sha, tree });
+            const commit = await github.rest.git.createCommit({
+              owner, repo, message: 'build(deps): regenerate requirement exports',
+              tree: nextTree.data.sha, parents: [pr.head.sha],
+            });
+            await github.rest.git.updateRef({ owner, repo, ref: `heads/${pr.head.ref}`, sha: commit.data.sha, force: false });
