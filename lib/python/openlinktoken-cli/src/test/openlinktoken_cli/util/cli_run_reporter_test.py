@@ -3,6 +3,8 @@
 import logging
 import os
 import re
+import threading
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
@@ -55,6 +57,39 @@ class TestProgressIndicator:
         assert _format_throughput(1_000_000.0) == "1.0 M rows/s"
         assert _format_throughput(5_250_000.0) == "5.2 M rows/s"
 
+    def test_render_uses_ascii_spinner_when_stderr_cannot_encode_braille(self):
+        """Legacy stderr encodings should still render an animated progress line."""
+        stderr = SimpleNamespace(encoding="cp1252")
+        writes: list[str] = []
+
+        with patch("sys.stderr", stderr):
+            pi = _ProgressIndicator(use_color=False)
+            pi._start_time = 0.0
+            pi.update(stage="Working", done=1)
+            pi._running.set()
+
+            def _write(text: str) -> int:
+                text.encode(stderr.encoding)
+                writes.append(text)
+                pi._running.clear()
+                return len(text)
+
+            stderr.write = _write
+            stderr.flush = lambda: None
+            pi._update_event.wait = lambda timeout: True
+
+            with (
+                patch("shutil.get_terminal_size", return_value=os.terminal_size((160, 24))),
+                patch("time.perf_counter", return_value=5.0),
+            ):
+                pi._render()
+
+            assert pi._frames == pi._ASCII_FRAMES
+            assert self._rendered_lines(writes[0])[0].startswith("| Working")
+
+        with patch("sys.stderr", SimpleNamespace(encoding="utf-8")):
+            assert _ProgressIndicator()._frames == _ProgressIndicator._FRAMES
+
     def test_progress_indicator_start_stop(self):
         """Enabled progress indicator should start and stop cleanly."""
         pi = _ProgressIndicator()
@@ -70,6 +105,54 @@ class TestProgressIndicator:
             assert pi._total_rows == 1000
         pi.stop()
         assert not pi._thread.is_alive()
+
+    def test_stop_is_bounded_when_stats_provider_blocks(self, caplog):
+        """A stalled stats provider must not block shutdown or render after stopping."""
+        pi = _ProgressIndicator()
+        metrics_started = threading.Event()
+        resume_metrics = threading.Event()
+        stop_returned = threading.Event()
+        rendered_lines: list[list[str]] = []
+        cleared_lines: list[bool] = []
+        pi._last_render_line_count = 1
+
+        class BlockingStatsProvider:
+            def get_metrics(self) -> list[tuple[str, str, str]]:
+                metrics_started.set()
+                resume_metrics.wait()
+                return []
+
+        pi._stats_providers.append(BlockingStatsProvider())
+
+        def _stop() -> None:
+            pi.stop()
+            stop_returned.set()
+
+        with (
+            patch.object(_ProgressIndicator, "_STOP_TIMEOUT_SECONDS", 0.05),
+            patch.object(pi, "_write_render_block", side_effect=lambda lines: rendered_lines.append(lines)),
+            patch.object(pi, "_clear_block", side_effect=lambda: cleared_lines.append(True)),
+            caplog.at_level(logging.WARNING, logger="openlinktoken_cli.util.cli_run_reporter"),
+        ):
+            pi.start()
+            stopper = threading.Thread(target=_stop)
+            try:
+                assert metrics_started.wait(timeout=1)
+                stopper.start()
+                assert stop_returned.wait(timeout=1)
+                assert pi._thread.is_alive()
+                assert rendered_lines == []
+                assert cleared_lines == []
+            finally:
+                resume_metrics.set()
+                if stopper.ident is not None:
+                    stopper.join(timeout=1)
+                pi._thread.join(timeout=1)
+
+        assert not pi._thread.is_alive()
+        assert rendered_lines == []
+        assert cleared_lines == []
+        assert "Progress renderer thread did not stop" in caplog.text
 
     def test_progress_update_via_lock(self):
         """Updates via _lock should be visible immediately."""
@@ -106,7 +189,9 @@ class TestProgressIndicator:
 
         assert writes
         rendered_lines = self._rendered_lines("".join(writes))
-        assert rendered_lines == ["⠋ Working | 100/200 rows (50.0%) | remaining 00:10 | 10.0 rows/s | elapsed 00:10"]
+        assert rendered_lines == [
+            f"{pi._frames[0]} Working | 100/200 rows (50.0%) | remaining 00:10 | 10.0 rows/s | elapsed 00:10"
+        ]
 
     def test_render_without_total_shows_placeholders(self):
         """When the total is unknown, the status line should show stable placeholders."""
@@ -132,7 +217,9 @@ class TestProgressIndicator:
 
         assert writes
         rendered_lines = self._rendered_lines("".join(writes))
-        assert rendered_lines == ["⠋ Working | 25/-- rows (--) | remaining -- | 5.0 rows/s | elapsed 00:05"]
+        assert rendered_lines == [
+            f"{pi._frames[0]} Working | 25/-- rows (--) | remaining -- | 5.0 rows/s | elapsed 00:05"
+        ]
 
     def test_render_keeps_progress_to_terminal_width(self):
         """The live progress line should fit within terminal width."""
@@ -186,7 +273,7 @@ class TestProgressIndicator:
         assert " | ".join(lines) in writes[0]
 
     def test_render_advances_spinner_on_fixed_interval_without_progress_updates(self):
-        """The spinner should animate every 100 ms when progress remains unchanged."""
+        """The spinner should animate every 50 ms when progress remains unchanged."""
         pi = _ProgressIndicator(use_color=False)
         pi._start_time = 0.0
         pi.set_total_rows(100)
@@ -221,9 +308,9 @@ class TestProgressIndicator:
             pi._render()
 
         assert len(writes) == 3
-        assert wait_timeouts[1:] == pytest.approx([0.1, 0.1])
+        assert wait_timeouts[1:] == pytest.approx([0.05, 0.05])
         rendered_lines = [self._rendered_lines(write)[0] for write in writes]
-        assert [line[0] for line in rendered_lines] == ["⠋", "⠙", "⠹"]
+        assert [line[0] for line in rendered_lines] == list(pi._frames[:3])
 
     def test_render_with_stats_provider(self):
         """Extension stats providers should appear after core metrics in the status line."""
