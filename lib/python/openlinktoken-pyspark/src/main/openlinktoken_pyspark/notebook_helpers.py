@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""
-Notebook helpers for convenient token definition and experimentation.
+"""Notebook helpers for convenient token definition and experimentation.
 This module provides a simplified API for creating custom tokens in Jupyter notebooks.
 """
 
@@ -16,6 +15,7 @@ from openlinktoken.attributes.person.last_name_attribute import LastNameAttribut
 from openlinktoken.attributes.person.postal_code_attribute import PostalCodeAttribute
 from openlinktoken.attributes.person.sex_attribute import SexAttribute
 from openlinktoken.attributes.person.social_security_number_attribute import SocialSecurityNumberAttribute
+from openlinktoken.crypto.crypto_suite import CryptoSuite
 from openlinktoken.exchange_config import derive_transport_encryption_key, resolve_exchange_config_inputs
 from openlinktoken.tokens.base_token_definition import BaseTokenDefinition
 from openlinktoken.tokens.token import Token
@@ -36,8 +36,13 @@ ATTRIBUTE_MAP = {
 
 
 class TokenBuilder:
-    """
-    A fluent builder for creating custom tokens with minimal code.
+    """A fluent builder for creating custom tokens with minimal code.
+
+    Args:
+        token_id: Identifier supplied to the constructor.
+
+    Returns:
+        A ``TokenBuilder`` initialized with ``token_id`` and no attribute expressions.
 
     Example:
         >>> token = TokenBuilder("ML1") \\
@@ -47,21 +52,24 @@ class TokenBuilder:
         ...     .add("postal_code", "T|S(0,3)") \\
         ...     .add("sex", "T|U") \\
         ...     .build()
+
     """
 
     def __init__(self, token_id: str):
-        """
-        Initialize the token builder.
+        """Initialize the token builder.
 
         Args:
             token_id: The identifier for the token (e.g., "ML1", "T7").
+
+        Returns:
+            None.
+
         """
         self.token_id = token_id
         self.expressions: List[AttributeExpression] = []
 
     def add(self, attribute: Union[str, Type[Attribute]], expression: str = "T") -> "TokenBuilder":
-        """
-        Add an attribute expression to the token definition.
+        """Add an attribute expression to the token definition.
 
         Args:
             attribute: Either an attribute class or a string name (e.g., "first_name", "last_name").
@@ -72,6 +80,7 @@ class TokenBuilder:
 
         Example:
             >>> builder.add("last_name", "T|U").add("first_name", "T|S(0,3)|U")
+
         """
         if isinstance(attribute, str):
             if attribute not in ATTRIBUTE_MAP:
@@ -84,55 +93,102 @@ class TokenBuilder:
         return self
 
     def build(self) -> Token:
-        """
-        Build the custom token.
+        """Build the custom token.
+
+        Args:
+            None; this method takes no arguments.
 
         Returns:
             A Token instance with the configured expressions.
+
         """
         token_id = self.token_id
         expressions = self.expressions
 
         class CustomToken(Token):
-            """Dynamically created custom token."""
+            """Token class created by ``TokenBuilder.build`` using captured settings.
+
+            Args:
+                None; the generated token constructor takes no arguments.
+
+            Returns:
+                A token instance containing the captured identifier and expressions.
+            """
 
             ID = token_id
 
             def __init__(self):
+                """Initialize the generated token with its configured expressions.
+
+                Args:
+                    None; this constructor takes no arguments.
+
+                Returns:
+                    None.
+                """
                 self._definition = expressions
 
             def get_identifier(self):
+                """Return the identifier captured when the token was built.
+
+                Args:
+                    None; this method takes no arguments.
+
+                Returns:
+                    The custom token identifier as a string.
+                """
                 return self.ID
 
             def get_definition(self):
+                """Return the token expressions captured when the token was built.
+
+                Args:
+                    None; this method takes no arguments.
+
+                Returns:
+                    The list of configured ``AttributeExpression`` objects.
+                """
                 return self._definition
 
         return CustomToken()
 
 
 class CustomTokenDefinition(BaseTokenDefinition):
-    """
-    A custom token definition that can include multiple custom tokens.
+    """A custom token definition that can include multiple custom tokens.
+
+    Args:
+        None; the constructor takes no arguments.
+
+    Returns:
+        An empty ``CustomTokenDefinition`` ready to receive tokens.
 
     Example:
         >>> definition = CustomTokenDefinition()
         >>> definition.add_token(ml1_token)
         >>> definition.add_token(t7_token)
+
     """
 
     def __init__(self):
-        """Initialize an empty custom token definition."""
+        """Initialize an empty custom token definition.
+
+        Args:
+            None; this constructor takes no arguments.
+
+        Returns:
+            None.
+        """
         self.tokens: Dict[str, Token] = {}
 
     def add_token(self, token: Token) -> "CustomTokenDefinition":
-        """
-        Add a custom token to the definition.
+        """Add a custom token to the definition.
 
         Args:
             token: The token to add.
 
         Returns:
             Self for method chaining.
+
         """
         token_id = token.get_identifier()
         self.tokens[token_id] = token
@@ -158,14 +214,15 @@ def create_token_generator(
     hashing_secret: Union[str, bytes, None],
     encryption_key: Union[str, bytes],
     token_definition: Optional[BaseTokenDefinition] = None,
+    crypto_suite: CryptoSuite | str | None = None,
 ) -> TokenGenerator:
-    """
-    Create a token generator with the specified secrets and token definition.
+    """Create a token generator with the specified secrets and token definition.
 
     Args:
-        hashing_secret: The secret used for HMAC-SHA256 hashing.
+        hashing_secret: Optional text or byte secret for HMAC-SHA256 hashing; ``None`` disables hashing.
         encryption_key: The 32-character key used for AES-256 encryption.
         token_definition: Optional custom token definition. If None, uses default tokens.
+        crypto_suite: Optional crypto suite or suite ID; defaults to the registered default suite.
 
     Returns:
         A configured TokenGenerator instance.
@@ -177,15 +234,20 @@ def create_token_generator(
         >>> # Use custom tokens
         >>> custom_def = CustomTokenDefinition().add_token(ml1_token)
         >>> generator = create_token_generator("secret", "key123...", custom_def)
+
     """
     if token_definition is None:
         from openlinktoken.tokens.token_definition import TokenDefinition
 
         token_definition = TokenDefinition()
 
-    token_transformers = [HashTokenTransformer(hashing_secret), EncryptTokenTransformer(encryption_key)]
+    selected_suite = CryptoSuite.from_id(crypto_suite) if isinstance(crypto_suite, str) else crypto_suite
+    token_transformers = [
+        HashTokenTransformer(hashing_secret, crypto_suite=selected_suite),
+        EncryptTokenTransformer(encryption_key),
+    ]
 
-    return TokenGenerator.from_transformers(token_definition, token_transformers)
+    return TokenGenerator.from_transformers(token_definition, token_transformers, crypto_suite=selected_suite)
 
 
 def create_token_generator_from_exchange_config(
@@ -195,20 +257,22 @@ def create_token_generator_from_exchange_config(
     private_key_env: Optional[str] = None,
     private_key_value: Union[str, bytes, None] = None,
     token_definition: Optional[BaseTokenDefinition] = None,
+    crypto_suite: CryptoSuite | str | None = None,
 ) -> TokenGenerator:
-    """
-    Create a token generator from an exchange config and private-key inputs.
+    """Create a token generator from an exchange config and private-key inputs.
 
     Args:
         exchange_config_path: Optional exchange-config path. Uses the default path when omitted.
         exchange_config_value: Optional in-memory exchange-config JSON or decoded mapping.
-        private_key_path: Optional private-key PEM path.
-        private_key_env: Optional environment-variable name containing private-key PEM text.
-        private_key_value: Optional in-memory private-key PEM text or bytes.
+        private_key_path: Optional v1 private-key PEM path or v2 private key-bundle JSON path.
+        private_key_env: Optional environment variable containing v1 private-key PEM or v2 private key-bundle JSON.
+        private_key_value: Optional in-memory v1 private-key PEM or v2 private key-bundle JSON.
         token_definition: Optional custom token definition. If None, uses default tokens.
+        crypto_suite: Optional suite to verify against the suite resolved from the exchange config.
 
     Returns:
         A configured TokenGenerator instance using the exchange hashing secret and transport key.
+
     """
     exchange = resolve_exchange_config_inputs(
         exchange_config_path=exchange_config_path,
@@ -217,10 +281,17 @@ def create_token_generator_from_exchange_config(
         private_key_env=private_key_env,
         private_key_value=private_key_value,
     )
+    selected_suite = CryptoSuite.from_id(crypto_suite) if isinstance(crypto_suite, str) else crypto_suite
+    if selected_suite is not None and selected_suite != exchange.crypto_suite:
+        raise ValueError(
+            f"Requested crypto suite '{selected_suite.suite_id}' does not match "
+            f"exchange config suite '{exchange.crypto_suite.suite_id}'."
+        )
     return create_token_generator(
         hashing_secret=exchange.hashing_secret,
         encryption_key=derive_transport_encryption_key(exchange),
         token_definition=token_definition,
+        crypto_suite=exchange.crypto_suite,
     )
 
 
@@ -230,8 +301,7 @@ def quick_token(
     hashing_secret: Union[str, bytes, None],
     encryption_key: Union[str, bytes],
 ) -> TokenGenerator:
-    """
-    Create a custom token and generator in one quick call.
+    """Create a custom token and generator in one quick call.
 
     Args:
         token_id: The identifier for the new token (e.g., "ML1").
@@ -255,6 +325,7 @@ def quick_token(
         ...     "my-hashing-secret",
         ...     "my-32-character-encryption-key!"
         ... )
+
     """
     builder = TokenBuilder(token_id)
     for attr_name, expr in attributes:
@@ -275,20 +346,20 @@ def quick_token_from_exchange_config(
     private_key_env: Optional[str] = None,
     private_key_value: Union[str, bytes, None] = None,
 ) -> TokenGenerator:
-    """
-    Create a custom token generator from exchange-config inputs in one quick call.
+    """Create a custom token generator from exchange-config inputs in one quick call.
 
     Args:
         token_id: The identifier for the new token (e.g., "ML1").
         attributes: List of (attribute_name, expression) tuples.
         exchange_config_path: Optional exchange-config path. Uses the default path when omitted.
         exchange_config_value: Optional in-memory exchange-config JSON or decoded mapping.
-        private_key_path: Optional private-key PEM path.
-        private_key_env: Optional environment-variable name containing private-key PEM text.
-        private_key_value: Optional in-memory private-key PEM text or bytes.
+        private_key_path: Optional v1 private-key PEM path or v2 private key-bundle JSON path.
+        private_key_env: Optional environment variable containing v1 private-key PEM or v2 private key-bundle JSON.
+        private_key_value: Optional in-memory v1 private-key PEM or v2 private key-bundle JSON.
 
     Returns:
         A TokenGenerator configured with the custom token and exchange-derived secrets.
+
     """
     builder = TokenBuilder(token_id)
     for attr_name, expr in attributes:
@@ -309,8 +380,10 @@ def quick_token_from_exchange_config(
 
 # Convenience function to list available attributes
 def list_attributes() -> Dict[str, Type[Attribute]]:
-    """
-    Get a dictionary of available attribute names and their classes.
+    """Get a dictionary of available attribute names and their classes.
+
+    Args:
+        None; this function takes no arguments.
 
     Returns:
         Dictionary mapping attribute names to their classes.
@@ -319,16 +392,20 @@ def list_attributes() -> Dict[str, Type[Attribute]]:
         >>> attrs = list_attributes()
         >>> print(attrs.keys())
         dict_keys(['first_name', 'last_name', 'birth_date', 'sex', 'postal_code', 'ssn', 'record_id'])
+
     """
     return ATTRIBUTE_MAP.copy()
 
 
 def expression_help() -> str:
-    """
-    Get help text about expression syntax.
+    """Get help text about expression syntax.
+
+    Args:
+        None; this function takes no arguments.
 
     Returns:
         A string describing the expression syntax.
+
     """
     return """
 Expression Syntax Guide:

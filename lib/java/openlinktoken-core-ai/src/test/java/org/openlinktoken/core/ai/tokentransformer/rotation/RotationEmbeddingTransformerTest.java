@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -130,6 +131,13 @@ class RotationEmbeddingTransformerTest {
         assertEquals(List.of("102 94 107", "95 126 103"), tokens);
     }
 
+    /**
+     * Verifies concurrent transformations produce consistent results.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
+     *
+     * @throws InterruptedException if the test thread is interrupted while awaiting worker threads
+     */
     @Test
     void testThreadSafetyProducesConsistentResults() throws InterruptedException {
         int threadCount = 20;
@@ -161,7 +169,7 @@ class RotationEmbeddingTransformerTest {
         latch.await();
         pool.shutdown();
 
-        assertFalse(!errors.isEmpty(), "No thread errors expected, got: " + errors);
+        assertTrue(errors.isEmpty(), "No thread errors expected, got: " + errors);
 
         List<String> reference = results[0];
         for (List<String> r : results) {

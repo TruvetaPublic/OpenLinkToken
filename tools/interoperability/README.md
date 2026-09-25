@@ -33,14 +33,24 @@ python tools/interoperability/cli_parity_test.py
 
 ## Token Interoperability Tests
 
-The `multi_language_interoperability_test.py` script executes four parity checks:
+The `multi_language_interoperability_test.py` script executes five parity checks:
 
 - **Unit-level fixture parity:** verifies that the Python library reproduces the
   same deterministic token fixture values already asserted by the Java
   `TokenGeneratorIntegrationTest`
 - **Java harness vs Python CLI parity:** invokes a thin Java harness built on the
   Java core library API and compares its T1-T5 `tokenize`-compatible CSV output
-  against the Python CLI `tokenize` command with ML1 inferencing disabled
+  against the Python CLI `tokenize` command with ML1 inferencing disabled for
+  all five registered exchange suites. The Python side provisions the matching
+  v1 ECDH or v2 key-bundle exchange for each suite.
+- **Java/Python exchange envelope parity:** builds and decrypts envelopes in both
+  directions with the public Java exchange APIs and the Python exchange helpers.
+  The check covers both v1 ECDH suites and every v2 pure ML-KEM and hybrid
+  ECDH/ML-KEM suite. It compares the suite ID each reader resolves, decrypted
+  payload identity, v1 key fingerprints, v2 key IDs, and the v1/v2 derived
+  transport keys without comparing randomized ciphertext or ephemeral values.
+  The Java harness also resolves each envelope through `ExchangeConfig` so
+  library-level transport-key derivation is covered.
 - **Java ML1 harness vs Python ML1 provider parity:** invokes
   `Ml1InteropHarness` from the Java core-AI module and compares its
   `RecordId`-to-signature JSON against the Python ML1 provider
@@ -84,6 +94,13 @@ To run only the ML1 parity test:
 ```bash
 source /home/vscode/.local/share/openlinktoken/.venv/bin/activate
 python -m pytest tools/interoperability/multi_language_interoperability_test.py -k ml1 -v
+```
+
+To run only the exchange envelope parity test:
+
+```bash
+source /home/vscode/.local/share/openlinktoken/.venv/bin/activate
+python -m pytest tools/interoperability/multi_language_interoperability_test.py -k exchange -v
 ```
 
 ## Rotation Matrix Interoperability Tests

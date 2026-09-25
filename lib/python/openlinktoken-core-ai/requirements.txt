@@ -95,6 +95,8 @@ protobuf==7.36.1
     #   onnxruntime-gpu
 pycparser==3.0 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'
     # via cffi
+pycryptodome==3.23.0
+    # via openlinktoken
 pyreadline3==3.5.6 ; python_full_version < '3.11' and sys_platform == 'win32'
     # via humanfriendly
 pyyaml==6.0.3

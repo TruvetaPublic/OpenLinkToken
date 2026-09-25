@@ -39,9 +39,12 @@ def derive_transport_encryption_key(exchange: Any) -> bytes:
 
 
 class PackageCommand:
-    """
-    Package command - combines tokenize and encrypt in one command.
+    """Package command - combines tokenize and encrypt in one command.
+
     This is the default workflow: hash + encrypt.
+
+    Constructor:
+        Takes no arguments and returns a new ``PackageCommand`` instance.
     """
 
     @staticmethod
@@ -166,7 +169,14 @@ class PackageCommand:
 
     @staticmethod
     def execute(args):
-        """Execute the package command."""
+        """Execute the package command.
+
+        Args:
+            args: Parsed CLI namespace containing the input/output paths, exchange credentials, and packaging options.
+
+        Returns:
+            ``0`` when tokenization and encryption complete, or ``1`` when validation or processing fails.
+        """
         from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig
         from openlinktoken.core.ai.tokens.rotation_config import RotationConfig
         from openlinktoken.exchange_config import rotation_iv_to_text
@@ -311,6 +321,7 @@ class PackageCommand:
                             hash_record_ids,
                             tokenization_config_path,
                             progress_callback=reporter.make_progress_callback("Packaging records", "records"),
+                            crypto_suite=getattr(exchange, "crypto_suite", None),
                         )
 
                         if is_zip:
@@ -348,8 +359,26 @@ class PackageCommand:
         hash_record_ids: bool = False,
         tokenization_config_path: Optional[str] = None,
         progress_callback=None,
+        crypto_suite=None,
     ) -> tuple[PersonAttributesProcessingSummary, str]:
-        """Process tokens from person attributes."""
+        """Tokenize and encrypt person-attribute records, then write metadata.
+
+        Args:
+            input_path: Path to the source person-attribute data.
+            output_path: Destination path for tokenized and encrypted output.
+            input_type: Detected input file format.
+            output_type: Selected output file format.
+            hashing_secret: Secret used by the crypto-suite hash transformer.
+            encryption_key: Transport key used by the encryption transformer.
+            ring_id: Ring identifier included in encrypted tokens.
+            hash_record_ids: Whether to hash record IDs before writing output.
+            tokenization_config_path: Optional path to a custom tokenization configuration.
+            progress_callback: Optional callback for reporting record-processing progress.
+            crypto_suite: Crypto suite selecting the token digest and MAC, or ``None`` for the default.
+
+        Returns:
+            A tuple containing the processing summary and the metadata file path.
+        """
         from openlinktoken.metadata import Metadata
         from openlinktoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
         from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
@@ -363,7 +392,7 @@ class PackageCommand:
 
         try:
             # Add both hash and encryption transformers
-            token_transformer_list.append(HashTokenTransformer(hashing_secret))
+            token_transformer_list.append(HashTokenTransformer(hashing_secret, crypto_suite=crypto_suite))
             token_transformer_list.append(EncryptTokenTransformer(encryption_key))
         except Exception as e:
             raise RuntimeError("Failed to initialize transformers") from e
@@ -391,6 +420,7 @@ class PackageCommand:
                     hash_record_ids,
                     token_definition=token_definition,
                     progress_callback=progress_callback,
+                    crypto_suite=crypto_suite,
                 )
 
                 # Write metadata, or bundle into ZIP if the output is a zip archive

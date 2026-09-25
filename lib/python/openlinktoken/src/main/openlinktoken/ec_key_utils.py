@@ -3,8 +3,8 @@
 Shared utilities for ECDH key management used by initiate-exchange and
 exchange-config consumers.
 
-Note: The exchange-config workflow is Python-CLI only. The Java counterpart
-(``EcKeyUtils.java``) is a placeholder stub that references this module.
+The cryptographic helpers are shared-library functionality. CLI-only path,
+environment, and file-permission policies remain in the Python CLI layer.
 """
 
 import logging

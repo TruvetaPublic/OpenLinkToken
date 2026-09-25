@@ -2,11 +2,14 @@
 
 import base64
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 from jwcrypto import jwe, jwk
+from jwcrypto.common import InvalidJWEData
 
+from openlinktoken.crypto.crypto_suite import CryptoSuite
 from openlinktoken.ec_key_utils import fingerprint_to_kid, generate_key_pair, public_key_fingerprint
 from openlinktoken.exchange_config import (
     _decode_bin_width,
@@ -19,6 +22,7 @@ from openlinktoken.exchange_config import (
     resolve_exchange_config,
     resolve_exchange_config_inputs,
     resolve_exchange_config_private_key,
+    resolve_loaded_exchange_config,
     rotation_iv_to_text,
 )
 from openlinktoken.exchange_jwe import (
@@ -29,7 +33,10 @@ from openlinktoken.exchange_jwe import (
     build_exchange_envelope,
     decrypt_exchange_envelope,
     resolve_private_key_by_kid,
+    resolve_v1_exchange_crypto_suite,
 )
+from openlinktoken.exchange_kem import build_exchange_envelope_v2
+from openlinktoken.exchange_key_bundle import generate_exchange_key_bundle
 
 
 def test_fingerprint_to_kid_normalizes_sha256_fingerprint():
@@ -45,7 +52,14 @@ def test_rotation_iv_to_text_recovers_non_utf8_exchange_bytes():
 
 
 def test_build_exchange_envelope_round_trips_for_either_private_key():
-    """Either intended recipient private key can decrypt the same exchange envelope."""
+    """Either intended recipient private key can decrypt the same exchange envelope.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     recipient_private_pem, recipient_public_pem = generate_key_pair("P-256")
 
@@ -83,6 +97,9 @@ def test_build_exchange_envelope_round_trips_for_either_private_key():
         "binWidth": 0.05,
         "dimensionBias": [0.1, -0.2],
     }
+    protected_header = _decode_protected_header(envelope)
+    assert "cryptoSuite" not in protected_header
+    assert "crit" not in protected_header
 
     recipient_headers = [entry["header"] for entry in envelope["recipients"]]
     assert envelope["version"] == 1
@@ -90,6 +107,231 @@ def test_build_exchange_envelope_round_trips_for_either_private_key():
         "sha256:" + public_key_fingerprint(sender_public_pem).lower().replace(":", "-"),
         "sha256:" + public_key_fingerprint(recipient_public_pem).lower().replace(":", "-"),
     }
+
+
+def test_build_v1_sha3_exchange_marks_suite_in_critical_protected_header():
+    """The non-default v1 suite is authenticated in the protected header, not payload.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
+    sender_private_pem, sender_public_pem = generate_key_pair("P-256")
+    _, recipient_public_pem = generate_key_pair("P-256")
+
+    envelope = build_exchange_envelope(
+        exchange_name="legacy-suite",
+        hashing_secret=b"shared-hashing-secret",
+        sender_public_pem=sender_public_pem,
+        recipient_public_pem=recipient_public_pem,
+        curve="P-256",
+        created_at="2026-03-11T00:00:00Z",
+        exchange_id="exchange-legacy-suite",
+        crypto_suite=CryptoSuite.from_id("suite-sha3-v1"),
+    )
+    protected_header = _decode_protected_header(envelope)
+    payload = json.loads(decrypt_exchange_envelope(envelope, sender_private_pem))
+
+    assert protected_header["cryptoSuite"] == "suite-sha3-v1"
+    assert protected_header["crit"] == ["cryptoSuite"]
+    assert "cryptoSuite" not in payload
+
+
+def test_resolve_v1_exchange_rejects_payload_suite_marker(monkeypatch):
+    """Version-one suite identity must not be selected from encrypted payload data.
+
+    Args:
+        monkeypatch: Pytest fixture for replacing the payload-decryption function
+            with a callback that accepts the config and private key, ignores them,
+            and returns the tampered payload as JSON text.
+
+    Returns:
+        None.
+    """
+    sender_private_pem, sender_public_pem = generate_key_pair("P-256")
+    _, recipient_public_pem = generate_key_pair("P-256")
+    envelope = build_exchange_envelope(
+        exchange_name="legacy-suite",
+        hashing_secret=b"shared-hashing-secret",
+        sender_public_pem=sender_public_pem,
+        recipient_public_pem=recipient_public_pem,
+        curve="P-256",
+        created_at="2026-03-11T00:00:00Z",
+        exchange_id="exchange-legacy-suite",
+    )
+    payload = json.loads(decrypt_exchange_envelope(envelope, sender_private_pem))
+    payload["cryptoSuite"] = "suite-sha256-v1"
+    loaded = load_exchange_config(exchange_config_value=envelope)
+    monkeypatch.setattr(
+        "openlinktoken.exchange_config.decrypt_exchange_envelope",
+        lambda _config, _private_key: json.dumps(payload),
+    )
+
+    with pytest.raises(ValueError, match="Version 1.*cryptoSuite.*protected header"):
+        resolve_loaded_exchange_config(loaded, sender_private_pem)
+
+
+def test_resolve_v1_sha3_exchange_uses_protected_suite_marker():
+    """The authenticated v1 suite marker selects SHA3 when resolving an exchange.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
+    sender_private_pem, sender_public_pem = generate_key_pair("P-256")
+    _, recipient_public_pem = generate_key_pair("P-256")
+    envelope = build_exchange_envelope(
+        exchange_name="legacy-suite",
+        hashing_secret=b"shared-hashing-secret",
+        sender_public_pem=sender_public_pem,
+        recipient_public_pem=recipient_public_pem,
+        curve="P-256",
+        created_at="2026-03-11T00:00:00Z",
+        exchange_id="exchange-legacy-suite",
+        crypto_suite=CryptoSuite.from_id("suite-sha3-v1"),
+    )
+
+    resolved = resolve_loaded_exchange_config(
+        load_exchange_config(exchange_config_value=envelope),
+        sender_private_pem,
+    )
+
+    assert resolved.version == 1
+    assert resolved.crypto_suite == CryptoSuite.from_id("suite-sha3-v1")
+
+
+@pytest.mark.parametrize(
+    ("protected_header", "unprotected_header", "message"),
+    [
+        pytest.param(
+            {"cryptoSuite": "suite-sha3-v1"},
+            None,
+            "listed in the protected crit header",
+            id="noncritical",
+        ),
+        pytest.param(
+            {},
+            {"cryptoSuite": "suite-sha3-v1"},
+            "only in the protected header",
+            id="unprotected",
+        ),
+        pytest.param(
+            {"cryptoSuite": "suite-sha3-v1", "crit": "cryptoSuite"},
+            None,
+            "crit must be an array of strings",
+            id="malformed-crit",
+        ),
+    ],
+)
+def test_resolve_v1_crypto_suite_rejects_noncritical_or_unprotected_markers(
+    protected_header: dict[str, object],
+    unprotected_header: dict[str, object] | None,
+    message: str,
+):
+    """A v1 suite marker is accepted only as a protected critical parameter.
+
+    Args:
+        protected_header: Candidate authenticated protected-header mapping.
+        unprotected_header: Optional unauthenticated header mapping.
+        message: Expected error-message fragment.
+
+    Returns:
+        None.
+    """
+    with pytest.raises(ValueError, match=message):
+        resolve_v1_exchange_crypto_suite(_v1_header_config(protected_header, unprotected_header))
+
+
+@pytest.mark.parametrize(
+    ("suite_id", "message"),
+    [
+        pytest.param("suite-unregistered-v1", "Unknown crypto suite", id="unknown"),
+        pytest.param("suite-pq-v1", "incompatible with version 1 ECDH", id="version-two"),
+    ],
+)
+def test_resolve_v1_crypto_suite_rejects_unknown_or_incompatible_suites(suite_id: str, message: str):
+    """Only registered version-one ECDH suites can be selected by a v1 envelope.
+
+    Args:
+        suite_id: Candidate suite identifier.
+        message: Expected error-message fragment.
+
+    Returns:
+        None.
+    """
+    header = {"cryptoSuite": suite_id, "crit": ["cryptoSuite"]}
+
+    with pytest.raises(ValueError, match=message):
+        resolve_v1_exchange_crypto_suite(_v1_header_config(header))
+
+
+def test_default_jwcrypto_reader_rejects_unknown_critical_suite_extension():
+    """A reader without the cryptoSuite extension fails closed on a SHA3 v1 envelope.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
+    sender_private_pem, sender_public_pem = generate_key_pair("P-256")
+    _, recipient_public_pem = generate_key_pair("P-256")
+    envelope = build_exchange_envelope(
+        exchange_name="legacy-suite",
+        hashing_secret=b"shared-hashing-secret",
+        sender_public_pem=sender_public_pem,
+        recipient_public_pem=recipient_public_pem,
+        curve="P-256",
+        created_at="2026-03-11T00:00:00Z",
+        exchange_id="exchange-legacy-suite",
+        crypto_suite=CryptoSuite.from_id("suite-sha3-v1"),
+    )
+    reader = jwe.JWE()
+    reader.deserialize(json.dumps(envelope))
+
+    with pytest.raises(InvalidJWEData):
+        reader.decrypt(jwk.JWK.from_pem(sender_private_pem))
+
+
+def _v1_header_config(
+    protected_header: dict[str, object],
+    unprotected_header: dict[str, object] | None = None,
+) -> dict[str, object]:
+    """Build the envelope header fields consumed by v1 suite resolution.
+
+    Args:
+        protected_header: Authenticated protected-header fields to encode.
+        unprotected_header: Optional unauthenticated header fields to include.
+
+    Returns:
+        A minimal version-one envelope mapping for suite-resolution tests.
+    """
+    protected = base64.urlsafe_b64encode(json.dumps(protected_header).encode("utf-8")).decode("ascii").rstrip("=")
+    config: dict[str, object] = {"version": 1, "protected": protected}
+    if unprotected_header is not None:
+        config["unprotected"] = unprotected_header
+    return config
+
+
+def _decode_protected_header(envelope: dict[str, object]) -> dict[str, object]:
+    """Decode a JWE general-JSON protected header for wire-format assertions.
+
+    Args:
+        envelope: General-JSON JWE envelope containing the encoded protected header.
+
+    Returns:
+        The decoded protected-header mapping.
+    """
+    protected = envelope["protected"]
+    assert isinstance(protected, str)
+    protected_bytes = base64.urlsafe_b64decode(protected + "=" * (-len(protected) % 4))
+    header = json.loads(protected_bytes)
+    assert isinstance(header, dict)
+    return header
 
 
 def test_resolve_private_key_by_kid_uses_matching_public_key_basename(tmp_path: Path):
@@ -180,8 +422,15 @@ def test_derive_transport_encryption_key_matches_for_both_participants(tmp_path:
     assert len(derive_transport_encryption_key(sender_exchange)) == 32
 
 
-def test_load_exchange_config_rejects_future_v2_exchange_config(tmp_path: Path):
-    """Exchange-config version 2 should fail validation during load."""
+def test_load_exchange_config_rejects_unknown_exchange_config_version(tmp_path: Path):
+    """Exchange-config versions outside the supported v1/v2 set fail during load.
+
+    Args:
+        tmp_path: Pytest temporary directory for the invalid exchange-config file.
+
+    Returns:
+        None.
+    """
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     _, recipient_public_pem = generate_key_pair("P-256")
     payload = {
@@ -219,11 +468,134 @@ def test_load_exchange_config_rejects_future_v2_exchange_config(tmp_path: Path):
 
     exchange_config_path = tmp_path / "future.exchange.json"
     serialized = json.loads(envelope.serialize(compact=False))
-    serialized["version"] = 2
+    serialized["version"] = 3
     exchange_config_path.write_text(json.dumps(serialized), encoding="utf-8")
 
-    with pytest.raises(ValueError, match="Unsupported exchange config version '2'. Supported versions: 1."):
+    with pytest.raises(ValueError, match="Unsupported exchange config version '3'. Supported versions: 1, 2."):
         load_exchange_config(exchange_config_path)
+
+
+@pytest.mark.parametrize("suite_id", ["suite-pq-v1", "suite-pq-shake-v1", "suite-pq-hybrid-v1"])
+def test_load_exchange_config_detects_v2_from_protected_header(suite_id):
+    """Standard v2 configs detect their version from the protected header.
+
+    Args:
+        suite_id: Parameterized version-2 crypto-suite identifier.
+
+    Returns:
+        None.
+    """
+    sender = generate_exchange_key_bundle(suite_id)
+    recipient = generate_exchange_key_bundle(suite_id)
+    envelope = build_exchange_envelope_v2(
+        "protected-version",
+        b"0123456789abcdef0123456789abcdef",
+        sender,
+        recipient,
+        "2026-03-12T00:00:00Z",
+        "exchange-protected-version",
+    )
+
+    loaded = load_exchange_config(exchange_config_value=envelope)
+
+    assert loaded.version == 2
+    assert "version" not in loaded.config
+
+
+def test_resolve_v2_exchange_exposes_same_transport_key_for_both_private_bundles():
+    """Both v2 participants resolve the authenticated transport key.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
+    sender = generate_exchange_key_bundle("suite-pq-v1")
+    recipient = generate_exchange_key_bundle("suite-pq-v1")
+    envelope = build_exchange_envelope_v2(
+        "resolved-v2",
+        b"hash-secret",
+        sender,
+        recipient,
+        "2026-03-12T00:00:00Z",
+        "exchange-resolved-v2",
+    )
+
+    sender_exchange = resolve_loaded_exchange_config(
+        load_exchange_config(exchange_config_value=envelope),
+        sender.to_json(include_private=True),
+    )
+    recipient_exchange = resolve_loaded_exchange_config(
+        load_exchange_config(exchange_config_value=envelope),
+        recipient.to_json(include_private=True),
+    )
+
+    assert sender_exchange.version == 2
+    assert sender_exchange.private_key_role == "sender"
+    assert recipient_exchange.private_key_role == "recipient"
+    assert derive_transport_encryption_key(sender_exchange) == derive_transport_encryption_key(recipient_exchange)
+    assert len(derive_transport_encryption_key(sender_exchange)) == 32
+
+
+def test_derive_v2_transport_key_rejects_invalid_cached_key():
+    """The v2 consumer API exposes only a complete 32-byte derived key.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
+    sender = generate_exchange_key_bundle("suite-pq-v1")
+    recipient = generate_exchange_key_bundle("suite-pq-v1")
+    envelope = build_exchange_envelope_v2(
+        "invalid-key",
+        b"hash-secret",
+        sender,
+        recipient,
+        "2026-03-12T00:00:00Z",
+        "exchange-invalid-key",
+    )
+    resolved = resolve_loaded_exchange_config(
+        load_exchange_config(exchange_config_value=envelope),
+        sender.to_json(include_private=True),
+    )
+
+    with pytest.raises(ValueError, match="32 bytes"):
+        derive_transport_encryption_key(replace(resolved, transport_encryption_key=b"short"))
+
+
+def test_resolve_v2_exchange_rejects_tampered_protected_exchange_id():
+    """Changing the protected exchange ID invalidates authenticated resolution.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
+    sender = generate_exchange_key_bundle("suite-pq-v1")
+    recipient = generate_exchange_key_bundle("suite-pq-v1")
+    envelope = build_exchange_envelope_v2(
+        "tampered-v2",
+        b"hash-secret",
+        sender,
+        recipient,
+        "2026-03-12T00:00:00Z",
+        "exchange-authenticated",
+    )
+    protected = json.loads(base64.urlsafe_b64decode(envelope["protected"] + "=" * (-len(envelope["protected"]) % 4)))
+    protected["exchangeId"] = "exchange-tampered"
+    envelope["protected"] = (
+        base64.urlsafe_b64encode(json.dumps(protected, sort_keys=True, separators=(",", ":")).encode("utf-8"))
+        .decode("ascii")
+        .rstrip("=")
+    )
+
+    loaded = load_exchange_config(exchange_config_value=envelope)
+    with pytest.raises(ValueError, match="Failed to decrypt exchange config"):
+        resolve_loaded_exchange_config(loaded, sender.to_json(include_private=True))
 
 
 def test_resolve_exchange_config_private_key_reads_explicit_private_key_path(tmp_path: Path):

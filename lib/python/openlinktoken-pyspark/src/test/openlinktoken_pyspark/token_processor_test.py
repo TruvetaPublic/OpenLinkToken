@@ -1,7 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""
-Tests for OpenLinkToken PySpark token processor.
-"""
+"""Tests for OpenLinkToken PySpark token processor."""
 
 import base64
 import json
@@ -16,6 +14,7 @@ pytest.importorskip("pyspark")
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StringType, StructField, StructType
 
+from openlinktoken.crypto.crypto_suite import CryptoSuite
 from openlinktoken.ec_key_utils import fingerprint_to_kid, generate_key_pair, public_key_fingerprint
 from openlinktoken.exchange_config import derive_transport_encryption_key, resolve_exchange_config_inputs
 from openlinktoken.exchange_jwe import (
@@ -68,7 +67,14 @@ def sample_data():
 
 
 class TestOpenLinkTokenProcessor:
-    """Tests for OpenLinkTokenProcessor class."""
+    """Tests for OpenLinkTokenProcessor class.
+
+    Args:
+        None; pytest creates this test class without constructor arguments.
+
+    Returns:
+        A test-case instance used by pytest to run the test methods.
+    """
 
     def test_initialization_with_valid_secrets(self):
         """Test that processor initializes with valid secrets."""
@@ -116,6 +122,39 @@ class TestOpenLinkTokenProcessor:
         assert payload["rid"] == "ring-from-config"
         assert payload["ppid"]
 
+    def test_from_exchange_config_supports_every_crypto_suite(self, spark, sample_data, exchange_config_case):
+        """The processor resolves each exchange suite and uses its digest and MAC algorithms.
+
+        Args:
+            spark: Spark session fixture used to create DataFrames.
+            sample_data: Person-record mappings used to create an input DataFrame.
+            exchange_config_case: Real exchange and private-key fixture for the current suite.
+
+        Returns:
+            None.
+        """
+        exchange = resolve_exchange_config_inputs(
+            exchange_config_case.exchange_config_path,
+            private_key_path=exchange_config_case.private_key_path,
+        )
+        processor = OpenLinkTokenProcessor.from_exchange_config(
+            exchange_config_path=exchange_config_case.exchange_config_path,
+            private_key_path=exchange_config_case.private_key_path,
+            ring_id="ring-all-suites",
+        )
+
+        assert exchange.crypto_suite == exchange_config_case.crypto_suite
+        assert processor.crypto_suite == exchange_config_case.crypto_suite
+        assert processor.encryption_key == derive_transport_encryption_key(exchange)
+
+        result_df = processor.process_dataframe(spark.createDataFrame(sample_data))
+        tokens = [row.Token for row in result_df.collect()]
+
+        assert tokens
+        payload = _decrypt_v1_payload(tokens[0], processor.encryption_key)
+        assert payload["hash_alg"] == exchange_config_case.crypto_suite.token_digest_algorithm
+        assert payload["mac_alg"] == exchange_config_case.crypto_suite.token_mac_algorithm
+
     def test_from_exchange_config_accepts_direct_exchange_config_and_private_key_values(
         self,
         spark,
@@ -144,12 +183,32 @@ class TestOpenLinkTokenProcessor:
         assert payload["ppid"]
 
     def test_from_exchange_config_derives_transport_key_without_version_fallback(self, monkeypatch):
-        """Test exchange-config factory always derives the transport key for resolved configs."""
-        resolved_exchange = SimpleNamespace(version=1, hashing_secret=b"resolved-hashing-secret")
+        """Verify the factory derives the transport key for each resolved exchange.
+
+        Args:
+            monkeypatch: Pytest fixture used to replace exchange resolution and key derivation.
+
+        Returns:
+            None.
+        """
+        resolved_exchange = SimpleNamespace(
+            version=1,
+            hashing_secret=b"resolved-hashing-secret",
+            crypto_suite=CryptoSuite.default(),
+        )
         derived_transport_key = b"12345678901234567890123456789012"
         derive_call_count = 0
 
         def fake_resolve_exchange_config_inputs(*args, **kwargs):
+            """Return the resolved exchange fixture after checking forwarded inputs.
+
+            Args:
+                *args: Positional resolver inputs, which this stub does not use.
+                **kwargs: Keyword resolver inputs to verify against the expected values.
+
+            Returns:
+                The resolved exchange fixture.
+            """
             assert kwargs == {
                 "exchange_config_path": "config.json",
                 "exchange_config_value": None,
@@ -160,6 +219,14 @@ class TestOpenLinkTokenProcessor:
             return resolved_exchange
 
         def fake_derive_transport_encryption_key(exchange):
+            """Return the fixture transport key after verifying the resolved exchange.
+
+            Args:
+                exchange: Exchange object whose identity is checked against the fixture.
+
+            Returns:
+                The fixture's derived transport encryption key as bytes.
+            """
             nonlocal derive_call_count
             derive_call_count += 1
             assert exchange is resolved_exchange
@@ -188,10 +255,17 @@ class TestOpenLinkTokenProcessor:
         assert processor.encryption_key == derived_transport_key
 
     def test_from_exchange_config_rejects_future_exchange_config_versions(self, tmp_path):
-        """Test exchange-config factory rejects unsupported version 2 exchange configs."""
+        """Verify the factory rejects unsupported future exchange-config versions.
+
+        Args:
+            tmp_path: Temporary directory used for the exchange config and private key.
+
+        Returns:
+            None.
+        """
         exchange_config_path, private_key_path = _write_future_exchange_config(tmp_path)
 
-        with pytest.raises(ValueError, match="Unsupported exchange config version '2'. Supported versions: 1."):
+        with pytest.raises(ValueError, match="Unsupported exchange config version '3'. Supported versions: 1, 2."):
             OpenLinkTokenProcessor.from_exchange_config(
                 exchange_config_path=exchange_config_path,
                 private_key_path=private_key_path,
@@ -407,11 +481,23 @@ class TestOpenLinkTokenProcessor:
         assert result.count() == 0
 
     def test_custom_token_definition(self, spark, sample_data):
-        """Test using custom token definition with processor."""
+        """Test using a custom token definition with the processor.
+
+        Args:
+            spark: Spark session fixture used to create and process the DataFrame.
+            sample_data: Person-record mappings used to create the input DataFrame.
+
+        Returns:
+            None.
+        """
         from openlinktoken_pyspark.notebook_helpers import CustomTokenDefinition, TokenBuilder
 
         # Create a custom ML1 token
-        ml1_token = TokenBuilder("ML1").add("last_name", "T|U").add("first_name", "T|U").add("birth_date", "T|D").build()
+        token_builder = TokenBuilder("ML1")
+        token_builder.add("last_name", "T|U")
+        token_builder.add("first_name", "T|U")
+        token_builder.add("birth_date", "T|D")
+        ml1_token = token_builder.build()
 
         custom_definition = CustomTokenDefinition().add_token(ml1_token)
 
@@ -561,7 +647,14 @@ def _write_exchange_config(tmp_path: Path) -> tuple[Path, Path]:
 
 
 def _write_future_exchange_config(tmp_path: Path) -> tuple[Path, Path]:
-    """Write an unsupported version 2 exchange config plus matching sender private key file."""
+    """Write a future-version exchange config and its matching sender private key.
+
+    Args:
+        tmp_path: Temporary directory in which to write the config and key files.
+
+    Returns:
+        Paths to the future-version exchange config and matching sender private key.
+    """
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     _, recipient_public_pem = generate_key_pair("P-256")
     payload = {
@@ -597,7 +690,7 @@ def _write_future_exchange_config(tmp_path: Path) -> tuple[Path, Path]:
 
     exchange_config_path = tmp_path / "future.exchange.json"
     serialized = json.loads(envelope.serialize(compact=False))
-    serialized["version"] = 2
+    serialized["version"] = 3
     exchange_config_path.write_text(json.dumps(serialized), encoding="utf-8")
 
     private_key_path = tmp_path / "future.private.pem"

@@ -54,6 +54,61 @@ def _generate_exchange_fixture(tmp_path: Path, hashing_secret: str) -> tuple[Pat
     return exchange_config_path, sender_private_key_path, recipient_private_key_path
 
 
+def _generate_v2_exchange_fixture(tmp_path: Path, hashing_secret: str) -> tuple[Path, Path, Path]:
+    """Generate a standard v2 JWE config and sender and recipient private bundles.
+
+    Args:
+        tmp_path: Temporary directory in which to create the exchange and key bundles.
+        hashing_secret: Plaintext hashing secret to encrypt in the exchange.
+
+    Returns:
+        Paths to the exchange config, sender private bundle, and recipient private bundle.
+    """
+    with patch("pathlib.Path.home", return_value=tmp_path):
+        assert (
+            OpenLinkTokenCommand.execute(
+                [
+                    "generate-key-pair",
+                    "--crypto-suite",
+                    "suite-pq-v1",
+                    "--name",
+                    "recipient",
+                ]
+            )
+            == 0
+        )
+        exchange_config_path = tmp_path / "generated-v2.exchange.json"
+        assert (
+            OpenLinkTokenCommand.execute(
+                [
+                    "initiate-exchange",
+                    "--crypto-suite",
+                    "suite-pq-v1",
+                    "--name",
+                    "sender-local",
+                    "--public-key",
+                    str(tmp_path / ".openlinktoken" / "recipient.public.bundle.json"),
+                    "--output",
+                    str(exchange_config_path),
+                    "--hashingsecret",
+                    hashing_secret,
+                    "--force",
+                ]
+            )
+            == 0
+        )
+
+    config = json.loads(exchange_config_path.read_text(encoding="utf-8"))
+    assert "version" not in config
+    assert set(config) == {"protected", "recipients", "iv", "ciphertext", "tag"}
+    assert {recipient["header"]["alg"] for recipient in config["recipients"]} == {"ML-KEM-768"}
+    return (
+        exchange_config_path,
+        tmp_path / ".openlinktoken" / "sender-local.private.bundle.json",
+        tmp_path / ".openlinktoken" / "recipient.private.bundle.json",
+    )
+
+
 def test_sender_private_key_decrypts_generated_exchange() -> None:
     """The sender-side local private key can recover the hashing secret."""
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -62,6 +117,103 @@ def test_sender_private_key_decrypts_generated_exchange() -> None:
         exchange_config_path, sender_private_key_path, _ = _generate_exchange_fixture(tmp_path, expected_secret)
 
         plaintext_secret = decrypt_exchange_secret(exchange_config_path, sender_private_key_path)
+
+        assert plaintext_secret == expected_secret.encode("utf-8")
+
+
+def test_v2_sender_private_bundle_decrypts_generated_exchange() -> None:
+    """Check that the sender-side v2 private bundle recovers the hashing secret.
+
+    Args:
+        None; this function takes no arguments.
+
+    Returns:
+        None.
+    """
+    with tempfile.TemporaryDirectory() as temp_dir:
+        tmp_path = Path(temp_dir)
+        expected_secret = "shared-v2-secret"
+        exchange_config_path, sender_private_bundle_path, _ = _generate_v2_exchange_fixture(tmp_path, expected_secret)
+
+        plaintext_secret = decrypt_exchange_secret(exchange_config_path, sender_private_bundle_path)
+
+        assert plaintext_secret == expected_secret.encode("utf-8")
+
+
+def test_v2_recipient_private_bundle_decrypts_generated_exchange() -> None:
+    """Check that the recipient-side v2 private bundle recovers the hashing secret.
+
+    Args:
+        None; this function takes no arguments.
+
+    Returns:
+        None.
+    """
+    with tempfile.TemporaryDirectory() as temp_dir:
+        tmp_path = Path(temp_dir)
+        expected_secret = "shared-v2-secret"
+        exchange_config_path, _, recipient_private_bundle_path = _generate_v2_exchange_fixture(
+            tmp_path, expected_secret
+        )
+
+        plaintext_secret = decrypt_exchange_secret(exchange_config_path, recipient_private_bundle_path)
+
+        assert plaintext_secret == expected_secret.encode("utf-8")
+
+
+def test_validator_accepts_v2_private_bundle_from_stdin() -> None:
+    """Check that the validator reads a v2 JSON private bundle from stdin.
+
+    Args:
+        None; this function takes no arguments.
+
+    Returns:
+        None.
+    """
+    with tempfile.TemporaryDirectory() as temp_dir:
+        tmp_path = Path(temp_dir)
+        expected_secret = "shared-v2-secret"
+        exchange_config_path, _, recipient_private_bundle_path = _generate_v2_exchange_fixture(
+            tmp_path, expected_secret
+        )
+
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(VALIDATOR_SCRIPT),
+                "--exchange-config",
+                str(exchange_config_path),
+                "--private-key-stdin",
+                "--expected-secret",
+                expected_secret,
+            ],
+            input=recipient_private_bundle_path.read_text(encoding="utf-8"),
+            capture_output=True,
+            text=True,
+            cwd=REPO_ROOT,
+            check=False,
+        )
+
+        assert completed.returncode == 0, completed.stderr
+        assert "Recovered secret matches expected secret." in completed.stdout
+
+
+def test_v2_private_bundle_is_auto_resolved_by_recipient_kid() -> None:
+    """Check that the validator locates a v2 private bundle from the local kid mapping.
+
+    Args:
+        None; this function takes no arguments.
+
+    Returns:
+        None.
+    """
+    with tempfile.TemporaryDirectory() as temp_dir:
+        tmp_path = Path(temp_dir)
+        expected_secret = "auto-resolved-v2-secret"
+        exchange_config_path, _, _ = _generate_v2_exchange_fixture(tmp_path, expected_secret)
+
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            plaintext_secret = decrypt_exchange_secret(exchange_config_path, None)
 
         assert plaintext_secret == expected_secret.encode("utf-8")
 
@@ -207,9 +359,20 @@ def test_rejects_private_key_that_matches_no_recipient() -> None:
 
 
 def main() -> int:
-    """Run the validator tests as a simple executable script."""
+    """Run the validator tests as a simple executable script.
+
+    Args:
+        None; this function takes no arguments.
+
+    Returns:
+        Exit code 0 when all tests pass, or 1 when any test fails.
+    """
     tests = [
         test_sender_private_key_decrypts_generated_exchange,
+        test_v2_sender_private_bundle_decrypts_generated_exchange,
+        test_v2_recipient_private_bundle_decrypts_generated_exchange,
+        test_validator_accepts_v2_private_bundle_from_stdin,
+        test_v2_private_bundle_is_auto_resolved_by_recipient_kid,
         test_recipient_private_key_decrypts_generated_exchange,
         test_validator_help_lists_private_key_stdin,
         test_validator_accepts_private_key_from_stdin,

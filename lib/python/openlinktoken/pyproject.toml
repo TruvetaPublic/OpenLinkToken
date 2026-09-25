@@ -12,6 +12,7 @@ dynamic = [
 dependencies = [
   "cryptography==50.0.1",
   "jwcrypto==1.6.0",
+  "pycryptodome==3.23.0",
   "PyYAML==6.0.3",
 ]
 

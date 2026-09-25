@@ -20,13 +20,25 @@ from openlinktoken_cli.util.exchange_config import default_exchange_config_path
 
 
 class TestExchangeConfigCommands:
-    """Focused command tests for exchange-config-driven secret resolution."""
+    """Focused command tests for exchange-config-driven secret resolution.
 
-    def test_tokenize_rejects_future_v2_exchange_config(self, tmp_path: Path, caplog) -> None:
-        """Tokenize should reject unsupported v2 configs during exchange-config loading."""
+    Constructor:
+        Takes no arguments and returns a new ``TestExchangeConfigCommands`` instance.
+    """
+
+    def test_tokenize_rejects_future_v3_exchange_config(self, tmp_path: Path, caplog) -> None:
+        """Tokenize should reject unsupported future configs during exchange-config loading.
+
+        Args:
+            tmp_path: Pytest temporary directory for the input and exchange-config files.
+            caplog: Pytest log capture fixture used to inspect the unsupported-version error.
+
+        Returns:
+            None.
+        """
         input_csv = _write_input_csv(tmp_path)
         output_csv = tmp_path / "output.csv"
-        exchange_config_path, private_key_path = _write_future_v2_exchange_config(tmp_path)
+        exchange_config_path, private_key_path = _write_future_v3_exchange_config(tmp_path)
 
         exit_code = OpenLinkTokenCommand.execute(
             [
@@ -43,13 +55,21 @@ class TestExchangeConfigCommands:
         )
 
         assert exit_code != 0
-        assert "Unsupported exchange config version '2'. Supported versions: 1." in caplog.text
+        assert "Unsupported exchange config version '3'. Supported versions: 1, 2." in caplog.text
 
-    def test_encrypt_rejects_future_v2_exchange_config(self, tmp_path: Path, caplog) -> None:
-        """Encrypt should reject unsupported v2 configs during exchange-config loading."""
+    def test_encrypt_rejects_future_v3_exchange_config(self, tmp_path: Path, caplog) -> None:
+        """Encrypt should reject unsupported future configs during exchange-config loading.
+
+        Args:
+            tmp_path: Pytest temporary directory for the input and exchange-config files.
+            caplog: Pytest log capture fixture used to inspect the unsupported-version error.
+
+        Returns:
+            None.
+        """
         input_csv = _write_tokenized_csv(tmp_path)
         output_csv = tmp_path / "encrypted.csv"
-        exchange_config_path, private_key_path = _write_future_v2_exchange_config(tmp_path)
+        exchange_config_path, private_key_path = _write_future_v3_exchange_config(tmp_path)
 
         exit_code = OpenLinkTokenCommand.execute(
             [
@@ -66,7 +86,7 @@ class TestExchangeConfigCommands:
         )
 
         assert exit_code != 0
-        assert "Unsupported exchange config version '2'. Supported versions: 1." in caplog.text
+        assert "Unsupported exchange config version '3'. Supported versions: 1, 2." in caplog.text
 
     def test_tokenize_uses_default_date_based_exchange_config_path(self, tmp_path: Path) -> None:
         """Consumer commands should use the same date-based default config name as initiate-exchange."""
@@ -176,6 +196,14 @@ class TestExchangeConfigCommands:
 
 
 def _write_input_csv(tmp_path: Path) -> Path:
+    """Create the small person-attribute CSV used by command integration tests.
+
+    Args:
+        tmp_path: Directory in which to create the input CSV.
+
+    Returns:
+        Path to the created input CSV.
+    """
     input_csv = tmp_path / "input.csv"
     input_csv.write_text(
         "RecordId,FirstName,LastName,PostalCode,Sex,BirthDate,SocialSecurityNumber\n"
@@ -186,6 +214,14 @@ def _write_input_csv(tmp_path: Path) -> Path:
 
 
 def _write_tokenized_csv(tmp_path: Path) -> Path:
+    """Create a representative tokenized CSV for encryption tests.
+
+    Args:
+        tmp_path: Directory in which to create the tokenized CSV.
+
+    Returns:
+        Path to the created tokenized CSV.
+    """
     tokenized_csv = tmp_path / "tokenized.csv"
     tokenized_csv.write_text(
         "RecordId,RuleNumber,RuleExpression,RuleWeight,RuleCount,Token\ntest-001,1,T1,1.0,1,SGVsbG9Ub2tlbg==\n",
@@ -195,6 +231,15 @@ def _write_tokenized_csv(tmp_path: Path) -> Path:
 
 
 def _write_current_exchange_config(exchange_config_path: Path, tmp_path: Path) -> Path:
+    """Write a legacy exchange config and return its matching private-key path.
+
+    Args:
+        exchange_config_path: Destination path for the serialized exchange config.
+        tmp_path: Directory in which to create the sender key files.
+
+    Returns:
+        Path to the sender private-key PEM matching the config.
+    """
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     _, recipient_public_pem = generate_key_pair("P-256")
     config = build_exchange_envelope(
@@ -215,7 +260,15 @@ def _write_current_exchange_config(exchange_config_path: Path, tmp_path: Path) -
     return private_key_path
 
 
-def _write_future_v2_exchange_config(tmp_path: Path) -> tuple[Path, Path]:
+def _write_future_v3_exchange_config(tmp_path: Path) -> tuple[Path, Path]:
+    """Create an unsupported v3 envelope and return its path and private key.
+
+    Args:
+        tmp_path: Directory in which to create the exchange config and sender key files.
+
+    Returns:
+        A tuple containing the exchange-config path and matching sender private-key path.
+    """
     sender_private_pem, sender_public_pem = generate_key_pair("P-256")
     _, recipient_public_pem = generate_key_pair("P-256")
     payload = {
@@ -251,7 +304,7 @@ def _write_future_v2_exchange_config(tmp_path: Path) -> tuple[Path, Path]:
 
     exchange_config_path = tmp_path / "future.exchange.json"
     serialized = json.loads(envelope.serialize(compact=False))
-    serialized["version"] = 2
+    serialized["version"] = 3
     exchange_config_path.write_text(json.dumps(serialized), encoding="utf-8")
 
     private_key_path = tmp_path / ".openlinktoken" / "future.private.pem"
