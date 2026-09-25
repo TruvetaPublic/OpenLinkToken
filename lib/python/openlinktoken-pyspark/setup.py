@@ -20,7 +20,7 @@ except FileNotFoundError:
 core_requirements = [
     "openlinktoken==2.2.0",
     "pycryptodome==3.23.0",
-    "jwcrypto==1.6.0",
+    "jwcrypto==1.6.1",
 ]
 
 setup(
