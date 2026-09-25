@@ -241,6 +241,8 @@ jobs:
       - name: Push allowlisted files with release-bot token
         if: steps.pr-check.outcome == 'success'
         uses: actions/github-script@v9
+        env:
+          VALIDATED_HEAD_SHA: ${{ steps.pr-check.outputs.head-sha }}
         with:
           github-token: ${{ steps.app-token.outputs.token }}
           script: |
@@ -259,8 +261,9 @@ jobs:
             ];
             const pr = (await github.rest.pulls.get({ owner, repo, pull_number: pullNumber })).data;
             if (pr.state !== 'open' || pr.user.login !== 'dependabot[bot]' || pr.base.ref !== 'develop' ||
-                pr.head.repo.full_name !== `${owner}/${repo}` || !pr.head.ref.startsWith('dependabot/')) {
-              throw new Error('PR is no longer an eligible same-repository Dependabot PR');
+                pr.head.repo.full_name !== `${owner}/${repo}` || !pr.head.ref.startsWith('dependabot/') ||
+                pr.head.sha !== process.env.VALIDATED_HEAD_SHA) {
+              throw new Error('PR changed after artifact validation; refusing to apply stale requirements');
             }
             const current = (await github.rest.git.getCommit({ owner, repo, commit_sha: pr.head.sha })).data;
             const tree = [];
