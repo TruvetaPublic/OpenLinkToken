@@ -116,17 +116,20 @@ public class SocialSecurityNumberAttribute extends BaseAttribute {
             "799-99-9999",
             "899-99-9999");
 
+    /** Creates an SSN attribute with placeholder and format validation. */
     public SocialSecurityNumberAttribute() {
         super(List.of(
                 new NotInValidator(INVALID_SSNS),
                 new RegexValidator(SSN_REGEX)));
     }
 
+    /** {@inheritDoc} */
     @Override
     public String getName() {
         return NAME;
     }
 
+    /** {@inheritDoc} */
     @Override
     public String[] getAliases() {
         return ALIASES;
@@ -185,6 +188,12 @@ public class SocialSecurityNumberAttribute extends BaseAttribute {
     // Examples:
     // "1234567" -> "001234567"
     // "12345678" -> "012345678"
+    /**
+     * Pads seven- or eight-digit SSNs with leading zeros to nine digits.
+     *
+     * @param ssn the digit-only SSN
+     * @return the nine-digit value, or the original value for other lengths
+     */
     private String padWithZeros(String ssn) {
         if (ssn.length() >= MIN_SSN_LENGTH && ssn.length() < SSN_LENGTH) {
             ssn = String.format(SSN_FORMAT, Long.parseLong(ssn));

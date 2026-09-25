@@ -11,8 +11,18 @@ from openlinktoken.tokens.token import Token
 
 
 class TokenRegistry:
+    """
+    Discover built-in and extension token definitions and index them by token identifier.
+    """
+
     @staticmethod
     def load_all_tokens() -> Dict[str, List[AttributeExpression]]:
+        """
+        Discover built-in and extension token definitions and index their attribute expressions by token identifier.
+
+        Returns:
+            Mapping from token identifiers to their attribute-expression definitions.
+        """
         definitions: Dict[str, List[AttributeExpression]] = {}
 
         package_name = "openlinktoken.tokens.definitions"

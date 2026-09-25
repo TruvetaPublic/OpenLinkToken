@@ -42,6 +42,9 @@ class FirstNameAttribute(BaseAttribute):
     FIRST_PART_NAME_PATTERN = re.compile(r"^([A-Za-z]{3,})[\s./]+[A-Za-z]+(?:[\s./\-\u2010-\u2015\u2212]+[A-Za-z]+)*$")
 
     def __init__(self):
+        """
+        Initialize the instance.
+        """
         placeholder_values = AttributeUtilities.COMMON_PLACEHOLDER_NAMES
         validation_rules = [NotInValidator(placeholder_values)]
         super().__init__(validation_rules)
@@ -80,13 +83,33 @@ class FirstNameAttribute(BaseAttribute):
         return True
 
     def get_name(self) -> str:
+        """
+        Retrieve name.
+
+        Returns:
+            The name.
+        """
         return self.NAME
 
     def get_aliases(self) -> List[str]:
+        """
+        Retrieve aliases.
+
+        Returns:
+            The aliases.
+        """
         return self.ALIASES.copy()
 
     def normalize(self, value: str) -> str:
-        """Normalize a first name by removing titles, suffixes, and separators."""
+        """
+        Normalize a first name by removing titles, suffixes, and separators.
+
+        Args:
+            value: First-name value to transliterate and normalize.
+
+        Returns:
+            Normalized a first name by removing titles, suffixes, and separators.
+        """
         if not value:
             return value
 

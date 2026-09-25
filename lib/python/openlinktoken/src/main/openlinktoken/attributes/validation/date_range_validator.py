@@ -49,19 +49,34 @@ class DateRangeValidator(SerializableAttributeValidator):
 
     @property
     def min_date(self) -> Optional[date]:
-        """Get the minimum allowed date."""
+        """
+        Get the minimum allowed date.
+
+        Returns:
+            The minimum allowed date.
+        """
         return self._min_date
 
     @property
     def max_date(self) -> Optional[date]:
-        """Get the maximum allowed date."""
+        """
+        Get the maximum allowed date.
+
+        Returns:
+            The maximum allowed date.
+        """
         if self._use_current_as_max:
             return date.today()
         return self._max_date
 
     @property
     def use_current_as_max(self) -> bool:
-        """Check if using current date as maximum."""
+        """
+        Check if using current date as maximum.
+
+        Returns:
+            Whether using current date as maximum.
+        """
         return self._use_current_as_max
 
     def eval(self, value: str) -> bool:

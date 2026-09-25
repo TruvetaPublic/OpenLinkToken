@@ -38,6 +38,12 @@ def configure_default_logging() -> None:
 
 
 def _get_default_console_handler() -> logging.Handler | None:
+    """
+    Retrieve default console handler.
+
+    Returns:
+        The default console handler.
+    """
     root_logger = logging.getLogger()
     for handler in root_logger.handlers:
         if getattr(handler, _CONSOLE_HANDLER_MARKER, False):
@@ -54,7 +60,15 @@ class CountSummary:
 
 
 def _format_elapsed(seconds: float) -> str:
-    """Format seconds as HH:MM:SS or NN:MM:SS."""
+    """
+    Format seconds as HH:MM:SS or NN:MM:SS.
+
+    Args:
+        seconds: Elapsed time in seconds.
+
+    Returns:
+        Formatted seconds as HH:MM:SS or NN:MM:SS.
+    """
     seconds = int(seconds)
     hours = seconds // 3600
     mins = (seconds % 3600) // 60
@@ -65,7 +79,15 @@ def _format_elapsed(seconds: float) -> str:
 
 
 def _format_throughput(rate: float) -> str:
-    """Format throughput as human-readable rows per second with K/M for large values."""
+    """
+    Format throughput as human-readable rows per second with K/M for large values.
+
+    Args:
+        rate: Processing rate used for display.
+
+    Returns:
+        Formatted throughput as human-readable rows per second with K/M for large values.
+    """
     rows = rate
     if rows >= 1_000_000:
         return f"{rows / 1_000_000:.1f} M rows/s"
@@ -78,7 +100,15 @@ def _format_throughput(rate: float) -> str:
 
 
 def _format_throughput_parts(rate: float) -> tuple[str, str]:
-    """Format throughput as (number, unit) parts for aligned rendering."""
+    """
+    Format throughput as (number, unit) parts for aligned rendering.
+
+    Args:
+        rate: Processing rate used for display.
+
+    Returns:
+        Formatted throughput as (number, unit) parts for aligned rendering.
+    """
     rows = rate
     if rows >= 1_000_000:
         return f"{rows / 1_000_000:.1f} M", "rows/s"
@@ -120,6 +150,12 @@ class _ProgressIndicator:
     _ANSI_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
 
     def __init__(self, use_color: bool = True):
+        """
+        Initialize the instance.
+
+        Args:
+            use_color: Whether to use color.
+        """
         self._total_rows = 0
         self._done = 0
         self._stage = ""
@@ -155,39 +191,92 @@ class _ProgressIndicator:
         self._clear_block()
 
     def set_total_rows(self, total: int) -> None:
-        """Set total rows and clear done count."""
+        """
+        Set total rows and clear done count.
+
+        Args:
+            total: Total number of items in the operation.
+        """
         with self._lock:
             self._total_rows = total
             self._done = 0
 
     def update(self, stage: str, done: int) -> None:
-        """Update the stage label and the number of completed rows."""
+        """
+        Update the stage label and the number of completed rows.
+
+        Args:
+            stage: String containing the stage used to update.
+            done: Number of items already processed.
+        """
         with self._lock:
             self._stage = stage
             self._done = done
         self._update_event.set()
 
     def _format_elapsed(self, seconds: float) -> str:
-        """Delegate to module-level _format_elapsed."""
+        """
+        Delegate to module-level _format_elapsed.
+
+        Args:
+            seconds: Elapsed time in seconds.
+
+        Returns:
+            Formatted elapsed.
+        """
         return _format_elapsed(seconds)
 
     def _format_percentage(self, done: int, total: int) -> str:
-        """Format done/total as a percentage string."""
+        """
+        Format done/total as a percentage string.
+
+        Args:
+            done: Number of items already processed.
+            total: Total number of items in the operation.
+
+        Returns:
+            Formatted done/total as a percentage string.
+        """
         if total > 0:
             return f"{done / total * 100:.1f}"
         return "N/A"
 
     def _visible_len(self, text: str) -> int:
-        """Compute terminal-visible length (excluding ANSI escape sequences)."""
+        """
+        Compute terminal-visible length (excluding ANSI escape sequences).
+
+        Args:
+            text: Text to process.
+
+        Returns:
+            Computed terminal-visible length (excluding ANSI escape sequences).
+        """
         return len(self._ANSI_RE.sub("", text))
 
     @staticmethod
     def _placeholder(value: str | None) -> str:
-        """Render unknown progress values consistently."""
+        """
+        Render unknown progress values consistently.
+
+        Args:
+            value: Progress value to render, or None when no value is available.
+
+        Returns:
+            Rendered unknown progress values consistently.
+        """
         return value if value else "--"
 
     def _truncate_line(self, line: str, max_width: int) -> str:
-        """Truncate a rendered line to fit the terminal width (ANSI-aware)."""
+        """
+        Truncate a rendered line to fit the terminal width (ANSI-aware).
+
+        Args:
+            line: Rendered progress line to trim to the terminal width.
+            max_width: Width of the max.
+
+        Returns:
+            String produced by truncate line.
+        """
         if max_width <= 0:
             return ""
         if self._visible_len(line) <= max_width:
@@ -208,7 +297,22 @@ class _ProgressIndicator:
         speed_parts: tuple[str, str] | None,
         elapsed_str: str,
     ) -> str:
-        """Build a compact status line containing core and extension metrics."""
+        """
+        Build a compact status line containing core and extension metrics.
+
+        Args:
+            frame: String containing the frame used to build.
+            stage: String containing the stage used to build.
+            done: Number of items already processed.
+            total: Total number of items in the operation.
+            pct_str: Pct str value to build.
+            remaining_str: Remaining str value to build.
+            speed_parts: Sequence of speed parts values to build.
+            elapsed_str: String containing the elapsed str used to build.
+
+        Returns:
+            Built a compact status line containing core and extension metrics.
+        """
         total_text = f"{total:,}" if total > 0 else "--"
         percentage_text = f"{pct_str}%" if pct_str else "--"
         throughput_text = f"{speed_parts[0]} {speed_parts[1]}" if speed_parts else "--"
@@ -232,7 +336,12 @@ class _ProgressIndicator:
         return " | ".join(segments)
 
     def _write_render_block(self, lines: list[str]) -> None:
-        """Draw the progress status in place without moving through prior lines."""
+        """
+        Draw the progress status in place without moving through prior lines.
+
+        Args:
+            lines: Sequence of lines values to write.
+        """
         terminal_width = max(20, shutil.get_terminal_size((80, 24)).columns)
         rendered_line = " | ".join(line.strip() for line in lines)
         rendered_line = self._truncate_line(rendered_line, terminal_width)
@@ -323,6 +432,13 @@ class CliRunReporter:
     """Manage per-run logging, TTY progress, and end-of-run summaries."""
 
     def __init__(self, command_name: str, no_progress: bool = False):
+        """
+        Initialize the instance.
+
+        Args:
+            command_name: Name of the command.
+            no_progress: Whether interactive progress reporting is disabled.
+        """
         self.command_name = command_name
         self.log_report = create_cli_log_report(command_name)
         self._console_handler: logging.Handler | None = None
@@ -340,6 +456,12 @@ class CliRunReporter:
         self._elapsed_seconds: float | None = None
 
     def __enter__(self) -> "CliRunReporter":
+        """
+        Enter the context manager.
+
+        Returns:
+            The current CliRunReporter instance for use inside the with block.
+        """
         self._attach_file_logging()
         self._mute_console_logging()
         if self._interactive:
@@ -349,6 +471,14 @@ class CliRunReporter:
         return self
 
     def __exit__(self, exc_type, exc, exc_tb) -> None:
+        """
+        Exit the context manager.
+
+        Args:
+            exc_type: Exception class raised by the wrapped operation.
+            exc: Exception raised by the managed command, or None if it completed successfully.
+            exc_tb: Traceback associated with the raised exception.
+        """
         if self._interactive:
             self._progress_indicator.stop()
         self._restore_console_logging()
@@ -363,14 +493,45 @@ class CliRunReporter:
         self._detach_file_logging()
 
     def update_status(self, stage: str, processed_count: int | None = None, unit_label: str | None = None) -> None:
+        """
+        Update status.
+
+        Args:
+            stage: String containing the stage used to update.
+            processed_count: Number of processed items.
+            unit_label: Unit label value to update.
+        """
         self._progress_indicator.update(stage, processed_count or 0)
 
     def set_total_rows(self, total: int) -> None:
+        """
+        Set total rows.
+
+        Args:
+            total: Total number of items in the operation.
+        """
         self._progress_indicator.set_total_rows(total)
         self._total_rows = total
 
     def make_progress_callback(self, stage: str, unit_label: str) -> Callable[[int], None]:
+        """
+        Create a progress callback that updates the reporter for a named stage.
+
+        Args:
+            stage: Name of the processing stage displayed by the progress indicator.
+            unit_label: Unit label displayed beside the processed-item count.
+
+        Returns:
+            Processed make progress callback.
+        """
+
         def _callback(processed_count: int) -> None:
+            """
+            Update progress with the processed-item count for the configured stage.
+
+            Args:
+                processed_count: Number of processed items.
+            """
             self.update_status(stage, processed_count=processed_count, unit_label=unit_label)
 
         return _callback
@@ -388,6 +549,13 @@ class CliRunReporter:
         self._progress_indicator._stats_providers.append(provider)
 
     def finish_success(self, title: str, lines: Sequence[str]) -> None:
+        """
+        Print a successful-run summary and detailed-log reference to standard error.
+
+        Args:
+            title: Heading for the successful-run summary.
+            lines: Summary lines to print beneath the success heading.
+        """
         detail_log_line = format_dimmed_stderr_message(f"  Detailed log: {self.log_report.log_path}")
         elapsed_line = (
             f"  Duration: {_format_elapsed(self._elapsed_seconds)}" if self._elapsed_seconds is not None else None
@@ -402,6 +570,17 @@ class CliRunReporter:
 
     @staticmethod
     def summarize_count_lines(label: str, counts: Mapping[str, int], limit: int | None = None) -> list[str]:
+        """
+        Summarize count lines.
+
+        Args:
+            label: String containing the label used to summarize.
+            counts: Mapping of counts values used to summarize.
+            limit: Limit value to summarize.
+
+        Returns:
+            Summarized count lines.
+        """
         non_zero_items = [CountSummary(name=name, count=count) for name, count in counts.items() if count > 0]
         if not non_zero_items:
             return [f"{label}: none"]
@@ -417,6 +596,9 @@ class CliRunReporter:
         return [f"{label}:", *[f"   {item.name}: {item.count:,}" for item in summary_items]]
 
     def _attach_file_logging(self) -> None:
+        """
+        Attach a redacting file handler for the current command run.
+        """
         self.log_report.log_path.parent.mkdir(parents=True, exist_ok=True)
         file_handler = logging.FileHandler(self.log_report.log_path, encoding="utf-8")
         file_handler.setLevel(logging.INFO)
@@ -429,6 +611,9 @@ class CliRunReporter:
         self._file_handler = file_handler
 
     def _detach_file_logging(self) -> None:
+        """
+        Remove and close the run log handler, then restore the prior root logger level.
+        """
         if self._file_handler is None:
             return
         root_logger = logging.getLogger()
@@ -442,6 +627,9 @@ class CliRunReporter:
                 self._root_logger_level = None
 
     def _mute_console_logging(self) -> None:
+        """
+        Temporarily silence the console handler while the command writes its run log.
+        """
         self._console_handler = _get_default_console_handler()
         if self._console_handler is None:
             return
@@ -449,6 +637,9 @@ class CliRunReporter:
         self._console_handler.setLevel(logging.CRITICAL + 1)
 
     def _restore_console_logging(self) -> None:
+        """
+        Restore the console handler level saved when the run started.
+        """
         if self._console_handler is None or self._console_handler_level is None:
             return
         self._console_handler.setLevel(self._console_handler_level)

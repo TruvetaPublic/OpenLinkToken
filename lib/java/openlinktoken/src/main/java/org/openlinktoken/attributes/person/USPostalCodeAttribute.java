@@ -92,11 +92,13 @@ public class USPostalCodeAttribute extends BaseAttribute {
         this.minLength = minLength;
     }
 
+    /** {@inheritDoc} */
     @Override
     public String getName() {
         return NAME;
     }
 
+    /** {@inheritDoc} */
     @Override
     public String[] getAliases() {
         return ALIASES;

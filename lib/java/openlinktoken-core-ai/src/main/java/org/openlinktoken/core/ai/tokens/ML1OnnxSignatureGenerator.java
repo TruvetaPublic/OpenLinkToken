@@ -53,6 +53,9 @@ public final class ML1OnnxSignatureGenerator {
     private static String activeTokenizerPath;
     private static final String PAD_INPUT_JSON = "{}";
 
+    /**
+     * Prevents instances of this static generator.
+     */
     private ML1OnnxSignatureGenerator() {
     }
 
@@ -164,7 +167,19 @@ public final class ML1OnnxSignatureGenerator {
         return new BatchRunResult(embeddings, inferenceElapsedMillis);
     }
 
+    /**
+     * Holds the embeddings and inference duration produced by one padded batch.
+     *
+     * @param embeddings embeddings for all rows in the inference batch, including padding rows
+     * @param elapsedMillis elapsed inference time in milliseconds
+     */
     private record BatchRunResult(float[][] embeddings, double elapsedMillis) {
+        /**
+         * Compares batch results by their elapsed time and embedding contents.
+         *
+         * @param o object to compare with this result
+         * @return {@code true} when the compared result has equal values
+         */
         @Override
         public boolean equals(Object o) {
             if (this == o) {
@@ -177,6 +192,11 @@ public final class ML1OnnxSignatureGenerator {
                     && Arrays.deepEquals(embeddings, that.embeddings);
         }
 
+        /**
+         * Returns a hash code consistent with {@link #equals(Object)}.
+         *
+         * @return hash code derived from the embeddings and elapsed time
+         */
         @Override
         public int hashCode() {
             int result = Arrays.deepHashCode(embeddings);
@@ -184,6 +204,11 @@ public final class ML1OnnxSignatureGenerator {
             return result;
         }
 
+        /**
+         * Returns a diagnostic representation of this batch result.
+         *
+         * @return string containing the embeddings and elapsed time
+         */
         @Override
         public String toString() {
             return "BatchRunResult[embeddings=" + Arrays.deepToString(embeddings)
@@ -461,6 +486,12 @@ public final class ML1OnnxSignatureGenerator {
                         + "filesystem path.");
     }
 
+    /**
+     * Searches the working directory's ancestors for a source-checkout copy of a classpath resource.
+     *
+     * @param normalized classpath-relative resource path without a leading slash
+     * @return matching resource path, or {@code null} when no ancestor contains it
+     */
     private static Path findSourceCheckoutPath(String normalized) {
         Path current = Paths.get(System.getProperty("user.dir")).toAbsolutePath().normalize();
         while (current != null) {

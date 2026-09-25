@@ -411,7 +411,16 @@ class TestOpenLinkTokenProcessor:
         from openlinktoken_pyspark.notebook_helpers import CustomTokenDefinition, TokenBuilder
 
         # Create a custom ML1 token
-        ml1_token = TokenBuilder("ML1").add("last_name", "T|U").add("first_name", "T|U").add("birth_date", "T|D").build()
+        ml1_token = (
+            TokenBuilder("ML1")
+            .add("last_name", "T|U")
+            .add("first_name", "T|U")
+            .add(
+                "birth_date",
+                "T|D",
+            )
+            .build()
+        )
 
         custom_definition = CustomTokenDefinition().add_token(ml1_token)
 

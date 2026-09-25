@@ -49,7 +49,19 @@ def create_release_assets(
     output_dir: Path,
     architecture: str | None = None,
 ) -> list[Path]:
-    """Create updater-ready CLI binaries, packaged ZIPs, and SHA-256 sidecars."""
+    """
+    Create updater-ready CLI binaries, packaged ZIPs, and SHA-256 sidecars.
+
+    Args:
+        version: String containing the version used to create.
+        runner_os: String containing the runner os used to create.
+        dist_dir: Directory used for the dist.
+        output_dir: Directory used for the output.
+        architecture: Architecture value to create.
+
+    Returns:
+        Created updater-ready CLI binaries, packaged ZIPs, and SHA-256 sidecars.
+    """
     spec = _resolve_release_asset_spec(version, runner_os, architecture)
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -74,7 +86,15 @@ def create_release_assets(
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """CLI entry point for GitHub Actions release asset preparation."""
+    """
+    CLI entry point for GitHub Actions release asset preparation.
+
+    Args:
+        argv: Sequence of argv values to process.
+
+    Returns:
+        Integer value produced by main.
+    """
     parser = argparse.ArgumentParser(description="Prepare CLI release assets and checksum files.")
     parser.add_argument(
         "--version",
@@ -122,7 +142,17 @@ def _resolve_release_asset_spec(
     runner_os: str,
     architecture: str | None = None,
 ) -> ReleaseAssetSpec:
-    """Resolve the asset naming convention for the requested runner OS."""
+    """
+    Resolve the asset naming convention for the requested runner OS.
+
+    Args:
+        version: String containing the version used to resolve.
+        runner_os: String containing the runner os used to resolve.
+        architecture: Architecture value to resolve.
+
+    Returns:
+        Resolved the asset naming convention for the requested runner OS.
+    """
     normalized_version = _normalize_version(version)
     normalized_runner = runner_os.strip().lower()
 
@@ -145,7 +175,15 @@ def _resolve_release_asset_spec(
 
 
 def _normalize_version(version: str) -> str:
-    """Drop the optional leading v prefix and validate the remaining version."""
+    """
+    Drop the optional leading v prefix and validate the remaining version.
+
+    Args:
+        version: String containing the version used to normalize.
+
+    Returns:
+        Normalized version.
+    """
     normalized_version = version.strip().lstrip("v")
     if not normalized_version:
         raise ValueError("Version cannot be empty")
@@ -153,7 +191,15 @@ def _normalize_version(version: str) -> str:
 
 
 def _normalize_macos_architecture(architecture: str) -> str:
-    """Normalize supported macOS architecture names for release assets."""
+    """
+    Normalize supported macOS architecture names for release assets.
+
+    Args:
+        architecture: String containing the architecture used to normalize.
+
+    Returns:
+        Normalized supported macOS architecture names for release assets.
+    """
     normalized_architecture = architecture.strip().lower()
     if normalized_architecture in {"arm64", "aarch64"}:
         return "arm64"
@@ -163,7 +209,14 @@ def _normalize_macos_architecture(architecture: str) -> str:
 
 
 def _create_zip_archive(bundle_root: Path, package_name: str, zip_path: Path) -> None:
-    """Create a ZIP containing the complete one-folder bundle."""
+    """
+    Create a ZIP containing the complete one-folder bundle.
+
+    Args:
+        bundle_root: Path to the bundle root used by the operation.
+        package_name: Name of the package.
+        zip_path: Filesystem path to the zip handled by the operation.
+    """
     with tempfile.TemporaryDirectory() as temp_dir:
         package_root = Path(temp_dir) / package_name
         package_root.mkdir(parents=True, exist_ok=True)
@@ -181,14 +234,30 @@ def _create_zip_archive(bundle_root: Path, package_name: str, zip_path: Path) ->
 
 
 def _write_checksum_file(asset_path: Path) -> Path:
-    """Create the .sha256 sidecar file for a release asset."""
+    """
+    Create the .sha256 sidecar file for a release asset.
+
+    Args:
+        asset_path: Filesystem path to the asset handled by the operation.
+
+    Returns:
+        Created the .sha256 sidecar file for a release asset.
+    """
     checksum_path = asset_path.parent / f"{asset_path.name}.sha256"
     checksum_path.write_text(f"{_sha256_file(asset_path)}  {asset_path.name}\n")
     return checksum_path
 
 
 def _sha256_file(path: Path) -> str:
-    """Compute the SHA-256 digest for the provided file."""
+    """
+    Compute the SHA-256 digest for the provided file.
+
+    Args:
+        path: Path to the downloaded asset whose SHA-256 digest is computed.
+
+    Returns:
+        Computed the SHA-256 digest for the provided file.
+    """
     digest = hashlib.sha256()
     with path.open("rb") as file_obj:
         for chunk in iter(lambda: file_obj.read(65536), b""):

@@ -21,3 +21,19 @@ repos:
       - id: check-merge-conflict
       - id: check-added-large-files
         args: [--maxkb=1000]
+
+  - repo: local
+    hooks:
+      - id: java-javadocs
+        name: Check Java type and method Javadocs
+        entry: mvn --batch-mode --no-transfer-progress -f lib/java/pom.xml validate
+        language: system
+        files: ^lib/java/(openlinktoken|openlinktoken-core-ai)/src/main/java/.*\.java$
+        pass_filenames: false
+      - id: python-docstrings
+        name: Check Python class and function docstrings
+        entry: python3 tools/check_python_docstrings.py
+        language: system
+        files: ^lib/.*\.py$
+        types: [python]
+        exclude: '(^|/)(tests?|test_[^/]*|[^/]+_test)\.py$|(^|/)tests?/'

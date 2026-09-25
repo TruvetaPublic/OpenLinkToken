@@ -28,7 +28,12 @@ class RegexValidator(SerializableAttributeValidator):
 
     @property
     def compiled_pattern(self) -> Pattern[str]:
-        """Get the compiled regex pattern."""
+        """
+        Get the compiled regex pattern.
+
+        Returns:
+            The compiled regex pattern.
+        """
         return self._compiled_pattern
 
     def eval(self, value: str) -> bool:

@@ -8,5 +8,13 @@ class EmbeddingTransformer(Protocol):
     """Protocol for transformers that convert a float embedding to a list of token strings."""
 
     def transform(self, embedding: List[float]) -> List[str]:
-        """Transform a raw float embedding into a list of token strings."""
+        """
+        Transform a raw float embedding into a list of token strings.
+
+        Args:
+            embedding: Sequence of embedding values to transform.
+
+        Returns:
+            Transformed a raw float embedding into a list of token strings.
+        """
         ...

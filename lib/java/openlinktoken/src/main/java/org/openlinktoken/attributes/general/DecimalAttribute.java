@@ -39,6 +39,7 @@ public class DecimalAttribute extends BaseAttribute {
      */
     private static final String DECIMAL_REGEX = "^\\s*[+-]?(\\d+(\\.\\d*)?|\\.\\d+)([eE][+-]?\\d+)?\\s*$";
 
+    /** Creates a decimal attribute with the standard decimal-format validator. */
     public DecimalAttribute() {
         super(List.of(new RegexValidator(DECIMAL_REGEX)));
     }
@@ -52,6 +53,12 @@ public class DecimalAttribute extends BaseAttribute {
         super(createValidatorList(additionalValidators));
     }
 
+    /**
+     * Combines the standard decimal-format validator with subclass-specific validators.
+     *
+     * @param additionalValidators validators to apply in addition to the decimal-format check
+     * @return the complete validator list
+     */
     private static List<SerializableAttributeValidator> createValidatorList(
             List<SerializableAttributeValidator> additionalValidators) {
         java.util.ArrayList<SerializableAttributeValidator> validators = new java.util.ArrayList<>();
@@ -60,16 +67,25 @@ public class DecimalAttribute extends BaseAttribute {
         return validators;
     }
 
+    /** {@inheritDoc} */
     @Override
     public String getName() {
         return NAME;
     }
 
+    /** {@inheritDoc} */
     @Override
     public String[] getAliases() {
         return ALIASES;
     }
 
+    /**
+     * Trims the value and converts it to the string form of a parsed {@code double}.
+     *
+     * @param value the decimal value to normalize
+     * @return the parsed value formatted by {@link String#valueOf(double)}
+     * @throws IllegalArgumentException if the value is {@code null} or cannot be parsed
+     */
     @Override
     public String normalize(String value) {
         if (value == null) {

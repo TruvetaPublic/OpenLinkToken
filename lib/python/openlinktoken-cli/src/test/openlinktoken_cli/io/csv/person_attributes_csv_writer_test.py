@@ -2,7 +2,6 @@
 
 import os
 import tempfile
-from pathlib import Path
 
 from openlinktoken_cli.io.csv.person_attributes_csv_writer import PersonAttributesCSVWriter
 

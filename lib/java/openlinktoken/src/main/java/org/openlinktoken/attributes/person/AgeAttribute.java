@@ -24,15 +24,18 @@ public class AgeAttribute extends IntegerAttribute {
     private static final String NAME = "Age";
     private static final String[] ALIASES = new String[] { NAME };
 
+    /** Creates an age attribute with the standard age-range validator. */
     public AgeAttribute() {
         super(List.of(new AgeRangeValidator()));
     }
 
+    /** {@inheritDoc} */
     @Override
     public String getName() {
         return NAME;
     }
 
+    /** {@inheritDoc} */
     @Override
     public String[] getAliases() {
         return ALIASES;

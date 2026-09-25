@@ -61,12 +61,19 @@ public class FirstNameAttribute extends BaseAttribute {
     private static final Pattern FIRST_PART_NAME_PATTERN = Pattern.compile(
             "^([A-Za-z]{3,})[\\s./]+[A-Za-z]+(?:[\\s./\\-\\u2010-\\u2015\\u2212]+[A-Za-z]+)*$");
 
+    /** Creates a first-name attribute with the standard placeholder-name check. */
     public FirstNameAttribute() {
         super(List.of(
                 new NotInValidator(
                         AttributeUtilities.COMMON_PLACEHOLDER_NAMES)));
     }
 
+    /**
+     * Validates both the original and normalized value against the base rules.
+     *
+     * @param value the first name to validate
+     * @return {@code true} if the original and normalized values are non-empty and not placeholders
+     */
     @Override
     public boolean validate(String value) {
         if (value == null) {
@@ -92,16 +99,24 @@ public class FirstNameAttribute extends BaseAttribute {
         return super.validate(normalizedValue);
     }
 
+    /** {@inheritDoc} */
     @Override
     public String getName() {
         return NAME;
     }
 
+    /** {@inheritDoc} */
     @Override
     public String[] getAliases() {
         return ALIASES;
     }
 
+    /**
+     * Normalizes a first name by removing diacritics, titles, suffixes, initials, and non-letters.
+     *
+     * @param value the first name to normalize
+     * @return the normalized first name
+     */
     @Override
     public String normalize(String value) {
         String normalizedValue = AttributeUtilities.normalizeDiacritics(value);

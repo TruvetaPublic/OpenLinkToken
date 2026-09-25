@@ -34,5 +34,10 @@ class Tokenizer(ABC):
         pass
 
     def get_token_transformer_list(self) -> List[TokenTransformer]:
-        """Return transformers configured after tokenization."""
+        """
+        Return transformers configured after tokenization.
+
+        Returns:
+            The token transformer list value returned by the operation.
+        """
         return []

@@ -26,6 +26,7 @@ public class T4Token implements Token {
 
     private final ArrayList<AttributeExpression> definition = new ArrayList<>();
 
+    /** Builds the attribute-expression definition for token T4. */
     public T4Token() {
         definition.add(new AttributeExpression(FieldIds.SOCIAL_SECURITY_NUMBER.getFieldId(),
                 SocialSecurityNumberAttribute.class, "T|M(\\d+)"));
@@ -33,11 +34,13 @@ public class T4Token implements Token {
         definition.add(new AttributeExpression(FieldIds.BIRTH_DATE.getFieldId(), BirthDateAttribute.class, "T|D"));
     }
 
+    /** {@inheritDoc} */
     @Override
     public String getIdentifier() {
         return ID;
     }
 
+    /** {@inheritDoc} */
     @Override
     public ArrayList<AttributeExpression> getDefinition() {
         return definition;

@@ -15,6 +15,9 @@ import java.util.List;
  */
 public final class EmbeddingRotator {
 
+    /**
+     * Prevents instances of this static utility class.
+     */
     private EmbeddingRotator() {
     }
 
