@@ -103,13 +103,13 @@ public class LastNameAttribute extends BaseAttribute {
         return regexValidator.eval(normalizedValue);
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} The canonical attribute name is {@code "LastName"}. */
     @Override
     public String getName() {
         return NAME;
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} Accepts {@code "LastName"} and {@code "Surname"}. */
     @Override
     public String[] getAliases() {
         return ALIASES;

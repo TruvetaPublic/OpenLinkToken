@@ -36,13 +36,13 @@ public class T1Token implements Token {
         definition.add(new AttributeExpression(FieldIds.BIRTH_DATE.getFieldId(), BirthDateAttribute.class, "T|D"));
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} This token uses the identifier {@code "T1"}. */
     @Override
     public String getIdentifier() {
         return ID;
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} Provides the ordered attribute expressions that define token {@code "T1"}. */
     @Override
     public ArrayList<AttributeExpression> getDefinition() {
         return definition;

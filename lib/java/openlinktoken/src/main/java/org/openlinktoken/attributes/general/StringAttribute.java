@@ -27,13 +27,13 @@ public class StringAttribute extends BaseAttribute {
         super(List.of());
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} The canonical attribute name is {@code "String"}. */
     @Override
     public String getName() {
         return NAME;
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} Accepts {@code "String"} and {@code "Text"}. */
     @Override
     public String[] getAliases() {
         return ALIASES;

@@ -34,13 +34,13 @@ public class T5Token implements Token {
         definition.add(new AttributeExpression(FieldIds.SEX.getFieldId(), SexAttribute.class, "T|U"));
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} This token uses the identifier {@code "T5"}. */
     @Override
     public String getIdentifier() {
         return ID;
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} Provides the ordered attribute expressions that define token {@code "T5"}. */
     @Override
     public ArrayList<AttributeExpression> getDefinition() {
         return definition;

@@ -29,13 +29,13 @@ public class AgeAttribute extends IntegerAttribute {
         super(List.of(new AgeRangeValidator()));
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} The canonical attribute name is {@code "Age"}. */
     @Override
     public String getName() {
         return NAME;
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} The only accepted name is {@code "Age"}. */
     @Override
     public String[] getAliases() {
         return ALIASES;

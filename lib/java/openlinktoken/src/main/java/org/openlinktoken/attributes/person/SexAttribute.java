@@ -46,7 +46,7 @@ public class SexAttribute extends BaseAttribute {
                         new RegexValidator(VALIDATE_REGEX)));
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} The canonical attribute name is {@code "Sex"}. */
     @Override
     public String getName() {
         return NAME;
@@ -74,7 +74,7 @@ public class SexAttribute extends BaseAttribute {
         }
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} Accepts {@code "Sex"} and {@code "Gender"}. */
     @Override
     public String[] getAliases() {
         return ALIASES;

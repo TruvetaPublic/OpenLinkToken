@@ -36,13 +36,13 @@ public class T2Token implements Token {
                 new AttributeExpression(FieldIds.POSTAL_CODE.getFieldId(), PostalCodeAttribute.class, "T|S(0,3)|U"));
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} This token uses the identifier {@code "T2"}. */
     @Override
     public String getIdentifier() {
         return ID;
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} Provides the ordered attribute expressions that define token {@code "T2"}. */
     @Override
     public ArrayList<AttributeExpression> getDefinition() {
         return definition;

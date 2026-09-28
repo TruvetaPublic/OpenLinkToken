@@ -26,13 +26,13 @@ public class BirthYearAttribute extends YearAttribute {
         super(List.of(new YearRangeValidator()));
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} The canonical attribute name is {@code "BirthYear"}. */
     @Override
     public String getName() {
         return NAME;
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} Accepts {@code "BirthYear"} and {@code "YearOfBirth"}. */
     @Override
     public String[] getAliases() {
         return ALIASES;

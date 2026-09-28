@@ -63,13 +63,13 @@ public class IntegerAttribute extends BaseAttribute {
         return validators;
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} The canonical attribute name is {@code "Integer"}. */
     @Override
     public String getName() {
         return NAME;
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} The only accepted name is {@code "Integer"}. */
     @Override
     public String[] getAliases() {
         return ALIASES;

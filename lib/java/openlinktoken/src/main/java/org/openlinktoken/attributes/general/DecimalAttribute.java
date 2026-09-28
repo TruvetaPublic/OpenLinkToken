@@ -67,13 +67,13 @@ public class DecimalAttribute extends BaseAttribute {
         return validators;
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} The canonical attribute name is {@code "Decimal"}. */
     @Override
     public String getName() {
         return NAME;
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} The only accepted name is {@code "Decimal"}. */
     @Override
     public String[] getAliases() {
         return ALIASES;

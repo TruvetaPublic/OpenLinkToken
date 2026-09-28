@@ -95,13 +95,13 @@ public class DateAttribute extends BaseAttribute {
         return validators;
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} The canonical attribute name is {@code "Date"}. */
     @Override
     public String getName() {
         return NAME;
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} The only accepted name is {@code "Date"}. */
     @Override
     public String[] getAliases() {
         return ALIASES;

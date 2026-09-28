@@ -123,13 +123,16 @@ public class SocialSecurityNumberAttribute extends BaseAttribute {
                 new RegexValidator(SSN_REGEX)));
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} The canonical attribute name is {@code "SocialSecurityNumber"}. */
     @Override
     public String getName() {
         return NAME;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc} Accepts {@code "SocialSecurityNumber"},
+     * {@code "NationalIdentificationNumber"}, and {@code "SSN"}.
+     */
     @Override
     public String[] getAliases() {
         return ALIASES;

@@ -148,13 +148,13 @@ public class CanadianPostalCodeAttribute extends BaseAttribute {
         return true;
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} The canonical attribute name is {@code "CanadianPostalCode"}. */
     @Override
     public String getName() {
         return NAME;
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} Accepts {@code "CanadianPostalCode"} and {@code "CanadianZipCode"}. */
     @Override
     public String[] getAliases() {
         return ALIASES;

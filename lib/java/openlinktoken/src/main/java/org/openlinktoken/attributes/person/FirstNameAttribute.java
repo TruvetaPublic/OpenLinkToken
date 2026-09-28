@@ -99,13 +99,13 @@ public class FirstNameAttribute extends BaseAttribute {
         return super.validate(normalizedValue);
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} The canonical attribute name is {@code "FirstName"}. */
     @Override
     public String getName() {
         return NAME;
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} Accepts {@code "FirstName"} and {@code "GivenName"}. */
     @Override
     public String[] getAliases() {
         return ALIASES;

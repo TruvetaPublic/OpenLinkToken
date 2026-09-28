@@ -31,13 +31,13 @@ public class BirthDateAttribute extends DateAttribute {
         super(List.of(new DateRangeValidator(LocalDate.of(1910, 1, 1), true)));
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} The canonical attribute name is {@code "BirthDate"}. */
     @Override
     public String getName() {
         return NAME;
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} Accepts {@code "BirthDate"} and {@code "DateOfBirth"}. */
     @Override
     public String[] getAliases() {
         return ALIASES;

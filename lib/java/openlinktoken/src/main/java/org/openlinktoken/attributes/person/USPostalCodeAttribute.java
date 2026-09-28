@@ -92,13 +92,13 @@ public class USPostalCodeAttribute extends BaseAttribute {
         this.minLength = minLength;
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} The canonical attribute name is {@code "USPostalCode"}. */
     @Override
     public String getName() {
         return NAME;
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} Accepts {@code "USPostalCode"} and {@code "USZipCode"}. */
     @Override
     public String[] getAliases() {
         return ALIASES;

@@ -45,7 +45,7 @@ public class TokenDefinition implements BaseTokenDefinition {
         return "2.0";
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} Returns identifiers for the token definitions loaded by this instance. */
     @Override
     public Set<String> getTokenIdentifiers() {
         return definitions.keySet();

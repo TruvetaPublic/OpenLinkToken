@@ -62,13 +62,13 @@ public class YearAttribute extends IntegerAttribute {
         return validators;
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} The canonical attribute name is {@code "Year"}. */
     @Override
     public String getName() {
         return NAME;
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} The only accepted name is {@code "Year"}. */
     @Override
     public String[] getAliases() {
         return ALIASES;

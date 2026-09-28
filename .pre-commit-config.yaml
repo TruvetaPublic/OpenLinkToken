@@ -23,9 +23,10 @@ repos:
         args: [--maxkb=1000]
 
   - repo: https://github.com/mattwise-42/pre-commit-hooks
-    rev: v0.1.0
+    rev: v0.1.1
     hooks:
       - id: java-javadocs
+        args: [--require-own-docs]
         files: ^lib/java/(openlinktoken|openlinktoken-core-ai)/src/main/java/.*\.java$
       - id: python-docstrings
         files: ^lib/.*\.py$

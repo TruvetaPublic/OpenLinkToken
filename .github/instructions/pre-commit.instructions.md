@@ -15,4 +15,4 @@ In this repository, prefer `--files` with the exact changed paths for the curren
 
 If prek reports any failures (formatting, linting, type errors), fix them and re-run against the changed files until all hooks pass. Do not mark work as done while prek hooks are failing.
 
-The configured documentation hooks require Javadocs for every production Java type and method under `lib/`, and docstrings for every production Python class and function under `lib/`. Python docstrings must document each input parameter and any return or yielded output. The pre-commit configuration excludes tests and files outside `lib/`.
+The Java hook requires own Javadoc content for every production Java type, method, and constructor under `lib/`; a comment containing only `{@inheritDoc}` does not qualify. The Python hook requires docstrings for every production class and function under `lib/`, documenting each input parameter and any return or yielded output. The pre-commit configuration excludes tests and files outside `lib/`.

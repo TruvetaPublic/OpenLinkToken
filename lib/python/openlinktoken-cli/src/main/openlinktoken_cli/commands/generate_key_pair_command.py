@@ -173,9 +173,6 @@ class GenerateKeyPairCommand:
 
         Args:
             directory: Path to the directory used by the operation.
-
-        Returns:
-            None.
         """
         from openlinktoken_cli.util.ec_key_utils import ensure_directory
 
@@ -191,9 +188,6 @@ class GenerateKeyPairCommand:
             pem_bytes: Byte sequence containing the pem bytes used to write.
             mode: Numeric mode value used to write.
             overwrite: Whether to overwrite.
-
-        Returns:
-            None.
         """
         from openlinktoken_cli.util.ec_key_utils import write_key
 
