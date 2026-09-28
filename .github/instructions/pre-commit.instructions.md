@@ -15,4 +15,4 @@ In this repository, prefer `--files` with the exact changed paths for the curren
 
 If prek reports any failures (formatting, linting, type errors), fix them and re-run against the changed files until all hooks pass. Do not mark work as done while prek hooks are failing.
 
-The configured local hooks require Javadocs for every production Java type and method under `lib/`, and docstrings for every production Python class and function under `lib/`. Python docstrings must document each input parameter and any return or yielded output. Test declarations and files outside `lib/` are excluded.
+The configured documentation hooks require Javadocs for every production Java type and method under `lib/`, and docstrings for every production Python class and function under `lib/`. Python docstrings must document each input parameter and any return or yielded output. The pre-commit configuration excludes tests and files outside `lib/`.
