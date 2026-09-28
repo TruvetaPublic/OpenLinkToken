@@ -231,7 +231,7 @@ pefile==2024.8.26 ; sys_platform == 'win32'
     # via pyinstaller
 pexpect==4.9.0 ; sys_platform != 'emscripten' and sys_platform != 'win32'
     # via ipython
-platformdirs==4.11.13
+platformdirs==4.11.14
     # via jupyter-core
 pluggy==1.6.0
     # via
