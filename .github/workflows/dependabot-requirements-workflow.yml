@@ -11,18 +11,11 @@ on:
       - "lib/python/**/pyproject.toml"
       - "lib/python/**/setup.py"
       - "lib/python/**/requirements.txt"
+      - "lib/python/**/dev-requirements.txt"
       - "lib/python/**/uv.lock"
-      - "tools/requirements.txt"
-      - "tools/interoperability/pyproject.toml"
-      - "tools/interoperability/uv.lock"
-      - "lib/python/dev-requirements.txt"
-      - "lib/python/openlinktoken/dev-requirements.txt"
-      - "lib/python/openlinktoken-pyspark/dev-requirements.txt"
-      - "lib/python/openlinktoken/requirements.txt"
-      - "lib/python/openlinktoken-cli/requirements.txt"
-      - "lib/python/openlinktoken-core-ai/requirements.txt"
-      - "lib/python/openlinktoken-pyspark/requirements.txt"
-      - "tools/interoperability/requirements.txt"
+      - "tools/**/*.toml"
+      - "tools/**/*.txt"
+      - "tools/**/*.lock"
       - "!.github/workflows/dependabot-requirements-workflow.yml"
 
 permissions:
@@ -181,12 +174,15 @@ jobs:
             const allowed = new Set([
               'lib/python/dev-requirements.txt',
               'lib/python/openlinktoken/requirements.txt',
+              'lib/python/openlinktoken/dev-requirements.txt',
               'lib/python/openlinktoken-cli/requirements.txt',
               'lib/python/openlinktoken-core-ai/requirements.txt',
               'lib/python/openlinktoken-pyspark/requirements.txt',
+              'lib/python/openlinktoken-pyspark/dev-requirements.txt',
               'lib/python/openlinktoken-pyspark/setup.py',
               'tools/requirements.txt',
               'tools/interoperability/requirements.txt',
+              'tools/interoperability/dev-requirements.txt',
             ]);
             const files = [];
             function walk(dir = 'regenerated') {
@@ -236,12 +232,15 @@ jobs:
             const allowed = [
               'lib/python/dev-requirements.txt',
               'lib/python/openlinktoken/requirements.txt',
+              'lib/python/openlinktoken/dev-requirements.txt',
               'lib/python/openlinktoken-cli/requirements.txt',
               'lib/python/openlinktoken-core-ai/requirements.txt',
               'lib/python/openlinktoken-pyspark/requirements.txt',
+              'lib/python/openlinktoken-pyspark/dev-requirements.txt',
               'lib/python/openlinktoken-pyspark/setup.py',
               'tools/requirements.txt',
               'tools/interoperability/requirements.txt',
+              'tools/interoperability/dev-requirements.txt',
             ];
             const pr = (await github.rest.pulls.get({ owner, repo, pull_number: pullNumber })).data;
             if (pr.state !== 'open' || pr.user.login !== 'dependabot[bot]' || pr.base.ref !== 'develop' ||
