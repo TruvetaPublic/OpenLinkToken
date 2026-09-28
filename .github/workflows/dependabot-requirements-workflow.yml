@@ -240,6 +240,7 @@ jobs:
           github-token: ${{ steps.app-token.outputs.token }}
           script: |
             const fs = require('node:fs');
+            const path = require('node:path');
             const { owner, repo } = context.repo;
             const pullNumber = context.payload.pull_request.number;
             const allowed = file =>
