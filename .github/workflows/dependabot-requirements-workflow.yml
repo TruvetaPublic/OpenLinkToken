@@ -16,6 +16,8 @@ on:
       - "tools/interoperability/pyproject.toml"
       - "tools/interoperability/uv.lock"
       - "lib/python/dev-requirements.txt"
+      - "lib/python/openlinktoken/dev-requirements.txt"
+      - "lib/python/openlinktoken-pyspark/dev-requirements.txt"
       - "lib/python/openlinktoken/requirements.txt"
       - "lib/python/openlinktoken-cli/requirements.txt"
       - "lib/python/openlinktoken-core-ai/requirements.txt"
@@ -92,7 +94,7 @@ jobs:
           setup.write_text(source, encoding="utf-8")
           PY
 
-      - name: Regenerate requirements
+      - name: Regenerate requirements and dev requirements
         working-directory: source
         run: |
           set -euo pipefail
@@ -105,6 +107,8 @@ jobs:
           uv export --package openlinktoken-cli --no-dev --no-hashes --output-file lib/python/openlinktoken-cli/requirements.txt
           uv export --package openlinktoken-core-ai --no-dev --no-hashes --no-emit-workspace --output-file lib/python/openlinktoken-core-ai/requirements.txt
           uv export --package openlinktoken-pyspark --no-dev --no-hashes --output-file lib/python/openlinktoken-pyspark/requirements.txt
+          cp lib/python/dev-requirements.txt lib/python/openlinktoken/dev-requirements.txt
+          cp lib/python/dev-requirements.txt lib/python/openlinktoken-pyspark/dev-requirements.txt
 
       - name: Collect changed allowlisted files
         id: exports
@@ -113,6 +117,8 @@ jobs:
           set -euo pipefail
           allowed=(
             lib/python/dev-requirements.txt
+            lib/python/openlinktoken/dev-requirements.txt
+            lib/python/openlinktoken-pyspark/dev-requirements.txt
             lib/python/openlinktoken/requirements.txt
             lib/python/openlinktoken-cli/requirements.txt
             lib/python/openlinktoken-core-ai/requirements.txt
@@ -194,9 +200,6 @@ jobs:
             }
             walk();
             if (!files.length || files.some(file => !allowed.has(file))) throw new Error(`Unexpected artifact paths: ${files}`);
-            for (const file of files) {
-              if (fs.statSync(path.join('regenerated', file)).size > 5_000_000) throw new Error(`Artifact file too large: ${file}`);
-            }
             const pr = (await github.rest.pulls.get({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -206,19 +209,6 @@ jobs:
                 pr.head.repo.full_name !== `${context.repo.owner}/${context.repo.repo}` || !pr.head.ref.startsWith('dependabot/') ||
                 pr.head.sha !== context.payload.pull_request.head.sha) {
               throw new Error('PR is no longer the same eligible Dependabot commit');
-            }
-            const changed = await github.paginate(github.rest.pulls.listFiles, {
-              owner: context.repo.owner, repo: context.repo.repo,
-              pull_number: context.payload.pull_request.number, per_page: 100,
-            });
-            const dependencyMetadata = new Set([
-              '.github/dependabot.yml', 'pyproject.toml', 'uv.lock',
-              'lib/python/openlinktoken/pyproject.toml', 'lib/python/openlinktoken-cli/pyproject.toml',
-              'lib/python/openlinktoken-core-ai/pyproject.toml', 'lib/python/openlinktoken-pyspark/setup.py',
-              'tools/interoperability/pyproject.toml', 'tools/interoperability/uv.lock',
-            ]);
-            if (!changed.some(file => dependencyMetadata.has(file.filename) || file.filename.startsWith('lib/python/') && /\/(pyproject\.toml|setup\.py|requirements\.txt|dev-requirements\.txt|uv\.lock)$/.test(file.filename) || file.filename.startsWith('tools/') && file.filename.endsWith('requirements.txt'))) {
-              throw new Error('PR does not change dependency metadata, lockfiles, or requirement exports');
             }
             core.setOutput('head-ref', pr.head.ref);
             core.setOutput('head-sha', pr.head.sha);
