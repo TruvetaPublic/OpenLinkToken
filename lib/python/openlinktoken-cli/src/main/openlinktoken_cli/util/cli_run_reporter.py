@@ -179,7 +179,11 @@ class _ProgressIndicator:
 
     @classmethod
     def _select_frames(cls) -> tuple[str, ...]:
-        """Use Braille spinner frames only when stderr can encode them."""
+        """Use Braille spinner frames only when stderr can encode them.
+
+        Returns:
+            Spinner frames supported by stderr's encoding.
+        """
         encoding = getattr(sys.stderr, "encoding", None)
         if not encoding:
             return cls._ASCII_FRAMES
