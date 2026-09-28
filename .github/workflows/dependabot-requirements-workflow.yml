@@ -158,12 +158,6 @@ jobs:
       contents: read
       pull-requests: read
     steps:
-      - name: Check out trusted base branch
-        uses: actions/checkout@v7
-        with:
-          ref: develop
-          persist-credentials: false
-
       - name: Download generated requirements artifact
         uses: actions/download-artifact@v8
         with:
