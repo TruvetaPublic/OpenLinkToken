@@ -62,16 +62,25 @@ public class YearAttribute extends IntegerAttribute {
         return validators;
     }
 
+    /** {@inheritDoc} The canonical attribute name is {@code "Year"}. */
     @Override
     public String getName() {
         return NAME;
     }
 
+    /** {@inheritDoc} The only accepted name is {@code "Year"}. */
     @Override
     public String[] getAliases() {
         return ALIASES;
     }
 
+    /**
+     * Trims and validates a four-digit year before applying integer normalization.
+     *
+     * @param value the year value to normalize
+     * @return the normalized year
+     * @throws IllegalArgumentException if the value is {@code null} or is not a four-digit year
+     */
     @Override
     public String normalize(String value) {
         if (value == null) {

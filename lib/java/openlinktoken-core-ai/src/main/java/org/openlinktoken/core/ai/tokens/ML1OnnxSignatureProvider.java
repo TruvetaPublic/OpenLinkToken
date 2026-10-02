@@ -317,6 +317,17 @@ public class ML1OnnxSignatureProvider implements InferenceSignatureProvider {
         return asJson(payload);
     }
 
+    /**
+     * Validates and normalizes one required attribute before adding it to the inference payload.
+     *
+     * @param fieldId key used to find the raw value in {@code personAttributes}
+     * @param attributeClass implementation used to validate and normalize that value
+     * @param fieldName key assigned to the normalized value in the model payload
+     * @param personAttributes raw attribute values for one person
+     * @param result result whose invalid-attribute list is updated when validation fails
+     * @param payload payload map that receives the normalized value on success
+     * @return {@code true} if the attribute was present, valid, and added to the payload
+     */
     private boolean addMl1Field(String fieldId, Class<? extends Attribute> attributeClass, String fieldName,
             Map<String, String> personAttributes, TokenGeneratorResult result,
             Map<String, String> payload) {

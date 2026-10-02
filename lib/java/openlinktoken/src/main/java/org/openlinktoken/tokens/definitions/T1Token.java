@@ -27,6 +27,7 @@ public class T1Token implements Token {
 
     private final ArrayList<AttributeExpression> definition = new ArrayList<>();
 
+    /** Builds the attribute-expression definition for token T1. */
     public T1Token() {
         definition.add(new AttributeExpression(FieldIds.LAST_NAME.getFieldId(), LastNameAttribute.class, "T|U"));
         definition.add(
@@ -35,11 +36,13 @@ public class T1Token implements Token {
         definition.add(new AttributeExpression(FieldIds.BIRTH_DATE.getFieldId(), BirthDateAttribute.class, "T|D"));
     }
 
+    /** {@inheritDoc} This token uses the identifier {@code "T1"}. */
     @Override
     public String getIdentifier() {
         return ID;
     }
 
+    /** {@inheritDoc} Provides the ordered attribute expressions that define token {@code "T1"}. */
     @Override
     public ArrayList<AttributeExpression> getDefinition() {
         return definition;

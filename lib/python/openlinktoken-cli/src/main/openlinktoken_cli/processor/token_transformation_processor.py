@@ -17,7 +17,15 @@ class TokenTransformer(Protocol):
     """Protocol for token transformers."""
 
     def transform(self, token: str) -> str:
-        """Transform a token."""
+        """
+        Transform a token.
+
+        Args:
+            token: Token value to inspect, transform, or compare.
+
+        Returns:
+            Transformed a token.
+        """
         ...
 
 
@@ -54,6 +62,10 @@ class TokenTransformationProcessor:
             writer: TokenWriter for output
             transformer: The token transformer (encryption or decryption)
             operation: The operation name for logging (e.g., "encrypted", "decrypted")
+            progress_callback: Callback invoked with updates as processing advances.
+
+        Returns:
+            Read tokens from input, transform them, and write to output.
         """
         row_counter = 0
         transformed_counter = 0

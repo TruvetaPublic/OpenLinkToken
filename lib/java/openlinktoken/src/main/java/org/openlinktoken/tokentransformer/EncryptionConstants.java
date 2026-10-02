@@ -6,6 +6,7 @@ package org.openlinktoken.tokentransformer;
  */
 public final class EncryptionConstants {
 
+    /** Prevents instantiation of this constants class. */
     private EncryptionConstants() {
         // Utility class, prevent instantiation
     }

@@ -16,11 +16,13 @@ public class RecordIdAttribute extends StringAttribute {
     private static final String NAME = "RecordId";
     private static final String[] ALIASES = new String[] { NAME, "Id" };
 
+    /** {@inheritDoc} The canonical attribute name is {@code "RecordId"}. */
     @Override
     public String getName() {
         return NAME;
     }
 
+    /** {@inheritDoc} Accepts {@code "RecordId"} and {@code "Id"}. */
     @Override
     public String[] getAliases() {
         return ALIASES;

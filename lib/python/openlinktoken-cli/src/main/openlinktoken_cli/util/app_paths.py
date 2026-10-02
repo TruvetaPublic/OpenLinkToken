@@ -9,7 +9,12 @@ _LOGS_DIR_NAME = "logs"
 
 
 def get_openlinktoken_home() -> Path:
-    """Return the platform-appropriate Open Link Token home directory."""
+    """
+    Return the platform-appropriate Open Link Token home directory.
+
+    Returns:
+        The openlinktoken home value returned by the operation.
+    """
     if sys.platform == "win32":
         appdata = os.getenv("APPDATA", "").strip()
         if appdata:
@@ -18,5 +23,10 @@ def get_openlinktoken_home() -> Path:
 
 
 def get_logs_dir() -> Path:
-    """Return the directory used for archived CLI error logs."""
+    """
+    Return the directory used for archived CLI error logs.
+
+    Returns:
+        The logs dir value returned by the operation.
+    """
     return get_openlinktoken_home() / _LOGS_DIR_NAME

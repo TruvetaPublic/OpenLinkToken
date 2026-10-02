@@ -30,16 +30,22 @@ public class PostalCodeAttribute extends CombinedAttribute {
             new USPostalCodeAttribute(3),
             new CanadianPostalCodeAttribute(3));
 
+    /** {@inheritDoc} The canonical attribute name is {@code "PostalCode"}. */
     @Override
     public String getName() {
         return NAME;
     }
 
+    /**
+     * {@inheritDoc} Accepts {@code "PostalCode"}, {@code "ZipCode"}, {@code "ZIP3"},
+     * {@code "ZIP4"}, and {@code "ZIP5"}.
+     */
     @Override
     public String[] getAliases() {
         return ALIASES;
     }
 
+    /** {@inheritDoc} Combines the U.S. and Canadian postal-code implementations. */
     @Override
     protected List<SerializableAttribute> getAttributeImplementations() {
         return implementations;

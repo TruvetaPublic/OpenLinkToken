@@ -5,7 +5,13 @@ from pathlib import Path
 
 
 def bundle_into_zip(zip_output_path: str, *file_paths: str) -> None:
-    """Bundle files into a zip archive, using each file's basename as the entry name."""
+    """
+    Bundle files into a zip archive, using each file's basename as the entry name.
+
+    Args:
+        zip_output_path: Filesystem path to the zip output handled by the operation.
+        file_paths: Paths to files to include in the ZIP archive.
+    """
     zip_path = Path(zip_output_path)
     zip_path.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(zip_output_path, mode="w", compression=zipfile.ZIP_DEFLATED) as archive:

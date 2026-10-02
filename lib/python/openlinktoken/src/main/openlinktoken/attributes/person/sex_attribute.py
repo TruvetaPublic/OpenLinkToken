@@ -25,17 +25,40 @@ class SexAttribute(BaseAttribute):
     VALIDATE_REGEX = r"^\s*([Mm](ale)?|[Ff](emale)?)\s*$"
 
     def __init__(self):
+        """
+        Initialize the instance.
+        """
         validation_rules = [RegexValidator(self.VALIDATE_REGEX)]
         super().__init__(validation_rules)
 
     def get_name(self) -> str:
+        """
+        Retrieve name.
+
+        Returns:
+            The name.
+        """
         return self.NAME
 
     def get_aliases(self) -> List[str]:
+        """
+        Retrieve aliases.
+
+        Returns:
+            The aliases.
+        """
         return self.ALIASES.copy()
 
     def normalize(self, value: str) -> str:
-        """Normalize sex value to 'Male' or 'Female'."""
+        """
+        Normalize sex value to 'Male' or 'Female'.
+
+        Args:
+            value: Sex value to normalize to the supported Male/Female representation.
+
+        Returns:
+            Normalized sex value to 'Male' or 'Female'.
+        """
         if not value:
             return None
 

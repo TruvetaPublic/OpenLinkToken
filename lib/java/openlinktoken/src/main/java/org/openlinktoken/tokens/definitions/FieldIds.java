@@ -22,6 +22,11 @@ public enum FieldIds {
 
     private final String fieldId;
 
+    /**
+     * Creates a field identifier with its canonical value.
+     *
+     * @param fieldId the field identifier string
+     */
     FieldIds(String fieldId) {
         this.fieldId = fieldId;
     }

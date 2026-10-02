@@ -235,6 +235,20 @@ class OpenLinkTokenProcessor:
             This function is executed on each partition of the DataFrame
             in parallel across the Spark cluster.
 
+            Args:
+                record_id_series: Record id series value to generate.
+                first_name_series: First name series value to generate.
+                last_name_series: Last name series value to generate.
+                birth_date_series: Birth date series value to generate.
+                sex_series: Sex series value to generate.
+                postal_code_series: Postal code series value to generate.
+                ssn_series: Ssn series value to generate.
+
+            Returns:
+                Spark UDF that generates a token for each input row.
+
+
+
             Note: Coverage tracking cannot instrument code executed inside Spark
             worker processes, so this function is marked with pragma: no cover.
             The logic is tested indirectly through integration tests.
@@ -361,7 +375,15 @@ class OpenLinkTokenProcessor:
 
     @staticmethod
     def _resolve_secret_bytes(secret: str | bytes | None) -> bytes | None:
-        """Resolve secret inputs into byte payloads for Spark worker transport."""
+        """
+        Resolve secret inputs into byte payloads for Spark worker transport.
+
+        Args:
+            secret: Byte sequence containing the secret used to resolve.
+
+        Returns:
+            Resolved secret inputs into byte payloads for Spark worker transport.
+        """
         if secret is None:
             return None
         if isinstance(secret, bytes):
@@ -370,7 +392,14 @@ class OpenLinkTokenProcessor:
 
     @staticmethod
     def _validate_secret_value(secret: str | bytes | None, secret_name: str, none_hint: str) -> None:
-        """Validate optional secret values while preserving constructor compatibility."""
+        """
+        Validate optional secret values while preserving constructor compatibility.
+
+        Args:
+            secret: Byte sequence containing the secret used to validate.
+            secret_name: Name of the secret.
+            none_hint: String containing the none hint used to validate.
+        """
         if secret is None:
             return
 

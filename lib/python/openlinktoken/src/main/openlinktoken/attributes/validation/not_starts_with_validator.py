@@ -28,7 +28,12 @@ class NotStartsWithValidator(SerializableAttributeValidator):
 
     @property
     def invalid_prefixes(self) -> Set[str]:
-        """Get the set of invalid prefixes."""
+        """
+        Get the set of invalid prefixes.
+
+        Returns:
+            The set of invalid prefixes.
+        """
         return self._invalid_prefixes.copy()
 
     def eval(self, value: str) -> bool:

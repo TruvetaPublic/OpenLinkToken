@@ -99,12 +99,27 @@ class TokenBuilder:
             ID = token_id
 
             def __init__(self):
+                """
+                Initialize the instance.
+                """
                 self._definition = expressions
 
             def get_identifier(self):
+                """
+                Retrieve identifier.
+
+                Returns:
+                    The identifier.
+                """
                 return self.ID
 
             def get_definition(self):
+                """
+                Retrieve definition.
+
+                Returns:
+                    The definition.
+                """
                 return self._definition
 
         return CustomToken()
@@ -139,15 +154,33 @@ class CustomTokenDefinition(BaseTokenDefinition):
         return self
 
     def get_version(self) -> str:
-        """Get the version of the token definition."""
+        """
+        Get the version of the token definition.
+
+        Returns:
+            The version of the token definition.
+        """
         return "2.0-custom"
 
     def get_token_identifiers(self) -> set:
-        """Get all token identifiers."""
+        """
+        Get all token identifiers.
+
+        Returns:
+            The all token identifiers.
+        """
         return set(self.tokens.keys())
 
     def get_token_definition(self, token_id: str) -> List[AttributeExpression]:
-        """Get the token definition for a given token identifier."""
+        """
+        Get the token definition for a given token identifier.
+
+        Args:
+            token_id: Identifier of the token or rule to process.
+
+        Returns:
+            The token definition for a given token identifier.
+        """
         token = self.tokens.get(token_id)
         if token:
             return token.get_definition()

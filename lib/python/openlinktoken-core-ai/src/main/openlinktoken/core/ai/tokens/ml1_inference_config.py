@@ -29,7 +29,17 @@ class ML1InferenceConfig:
         configured_batch_size: int = DEFAULT_BATCH_SIZE,
         configured_num_threads: int = DEFAULT_NUM_THREADS,
     ) -> None:
-        """Apply ML1 runtime configuration."""
+        """
+        Apply ML1 runtime configuration.
+
+        Args:
+            enable_ml1: Whether to enable ml1.
+            configured_model_path: Filesystem path to the configured model handled by the operation.
+            configured_tokenizer_path: Filesystem path to the configured tokenizer handled by the operation.
+            configured_max_sequence_length: Numeric configured max sequence length value used to configure.
+            configured_batch_size: Numeric configured batch size value used to configure.
+            configured_num_threads: Numeric configured num threads value used to configure.
+        """
         if configured_max_sequence_length <= 0:
             raise ValueError("ML1 max sequence length must be greater than zero.")
         if configured_batch_size <= 0:
@@ -54,30 +64,60 @@ class ML1InferenceConfig:
 
     @classmethod
     def is_enabled(cls) -> bool:
-        """Return whether ML1 inference is enabled."""
+        """
+        Return whether ML1 inference is enabled.
+
+        Returns:
+            Whether ML1 inference is enabled.
+        """
         return cls._enabled
 
     @classmethod
     def get_model_path(cls) -> str:
-        """Return configured ONNX model path."""
+        """
+        Return configured ONNX model path.
+
+        Returns:
+            The model path value returned by the operation.
+        """
         return cls._model_path
 
     @classmethod
     def get_tokenizer_path(cls) -> str:
-        """Return configured tokenizer path."""
+        """
+        Return configured tokenizer path.
+
+        Returns:
+            The tokenizer path value returned by the operation.
+        """
         return cls._tokenizer_path
 
     @classmethod
     def get_max_sequence_length(cls) -> int:
-        """Return configured maximum sequence length."""
+        """
+        Return configured maximum sequence length.
+
+        Returns:
+            The max sequence length value returned by the operation.
+        """
         return cls._max_sequence_length
 
     @classmethod
     def get_batch_size(cls) -> int:
-        """Return configured inference batch size."""
+        """
+        Return configured inference batch size.
+
+        Returns:
+            The batch size value returned by the operation.
+        """
         return cls._batch_size
 
     @classmethod
     def get_num_threads(cls) -> int:
-        """Return configured ORT intra/inter-op thread count."""
+        """
+        Return configured ORT intra/inter-op thread count.
+
+        Returns:
+            The num threads value returned by the operation.
+        """
         return cls._num_threads

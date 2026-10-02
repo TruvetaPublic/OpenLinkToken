@@ -107,12 +107,28 @@ public final class AttributeExpression implements Serializable {
         return result;
     }
 
+    /**
+     * Creates the exception used when an expression cannot be evaluated.
+     *
+     * @param value the value being processed
+     * @param expression the expression that failed
+     * @param innerException the underlying cause, if any
+     * @return an exception describing the failed evaluation
+     */
     private static IllegalArgumentException evalError(String value, String expression, Throwable innerException) {
         return new IllegalArgumentException(
                 String.format("Unable to evaluate expression [%s] over value [%s].", expression, value),
                 innerException);
     }
 
+    /**
+     * Applies one operation in an attribute expression pipeline.
+     *
+     * @param value the value to transform
+     * @param expression the operation and its optional arguments
+     * @return the transformed value
+     * @throws IllegalArgumentException if the operation or its arguments are invalid
+     */
     private static String eval(String value, String expression) {
         if (value == null || expression == null) {
             throw evalError(value, expression, null);
@@ -157,6 +173,15 @@ public final class AttributeExpression implements Serializable {
     }
 
     // Substring expression S(start,count)
+    /**
+     * Extracts a substring using the start and end indexes supplied by the expression.
+     *
+     * @param value the value to slice
+     * @param expression the complete expression, used in error reporting
+     * @param args the start and end indexes
+     * @return the requested substring
+     * @throws IllegalArgumentException if the indexes are malformed or out of range
+     */
     private static String S(String value, String expression, String[] args) {
 
         if (args.length != 2) {
@@ -177,6 +202,15 @@ public final class AttributeExpression implements Serializable {
     }
 
     // Replace expression R(oldString,newString)
+    /**
+     * Replaces all occurrences of the quoted old string with the quoted new string.
+     *
+     * @param value the value to update
+     * @param expression the complete expression, used in error reporting
+     * @param args the quoted old and new strings
+     * @return the updated value
+     * @throws IllegalArgumentException if the expression arguments are malformed
+     */
     private static String R(String value, String expression, String[] args) {
 
         if (args.length != 2) {
@@ -195,6 +229,15 @@ public final class AttributeExpression implements Serializable {
     }
 
     // RegExe match M(regex)
+    /**
+     * Concatenates the substrings matched by the supplied regular expression.
+     *
+     * @param value the value to search
+     * @param expression the complete expression, used in error reporting
+     * @param args the regular expression
+     * @return the concatenated matches, or an empty string if there are none
+     * @throws IllegalArgumentException if the expression arguments or regular expression are invalid
+     */
     private static String M(String value, String expression, String[] args) {
 
         if (args.length != 1) {
@@ -217,6 +260,14 @@ public final class AttributeExpression implements Serializable {
     }
 
     // Date expression
+    /**
+     * Parses and formats a date using the {@code yyyy-MM-dd} pattern.
+     *
+     * @param value the date value to parse
+     * @param expression the complete expression, used in error reporting
+     * @return the date formatted as {@code yyyy-MM-dd}
+     * @throws IllegalArgumentException if the value cannot be parsed
+     */
     private static String D(String value, String expression) {
         // Supported date formats, and will be changed to "yyyy-MM-dd"
         // If the date is not in the supported formats, an exception will be thrown.

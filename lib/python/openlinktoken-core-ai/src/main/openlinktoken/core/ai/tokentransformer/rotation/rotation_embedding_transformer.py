@@ -29,7 +29,12 @@ _CACHE_ROOT_ENV = "OLT_ROTATION_CACHE_DIR"
 
 
 def _algorithm_fingerprint() -> str:
-    """Return a fingerprint that invalidates caches when generation code changes."""
+    """
+    Return a fingerprint that invalidates caches when generation code changes.
+
+    Returns:
+        String produced by algorithm fingerprint.
+    """
     digest = hashlib.sha256()
     digest.update(_CACHE_VERSION.encode("utf-8"))
     digest.update(np.__version__.encode("utf-8"))
@@ -43,7 +48,12 @@ _CACHE_ALGORITHM_FINGERPRINT = _algorithm_fingerprint()
 
 
 def _cache_root() -> Optional[Path]:
-    """Return the configured cache root, or None when no home directory is available."""
+    """
+    Return the configured cache root, or None when no home directory is available.
+
+    Returns:
+        Path] instance produced by cache root.
+    """
     try:
         configured_root = os.getenv(_CACHE_ROOT_ENV, "").strip()
         if configured_root:
@@ -60,7 +70,18 @@ def _matrix_cache_path(
     dimension: int,
     hash_dimension: int,
 ) -> Optional[Path]:
-    """Return the private cache path for one deterministic matrix configuration."""
+    """
+    Return the private cache path for one deterministic matrix configuration.
+
+    Args:
+        iv: Rotation initialization vector used in the matrix-cache key.
+        rotation_count: Number of token rotations to generate or apply.
+        dimension: Embedding dimension used in the matrix-cache filename.
+        hash_dimension: Hash dimension used in the matrix-cache filename.
+
+    Returns:
+        Deterministic matrix-cache path, or None when the cache directory is unavailable.
+    """
     cache_key = "\x00".join(
         (
             _CACHE_VERSION,
@@ -82,7 +103,18 @@ def _load_cached_matrices(
     dimension: int,
     hash_dimension: int,
 ) -> Optional[List[np.ndarray]]:
-    """Load validated leading matrix rows from the local cache when available."""
+    """
+    Load validated leading matrix rows from the local cache when available.
+
+    Args:
+        iv: String containing the iv used to load.
+        rotation_count: Number of token rotations to generate or apply.
+        dimension: Numeric dimension value used to load.
+        hash_dimension: Numeric hash dimension value used to load.
+
+    Returns:
+        Loaded validated leading matrix rows from the local cache when available.
+    """
     if rotation_count <= 0:
         return []
 
@@ -128,7 +160,16 @@ def _write_cached_matrices(
     hash_dimension: int,
     matrices: List[np.ndarray],
 ) -> None:
-    """Atomically write leading matrix rows to a private best-effort cache."""
+    """
+    Atomically write leading matrix rows to a private best-effort cache.
+
+    Args:
+        iv: String containing the iv used to write.
+        rotation_count: Number of token rotations to generate or apply.
+        dimension: Numeric dimension value used to write.
+        hash_dimension: Numeric hash dimension value used to write.
+        matrices: Sequence of matrices values to write.
+    """
     if rotation_count <= 0:
         return
 

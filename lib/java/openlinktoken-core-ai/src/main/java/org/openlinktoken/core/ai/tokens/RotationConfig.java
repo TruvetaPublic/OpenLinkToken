@@ -38,6 +38,9 @@ public final class RotationConfig {
     private static volatile double maxVal = DEFAULT_MAX_VAL;
     private static volatile double[] dimensionBias = null;
 
+    /**
+     * Prevents instances of this configuration holder.
+     */
     private RotationConfig() {
     }
 

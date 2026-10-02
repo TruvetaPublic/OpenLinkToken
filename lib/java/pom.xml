@@ -211,7 +211,7 @@
                         <configLocation>checkstyle.xml</configLocation>
                         <failsOnError>true</failsOnError>
                         <consoleOutput>true</consoleOutput>
-                        <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                        <includeTestSourceDirectory>false</includeTestSourceDirectory>
                         <excludes>**/package-info.java</excludes>
                     </configuration>
                     <executions>

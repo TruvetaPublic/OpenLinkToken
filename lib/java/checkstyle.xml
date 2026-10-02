@@ -9,5 +9,13 @@
     <module name="RedundantImport"/>
     <module name="UnusedImports"/>
     <module name="AvoidStarImport"/>
+    <module name="MissingJavadocType">
+      <property name="scope" value="private"/>
+    </module>
+    <module name="MissingJavadocMethod">
+      <property name="scope" value="private"/>
+      <property name="minLineCount" value="0"/>
+      <property name="allowedAnnotations" value=""/>
+    </module>
   </module>
 </module>

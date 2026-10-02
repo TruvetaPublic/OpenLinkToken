@@ -21,15 +21,18 @@ public class BirthYearAttribute extends YearAttribute {
     private static final String NAME = "BirthYear";
     private static final String[] ALIASES = new String[] { NAME, "YearOfBirth" };
 
+    /** Creates a birth-year attribute with the standard birth-year range validator. */
     public BirthYearAttribute() {
         super(List.of(new YearRangeValidator()));
     }
 
+    /** {@inheritDoc} The canonical attribute name is {@code "BirthYear"}. */
     @Override
     public String getName() {
         return NAME;
     }
 
+    /** {@inheritDoc} Accepts {@code "BirthYear"} and {@code "YearOfBirth"}. */
     @Override
     public String[] getAliases() {
         return ALIASES;

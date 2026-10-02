@@ -20,6 +20,9 @@ class BirthYearAttribute(YearAttribute):
     ALIASES = [NAME, "YearOfBirth"]
 
     def __init__(self):
+        """
+        Initialize the instance.
+        """
         super().__init__(additional_validators=[YearRangeValidator()])
 
     def get_name(self) -> str:

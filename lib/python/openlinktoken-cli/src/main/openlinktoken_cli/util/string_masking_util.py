@@ -35,5 +35,13 @@ class StringMaskingUtil:
 
 
 def mask_string(input_str: str | None) -> str:
-    """Mask a sensitive string for logging."""
+    """
+    Mask a sensitive string for logging.
+
+    Args:
+        input_str: Input text to mask before logging or display.
+
+    Returns:
+        String produced by mask string.
+    """
     return StringMaskingUtil.mask_string(input_str)

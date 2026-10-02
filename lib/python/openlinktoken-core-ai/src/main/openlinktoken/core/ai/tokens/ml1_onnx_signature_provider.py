@@ -35,11 +35,18 @@ _T1_ATTRIBUTE_INSTANCES = {expr.attribute_class: expr.attribute_class() for expr
 
 
 def _compute_t1_signature(person_attributes: Dict[str, str]) -> Optional[str]:
-    """Compute the raw (pre-transformer) T1 signature from person attributes.
+    """
+    Compute the raw (pre-transformer) T1 signature from person attributes.
 
     Applies the same attribute-expression pipeline as the T1 token definition:
     LASTNAME|FIRSTINITIAL|SEX|BIRTHDATE (each normalized via its expression).
     Returns None when any required T1 attribute is absent or invalid.
+
+    Args:
+        person_attributes: Mapping of person-attribute identifiers to their input values.
+
+    Returns:
+        Computed the raw (pre-transformer) T1 signature from person attributes.
     """
     values = []
     for attr_expr in _T1_DEFINITION:
@@ -63,7 +70,15 @@ def _compute_t1_signature(person_attributes: Dict[str, str]) -> Optional[str]:
 def _compute_blocking_key(
     person_attributes: Dict[str, str],
 ) -> Optional[str]:
-    """Compute the SHA-256 T1 blocking key used by PersonMatching rotations."""
+    """
+    Compute the SHA-256 T1 blocking key used by PersonMatching rotations.
+
+    Args:
+        person_attributes: Mapping of person-attribute identifiers to their input values.
+
+    Returns:
+        Computed the SHA-256 T1 blocking key used by PersonMatching rotations.
+    """
     t1_signature = _compute_t1_signature(person_attributes)
     if t1_signature is None:
         return None
@@ -90,7 +105,16 @@ def _hash_rotation_values(rotation_values: List[str], blocking_key: Optional[str
 
 
 def _build_rotation_signature(rotation_values: List[str], blocking_key: Optional[str]) -> str:
-    """Build a hashed rotation signature or return the canonical blank token."""
+    """
+    Build a hashed rotation signature or return the canonical blank token.
+
+    Args:
+        rotation_values: Sequence of rotation values values to build.
+        blocking_key: Key used to build the blocking.
+
+    Returns:
+        Built a hashed rotation signature or return the canonical blank token.
+    """
     hashed_values = _hash_rotation_values(rotation_values, blocking_key)
     return Token.BLANK if hashed_values is None else ",".join(hashed_values)
 
@@ -118,16 +142,34 @@ class ML1OnnxSignatureProvider:
     _rotation_transformer_lock: ClassVar[Lock] = Lock()
 
     def get_token_id(self) -> str:
-        """Return the registry identifier for the ML1 inference provider."""
+        """
+        Return the registry identifier for the ML1 inference provider.
+
+        Returns:
+            The token id value returned by the operation.
+        """
         return ML1Token.TOKEN_ID
 
     def is_enabled(self) -> bool:
-        """Return whether ML1 inference is enabled in the runtime configuration."""
+        """
+        Return whether ML1 inference is enabled in the runtime configuration.
+
+        Returns:
+            Whether ML1 inference is enabled in the runtime configuration.
+        """
         return ML1InferenceConfig.is_enabled()
 
     @classmethod
     def _get_rotation_transformer(cls, embedding_dim: int) -> Optional[RotationEmbeddingTransformer]:
-        """Return the (lazily built) rotation transformer, or None if rotation is disabled."""
+        """
+        Return the (lazily built) rotation transformer, or None if rotation is disabled.
+
+        Args:
+            embedding_dim: Numeric embedding dim value used to retrieve.
+
+        Returns:
+            The rotation transformer value returned by the operation.
+        """
         if not RotationConfig.is_enabled():
             return None
         if cls._rotation_transformer is None:
@@ -146,10 +188,17 @@ class ML1OnnxSignatureProvider:
         return cls._rotation_transformer
 
     def generate_signature(self, person_attributes: Dict[str, str]) -> Optional[str]:
-        """Generate a single ML1 signature via ONNX inference.
+        """
+        Generate a single ML1 signature via ONNX inference.
 
         Pipeline: ONNX embed → rotate → quantize → SHA-256 hash with T1 signature.
         Falls back to raw hex embedding string when rotation is disabled.
+
+        Args:
+            person_attributes: Mapping of person-attribute identifiers to their input values.
+
+        Returns:
+            Generated a single ML1 signature via ONNX inference.
         """
         result = TokenGeneratorResult()
         payload_json = self.build_ml1_payload(person_attributes, result)
@@ -169,10 +218,17 @@ class ML1OnnxSignatureProvider:
             return None
 
     def generate_batch(self, rows: List[Dict[str, str]]) -> InferenceBatchResult:
-        """Generate ML1 signatures for a batch of records.
+        """
+        Generate ML1 signatures for a batch of records.
 
         Pipeline per record: ONNX embed → rotate → quantize → SHA-256 hash with T1 signature.
         Falls back to raw hex embedding string when rotation is disabled.
+
+        Args:
+            rows: Rows to generate.
+
+        Returns:
+            Generated ML1 signatures for a batch of records.
         """
         payloads: List[Optional[str]] = []
         valid_indices: List[int] = []
@@ -217,10 +273,19 @@ class ML1OnnxSignatureProvider:
         person_attributes: Dict[str, str],
         result: TokenGeneratorResult,
     ) -> Optional[str]:
-        """Build the deterministic JSON payload for ML1 inference.
+        """
+        Build the deterministic JSON payload for ML1 inference.
 
         Returns None if any required field is missing, fails validation, or normalizes to empty.
         Field order: PostalCode, Birthdate, GivenName, Surname, Gender.
+
+        Args:
+            person_attributes: Mapping of person-attribute identifiers to their input values.
+            result: Accumulator used to record invalid input attribute identifiers.
+
+        Returns:
+            JSON payload for ML1 inference, or None when a required field is missing,
+            invalid, or empty.
         """
         payload: Dict[str, str] = {}
         for field_id, field_name, attr_cls in _ML1_FIELDS:

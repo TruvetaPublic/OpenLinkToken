@@ -39,6 +39,12 @@ public final class AttributeField implements Serializable {
         this.attributeClass = Objects.requireNonNull(attributeClass, "attributeClass must not be null");
     }
 
+    /**
+     * Compares this field with another field by identifier.
+     *
+     * @param o the object to compare
+     * @return {@code true} if the other object is an {@code AttributeField} with the same field ID
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -50,11 +56,21 @@ public final class AttributeField implements Serializable {
         return fieldId.equals(other.fieldId);
     }
 
+    /**
+     * Returns the hash code of this field's identifier.
+     *
+     * @return the identifier's hash code
+     */
     @Override
     public int hashCode() {
         return fieldId.hashCode();
     }
 
+    /**
+     * Returns a string containing this field's identifier and attribute type.
+     *
+     * @return the field description
+     */
     @Override
     public String toString() {
         return "AttributeField{fieldId='" + fieldId + "', attributeClass=" + attributeClass.getSimpleName() + "}";

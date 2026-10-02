@@ -50,7 +50,12 @@ class PersonAttributesZipWriter(PersonAttributesWriter):
 
     @property
     def zip_path(self) -> str:
-        """The path of the ZIP file that will be written."""
+        """
+        The path of the ZIP file that will be written.
+
+        Returns:
+            String produced by zip path.
+        """
         return self._zip_path
 
     def write_attributes(self, data: Dict[str, str]) -> None:

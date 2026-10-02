@@ -106,9 +106,21 @@ class CanadianPostalCodeAttribute(BaseAttribute):
         return True
 
     def get_name(self) -> str:
+        """
+        Retrieve name.
+
+        Returns:
+            The name.
+        """
         return self.NAME
 
     def get_aliases(self) -> List[str]:
+        """
+        Retrieve aliases.
+
+        Returns:
+            The aliases.
+        """
         return self.ALIASES.copy()
 
     def normalize(self, value: str) -> str:
@@ -126,6 +138,12 @@ class CanadianPostalCodeAttribute(BaseAttribute):
         - 6-character format returns uppercase format with space (e.g., "k1a0a6" becomes "K1A 0A6")
         If the input value is null or doesn't match Canadian postal pattern, the original
         trimmed value is returned.
+
+        Args:
+            value: Postal-code value to normalize to the Canadian format.
+
+        Returns:
+            Normalized a Canadian postal code to standard A1A 1A1 format.
         """
         if not value:
             return value

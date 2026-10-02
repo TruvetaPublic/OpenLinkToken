@@ -39,6 +39,12 @@ logger = logging.getLogger(__name__)
 def _temporary_sys_path(path: Optional[Path]):
     """
     Temporarily add ``path`` to ``sys.path`` for dynamic imports.
+
+    Args:
+        path: Directory to temporarily add to Python's module search path.
+
+    Yields:
+        Control passes to the with block while the temporary directories are on sys.path.
     """
     if path is None:
         yield
@@ -66,6 +72,14 @@ def _resolve_extension_command_name(
 ) -> Optional[str]:
     """
     Import the extension class and return its ``command_name`` attribute.
+
+    Args:
+        module_name: Name of the module.
+        class_name: Name of the class.
+        src_dir: Directory used for the src.
+
+    Returns:
+        Resolved extension command name as a str] instance.
     """
     try:
         from openlinktoken_cli.extension.extension_interface import OpenLinkTokenExtension
@@ -130,7 +144,15 @@ _VALID_DIST_NAME_RE = re.compile(r"^[A-Za-z0-9]([A-Za-z0-9._-]*[A-Za-z0-9])?$")
 
 
 def _validate_dist_name(dist_name: str) -> bool:
-    """Return *True* if *dist_name* is a valid PEP 508 distribution name."""
+    """
+    Return *True* if *dist_name* is a valid PEP 508 distribution name.
+
+    Args:
+        dist_name: Name of the dist.
+
+    Returns:
+        True when the check succeeds; otherwise, False.
+    """
     return bool(_VALID_DIST_NAME_RE.match(dist_name))
 
 
@@ -143,7 +165,12 @@ class ExtensionCommand:
 
     @staticmethod
     def register_subcommand(subparsers) -> None:
-        """Register the ``extension`` subcommand and its sub-subcommands."""
+        """
+        Register the ``extension`` subcommand and its sub-subcommands.
+
+        Args:
+            subparsers: Argument-parser subparsers to configure with command handlers.
+        """
         parser = subparsers.add_parser(
             "extension",
             help="Manage Open Link Token CLI extensions",
@@ -216,7 +243,15 @@ class ExtensionCommand:
 
     @staticmethod
     def _install(args) -> int:
-        """Handle ``extension install <url>``."""
+        """
+        Handle ``extension install <url>``.
+
+        Args:
+            args: Parsed command-line options for this command.
+
+        Returns:
+            Integer value produced by install.
+        """
         manifest_option = getattr(args, "manifest", None)
         if not isinstance(manifest_option, str):
             manifest_option = None
@@ -274,7 +309,16 @@ class ExtensionCommand:
 
     @staticmethod
     def _install_bootstrap_manifest(payload: object, *, source_url: str) -> int:
-        """Validate a bootstrap manifest and install its declared wheel."""
+        """
+        Validate a bootstrap manifest and install its declared wheel.
+
+        Args:
+            payload: Structured payload to parse, validate, or encrypt.
+            source_url: URL for the source resource.
+
+        Returns:
+            Validated a bootstrap manifest and install its declared wheel.
+        """
         parsed_source = urlparse(source_url)
         allow_local = parsed_source.scheme == "file" or (
             not parsed_source.scheme and Path(source_url).expanduser().is_file()
@@ -303,7 +347,15 @@ class ExtensionCommand:
 
     @staticmethod
     def _list(args) -> int:  # noqa: ARG004
-        """Handle ``extension list``."""
+        """
+        Handle ``extension list``.
+
+        Args:
+            args: Parsed command-line options for this command.
+
+        Returns:
+            The result value returned by the operation.
+        """
         rows: dict[str, dict] = {}
 
         # Registry entries (installed via `extension install`).
@@ -375,7 +427,15 @@ class ExtensionCommand:
 
     @staticmethod
     def _uninstall(args) -> int:
-        """Handle ``extension uninstall <name>``."""
+        """
+        Handle ``extension uninstall <name>``.
+
+        Args:
+            args: Parsed command-line options for this command.
+
+        Returns:
+            Integer value produced by uninstall.
+        """
         name: str = args.name
         registry = ExtensionRegistry.load()
 
@@ -458,7 +518,15 @@ class ExtensionCommand:
 
     @staticmethod
     def _update(args) -> int:
-        """Handle ``extension update <name>`` and ``extension update --all``."""
+        """
+        Handle ``extension update <name>`` and ``extension update --all``.
+
+        Args:
+            args: Parsed command-line options for this command.
+
+        Returns:
+            Updated result as a integer value.
+        """
         registry = ExtensionRegistry.load()
         update_all = getattr(args, "all", False)
         names = sorted(registry) if update_all else [args.name]
@@ -487,7 +555,19 @@ class ExtensionCommand:
         skip_confirm: bool,
         require_manifest: bool = False,
     ) -> int:
-        """Resolve, validate, and optionally install one manifest update."""
+        """
+        Resolve, validate, and optionally install one manifest update.
+
+        Args:
+            name: Name identifying the item being processed.
+            metadata: Metadata to validate, normalize, or serialize.
+            dry_run: Whether to dry run.
+            skip_confirm: Whether to skip confirm.
+            require_manifest: Whether to require manifest.
+
+        Returns:
+            Updated one as a integer value.
+        """
         if metadata is None:
             print(f"[{name}] failed: extension is not installed.", file=sys.stderr)
             return 1
@@ -565,7 +645,15 @@ class ExtensionCommand:
 
     @staticmethod
     def _fetch_manifest(url: str) -> dict:
-        """Fetch a data-only HTTPS manifest, using a bounded local cache."""
+        """
+        Fetch a data-only HTTPS manifest, using a bounded local cache.
+
+        Args:
+            url: URL for the remote manifest, artifact, or release resource to fetch.
+
+        Returns:
+            Mapping produced by fetch manifest.
+        """
         cache_path = ExtensionCommand._manifest_cache_path(url)
         now = datetime.now(timezone.utc)
         try:
@@ -602,7 +690,15 @@ class ExtensionCommand:
 
     @staticmethod
     def _manifest_cache_path(url: str) -> Path:
-        """Return a stable cache path for one vendor manifest URL."""
+        """
+        Return a stable cache path for one vendor manifest URL.
+
+        Args:
+            url: URL for the remote manifest, artifact, or release resource to fetch.
+
+        Returns:
+            A stable cache path for one vendor manifest URL.
+        """
         key = hashlib.sha256(url.encode("utf-8")).hexdigest()
         return get_openlinktoken_home() / "extension-manifests" / f"{key}.json"
 
@@ -617,6 +713,11 @@ class ExtensionCommand:
 
         Supports ``https://`` (via ``urllib.request.urlopen``) and
         ``file://`` (via ``shutil.copy``).
+
+        Args:
+            url: URL for the remote manifest, artifact, or release resource to fetch.
+            dest: Destination path for the downloaded extension wheel.
+
 
         Returns:
             ``True`` on success, ``False`` on failure (error printed to stderr).
@@ -674,6 +775,11 @@ class ExtensionCommand:
         """
         Safely extract a wheel, ensuring no archive entry escapes *dest_dir*.
 
+        Args:
+            zf: Zf value to extract.
+            dest_dir: Directory used for the dest.
+
+
         Raises:
             ValueError: If an entry's resolved path is outside *dest_dir*.
         """
@@ -724,6 +830,12 @@ class ExtensionCommand:
         Args:
             whl_path: Path to the downloaded ``.whl`` file.
             source_url: Original URL used to fetch the wheel (stored in registry).
+            expected_sha256: Expected sha256 used to check the actual result.
+            signature: Artifact signature metadata to validate before installation.
+            update_manifest_url: URL for the update manifest resource.
+            core_range: Core-version compatibility range required by the extension manifest.
+            expected_name: Expected name used to check the actual result.
+            expected_version: Expected version used to check the actual result.
 
         Returns:
             Exit code (0 on success).
@@ -914,7 +1026,25 @@ class ExtensionCommand:
         update_manifest_url: Optional[str],
         core_range: Optional[str],
     ) -> Optional[dict]:
-        """Stage, validate, and atomically activate one frozen extension."""
+        """
+        Stage, validate, and atomically activate one frozen extension.
+
+        Args:
+            zf: ZipFile archive containing the extension wheel to install.
+            ext_name: Name of the ext.
+            module_name: Name of the module.
+            class_name: Name of the class.
+            version: Version string to validate, compare, or include in generated metadata.
+            dist_name: Name of the dist.
+            source_url: URL for the source resource.
+            artifact_sha256: Expected SHA-256 digest of the wheel artifact.
+            signature: Artifact signature metadata to validate before installation.
+            update_manifest_url: URL for the update manifest resource.
+            core_range: Core-version compatibility range required by the extension manifest.
+
+        Returns:
+            Mapping produced by install frozen wheel.
+        """
         if not _validate_dist_name(ext_name):
             print(f"Error: Wheel entry-point key '{ext_name}' is not a valid extension name.", file=sys.stderr)
             return None
@@ -986,7 +1116,15 @@ class ExtensionCommand:
 
     @staticmethod
     def _sha256_file(path: Path) -> str:
-        """Return the lowercase SHA-256 digest for a file."""
+        """
+        Return the lowercase SHA-256 digest for a file.
+
+        Args:
+            path: Path to the file whose SHA-256 digest is computed.
+
+        Returns:
+            The lowercase SHA-256 digest for a file.
+        """
         digest = hashlib.sha256()
         with path.open("rb") as stream:
             for chunk in iter(lambda: stream.read(1024 * 1024), b""):
@@ -1002,6 +1140,9 @@ class ExtensionCommand:
 
         Args:
             zf: An open ZipFile handle for the wheel.
+
+        Returns:
+            A description of unsatisfied external dependencies, or ``None`` if all are bundled.
         """
         metadata_candidates = [n for n in zf.namelist() if n.endswith(".dist-info/METADATA")]
         if not metadata_candidates:
@@ -1041,6 +1182,10 @@ class ExtensionCommand:
         Parse the wheel's ``entry_points.txt`` and return the first ``openlinktoken.extensions`` entry.
 
         Also reads the ``METADATA`` file to obtain the package version and distribution name.
+
+        Args:
+            zf: Zf value to extract.
+
 
         Returns:
             ``(entry_name, module, class_name, version, dist_name)`` or ``None`` if not found.

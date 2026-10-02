@@ -20,6 +20,9 @@ class StringAttribute(BaseAttribute):
 
     def __init__(self):
         # Use default validation rules from BaseAttribute (not null or empty)
+        """
+        Initialize the instance.
+        """
         super().__init__()
 
     def get_name(self) -> str:
