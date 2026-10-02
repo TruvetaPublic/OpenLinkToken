@@ -14,7 +14,15 @@ class FileTypeDetector:
 
     @staticmethod
     def detect_input_type(path: str) -> str:
-        """Detect input file type from extension. Supports: csv, parquet."""
+        """
+        Detect input file type from extension. Supports: csv, parquet.
+
+        Args:
+            path: String containing the path used to detect.
+
+        Returns:
+            Detected input file type from extension. Supports: csv, parquet.
+        """
         suffix = Path(path).suffix.lower()
         if suffix == FileExtension.CSV:
             return FileTypeDetector.TYPE_CSV
@@ -24,7 +32,15 @@ class FileTypeDetector:
 
     @staticmethod
     def detect_output_type(path: str) -> str:
-        """Detect output file type from extension. Supports: csv, parquet, zip."""
+        """
+        Detect output file type from extension. Supports: csv, parquet, zip.
+
+        Args:
+            path: String containing the path used to detect.
+
+        Returns:
+            Detected output file type from extension. Supports: csv, parquet, zip.
+        """
         suffix = Path(path).suffix.lower()
         if suffix == FileExtension.CSV:
             return FileTypeDetector.TYPE_CSV

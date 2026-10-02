@@ -38,7 +38,12 @@ class UpdateCommand:
 
     @staticmethod
     def register_subcommand(subparsers):
-        """Register the update subcommand with the argument parser."""
+        """
+        Register the update subcommand with the argument parser.
+
+        Args:
+            subparsers: Argument-parser subparsers to configure with command handlers.
+        """
         parser = subparsers.add_parser(
             "update",
             help="Update Open Link Token CLI to the latest release",
@@ -77,7 +82,15 @@ class UpdateCommand:
 
     @staticmethod
     def execute(args) -> int:
-        """Execute the update command."""
+        """
+        Execute the update command.
+
+        Args:
+            args: Parsed command-line options for this command.
+
+        Returns:
+            Executed result as a integer value.
+        """
         current_version = Metadata.DEFAULT_VERSION
         target_version_tag = getattr(args, "target_version", None)
         dry_run = getattr(args, "dry_run", False)
@@ -190,19 +203,40 @@ class UpdateCommand:
 
     @staticmethod
     def _fetch_latest_release() -> Optional[dict]:
-        """Fetch the latest release JSON from GitHub."""
+        """
+        Fetch the latest release JSON from GitHub.
+
+        Returns:
+            Mapping produced by fetch latest release.
+        """
         url = f"{_GITHUB_API_BASE}/releases/latest"
         return UpdateCommand._get_json(url)
 
     @staticmethod
     def _fetch_release_by_tag(tag: str) -> Optional[dict]:
-        """Fetch a specific release by tag name from GitHub."""
+        """
+        Fetch a specific release by tag name from GitHub.
+
+        Args:
+            tag: GitHub release tag identifying the version to retrieve.
+
+        Returns:
+            Mapping produced by fetch release by tag.
+        """
         url = f"{_GITHUB_API_BASE}/releases/tags/{tag}"
         return UpdateCommand._get_json(url)
 
     @staticmethod
     def _get_json(url: str) -> Optional[dict]:
-        """Perform a GET request and return the parsed JSON body."""
+        """
+        Perform a GET request and return the parsed JSON body.
+
+        Args:
+            url: String containing the url used to retrieve.
+
+        Returns:
+            The json value returned by the operation.
+        """
         try:
             req = Request(url, headers={"User-Agent": "openlinktoken-cli"})
             with urlopen(req, timeout=_REQUEST_TIMEOUT_SECONDS) as resp:
@@ -216,7 +250,15 @@ class UpdateCommand:
 
     @staticmethod
     def _find_asset(release_info: dict) -> Optional[dict]:
-        """Find the release asset that matches the current platform/architecture."""
+        """
+        Find the release asset that matches the current platform/architecture.
+
+        Args:
+            release_info: Mapping of release info values used to find.
+
+        Returns:
+            Found the release asset that matches the current platform/architecture.
+        """
         assets = release_info.get("assets", [])
         raw_system = platform.system().lower()
         system = _OS_SYSTEM_ALIASES.get(raw_system, raw_system)
@@ -250,7 +292,17 @@ class UpdateCommand:
 
     @staticmethod
     def _expected_asset_names(version: str, system: str, machine: str) -> tuple[str, ...]:
-        """Return exact bundle-first asset names for a platform."""
+        """
+        Return exact bundle-first asset names for a platform.
+
+        Args:
+            version: Version string to validate, compare, or include in generated metadata.
+            system: Operating-system identifier used to select a release asset.
+            machine: Machine architecture used to select a release asset.
+
+        Returns:
+            Exact bundle-first asset names for a platform.
+        """
         if system == "linux" and machine in {"x86_64", "amd64"}:
             return (
                 f"olt-cli-{version}-linux-x64.zip",
@@ -277,7 +329,15 @@ class UpdateCommand:
 
     @staticmethod
     def _legacy_macos_suffixes(machine: str) -> tuple[str, ...]:
-        """Return legacy macOS asset suffixes compatible with the current architecture."""
+        """
+        Return legacy macOS asset suffixes compatible with the current architecture.
+
+        Args:
+            machine: Machine architecture used to select a release asset.
+
+        Returns:
+            Legacy macOS asset suffixes compatible with the current architecture.
+        """
         if machine in {"arm64", "aarch64"}:
             return ("-macos-arm64", "-macos-universal")
         if machine in {"x86_64", "amd64", "x64"}:
@@ -286,7 +346,16 @@ class UpdateCommand:
 
     @staticmethod
     def _find_checksum_asset(release_info: dict, asset_name: str) -> Optional[dict]:
-        """Find the SHA-256 checksum asset for the given asset, if available."""
+        """
+        Find the SHA-256 checksum asset for the given asset, if available.
+
+        Args:
+            release_info: Mapping of release info values used to find.
+            asset_name: Name of the asset.
+
+        Returns:
+            Found the SHA-256 checksum asset for the given asset, if available.
+        """
         for asset in release_info.get("assets", []):
             name = asset["name"]
             if name in (f"{asset_name}.sha256", f"{asset_name}.sha256sum"):
@@ -299,7 +368,16 @@ class UpdateCommand:
 
     @staticmethod
     def _download_file(url: str, dest: Path) -> bool:
-        """Download *url* to *dest*. Returns True on success."""
+        """
+        Download *url* to *dest*. Returns True on success.
+
+        Args:
+            url: URL for the remote manifest, artifact, or release resource to fetch.
+            dest: Destination path for the downloaded update archive.
+
+        Returns:
+            True when the check succeeds; otherwise, False.
+        """
         try:
             req = Request(url, headers={"User-Agent": "openlinktoken-cli"})
             with urlopen(req, timeout=_REQUEST_TIMEOUT_SECONDS) as resp, dest.open("wb") as f:
@@ -315,6 +393,13 @@ class UpdateCommand:
         Fetch a checksum file and extract the SHA-256 for *asset_name*.
 
         Returns the lowercase hex digest, or None if it cannot be parsed.
+
+        Args:
+            url: URL for the remote manifest, artifact, or release resource to fetch.
+            asset_name: Name of the asset.
+
+        Returns:
+            Str] instance produced by fetch checksum.
         """
         try:
             req = Request(url, headers={"User-Agent": "openlinktoken-cli"})
@@ -331,7 +416,15 @@ class UpdateCommand:
 
     @staticmethod
     def _sha256_file(path: Path) -> str:
-        """Compute the SHA-256 hex digest of *path*."""
+        """
+        Compute the SHA-256 hex digest of *path*.
+
+        Args:
+            path: Path to the update file whose SHA-256 digest is computed.
+
+        Returns:
+            Computed the SHA-256 hex digest of *path*.
+        """
         h = hashlib.sha256()
         with path.open("rb") as f:
             for chunk in iter(lambda: f.read(65536), b""):
@@ -344,7 +437,15 @@ class UpdateCommand:
 
     @staticmethod
     def _resolve_target_binary(expected_entrypoint_name: str) -> Optional[Path]:
-        """Locate the installed CLI entry point without selecting the interpreter."""
+        """
+        Locate the installed CLI entry point without selecting the interpreter.
+
+        Args:
+            expected_entrypoint_name: Expected entrypoint name used to check the actual result.
+
+        Returns:
+            Resolved target binary as a path] instance.
+        """
         python_interpreter = Path(sys.executable).resolve()
         target = UpdateCommand._find_target_binary()
         if target is not None:
@@ -368,6 +469,13 @@ class UpdateCommand:
         Replace the current executable with *src*.
 
         Returns 0 on success, non-zero on failure.
+
+        Args:
+            src: Path to the src used by the operation.
+            expected_entrypoint_name: Expected entrypoint name used to check the actual result.
+
+        Returns:
+            Replaced binary as a integer value.
         """
         target = UpdateCommand._resolve_target_binary(expected_entrypoint_name)
         if target is None:
@@ -396,7 +504,16 @@ class UpdateCommand:
 
     @staticmethod
     def _replace_bundle(src: Path, expected_entrypoint_name: str) -> int:
-        """Extract and install a complete PyInstaller bundle."""
+        """
+        Extract and install a complete PyInstaller bundle.
+
+        Args:
+            src: Path to the src used by the operation.
+            expected_entrypoint_name: Expected entrypoint name used to check the actual result.
+
+        Returns:
+            Extracted and install a complete PyInstaller bundle.
+        """
         target = UpdateCommand._resolve_target_binary(expected_entrypoint_name)
         if target is None:
             return UpdateCommand._print_target_not_found_error()
@@ -429,7 +546,13 @@ class UpdateCommand:
 
     @staticmethod
     def _extract_bundle(archive: zipfile.ZipFile, destination: Path) -> None:
-        """Extract a bundle after rejecting unsafe archive paths."""
+        """
+        Extract a bundle after rejecting unsafe archive paths.
+
+        Args:
+            archive: Archive value to extract.
+            destination: Directory where the update bundle contents are extracted.
+        """
         destination_root = destination.resolve()
         for member in archive.infolist():
             member_path = Path(member.filename)
@@ -442,7 +565,17 @@ class UpdateCommand:
 
     @staticmethod
     def _replace_posix_bundle(source_bundle: Path, target: Path, entrypoint_name: str) -> int:
-        """Atomically switch the POSIX launcher to a staged bundle."""
+        """
+        Atomically switch the POSIX launcher to a staged bundle.
+
+        Args:
+            source_bundle: Path to the source bundle used by the operation.
+            target: Path to the target used by the operation.
+            entrypoint_name: Name of the entrypoint.
+
+        Returns:
+            Replaced posix bundle as a integer value.
+        """
         bundle_dir = target.resolve().parent if target.is_symlink() else target.parent / ".olt"
         staged_bundle = bundle_dir.parent / f".olt-staged-{os.getpid()}"
         old_bundle = bundle_dir.parent / f".olt-previous-{os.getpid()}"
@@ -473,7 +606,16 @@ class UpdateCommand:
 
     @staticmethod
     def _schedule_windows_bundle_replacement(source_bundle: Path, target: Path) -> int:
-        """Schedule replacement after the running Windows executable exits."""
+        """
+        Schedule replacement after the running Windows executable exits.
+
+        Args:
+            source_bundle: Path to the source bundle used by the operation.
+            target: Path to the target used by the operation.
+
+        Returns:
+            Integer value produced by schedule windows bundle replacement.
+        """
         stage_dir = Path(tempfile.mkdtemp(prefix="olt-update-"))
         script = Path(tempfile.gettempdir()) / f"olt-update-{os.getpid()}.cmd"
         backup_dir = Path(tempfile.gettempdir()) / f"olt-update-previous-{os.getpid()}"
@@ -510,7 +652,12 @@ class UpdateCommand:
 
     @staticmethod
     def _print_target_not_found_error() -> int:
-        """Report that the active standalone executable could not be located."""
+        """
+        Report that the active standalone executable could not be located.
+
+        Returns:
+            Printed target not found error as a integer value.
+        """
         print(
             "Error: Unable to locate the olt executable to update.\n"
             "The updater could not find an 'olt' binary on PATH and\n"
@@ -524,7 +671,12 @@ class UpdateCommand:
 
     @staticmethod
     def _find_target_binary() -> Optional[Path]:
-        """Locate the 'olt' script on PATH."""
+        """
+        Locate the 'olt' script on PATH.
+
+        Returns:
+            The target binary value returned by the operation.
+        """
         target = shutil.which("olt")
         return Path(target) if target else None
 
@@ -534,4 +686,14 @@ class UpdateCommand:
 
     @staticmethod
     def _is_newer(candidate: str, current: str) -> bool:
+        """
+        Determine whether newer.
+
+        Args:
+            candidate: String containing the candidate used to check.
+            current: String containing the current used to check.
+
+        Returns:
+            Whether newer.
+        """
         return VersionChecker._is_newer(candidate, current)

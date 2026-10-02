@@ -22,7 +22,12 @@ class GenerateKeyPairCommand:
 
     @staticmethod
     def register_subcommand(subparsers) -> None:
-        """Register the generate-key-pair subcommand with the argument parser."""
+        """
+        Register the generate-key-pair subcommand with the argument parser.
+
+        Args:
+            subparsers: Argument-parser subparsers to configure with command handlers.
+        """
         parser = subparsers.add_parser(
             "generate-key-pair",
             help="Generate an ECDH public/private key pair and write keys to ~/.openlinktoken/",
@@ -129,18 +134,33 @@ class GenerateKeyPairCommand:
 
     @staticmethod
     def _resolve_key_name(name: Optional[str]) -> str:
-        """Resolve and validate the requested key basename."""
+        """
+        Resolve and validate the requested key basename.
+
+        Args:
+            name: Name identifying the item being processed.
+
+        Returns:
+            Resolved and validate the requested key basename.
+        """
         from openlinktoken_cli.util.ec_key_utils import resolve_key_name
 
         return resolve_key_name(name)
 
     @staticmethod
     def generate_key_pair(curve: str) -> Tuple[bytes, bytes]:
-        """Generate an EC key pair for the specified curve.
+        """
+        Generate an EC key pair for the specified curve.
 
         .. deprecated::
             Call ``openlinktoken_cli.util.ec_key_utils.generate_key_pair`` directly.
             This shim exists only for backward compatibility.
+
+        Args:
+            curve: Elliptic-curve name used to generate the key pair.
+
+        Returns:
+            Generated an EC key pair for the specified curve.
         """
         from openlinktoken_cli.util.ec_key_utils import generate_key_pair
 
@@ -148,14 +168,27 @@ class GenerateKeyPairCommand:
 
     @staticmethod
     def _ensure_directory(directory: Path) -> None:
-        """Ensure the directory exists, is not a symlink, and has 700 permissions."""
+        """
+        Ensure the directory exists, is not a symlink, and has 700 permissions.
+
+        Args:
+            directory: Path to the directory used by the operation.
+        """
         from openlinktoken_cli.util.ec_key_utils import ensure_directory
 
         return ensure_directory(directory)
 
     @staticmethod
     def _write_key(path: Path, pem_bytes: bytes, mode: int, overwrite: bool = True) -> None:
-        """Write PEM bytes to a file using secure creation flags and set the specified permissions."""
+        """
+        Write PEM bytes to a file using secure creation flags and set the specified permissions.
+
+        Args:
+            path: Destination path for the generated private or public key file.
+            pem_bytes: Byte sequence containing the pem bytes used to write.
+            mode: Numeric mode value used to write.
+            overwrite: Whether to overwrite.
+        """
         from openlinktoken_cli.util.ec_key_utils import write_key
 
         return write_key(path, pem_bytes, mode, overwrite=overwrite)

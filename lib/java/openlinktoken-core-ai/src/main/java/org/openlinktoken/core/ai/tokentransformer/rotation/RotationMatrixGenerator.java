@@ -36,6 +36,9 @@ public final class RotationMatrixGenerator {
 
     private static final double TWO_PI = 2.0 * Math.PI;
 
+    /**
+     * Prevents instances of this static matrix-generation utility.
+     */
     private RotationMatrixGenerator() {
     }
 

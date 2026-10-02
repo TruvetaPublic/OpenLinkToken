@@ -26,6 +26,7 @@ public class T5Token implements Token {
 
     private final ArrayList<AttributeExpression> definition = new ArrayList<>();
 
+    /** Builds the attribute-expression definition for token T5. */
     public T5Token() {
         definition.add(new AttributeExpression(FieldIds.LAST_NAME.getFieldId(), LastNameAttribute.class, "T|U"));
         definition.add(
@@ -33,11 +34,13 @@ public class T5Token implements Token {
         definition.add(new AttributeExpression(FieldIds.SEX.getFieldId(), SexAttribute.class, "T|U"));
     }
 
+    /** {@inheritDoc} This token uses the identifier {@code "T5"}. */
     @Override
     public String getIdentifier() {
         return ID;
     }
 
+    /** {@inheritDoc} Provides the ordered attribute expressions that define token {@code "T5"}. */
     @Override
     public ArrayList<AttributeExpression> getDefinition() {
         return definition;

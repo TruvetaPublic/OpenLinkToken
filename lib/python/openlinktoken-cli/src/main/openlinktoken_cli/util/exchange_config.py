@@ -29,7 +29,17 @@ def resolve_exchange_config(
     private_key_path: str | None = None,
     private_key_env: str | None = None,
 ) -> ResolvedExchangeConfig:
-    """Resolve an exchange-config path plus CLI private-key options into shared exchange state."""
+    """
+    Resolve an exchange-config path plus CLI private-key options into shared exchange state.
+
+    Args:
+        exchange_config_path: Path to the exchange-config file to load.
+        private_key_path: Path to the private-key PEM file.
+        private_key_env: Environment-variable name containing the private-key PEM.
+
+    Returns:
+        Resolved an exchange-config path plus CLI private-key options into shared exchange state.
+    """
     if private_key_path and private_key_env:
         raise ValueError("Cannot combine --private-key and --private-key-env.")
 

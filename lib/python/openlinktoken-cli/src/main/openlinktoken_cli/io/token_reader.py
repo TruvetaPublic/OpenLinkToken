@@ -13,12 +13,22 @@ class TokenReader(ABC, Iterator[Dict[str, str]]):
 
     @abstractmethod
     def __iter__(self) -> Iterator[Dict[str, str]]:
-        """Return the iterator object."""
+        """
+        Return the iterator object.
+
+        Returns:
+            This reader instance, which iterates over token-row dictionaries.
+        """
         pass
 
     @abstractmethod
     def row_count(self) -> int:
-        """Return the total number of rows in the file."""
+        """
+        Return the total number of rows in the file.
+
+        Returns:
+            Total number of rows in the loaded Parquet file.
+        """
         pass
 
     @abstractmethod
@@ -44,9 +54,21 @@ class TokenReader(ABC, Iterator[Dict[str, str]]):
         pass
 
     def __enter__(self):
-        """Context manager entry."""
+        """
+        Context manager entry.
+
+        Returns:
+            The current TokenReader instance for use inside the with block.
+        """
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        """Context manager exit."""
+        """
+        Context manager exit.
+
+        Args:
+            exc_type: Exception class raised by the wrapped operation.
+            exc_val: Exception instance raised by the wrapped operation.
+            exc_tb: Traceback associated with the raised exception.
+        """
         self.close()
