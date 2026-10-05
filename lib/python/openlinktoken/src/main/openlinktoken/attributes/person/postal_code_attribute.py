@@ -29,14 +29,35 @@ class PostalCodeAttribute(CombinedAttribute):
     ALIASES = [NAME, "ZipCode", "ZIP3", "ZIP4", "ZIP5"]
 
     def __init__(self):
+        """
+        Initialize the instance.
+        """
         self._implementations = [USPostalCodeAttribute(min_length=3), CanadianPostalCodeAttribute(min_length=3)]
         super().__init__()
 
     def get_name(self) -> str:
+        """
+        Retrieve name.
+
+        Returns:
+            The name.
+        """
         return self.NAME
 
     def get_aliases(self) -> List[str]:
+        """
+        Retrieve aliases.
+
+        Returns:
+            The aliases.
+        """
         return self.ALIASES.copy()
 
     def get_attribute_implementations(self) -> List[SerializableAttribute]:
+        """
+        Retrieve attribute implementations.
+
+        Returns:
+            The attribute implementations.
+        """
         return self._implementations

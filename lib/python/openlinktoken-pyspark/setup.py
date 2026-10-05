@@ -20,7 +20,7 @@ except FileNotFoundError:
 core_requirements = [
     "openlinktoken==2.2.0",
     "pycryptodome==3.23.0",
-    "jwcrypto==1.5.9",
+    "jwcrypto==1.6.1",
 ]
 
 setup(
@@ -43,14 +43,14 @@ setup(
         # Spark 4.1.x - Latest for Java 21
         "spark41": [
             "pyspark==4.1.0",
-            "pyarrow==25.0.0",
+            "pyarrow==25.0.1",
             "pandas==2.2.3; python_version < '3.11'",
             "pandas==3.0.3; python_version >= '3.11'",
         ],
         # Spark 4.0.x - Recommended for Java 21
         "spark40": [
             "pyspark==4.0.1",
-            "pyarrow==25.0.0",
+            "pyarrow==25.0.1",
             "pandas==2.2.3; python_version < '3.11'",
             "pandas==3.0.3; python_version >= '3.11'",
         ],
@@ -76,7 +76,7 @@ setup(
             "pytest-cov==7.1.0",
             "flake8==7.3.0",
             "jupyter==1.1.1",
-            "notebook==7.6.2",
+            "notebook==7.6.3",
             "ipykernel==7.3.0",
         ],
     },

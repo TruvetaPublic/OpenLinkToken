@@ -84,7 +84,15 @@ class OpenLinkTokenOverlapAnalyzer:
 
     @staticmethod
     def _normalize_encryption_key(encryption_key: Union[str, bytes]) -> bytes:
-        """Validate and normalize string or byte encryption keys to raw bytes."""
+        """
+        Validate and normalize string or byte encryption keys to raw bytes.
+
+        Args:
+            encryption_key: Key used to encrypt or decrypt the payload.
+
+        Returns:
+            Validated and normalize string or byte encryption keys to raw bytes.
+        """
         if isinstance(encryption_key, bytes):
             if len(encryption_key) == 0 or not encryption_key.strip():
                 raise ValueError("Encryption key cannot be empty")
@@ -107,6 +115,12 @@ class OpenLinkTokenOverlapAnalyzer:
 
     @staticmethod
     def _v1_token_prefix() -> str:
+        """
+        Return the prefix used by version 1 tokens.
+
+        Returns:
+            Canonical V1 token prefix.
+        """
         return V1_TOKEN_PREFIX
 
     def _decrypt_legacy_token(self, encrypted_token: str) -> Optional[str]:

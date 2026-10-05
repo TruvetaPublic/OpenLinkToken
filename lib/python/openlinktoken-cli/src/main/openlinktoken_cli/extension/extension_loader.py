@@ -7,7 +7,10 @@ import logging
 import sys
 from typing import Optional
 
+from openlinktoken_cli.extension.extension_manifest import CURRENT_CORE_VERSION, is_core_compatible
+
 logger = logging.getLogger(__name__)
+_CURRENT_CORE_VERSION = CURRENT_CORE_VERSION
 
 #: The set of command names reserved by built-in Open Link Token subcommands.
 BUILTIN_COMMANDS: set[str] = {
@@ -36,6 +39,8 @@ class ExtensionLoader:
       binary), reads ``registry.json``, prepends each extension's ``source_path``
       to ``sys.path``, and imports the module directly.
     """
+
+    CURRENT_CORE_VERSION = _CURRENT_CORE_VERSION
 
     @staticmethod
     def load_extensions(
@@ -107,6 +112,9 @@ class ExtensionLoader:
 
         Each entry point is expected to point to an ``OpenLinkTokenExtension`` subclass.
         Import errors are caught per extension and emit a warning.
+
+        Returns:
+            Loaded from entry points as a sequence.
         """
         from openlinktoken_cli.extension.extension_interface import OpenLinkTokenExtension
 
@@ -157,6 +165,9 @@ class ExtensionLoader:
 
         Each entry's ``source_path`` is prepended to ``sys.path`` so that the
         extension's source tree is importable.
+
+        Returns:
+            Loaded from registry as a sequence.
         """
         from openlinktoken_cli.extension.extension_interface import OpenLinkTokenExtension
         from openlinktoken_cli.extension.extension_registry import ExtensionRegistry
@@ -165,6 +176,31 @@ class ExtensionLoader:
         registry = ExtensionRegistry.load()
 
         for name, metadata in registry.items():
+            if not isinstance(metadata, dict):
+                logger.warning("Extension '%s' registry entry is not an object; skipping.", name)
+                continue
+            core_range = (
+                metadata.get("supported_core")
+                or metadata.get("supported_core_version_range")
+                or metadata.get("core_range")
+            )
+            if core_range and not is_core_compatible(ExtensionLoader.CURRENT_CORE_VERSION, core_range):
+                message = (
+                    f"Extension '{name}' is incompatible with Open Link Token core "
+                    f"{ExtensionLoader.CURRENT_CORE_VERSION} (requires {core_range}). "
+                    "Update the extension or roll back the core bundle."
+                )
+                ExtensionLoader._record_state(name, disabled=True, error=message)
+                logger.warning(message)
+                continue
+            if metadata.get("disabled"):
+                error = metadata.get("error")
+                if isinstance(error, str) and error.startswith("Extension '") and "incompatible with" in error:
+                    ExtensionLoader._record_state(name, disabled=False, error=None)
+                else:
+                    logger.info("Extension '%s' is disabled: %s", name, metadata.get("error", "disabled"))
+                    continue
+
             source_path = metadata.get("source_path")
             module_name = metadata.get("module")
             class_name = metadata.get("class")
@@ -208,6 +244,25 @@ class ExtensionLoader:
 
                 extensions.append(instance)
             except Exception as exc:  # noqa: BLE001
-                logger.warning("Failed to load extension '%s' from registry: %s", name, exc)
+                message = f"Failed to load extension '{name}' from registry: {exc}"
+                ExtensionLoader._record_state(name, disabled=False, error=str(exc))
+                logger.warning(message)
 
         return extensions
+
+    @staticmethod
+    def _record_state(name: str, *, disabled: bool, error: Optional[str]) -> None:
+        """
+        Persist loader state without allowing a registry failure to break startup.
+
+        Args:
+            name: Name identifying the item being processed.
+            disabled: Whether to disabled.
+            error: Error message or exception text to include in the status record.
+        """
+        try:
+            from openlinktoken_cli.extension.extension_registry import ExtensionRegistry
+
+            ExtensionRegistry.update_state(name, disabled=disabled, error=error)
+        except Exception:  # noqa: BLE001
+            logger.debug("Could not persist state for extension '%s'.", name, exc_info=True)

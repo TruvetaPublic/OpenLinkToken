@@ -27,6 +27,7 @@ public class T2Token implements Token {
 
     private final ArrayList<AttributeExpression> definition = new ArrayList<>();
 
+    /** Builds the attribute-expression definition for token T2. */
     public T2Token() {
         definition.add(new AttributeExpression(FieldIds.LAST_NAME.getFieldId(), LastNameAttribute.class, "T|U"));
         definition.add(new AttributeExpression(FieldIds.FIRST_NAME.getFieldId(), FirstNameAttribute.class, "T|U"));
@@ -35,11 +36,13 @@ public class T2Token implements Token {
                 new AttributeExpression(FieldIds.POSTAL_CODE.getFieldId(), PostalCodeAttribute.class, "T|S(0,3)|U"));
     }
 
+    /** {@inheritDoc} This token uses the identifier {@code "T2"}. */
     @Override
     public String getIdentifier() {
         return ID;
     }
 
+    /** {@inheritDoc} Provides the ordered attribute expressions that define token {@code "T2"}. */
     @Override
     public ArrayList<AttributeExpression> getDefinition() {
         return definition;

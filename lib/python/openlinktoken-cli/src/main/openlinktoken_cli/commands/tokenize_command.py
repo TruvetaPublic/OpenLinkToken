@@ -22,7 +22,17 @@ def resolve_exchange_config(
     private_key_path: str | None = None,
     private_key_env: str | None = None,
 ) -> Any:
-    """Resolve exchange configuration without importing crypto dependencies at startup."""
+    """
+    Resolve exchange configuration without importing crypto dependencies at startup.
+
+    Args:
+        exchange_config_path: Path to the exchange-config file to load.
+        private_key_path: Path to the private-key PEM file.
+        private_key_env: Environment-variable name containing the private-key PEM.
+
+    Returns:
+        Resolved exchange configuration without importing crypto dependencies at startup.
+    """
     from openlinktoken_cli.util.exchange_config import resolve_exchange_config as implementation
 
     return implementation(exchange_config_path, private_key_path, private_key_env)
@@ -54,7 +64,12 @@ class TokenizeCommand:
 
     @staticmethod
     def register_subcommand(subparsers):
-        """Register the tokenize subcommand with the argument parser."""
+        """
+        Register the tokenize subcommand with the argument parser.
+
+        Args:
+            subparsers: Argument-parser subparsers to configure with command handlers.
+        """
         parser = subparsers.add_parser(
             "tokenize",
             help="Generate tokens from person attributes (--mode default|hash-only|demo)",
@@ -188,7 +203,15 @@ class TokenizeCommand:
 
     @staticmethod
     def execute(args):
-        """Execute the tokenize command."""
+        """
+        Execute the tokenize command.
+
+        Args:
+            args: Parsed command-line options for this command.
+
+        Returns:
+            Integer exit status: 0 on success and 1 when the command reports an error.
+        """
         from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig
         from openlinktoken.core.ai.tokens.rotation_config import RotationConfig
         from openlinktoken_cli.tokens.config.tokenization_config_helper import TokenizationConfigHelper
@@ -392,7 +415,12 @@ class TokenizeCommand:
 
     @staticmethod
     def _configure_rotation(exchange) -> None:
-        """Apply an exchange's rotation settings."""
+        """
+        Apply an exchange's rotation settings.
+
+        Args:
+            exchange: Exchange value to configure.
+        """
         from openlinktoken.core.ai.tokens.rotation_config import RotationConfig
         from openlinktoken.exchange_config import rotation_iv_to_text
 
@@ -420,7 +448,22 @@ class TokenizeCommand:
         tokenization_config_path: Optional[str] = None,
         progress_callback=None,
     ) -> tuple[PersonAttributesProcessingSummary, str]:
-        """Process tokens in normal mode using SHA-256 + HMAC-SHA256."""
+        """
+        Process tokens in normal mode using SHA-256 + HMAC-SHA256.
+
+        Args:
+            input_path: Path to the input file to read.
+            output_path: Destination path for the generated output file.
+            input_type: Detected format of the input file, such as CSV or Parquet.
+            output_type: Format to use for the output file, such as CSV or Parquet.
+            hashing_secret: Secret used as the HMAC-SHA256 key for token hashing.
+            hash_record_ids: Whether record identifiers should be hashed in the output.
+            tokenization_config_path: Filesystem path to the tokenization config handled by the operation.
+            progress_callback: Callback invoked with updates as processing advances.
+
+        Returns:
+            Processed tokens in normal mode using SHA-256 + HMAC-SHA256.
+        """
         from openlinktoken.metadata import Metadata
         from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
         from openlinktoken_cli.io.json.metadata_json_writer import MetadataJsonWriter
@@ -479,7 +522,21 @@ class TokenizeCommand:
         tokenization_config_path: Optional[str] = None,
         progress_callback=None,
     ) -> tuple[PersonAttributesProcessingSummary, str]:
-        """Process tokens in hash-only mode using SHA-256 only (no HMAC, no secret)."""
+        """
+        Process tokens in hash-only mode using SHA-256 only (no HMAC, no secret).
+
+        Args:
+            input_path: Path to the input file to read.
+            output_path: Destination path for the generated output file.
+            input_type: Detected format of the input file, such as CSV or Parquet.
+            output_type: Format to use for the output file, such as CSV or Parquet.
+            hash_record_ids: Whether record identifiers should be hashed in the output.
+            tokenization_config_path: Filesystem path to the tokenization config handled by the operation.
+            progress_callback: Callback invoked with updates as processing advances.
+
+        Returns:
+            Processed tokens in hash-only mode using SHA-256 only (no HMAC, no secret).
+        """
         from openlinktoken.metadata import Metadata
         from openlinktoken_cli.io.json.metadata_json_writer import MetadataJsonWriter
         from openlinktoken_cli.io.zip.person_attributes_zip_writer import PersonAttributesZipWriter
@@ -529,7 +586,20 @@ class TokenizeCommand:
         tokenization_config_path: Optional[str] = None,
         progress_callback=None,
     ) -> tuple[PersonAttributesProcessingSummary, str]:
-        """Process tokens in demo mode using PassthroughTokenizer (no hashing)."""
+        """
+        Process tokens in demo mode using PassthroughTokenizer (no hashing).
+
+        Args:
+            input_path: Path to the input file to read.
+            output_path: Destination path for the generated output file.
+            input_type: Detected format of the input file, such as CSV or Parquet.
+            output_type: Format to use for the output file, such as CSV or Parquet.
+            tokenization_config_path: Filesystem path to the tokenization config handled by the operation.
+            progress_callback: Callback invoked with updates as processing advances.
+
+        Returns:
+            Processed tokens in demo mode using PassthroughTokenizer (no hashing).
+        """
         from openlinktoken.metadata import Metadata
         from openlinktoken.tokens.tokenizer.passthrough_tokenizer import PassthroughTokenizer
         from openlinktoken_cli.io.json.metadata_json_writer import MetadataJsonWriter
@@ -578,7 +648,19 @@ class TokenizeCommand:
         mode: str,
         hash_record_ids: bool,
     ) -> list[str]:
-        """Build the human-readable completion summary for a tokenize run."""
+        """
+        Build the human-readable completion summary for a tokenize run.
+
+        Args:
+            output_path: Destination path for the generated output file.
+            metadata_path: Filesystem path to the metadata handled by the operation.
+            summary: Summary value to build.
+            mode: String containing the mode used to build.
+            hash_record_ids: Whether record identifiers should be hashed in the output.
+
+        Returns:
+            Built the human-readable completion summary for a tokenize run.
+        """
         from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
 
         mode_labels = {
@@ -603,7 +685,16 @@ class TokenizeCommand:
 
     @staticmethod
     def _create_writer(path: str, file_type: str):
-        """Create a PersonAttributesWriter based on file type."""
+        """
+        Create a PersonAttributesWriter based on file type.
+
+        Args:
+            path: Path to the output file that receives tokenized records.
+            file_type: File format that selects the CSV or Parquet writer.
+
+        Returns:
+            Created a PersonAttributesWriter based on file type.
+        """
         from openlinktoken_cli.io.csv.person_attributes_csv_writer import PersonAttributesCSVWriter
         from openlinktoken_cli.io.parquet.person_attributes_parquet_writer import PersonAttributesParquetWriter
         from openlinktoken_cli.io.zip.person_attributes_zip_writer import PersonAttributesZipWriter

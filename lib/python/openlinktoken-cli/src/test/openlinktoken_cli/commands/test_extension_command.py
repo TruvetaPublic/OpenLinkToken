@@ -6,11 +6,13 @@ Unit tests for ExtensionCommand.
 import json
 import logging
 import os
+import sys
 import zipfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from openlinktoken_cli.commands.extension_command import _SECURITY_WARNING, ExtensionCommand
+from openlinktoken_cli.extension.extension_registry import ExtensionRegistry
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -41,6 +43,32 @@ def _make_wheel(dest: Path, name: str = "hello-world", version: str = "1.0.0") -
         zf.writestr(f"{dist_info}/METADATA", metadata_content)
         zf.writestr(f"{dist_info}/entry_points.txt", ep_content)
         zf.writestr(f"openlinktoken_{name.replace('-', '_')}/__init__.py", "")
+    return whl_path
+
+
+def _make_loadable_wheel(dest: Path, name: str = "hello-world", version: str = "1.0.0") -> Path:
+    """Write a wheel containing a loadable extension class for frozen tests."""
+    dist_info = f"openlinktoken_{name.replace('-', '_')}-{version}.dist-info"
+    package = name.replace("-", "_")
+    metadata_content = f"Metadata-Version: 2.1\nName: openlinktoken-{name}\nVersion: {version}\n"
+    ep_content = f"[openlinktoken.extensions]\n{name} = {package}.extension:FakeExtension\n"
+    module_content = (
+        "from openlinktoken_cli.extension import OpenLinkTokenExtension\n"
+        "class FakeExtension(OpenLinkTokenExtension):\n"
+        "    @property\n"
+        "    def command_name(self): return 'hello-world'\n"
+        "    @property\n"
+        "    def description(self): return 'test'\n"
+        "    @property\n"
+        "    def version(self): return '1.0.0'\n"
+        "    def register_subcommand(self, subparsers): pass\n"
+    )
+    whl_path = dest / f"openlinktoken_{package}-{version}-py3-none-any.whl"
+    with zipfile.ZipFile(whl_path, "w") as zf:
+        zf.writestr(f"{dist_info}/METADATA", metadata_content)
+        zf.writestr(f"{dist_info}/entry_points.txt", ep_content)
+        zf.writestr(f"{package}/__init__.py", "")
+        zf.writestr(f"{package}/extension.py", module_content)
     return whl_path
 
 
@@ -238,6 +266,241 @@ class TestExtensionInstall:
         assert result == 1
         err = capsys.readouterr().err
         assert "--yes" in err
+
+    def test_install_bootstrap_manifest_downloads_declared_artifact(self, tmp_path):
+        """install accepts a local bootstrap manifest and forwards its contract."""
+        wheel = _make_wheel(tmp_path)
+        artifact_url = f"file://{wheel}"
+        manifest_path = tmp_path / "bootstrap.json"
+        manifest_path.write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "extension": {
+                        "name": "hello-world",
+                        "version": "1.0.0",
+                        "artifact_url": artifact_url,
+                        "update_manifest_url": "https://example.com/hello-world.json",
+                        "sha256": ExtensionCommand._sha256_file(wheel),
+                        "signature": {"algorithm": "ed25519", "value": "metadata-only"},
+                    },
+                    "core": {"min_version": "2.0.0", "max_version": "<3.0.0"},
+                }
+            )
+        )
+        args = _make_args(url=str(manifest_path), manifest=None, yes=True)
+
+        with patch.object(ExtensionCommand, "_install_wheel", return_value=0) as install_wheel:
+            result = ExtensionCommand._install(args)
+
+        assert result == 0
+        install_wheel.assert_called_once()
+        call = install_wheel.call_args
+        assert call.kwargs["source_url"] == artifact_url
+        assert call.kwargs["expected_name"] == "hello-world"
+        assert call.kwargs["expected_version"] == "1.0.0"
+        assert call.kwargs["expected_sha256"] == ExtensionCommand._sha256_file(wheel)
+        assert call.kwargs["update_manifest_url"] == "https://example.com/hello-world.json"
+        assert call.kwargs["signature"]["algorithm"] == "ed25519"
+
+    def test_install_manifest_option_accepts_https_manifest(self, tmp_path):
+        """The explicit --manifest form uses the same bootstrap installer path."""
+        manifest = {
+            "schema_version": 1,
+            "extension": {
+                "name": "hello-world",
+                "version": "1.0.0",
+                "artifact_url": "https://example.com/hello-world.whl",
+                "sha256": "a" * 64,
+            },
+            "core": {"min_version": "2.0.0", "max_version": "<3.0.0"},
+        }
+        args = _make_args(url=None, manifest="https://example.com/bootstrap.json", yes=True)
+        response = MagicMock()
+        response.read.return_value = json.dumps(manifest).encode()
+        response.geturl.return_value = "https://example.com/bootstrap.json"
+        response.__enter__ = lambda value: value
+        response.__exit__ = MagicMock(return_value=False)
+
+        def download(url, destination):
+            if url.endswith("bootstrap.json"):
+                destination.write_text(json.dumps(manifest))
+            return True
+
+        with patch("openlinktoken_cli.commands.extension_command.urlopen", return_value=response):
+            with patch.object(ExtensionCommand, "_download", side_effect=download):
+                with patch.object(ExtensionCommand, "_install_wheel", return_value=0) as install_wheel:
+                    result = ExtensionCommand._install(args)
+
+        assert result == 0
+        install_wheel.assert_called_once()
+
+    def test_frozen_install_rejects_invalid_entry_point_name_without_path_escape(self, tmp_path):
+        """Frozen installation rejects traversal names before constructing extension paths."""
+        wheel = tmp_path / "malicious.whl"
+        with zipfile.ZipFile(wheel, "w") as archive:
+            archive.writestr(
+                "malicious-1.0.0.dist-info/METADATA",
+                "Metadata-Version: 2.1\nName: malicious\nVersion: 1.0.0\n",
+            )
+            archive.writestr(
+                "malicious-1.0.0.dist-info/entry_points.txt",
+                "[openlinktoken.extensions]\n../escape = malicious:Extension\n",
+            )
+        outside = tmp_path.parent / "escape"
+
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path / "extensions")}):
+            with patch.object(sys, "frozen", True, create=True):
+                with patch.object(ExtensionCommand, "_install_frozen_wheel") as frozen_installer:
+                    result = ExtensionCommand._install_wheel(wheel, f"file://{wheel}")
+
+        assert result == 1
+        frozen_installer.assert_not_called()
+        assert not outside.exists()
+        assert not (tmp_path / "extensions").exists()
+
+    def test_download_accepts_existing_plain_local_path(self, tmp_path):
+        """Direct local paths are copied without weakening HTTPS restrictions."""
+        source = tmp_path / "extension.whl"
+        source.write_bytes(b"wheel")
+        destination = tmp_path / "downloaded.whl"
+
+        assert ExtensionCommand._download(str(source), destination)
+        assert destination.read_bytes() == b"wheel"
+
+
+class TestExtensionUpdate:
+    """Tests for explicit persistent extension updates."""
+
+    def test_update_parser_wires_name_and_all_targets(self):
+        """The extension parser accepts either one name or --all."""
+        from openlinktoken_cli.commands.open_link_token_command import OpenLinkTokenCommand
+
+        parser = OpenLinkTokenCommand.create_parser(load_extensions=False)
+        name_args = parser.parse_args(["extension", "update", "demo", "--dry-run"])
+        all_args = parser.parse_args(["extension", "update", "--all", "--yes"])
+
+        assert name_args.name == "demo"
+        assert name_args.dry_run is True
+        assert all_args.all is True
+        assert all_args.yes is True
+
+    def test_update_all_reports_failure_without_stopping_other_extensions(self, tmp_path, capsys):
+        """--all processes every registered extension and returns failure if one fails."""
+        registry = {
+            "bad": {"version": "1.0.0", "update_manifest_url": "https://example.com/bad.json"},
+            "good": {"version": "1.0.0", "update_manifest_url": "https://example.com/good.json"},
+        }
+        (tmp_path / "registry.json").write_text(json.dumps(registry))
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
+            with patch.object(
+                ExtensionCommand,
+                "_update_one",
+                side_effect=[1, 0],
+            ) as update_one:
+                result = ExtensionCommand._update(_make_args(all=True, dry_run=False, yes=True))
+
+        assert result == 1
+        assert [call.args[0] for call in update_one.call_args_list] == ["bad", "good"]
+
+    def test_update_dry_run_selects_newer_compatible_artifact_without_loading_code(self, capsys):
+        """Dry-run selects a newer artifact and stops before download or install."""
+        manifest = {
+            "schema_version": 1,
+            "extension": "demo",
+            "latest_version": "2.0.0",
+            "requires_core": ">=2.0.0,<3.0.0",
+            "artifacts": [
+                {"url": "https://example.com/demo-2.0.0.whl", "sha256": "b" * 64},
+            ],
+        }
+        metadata = {
+            "version": "1.0.0",
+            "update_manifest_url": "https://example.com/demo.json",
+        }
+        with patch.object(ExtensionCommand, "_fetch_manifest", return_value=manifest):
+            with patch.object(ExtensionCommand, "_download") as download:
+                with patch.object(ExtensionCommand, "_install_wheel") as install:
+                    result = ExtensionCommand._update_one(
+                        "demo",
+                        metadata,
+                        dry_run=True,
+                        skip_confirm=True,
+                    )
+
+        assert result == 0
+        assert "would update 1.0.0 -> 2.0.0" in capsys.readouterr().out
+        download.assert_not_called()
+        install.assert_not_called()
+
+    def test_frozen_install_rolls_back_directory_and_registry_when_registry_write_fails(self, tmp_path):
+        """A failed atomic registry commit leaves the prior extension untouched."""
+        wheel = _make_loadable_wheel(tmp_path)
+        ext_dir = tmp_path / "hello-world"
+        ext_dir.mkdir()
+        (ext_dir / "old.txt").write_text("old")
+        old_registry = {
+            "hello-world": {
+                "version": "0.9.0",
+                "source_path": str(ext_dir / "src"),
+                "command_name": "hello-world",
+            }
+        }
+        (tmp_path / "registry.json").write_text(json.dumps(old_registry))
+
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
+            with patch.object(sys, "frozen", True, create=True):
+                with patch.object(ExtensionRegistry, "save", side_effect=OSError("disk full")):
+                    result = ExtensionCommand._install_wheel(wheel, f"file://{wheel}")
+
+        assert result == 1
+        assert (ext_dir / "old.txt").read_text() == "old"
+        assert json.loads((tmp_path / "registry.json").read_text()) == old_registry
+
+    def test_frozen_install_rolls_back_directory_when_stage_swap_fails(self, tmp_path):
+        """A failed staged directory swap leaves the prior extension untouched."""
+        wheel = _make_loadable_wheel(tmp_path)
+        ext_dir = tmp_path / "hello-world"
+        ext_dir.mkdir()
+        (ext_dir / "old.txt").write_text("old")
+        old_registry = {
+            "hello-world": {
+                "version": "0.9.0",
+                "source_path": str(ext_dir / "src"),
+                "command_name": "hello-world",
+            }
+        }
+        (tmp_path / "registry.json").write_text(json.dumps(old_registry))
+
+        original_replace = Path.replace
+
+        def fail_stage_swap(source: Path, target: Path) -> Path:
+            if source.name.startswith(".hello-world.stage-") and target == ext_dir:
+                raise OSError("rename failed")
+            return original_replace(source, target)
+
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
+            with patch.object(sys, "frozen", True, create=True):
+                with patch.object(Path, "replace", new=fail_stage_swap):
+                    result = ExtensionCommand._install_wheel(wheel, f"file://{wheel}")
+
+        assert result == 1
+        assert (ext_dir / "old.txt").read_text() == "old"
+        assert json.loads((tmp_path / "registry.json").read_text()) == old_registry
+
+    def test_install_rejects_declared_checksum_before_extracting(self, tmp_path):
+        """A mismatched declared SHA-256 never changes the installed extension."""
+        wheel = _make_wheel(tmp_path)
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
+            with patch.object(sys, "frozen", True, create=True):
+                result = ExtensionCommand._install_wheel(
+                    wheel,
+                    f"file://{wheel}",
+                    expected_sha256="0" * 64,
+                )
+
+        assert result == 1
+        assert not (tmp_path / "hello-world").exists()
 
     def test_install_rejects_non_https_url(self, tmp_path, capsys):
         """install must reject URLs with schemes other than https:// or file://."""

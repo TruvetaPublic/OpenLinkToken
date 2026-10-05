@@ -90,6 +90,7 @@ demos/pprl-superhero-example/datasets/
 .ruff_cache/
 *.exchange.json
 uv.lock
+!tools/interoperability/uv.lock
 apm.lock
 apm.lock.yaml
 test-output.xml

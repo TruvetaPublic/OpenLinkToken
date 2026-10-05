@@ -16,9 +16,19 @@ class ML1Token(Token):
         self._definition: List[AttributeExpression] = []
 
     def get_identifier(self) -> str:
-        """Return the stable registry identifier for this token definition."""
+        """
+        Return the stable registry identifier for this token definition.
+
+        Returns:
+            The identifier value returned by the operation.
+        """
         return self.TOKEN_ID
 
     def get_definition(self) -> List[AttributeExpression]:
-        """Return the attribute expressions that make up the ML1 definition."""
+        """
+        Return the attribute expressions that make up the ML1 definition.
+
+        Returns:
+            The definition value returned by the operation.
+        """
         return self._definition

@@ -839,6 +839,86 @@ cd lib/python/openlinktoken_ext_hello_world && pytest src/test
 5. Package with `python -m build` and distribute as a `.whl`.
 6. End users install via `olt extension install <url-or-file://path>`.
 
+### Persistent standalone extensions
+
+Frozen standalone bundles load extensions from the persistent
+`~/.openlinktoken/extensions` directory. The core bundle can therefore be
+replaced by `olt update` without removing installed vendor extensions. The
+extension registry is managed by Open Link Token and records the extension
+version, distribution name, source and update-manifest URLs, compatible core
+range, artifact integrity metadata, module/class entry point, and installation
+location.
+
+Vendor installers may pass a bootstrap manifest to the common extension
+installer instead of implementing registry writes themselves. A manifest uses
+`schema_version: 1` and identifies the extension artifact and the core range:
+
+```json
+{
+  "schema_version": 1,
+  "extension": {
+    "name": "truveta",
+    "version": "1.0.0",
+    "artifact_url": "https://example.com/openlinktoken_ext_truveta-1.0.0-py3-none-any.whl",
+    "update_manifest_url": "https://example.com/truveta-extension.json",
+    "sha256": "..."
+  },
+  "core": {
+    "min_version": "2.2.0",
+    "max_version": "<3.0.0"
+  }
+}
+```
+
+Install a local or remote bootstrap manifest through the shared CLI command:
+
+```shell
+olt extension install --yes --manifest https://example.com/truveta-bootstrap.json
+```
+
+The vendor update manifest is data-only and publishes the latest compatible
+artifact:
+
+```json
+{
+  "schema_version": 1,
+  "extension": "truveta",
+  "latest_version": "1.1.0",
+  "requires_core": ">=2.2.0,<3.0.0",
+  "artifacts": [
+    {
+      "url": "https://example.com/openlinktoken_ext_truveta-1.1.0-py3-none-any.whl",
+      "sha256": "..."
+    }
+  ]
+}
+```
+
+Open Link Token checks registered manifests asynchronously using a cache and
+only prints a notice. It never imports extension code for that check. Users
+explicitly apply an update with:
+
+```shell
+olt extension update truveta
+olt extension update --all
+```
+
+Each update is verified, compatibility-checked, staged, and validated before
+the active extension directory and registry entry are replaced. Failed
+updates leave the previous extension installed. If a core update makes an
+extension incompatible, the extension is disabled with guidance to update or
+roll it back; the core update itself still completes.
+
+Remote artifacts must provide a SHA-256 checksum. Signature metadata is
+recorded in the registry for the contract, but checksum verification is the
+currently enforced integrity check until a trusted vendor-key distribution
+mechanism is defined.
+
+Frozen extensions may depend only on runtime packages included in the core
+bundle's allowlist. Vendor-specific dependencies must be added to a core
+release before an extension can declare them; the frozen installer does not
+silently install packages outside the bundle.
+
 #### Reporting custom progress metrics
 
 Extensions that process large datasets can contribute custom metrics to the CLI progress display. Implement the `StatsProvider` protocol and register it with the reporter:

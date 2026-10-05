@@ -14,11 +14,11 @@ dependencies = [
   "openlinktoken-core-ai==2.2.0",
   "pandas==2.2.3; python_version < '3.11'",
   "pandas==3.0.3; python_version >= '3.11'",
-  "pyarrow==25.0.0",
+  "pyarrow==25.0.1",
   "csv2parquet==0.0.9",
   "cryptography==50.0.1",
-  "urllib3==2.7.0",
-  "jwcrypto==1.5.9",
+  "urllib3==2.8.0",
+  "jwcrypto==1.6.1",
   "packaging==26.3",
 ]
 
@@ -26,7 +26,7 @@ dependencies = [
 olt = "openlinktoken_cli.main:main"
 
 [build-system]
-requires = ["setuptools==84.0.0", "wheel==0.47.0"]
+requires = ["setuptools==84.0.0", "wheel==0.48.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]

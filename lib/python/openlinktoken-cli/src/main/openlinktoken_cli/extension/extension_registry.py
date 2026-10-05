@@ -5,10 +5,11 @@ import logging
 import os
 import tempfile
 from pathlib import Path
+from typing import Any, Optional
+
+from openlinktoken_cli.util.app_paths import get_openlinktoken_home
 
 logger = logging.getLogger(__name__)
-
-_DEFAULT_EXTENSIONS_SUBDIR = Path(".openlinktoken") / "extensions"
 
 
 class ExtensionRegistry:
@@ -42,6 +43,9 @@ class ExtensionRegistry:
 
         Uses the ``OLT_EXTENSIONS_DIR`` environment variable when set;
         otherwise defaults to ``~/.openlinktoken/extensions/``.
+
+        Returns:
+            The base directory for installed extensions.
         """
         env_override = os.environ.get("OLT_EXTENSIONS_DIR")
         if env_override:
@@ -49,11 +53,16 @@ class ExtensionRegistry:
             if not base_path.is_absolute():
                 base_path = Path.home() / base_path
             return base_path.resolve()
-        return (Path.home() / _DEFAULT_EXTENSIONS_SUBDIR).resolve()
+        return (get_openlinktoken_home() / "extensions").resolve()
 
     @staticmethod
     def get_registry_path() -> Path:
-        """Return the full path to the registry JSON file."""
+        """
+        Return the full path to the registry JSON file.
+
+        Returns:
+            The full path to the registry JSON file.
+        """
         return ExtensionRegistry.get_extensions_dir() / "registry.json"
 
     @staticmethod
@@ -62,12 +71,19 @@ class ExtensionRegistry:
         Load and return the registry contents.
 
         Returns an empty dict if the registry file does not exist or cannot be parsed.
+
+        Returns:
+            Loaded and return the registry contents.
         """
         registry_path = ExtensionRegistry.get_registry_path()
         if not registry_path.exists():
             return {}
         try:
-            return json.loads(registry_path.read_text(encoding="utf-8"))
+            payload = json.loads(registry_path.read_text(encoding="utf-8"))
+            if not isinstance(payload, dict):
+                logger.warning("Extension registry at %s is not a JSON object.", registry_path)
+                return {}
+            return payload
         except (json.JSONDecodeError, OSError) as exc:
             logger.warning("Failed to load extension registry at %s: %s", registry_path, exc)
             return {}
@@ -85,6 +101,7 @@ class ExtensionRegistry:
 
         content = json.dumps(registry, indent=2, sort_keys=True) + "\n"
         dir_ = registry_path.parent
+        tmp_path: Optional[Path] = None
         try:
             with tempfile.NamedTemporaryFile(
                 mode="w",
@@ -98,6 +115,8 @@ class ExtensionRegistry:
             tmp_path.replace(registry_path)
         except OSError as exc:
             logger.error("Failed to save extension registry to %s: %s", registry_path, exc)
+            if tmp_path is not None:
+                tmp_path.unlink(missing_ok=True)
             raise
 
     @staticmethod
@@ -113,6 +132,41 @@ class ExtensionRegistry:
         registry = ExtensionRegistry.load()
         registry[name] = metadata
         ExtensionRegistry.save(registry)
+
+    @staticmethod
+    def update_state(name: str, *, disabled: bool, error: Optional[str] = None) -> None:
+        """
+        Persist the loader state for an installed extension atomically.
+
+        Args:
+            name: Name identifying the item being processed.
+            disabled: Whether to disabled.
+            error: String containing the error used to update.
+        """
+        registry = ExtensionRegistry.load()
+        if name not in registry:
+            return
+        metadata = dict(registry[name])
+        metadata["disabled"] = disabled
+        metadata["error"] = error
+        registry[name] = metadata
+        ExtensionRegistry.save(registry)
+
+    @staticmethod
+    def replace_extension(name: str, metadata: dict[str, Any]) -> dict[str, Any]:
+        """
+        Return a registry copy with *name* replaced, without writing it.
+
+        Args:
+            name: Name identifying the item being processed.
+            metadata: Metadata to validate, normalize, or serialize.
+
+        Returns:
+            A registry copy with *name* replaced, without writing it.
+        """
+        registry = ExtensionRegistry.load()
+        registry[name] = metadata
+        return registry
 
     @staticmethod
     def remove_extension(name: str) -> None:

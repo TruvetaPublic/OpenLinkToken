@@ -174,3 +174,45 @@ class TestLoadExtensionsFrozen:
                 ExtensionLoader.load_extensions(subparsers, set())
 
         assert "frozen-cmd" in subparsers.choices
+
+    def test_incompatible_extension_is_disabled_without_importing_code(self):
+        """An incompatible registry entry is skipped and marked disabled."""
+        subparsers = _make_subparsers()
+        registry = {
+            "future": {
+                "version": "1.0.0",
+                "supported_core": ">=99.0.0",
+                "module": "future_ext",
+                "class": "FutureExtension",
+            }
+        }
+
+        with patch.object(sys, "frozen", True, create=True):
+            with patch(
+                "openlinktoken_cli.extension.extension_registry.ExtensionRegistry.load",
+                return_value=registry,
+            ):
+                with patch(
+                    "openlinktoken_cli.extension.extension_registry.ExtensionRegistry.update_state"
+                ) as update_state:
+                    with patch("importlib.import_module") as import_module:
+                        ExtensionLoader.load_extensions(subparsers, set())
+
+        assert "future" not in subparsers.choices
+        import_module.assert_not_called()
+        update_state.assert_called_once()
+        assert update_state.call_args.kwargs["disabled"] is True
+
+    def test_malformed_registry_entry_is_skipped(self):
+        """A non-object registry entry does not prevent other extensions from loading."""
+        subparsers = _make_subparsers()
+        registry = {"malformed": None}
+
+        with patch.object(sys, "frozen", True, create=True):
+            with patch(
+                "openlinktoken_cli.extension.extension_registry.ExtensionRegistry.load",
+                return_value=registry,
+            ):
+                ExtensionLoader.load_extensions(subparsers, set())
+
+        assert not subparsers.choices

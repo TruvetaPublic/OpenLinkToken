@@ -133,6 +133,7 @@ Then run:
 - `olt encrypt` - Encrypt existing hashed tokens using the exchange config
 - `olt decrypt` - Decrypt encrypted tokens using the exchange config
 - `olt initiate-exchange` - Create the exchange config consumed by later commands
+- `olt extension update <name>` / `olt extension update --all` - Update persistent standalone extensions explicitly
 - `olt help [command]` - Show help for a specific command
 
 See <a href="https://truvetapublic.github.io/OpenLinkToken/quickstarts/" target="_blank" rel="noopener noreferrer">Quickstarts</a> for Python CLI and detailed setup instructions.

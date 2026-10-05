@@ -22,6 +22,9 @@ public final class RotationQuantizer {
     /** Default bin width. */
     public static final double DEFAULT_BIN_WIDTH = 0.05;
 
+    /**
+     * Prevents instances of this static quantization utility.
+     */
     private RotationQuantizer() {
     }
 
