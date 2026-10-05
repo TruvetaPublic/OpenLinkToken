@@ -21,11 +21,21 @@ class InferenceSignatureProvider(Protocol):
     """
 
     def get_token_id(self) -> str:
-        """Return the token identifier this provider handles (e.g. ``"ML1"``)."""
+        """
+        Return the token identifier this provider handles (e.g. ``"ML1"``).
+
+        Returns:
+            The token id value returned by the operation.
+        """
         ...
 
     def is_enabled(self) -> bool:
-        """Return whether this provider is currently enabled and configured."""
+        """
+        Return whether this provider is currently enabled and configured.
+
+        Returns:
+            Whether this provider is currently enabled and configured.
+        """
         ...
 
     def generate_signature(self, person_attributes: Dict[str, str]) -> Optional[str]:

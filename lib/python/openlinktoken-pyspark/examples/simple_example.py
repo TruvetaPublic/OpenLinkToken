@@ -63,7 +63,12 @@ from openlinktoken_pyspark import OpenLinkTokenProcessor
 
 
 def create_processor() -> OpenLinkTokenProcessor:
-    """Create a processor using exchange-config inputs when available."""
+    """
+    Create a processor using exchange-config inputs when available.
+
+    Returns:
+        Created a processor using exchange-config inputs when available.
+    """
     exchange_config_path = os.environ.get("OLT_EXCHANGE_CONFIG_PATH")
     private_key_path = os.environ.get("OLT_PRIVATE_KEY_PATH")
     private_key_env = "OLT_PRIVATE_KEY" if os.environ.get("OLT_PRIVATE_KEY") else None

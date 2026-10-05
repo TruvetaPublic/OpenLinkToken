@@ -53,7 +53,18 @@ def _generate_one(
     n: int,
     row_count: Optional[int] = None,
 ) -> np.ndarray:
-    """Generate a single ``n x n`` proper-rotation matrix."""
+    """
+    Generate a single ``n x n`` proper-rotation matrix.
+
+    Args:
+        key_material: Byte sequence containing the key material used to generate.
+        rotation_index: Numeric rotation index value used to generate.
+        n: Numeric n value used to generate.
+        row_count: Number of row items.
+
+    Returns:
+        Generated a single ``n x n`` proper-rotation matrix.
+    """
     pairs_per_col = (n + 1) // 2
     sample_count = n * pairs_per_col
 

@@ -37,7 +37,12 @@ class InitiateExchangeCommand:
 
     @staticmethod
     def register_subcommand(subparsers) -> None:
-        """Register the initiate-exchange subcommand with the argument parser."""
+        """
+        Register the initiate-exchange subcommand with the argument parser.
+
+        Args:
+            subparsers: Argument-parser subparsers to configure with command handlers.
+        """
         parser = subparsers.add_parser(
             "initiate-exchange",
             help="Initiate an ECDH key exchange and produce an encrypted exchange config JWE envelope",
@@ -544,12 +549,22 @@ class InitiateExchangeCommand:
 
     @staticmethod
     def _created_at() -> str:
-        """Return the current UTC timestamp in ISO 8601 ``Z`` form."""
+        """
+        Return the current UTC timestamp in ISO 8601 ``Z`` form.
+
+        Returns:
+            The current UTC timestamp in ISO 8601 ``Z`` form.
+        """
         return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
     @staticmethod
     def _exchange_id() -> str:
-        """Return a stable random exchange identifier for the envelope payload."""
+        """
+        Return a stable random exchange identifier for the envelope payload.
+
+        Returns:
+            A stable random exchange identifier for the envelope payload.
+        """
         return str(uuid4())
 
     @staticmethod
@@ -558,7 +573,17 @@ class InitiateExchangeCommand:
         public_key_path: Path,
         requested_curve: Optional[str],
     ) -> Tuple[bytes, bytes, str]:
-        """Load and validate an existing local sender key pair."""
+        """
+        Load and validate an existing local sender key pair.
+
+        Args:
+            private_key_path: Path to the private-key PEM file.
+            public_key_path: Filesystem path to the public key handled by the operation.
+            requested_curve: String containing the requested curve used to load.
+
+        Returns:
+            Loaded and validate an existing local sender key pair.
+        """
         from openlinktoken_cli.util.ec_key_utils import derive_public_key_from_private_pem, public_key_fingerprint
 
         if private_key_path.is_symlink() or public_key_path.is_symlink():

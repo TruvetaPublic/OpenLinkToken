@@ -25,7 +25,7 @@ class TestGetAutoOutputPath:
         assert get_auto_output_path("customers.csv", "decrypt") == "customers_decrypted.csv"
 
     def test_package_nested_path(self):
-         # Path.stem returns just the filename ("data"), but with_name() preserves parent dirs
+        # Path.stem returns just the filename ("data"), but with_name() preserves parent dirs
         assert get_auto_output_path("path/to/data.json", "package") == "path/to/data_packaged.zip"
 
     def test_suffix_unknown_subcommand(self):

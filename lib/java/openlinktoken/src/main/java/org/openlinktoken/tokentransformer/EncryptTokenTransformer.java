@@ -61,10 +61,24 @@ public class EncryptTokenTransformer implements TokenTransformer {
         this.secretKey = new SecretKeySpec(toValidatedKeyBytes(encryptionKey), EncryptionConstants.AES);
     }
 
+    /**
+     * Converts a string key to UTF-8 bytes before validating its length.
+     *
+     * @param encryptionKey the encryption key string
+     * @return a copy of the encoded key bytes
+     * @throws InvalidKeyException if the key is {@code null} or does not encode to 32 bytes
+     */
     private static byte[] toValidatedKeyBytes(String encryptionKey) throws InvalidKeyException {
         return toValidatedKeyBytes(encryptionKey == null ? null : encryptionKey.getBytes(StandardCharsets.UTF_8));
     }
 
+    /**
+     * Validates and copies raw AES-256 key material.
+     *
+     * @param encryptionKey the raw key bytes
+     * @return a defensive copy of the key bytes
+     * @throws InvalidKeyException if the key is {@code null} or not 32 bytes long
+     */
     private static byte[] toValidatedKeyBytes(byte[] encryptionKey) throws InvalidKeyException {
         if (encryptionKey == null || encryptionKey.length != EncryptionConstants.KEY_BYTE_LENGTH) {
             logger.error("Invalid Argument. Key must be {} bytes long", EncryptionConstants.KEY_BYTE_LENGTH);

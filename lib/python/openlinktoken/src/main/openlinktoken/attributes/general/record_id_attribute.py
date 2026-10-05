@@ -22,6 +22,9 @@ class RecordIdAttribute(StringAttribute):
 
     def __init__(self):
         # Use validation rules from StringAttribute
+        """
+        Initialize the instance.
+        """
         super().__init__()
 
     def get_name(self) -> str:

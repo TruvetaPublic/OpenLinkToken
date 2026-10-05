@@ -267,6 +267,16 @@ public class TokenGenerator implements Serializable {
      *
      * @throws TokenGenerationException in case of failure to generate the token.
      */
+    /**
+     * Gets a token for an identifier using the legacy class-keyed attribute map.
+     *
+     * @param tokenId the token identifier
+     * @param personAttributes the person attributes keyed by attribute class
+     * @param result the result object that receives invalid attribute names
+     * @return the generated token, or {@code null} if required data is missing or invalid
+     * @throws TokenGenerationException if tokenization fails
+     * @deprecated Use field-ID-keyed attributes with {@link #getAllTokensViaFieldId(Map)}.
+     */
     @Deprecated(since = "2.1.0", forRemoval = false)
     protected String getToken(String tokenId, Map<Class<? extends Attribute>, String> personAttributes,
             TokenGeneratorResult result)

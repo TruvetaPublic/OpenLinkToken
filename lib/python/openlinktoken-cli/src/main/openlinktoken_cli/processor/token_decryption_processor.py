@@ -48,6 +48,10 @@ class TokenDecryptionProcessor:
             reader: Iterator providing encrypted token rows
             writer: Writer instance with write_token method
             decryptor: The decryption transformer
+            progress_callback: Callback invoked with updates as processing advances.
+
+        Returns:
+            Processed result.
         """
         return TokenDecryptionProcessor.process_with_key(reader, writer, decryptor, None, progress_callback)
 
@@ -68,6 +72,10 @@ class TokenDecryptionProcessor:
             writer: Writer instance with write_token method
             decryptor: The decryption transformer
             encryption_key: Encryption key for decrypting JWE tokens
+            progress_callback: Callback invoked with updates as processing advances.
+
+        Returns:
+            Processed with key.
         """
         row_counter = 0
         decrypted_counter = 0
@@ -125,6 +133,17 @@ class TokenDecryptionProcessor:
         decryptor: DecryptTokenTransformer,
         encryption_key: str | bytes | None,
     ) -> str:
+        """
+        Decrypt token.
+
+        Args:
+            token: Token value to inspect, transform, or compare.
+            decryptor: Decryptor value to decrypt.
+            encryption_key: Key used to encrypt or decrypt the payload.
+
+        Returns:
+            Decrypted token.
+        """
         if is_supported_v1_token(token):
             return TokenDecryptionProcessor._decrypt_v1_token(token, decryptor, encryption_key)
         return decryptor.transform(token)
@@ -135,6 +154,17 @@ class TokenDecryptionProcessor:
         decryptor: DecryptTokenTransformer,
         encryption_key: str | None,
     ) -> str:
+        """
+        Decrypt v1 token.
+
+        Args:
+            token: Token value to inspect, transform, or compare.
+            decryptor: Decryptor value to decrypt.
+            encryption_key: Key used to encrypt or decrypt the payload.
+
+        Returns:
+            Decrypted v1 token.
+        """
         if not encryption_key:
             raise ValueError("Encryption key is required for JWE token decryption")
 

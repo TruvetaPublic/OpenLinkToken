@@ -21,7 +21,12 @@ INFERENCING_ASSETS_SOURCE_PKG = os.path.join("src", "main", INFERENCING_ASSETS_P
 
 
 def _find_manifest_source():
-    """Find the manifest in the checkout or in an sdist's package source tree."""
+    """
+    Find the manifest in the checkout or in an sdist's package source tree.
+
+    Returns:
+        Found the manifest in the checkout or in an sdist's package source tree.
+    """
     candidates = [
         os.path.join(INFERENCING_ASSETS_SRC, "asset-manifest.json"),
         os.path.join(THIS_DIR, INFERENCING_ASSETS_SOURCE_PKG, "asset-manifest.json"),
@@ -51,7 +56,13 @@ class SdistWithInferencingManifest(sdist):
     """Stage the ML1 manifest inside source distributions for source installs."""
 
     def make_release_tree(self, base_dir, files):
-        """Copy the manifest into the package source tree in the sdist."""
+        """
+        Copy the manifest into the package source tree in the sdist.
+
+        Args:
+            base_dir: Directory used for the base.
+            files: Files from the source tree to copy into the release tree.
+        """
         super().make_release_tree(base_dir, files)
         dst = os.path.join(base_dir, INFERENCING_ASSETS_SOURCE_PKG)
         os.makedirs(dst, exist_ok=True)

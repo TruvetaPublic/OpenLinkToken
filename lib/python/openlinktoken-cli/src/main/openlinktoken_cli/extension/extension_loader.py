@@ -112,6 +112,9 @@ class ExtensionLoader:
 
         Each entry point is expected to point to an ``OpenLinkTokenExtension`` subclass.
         Import errors are caught per extension and emit a warning.
+
+        Returns:
+            Loaded from entry points as a sequence.
         """
         from openlinktoken_cli.extension.extension_interface import OpenLinkTokenExtension
 
@@ -162,6 +165,9 @@ class ExtensionLoader:
 
         Each entry's ``source_path`` is prepended to ``sys.path`` so that the
         extension's source tree is importable.
+
+        Returns:
+            Loaded from registry as a sequence.
         """
         from openlinktoken_cli.extension.extension_interface import OpenLinkTokenExtension
         from openlinktoken_cli.extension.extension_registry import ExtensionRegistry
@@ -246,7 +252,14 @@ class ExtensionLoader:
 
     @staticmethod
     def _record_state(name: str, *, disabled: bool, error: Optional[str]) -> None:
-        """Persist loader state without allowing a registry failure to break startup."""
+        """
+        Persist loader state without allowing a registry failure to break startup.
+
+        Args:
+            name: Name identifying the item being processed.
+            disabled: Whether to disabled.
+            error: Error message or exception text to include in the status record.
+        """
         try:
             from openlinktoken_cli.extension.extension_registry import ExtensionRegistry
 

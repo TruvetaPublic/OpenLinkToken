@@ -72,9 +72,21 @@ class TokenParquetWriter(TokenWriter):
             raise IOError(f"Failed to write Parquet file: {self.file_path}") from e
 
     def __enter__(self):
-        """Context manager entry."""
+        """
+        Context manager entry.
+
+        Returns:
+            The current TokenParquetWriter instance for use inside the with block.
+        """
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        """Context manager exit."""
+        """
+        Context manager exit.
+
+        Args:
+            exc_type: Exception class raised by the wrapped operation.
+            exc_val: Exception instance raised by the wrapped operation.
+            exc_tb: Traceback associated with the raised exception.
+        """
         self.close()

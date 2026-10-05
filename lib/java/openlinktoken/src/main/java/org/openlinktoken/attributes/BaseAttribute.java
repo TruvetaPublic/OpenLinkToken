@@ -27,6 +27,11 @@ public abstract class BaseAttribute implements SerializableAttribute {
 
     private final List<SerializableAttributeValidator> validationRules;
 
+    /**
+     * Creates an attribute that applies the non-empty check before the supplied validators.
+     *
+     * @param validationRules additional validation rules to apply
+     */
     protected BaseAttribute(List<SerializableAttributeValidator> validationRules) {
         ArrayList<SerializableAttributeValidator> ruleList = new ArrayList<>();
         ruleList.add(new NotNullOrEmptyValidator());

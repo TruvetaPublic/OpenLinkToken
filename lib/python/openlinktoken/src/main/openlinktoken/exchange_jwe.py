@@ -35,7 +35,25 @@ def build_exchange_envelope(
     bin_width: float = 0.05,
     dimension_bias: list[float] | None = None,
 ) -> dict[str, Any]:
-    """Build a multi-recipient JWE exchange envelope."""
+    """
+    Build a multi-recipient JWE exchange envelope.
+
+    Args:
+        exchange_name: Name of the exchange.
+        hashing_secret: Secret used to build the hashing.
+        sender_public_pem: PEM-encoded sender public bytes.
+        recipient_public_pem: PEM-encoded recipient public bytes.
+        curve: Elliptic-curve name used to generate the key pair.
+        created_at: String containing the created at used to build.
+        exchange_id: Identifier for the exchange.
+        rotation_iv: Byte sequence containing the rotation iv used to build.
+        rotation_count: Number of token rotations to generate or apply.
+        bin_width: Width of the bin.
+        dimension_bias: Sequence of dimension bias values to build.
+
+    Returns:
+        Built a multi-recipient JWE exchange envelope.
+    """
     payload = {
         "exchangeName": exchange_name,
         "hashingSecret": _base64url_encode(hashing_secret),
@@ -78,7 +96,16 @@ def build_exchange_envelope(
 
 
 def decrypt_exchange_envelope(exchange_config: Mapping[str, Any], private_pem: bytes) -> bytes:
-    """Decrypt an exchange JWE envelope with a matching private key PEM."""
+    """
+    Decrypt an exchange JWE envelope with a matching private key PEM.
+
+    Args:
+        exchange_config: Mapping of exchange config values used to decrypt.
+        private_pem: PEM-encoded private bytes.
+
+    Returns:
+        Decrypted an exchange JWE envelope with a matching private key PEM.
+    """
     envelope = jwe.JWE()
     envelope.deserialize(json.dumps(dict(exchange_config)))
     envelope.decrypt(jwk.JWK.from_pem(private_pem))
@@ -86,7 +113,16 @@ def decrypt_exchange_envelope(exchange_config: Mapping[str, Any], private_pem: b
 
 
 def resolve_private_key_by_kid(openlinktoken_dir: Path, kid: str) -> bytes:
-    """Resolve a private key by matching a fingerprint-derived recipient ``kid``."""
+    """
+    Resolve a private key by matching a fingerprint-derived recipient ``kid``.
+
+    Args:
+        openlinktoken_dir: Directory used for the openlinktoken.
+        kid: String containing the kid used to resolve.
+
+    Returns:
+        Resolved a private key by matching a fingerprint-derived recipient ``kid``.
+    """
     for public_key_path in sorted(openlinktoken_dir.glob("*.public.pem")):
         public_pem = public_key_path.read_bytes()
         if fingerprint_to_kid(public_key_fingerprint(public_pem)) != kid:
@@ -104,12 +140,28 @@ def resolve_private_key_by_kid(openlinktoken_dir: Path, kid: str) -> bytes:
 
 
 def _base64url_encode(value: bytes) -> str:
-    """Encode bytes as unpadded base64url text."""
+    """
+    Encode bytes as unpadded base64url text.
+
+    Args:
+        value: Bytes to encode as unpadded base64url text.
+
+    Returns:
+        Encoded bytes as unpadded base64url text.
+    """
     return base64.urlsafe_b64encode(value).decode("utf-8").rstrip("=")
 
 
 def _recipient_header(public_pem: bytes) -> dict[str, str]:
-    """Build the per-recipient JOSE header for the provided public key."""
+    """
+    Build the per-recipient JOSE header for the provided public key.
+
+    Args:
+        public_pem: PEM-encoded public bytes.
+
+    Returns:
+        Built the per-recipient JOSE header for the provided public key.
+    """
     return {
         "alg": EXCHANGE_JWE_RECIPIENT_ALGORITHM,
         "kid": fingerprint_to_kid(public_key_fingerprint(public_pem)),

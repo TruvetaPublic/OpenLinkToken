@@ -22,20 +22,30 @@ public class StringAttribute extends BaseAttribute {
     private static final String NAME = "String";
     private static final String[] ALIASES = new String[] { NAME, "Text" };
 
+    /** Creates a string attribute with the base non-empty validation rule. */
     public StringAttribute() {
         super(List.of());
     }
 
+    /** {@inheritDoc} The canonical attribute name is {@code "String"}. */
     @Override
     public String getName() {
         return NAME;
     }
 
+    /** {@inheritDoc} Accepts {@code "String"} and {@code "Text"}. */
     @Override
     public String[] getAliases() {
         return ALIASES;
     }
 
+    /**
+     * Trims leading and trailing whitespace from the value.
+     *
+     * @param value the string value to normalize
+     * @return the trimmed value
+     * @throws IllegalArgumentException if the value is {@code null}
+     */
     @Override
     public String normalize(String value) {
         if (value == null) {

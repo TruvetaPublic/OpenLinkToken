@@ -22,9 +22,7 @@ class ConfiguredAttributeResolver:
         self._column_to_field_id: Dict[str, str] = {}
 
         type_name_to_base_class = self._build_type_name_index()
-        base_class_to_instance: Dict[Type[Attribute], Attribute] = {
-            type(attr): attr for attr in AttributeLoader.load()
-        }
+        base_class_to_instance: Dict[Type[Attribute], Attribute] = {type(attr): attr for attr in AttributeLoader.load()}
         self._register_field_mappings(config.column_mappings, type_name_to_base_class, base_class_to_instance)
 
     def get_class_for_field(self, field_id: str) -> Type[Attribute]:
@@ -72,6 +70,14 @@ class ConfiguredAttributeResolver:
         type_name_to_base_class: Dict[str, Type[Attribute]],
         base_class_to_instance: Dict[Type[Attribute], Attribute],
     ) -> None:
+        """
+        Register attribute classes and instances by field ID and map source columns to those IDs.
+
+        Args:
+            attributes: Configured column-to-attribute mapping entries keyed by field ID.
+            type_name_to_base_class: Lookup from attribute type names and aliases to their base classes.
+            base_class_to_instance: Lookup from base attribute classes to their reusable instances.
+        """
         for field_id, entry in attributes.items():
             base_class = type_name_to_base_class.get(entry.type)
             if base_class is None:
@@ -91,6 +97,12 @@ class ConfiguredAttributeResolver:
 
     @staticmethod
     def _build_type_name_index() -> Dict[str, Type[Attribute]]:
+        """
+        Build type name index.
+
+        Returns:
+            Built type name index.
+        """
         index: Dict[str, Type[Attribute]] = {}
         attributes = sorted(
             AttributeLoader.load(),
@@ -109,6 +121,14 @@ class ConfiguredAttributeResolver:
         type_name: str,
         attribute_class: Type[Attribute],
     ) -> None:
+        """
+        Register an attribute type name or alias and reject conflicting class mappings.
+
+        Args:
+            index: Position of the item in the sequence.
+            type_name: Name of the type.
+            attribute_class: Attribute subclass associated with the configured field type.
+        """
         existing = index.get(type_name)
         if existing is not None and existing is not attribute_class:
             raise ValueError(
