@@ -264,15 +264,26 @@ def resolve_loaded_exchange_config(
     """
     transport_encryption_key = None
     v1_crypto_suite = None
+    private_key_material: bytes
     try:
+        if isinstance(private_key_pem, Mapping):
+            private_key_material = ExchangeKeyBundle.from_mapping(
+                private_key_pem,
+                require_private=True,
+            ).to_json(include_private=True)
+        elif isinstance(private_key_pem, str):
+            private_key_material = private_key_pem.encode("utf-8")
+        else:
+            private_key_material = private_key_pem
+
         if exchange_config.version == 2:
             payload_bytes, transport_encryption_key = decrypt_exchange_envelope_v2(
                 exchange_config.config,
-                private_key_pem,
+                private_key_material,
             )
             payload = json.loads(payload_bytes)
         else:
-            payload = json.loads(decrypt_exchange_envelope(exchange_config.config, private_key_pem))
+            payload = json.loads(decrypt_exchange_envelope(exchange_config.config, private_key_material))
             v1_crypto_suite = resolve_v1_exchange_crypto_suite(exchange_config.config)
     except Exception as error:
         raise ValueError(f"Failed to decrypt exchange config '{exchange_config.path}': {error}") from error
@@ -299,8 +310,8 @@ def resolve_loaded_exchange_config(
         crypto_suite=crypto_suite,
         config=exchange_config.config,
         payload=payload,
-        private_key_pem=private_key_pem,
-        private_key_role=_resolve_private_key_role(private_key_pem, payload),
+        private_key_pem=private_key_material,
+        private_key_role=_resolve_private_key_role(private_key_material, payload),
         hashing_secret=_decode_hashing_secret(payload),
         rotation_iv=_decode_rotation_iv(payload),
         rotation_count=_decode_rotation_count(payload),

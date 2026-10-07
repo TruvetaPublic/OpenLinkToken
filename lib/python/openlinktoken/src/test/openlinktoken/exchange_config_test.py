@@ -538,6 +538,33 @@ def test_resolve_v2_exchange_exposes_same_transport_key_for_both_private_bundles
     assert len(derive_transport_encryption_key(sender_exchange)) == 32
 
 
+def test_resolve_v2_exchange_accepts_private_key_bundle_mapping():
+    """Resolve a v2 exchange when private-key material is supplied as a bundle mapping.
+
+    Returns:
+        None.
+    """
+    sender = generate_exchange_key_bundle("suite-pq-v1")
+    recipient = generate_exchange_key_bundle("suite-pq-v1")
+    envelope = build_exchange_envelope_v2(
+        "mapping-v2",
+        b"hash-secret",
+        sender,
+        recipient,
+        "2026-03-12T00:00:00Z",
+        "exchange-mapping-v2",
+    )
+
+    resolved = resolve_loaded_exchange_config(
+        load_exchange_config(exchange_config_value=envelope),
+        sender.to_mapping(include_private=True),
+    )
+
+    assert resolved.version == 2
+    assert resolved.private_key_role == "sender"
+    assert resolved.hashing_secret == b"hash-secret"
+
+
 def test_derive_v2_transport_key_rejects_invalid_cached_key():
     """The v2 consumer API exposes only a complete 32-byte derived key.
 
