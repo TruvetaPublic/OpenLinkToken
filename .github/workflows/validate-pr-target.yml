@@ -23,9 +23,22 @@ jobs:
             const pr = context.payload.pull_request;
             const headRef = pr.head.ref;
 
+            // The event payload is frozen at creation, so reruns can see a stale base after retargeting.
+            const { data: current } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number
+            });
+            const baseRef = current.base.ref;
+
             console.log(`Validating PR #${pr.number}`);
             console.log(`Head branch: ${headRef}`);
-            console.log(`Base branch: ${pr.base.ref}`);
+            console.log(`Base branch: ${baseRef}`);
+
+            if (baseRef !== 'main') {
+              console.log(`PR no longer targets main (now '${baseRef}'), nothing to validate.`);
+              return;
+            }
 
             // Check if the head branch matches release/* pattern
             if (!headRef.startsWith('release/')) {
