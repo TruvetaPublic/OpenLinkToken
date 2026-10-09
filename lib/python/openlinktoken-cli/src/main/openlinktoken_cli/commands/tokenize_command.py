@@ -39,12 +39,10 @@ def resolve_exchange_config(
 
 
 class TokenizeCommand:
-    """
-    Tokenize command - generates tokens from person attributes.
+    """Tokenize command - generates tokens from person attributes.
 
-    Default mode (``--mode default`` or omitted): applies SHA-256 then
-    HMAC-SHA256 hashing on the token signature using the hashing secret from the
-    exchange config.
+    Default mode (``--mode default`` or omitted): applies the digest and keyed
+    MAC selected by the exchange config using its hashing secret.
 
     Hash-only mode (``--mode hash-only``): applies SHA-256 only (no HMAC). No
     exchange config or secret is required. Output tokens are 64-character hex
@@ -56,6 +54,9 @@ class TokenizeCommand:
     pipe-separated attribute signature strings. No secret is needed, making it easy
     to explore the output without managing secrets. Demo-mode output is
     **not** suitable for production or cross-organisation exchange.
+
+    Constructor:
+        Takes no arguments and returns a new ``TokenizeCommand`` instance.
     """
 
     _MODE_DEFAULT = "default"
@@ -64,19 +65,21 @@ class TokenizeCommand:
 
     @staticmethod
     def register_subcommand(subparsers):
-        """
-        Register the tokenize subcommand with the argument parser.
+        """Register the tokenize subcommand with the argument parser.
 
         Args:
-            subparsers: Argument-parser subparsers to configure with command handlers.
+            subparsers: Argument-parser subparsers collection to receive the command.
+
+        Returns:
+            None.
         """
         parser = subparsers.add_parser(
             "tokenize",
             help="Generate tokens from person attributes (--mode default|hash-only|demo)",
             description=(
                 "Generate tokens from person attributes.\n\n"
-                "Default mode (--mode default or omitted): tokens are HMAC-SHA256 hashed "
-                "using the exchange config.\n"
+                "Default mode (--mode default or omitted): tokens use the digest and keyed MAC "
+                "selected by the exchange config.\n"
                 "Hash-only mode (--mode hash-only): tokens are SHA-256 hashed (no HMAC, no secret). "
                 "Output is deterministic and NOT suitable for production or cross-organisation exchange.\n"
                 "Demo mode (--mode demo): tokens are plain attribute signature strings; no secret needed."
@@ -113,7 +116,7 @@ class TokenizeCommand:
             default=TokenizeCommand._MODE_DEFAULT,
             dest="mode",
             help=(
-                "Tokenization mode: 'default' uses SHA-256 + HMAC-SHA256 with the exchange config; "
+                "Tokenization mode: 'default' uses the digest and keyed MAC selected by the exchange config; "
                 "'hash-only' uses deterministic SHA-256 only with no exchange config or secret; "
                 "'demo' outputs raw pipe-separated attribute signature strings."
             ),
@@ -203,14 +206,14 @@ class TokenizeCommand:
 
     @staticmethod
     def execute(args):
-        """
-        Execute the tokenize command.
+        """Execute the tokenize command.
 
         Args:
-            args: Parsed command-line options for this command.
+            args: Parsed CLI namespace containing input/output paths, mode, exchange credentials, and tokenization
+                options.
 
         Returns:
-            Integer exit status: 0 on success and 1 when the command reports an error.
+            ``0`` when tokenization completes, or ``1`` when validation or processing fails.
         """
         from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig
         from openlinktoken.core.ai.tokens.rotation_config import RotationConfig
@@ -222,6 +225,7 @@ class TokenizeCommand:
         mode = getattr(args, "mode", TokenizeCommand._MODE_DEFAULT)
         hash_record_ids = getattr(args, "hash_record_ids", False)
         tokenization_config_path = getattr(args, "tokenization_config", None)
+        crypto_suite = None
 
         input_type = FileTypeDetector.detect_input_type(args.input_path)
         if not input_type:
@@ -390,7 +394,9 @@ class TokenizeCommand:
                             hash_record_ids,
                             tokenization_config_path,
                             progress_callback=reporter.make_progress_callback("Tokenizing records", "records"),
+                            crypto_suite=getattr(exchange, "crypto_suite", None),
                         )
+                        crypto_suite = getattr(exchange, "crypto_suite", None)
                     logger.info("Token generation completed successfully")
                 except Exception as error:
                     logger.error("Error during token generation: %s", error)
@@ -404,6 +410,7 @@ class TokenizeCommand:
                     summary,
                     mode,
                     hash_record_ids,
+                    crypto_suite,
                 ),
             )
             return 0
@@ -447,22 +454,23 @@ class TokenizeCommand:
         hash_record_ids: bool = False,
         tokenization_config_path: Optional[str] = None,
         progress_callback=None,
+        crypto_suite=None,
     ) -> tuple[PersonAttributesProcessingSummary, str]:
-        """
-        Process tokens in normal mode using SHA-256 + HMAC-SHA256.
+        """Process tokens in normal mode using the exchange config's crypto suite.
 
         Args:
-            input_path: Path to the input file to read.
-            output_path: Destination path for the generated output file.
-            input_type: Detected format of the input file, such as CSV or Parquet.
-            output_type: Format to use for the output file, such as CSV or Parquet.
-            hashing_secret: Secret used as the HMAC-SHA256 key for token hashing.
-            hash_record_ids: Whether record identifiers should be hashed in the output.
-            tokenization_config_path: Filesystem path to the tokenization config handled by the operation.
-            progress_callback: Callback invoked with updates as processing advances.
+            input_path: Path to the source person-attribute data.
+            output_path: Destination path for tokenized output.
+            input_type: Detected input file format.
+            output_type: Selected output file format.
+            hashing_secret: Secret used by the crypto-suite hash transformer.
+            hash_record_ids: Whether to hash record IDs before writing output.
+            tokenization_config_path: Optional path to a custom tokenization configuration.
+            progress_callback: Optional callback for reporting record-processing progress.
+            crypto_suite: Crypto suite selecting the token digest and MAC, or ``None`` for the default.
 
         Returns:
-            Processed tokens in normal mode using SHA-256 + HMAC-SHA256.
+            A tuple containing the processing summary and the metadata file path.
         """
         from openlinktoken.metadata import Metadata
         from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
@@ -476,7 +484,7 @@ class TokenizeCommand:
 
         try:
             # Add only hash transformer (no encryption in tokenize mode)
-            token_transformer_list.append(HashTokenTransformer(hashing_secret))
+            token_transformer_list.append(HashTokenTransformer(hashing_secret, crypto_suite=crypto_suite))
         except Exception as e:
             raise RuntimeError("Failed to initialize transformer") from e
 
@@ -499,6 +507,7 @@ class TokenizeCommand:
                     hash_record_ids=hash_record_ids,
                     token_definition=token_definition,
                     progress_callback=progress_callback,
+                    crypto_suite=crypto_suite,
                 )
 
                 if isinstance(writer, PersonAttributesZipWriter):
@@ -647,19 +656,20 @@ class TokenizeCommand:
         summary: PersonAttributesProcessingSummary,
         mode: str,
         hash_record_ids: bool,
+        crypto_suite=None,
     ) -> list[str]:
-        """
-        Build the human-readable completion summary for a tokenize run.
+        """Build the human-readable completion summary for a tokenize run.
 
         Args:
-            output_path: Destination path for the generated output file.
-            metadata_path: Filesystem path to the metadata handled by the operation.
-            summary: Summary value to build.
-            mode: String containing the mode used to build.
-            hash_record_ids: Whether record identifiers should be hashed in the output.
+            output_path: Path to the tokenized output.
+            metadata_path: Path to the generated metadata file.
+            summary: Processing counters for the completed run.
+            mode: Tokenization mode used for the run.
+            hash_record_ids: Whether record IDs were hashed in the output.
+            crypto_suite: Optional suite used to select the default-mode digest and MAC labels.
 
         Returns:
-            Built the human-readable completion summary for a tokenize run.
+            The completion-summary lines in display order.
         """
         from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
 
@@ -668,10 +678,13 @@ class TokenizeCommand:
             TokenizeCommand._MODE_HASH_ONLY: "hash-only SHA-256",
             TokenizeCommand._MODE_DEMO: "demo plain signatures",
         }
+        mode_label = mode_labels.get(mode, mode)
+        if mode == TokenizeCommand._MODE_DEFAULT and crypto_suite is not None:
+            mode_label = f"default {crypto_suite.token_digest_algorithm} + {crypto_suite.token_mac_algorithm}"
         lines = [
             f"Output: {output_path}",
             f"Metadata: {metadata_path}",
-            f"Mode: {mode_labels.get(mode, mode)}",
+            f"Mode: {mode_label}",
             f"Rows processed: {summary.total_rows:,}",
             f"Rows with invalid attributes: {summary.total_rows_with_invalid_attributes:,}",
         ]

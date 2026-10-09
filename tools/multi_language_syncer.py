@@ -15,7 +15,15 @@ from pathlib import Path
 
 
 class MultiLanguageSyncer:
-    """Syncer that handles Java and Python implementations"""
+    """Synchronize files shared by the Java and Python implementations.
+
+    Args:
+        mapping_file: Path to the mapping JSON file, defaulting to
+            ``tools/multi-language-mapping.json``.
+
+    Returns:
+        A synchronizer with mappings loaded and active languages discovered.
+    """
 
     # Language configuration
     LANGUAGES = {
@@ -38,6 +46,11 @@ class MultiLanguageSyncer:
         "directory_mappings": {},
         "ignore_patterns": [],
         "auto_generate_unmapped": True,
+    }
+
+    SPECIAL_FILE_MAPPINGS = {
+        ("java", "crypto/CryptoSuite.java", "python"): "crypto/crypto_suite.py",
+        ("python", "crypto/crypto_suite.py", "java"): "crypto/CryptoSuite.java",
     }
 
     def __init__(self, mapping_file="tools/multi-language-mapping.json"):
@@ -177,10 +190,19 @@ class MultiLanguageSyncer:
         """Check if a file exists"""
         return (self.root_dir / file_path).exists()
 
-    KNOWN_ACRONYMS = {"us", "sha256"}
+    KNOWN_ACRONYMS = {"us", "sha256", "sha3", "shake256"}
 
     def convert_filename(self, filename, from_naming, to_naming):
-        """Convert filename between naming conventions"""
+        """Convert a filename stem between naming conventions.
+
+        Args:
+            filename: Source filename, optionally including a configured extension.
+            from_naming: Source naming convention.
+            to_naming: Target naming convention.
+
+        Returns:
+            The converted filename stem without an extension, preserving known acronyms.
+        """
         # Remove extension
         base_name = filename
         for lang_config in self.LANGUAGES.values():
@@ -210,6 +232,9 @@ class MultiLanguageSyncer:
             source_lang: Language of the source file
             active_languages: Optional dict of language configs to restrict results to.
                               Defaults to all LANGUAGES when None.
+
+        Returns:
+            A mapping from each active target language to its corresponding file path.
         """
         corresponding = {}
 
@@ -228,14 +253,15 @@ class MultiLanguageSyncer:
             if source_group and target_config.get("group") != source_group:
                 continue
 
-            # Convert directory structure (usually similar)
-            target_path = source_path
-            path_parts = target_path.split("/")
-            if path_parts:
-                filename = path_parts[-1]
-                converted = self.convert_filename(filename, lang_config["naming"], target_config["naming"])
-                path_parts[-1] = converted + target_config["extension"]
-                target_path = "/".join(path_parts)
+            target_path = self.SPECIAL_FILE_MAPPINGS.get((source_lang, source_path, target_lang))
+            if target_path is None:
+                target_path = source_path
+                path_parts = target_path.split("/")
+                if path_parts:
+                    filename = path_parts[-1]
+                    converted = self.convert_filename(filename, lang_config["naming"], target_config["naming"])
+                    path_parts[-1] = converted + target_config["extension"]
+                    target_path = "/".join(path_parts)
 
             target_file = target_config["path"] + target_path
             corresponding[target_lang] = target_file

@@ -42,6 +42,8 @@ This site organizes quickstarts, concepts, operations guidance, configuration, r
   - [Matching Model](concepts/matching-model.md)
   - [ML1 Model and Rotation](concepts/ml1-model-and-rotation.md)
   - [Matching Concepts](matching-concepts/index.md)
+  - [Cryptographic Suites](concepts/crypto-suites.md)
+  - [Token Hashing and Encryption](concepts/token-hashing-and-encryption.md)
   - [Token Rules](concepts/token-rules.md)
   - [Match Token Format](concepts/match-token-format.md)
   - [Normalization and Validation](concepts/normalization-and-validation.md)

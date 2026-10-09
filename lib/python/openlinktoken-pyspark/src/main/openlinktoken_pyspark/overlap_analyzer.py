@@ -33,6 +33,12 @@ class OpenLinkTokenOverlapAnalyzer:
     This class helps identify records that match between two datasets using
     encrypted tokens. It supports flexible matching rules based on specific
     token types (T1-T5 or custom tokens).
+
+    Args:
+        encryption_key: AES-256 key used to decrypt tokens for comparison.
+
+    Returns:
+        An analyzer initialized with the normalized encryption key.
     """
 
     def __init__(self, encryption_key: Union[str, bytes]):
@@ -42,6 +48,9 @@ class OpenLinkTokenOverlapAnalyzer:
         Args:
             encryption_key: The same AES-256 encryption key used to encrypt tokens.
                             Required to decrypt tokens for comparison.
+
+        Returns:
+            None.
 
         Raises:
             ValueError: If encryption key is empty or invalid length
@@ -66,9 +75,9 @@ class OpenLinkTokenOverlapAnalyzer:
         Args:
             exchange_config_path: Optional exchange-config path. Uses the default path when omitted.
             exchange_config_value: Optional in-memory exchange-config JSON or decoded mapping.
-            private_key_path: Optional private-key PEM path.
-            private_key_env: Optional environment-variable name containing private-key PEM text.
-            private_key_value: Optional in-memory private-key PEM text or bytes.
+            private_key_path: Optional v1 private-key PEM path or v2 private key-bundle JSON path.
+            private_key_env: Optional environment variable containing v1 private-key PEM or v2 private key-bundle JSON.
+            private_key_value: Optional in-memory v1 private-key PEM or v2 private key-bundle JSON.
 
         Returns:
             An overlap analyzer configured with the exchange-derived transport key.

@@ -99,7 +99,14 @@ class TestCustomTokenDefinition:
 
 
 class TestCreateTokenGenerator:
-    """Tests for create_token_generator helper."""
+    """Tests for create_token_generator helper.
+
+    Args:
+        None; pytest creates this test class without constructor arguments.
+
+    Returns:
+        A test-case instance used by pytest to run the test methods.
+    """
 
     def test_create_with_default_definition(self):
         """Test creating a generator with default token definition."""
@@ -156,9 +163,47 @@ class TestCreateTokenGenerator:
         for token_id, generated_token in generated_tokens.items():
             assert analyzer._decrypt_token(generated_token) == analyzer._decrypt_token(expected_tokens[token_id])
 
+    def test_create_from_exchange_config_supports_every_crypto_suite(self, exchange_config_case):
+        """Exchange-config token generators retain every suite's digest and MAC choices.
+
+        Args:
+            exchange_config_case: Real exchange and private-key fixture for the current suite.
+
+        Returns:
+            None.
+        """
+        exchange = resolve_exchange_config_inputs(
+            exchange_config_case.exchange_config_path,
+            private_key_value=exchange_config_case.private_key_value,
+        )
+        generator = notebook_helpers.create_token_generator_from_exchange_config(
+            exchange_config_path=exchange_config_case.exchange_config_path,
+            private_key_value=exchange_config_case.private_key_value,
+        )
+        expected_generator = create_token_generator(
+            exchange.hashing_secret,
+            derive_transport_encryption_key(exchange),
+            crypto_suite=exchange_config_case.crypto_suite,
+        )
+        analyzer = OpenLinkTokenOverlapAnalyzer(derive_transport_encryption_key(exchange))
+        generated_tokens = generator.get_all_tokens(_sample_person_attributes()).tokens
+        expected_tokens = expected_generator.get_all_tokens(_sample_person_attributes()).tokens
+
+        assert exchange.crypto_suite == exchange_config_case.crypto_suite
+        assert generated_tokens.keys() == expected_tokens.keys()
+        for token_id, generated_token in generated_tokens.items():
+            assert analyzer._decrypt_token(generated_token) == analyzer._decrypt_token(expected_tokens[token_id])
+
 
 class TestQuickToken:
-    """Tests for quick_token convenience function."""
+    """Tests for quick_token convenience function.
+
+    Args:
+        None; pytest creates this test class without constructor arguments.
+
+    Returns:
+        A test-case instance used by pytest to run the test methods.
+    """
 
     def test_quick_token_creation(self):
         """Test creating a quick token with attribute list."""
@@ -227,6 +272,42 @@ class TestQuickToken:
         generated_tokens = generator.get_all_tokens(_sample_person_attributes()).tokens
         expected_tokens = expected_generator.get_all_tokens(_sample_person_attributes()).tokens
 
+        assert generated_tokens.keys() == expected_tokens.keys()
+        for token_id, generated_token in generated_tokens.items():
+            assert analyzer._decrypt_token(generated_token) == analyzer._decrypt_token(expected_tokens[token_id])
+
+    def test_quick_token_from_exchange_config_supports_every_crypto_suite(self, exchange_config_case):
+        """Quick-token helpers preserve the suite resolved from each exchange config.
+
+        Args:
+            exchange_config_case: Real exchange and private-key fixture for the current suite.
+
+        Returns:
+            None.
+        """
+        exchange = resolve_exchange_config_inputs(
+            exchange_config_case.exchange_config_path,
+            private_key_value=exchange_config_case.private_key_value,
+        )
+        generator = notebook_helpers.quick_token_from_exchange_config(
+            token_id="T10",
+            attributes=[("last_name", "T|U"), ("first_name", "T|U"), ("birth_date", "T|D")],
+            exchange_config_path=exchange_config_case.exchange_config_path,
+            private_key_value=exchange_config_case.private_key_value,
+        )
+        token = TokenBuilder("T10").add("last_name", "T|U").add("first_name", "T|U").add("birth_date", "T|D").build()
+        definition = CustomTokenDefinition().add_token(token)
+        expected_generator = create_token_generator(
+            exchange.hashing_secret,
+            derive_transport_encryption_key(exchange),
+            definition,
+            crypto_suite=exchange_config_case.crypto_suite,
+        )
+        analyzer = OpenLinkTokenOverlapAnalyzer(derive_transport_encryption_key(exchange))
+        generated_tokens = generator.get_all_tokens(_sample_person_attributes()).tokens
+        expected_tokens = expected_generator.get_all_tokens(_sample_person_attributes()).tokens
+
+        assert exchange.crypto_suite == exchange_config_case.crypto_suite
         assert generated_tokens.keys() == expected_tokens.keys()
         for token_id, generated_token in generated_tokens.items():
             assert analyzer._decrypt_token(generated_token) == analyzer._decrypt_token(expected_tokens[token_id])
