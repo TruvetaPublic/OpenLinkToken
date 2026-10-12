@@ -2,5 +2,5 @@
 #    uv export --only-group tools --no-hashes --format requirements.txt --output-file tools/requirements.txt
 faker==40.40.0
 pycryptodome==3.23.0
-tzdata==2026.4 ; sys_platform == 'win32'
+tzdata==2026.5 ; sys_platform == 'win32'
     # via faker
