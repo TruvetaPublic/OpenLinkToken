@@ -3,18 +3,14 @@ package org.openlinktoken.crypto;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
-import java.security.NoSuchAlgorithmException;
 
 import org.junit.jupiter.api.Test;
-
-import org.openlinktoken.tokens.tokenizer.TokenDigestFactory;
 
 /**
  * Tests the registered crypto suite contracts and lookup validation.
@@ -155,25 +151,43 @@ class CryptoSuiteTest {
     }
 
     /**
-     * Verifies suite-based digest selection rejects a suite with an unsupported digest identifier.
+     * Verifies unsupported token-digest identifiers fail during suite construction.
      *
      * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
-    void tokenDigestFactoryRejectsUnsupportedSuiteDigest() {
-        CryptoSuite suite = new CryptoSuite(
-                "unsupported-digest-suite",
-                "UNKNOWN-DIGEST",
-                CryptoSuite.TOKEN_MAC_HS256,
-                CryptoSuite.TOKEN_CONTENT_ENCRYPTION_A256GCM,
-                CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH,
-                1);
-
+    void unsupportedTokenDigestFailsDuringSuiteValidation() {
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> TokenDigestFactory.forSuite(suite));
+                () -> new CryptoSuite(
+                        "unsupported-digest-suite",
+                        "UNKNOWN-DIGEST",
+                        CryptoSuite.TOKEN_MAC_HS256,
+                        CryptoSuite.TOKEN_CONTENT_ENCRYPTION_A256GCM,
+                        CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH,
+                        1));
 
-        assertInstanceOf(NoSuchAlgorithmException.class, exception.getCause());
+        assertEquals("Unsupported token digest algorithm 'UNKNOWN-DIGEST'.", exception.getMessage());
+    }
+
+    /**
+     * Verifies unsupported token-MAC identifiers fail during suite construction.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
+     */
+    @Test
+    void unsupportedTokenMacFailsDuringSuiteValidation() {
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> new CryptoSuite(
+                        "unsupported-mac-suite",
+                        CryptoSuite.TOKEN_DIGEST_SHA256,
+                        "UNKNOWN-MAC",
+                        CryptoSuite.TOKEN_CONTENT_ENCRYPTION_A256GCM,
+                        CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH,
+                        1));
+
+        assertEquals("Unsupported token MAC algorithm 'UNKNOWN-MAC'.", exception.getMessage());
     }
 
     /**

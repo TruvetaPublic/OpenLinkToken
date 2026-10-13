@@ -36,7 +36,7 @@ from openlinktoken.exchange_jwe import (
     resolve_v1_exchange_crypto_suite,
 )
 from openlinktoken.exchange_kem import build_exchange_envelope_v2
-from openlinktoken.exchange_key_bundle import generate_exchange_key_bundle
+from openlinktoken.exchange_key_bundle import KeyBundleError, generate_exchange_key_bundle
 
 
 def test_fingerprint_to_kid_normalizes_sha256_fingerprint():
@@ -332,6 +332,62 @@ def _decode_protected_header(envelope: dict[str, object]) -> dict[str, object]:
     header = json.loads(protected_bytes)
     assert isinstance(header, dict)
     return header
+
+
+def test_resolve_exchange_config_private_key_continues_after_invalid_bundle(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A malformed candidate for one recipient does not block a later match.
+
+    Args:
+        monkeypatch: Pytest fixture for replacing private-bundle lookup inputs.
+        tmp_path: Temporary directory supplied to private-bundle resolution.
+
+    Returns:
+        None.
+    """
+    sender = generate_exchange_key_bundle("suite-pq-v1")
+    recipient = generate_exchange_key_bundle("suite-pq-v1")
+    envelope = build_exchange_envelope_v2(
+        "lookup-fallback",
+        b"hash-secret",
+        sender,
+        recipient,
+        "2026-10-13T00:00:00Z",
+        "exchange-lookup-fallback",
+    )
+    exchange_config = load_exchange_config(exchange_config_value=envelope)
+    attempted_kids: list[str] = []
+
+    def resolve_bundle(directory: Path, kid: str) -> bytes:
+        """Simulate an invalid candidate for the first recipient, then a match.
+
+        Args:
+            directory: Directory passed to private-bundle resolution.
+            kid: Recipient key identifier being resolved.
+
+        Returns:
+            Matching private-bundle bytes for the second recipient.
+
+        Raises:
+            KeyBundleError: If the first recipient has only invalid candidates.
+        """
+        del directory
+        attempted_kids.append(kid)
+        if kid == "first":
+            raise KeyBundleError("Invalid bundle candidate before match.")
+        return b"valid private bundle"
+
+    monkeypatch.setattr(
+        "openlinktoken.exchange_config._recipient_kids",
+        lambda *_args: ["first", "second"],
+    )
+    monkeypatch.setattr("openlinktoken.exchange_config.resolve_private_bundle_by_kid", resolve_bundle)
+
+    resolved = resolve_exchange_config_private_key(exchange_config, openlinktoken_dir=tmp_path)
+
+    assert resolved == b"valid private bundle"
+    assert attempted_kids == ["first", "second"]
 
 
 def test_resolve_private_key_by_kid_uses_matching_public_key_basename(tmp_path: Path):

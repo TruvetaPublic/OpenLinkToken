@@ -159,7 +159,7 @@ class CryptoSuite:
         return hashing_secret
 
     def validate(self) -> "CryptoSuite":
-        """Validate the suite's internal algorithm and version combination.
+        """Validate token algorithms and the exchange-version combination.
 
         Args:
             None.
@@ -168,8 +168,20 @@ class CryptoSuite:
             This ``CryptoSuite`` instance when its algorithms and version agree.
 
         Raises:
-            CryptoSuiteError: If an algorithm or exchange version is unsupported.
+            CryptoSuiteError: If a token algorithm or exchange version is unsupported.
         """
+        if self.token_digest_algorithm not in {
+            self.TOKEN_DIGEST_SHA256,
+            self.TOKEN_DIGEST_SHA3_256,
+            self.TOKEN_DIGEST_SHAKE256_256,
+        }:
+            raise CryptoSuiteError(f"Unsupported token digest algorithm '{self.token_digest_algorithm}'.")
+        if self.token_mac_algorithm not in {
+            self.TOKEN_MAC_HS256,
+            self.TOKEN_MAC_HS3_256,
+            self.TOKEN_MAC_KMAC256_256,
+        }:
+            raise CryptoSuiteError(f"Unsupported token MAC algorithm '{self.token_mac_algorithm}'.")
         if self.token_content_encryption != self.TOKEN_CONTENT_ENCRYPTION_A256GCM:
             raise CryptoSuiteError(f"Unsupported token content encryption '{self.token_content_encryption}'.")
         if self.exchange_config_version == 1 and self.exchange_key_agreement != self.EXCHANGE_KEY_AGREEMENT_ECDH:

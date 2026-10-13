@@ -166,6 +166,8 @@ def test_unknown_suite_ids_fail_closed(suite_id):
 @pytest.mark.parametrize(
     ("overrides", "message"),
     [
+        ({"token_digest_algorithm": "UNKNOWN-DIGEST"}, "Unsupported token digest algorithm"),
+        ({"token_mac_algorithm": "UNKNOWN-MAC"}, "Unsupported token MAC algorithm"),
         ({"token_content_encryption": "A128GCM"}, "content encryption"),
         ({"exchange_config_version": 1, "exchange_key_agreement": "ML-KEM-768"}, "only supports ECDH"),
         ({"exchange_config_version": 2, "exchange_key_agreement": "ECDH"}, "requires a non-ECDH"),
@@ -184,8 +186,8 @@ def test_invalid_suite_contracts_fail_validation(overrides, message):
     """
     suite = CryptoSuite(
         suite_id="test-suite",
-        token_digest_algorithm="SHA-256",
-        token_mac_algorithm="HS256",
+        token_digest_algorithm=overrides.get("token_digest_algorithm", "SHA-256"),
+        token_mac_algorithm=overrides.get("token_mac_algorithm", "HS256"),
         token_content_encryption=overrides.get("token_content_encryption", "A256GCM"),
         exchange_key_agreement=overrides.get("exchange_key_agreement", "ECDH"),
         exchange_config_version=overrides.get("exchange_config_version", 1),

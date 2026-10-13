@@ -100,6 +100,27 @@ class ExchangeKeyBundleTest {
     }
 
     /**
+     * Verifies an ML-KEM private seed must derive the public key stored in its bundle.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
+     */
+    @Test
+    void rejectsMismatchedMlKemPrivateSeed() {
+        ExchangeKeyBundle bundle = ExchangeKeyBundle.generate("suite-pq-v1");
+        ExchangeKeyBundle otherBundle = ExchangeKeyBundle.generate("suite-pq-v1");
+        Map<String, Object> mapping = bundle.toMapping(true);
+        Map<String, Object> keys = (Map<String, Object>) mapping.get("keys");
+        Map<String, Object> mlkem = (Map<String, Object>) keys.get("mlkem");
+        Map<String, Object> otherKeys = (Map<String, Object>) otherBundle.toMapping(true).get("keys");
+        Map<String, Object> otherMlkem = (Map<String, Object>) otherKeys.get("mlkem");
+        mlkem.put("privateKey", otherMlkem.get("privateKey"));
+
+        assertThrows(
+                ExchangeKeyBundle.KeyBundleException.class,
+                () -> ExchangeKeyBundle.fromMapping(mapping, true));
+    }
+
+    /**
      * Verifies version-one suites and malformed envelopes are rejected.
      *
      * <p>This test method accepts no arguments and returns no value.</p>

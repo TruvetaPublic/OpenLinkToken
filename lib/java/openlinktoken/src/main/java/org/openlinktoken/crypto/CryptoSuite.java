@@ -144,13 +144,25 @@ public final class CryptoSuite implements Serializable {
     }
 
     /**
-     * Validates the internal algorithm and exchange-version contract.
+     * Validates supported token algorithms and the exchange-version contract.
      *
      * <p>This method accepts no arguments.</p>
      *
      * @return this validated suite
+     * @throws IllegalArgumentException if a token algorithm or exchange version is unsupported
      */
     public CryptoSuite validate() {
+        if (!TOKEN_DIGEST_SHA256.equals(tokenDigestAlgorithm)
+                && !TOKEN_DIGEST_SHA3_256.equals(tokenDigestAlgorithm)
+                && !TOKEN_DIGEST_SHAKE256_256.equals(tokenDigestAlgorithm)) {
+            throw new IllegalArgumentException(
+                    "Unsupported token digest algorithm '" + tokenDigestAlgorithm + "'.");
+        }
+        if (!TOKEN_MAC_HS256.equals(tokenMacAlgorithm)
+                && !TOKEN_MAC_HS3_256.equals(tokenMacAlgorithm)
+                && !TOKEN_MAC_KMAC256_256.equals(tokenMacAlgorithm)) {
+            throw new IllegalArgumentException("Unsupported token MAC algorithm '" + tokenMacAlgorithm + "'.");
+        }
         if (!TOKEN_CONTENT_ENCRYPTION_A256GCM.equals(tokenContentEncryption)) {
             throw new IllegalArgumentException(
                     "Unsupported token content encryption '" + tokenContentEncryption + "'.");

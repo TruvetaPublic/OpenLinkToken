@@ -338,6 +338,20 @@ def test_key_bundle_rejects_public_fingerprint_mismatch():
         ExchangeKeyBundle.from_mapping(bundle, require_private=True)
 
 
+def test_key_bundle_rejects_mismatched_mlkem_private_seed():
+    """A private seed must derive the public key stored in its bundle.
+
+    Returns:
+        None.
+    """
+    bundle = generate_exchange_key_bundle("suite-pq-v1").to_mapping(include_private=True)
+    other_bundle = generate_exchange_key_bundle("suite-pq-v1").to_mapping(include_private=True)
+    bundle["keys"]["mlkem"]["privateKey"] = other_bundle["keys"]["mlkem"]["privateKey"]
+
+    with pytest.raises(KeyBundleError, match="mlkem.privateKey does not match"):
+        ExchangeKeyBundle.from_mapping(bundle, require_private=True)
+
+
 def test_key_bundle_requires_private_material():
     """Private-key consumers reject public-only bundles.
 
@@ -614,4 +628,38 @@ def test_private_bundle_resolution_finds_matching_kid(tmp_path):
 
     assert resolve_private_bundle_by_kid(tmp_path, bundle.kid) == matching_path.read_bytes()
     with pytest.raises(FileNotFoundError, match="No private key bundle"):
+        resolve_private_bundle_by_kid(tmp_path, "sha256:missing")
+
+
+def test_private_bundle_resolution_skips_invalid_candidate_before_match(tmp_path):
+    """Invalid bundles do not prevent discovery of a later valid match.
+
+    Args:
+        tmp_path: Pytest temporary directory containing candidate bundles.
+
+    Returns:
+        None.
+    """
+    (tmp_path / "a-invalid.private.bundle.json").write_bytes(b"{")
+    bundle = generate_exchange_key_bundle("suite-pq-v1")
+    matching_bundle = bundle.to_json(include_private=True)
+    matching_path = tmp_path / "z-matching.private.bundle.json"
+    matching_path.write_bytes(matching_bundle)
+
+    assert resolve_private_bundle_by_kid(tmp_path, bundle.kid) == matching_bundle
+
+
+def test_private_bundle_resolution_reports_invalid_candidates_when_no_match(tmp_path):
+    """Invalid candidates remain visible when no valid bundle matches.
+
+    Args:
+        tmp_path: Pytest temporary directory containing candidate bundles.
+
+    Returns:
+        None.
+    """
+    invalid_path = tmp_path / "invalid.private.bundle.json"
+    invalid_path.write_bytes(b"{")
+
+    with pytest.raises(KeyBundleError, match=r"invalid bundle candidates:.*invalid\.private\.bundle\.json"):
         resolve_private_bundle_by_kid(tmp_path, "sha256:missing")

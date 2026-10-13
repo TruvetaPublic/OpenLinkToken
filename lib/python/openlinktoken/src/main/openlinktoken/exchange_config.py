@@ -32,7 +32,7 @@ from openlinktoken.exchange_kem import (
     EXCHANGE_V2_VERSION,
     decrypt_exchange_envelope_v2,
 )
-from openlinktoken.exchange_key_bundle import ExchangeKeyBundle, resolve_private_bundle_by_kid
+from openlinktoken.exchange_key_bundle import ExchangeKeyBundle, KeyBundleError, resolve_private_bundle_by_kid
 
 SUPPORTED_EXCHANGE_CONFIG_VERSIONS = {1, 2}
 TRANSPORT_KEY_INFO = b"openlinktoken:token-encryption:v1"
@@ -215,6 +215,13 @@ def resolve_exchange_config_private_key(
 
     Returns:
         Private-key PEM bytes or private key-bundle JSON bytes.
+
+    Raises:
+        ValueError: If private-key input sources conflict or recipient headers
+            do not contain usable key identifiers.
+        KeyBundleError: If no matching version-two bundle is found after
+            invalid bundle candidates were encountered.
+        FileNotFoundError: If no matching private key is found.
     """
     provided_private_key_inputs = [
         private_key_path is not None,
@@ -234,6 +241,7 @@ def resolve_exchange_config_private_key(
         return _read_private_key_value(private_key_value)
 
     resolved_openlinktoken_dir = openlinktoken_dir if openlinktoken_dir else Path.home() / ".openlinktoken"
+    invalid_bundle_errors: list[str] = []
     for kid in _recipient_kids(exchange_config.config, exchange_config.version):
         try:
             if exchange_config.version == 2:
@@ -241,7 +249,18 @@ def resolve_exchange_config_private_key(
             return resolve_private_key_by_kid(resolved_openlinktoken_dir, kid)
         except FileNotFoundError:
             continue
+        except KeyBundleError as error:
+            if exchange_config.version != 2:
+                raise
+            invalid_bundle_errors.append(str(error))
+            continue
 
+    if invalid_bundle_errors:
+        invalid_bundle_details = "; ".join(dict.fromkeys(invalid_bundle_errors))
+        raise KeyBundleError(
+            f"No valid private key bundle matching this exchange config was found in "
+            f"{resolved_openlinktoken_dir}. Invalid candidate details: {invalid_bundle_details}"
+        )
     raise FileNotFoundError(
         f"No private key matching this exchange config was found in {resolved_openlinktoken_dir}. "
         "Provide a private key path, environment variable, or direct value."

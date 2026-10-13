@@ -284,6 +284,12 @@ class ExchangeKeyBundle:
                 mlkem_private_seed = _decode(mlkem_section.get("privateKey"), "mlkem.privateKey")
                 if len(mlkem_private_seed) != MLKEM_PRIVATE_SEED_SIZE:
                     raise KeyBundleError(f"mlkem.privateKey must be {MLKEM_PRIVATE_SEED_SIZE} bytes.")
+                try:
+                    mlkem_private_key = mlkem.MLKEM768PrivateKey.from_seed_bytes(mlkem_private_seed)
+                except (TypeError, ValueError) as error:
+                    raise KeyBundleError(f"mlkem.privateKey is not a valid ML-KEM-768 seed: {error}") from error
+                if mlkem_private_key.public_key().public_bytes_raw() != mlkem_public_key:
+                    raise KeyBundleError("mlkem.privateKey does not match mlkem.publicKey.")
 
         ec_section = keys.get("ec")
         ec_public_pem = None
@@ -377,11 +383,29 @@ def resolve_private_bundle_by_kid(directory: Path, kid: str) -> bytes:
 
     Returns:
         The matching private key-bundle JSON bytes.
+
+    Raises:
+        KeyBundleError: If invalid candidates were encountered and no valid
+            bundle matched ``kid``.
+        FileNotFoundError: If no candidate matched ``kid`` and all candidates
+            were valid.
     """
+    invalid_candidates: list[str] = []
     for path in sorted(directory.glob("*.private.bundle.json")):
-        bundle = ExchangeKeyBundle.from_json(path.read_bytes(), require_private=True)
+        bundle_bytes = path.read_bytes()
+        try:
+            bundle = ExchangeKeyBundle.from_json(bundle_bytes, require_private=True)
+        except ValueError as error:
+            invalid_candidates.append(f"{path}: {error}")
+            continue
         if bundle.kid == kid:
-            return path.read_bytes()
+            return bundle_bytes
+    if invalid_candidates:
+        invalid_candidate_details = "; ".join(invalid_candidates)
+        raise KeyBundleError(
+            f"No private key bundle found for recipient kid '{kid}' in {directory}; "
+            f"invalid bundle candidates: {invalid_candidate_details}"
+        )
     raise FileNotFoundError(f"No private key bundle found for recipient kid '{kid}' in {directory}.")
 
 
