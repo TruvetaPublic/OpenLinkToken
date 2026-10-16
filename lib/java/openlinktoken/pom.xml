@@ -74,6 +74,13 @@
             <artifactId>nimbus-jose-jwt</artifactId>
         </dependency>
 
+        <!-- Bouncy Castle lightweight SHAKE/KMAC primitives -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>1.85</version>
+        </dependency>
+
         <!-- Logging -->
         <dependency>
             <groupId>org.slf4j</groupId>

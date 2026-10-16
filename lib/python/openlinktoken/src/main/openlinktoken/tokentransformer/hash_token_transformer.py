@@ -7,33 +7,48 @@ import logging
 import threading
 from typing import Union
 
+from openlinktoken.crypto.crypto_suite import CryptoSuite
 from openlinktoken.tokentransformer.token_transformer import TokenTransformer
 
 logger = logging.getLogger(__name__)
 
 
 class HashTokenTransformer(TokenTransformer):
-    """
-    Transforms the token using a cryptographic hash function with
-    a secret key.
+    """Transform the token using a cryptographic hash function and secret key.
 
     See: https://datatracker.ietf.org/doc/html/rfc4868 (HMACSHA256)
+
+    Args:
+        hashing_secret: Optional MAC key as UTF-8 text or raw bytes. Empty or
+            ``None`` values create a transformer without an available MAC.
+        crypto_suite: Optional suite selecting the keyed MAC; defaults to the
+            backward-compatible HMAC-SHA256 suite.
+
+    Returns:
+        A ``HashTokenTransformer`` configured with the selected MAC.
     """
 
-    def __init__(self, hashing_secret: Union[str, bytes, None]):
-        """
-        Initializes the underlying MAC with the secret key.
+    def __init__(
+        self,
+        hashing_secret: Union[str, bytes, None],
+        crypto_suite: CryptoSuite | None = None,
+    ):
+        """Initialize the underlying MAC with the secret key.
 
         Accepts a ``str`` (encoded to UTF-8), raw ``bytes``, or ``None`` / empty
         to create a no-op transformer (``transform`` will raise ``RuntimeError``).
 
         Args:
-            hashing_secret: The cryptographic secret key.
+            hashing_secret: Optional MAC key as UTF-8 text or raw bytes. Empty
+                or ``None`` values leave the MAC unavailable.
+            crypto_suite: Optional suite selecting the keyed MAC; defaults to
+                HMAC-SHA256.
 
-        Raises:
-            ValueError: If the hashing secret is None or empty.
+        Returns:
+            None.
         """
         self._lock = threading.Lock()
+        self.crypto_suite = crypto_suite or CryptoSuite.default()
         if isinstance(hashing_secret, bytes):
             self.hashing_secret = hashing_secret
             self._mac_available = len(hashing_secret) > 0
@@ -45,10 +60,9 @@ class HashTokenTransformer(TokenTransformer):
             self._mac_available = True
 
     def transform(self, token: str) -> str:
-        """
-        Hash token transformer.
+        """Hash a token with the suite-selected keyed MAC.
 
-        The token is transformed using HMAC SHA256 algorithm.
+        The MAC output is encoded as standard base64 text.
 
         Args:
             token: The token to be transformed.
@@ -58,7 +72,10 @@ class HashTokenTransformer(TokenTransformer):
 
         Raises:
             ValueError: If token is None or blank.
+            ValueError: If the selected MAC algorithm is unsupported or its
+                secret does not meet suite requirements.
             RuntimeError: If the HMAC is not initialized properly.
+
         """
         if token is None or token.strip() == "":
             logger.error("Invalid Argument. Token can't be None or blank.")
@@ -68,7 +85,20 @@ class HashTokenTransformer(TokenTransformer):
             raise RuntimeError("HMAC is not properly initialized due to empty hashing secret.")
 
         with self._lock:
-            mac = hmac.new(self.hashing_secret, token.encode("utf-8"), hashlib.sha256)
+            if self.crypto_suite.token_mac_algorithm == CryptoSuite.TOKEN_MAC_KMAC256_256:
+                self.crypto_suite.validate_hashing_secret(self.hashing_secret)
+                from Crypto.Hash import KMAC256
+
+                digest = KMAC256.new(key=self.hashing_secret, data=token.encode("utf-8"), mac_len=32).digest()
+                return base64.b64encode(digest).decode("utf-8")
+
+            digest_name = {
+                CryptoSuite.TOKEN_MAC_HS256: hashlib.sha256,
+                CryptoSuite.TOKEN_MAC_HS3_256: hashlib.sha3_256,
+            }.get(self.crypto_suite.token_mac_algorithm)
+            if digest_name is None:
+                raise ValueError(f"Unsupported token MAC algorithm '{self.crypto_suite.token_mac_algorithm}'.")
+            mac = hmac.new(self.hashing_secret, token.encode("utf-8"), digest_name)
 
             # Get the digest and encode to base64
             digest = mac.digest()

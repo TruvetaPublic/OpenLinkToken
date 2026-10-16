@@ -170,8 +170,8 @@ These arguments are shared across all subcommands:
 | `--input`           | `-i`                | Input file path (CSV or Parquet)                                                                                                                            |
 | `--output`          | `-o`                | Output file path                                                                                                                                            |
 | `-c`                | `--exchange-config` | Exchange config JSON path. Defaults to `./openlinktoken-YYYY-MM-DD.exchange.json` when omitted on consumer commands.                                        |
-| `--private-key`     |                     | Private key PEM used to decrypt the exchange config and derive later transport keys                                                                         |
-| `--private-key-env` |                     | Environment variable containing the private key PEM                                                                                                         |
+| `--private-key`     |                     | Private PEM key or JSON private bundle used to decrypt the exchange config and derive later transport keys                                                  |
+| `--private-key-env` |                     | Environment variable containing the private PEM key or JSON private bundle                                                                                  |
 | `--mode`            |                     | Tokenize mode selector: `default`, `hash-only`, or `demo`; hash-only/demo do not need secrets, but an exchange config may be supplied for rotation settings |
 | `--hash-record-ids` |                     | SHA-256 hash each input `RecordId` before writing to output (one-way, no traceability; default `tokenize` mode and `package` only)                          |
 
