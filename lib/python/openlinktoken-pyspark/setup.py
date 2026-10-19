@@ -18,7 +18,7 @@ except FileNotFoundError:
 
 setup(
     name="openlinktoken-pyspark",
-    version="2.2.0",
+    version="2.2.1",
     author="Open Link Token Contributors",
     description="Open Link Token PySpark bridge for distributed token generation",
     long_description=long_description,

@@ -30,7 +30,7 @@ The Python CLI emits fields like these:
 {
   "Platform": "Python",
   "PythonVersion": "3.11.5",
-  "Version": "2.2.0",
+  "Version": "2.2.1",
   "TotalRows": 101,
   "TotalRowsWithInvalidAttributes": 9,
   "InvalidAttributesByType": {
@@ -96,7 +96,7 @@ count.
 {
   "Platform": "Python",
   "PythonVersion": "3.11.5",
-  "Version": "2.2.0",
+  "Version": "2.2.1",
   "TotalRows": 3,
   "TotalRowsWithInvalidAttributes": 1,
   "InvalidAttributesByType": {
