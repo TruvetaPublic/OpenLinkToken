@@ -180,6 +180,18 @@ jobs:
           set -euo pipefail
           mkdir -p smoke/cpu-only
           unzip -q "release-assets/olt-cli-${VERSION}-linux-x64.zip" -d smoke/cpu-only
+          model_manifest="release-assets/olt-model-${VERSION}-linux-x64.manifest"
+          model_data="smoke/cpu-only/olt-cli-${VERSION}-linux-x64/_internal/openlinktoken/core/ai/tokens/model.onnx.data"
+          read -r manifest_kind model_checksum < "$model_manifest"
+          test "$manifest_kind" = "sha256"
+          mkdir -p "$(dirname "$model_data")"
+          : > "$model_data"
+          while IFS=$'\t' read -r entry_kind part_checksum part_name; do
+            test "$entry_kind" = "part"
+            printf '%s  %s\n' "$part_checksum" "release-assets/$part_name" | sha256sum -c -
+            cat "release-assets/$part_name" >> "$model_data"
+          done < <(tail -n +2 "$model_manifest")
+          printf '%s  %s\n' "$model_checksum" "$model_data" | sha256sum -c -
           cpu_cli="smoke/cpu-only/olt-cli-${VERSION}-linux-x64/olt"
           "$cpu_cli" tokenize \
             -i smoke/input.csv \

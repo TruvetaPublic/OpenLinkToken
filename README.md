@@ -53,7 +53,7 @@ Perfect for understanding privacy-preserving record linkage concepts before divi
 
 ## Quickstart
 
-**Self-contained executable (easiest):**
+**Standalone CLI packages:**
 
 Download the binary for your platform from the [latest release](https://github.com/TruvetaPublic/OpenLinkToken/releases):
 
@@ -65,9 +65,11 @@ Download the binary for your platform from the [latest release](https://github.c
 | Windows             | `olt-cli-X.Y.Z-windows-x64.zip`  |
 
 Each ZIP contains the executable and its runtime files. Each asset has a matching
-`.sha256` file you can use to verify the download.
-The Linux ZIP contains the CPU-capable runtime. The installer includes the
-optional NVIDIA runtime by default; pass `--no-cuda` for a CPU-only installation.
+`.sha256` file you can use to verify the download. The Linux x86_64 ZIP omits the
+large ML1 model data and NVIDIA libraries to keep the archive within the release
+asset limit. Use `install.sh` on Linux to download and verify the required ML1
+model data; it also installs the NVIDIA runtime by default. Pass `--no-cuda` to
+skip the NVIDIA libraries (the ML1 model data is still installed).
 
 **One-line installers:**
 
@@ -96,7 +98,9 @@ irm https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/inst
 & ([scriptblock]::Create((irm https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.ps1))) -Version v2.2.1
 ```
 
-Extract the ZIP, then run the executable inside its `olt` directory.
+On Linux, use the installer for a complete installation, including the ML1
+model data. On macOS and Windows, extract the ZIP and run the executable inside
+its `olt` directory.
 
 Then run:
 

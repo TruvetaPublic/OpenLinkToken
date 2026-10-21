@@ -16,6 +16,14 @@ def _write_binary(dist_dir: Path, name: str, content: bytes) -> None:
     (dist_dir / name).write_bytes(content)
 
 
+def _write_model_data(bundle_dir: Path, content: bytes) -> Path:
+    """Create model data in the bundle location used by Linux release builds."""
+    model_data = bundle_dir / "_internal" / "openlinktoken" / "core" / "ai" / "tokens" / "model.onnx.data"
+    model_data.parent.mkdir(parents=True, exist_ok=True)
+    model_data.write_bytes(content)
+    return model_data
+
+
 def _expected_checksum(content: bytes, file_name: str) -> str:
     """Return the checksum file contents for an asset."""
     digest = hashlib.sha256(content).hexdigest()
@@ -32,6 +40,7 @@ class TestCreateReleaseAssets:
         (bundle_dir / "olt").write_bytes(b"bundle executable")
         (bundle_dir / "_internal").mkdir()
         (bundle_dir / "_internal" / "runtime.dat").write_bytes(b"runtime")
+        model_data = _write_model_data(bundle_dir, b"model data")
         cuda_lib = bundle_dir / "_internal" / "nvidia" / "cublas" / "lib" / "libcuda.so"
         cuda_lib.parent.mkdir(parents=True)
         cuda_lib.write_bytes(b"cuda")
@@ -46,6 +55,12 @@ class TestCreateReleaseAssets:
         with zipfile.ZipFile(tmp_path / "release-assets/olt-cuda-2.1.0-linux-x64-part-001.zip") as archive:
             assert archive.namelist() == ["nvidia/cublas/lib/libcuda.so"]
             assert archive.read("nvidia/cublas/lib/libcuda.so") == b"cuda"
+        model_part = tmp_path / "release-assets/olt-model-2.1.0-linux-x64-part-001.bin"
+        assert model_part.read_bytes() == model_data.read_bytes()
+        assert (tmp_path / "release-assets/olt-model-2.1.0-linux-x64.manifest").read_text().splitlines() == [
+            f"sha256\t{hashlib.sha256(b'model data').hexdigest()}",
+            f"part\t{hashlib.sha256(b'model data').hexdigest()}\t{model_part.name}",
+        ]
 
     def test_creates_linux_release_assets_and_checksums(self, tmp_path):
         """Linux builds should emit updater binary, zip package, and checksum sidecars."""
@@ -53,6 +68,7 @@ class TestCreateReleaseAssets:
         output_dir = tmp_path / "release-assets"
         binary_content = b"linux binary"
         _write_binary(dist_dir, "olt", binary_content)
+        _write_model_data(dist_dir, b"model data")
         cuda_lib = dist_dir / "_internal" / "nvidia" / "cublas" / "lib" / "libcuda.so"
         cuda_lib.parent.mkdir(parents=True)
         cuda_lib.write_bytes(b"cuda")
@@ -65,6 +81,8 @@ class TestCreateReleaseAssets:
             "olt-v2.1.0-linux-x86_64.sha256",
             "olt-cli-2.1.0-linux-x64.zip",
             "olt-cli-2.1.0-linux-x64.zip.sha256",
+            "olt-model-2.1.0-linux-x64-part-001.bin",
+            "olt-model-2.1.0-linux-x64.manifest",
             "olt-cuda-2.1.0-linux-x64-part-001.zip",
             "olt-cuda-2.1.0-linux-x64.manifest",
         }
@@ -80,6 +98,7 @@ class TestCreateReleaseAssets:
             archived_binary_name = "olt-cli-2.1.0-linux-x64/olt"
             assert archive.namelist() == [archived_binary_name]
             assert archive.read(archived_binary_name) == binary_content
+            assert not any(name.endswith("model.onnx.data") for name in archive.namelist())
 
         assert (output_dir / f"{zip_path.name}.sha256").read_text() == _expected_checksum(
             zip_path.read_bytes(), zip_path.name
@@ -99,6 +118,7 @@ class TestCreateReleaseAssets:
             file_path.parent.mkdir(parents=True, exist_ok=True)
             file_path.write_bytes(content)
         _write_binary(dist_dir, "olt", b"linux binary")
+        _write_model_data(dist_dir, b"model data")
 
         create_release_assets("2.1.0", "Linux", dist_dir, tmp_path / "release-assets")
 
@@ -115,6 +135,7 @@ class TestCreateReleaseAssets:
         cuda_lib.parent.mkdir(parents=True)
         cuda_lib.write_bytes(b"four")
         _write_binary(dist_dir, "olt", b"linux binary")
+        _write_model_data(dist_dir, b"model data")
 
         generated_paths = create_release_assets("2.1.0", "Linux", dist_dir, tmp_path / "release-assets")
 
@@ -123,6 +144,31 @@ class TestCreateReleaseAssets:
         with zipfile.ZipFile(part) as archive:
             assert archive.namelist() == ["nvidia/libcuda.so"]
             assert archive.read("nvidia/libcuda.so") == b"four"
+
+    def test_splits_model_data_into_ordered_checksummed_parts(self, tmp_path, monkeypatch):
+        """Model parts should reconstruct the original data in manifest order."""
+        monkeypatch.setattr(release_assets, "_MODEL_PART_BYTES", 4)
+        dist_dir = tmp_path / "dist"
+        model_data = _write_model_data(dist_dir, b"abcdefgh")
+        _write_binary(dist_dir, "olt", b"linux binary")
+        cuda_lib = dist_dir / "_internal" / "nvidia" / "libcuda.so"
+        cuda_lib.parent.mkdir(parents=True)
+        cuda_lib.write_bytes(b"cuda")
+        output_dir = tmp_path / "release-assets"
+
+        generated_paths = create_release_assets("2.1.0", "Linux", dist_dir, output_dir)
+
+        part_names = [
+            "olt-model-2.1.0-linux-x64-part-001.bin",
+            "olt-model-2.1.0-linux-x64-part-002.bin",
+        ]
+        manifest = output_dir / "olt-model-2.1.0-linux-x64.manifest"
+        entries = manifest.read_text().splitlines()
+        assert entries[0] == f"sha256\t{hashlib.sha256(model_data.read_bytes()).hexdigest()}"
+        assert [entry.split("\t")[2] for entry in entries[1:]] == part_names
+        reconstructed = b"".join((output_dir / name).read_bytes() for name in part_names)
+        assert reconstructed == model_data.read_bytes()
+        assert all((output_dir / name) in generated_paths for name in part_names)
 
     def test_creates_macos_arm64_release_assets(self, tmp_path):
         """macOS arm64 builds should use an architecture-specific asset name."""

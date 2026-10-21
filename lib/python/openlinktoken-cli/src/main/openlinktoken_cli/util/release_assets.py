@@ -42,6 +42,7 @@ _RELEASE_ASSET_SPECS = {
 _CUDA_PART_TARGET_BYTES = 500 * 1024 * 1024
 _RELEASE_ASSET_MAX_BYTES = 1536 * 1024 * 1024
 _CUDA_PART_MAX_BYTES = _RELEASE_ASSET_MAX_BYTES
+_MODEL_PART_BYTES = 256 * 1024 * 1024
 
 
 def create_release_assets(
@@ -80,13 +81,14 @@ def create_release_assets(
 
     zip_path = output_dir / f"{spec.package_name}.zip"
     is_linux = runner_os.strip().lower() == "linux"
-    _create_zip_archive(bundle_root, spec.package_name, zip_path, exclude_cuda=is_linux)
+    _create_zip_archive(bundle_root, spec.package_name, zip_path, exclude_cuda=is_linux, exclude_model_data=is_linux)
 
     binary_checksum_path = _write_checksum_file(raw_binary_path)
     zip_checksum_path = _write_checksum_file(zip_path)
 
     assets = [raw_binary_path, binary_checksum_path, zip_path, zip_checksum_path]
     if is_linux:
+        assets.extend(_create_model_assets(bundle_root, version, output_dir))
         assets.extend(_create_cuda_assets(bundle_root, version, output_dir))
     for asset in assets:
         if asset.stat().st_size > _RELEASE_ASSET_MAX_BYTES:
@@ -222,6 +224,7 @@ def _create_zip_archive(
     package_name: str,
     zip_path: Path,
     exclude_cuda: bool = False,
+    exclude_model_data: bool = False,
 ) -> None:
     """
     Create a ZIP containing the complete one-folder bundle.
@@ -231,13 +234,56 @@ def _create_zip_archive(
         package_name: Name of the package.
         zip_path: Filesystem path to the zip handled by the operation.
         exclude_cuda: Whether to omit bundled NVIDIA libraries.
+        exclude_model_data: Whether to omit the separately distributed ML1 model data.
     """
+    model_data_path = Path("_internal/openlinktoken/core/ai/tokens/model.onnx.data")
     with zipfile.ZipFile(zip_path, mode="w", compression=zipfile.ZIP_DEFLATED) as archive:
         for source_path in sorted(bundle_root.rglob("*")):
             relative_path = source_path.relative_to(bundle_root)
-            if not source_path.is_file() or (exclude_cuda and relative_path.parts[:2] == ("_internal", "nvidia")):
+            if (
+                not source_path.is_file()
+                or (exclude_cuda and relative_path.parts[:2] == ("_internal", "nvidia"))
+                or (exclude_model_data and relative_path == model_data_path)
+            ):
                 continue
             archive.write(source_path, arcname=Path(package_name) / relative_path)
+
+
+def _create_model_assets(bundle_root: Path, version: str, output_dir: Path) -> list[Path]:
+    """
+    Split the ML1 model data into bounded, checksummed Linux release parts.
+
+    Args:
+        bundle_root: PyInstaller bundle root containing the model data.
+        version: Release version used to name the model assets.
+        output_dir: Directory where the model parts and manifest are written.
+
+    Returns:
+        Created model data parts and their manifest.
+    """
+    model_data = bundle_root / "_internal" / "openlinktoken" / "core" / "ai" / "tokens" / "model.onnx.data"
+    if not model_data.is_file():
+        raise FileNotFoundError(f"Expected ML1 model data at {model_data}")
+
+    version = _normalize_version(version)
+    manifest_path = output_dir / f"olt-model-{version}-linux-x64.manifest"
+    digest = hashlib.sha256()
+    manifest_entries = []
+    assets = []
+    with model_data.open("rb") as source:
+        part_number = 0
+        while chunk := source.read(_MODEL_PART_BYTES):
+            part_number += 1
+            part_name = f"olt-model-{version}-linux-x64-part-{part_number:03}.bin"
+            part_path = output_dir / part_name
+            part_path.write_bytes(chunk)
+            digest.update(chunk)
+            manifest_entries.append(f"part\t{_sha256_file(part_path)}\t{part_name}\n")
+            assets.append(part_path)
+
+    manifest_path.write_text(f"sha256\t{digest.hexdigest()}\n{''.join(manifest_entries)}", encoding="utf-8")
+    assets.append(manifest_path)
+    return assets
 
 
 def _create_cuda_assets(bundle_root: Path, version: str, output_dir: Path) -> list[Path]:

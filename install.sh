@@ -175,48 +175,102 @@ staged_bundle="$tmp_dir/staged-bundle"
 cp -R "$bundle_source/." "$staged_bundle"
 chmod 0755 "$staged_bundle/olt"
 
+if [[ "$(uname -s)" == "Linux" ]]; then
+    model_destination="$staged_bundle/_internal/openlinktoken/core/ai/tokens/model.onnx.data"
+    if [[ ! -f "$model_destination" ]]; then
+        printf 'Downloading required ML1 model data...\n'
+        model_manifest="$tmp_dir/olt-model-${version}-linux-x64.manifest"
+        model_manifest_url="${RELEASES_URL}/download/${tag}/olt-model-${version}-linux-x64.manifest"
+        curl -fL --retry 3 --output "$model_manifest" "$model_manifest_url" ||
+            fail "ML1 model data manifest not found for $tag"
+
+        IFS=$'\t' read -r manifest_kind model_checksum manifest_extra < "$model_manifest" ||
+            fail "Invalid ML1 model data manifest"
+        [[ "$manifest_kind" == "sha256" && -n "$model_checksum" && -z "${manifest_extra:-}" ]] ||
+            fail "Invalid ML1 model data manifest"
+        [[ "$model_checksum" =~ ^[[:xdigit:]]{64}$ ]] || fail "Invalid ML1 model data checksum"
+
+        model_part_prefix="olt-model-${version}-linux-x64-part-"
+        model_data="$tmp_dir/model.onnx.data"
+        : > "$model_data"
+        model_part_count=0
+        while IFS=$'\t' read -r entry_kind expected_checksum model_asset extra; do
+            [[ "$entry_kind" == "part" && -n "$expected_checksum" && -n "$model_asset" && -z "${extra:-}" ]] ||
+                fail "Invalid ML1 model data manifest entry"
+            [[ "$model_asset" == "$model_part_prefix"* && "$model_asset" == *.bin && "$model_asset" != */* ]] ||
+                fail "Invalid ML1 model data asset name in manifest"
+            part_number="${model_asset#"$model_part_prefix"}"
+            part_number="${part_number%.bin}"
+            [[ "$part_number" =~ ^[0-9]{3}$ ]] || fail "Invalid ML1 model data part number"
+            expected_part_number=$(printf '%03d' "$((model_part_count + 1))")
+            [[ "$part_number" == "$expected_part_number" ]] || fail "Unexpected ML1 model data part order"
+
+            model_part="$tmp_dir/$model_asset"
+            model_url="${RELEASES_URL}/download/${tag}/${model_asset}"
+            printf 'Downloading ML1 model data part %s...\n' "$part_number"
+            curl -fL --retry 3 --output "$model_part" "$model_url" ||
+                fail "ML1 model data part not found: $model_asset"
+            verify_sha256 "$expected_checksum" "$model_part" "$model_asset"
+            cat "$model_part" >> "$model_data" || fail "Unable to assemble ML1 model data"
+            model_part_count=$((model_part_count + 1))
+        done < <(tail -n +2 "$model_manifest")
+
+        ((model_part_count > 0)) || fail "ML1 model data manifest contains no parts"
+        verify_sha256 "$model_checksum" "$model_data" "assembled ML1 model data"
+        mkdir -p "$(dirname "$model_destination")"
+        mv "$model_data" "$model_destination"
+    fi
+fi
+
 if [[ "$install_cuda" == true ]]; then
-    printf 'Installing the NVIDIA CUDA runtime by default (use --no-cuda to skip)...\n'
-    cuda_manifest="$tmp_dir/olt-cuda-${version}-linux-x64.manifest"
-    cuda_manifest_url="${RELEASES_URL}/download/${tag}/olt-cuda-${version}-linux-x64.manifest"
-    curl -fL --retry 3 --output "$cuda_manifest" "$cuda_manifest_url" ||
-        fail "CUDA runtime manifest not found for $tag"
+    if [[ -n "$(find "$staged_bundle/_internal/nvidia" -type f -print -quit 2>/dev/null)" ]]; then
+        printf 'NVIDIA runtime already included in the CLI archive.\n'
+    else
+        printf 'Installing the NVIDIA CUDA runtime by default (use --no-cuda to skip)...\n'
+        cuda_manifest="$tmp_dir/olt-cuda-${version}-linux-x64.manifest"
+        cuda_manifest_url="${RELEASES_URL}/download/${tag}/olt-cuda-${version}-linux-x64.manifest"
+        curl -fL --retry 3 --output "$cuda_manifest" "$cuda_manifest_url" ||
+            fail "CUDA runtime manifest not found for $tag"
 
-    cuda_part_prefix="olt-cuda-${version}-linux-x64-part-"
-    cuda_part_count=0
-    while IFS=$'\t' read -r expected_checksum cuda_asset extra; do
-        [[ -n "$expected_checksum" && -n "$cuda_asset" && -z "${extra:-}" ]] ||
-            fail "Invalid CUDA runtime manifest entry"
-        [[ "$cuda_asset" == "$cuda_part_prefix"* && "$cuda_asset" == *.zip ]] ||
-            fail "Invalid CUDA runtime asset name in manifest"
-        part_number="${cuda_asset#"$cuda_part_prefix"}"
-        part_number="${part_number%.zip}"
-        [[ "$part_number" =~ ^[0-9]{3}$ ]] || fail "Invalid CUDA runtime part number"
+        cuda_part_prefix="olt-cuda-${version}-linux-x64-part-"
+        cuda_part_count=0
+        while IFS=$'\t' read -r expected_checksum cuda_asset extra; do
+            [[ -n "$expected_checksum" && -n "$cuda_asset" && -z "${extra:-}" ]] ||
+                fail "Invalid CUDA runtime manifest entry"
+            [[ "$cuda_asset" == "$cuda_part_prefix"* && "$cuda_asset" == *.zip ]] ||
+                fail "Invalid CUDA runtime asset name in manifest"
+            part_number="${cuda_asset#"$cuda_part_prefix"}"
+            part_number="${part_number%.zip}"
+            [[ "$part_number" =~ ^[0-9]{3}$ ]] || fail "Invalid CUDA runtime part number"
 
-        cuda_archive="$tmp_dir/$cuda_asset"
-        cuda_url="${RELEASES_URL}/download/${tag}/${cuda_asset}"
-        printf 'Downloading CUDA runtime part %s...\n' "$part_number"
-        curl -fL --retry 3 --output "$cuda_archive" "$cuda_url" ||
-            fail "CUDA runtime part not found: $cuda_asset"
-        verify_sha256 "$expected_checksum" "$cuda_archive" "$cuda_asset"
+            cuda_archive="$tmp_dir/$cuda_asset"
+            cuda_url="${RELEASES_URL}/download/${tag}/${cuda_asset}"
+            printf 'Downloading CUDA runtime part %s...\n' "$part_number"
+            curl -fL --retry 3 --output "$cuda_archive" "$cuda_url" ||
+                fail "CUDA runtime part not found: $cuda_asset"
+            verify_sha256 "$expected_checksum" "$cuda_archive" "$cuda_asset"
 
-        cuda_entries="$tmp_dir/${cuda_asset}.entries"
-        unzip -Z1 "$cuda_archive" > "$cuda_entries" ||
-            fail "Unable to list CUDA runtime part: $cuda_asset"
-        while IFS= read -r cuda_entry; do
-            [[ "$cuda_entry" == nvidia/* ]] || fail "Invalid path in CUDA runtime part: $cuda_entry"
-            case "/$cuda_entry/" in
-                *"/../"*|*"/./"*) fail "Invalid path in CUDA runtime part: $cuda_entry" ;;
-            esac
-        done < "$cuda_entries"
-        unzip -o -q "$cuda_archive" -d "$staged_bundle/_internal" ||
-            fail "Unable to extract CUDA runtime part: $cuda_asset"
-        cuda_part_count=$((cuda_part_count + 1))
-    done < "$cuda_manifest"
+            cuda_entries="$tmp_dir/${cuda_asset}.entries"
+            unzip -Z1 "$cuda_archive" > "$cuda_entries" ||
+                fail "Unable to list CUDA runtime part: $cuda_asset"
+            while IFS= read -r cuda_entry; do
+                [[ "$cuda_entry" == nvidia/* ]] || fail "Invalid path in CUDA runtime part: $cuda_entry"
+                case "/$cuda_entry/" in
+                    *"/../"*|*"/./"*) fail "Invalid path in CUDA runtime part: $cuda_entry" ;;
+                esac
+            done < "$cuda_entries"
+            unzip -o -q "$cuda_archive" -d "$staged_bundle/_internal" ||
+                fail "Unable to extract CUDA runtime part: $cuda_asset"
+            cuda_part_count=$((cuda_part_count + 1))
+        done < "$cuda_manifest"
 
-    ((cuda_part_count > 0)) || fail "CUDA runtime manifest contains no parts"
-    [[ -n "$(find "$staged_bundle/_internal/nvidia" -type f -print -quit 2>/dev/null)" ]] ||
-        fail "CUDA runtime parts contain no NVIDIA libraries"
+        ((cuda_part_count > 0)) || fail "CUDA runtime manifest contains no parts"
+        [[ -n "$(find "$staged_bundle/_internal/nvidia" -type f -print -quit 2>/dev/null)" ]] ||
+            fail "CUDA runtime parts contain no NVIDIA libraries"
+    fi
+elif [[ -d "$staged_bundle/_internal/nvidia" ]]; then
+    rm -rf -- "$staged_bundle/_internal/nvidia"
+    printf 'Installing the CPU-only runtime.\n'
 else
     printf 'Installing the CPU-only runtime.\n'
 fi
