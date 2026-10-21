@@ -142,7 +142,7 @@ metadata:
 ```json
 {
   "PythonVersion": "3.11.0",
-  "Version": "2.2.0",
+  "Version": "2.2.1",
   "Platform": "Python",
   "TotalRows": 3,
   "TotalRowsWithInvalidAttributes": 1,

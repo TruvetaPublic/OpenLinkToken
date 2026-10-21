@@ -36,15 +36,34 @@ class AttributeField:
 
     @property
     def field_id(self) -> str:
-        """Get the unique field identifier."""
+        """
+        Get the unique field identifier.
+
+        Returns:
+            The unique field identifier.
+        """
         return self._field_id
 
     @property
     def attribute_class(self) -> Type["Attribute"]:
-        """Get the attribute class providing normalization and validation behavior."""
+        """
+        Get the attribute class providing normalization and validation behavior.
+
+        Returns:
+            The attribute class providing normalization and validation behavior.
+        """
         return self._attribute_class
 
     def __eq__(self, other: object) -> bool:
+        """
+        Compare this instance with another value.
+
+        Args:
+            other: Other value to compare with this AttributeField.
+
+        Returns:
+            True when the check succeeds; otherwise, False.
+        """
         if self is other:
             return True
         if not isinstance(other, AttributeField):
@@ -52,7 +71,19 @@ class AttributeField:
         return self._field_id == other._field_id
 
     def __hash__(self) -> int:
+        """
+        Return a hash for the instance.
+
+        Returns:
+            Hashed result.
+        """
         return hash(self._field_id)
 
     def __repr__(self) -> str:
+        """
+        Return a developer-readable representation of the instance.
+
+        Returns:
+            String produced by repr.
+        """
         return f"AttributeField(field_id='{self._field_id}', attribute_class={self._attribute_class.__name__})"

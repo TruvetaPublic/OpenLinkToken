@@ -29,12 +29,27 @@ class BirthDateAttribute(DateAttribute):
 
     def __init__(self):
         # Birth dates must be between 1910-01-01 and today
+        """
+        Initialize the instance.
+        """
         min_date = date(1910, 1, 1)
         validator = DateRangeValidator(min_date=min_date, use_current_as_max=True)
         super().__init__(additional_validators=[validator])
 
     def get_name(self) -> str:
+        """
+        Retrieve name.
+
+        Returns:
+            The name.
+        """
         return self.NAME
 
     def get_aliases(self) -> List[str]:
+        """
+        Retrieve aliases.
+
+        Returns:
+            The aliases.
+        """
         return self.ALIASES.copy()

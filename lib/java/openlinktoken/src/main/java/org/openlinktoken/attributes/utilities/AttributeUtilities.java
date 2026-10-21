@@ -138,6 +138,7 @@ public class AttributeUtilities {
             "NotAvailable" // Placeholder for data not available (no spaces)
     );
 
+    /** Prevents instantiation of this utility class. */
     private AttributeUtilities() {
         throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
     }

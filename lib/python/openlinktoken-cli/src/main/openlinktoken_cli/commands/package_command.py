@@ -25,14 +25,32 @@ def resolve_exchange_config(
     private_key_path: str | None = None,
     private_key_env: str | None = None,
 ) -> Any:
-    """Resolve exchange configuration without importing crypto dependencies at startup."""
+    """
+    Resolve exchange configuration without importing crypto dependencies at startup.
+
+    Args:
+        exchange_config_path: Path to the exchange-config file to load.
+        private_key_path: Path to the private-key PEM file.
+        private_key_env: Environment-variable name containing the private-key PEM.
+
+    Returns:
+        Resolved exchange configuration without importing crypto dependencies at startup.
+    """
     from openlinktoken_cli.util.exchange_config import resolve_exchange_config as implementation
 
     return implementation(exchange_config_path, private_key_path, private_key_env)
 
 
 def derive_transport_encryption_key(exchange: Any) -> bytes:
-    """Derive the transport key without importing crypto dependencies at startup."""
+    """
+    Derive the transport key without importing crypto dependencies at startup.
+
+    Args:
+        exchange: Exchange value to derive.
+
+    Returns:
+        Derived the transport key without importing crypto dependencies at startup.
+    """
     from openlinktoken_cli.util.exchange_config import derive_transport_encryption_key as implementation
 
     return implementation(exchange)
@@ -46,7 +64,12 @@ class PackageCommand:
 
     @staticmethod
     def register_subcommand(subparsers):
-        """Register the package subcommand with the argument parser."""
+        """
+        Register the package subcommand with the argument parser.
+
+        Args:
+            subparsers: Argument-parser subparsers to configure with command handlers.
+        """
         parser = subparsers.add_parser(
             "package",
             help="Generate and encrypt tokens in one step using the exchange config",
@@ -166,7 +189,15 @@ class PackageCommand:
 
     @staticmethod
     def execute(args):
-        """Execute the package command."""
+        """
+        Execute the package command.
+
+        Args:
+            args: Parsed command-line options for this command.
+
+        Returns:
+            Integer exit status: 0 on success and 1 when the command reports an error.
+        """
         from openlinktoken.core.ai.tokens.ml1_inference_config import ML1InferenceConfig
         from openlinktoken.core.ai.tokens.rotation_config import RotationConfig
         from openlinktoken.exchange_config import rotation_iv_to_text
@@ -349,7 +380,24 @@ class PackageCommand:
         tokenization_config_path: Optional[str] = None,
         progress_callback=None,
     ) -> tuple[PersonAttributesProcessingSummary, str]:
-        """Process tokens from person attributes."""
+        """
+        Process tokens from person attributes.
+
+        Args:
+            input_path: Path to the input file to read.
+            output_path: Destination path for the generated output file.
+            input_type: Detected format of the input file, such as CSV or Parquet.
+            output_type: Format to use for the output file, such as CSV or Parquet.
+            hashing_secret: Secret used as the HMAC-SHA256 key for token hashing.
+            encryption_key: Key used to encrypt or decrypt the payload.
+            ring_id: Identifier of the key or token ring to retrieve.
+            hash_record_ids: Whether record identifiers should be hashed in the output.
+            tokenization_config_path: Filesystem path to the tokenization config handled by the operation.
+            progress_callback: Callback invoked with updates as processing advances.
+
+        Returns:
+            Processed tokens from person attributes.
+        """
         from openlinktoken.metadata import Metadata
         from openlinktoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
         from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
@@ -412,7 +460,18 @@ class PackageCommand:
         summary: PersonAttributesProcessingSummary,
         hash_record_ids: bool,
     ) -> list[str]:
-        """Build the human-readable completion summary for a package run."""
+        """
+        Build the human-readable completion summary for a package run.
+
+        Args:
+            output_path: Destination path for the generated output file.
+            metadata_path: Filesystem path to the metadata handled by the operation.
+            summary: Summary value to build.
+            hash_record_ids: Whether record identifiers should be hashed in the output.
+
+        Returns:
+            Built the human-readable completion summary for a package run.
+        """
         from openlinktoken_cli.util.cli_run_reporter import CliRunReporter
 
         lines = [
@@ -436,7 +495,16 @@ class PackageCommand:
 
     @staticmethod
     def _create_writer(path: str, file_type: str):
-        """Create a PersonAttributesWriter based on file type."""
+        """
+        Create a PersonAttributesWriter based on file type.
+
+        Args:
+            path: Path to the output file that receives packaged tokens.
+            file_type: File format that selects the CSV or Parquet writer.
+
+        Returns:
+            Created a PersonAttributesWriter based on file type.
+        """
         from openlinktoken_cli.io.csv.person_attributes_csv_writer import PersonAttributesCSVWriter
         from openlinktoken_cli.io.parquet.person_attributes_parquet_writer import PersonAttributesParquetWriter
         from openlinktoken_cli.io.zip.person_attributes_zip_writer import PersonAttributesZipWriter

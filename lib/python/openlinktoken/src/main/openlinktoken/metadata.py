@@ -20,7 +20,7 @@ class Metadata:
     METADATA_FILE_EXTENSION = ".metadata.json"
     SYSTEM_PYTHON_VERSION = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
 
-    DEFAULT_VERSION = "2.2.0"
+    DEFAULT_VERSION = "2.2.1"
 
     # Output format values
     OUTPUT_FORMAT_JSON = "JSON"
@@ -97,5 +97,12 @@ class HashCalculationException(Exception):
     """Custom exception for hash calculation errors."""
 
     def __init__(self, message: str, cause: Exception = None):
+        """
+        Initialize the instance.
+
+        Args:
+            message: String containing the message used to initialize.
+            cause: Cause value to initialize.
+        """
         super().__init__(message)
         self.cause = cause

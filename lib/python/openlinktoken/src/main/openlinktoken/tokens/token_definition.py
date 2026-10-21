@@ -30,17 +30,29 @@ class TokenDefinition(BaseTokenDefinition):
     def get_version(self) -> str:
         """
         Get the version of the token definition.
+
+        Returns:
+            The version of the token definition.
         """
         return "2.0"
 
     def get_token_identifiers(self) -> Set[str]:
         """
         Get all token identifiers.
+
+        Returns:
+            The all token identifiers.
         """
         return set(self.definitions.keys())
 
     def get_token_definition(self, token_id: str) -> List[AttributeExpression]:
         """
         Get the token definition for a given token identifier.
+
+        Args:
+            token_id: Identifier of the token or rule to process.
+
+        Returns:
+            The token definition for a given token identifier.
         """
         return self.definitions.get(token_id)

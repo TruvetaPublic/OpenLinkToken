@@ -271,7 +271,7 @@ Parquet format includes compression and is suitable for large datasets.
 {
   "Platform": "Python",
   "PythonVersion": "3.11.5",
-  "Version": "2.2.0",
+  "Version": "2.2.1",
   "TotalRows": 100,
   "TotalRowsWithInvalidAttributes": 3,
   "InvalidAttributesByType": {

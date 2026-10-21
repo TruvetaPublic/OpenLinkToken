@@ -7,6 +7,9 @@ import java.security.NoSuchAlgorithmException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * Maintains token-output metadata and provides SHA-256 helpers for secret values.
+ */
 public class Metadata {
 
     // Metadata keys
@@ -21,7 +24,7 @@ public class Metadata {
     public static final String METADATA_FILE_EXTENSION = ".metadata.json";
     public static final String SYSTEM_JAVA_VERSION = System.getProperty("java.version");
 
-    public static final String DEFAULT_VERSION = "2.2.0";
+    public static final String DEFAULT_VERSION = "2.2.1";
 
     // Output format values
     public static final String OUTPUT_FORMAT_JSON = "JSON";
@@ -30,6 +33,7 @@ public class Metadata {
 
     private Map<String, Object> metadataMap;
 
+    /** Creates metadata with an empty backing map. */
     public Metadata() {
         metadataMap = new LinkedHashMap<>();
     }
@@ -127,6 +131,12 @@ public class Metadata {
      * Custom exception for hash calculation errors.
      */
     public static class HashCalculationException extends RuntimeException {
+        /**
+         * Creates an exception describing the hash calculation failure.
+         *
+         * @param message the failure description
+         * @param cause the underlying cause
+         */
         public HashCalculationException(String message, Throwable cause) {
             super(message, cause);
         }

@@ -75,14 +75,24 @@ class HashTokenTransformer(TokenTransformer):
             return base64.b64encode(digest).decode("utf-8")
 
     def __getstate__(self):
-        """Custom serialization support."""
+        """
+        Custom serialization support.
+
+        Returns:
+            Copy of the instance state with the unpicklable thread lock removed.
+        """
         state = self.__dict__.copy()
         # Remove the lock as it can't be pickled
         del state["_lock"]
         return state
 
     def __setstate__(self, state):
-        """Custom deserialization support."""
+        """
+        Custom deserialization support.
+
+        Args:
+            state: Serialized object state to restore.
+        """
         self.__dict__.update(state)
         # Recreate the lock
         self._lock = threading.Lock()

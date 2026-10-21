@@ -1,18 +1,57 @@
 [project]
 name = "openlinktoken-pyspark"
-version = "2.2.0"
+version = "2.2.1"
 requires-python = ">=3.10"
 dynamic = [
   "authors",
-  "dependencies",
   "description",
-  "optional-dependencies",
   "readme",
   "urls",
 ]
+dependencies = [
+  "openlinktoken==2.2.0",
+  "pycryptodome==3.24.0",
+  "jwcrypto==1.6.1",
+]
+
+[project.optional-dependencies]
+spark41 = [
+  "pyspark==4.1.0",
+  "pyarrow==25.0.1",
+  "pandas==2.2.3; python_version < '3.11'",
+  "pandas==3.0.3; python_version >= '3.11'",
+]
+spark40 = [
+  "pyspark==4.0.1",
+  "pyarrow==25.0.1",
+  "pandas==2.2.3; python_version < '3.11'",
+  "pandas==3.0.3; python_version >= '3.11'",
+]
+spark35 = [
+  "pyspark==3.5.5",
+  "pyarrow==19.0.0",
+  "pandas==2.2.3; python_version < '3.11'",
+  "pandas==3.0.3; python_version >= '3.11'",
+  "setuptools==83.0.0; python_version >= '3.12'",
+]
+spark34 = [
+  "pyspark==3.4.4",
+  "pyarrow==22.0.0",
+  "pandas==2.1.4; python_version < '3.11'",
+  "pandas==3.0.3; python_version >= '3.11'",
+  "setuptools==83.0.0; python_version >= '3.12'",
+]
+dev = [
+  "pytest==9.1.1",
+  "pytest-cov==7.1.0",
+  "flake8==7.3.0",
+  "jupyter==1.1.1",
+  "notebook==7.6.3",
+  "ipykernel==7.3.0",
+]
 
 [build-system]
-requires = ["setuptools==84.0.0", "wheel==0.47.0"]
+requires = ["setuptools==84.0.0", "wheel==0.48.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.uv]

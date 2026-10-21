@@ -55,16 +55,31 @@ class PersonAttributesParquetReader(PersonAttributesReader):
 
     @property
     def attribute_map(self) -> Dict[str, str]:
-        """Return the normalized input-column mapping for this reader."""
+        """
+        Return the normalized input-column mapping for this reader.
+
+        Returns:
+            The normalized input-column mapping for this reader.
+        """
         return self._attribute_map
 
     @attribute_map.setter
     def attribute_map(self, value: Dict[str, str]) -> None:
-        """Store column mappings using lowercase keys for case-insensitive lookups."""
+        """
+        Store column mappings using lowercase keys for case-insensitive lookups.
+
+        Args:
+            value: Mapping from input column names to field identifiers.
+        """
         self._attribute_map = {column_name.lower(): field_id for column_name, field_id in value.items()}
 
     def __iter__(self):
-        """Return the iterator object."""
+        """
+        Return the iterator object.
+
+        Returns:
+            The iterator object.
+        """
         return self
 
     def has_next(self) -> bool:
@@ -128,7 +143,12 @@ class PersonAttributesParquetReader(PersonAttributesReader):
         return attributes
 
     def row_count(self) -> int:
-        """Return the total number of rows in the Parquet file."""
+        """
+        Return the total number of rows in the Parquet file.
+
+        Returns:
+            Total number of rows in the loaded Parquet file.
+        """
         return self.total_rows
 
     def close(self) -> None:
@@ -138,7 +158,12 @@ class PersonAttributesParquetReader(PersonAttributesReader):
         # No explicit file handle to close
 
     def _build_column_to_field_id_map(self) -> Dict[str, str]:
-        """Build lowercase alias-to-field-id mapping from AttributeLoader."""
+        """
+        Build lowercase alias-to-field-id mapping from AttributeLoader.
+
+        Returns:
+            Built lowercase alias-to-field-id mapping from AttributeLoader.
+        """
         field_id_map: Dict[str, str] = {}
         attributes: Set[Attribute] = AttributeLoader.load()
         for attribute in attributes:

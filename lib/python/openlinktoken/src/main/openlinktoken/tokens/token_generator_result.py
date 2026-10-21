@@ -19,15 +19,30 @@ class TokenGeneratorResult:
 
     @property
     def tokens(self) -> Dict[str, str]:
-        """Get the generated tokens."""
+        """
+        Get the generated tokens.
+
+        Returns:
+            The generated tokens.
+        """
         return self._tokens
 
     @property
     def invalid_attributes(self) -> Set[str]:
-        """Get the invalid attributes."""
+        """
+        Get the invalid attributes.
+
+        Returns:
+            The invalid attributes.
+        """
         return self._invalid_attributes
 
     @property
     def blank_tokens_by_rule(self) -> Set[str]:
-        """Get the blank tokens by rule."""
+        """
+        Get the blank tokens by rule.
+
+        Returns:
+            The blank tokens by rule.
+        """
         return self._blank_tokens_by_rule

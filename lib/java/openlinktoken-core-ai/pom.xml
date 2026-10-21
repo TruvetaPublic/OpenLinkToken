@@ -7,13 +7,13 @@
     <parent>
         <groupId>org.openlinktoken</groupId>
         <artifactId>openlinktoken-parent</artifactId>
-        <version>2.2.0</version>
+        <version>2.2.1</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>openlinktoken-core-ai</artifactId>
     <packaging>jar</packaging>
-    <version>2.2.0</version>
+    <version>2.2.1</version>
 
     <name>openlinktoken-core-ai</name>
     <description>Open Link Token Core AI — ONNX-based ML1 inference and rotation token generation</description>
@@ -22,7 +22,7 @@
     <properties>
         <!-- This module is also published to GitHub Packages -->
         <maven.deploy.skip>false</maven.deploy.skip>
-        <ai.djl.version>0.36.0</ai.djl.version>
+        <ai.djl.version>0.38.0</ai.djl.version>
     </properties>
 
     <dependencies>

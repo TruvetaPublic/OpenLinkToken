@@ -28,7 +28,12 @@ class NotInValidator(SerializableAttributeValidator):
 
     @property
     def invalid_values(self) -> Set[str]:
-        """Get the set of invalid values (in lowercase)."""
+        """
+        Get the set of invalid values (in lowercase).
+
+        Returns:
+            The set of invalid values (in lowercase).
+        """
         return self._invalid_values.copy()
 
     def eval(self, value: str) -> bool:

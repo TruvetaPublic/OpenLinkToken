@@ -52,7 +52,12 @@ class ResolvedExchangeConfig:
 
 
 def default_exchange_config_path() -> Path:
-    """Return the default date-based exchange-config path."""
+    """
+    Return the default date-based exchange-config path.
+
+    Returns:
+        Path instance produced by default exchange config path.
+    """
     return Path(f"./openlinktoken-{date.today().isoformat()}.exchange.json")
 
 
@@ -60,7 +65,16 @@ def load_exchange_config(
     exchange_config_path: str | Path | None = None,
     exchange_config_value: str | bytes | Mapping[str, Any] | None = None,
 ) -> LoadedExchangeConfig:
-    """Load and validate an exchange-config envelope from disk or an in-memory value."""
+    """
+    Load and validate an exchange-config envelope from disk or an in-memory value.
+
+    Args:
+        exchange_config_path: Path to the exchange-config file to load.
+        exchange_config_value: Exchange-config content supplied directly as a string, bytes, or mapping.
+
+    Returns:
+        Loaded and validate an exchange-config envelope from disk or an in-memory value.
+    """
     if exchange_config_path and exchange_config_value is not None:
         raise ValueError("Cannot combine an exchange config path and a direct exchange config value.")
 
@@ -94,7 +108,16 @@ def resolve_exchange_config(
     exchange_config_path: str | Path | None,
     private_key_pem: bytes,
 ) -> ResolvedExchangeConfig:
-    """Load, validate, and decrypt an exchange config using the provided private key PEM."""
+    """
+    Load, validate, and decrypt an exchange config using the provided private key PEM.
+
+    Args:
+        exchange_config_path: Path to the exchange-config file to load.
+        private_key_pem: PEM-encoded private key used for decryption.
+
+    Returns:
+        Resolved exchange config.
+    """
     return resolve_loaded_exchange_config(load_exchange_config(exchange_config_path), private_key_pem)
 
 
@@ -105,7 +128,19 @@ def resolve_exchange_config_inputs(
     exchange_config_value: str | bytes | Mapping[str, Any] | None = None,
     private_key_value: str | bytes | None = None,
 ) -> ResolvedExchangeConfig:
-    """Resolve exchange-config inputs into decrypted exchange state."""
+    """
+    Resolve exchange-config inputs into decrypted exchange state.
+
+    Args:
+        exchange_config_path: Path to the exchange-config file to load.
+        private_key_path: Path to the private-key PEM file.
+        private_key_env: Environment-variable name containing the private-key PEM.
+        exchange_config_value: Exchange-config content supplied directly as a string, bytes, or mapping.
+        private_key_value: Private-key PEM supplied directly as a string or byte sequence.
+
+    Returns:
+        Resolved exchange-config inputs into decrypted exchange state.
+    """
     loaded_exchange = load_exchange_config(
         exchange_config_path=exchange_config_path,
         exchange_config_value=exchange_config_value,
@@ -127,7 +162,20 @@ def resolve_exchange_config_private_key(
     openlinktoken_dir: Path | None = None,
     environment: Mapping[str, str] | None = None,
 ) -> bytes:
-    """Resolve private-key PEM bytes for a loaded exchange config."""
+    """
+    Resolve private-key PEM bytes for a loaded exchange config.
+
+    Args:
+        exchange_config: Exchange config value to resolve.
+        private_key_path: Path to the private-key PEM file.
+        private_key_env: Environment-variable name containing the private-key PEM.
+        private_key_value: Private-key PEM supplied directly as a string or byte sequence.
+        openlinktoken_dir: Directory used for the openlinktoken.
+        environment: Environment-variable mapping used to resolve configuration.
+
+    Returns:
+        Resolved private-key PEM bytes for a loaded exchange config.
+    """
     provided_private_key_inputs = [
         private_key_path is not None,
         private_key_env is not None,
@@ -161,7 +209,16 @@ def resolve_exchange_config_private_key(
 def resolve_loaded_exchange_config(
     exchange_config: LoadedExchangeConfig, private_key_pem: bytes
 ) -> ResolvedExchangeConfig:
-    """Decrypt a validated exchange-config envelope using the provided private key PEM."""
+    """
+    Decrypt a validated exchange-config envelope using the provided private key PEM.
+
+    Args:
+        exchange_config: Exchange config value to resolve.
+        private_key_pem: PEM-encoded private key used for decryption.
+
+    Returns:
+        Decrypted a validated exchange-config envelope using the provided private key PEM.
+    """
     try:
         payload = json.loads(decrypt_exchange_envelope(exchange_config.config, private_key_pem))
     except Exception as error:
@@ -186,7 +243,15 @@ def resolve_loaded_exchange_config(
 
 
 def derive_transport_encryption_key(exchange: ResolvedExchangeConfig) -> bytes:
-    """Derive the shared 32-byte transport key defined by the exchange config contract."""
+    """
+    Derive the shared 32-byte transport key defined by the exchange config contract.
+
+    Args:
+        exchange: Exchange value to derive.
+
+    Returns:
+        Derived the shared 32-byte transport key defined by the exchange config contract.
+    """
     sender_public_key = exchange.payload.get("senderPublicKey")
     recipient_public_key = exchange.payload.get("recipientPublicKey")
     exchange_id = exchange.payload.get("exchangeId")
@@ -215,7 +280,15 @@ def derive_transport_encryption_key(exchange: ResolvedExchangeConfig) -> bytes:
 
 
 def _read_private_key_path(private_key_path: str | Path) -> bytes:
-    """Read private-key PEM bytes from disk."""
+    """
+    Read private-key PEM bytes from disk.
+
+    Args:
+        private_key_path: Path to the private-key PEM file.
+
+    Returns:
+        Read private-key PEM bytes from disk.
+    """
     path = Path(private_key_path)
     if not path.exists():
         raise FileNotFoundError(f"Private key file not found: {path}")
@@ -228,7 +301,16 @@ def _read_private_key_env(
     private_key_env: str,
     environment: Mapping[str, str] | None = None,
 ) -> bytes:
-    """Read private-key PEM bytes from a named environment variable."""
+    """
+    Read private-key PEM bytes from a named environment variable.
+
+    Args:
+        private_key_env: Environment-variable name containing the private-key PEM.
+        environment: Environment-variable mapping used to resolve configuration.
+
+    Returns:
+        Read private-key PEM bytes from a named environment variable.
+    """
     resolved_environment = os.environ if environment is None else environment
     value = resolved_environment.get(private_key_env)
     if value is None or not value.strip():
@@ -237,7 +319,15 @@ def _read_private_key_env(
 
 
 def _read_private_key_value(private_key_value: str | bytes) -> bytes:
-    """Read private-key PEM bytes from a direct in-memory value."""
+    """
+    Read private-key PEM bytes from a direct in-memory value.
+
+    Args:
+        private_key_value: Private-key PEM supplied directly as a string or byte sequence.
+
+    Returns:
+        Read private-key PEM bytes from a direct in-memory value.
+    """
     if isinstance(private_key_value, bytes):
         if not private_key_value.strip():
             raise ValueError("Direct private key value does not contain non-empty private key data.")
@@ -249,7 +339,15 @@ def _read_private_key_value(private_key_value: str | bytes) -> bytes:
 
 
 def _parse_exchange_config_value(exchange_config_value: str | bytes | Mapping[str, Any]) -> Mapping[str, Any]:
-    """Parse an in-memory exchange-config payload."""
+    """
+    Parse an in-memory exchange-config payload.
+
+    Args:
+        exchange_config_value: Exchange-config content supplied directly as a string, bytes, or mapping.
+
+    Returns:
+        Parsed an in-memory exchange-config payload.
+    """
     if isinstance(exchange_config_value, Mapping):
         return dict(exchange_config_value)
 
@@ -270,7 +368,15 @@ def _parse_exchange_config_value(exchange_config_value: str | bytes | Mapping[st
 
 
 def _recipient_kids(exchange_config: Mapping[str, Any]) -> list[str]:
-    """Extract recipient key identifiers from an exchange-config envelope."""
+    """
+    Extract recipient key identifiers from an exchange-config envelope.
+
+    Args:
+        exchange_config: Exchange-config envelope whose recipient key IDs are extracted.
+
+    Returns:
+        Recipient key IDs in the order they appear in the JWE envelope.
+    """
     recipients = exchange_config.get("recipients")
     if not isinstance(recipients, list) or not recipients:
         raise ValueError("Exchange config is missing recipient entries needed for private-key resolution.")
@@ -289,6 +395,16 @@ def _recipient_kids(exchange_config: Mapping[str, Any]) -> list[str]:
 
 
 def _resolve_private_key_role(private_pem: bytes, payload: Mapping[str, Any]) -> str:
+    """
+    Resolve private key role.
+
+    Args:
+        private_pem: PEM-encoded private bytes.
+        payload: Structured payload to parse, validate, or encrypt.
+
+    Returns:
+        Resolved private key role.
+    """
     public_pem, _ = derive_public_key_from_private_pem(private_pem)
     fingerprint = public_key_fingerprint(public_pem)
     if fingerprint == payload.get("senderKeyFingerprint"):
@@ -299,6 +415,15 @@ def _resolve_private_key_role(private_pem: bytes, payload: Mapping[str, Any]) ->
 
 
 def _decode_hashing_secret(payload: Mapping[str, Any]) -> bytes:
+    """
+    Decode hashing secret.
+
+    Args:
+        payload: Structured payload to parse, validate, or encrypt.
+
+    Returns:
+        Decoded hashing secret.
+    """
     encoding = payload.get("hashingSecretEncoding")
     value = payload.get("hashingSecret")
     if encoding != "base64url":
@@ -314,6 +439,15 @@ def _decode_hashing_secret(payload: Mapping[str, Any]) -> bytes:
 
 
 def _decode_rotation_iv(payload: Mapping[str, Any]) -> bytes:
+    """
+    Decode rotation iv.
+
+    Args:
+        payload: Structured payload to parse, validate, or encrypt.
+
+    Returns:
+        Decoded rotation iv.
+    """
     encoding = payload.get("rotationIvEncoding")
     value = payload.get("rotationIv")
     if value is None:
@@ -331,10 +465,17 @@ def _decode_rotation_iv(payload: Mapping[str, Any]) -> bytes:
 
 
 def rotation_iv_to_text(rotation_iv: bytes) -> str:
-    """Convert resolved rotation-IV bytes to the text used by ML1 generation.
+    """
+    Convert resolved rotation-IV bytes to the text used by ML1 generation.
 
     Exchange configs produced by older Truveta clients contain the base64-decoded
     bytes of the original text IV. Non-UTF-8 bytes identify that representation.
+
+    Args:
+        rotation_iv: Rotation initialization-vector bytes to encode as URL-safe text.
+
+    Returns:
+        Converted resolved rotation-IV bytes to the text used by ML1 generation.
     """
     try:
         return rotation_iv.decode("utf-8")
@@ -343,6 +484,15 @@ def rotation_iv_to_text(rotation_iv: bytes) -> str:
 
 
 def _decode_rotation_count(payload: Mapping[str, Any]) -> int:
+    """
+    Decode rotation count.
+
+    Args:
+        payload: Structured payload to parse, validate, or encrypt.
+
+    Returns:
+        Decoded rotation count.
+    """
     value = payload.get("rotationCount")
     if value is None or value == 0:
         return 0
@@ -352,6 +502,15 @@ def _decode_rotation_count(payload: Mapping[str, Any]) -> int:
 
 
 def _decode_bin_width(payload: Mapping[str, Any]) -> float:
+    """
+    Decode bin width.
+
+    Args:
+        payload: Structured payload to parse, validate, or encrypt.
+
+    Returns:
+        Decoded bin width.
+    """
     value = payload.get("binWidth")
     if value is None:
         return 0.05
@@ -361,6 +520,15 @@ def _decode_bin_width(payload: Mapping[str, Any]) -> float:
 
 
 def _decode_dimension_bias(payload: Mapping[str, Any]) -> list[float]:
+    """
+    Decode dimension bias.
+
+    Args:
+        payload: Structured payload to parse, validate, or encrypt.
+
+    Returns:
+        Decoded dimension bias.
+    """
     value = payload.get("dimensionBias")
     if value is None:
         return []

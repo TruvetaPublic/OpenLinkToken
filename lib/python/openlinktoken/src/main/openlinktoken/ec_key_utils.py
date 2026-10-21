@@ -108,7 +108,15 @@ def generate_key_pair(curve: str) -> Tuple[bytes, bytes]:
 
 
 def _curve_name_from_private_key(private_key) -> str:
-    """Map a cryptography EC private key's curve to an Open Link Token curve name."""
+    """
+    Map a cryptography EC private key's curve to an Open Link Token curve name.
+
+    Args:
+        private_key: EC private key whose curve determines the Open Link Token curve name.
+
+    Returns:
+        Supported Open Link Token curve name for the private key.
+    """
     curve_name_map = {
         "secp256r1": "P-256",
         "secp384r1": "P-384",
@@ -121,7 +129,15 @@ def _curve_name_from_private_key(private_key) -> str:
 
 
 def derive_public_key_from_private_pem(private_pem: bytes) -> Tuple[bytes, str]:
-    """Load an EC private key PEM and return its public key PEM plus Open Link Token curve name."""
+    """
+    Load an EC private key PEM and return its public key PEM plus Open Link Token curve name.
+
+    Args:
+        private_pem: PEM-encoded private bytes.
+
+    Returns:
+        Loaded an EC private key PEM and return its public key PEM plus Open Link Token curve name.
+    """
     from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat, load_pem_private_key
 
     private_key = load_pem_private_key(private_pem, password=None)
@@ -187,7 +203,15 @@ def write_key(path: Path, pem_bytes: bytes, mode: int, overwrite: bool = True) -
 
 
 def public_key_fingerprint(public_pem: bytes) -> str:
-    """Compute a SHA-256 fingerprint of a SubjectPublicKeyInfo PEM public key."""
+    """
+    Compute a SHA-256 fingerprint of a SubjectPublicKeyInfo PEM public key.
+
+    Args:
+        public_pem: PEM-encoded public bytes.
+
+    Returns:
+        Computed a SHA-256 fingerprint of a SubjectPublicKeyInfo PEM public key.
+    """
     import hashlib
 
     from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat, load_pem_public_key
@@ -199,7 +223,15 @@ def public_key_fingerprint(public_pem: bytes) -> str:
 
 
 def fingerprint_to_kid(fingerprint: str) -> str:
-    """Convert a SHA-256 public-key fingerprint into the portable JWE recipient id."""
+    """
+    Convert a SHA-256 public-key fingerprint into the portable JWE recipient id.
+
+    Args:
+        fingerprint: SHA-256 public-key fingerprint to encode as a recipient key ID.
+
+    Returns:
+        Portable recipient key ID derived from the normalized SHA-256 fingerprint.
+    """
     normalized = fingerprint.strip()
     if not normalized:
         raise ValueError("Fingerprint must not be empty.")

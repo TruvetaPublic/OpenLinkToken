@@ -22,18 +22,32 @@ class OpenLinkTokenExtension(ABC):
         Must be unique across all installed extensions and must not
         conflict with built-in Open Link Token commands.
 
+        Returns:
+            Command name registered by the test extension.
+
+
         Example: "extcmd"  → enables `openlinktoken extcmd ...`
         """
 
     @property
     @abstractmethod
     def description(self) -> str:
-        """Short human-readable description shown in `olt --help`."""
+        """
+        Short human-readable description shown in `olt --help`.
+
+        Returns:
+            Help description exposed for the test extension command.
+        """
 
     @property
     @abstractmethod
     def version(self) -> str:
-        """SemVer string for this extension (e.g. "1.0.0")."""
+        """
+        SemVer string for this extension (e.g. "1.0.0").
+
+        Returns:
+            Version string reported by the test extension.
+        """
 
     @abstractmethod
     def register_subcommand(self, subparsers: argparse._SubParsersAction) -> None:

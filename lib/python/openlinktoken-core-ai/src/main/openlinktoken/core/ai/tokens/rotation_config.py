@@ -77,40 +77,80 @@ class RotationConfig:
 
     @classmethod
     def is_enabled(cls) -> bool:
-        """Return whether rotation token generation is enabled."""
+        """
+        Return whether rotation token generation is enabled.
+
+        Returns:
+            Whether rotation token generation is enabled.
+        """
         return cls._enabled
 
     @classmethod
     def get_rotation_iv(cls) -> Optional[str]:
-        """Return the rotation initialization vector."""
+        """
+        Return the rotation initialization vector.
+
+        Returns:
+            The rotation iv value returned by the operation.
+        """
         return cls._rotation_iv
 
     @classmethod
     def get_rotation_count(cls) -> int:
-        """Return the number of rotation matrices to generate."""
+        """
+        Return the number of rotation matrices to generate.
+
+        Returns:
+            The rotation count value returned by the operation.
+        """
         return cls._rotation_count
 
     @classmethod
     def get_hash_dimension(cls) -> int:
-        """Return the number of projected dimensions to quantize."""
+        """
+        Return the number of projected dimensions to quantize.
+
+        Returns:
+            The hash dimension value returned by the operation.
+        """
         return cls._hash_dimension
 
     @classmethod
     def get_bin_width(cls) -> float:
-        """Return the quantizer bin width."""
+        """
+        Return the quantizer bin width.
+
+        Returns:
+            The bin width value returned by the operation.
+        """
         return cls._bin_width
 
     @classmethod
     def get_min_val(cls) -> float:
-        """Return the quantizer lower bound."""
+        """
+        Return the quantizer lower bound.
+
+        Returns:
+            The min val value returned by the operation.
+        """
         return cls._min_val
 
     @classmethod
     def get_max_val(cls) -> float:
-        """Return the quantizer upper bound."""
+        """
+        Return the quantizer upper bound.
+
+        Returns:
+            The max val value returned by the operation.
+        """
         return cls._max_val
 
     @classmethod
     def get_dimension_bias(cls) -> Optional[List[float]]:
-        """Return the dimension bias vector, or None for all-zeros default."""
+        """
+        Return the dimension bias vector, or None for all-zeros default.
+
+        Returns:
+            The dimension bias value returned by the operation.
+        """
         return cls._dimension_bias

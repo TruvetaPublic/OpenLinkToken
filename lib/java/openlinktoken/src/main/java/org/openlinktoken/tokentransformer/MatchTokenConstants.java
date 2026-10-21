@@ -6,6 +6,7 @@ package org.openlinktoken.tokentransformer;
  */
 public final class MatchTokenConstants {
 
+    /** Prevents instantiation of this constants class. */
     private MatchTokenConstants() {
         // Utility class, prevent instantiation
     }

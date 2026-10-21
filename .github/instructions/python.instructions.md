@@ -21,6 +21,7 @@ source /home/vscode/.local/share/openlinktoken/.venv/bin/activate
 - Prefer clear, descriptive docstrings for functions; use inline comments sparingly to explain non-obvious intent or constraints, not obvious behavior.
 - Ensure functions have descriptive names and include type hints.
 - Provide docstrings following PEP 257 conventions.
+- In production Python code under `lib/`, add a docstring to every class, function, and method. Use Google-style `Args:` sections to describe each input parameter and `Returns:` or `Yields:` sections to describe outputs when applicable. Test declarations and Python files outside `lib/` are excluded.
 - Use the `typing` module for type annotations (e.g., `List[str]`, `Dict[str, int]`).
 - Break down complex functions into smaller, more manageable functions.
 
@@ -96,7 +97,7 @@ cd lib/python/openlinktoken-cli && uv pip install -r requirements.txt -r dev-req
 - Always include test cases for critical paths of the application.
 - Account for common edge cases like empty inputs, invalid data types, and large datasets.
 - Include comments for edge cases and the expected behavior in those cases.
-- Write unit tests for functions and document them with docstrings explaining the test cases.
+- Write unit tests for functions with descriptive test names and assertions.
 
 ## Example of Proper Documentation
 

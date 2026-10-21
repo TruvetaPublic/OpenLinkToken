@@ -23,7 +23,17 @@ def resolve_exchange_config(
     private_key_path: str | None = None,
     private_key_env: str | None = None,
 ) -> Any:
-    """Resolve exchange configuration without importing crypto dependencies at startup."""
+    """
+    Resolve exchange configuration without importing crypto dependencies at startup.
+
+    Args:
+        exchange_config_path: Path to the exchange-config file to load.
+        private_key_path: Path to the private-key PEM file.
+        private_key_env: Environment-variable name containing the private-key PEM.
+
+    Returns:
+        Resolved exchange configuration without importing crypto dependencies at startup.
+    """
     from openlinktoken_cli.util.exchange_config import resolve_exchange_config as implementation
 
     return implementation(exchange_config_path, private_key_path, private_key_env)
@@ -34,7 +44,12 @@ class EncryptCommand:
 
     @staticmethod
     def register_subcommand(subparsers):
-        """Register the encrypt subcommand with the argument parser."""
+        """
+        Register the encrypt subcommand with the argument parser.
+
+        Args:
+            subparsers: Argument-parser subparsers to configure with command handlers.
+        """
         parser = subparsers.add_parser(
             "encrypt",
             help="Encrypt hashed tokens using the exchange config",
@@ -109,7 +124,15 @@ class EncryptCommand:
 
     @staticmethod
     def execute(args):
-        """Execute the encrypt command."""
+        """
+        Execute the encrypt command.
+
+        Args:
+            args: Parsed command-line options for this command.
+
+        Returns:
+            Integer exit status: 0 on success and 1 when the command reports an error.
+        """
         from openlinktoken_cli.util.cli_error_reporter import archive_cli_error, format_error_reference_message
         from openlinktoken_cli.util.exchange_config import derive_transport_encryption_key
         from openlinktoken_cli.util.file_type_detector import FileTypeDetector
@@ -217,7 +240,21 @@ class EncryptCommand:
         ring_id: str,
         progress_callback=None,
     ) -> TokenTransformationSummary:
-        """Encrypt tokens from input file."""
+        """
+        Encrypt tokens from input file.
+
+        Args:
+            input_path: Path to the input file to read.
+            output_path: Destination path for the generated output file.
+            input_type: Detected format of the input file, such as CSV or Parquet.
+            output_type: Format to use for the output file, such as CSV or Parquet.
+            encryption_key: Key used to encrypt or decrypt the payload.
+            ring_id: Identifier of the key or token ring to retrieve.
+            progress_callback: Callback invoked with updates as processing advances.
+
+        Returns:
+            Encrypted tokens from input file.
+        """
         from openlinktoken.tokens.token import Token
         from openlinktoken.tokentransformer.encrypt_token_transformer import EncryptTokenTransformer
         from openlinktoken_cli.processor.token_constants import TokenConstants
@@ -283,6 +320,16 @@ class EncryptCommand:
 
     @staticmethod
     def _build_summary_lines(output_path: str, summary: TokenTransformationSummary) -> list[str]:
+        """
+        Build summary lines.
+
+        Args:
+            output_path: Destination path for the generated output file.
+            summary: Summary value to build.
+
+        Returns:
+            Human-readable lines summarizing the output path and token-processing totals.
+        """
         return [
             f"Output: {output_path}",
             f"Tokens processed: {summary.total_tokens:,}",
@@ -298,6 +345,19 @@ class EncryptCommand:
         ring_id: str,
         jwe_formatters: dict[str, JweMatchTokenFormatter],
     ) -> str:
+        """
+        Wrap an encrypted token in the rule-specific V1 JWE formatter.
+
+        Args:
+            encrypted_token: Encrypted token value to decrypt.
+            row: Person-attribute and token values for the current record.
+            encryption_key: Key used to encrypt or decrypt the payload.
+            ring_id: Identifier of the key or token ring to retrieve.
+            jwe_formatters: Mapping from token rule identifiers to the JWE formatters used to wrap tokens.
+
+        Returns:
+            V1 JWE token for the row rule, or the original token when the row has no RuleId.
+        """
         from openlinktoken.tokentransformer.jwe_match_token_formatter import JweMatchTokenFormatter
         from openlinktoken_cli.processor.token_constants import TokenConstants
 
@@ -314,7 +374,16 @@ class EncryptCommand:
 
     @staticmethod
     def _create_token_reader(path: str, file_type: str):
-        """Create a TokenReader based on file type."""
+        """
+        Create a TokenReader based on file type.
+
+        Args:
+            path: Path to the input file from which tokens are read.
+            file_type: File format that selects the CSV or Parquet reader.
+
+        Returns:
+            Reader that reads tokens from the requested input format.
+        """
         from openlinktoken_cli.io.csv.token_csv_reader import TokenCSVReader
         from openlinktoken_cli.io.parquet.token_parquet_reader import TokenParquetReader
         from openlinktoken_cli.util.file_type_detector import FileTypeDetector
@@ -329,7 +398,16 @@ class EncryptCommand:
 
     @staticmethod
     def _create_token_writer(path: str, file_type: str):
-        """Create a TokenWriter based on file type."""
+        """
+        Create a TokenWriter based on file type.
+
+        Args:
+            path: Path to the output file that receives processed tokens.
+            file_type: File format that selects the CSV or Parquet writer.
+
+        Returns:
+            Writer that stores tokens in the requested output format.
+        """
         from openlinktoken_cli.io.csv.token_csv_writer import TokenCSVWriter
         from openlinktoken_cli.io.parquet.token_parquet_writer import TokenParquetWriter
         from openlinktoken_cli.util.file_type_detector import FileTypeDetector

@@ -93,6 +93,9 @@ class FieldRegistry:
         """Builder for constructing a FieldRegistry with custom registrations."""
 
         def __init__(self):
+            """
+            Initialize the instance.
+            """
             self._fields: Dict[str, AttributeField] = {}
             self._field_to_attribute: Dict[str, Attribute] = {}
 

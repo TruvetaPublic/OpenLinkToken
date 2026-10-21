@@ -121,6 +121,9 @@ public final class RotationEmbeddingTransformer implements EmbeddingTransformer 
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Generates and caches the sentinel followed by the configured rotation matrices on first use.
+     */
     private synchronized void ensureMatrices() {
         if (matrices == null) {
             // Index 0 is the [[-1]] sentinel (pass-through token); the remaining
