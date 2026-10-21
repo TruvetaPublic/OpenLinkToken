@@ -42,16 +42,13 @@ public final class CryptoSuite implements Serializable {
     /** ML-KEM-768 exchange key-agreement identifier. */
     public static final String EXCHANGE_KEY_AGREEMENT_MLKEM768 = "ML-KEM-768";
 
-    /** ECDH and ML-KEM-768 hybrid exchange key-agreement identifier. */
-    public static final String EXCHANGE_KEY_AGREEMENT_ECDH_MLKEM768 = "ECDH+ML-KEM-768";
-
     /** ML-KEM exchange key-agreement family prefix. */
     public static final String EXCHANGE_KEY_AGREEMENT_MLKEM_PREFIX = "ML-KEM";
 
     /** The SHA-256 and ECDH crypto suite. */
-    public static final CryptoSuite SUITE_SHA256_V1 =
+    public static final CryptoSuite SUITE_SHA256 =
             new CryptoSuite(
-                    "suite-sha256-v1",
+                    "suite-sha256",
                     TOKEN_DIGEST_SHA256,
                     TOKEN_MAC_HS256,
                     TOKEN_CONTENT_ENCRYPTION_A256GCM,
@@ -59,9 +56,9 @@ public final class CryptoSuite implements Serializable {
                     1);
 
     /** The SHA-3-256 and ECDH crypto suite. */
-    public static final CryptoSuite SUITE_SHA3_V1 =
+    public static final CryptoSuite SUITE_SHA3 =
             new CryptoSuite(
-                    "suite-sha3-v1",
+                    "suite-sha3",
                     TOKEN_DIGEST_SHA3_256,
                     TOKEN_MAC_HS3_256,
                     TOKEN_CONTENT_ENCRYPTION_A256GCM,
@@ -69,9 +66,9 @@ public final class CryptoSuite implements Serializable {
                     1);
 
     /** The SHAKE256 and ML-KEM-768 crypto suite. */
-    public static final CryptoSuite SUITE_PQ_SHAKE_V1 =
+    public static final CryptoSuite SUITE_PQ_SHAKE =
             new CryptoSuite(
-                    "suite-pq-shake-v1",
+                    "suite-pq-shake",
                     TOKEN_DIGEST_SHAKE256_256,
                     TOKEN_MAC_KMAC256_256,
                     TOKEN_CONTENT_ENCRYPTION_A256GCM,
@@ -79,36 +76,24 @@ public final class CryptoSuite implements Serializable {
                     2);
 
     /** The SHA-3-256 and ML-KEM-768 crypto suite. */
-    public static final CryptoSuite SUITE_PQ_V1 =
+    public static final CryptoSuite SUITE_PQ =
             new CryptoSuite(
-                    "suite-pq-v1",
+                    "suite-pq",
                     TOKEN_DIGEST_SHA3_256,
                     TOKEN_MAC_HS3_256,
                     TOKEN_CONTENT_ENCRYPTION_A256GCM,
                     EXCHANGE_KEY_AGREEMENT_MLKEM768,
                     2);
 
-    /** The SHA-3-256, ECDH, and ML-KEM-768 hybrid crypto suite. */
-    public static final CryptoSuite SUITE_PQ_HYBRID_V1 =
-            new CryptoSuite(
-                    "suite-pq-hybrid-v1",
-                    TOKEN_DIGEST_SHA3_256,
-                    TOKEN_MAC_HS3_256,
-                    TOKEN_CONTENT_ENCRYPTION_A256GCM,
-                    EXCHANGE_KEY_AGREEMENT_ECDH_MLKEM768,
-                    2);
-
     private static final Map<String, CryptoSuite> REGISTRY = Map.of(
-            SUITE_SHA256_V1.getSuiteId(),
-            SUITE_SHA256_V1,
-            SUITE_SHA3_V1.getSuiteId(),
-            SUITE_SHA3_V1,
-            SUITE_PQ_SHAKE_V1.getSuiteId(),
-            SUITE_PQ_SHAKE_V1,
-            SUITE_PQ_V1.getSuiteId(),
-            SUITE_PQ_V1,
-            SUITE_PQ_HYBRID_V1.getSuiteId(),
-            SUITE_PQ_HYBRID_V1);
+            SUITE_SHA256.getSuiteId(),
+            SUITE_SHA256,
+            SUITE_SHA3.getSuiteId(),
+            SUITE_SHA3,
+            SUITE_PQ_SHAKE.getSuiteId(),
+            SUITE_PQ_SHAKE,
+            SUITE_PQ.getSuiteId(),
+            SUITE_PQ);
 
     private final String suiteId;
     private final String tokenDigestAlgorithm;
@@ -170,9 +155,9 @@ public final class CryptoSuite implements Serializable {
         if (exchangeConfigVersion == 1 && !EXCHANGE_KEY_AGREEMENT_ECDH.equals(exchangeKeyAgreement)) {
             throw new IllegalArgumentException("Exchange configuration version 1 only supports ECDH.");
         }
-        if (exchangeConfigVersion == 2 && EXCHANGE_KEY_AGREEMENT_ECDH.equals(exchangeKeyAgreement)) {
+        if (exchangeConfigVersion == 2 && !EXCHANGE_KEY_AGREEMENT_MLKEM768.equals(exchangeKeyAgreement)) {
             throw new IllegalArgumentException(
-                    "Exchange configuration version 2 requires a non-ECDH key agreement.");
+                    "Exchange configuration version 2 only supports ML-KEM-768.");
         }
         if (exchangeConfigVersion != 1 && exchangeConfigVersion != 2) {
             throw new IllegalArgumentException(
@@ -225,7 +210,7 @@ public final class CryptoSuite implements Serializable {
      * @return the default suite
      */
     public static CryptoSuite defaultSuite() {
-        return SUITE_SHA256_V1;
+        return SUITE_SHA256;
     }
 
     /**

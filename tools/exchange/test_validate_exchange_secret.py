@@ -70,7 +70,7 @@ def _generate_v2_exchange_fixture(tmp_path: Path, hashing_secret: str) -> tuple[
                 [
                     "generate-key-pair",
                     "--crypto-suite",
-                    "suite-pq-v1",
+                    "suite-pq",
                     "--name",
                     "recipient",
                 ]
@@ -83,7 +83,7 @@ def _generate_v2_exchange_fixture(tmp_path: Path, hashing_secret: str) -> tuple[
                 [
                     "initiate-exchange",
                     "--crypto-suite",
-                    "suite-pq-v1",
+                    "suite-pq",
                     "--name",
                     "sender-local",
                     "--public-key",

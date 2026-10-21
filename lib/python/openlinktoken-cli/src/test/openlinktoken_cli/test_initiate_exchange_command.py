@@ -85,7 +85,7 @@ def test_initiate_exchange_version_two_suite_round_trips(tmp_path: Path) -> None
                 [
                     "generate-key-pair",
                     "--crypto-suite",
-                    "suite-pq-v1",
+                    "suite-pq",
                     "--name",
                     "partner",
                 ]
@@ -97,7 +97,7 @@ def test_initiate_exchange_version_two_suite_round_trips(tmp_path: Path) -> None
                 [
                     "initiate-exchange",
                     "--crypto-suite",
-                    "suite-pq-v1",
+                    "suite-pq",
                     "--name",
                     "sender",
                     "--public-key",
@@ -121,8 +121,8 @@ def test_initiate_exchange_version_two_suite_round_trips(tmp_path: Path) -> None
         config = json.loads((tmp_path / "exchange.json").read_text(encoding="utf-8"))
 
     assert resolved.version == 2
-    assert resolved.crypto_suite.suite_id == "suite-pq-v1"
-    _assert_v2_jwe_header(config, "suite-pq-v1")
+    assert resolved.crypto_suite.suite_id == "suite-pq"
+    _assert_v2_jwe_header(config, "suite-pq")
 
 
 def test_initiate_exchange_sha3_v1_suite_round_trips(tmp_path: Path) -> None:
@@ -146,7 +146,7 @@ def test_initiate_exchange_sha3_v1_suite_round_trips(tmp_path: Path) -> None:
                 [
                     "initiate-exchange",
                     "--crypto-suite",
-                    "suite-sha3-v1",
+                    "suite-sha3",
                     "--name",
                     "sender",
                     "--public-key",
@@ -169,8 +169,8 @@ def test_initiate_exchange_sha3_v1_suite_round_trips(tmp_path: Path) -> None:
 
     protected_header = _decode_base64url_json(config["protected"])
     assert resolved.version == 1
-    assert resolved.crypto_suite.suite_id == "suite-sha3-v1"
-    assert protected_header["cryptoSuite"] == "suite-sha3-v1"
+    assert resolved.crypto_suite.suite_id == "suite-sha3"
+    assert protected_header["cryptoSuite"] == "suite-sha3"
     assert protected_header["crit"] == ["cryptoSuite"]
     assert "cryptoSuite" not in resolved.payload
 
@@ -195,7 +195,7 @@ def test_initiate_exchange_resolves_v1_public_key_from_base_path(tmp_path: Path)
                 [
                     "initiate-exchange",
                     "--crypto-suite",
-                    "suite-sha256-v1",
+                    "suite-sha256",
                     "--name",
                     "sender",
                     "--public-key-base",
@@ -226,7 +226,7 @@ def test_initiate_exchange_resolves_v2_public_key_from_base_path(tmp_path: Path)
                 [
                     "generate-key-pair",
                     "--crypto-suite",
-                    "suite-pq-v1",
+                    "suite-pq",
                     "--name",
                     "partner",
                 ]
@@ -239,7 +239,7 @@ def test_initiate_exchange_resolves_v2_public_key_from_base_path(tmp_path: Path)
                 [
                     "initiate-exchange",
                     "--crypto-suite",
-                    "suite-pq-v1",
+                    "suite-pq",
                     "--name",
                     "sender",
                     "--public-key-base",
@@ -282,7 +282,7 @@ def test_initiate_exchange_rejects_short_kmac_secret_before_writing_config(
     Returns:
         None.
     """
-    partner_bundle = generate_exchange_key_bundle("suite-pq-shake-v1")
+    partner_bundle = generate_exchange_key_bundle("suite-pq-shake")
     partner_path = tmp_path / "partner.public.bundle.json"
     partner_path.write_bytes(partner_bundle.to_json())
     output_path = tmp_path / "short-kmac.exchange.json"
@@ -290,7 +290,7 @@ def test_initiate_exchange_rejects_short_kmac_secret_before_writing_config(
     command = [
         "initiate-exchange",
         "--crypto-suite",
-        "suite-pq-shake-v1",
+        "suite-pq-shake",
         "--name",
         "short-kmac",
         "--public-key",
@@ -314,7 +314,7 @@ def test_initiate_exchange_rejects_short_kmac_secret_before_writing_config(
 
     captured = capsys.readouterr()
     assert exit_code == 1
-    assert "suite-pq-shake-v1" in captured.err
+    assert "suite-pq-shake" in captured.err
     assert "32 bytes" in captured.err
     assert not output_path.exists()
 
@@ -344,7 +344,7 @@ def test_initiate_exchange_shake_suite_flows_through_tokenize_and_package(tmp_pa
                 [
                     "generate-key-pair",
                     "--crypto-suite",
-                    "suite-pq-shake-v1",
+                    "suite-pq-shake",
                     "--name",
                     "partner",
                 ]
@@ -358,7 +358,7 @@ def test_initiate_exchange_shake_suite_flows_through_tokenize_and_package(tmp_pa
                 [
                     "initiate-exchange",
                     "--crypto-suite",
-                    "suite-pq-shake-v1",
+                    "suite-pq-shake",
                     "--name",
                     "shake",
                     "--public-key",
@@ -381,7 +381,7 @@ def test_initiate_exchange_shake_suite_flows_through_tokenize_and_package(tmp_pa
             private_key_path=private_key_path,
         )
         assert resolved.version == 2
-        assert resolved.crypto_suite.suite_id == "suite-pq-shake-v1"
+        assert resolved.crypto_suite.suite_id == "suite-pq-shake"
         transport_key = derive_transport_encryption_key(resolved)
 
         assert (
@@ -630,21 +630,16 @@ def _assert_v2_jwe_header(config: dict, suite_id: str) -> None:
     assert protected["version"] == 2
     assert protected["cryptoSuite"] == suite_id
     assert isinstance(protected["exchangeId"], str) and protected["exchangeId"]
-    expected_algorithm = "ECDH-ES+ML-KEM-768" if suite_id == "suite-pq-hybrid-v1" else "ML-KEM-768"
     assert len(config["recipients"]) == 2
     for recipient in config["recipients"]:
         assert set(recipient) == {"header", "encrypted_key"}
-        assert recipient["header"]["alg"] == expected_algorithm
+        assert recipient["header"]["alg"] == "ML-KEM-768"
         assert recipient["header"]["kid"]
         assert (
             len(base64.urlsafe_b64decode(recipient["encrypted_key"] + "=" * (-len(recipient["encrypted_key"]) % 4)))
             == 1128
         )
-        if suite_id == "suite-pq-hybrid-v1":
-            assert recipient["header"]["epk"]["kty"] == "EC"
-            assert recipient["header"]["epk"]["crv"] == "P-256"
-        else:
-            assert "epk" not in recipient["header"]
+        assert "epk" not in recipient["header"]
 
 
 def _assert_recipient_headers(config: dict, curve: str, expected_kids: set[str]) -> None:

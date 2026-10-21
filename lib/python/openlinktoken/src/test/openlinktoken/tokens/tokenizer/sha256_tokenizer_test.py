@@ -92,7 +92,7 @@ class TestSHA256Tokenizer:
         """
         tokenizer = SHA256Tokenizer([])
 
-        assert tokenizer.crypto_suite is CryptoSuite.SUITE_SHA256_V1
+        assert tokenizer.crypto_suite is CryptoSuite.SUITE_SHA256
 
     def test_tokenize_valid_input_transformer_throws_exception(self):
         """Test that transformer exceptions are propagated."""
@@ -152,7 +152,7 @@ class TestSHA256Tokenizer:
         Returns:
             None.
         """
-        tokenizer = SHA256Tokenizer([], crypto_suite=CryptoSuite.from_id("suite-sha3-v1"))
+        tokenizer = SHA256Tokenizer([], crypto_suite=CryptoSuite.from_id("suite-sha3"))
 
         assert tokenizer.tokenize("test-input") == "ab96273f069fc38264bf16cc2287218779c5eed6c0fee89490b990ffc35a2af5"
 
@@ -165,7 +165,7 @@ class TestSHA256Tokenizer:
         Returns:
             None.
         """
-        tokenizer = SHA256Tokenizer([], crypto_suite=CryptoSuite.from_id("suite-pq-shake-v1"))
+        tokenizer = SHA256Tokenizer([], crypto_suite=CryptoSuite.from_id("suite-pq-shake"))
 
         assert tokenizer.tokenize("test-input") == hashlib.shake_256(b"test-input").hexdigest(32)
 

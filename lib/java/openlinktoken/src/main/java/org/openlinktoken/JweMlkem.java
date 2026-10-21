@@ -3,22 +3,12 @@ package org.openlinktoken;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
-import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.security.SecureRandom;
-import java.security.interfaces.ECPrivateKey;
-import java.security.interfaces.ECPublicKey;
-import java.security.spec.ECPoint;
-import java.security.spec.ECParameterSpec;
-import java.security.spec.ECPublicKeySpec;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashSet;
@@ -28,7 +18,6 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.crypto.Cipher;
-import javax.crypto.KeyAgreement;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -61,7 +50,6 @@ final class JweMlkem implements Serializable {
     static final String EXCHANGE_V2_CONTENT_TYPE = "application/openlinktoken-exchange+json";
     static final String EXCHANGE_V2_ENCRYPTION = CryptoSuite.TOKEN_CONTENT_ENCRYPTION_A256GCM;
     static final String PURE_KEM_ALGORITHM = CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM768;
-    static final String HYBRID_KEM_ALGORITHM = "ECDH-ES+" + CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM768;
     static final String TOKEN_TRANSPORT_KEY_INFO = "openlinktoken:token-encryption:v2";
 
     static final int CEK_SIZE = 32;
@@ -178,9 +166,6 @@ final class JweMlkem implements Serializable {
         if (privateBundle.getMlkemPrivateSeed() == null) {
             throw new IllegalArgumentException("Exchange key bundle is missing its ML-KEM private seed.");
         }
-        if (HYBRID_KEM_ALGORITHM.equals(algorithm) && privateBundle.getEcPrivatePem() == null) {
-            throw new IllegalArgumentException("Hybrid exchange key bundle is missing its EC private key.");
-        }
 
         Object recipientsValue = envelope.get("recipients");
         if (!(recipientsValue instanceof List<?> recipients) || recipients.size() < 2) {
@@ -222,7 +207,7 @@ final class JweMlkem implements Serializable {
             throw new IllegalArgumentException("Version-2 JWE tag must be " + TAG_SIZE + " bytes.");
         }
 
-        byte[] sharedSecret = decapsulate(privateBundle, algorithm, encryptedKey, recipientHeader);
+        byte[] sharedSecret = decapsulate(privateBundle, encryptedKey);
         byte[] kek = deriveRecipientKek(sharedSecret, protectedHeader, algorithm, (String) recipientHeader.get("kid"));
         byte[] cek = unwrap(kek, Arrays.copyOfRange(encryptedKey, MLKEM_CIPHERTEXT_SIZE, encryptedKey.length));
         byte[] encrypted = new byte[ciphertext.length + tag.length];
@@ -268,7 +253,7 @@ final class JweMlkem implements Serializable {
             String algorithm,
             Map<String, Object> protectedHeader,
             byte[] cek) {
-        Encapsulation encapsulation = encapsulate(bundle, algorithm);
+        Encapsulation encapsulation = encapsulate(bundle);
         byte[] kek = deriveRecipientKek(
                 encapsulation.sharedSecret,
                 protectedHeader,
@@ -282,9 +267,6 @@ final class JweMlkem implements Serializable {
         Map<String, Object> header = new LinkedHashMap<>();
         header.put("alg", algorithm);
         header.put("kid", bundle.getKid());
-        if (encapsulation.epk != null) {
-            header.put("epk", encapsulation.epk);
-        }
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("header", header);
         result.put("encrypted_key", encodeBase64(encryptedKey));
@@ -292,13 +274,12 @@ final class JweMlkem implements Serializable {
     }
 
     /**
-     * Encapsulates a shared secret for a pure or hybrid ML-KEM recipient.
+     * Encapsulates a shared secret for an ML-KEM recipient.
      *
      * @param bundle recipient public key bundle
-     * @param algorithm recipient key-management algorithm
-     * @return the shared secret, ML-KEM ciphertext, and optional ephemeral public key
+     * @return the shared secret and ML-KEM ciphertext
      */
-    private static Encapsulation encapsulate(ExchangeKeyBundle bundle, String algorithm) {
+    private static Encapsulation encapsulate(ExchangeKeyBundle bundle) {
         MLKEMPublicKeyParameters publicKey;
         try {
             publicKey = new MLKEMPublicKeyParameters(
@@ -320,33 +301,19 @@ final class JweMlkem implements Serializable {
                     CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM768
                             + " produced an unexpected ciphertext length.");
         }
-        if (PURE_KEM_ALGORITHM.equals(algorithm)) {
-            return new Encapsulation(mlkemSecret, ciphertext, null);
-        }
-
-        PublicKey recipientPublic = EcKeyUtils.publicKeyFromPem(bundle.getEcPublicPem());
-        KeyPair ephemeral = EcKeyUtils.generateKeyPair("P-256");
-        byte[] ecdhSecret = deriveEcdhSecret(ephemeral.getPrivate(), recipientPublic);
-        return new Encapsulation(
-                concatenate(ecdhSecret, mlkemSecret),
-                ciphertext,
-                serializeEphemeralPublicKey((ECPublicKey) ephemeral.getPublic()));
+        return new Encapsulation(mlkemSecret, ciphertext);
     }
 
     /**
-     * Decapsulates the recipient secret and, for a hybrid suite, combines it with ECDH.
+     * Decapsulates the recipient's ML-KEM secret.
      *
      * @param bundle recipient private key bundle
-     * @param algorithm recipient key-management algorithm
      * @param encryptedKey combined ML-KEM ciphertext and wrapped content key
-     * @param recipientHeader recipient-specific protected fields
      * @return the derived shared secret
      */
     private static byte[] decapsulate(
             ExchangeKeyBundle bundle,
-            String algorithm,
-            byte[] encryptedKey,
-            Map<String, Object> recipientHeader) {
+            byte[] encryptedKey) {
         if (encryptedKey.length != RECIPIENT_ENCRYPTED_KEY_SIZE) {
             throw new IllegalArgumentException(
                     "Recipient encrypted_key must be " + RECIPIENT_ENCRYPTED_KEY_SIZE
@@ -367,21 +334,13 @@ final class JweMlkem implements Serializable {
         } catch (RuntimeException exception) {
             throw new IllegalArgumentException("Unable to decapsulate ML-KEM-768.", exception);
         }
-        if (PURE_KEM_ALGORITHM.equals(algorithm)) {
-            return mlkemSecret;
-        }
-
-        PrivateKey privateEc = EcKeyUtils.privateKeyFromPem(bundle.getEcPrivatePem());
-        PublicKey ephemeralPublic = parseEphemeralPublicKey(
-                recipientHeader.get("epk"),
-                ((ECPrivateKey) privateEc).getParams());
-        return concatenate(deriveEcdhSecret(privateEc, ephemeralPublic), mlkemSecret);
+        return mlkemSecret;
     }
 
     /**
      * Derives the recipient key-encryption key using the exchange context.
      *
-     * @param sharedSecret encapsulated or hybrid shared secret
+     * @param sharedSecret encapsulated shared secret
      * @param protectedHeader authenticated protected-header fields
      * @param algorithm recipient key-management algorithm
      * @param kid recipient key identifier
@@ -515,72 +474,6 @@ final class JweMlkem implements Serializable {
     }
 
     /**
-     * Derives an ECDH shared secret for hybrid key establishment.
-     *
-     * @param privateKey local EC private key
-     * @param publicKey peer EC public key
-     * @return the derived ECDH shared secret
-     */
-    private static byte[] deriveEcdhSecret(PrivateKey privateKey, PublicKey publicKey) {
-        try {
-            KeyAgreement agreement = KeyAgreement.getInstance("ECDH");
-            agreement.init(privateKey);
-            agreement.doPhase(publicKey, true);
-            return agreement.generateSecret();
-        } catch (GeneralSecurityException exception) {
-            throw new IllegalArgumentException("Unable to derive the P-256 ECDH secret.", exception);
-        }
-    }
-
-    /**
-     * Serializes a P-256 ephemeral public key as a JWK mapping.
-     *
-     * @param publicKey ephemeral EC public key
-     * @return the public-key JWK fields
-     */
-    private static Map<String, Object> serializeEphemeralPublicKey(ECPublicKey publicKey) {
-        Map<String, Object> epk = new LinkedHashMap<>();
-        epk.put("kty", "EC");
-        epk.put("crv", "P-256");
-        epk.put("x", encodeBase64(toFixedLength(publicKey.getW().getAffineX(), 32, "epk.x")));
-        epk.put("y", encodeBase64(toFixedLength(publicKey.getW().getAffineY(), 32, "epk.y")));
-        return epk;
-    }
-
-    /**
-     * Parses and validates a P-256 ephemeral public key from a JWK mapping.
-     *
-     * @param value candidate ephemeral JWK value
-     * @param parameters EC parameters for the recipient private key
-     * @return the parsed ephemeral EC public key
-     */
-    private static PublicKey parseEphemeralPublicKey(Object value, ECParameterSpec parameters) {
-        Map<String, Object> epk = mapValue(value, "Hybrid recipient epk");
-        if (!"EC".equals(epk.get("kty")) || !"P-256".equals(epk.get("crv"))) {
-            throw new IllegalArgumentException("Hybrid recipient epk must be a P-256 EC JWK.");
-        }
-        if (epk.containsKey("d")) {
-            throw new IllegalArgumentException("Recipient epk must not contain private key material.");
-        }
-        byte[] x = decodeBase64(stringValue(epk.get("x"), "recipient epk.x"), "recipient epk.x", false);
-        byte[] y = decodeBase64(stringValue(epk.get("y"), "recipient epk.y"), "recipient epk.y", false);
-        if (x.length != 32 || y.length != 32) {
-            throw new IllegalArgumentException("Recipient epk coordinates must be 32 bytes.");
-        }
-        try {
-            PublicKey publicKey = KeyFactory.getInstance("EC").generatePublic(new ECPublicKeySpec(
-                    new ECPoint(new BigInteger(1, x), new BigInteger(1, y)),
-                    parameters));
-            if (!"P-256".equals(EcKeyUtils.curveName(publicKey))) {
-                throw new IllegalArgumentException("Recipient epk must use P-256.");
-            }
-            return publicKey;
-        } catch (GeneralSecurityException | IllegalArgumentException exception) {
-            throw new IllegalArgumentException("Recipient epk is not a valid P-256 public key.", exception);
-        }
-    }
-
-    /**
      * Validates and copies a serialized recipient entry.
      *
      * @param value candidate recipient value
@@ -608,34 +501,10 @@ final class JweMlkem implements Serializable {
                     "Recipient encrypted_key must decode to " + RECIPIENT_ENCRYPTED_KEY_SIZE
                             + " bytes, got " + encryptedKey.length + ".");
         }
-        if (HYBRID_KEM_ALGORITHM.equals(algorithm)) {
-            validateEphemeralPublicKey(header.get("epk"));
-        } else if (header.containsKey("epk")) {
-            throw new IllegalArgumentException("Pure ML-KEM recipients must not contain epk.");
+        if (header.containsKey("epk")) {
+            throw new IllegalArgumentException("ML-KEM recipients must not contain epk.");
         }
         return recipient;
-    }
-
-    /**
-     * Validates the public-only P-256 ephemeral key fields.
-     *
-     * <p>This method returns no value.</p>
-     *
-     * @param value candidate ephemeral JWK value
-     */
-    private static void validateEphemeralPublicKey(Object value) {
-        Map<String, Object> epk = mapValue(value, "Hybrid recipient epk");
-        if (!"EC".equals(epk.get("kty")) || !"P-256".equals(epk.get("crv"))) {
-            throw new IllegalArgumentException("Hybrid recipient epk must be a P-256 EC JWK.");
-        }
-        if (epk.containsKey("d")) {
-            throw new IllegalArgumentException("Recipient epk must not contain private key material.");
-        }
-        byte[] x = decodeBase64(stringValue(epk.get("x"), "recipient epk.x"), "recipient epk.x", false);
-        byte[] y = decodeBase64(stringValue(epk.get("y"), "recipient epk.y"), "recipient epk.y", false);
-        if (x.length != 32 || y.length != 32) {
-            throw new IllegalArgumentException("Recipient epk coordinates must be 32 bytes.");
-        }
     }
 
     /**
@@ -712,7 +581,7 @@ final class JweMlkem implements Serializable {
      * Selects the version-two recipient algorithm for a crypto suite.
      *
      * @param suite version-two crypto suite
-     * @return the pure or hybrid ML-KEM recipient algorithm identifier
+     * @return the ML-KEM recipient algorithm identifier
      */
     private static String algorithmForSuite(CryptoSuite suite) {
         if (suite.getExchangeConfigVersion() != EXCHANGE_V2_VERSION) {
@@ -721,9 +590,6 @@ final class JweMlkem implements Serializable {
         }
         if (CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM768.equals(suite.getExchangeKeyAgreement())) {
             return PURE_KEM_ALGORITHM;
-        }
-        if (CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH_MLKEM768.equals(suite.getExchangeKeyAgreement())) {
-            return HYBRID_KEM_ALGORITHM;
         }
         throw new IllegalArgumentException(
                 "Unsupported version-2 exchange agreement '" + suite.getExchangeKeyAgreement() + "'.");
@@ -916,39 +782,6 @@ final class JweMlkem implements Serializable {
     }
 
     /**
-     * Encodes a positive integer into a fixed-width, big-endian byte array.
-     *
-     * @param value integer to encode
-     * @param length required output length in bytes
-     * @param fieldName field name used in validation errors
-     * @return the fixed-width encoded value
-     */
-    private static byte[] toFixedLength(BigInteger value, int length, String fieldName) {
-        byte[] encoded = value.toByteArray();
-        int offset = encoded.length > 1 && encoded[0] == 0 ? 1 : 0;
-        if (encoded.length - offset > length) {
-            throw new IllegalArgumentException(fieldName + " does not fit in " + length + " bytes.");
-        }
-        byte[] result = new byte[length];
-        System.arraycopy(encoded, offset, result, length - (encoded.length - offset), encoded.length - offset);
-        return result;
-    }
-
-    /**
-     * Concatenates two byte arrays in order.
-     *
-     * @param first first byte sequence
-     * @param second second byte sequence
-     * @return the combined byte sequence
-     */
-    private static byte[] concatenate(byte[] first, byte[] second) {
-        byte[] result = new byte[first.length + second.length];
-        System.arraycopy(first, 0, result, 0, first.length);
-        System.arraycopy(second, 0, result, first.length, second.length);
-        return result;
-    }
-
-    /**
      * Holds decrypted JWE values required by exchange processing.
      */
     static final class Decryption implements Serializable {
@@ -1028,9 +861,8 @@ final class JweMlkem implements Serializable {
      *
      * @param sharedSecret encapsulated shared secret
      * @param ciphertext ML-KEM ciphertext
-     * @param epk ephemeral public-key fields, or {@code null} for pure ML-KEM
      */
-    private record Encapsulation(byte[] sharedSecret, byte[] ciphertext, Map<String, Object> epk)
+    private record Encapsulation(byte[] sharedSecret, byte[] ciphertext)
             implements Serializable {
     }
 }

@@ -121,7 +121,7 @@ class SHA256TokenizerTest {
         tokenizer = new SHA256Tokenizer(new ArrayList<>());
 
         assertEquals(
-                new SHA256Tokenizer(new ArrayList<>(), CryptoSuite.SUITE_SHA256_V1).tokenize("test-input"),
+                new SHA256Tokenizer(new ArrayList<>(), CryptoSuite.SUITE_SHA256).tokenize("test-input"),
                 tokenizer.tokenize("test-input"));
     }
 
@@ -152,7 +152,7 @@ class SHA256TokenizerTest {
      */
     @Test
     void testTokenize_Sha3Suite_ReturnsFixedVector() throws Exception {
-        tokenizer = new SHA256Tokenizer(new ArrayList<>(), CryptoSuite.fromId("suite-sha3-v1"));
+        tokenizer = new SHA256Tokenizer(new ArrayList<>(), CryptoSuite.fromId("suite-sha3"));
 
         assertEquals(
                 "ab96273f069fc38264bf16cc2287218779c5eed6c0fee89490b990ffc35a2af5",
@@ -166,7 +166,7 @@ class SHA256TokenizerTest {
      */
     @Test
     void testTokenize_ShakeSuite_ReturnsFixedVector() throws Exception {
-        tokenizer = new SHA256Tokenizer(new ArrayList<>(), CryptoSuite.fromId("suite-pq-shake-v1"));
+        tokenizer = new SHA256Tokenizer(new ArrayList<>(), CryptoSuite.fromId("suite-pq-shake"));
 
         assertEquals(
                 "083e2185f52946fb45e459794409b2ea56e64241ba22a29072ad25b5947c023a",

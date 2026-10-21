@@ -7,7 +7,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CodingErrorAction;
-import java.security.KeyPair;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -52,9 +51,6 @@ public final class ExchangeKeyBundle implements Serializable {
     /** Raw ML-KEM-768 private seed size. */
     public static final int MLKEM_PRIVATE_SEED_SIZE = 64;
 
-    /** EC algorithm identifier used by the hybrid bundle format. */
-    public static final String EC_ALGORITHM = "ECDH-P256";
-
     private static final TypeReference<Map<String, Object>> JSON_OBJECT_TYPE = new TypeReference<>() {
     };
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper()
@@ -64,8 +60,6 @@ public final class ExchangeKeyBundle implements Serializable {
     private final CryptoSuite suite;
     private final byte[] mlkemPublicKey;
     private final byte[] mlkemPrivateSeed;
-    private final byte[] ecPublicPem;
-    private final byte[] ecPrivatePem;
     private final String kid;
 
     /**
@@ -74,20 +68,14 @@ public final class ExchangeKeyBundle implements Serializable {
      * @param suite the version-two crypto suite
      * @param mlkemPublicKey the raw ML-KEM-768 public key
      * @param mlkemPrivateSeed the optional raw ML-KEM-768 private seed
-     * @param ecPublicPem the optional P-256 public key PEM
-     * @param ecPrivatePem the optional P-256 private key PEM
      */
     public ExchangeKeyBundle(
             CryptoSuite suite,
             byte[] mlkemPublicKey,
-            byte[] mlkemPrivateSeed,
-            byte[] ecPublicPem,
-            byte[] ecPrivatePem) {
+            byte[] mlkemPrivateSeed) {
         this.suite = requireVersionTwoSuite(suite);
         this.mlkemPublicKey = copy(mlkemPublicKey);
         this.mlkemPrivateSeed = copy(mlkemPrivateSeed);
-        this.ecPublicPem = copy(ecPublicPem);
-        this.ecPrivatePem = copy(ecPrivatePem);
         validateKeyMaterial();
         this.kid = calculateKid();
     }
@@ -122,20 +110,10 @@ public final class ExchangeKeyBundle implements Serializable {
             MLKEMPublicKeyParameters publicKey = (MLKEMPublicKeyParameters) keyPair.getPublic();
             MLKEMPrivateKeyParameters privateKey = (MLKEMPrivateKeyParameters) keyPair.getPrivate();
 
-            byte[] ecPublicPem = null;
-            byte[] ecPrivatePem = null;
-            if (CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH_MLKEM768.equals(suite.getExchangeKeyAgreement())) {
-                KeyPair ecKeyPair = EcKeyUtils.generateKeyPair("P-256");
-                ecPublicPem = EcKeyUtils.publicKeyToPem(ecKeyPair.getPublic());
-                ecPrivatePem = EcKeyUtils.privateKeyToPem(ecKeyPair.getPrivate());
-            }
-
             return new ExchangeKeyBundle(
                     suite,
                     publicKey.getEncoded(),
-                    privateKey.getSeed(),
-                    ecPublicPem,
-                    ecPrivatePem);
+                    privateKey.getSeed());
         } catch (RuntimeException exception) {
             if (exception instanceof KeyBundleException) {
                 throw exception;
@@ -223,7 +201,7 @@ public final class ExchangeKeyBundle implements Serializable {
         if (!(keysValue instanceof Map<?, ?> keys)) {
             throw new KeyBundleException("Key bundle is missing its keys object.");
         }
-        validateKeySections(keys, suite);
+        validateKeySections(keys);
 
         byte[] mlkemPublicKey = null;
         byte[] mlkemPrivateSeed = null;
@@ -264,36 +242,10 @@ public final class ExchangeKeyBundle implements Serializable {
             }
         }
 
-        byte[] ecPublicPem = null;
-        byte[] ecPrivatePem = null;
-        if (CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH_MLKEM768.equals(suite.getExchangeKeyAgreement())) {
-            Map<?, ?> ec = section(keys, "ec", "The selected hybrid suite requires an ec key section.");
-            validateSectionKeys(
-                    ec,
-                    Set.of("algorithm", "publicKeyEncoding", "publicKey", "privateKeyEncoding", "privateKey"),
-                    "ec");
-            if (!EC_ALGORITHM.equals(ec.get("algorithm"))) {
-                throw new KeyBundleException("Unsupported EC algorithm '" + ec.get("algorithm") + "'.");
-            }
-            requireEquals(ec.get("publicKeyEncoding"), "pem", "ec.publicKeyEncoding must be pem.");
-            ecPublicPem = stringValue(ec.get("publicKey"), "ec.publicKey").getBytes(StandardCharsets.UTF_8);
-            boolean hasPrivateKey = ec.containsKey("privateKey");
-            boolean hasPrivateKeyEncoding = ec.containsKey("privateKeyEncoding");
-            if (hasPrivateKey != hasPrivateKeyEncoding) {
-                throw new KeyBundleException("ec.privateKey and ec.privateKeyEncoding must appear together.");
-            }
-            if (hasPrivateKey) {
-                requireEquals(ec.get("privateKeyEncoding"), "pem", "ec.privateKeyEncoding must be pem.");
-                ecPrivatePem = stringValue(ec.get("privateKey"), "ec.privateKey").getBytes(StandardCharsets.UTF_8);
-            }
-        }
-
         ExchangeKeyBundle bundle = new ExchangeKeyBundle(
                 suite,
                 mlkemPublicKey,
-                mlkemPrivateSeed,
-                ecPublicPem,
-                ecPrivatePem);
+                mlkemPrivateSeed);
         if (!bundle.getKid().equals(mapping.get("kid"))) {
             throw new KeyBundleException("Key-bundle kid does not match its public key material.");
         }
@@ -345,21 +297,6 @@ public final class ExchangeKeyBundle implements Serializable {
             mlkem.put("privateKey", encodeBase64Url(mlkemPrivateSeed));
         }
         keys.put("mlkem", mlkem);
-
-        if (hasEcKey()) {
-            Map<String, Object> ec = new LinkedHashMap<>();
-            ec.put("algorithm", EC_ALGORITHM);
-            ec.put("publicKeyEncoding", "pem");
-            ec.put("publicKey", new String(ecPublicPem, StandardCharsets.UTF_8));
-            if (includePrivate) {
-                if (ecPrivatePem == null) {
-                    throw new KeyBundleException("EC private key is missing.");
-                }
-                ec.put("privateKeyEncoding", "pem");
-                ec.put("privateKey", new String(ecPrivatePem, StandardCharsets.UTF_8));
-            }
-            keys.put("ec", ec);
-        }
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("version", BUNDLE_VERSION);
@@ -425,28 +362,6 @@ public final class ExchangeKeyBundle implements Serializable {
     }
 
     /**
-     * Returns a copy of the EC public key PEM.
-     *
-     * <p>This method accepts no arguments.</p>
-     *
-     * @return the public key, or {@code null} for a pure ML-KEM suite
-     */
-    public byte[] getEcPublicPem() {
-        return copy(ecPublicPem);
-    }
-
-    /**
-     * Returns a copy of the EC private key PEM.
-     *
-     * <p>This method accepts no arguments.</p>
-     *
-     * @return the private key, or {@code null} when absent
-     */
-    public byte[] getEcPrivatePem() {
-        return copy(ecPrivatePem);
-    }
-
-    /**
      * Returns the stable public-material identifier.
      *
      * <p>This method accepts no arguments.</p>
@@ -458,17 +373,6 @@ public final class ExchangeKeyBundle implements Serializable {
     }
 
     /**
-     * Returns whether this bundle contains an EC key section.
-     *
-     * <p>This method accepts no arguments.</p>
-     *
-     * @return true for the hybrid profile
-     */
-    public boolean hasEcKey() {
-        return ecPublicPem != null;
-    }
-
-    /**
      * Returns whether all private material required by the suite is present.
      *
      * <p>This method accepts no arguments.</p>
@@ -476,9 +380,6 @@ public final class ExchangeKeyBundle implements Serializable {
      * @return true when the bundle can be used for private-key operations
      */
     public boolean hasPrivateMaterial() {
-        if (CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH_MLKEM768.equals(suite.getExchangeKeyAgreement())) {
-            return mlkemPrivateSeed != null && ecPrivatePem != null;
-        }
         return mlkemPrivateSeed != null;
     }
 
@@ -519,7 +420,7 @@ public final class ExchangeKeyBundle implements Serializable {
      * @return {@code true} if the suite uses ML-KEM
      */
     private static boolean usesMlKem(CryptoSuite suite) {
-        return suite.getExchangeKeyAgreement().contains(CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM_PREFIX);
+        return CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM768.equals(suite.getExchangeKeyAgreement());
     }
 
     /**
@@ -554,33 +455,6 @@ public final class ExchangeKeyBundle implements Serializable {
             }
         }
 
-        if (hasEcKey()) {
-            try {
-                if (!"P-256".equals(EcKeyUtils.curveName(EcKeyUtils.publicKeyFromPem(ecPublicPem)))) {
-                    throw new KeyBundleException("ec.publicKey must be a P-256 public key.");
-                }
-            } catch (KeyBundleException exception) {
-                throw exception;
-            } catch (RuntimeException exception) {
-                throw new KeyBundleException("ec.publicKey is not valid PEM.", exception);
-            }
-            if (ecPrivatePem != null) {
-                try {
-                    byte[] expectedPublicDer = EcKeyUtils.publicKeyToDer(EcKeyUtils.publicKeyFromPem(ecPublicPem));
-                    byte[] derivedPublicDer = EcKeyUtils.publicKeyToDer(EcKeyUtils.publicKeyFromPem(
-                            EcKeyUtils.derivePublicKeyFromPrivatePem(ecPrivatePem)));
-                    if (!Arrays.equals(expectedPublicDer, derivedPublicDer)) {
-                        throw new KeyBundleException("ec.privateKey does not match ec.publicKey.");
-                    }
-                } catch (KeyBundleException exception) {
-                    throw exception;
-                } catch (RuntimeException exception) {
-                    throw new KeyBundleException("ec.privateKey is not valid PEM.", exception);
-                }
-            }
-        } else if (ecPrivatePem != null || ecPublicPem != null) {
-            throw new KeyBundleException("EC key material is only supported by the hybrid suite.");
-        }
     }
 
     /**
@@ -592,10 +466,8 @@ public final class ExchangeKeyBundle implements Serializable {
      */
     private String calculateKid() {
         byte[] prefix = ("openlinktoken:key-bundle:v1:" + suite.getSuiteId()).getBytes(StandardCharsets.US_ASCII);
-        byte[] ecEncoded = hasEcKey() ? EcKeyUtils.publicKeyFromPem(ecPublicPem).getEncoded() : null;
         byte[] fingerprintInput = new byte[prefix.length
-                + ":mlkem:".length() + mlkemPublicKey.length
-                + (ecEncoded == null ? 0 : ":ec:".length() + ecEncoded.length)];
+                + ":mlkem:".length() + mlkemPublicKey.length];
         int offset = 0;
         System.arraycopy(prefix, 0, fingerprintInput, offset, prefix.length);
         offset += prefix.length;
@@ -603,13 +475,6 @@ public final class ExchangeKeyBundle implements Serializable {
         System.arraycopy(mlkemMarker, 0, fingerprintInput, offset, mlkemMarker.length);
         offset += mlkemMarker.length;
         System.arraycopy(mlkemPublicKey, 0, fingerprintInput, offset, mlkemPublicKey.length);
-        offset += mlkemPublicKey.length;
-        if (ecEncoded != null) {
-            byte[] ecMarker = ":ec:".getBytes(StandardCharsets.US_ASCII);
-            System.arraycopy(ecMarker, 0, fingerprintInput, offset, ecMarker.length);
-            offset += ecMarker.length;
-            System.arraycopy(ecEncoded, 0, fingerprintInput, offset, ecEncoded.length);
-        }
         return EcKeyUtils.fingerprintToKid(fingerprint(fingerprintInput));
     }
 
@@ -635,12 +500,10 @@ public final class ExchangeKeyBundle implements Serializable {
      * <p>This method returns no value.</p>
      *
      * @param keys key sections mapping
-     * @param suite selected crypto suite
      */
-    private static void validateKeySections(Map<?, ?> keys, CryptoSuite suite) {
-        boolean hybrid = CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH_MLKEM768.equals(suite.getExchangeKeyAgreement());
+    private static void validateKeySections(Map<?, ?> keys) {
         for (Object key : keys.keySet()) {
-            if (!"mlkem".equals(key) && !(hybrid && "ec".equals(key))) {
+            if (!"mlkem".equals(key)) {
                 throw new KeyBundleException("Key bundle contains an unsupported key section '" + key + "'.");
             }
         }
@@ -868,9 +731,7 @@ public final class ExchangeKeyBundle implements Serializable {
         }
         return suite.equals(other.suite)
                 && Arrays.equals(mlkemPublicKey, other.mlkemPublicKey)
-                && Arrays.equals(mlkemPrivateSeed, other.mlkemPrivateSeed)
-                && Arrays.equals(ecPublicPem, other.ecPublicPem)
-                && Arrays.equals(ecPrivatePem, other.ecPrivatePem);
+                && Arrays.equals(mlkemPrivateSeed, other.mlkemPrivateSeed);
     }
 
     /**
@@ -885,8 +746,6 @@ public final class ExchangeKeyBundle implements Serializable {
         int result = Objects.hash(suite);
         result = 31 * result + Arrays.hashCode(mlkemPublicKey);
         result = 31 * result + Arrays.hashCode(mlkemPrivateSeed);
-        result = 31 * result + Arrays.hashCode(ecPublicPem);
-        result = 31 * result + Arrays.hashCode(ecPrivatePem);
         return result;
     }
 }

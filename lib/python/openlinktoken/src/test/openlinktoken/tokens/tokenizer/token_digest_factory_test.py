@@ -31,7 +31,7 @@ class TestTokenDigestFactory:
             None.
         """
         with pytest.raises(ValueError, match="A valid CryptoSuite is required"):
-            TokenDigestFactory.for_suite("suite-sha256-v1")
+            TokenDigestFactory.for_suite("suite-sha256")
 
     def test_factory_selects_digest_implementation_for_each_suite(self):
         """Each registered suite selects its declared digest implementation.
@@ -42,9 +42,9 @@ class TestTokenDigestFactory:
         Returns:
             None.
         """
-        assert isinstance(TokenDigestFactory.for_suite(CryptoSuite.from_id("suite-sha256-v1")), Sha256TokenDigest)
-        assert isinstance(TokenDigestFactory.for_suite(CryptoSuite.from_id("suite-sha3-v1")), Sha3TokenDigest)
-        assert isinstance(TokenDigestFactory.for_suite(CryptoSuite.from_id("suite-pq-shake-v1")), Shake256TokenDigest)
+        assert isinstance(TokenDigestFactory.for_suite(CryptoSuite.from_id("suite-sha256")), Sha256TokenDigest)
+        assert isinstance(TokenDigestFactory.for_suite(CryptoSuite.from_id("suite-sha3")), Sha3TokenDigest)
+        assert isinstance(TokenDigestFactory.for_suite(CryptoSuite.from_id("suite-pq-shake")), Shake256TokenDigest)
 
     def test_digest_implementations_match_standard_vectors(self):
         """Each implementation produces the expected digest bytes.

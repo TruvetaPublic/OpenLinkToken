@@ -219,7 +219,7 @@ class JweMatchTokenFormatterTest {
                 TEST_RING_ID,
                 TEST_RULE_ID,
                 "test.issuer",
-                CryptoSuite.fromId("suite-pq-shake-v1"));
+                CryptoSuite.fromId("suite-pq-shake"));
 
         String result = formatter.transform(TEST_TOKEN);
         JWEObject jweObject = JWEObject.parse(result.substring("olt.V1.".length()));
@@ -288,7 +288,7 @@ class JweMatchTokenFormatterTest {
                 TEST_RING_ID,
                 TEST_RULE_ID,
                 "test.issuer",
-                CryptoSuite.fromId("suite-pq-shake-v1"));
+                CryptoSuite.fromId("suite-pq-shake"));
 
         JweMatchTokenFormatter deserializedFormatter = serializeAndDeserialize(formatter);
         Map<String, Object> payload = decryptPayload(deserializedFormatter.transform(TEST_TOKEN));

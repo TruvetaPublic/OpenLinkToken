@@ -35,11 +35,11 @@ Base64-encoded hashed token
 
 The digest and MAC are selected by the crypto suite:
 
-| Suite family                                         | Digest       | Keyed MAC     |
-| ---------------------------------------------------- | ------------ | ------------- |
-| `suite-sha256-v1`                                    | SHA-256      | HMAC-SHA256   |
-| `suite-sha3-v1`, `suite-pq-v1`, `suite-pq-hybrid-v1` | SHA3-256     | HMAC-SHA3-256 |
-| `suite-pq-shake-v1`                                  | SHAKE256-256 | KMAC256-256   |
+| Suite family             | Digest       | Keyed MAC     |
+| ------------------------ | ------------ | ------------- |
+| `suite-sha256`           | SHA-256      | HMAC-SHA256   |
+| `suite-sha3`, `suite-pq` | SHA3-256     | HMAC-SHA3-256 |
+| `suite-pq-shake`         | SHAKE256-256 | KMAC256-256   |
 
 The same normalized attributes, suite, and hashing secret produce the same
 hashed token. Changing any of those inputs produces a different token
@@ -156,7 +156,7 @@ secret overrides.
 
 ## How crypto suites affect the pipeline
 
-Crypto suites are complete, versioned contracts. They select:
+Crypto suites are complete algorithm contracts. They select:
 
 - the digest and keyed MAC used for deterministic token values;
 - the key agreement used to protect the exchange config;
@@ -164,8 +164,7 @@ Crypto suites are complete, versioned contracts. They select:
 - the token content-encryption algorithm.
 
 The current post-quantum suites use ML-KEM-768 for exchange key agreement.
-`suite-pq-hybrid-v1` combines ML-KEM-768 with ECDH-P256. The token payload
-still uses AES-256-GCM, and decryption still returns hashed values rather than
+The token payload still uses AES-256-GCM, and decryption still returns hashed values rather than
 original attributes.
 
 See [Cryptographic Suites](crypto-suites.md) for suite selection and

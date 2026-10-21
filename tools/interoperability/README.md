@@ -41,12 +41,12 @@ The `multi_language_interoperability_test.py` script executes five parity checks
 - **Java harness vs Python CLI parity:** invokes a thin Java harness built on the
   Java core library API and compares its T1-T5 `tokenize`-compatible CSV output
   against the Python CLI `tokenize` command with ML1 inferencing disabled for
-  all five registered exchange suites. The Python side provisions the matching
+  all four registered exchange suites. The Python side provisions the matching
   v1 ECDH or v2 key-bundle exchange for each suite.
 - **Java/Python exchange envelope parity:** builds and decrypts envelopes in both
   directions with the public Java exchange APIs and the Python exchange helpers.
-  The check covers both v1 ECDH suites and every v2 pure ML-KEM and hybrid
-  ECDH/ML-KEM suite. It compares the suite ID each reader resolves, decrypted
+  The check covers both ECDH suites and both ML-KEM suites. It compares the
+  suite ID each reader resolves, decrypted
   payload identity, v1 key fingerprints, v2 key IDs, and the v1/v2 derived
   transport keys without comparing randomized ciphertext or ephemeral values.
   The Java harness also resolves each envelope through `ExchangeConfig` so

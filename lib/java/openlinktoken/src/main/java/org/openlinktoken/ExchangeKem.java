@@ -41,9 +41,6 @@ public final class ExchangeKem implements Serializable {
     /** Pure ML-KEM-768 recipient algorithm. */
     public static final String PURE_KEM_ALGORITHM = JweMlkem.PURE_KEM_ALGORITHM;
 
-    /** Hybrid P-256 and ML-KEM-768 recipient algorithm. */
-    public static final String HYBRID_KEM_ALGORITHM = JweMlkem.HYBRID_KEM_ALGORITHM;
-
     /** HKDF domain-separation label for the v2 token transport key. */
     public static final String TOKEN_TRANSPORT_KEY_INFO = JweMlkem.TOKEN_TRANSPORT_KEY_INFO;
 

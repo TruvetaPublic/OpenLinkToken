@@ -23,6 +23,6 @@ class TestCryptoSuiteTokenizer:
         Returns:
             None.
         """
-        tokenizer = CryptoSuiteTokenizer([], CryptoSuite.from_id("suite-sha3-v1"))
+        tokenizer = CryptoSuiteTokenizer([], CryptoSuite.from_id("suite-sha3"))
 
         assert tokenizer.tokenize("test-input") == "ab96273f069fc38264bf16cc2287218779c5eed6c0fee89490b990ffc35a2af5"

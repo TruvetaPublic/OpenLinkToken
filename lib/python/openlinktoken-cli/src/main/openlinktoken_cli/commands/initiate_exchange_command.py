@@ -63,12 +63,9 @@ class InitiateExchangeCommand:
         parser.add_argument(
             "--crypto-suite",
             dest="crypto_suite",
-            default="suite-sha256-v1",
+            default="suite-sha256",
             metavar="SUITE_ID",
-            help=(
-                "Crypto suite to use (default: suite-sha256-v1). "
-                "Use suite-pq-v1 or suite-pq-hybrid-v1 with JSON key bundles."
-            ),
+            help=("Crypto suite to use (default: suite-sha256). Use suite-pq or suite-pq-shake with JSON key bundles."),
         )
 
         partner_public_key_group = parser.add_mutually_exclusive_group(required=True)
@@ -654,7 +651,7 @@ class InitiateExchangeCommand:
                     f"Partner key bundle suite '{recipient_bundle.suite.suite_id}' does not match "
                     f"--crypto-suite '{crypto_suite.suite_id}'."
                 )
-            if recipient_bundle.mlkem_private_seed is not None or recipient_bundle.ec_private_pem is not None:
+            if recipient_bundle.mlkem_private_seed is not None:
                 raise ValueError("Partner public key bundle must not contain private key material.")
 
             openlinktoken_dir = Path.home() / ".openlinktoken"

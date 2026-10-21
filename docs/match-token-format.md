@@ -9,13 +9,12 @@ Match tokens are privacy-protected identifiers generated from normalized person 
 The default `olt.V1` serialization remains unchanged. Crypto suites select the
 digest and MAC primitives while preserving the same token envelope:
 
-| Suite                | `hash_alg`     | `mac_alg`     |
-| -------------------- | -------------- | ------------- |
-| `suite-sha256-v1`    | `SHA-256`      | `HS256`       |
-| `suite-sha3-v1`      | `SHA3-256`     | `HS3-256`     |
-| `suite-pq-shake-v1`  | `SHAKE256-256` | `KMAC256-256` |
-| `suite-pq-v1`        | `SHA3-256`     | `HS3-256`     |
-| `suite-pq-hybrid-v1` | `SHA3-256`     | `HS3-256`     |
+| Suite            | `hash_alg`     | `mac_alg`     |
+| ---------------- | -------------- | ------------- |
+| `suite-sha256`   | `SHA-256`      | `HS256`       |
+| `suite-sha3`     | `SHA3-256`     | `HS3-256`     |
+| `suite-pq-shake` | `SHAKE256-256` | `KMAC256-256` |
+| `suite-pq`       | `SHA3-256`     | `HS3-256`     |
 
 The suite ID is recorded in exchange metadata. The token payload records the
 exact `hash_alg` and `mac_alg`, so readers do not infer algorithms from a

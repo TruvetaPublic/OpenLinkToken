@@ -138,10 +138,10 @@ class ExchangeJweTest {
                 0,
                 0.05,
                 List.of(),
-                CryptoSuite.SUITE_SHA3_V1);
+                CryptoSuite.SUITE_SHA3);
 
         Map<String, Object> protectedHeader = readProtectedHeader(envelope);
-        assertEquals("suite-sha3-v1", protectedHeader.get("cryptoSuite"));
+        assertEquals("suite-sha3", protectedHeader.get("cryptoSuite"));
         assertEquals(List.of("cryptoSuite"), protectedHeader.get("crit"));
 
         Map<String, Object> payload = ExchangeJsonTestSupport.readObject(
@@ -160,7 +160,7 @@ class ExchangeJweTest {
 
         Map<String, Object> unmarkedSuite = buildEnvelope(keys);
         Map<String, Object> unmarkedSuiteHeader = readProtectedHeader(unmarkedSuite);
-        unmarkedSuiteHeader.put("cryptoSuite", "suite-sha3-v1");
+        unmarkedSuiteHeader.put("cryptoSuite", "suite-sha3");
         updateProtectedHeader(unmarkedSuite, unmarkedSuiteHeader);
         assertThrows(
                 IllegalArgumentException.class,
@@ -175,7 +175,7 @@ class ExchangeJweTest {
                 () -> ExchangeJwe.decryptExchangeEnvelope(missingSuite, keys.senderPrivatePem));
 
         Map<String, Object> unprotectedSuite = buildEnvelope(keys);
-        unprotectedSuite.put("unprotected", Map.of("cryptoSuite", "suite-sha3-v1"));
+        unprotectedSuite.put("unprotected", Map.of("cryptoSuite", "suite-sha3"));
         assertThrows(
                 IllegalArgumentException.class,
                 () -> ExchangeJwe.decryptExchangeEnvelope(unprotectedSuite, keys.senderPrivatePem));

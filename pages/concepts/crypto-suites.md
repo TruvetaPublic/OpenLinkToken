@@ -7,7 +7,7 @@ title: Cryptographic Suites
 
 Open Link Token uses a **cryptographic suite** to select the algorithms used
 for both deterministic token generation and exchange key establishment. A suite
-is a complete, versioned contract: every organization participating in an
+is a complete algorithm contract: every organization participating in an
 exchange must use the same suite.
 
 The suite is selected when key material and the exchange config are created.
@@ -37,10 +37,8 @@ Post-quantum suites use **ML-KEM-768** for exchange key establishment. This is
 separate from the token digest and MAC: a suite can use a post-quantum exchange
 while still using SHA-3 and HMAC for its deterministic token primitives.
 Version 2 exchanges use the RFC 7516 general JWE JSON Serialization with
-custom key-management algorithm identifiers:
-
-- `ML-KEM-768` for `suite-pq-v1` and `suite-pq-shake-v1`
-- `ECDH-ES+ML-KEM-768` for `suite-pq-hybrid-v1`
+the custom key-management algorithm identifier `ML-KEM-768` for both
+`suite-pq` and `suite-pq-shake`.
 
 The JWE content-encryption key is used only for the exchange payload. The
 exchange implementation derives a separate token transport key from that CEK
@@ -49,17 +47,20 @@ directly.
 
 ## Supported suites
 
-| Suite ID             | Token digest | Token MAC                 | Exchange version and key agreement | Key material     | Choose it when                                                                                                                      |
-| -------------------- | ------------ | ------------------------- | ---------------------------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `suite-sha256-v1`    | SHA-256      | HMAC-SHA256 (`HS256`)     | Version 1, ECDH/JWE                | PEM              | You need the backward-compatible default or must interoperate with an existing version-1 exchange.                                  |
-| `suite-sha3-v1`      | SHA3-256     | HMAC-SHA3-256 (`HS3-256`) | Version 1, ECDH/JWE                | PEM              | All participants support version 1 and you want SHA-3 token primitives without changing the ECDH exchange format.                   |
-| `suite-pq-v1`        | SHA3-256     | HMAC-SHA3-256 (`HS3-256`) | Version 2, ML-KEM-768              | JSON key bundles | You want a post-quantum-only exchange and SHA-3/HMAC token primitives.                                                              |
-| `suite-pq-shake-v1`  | SHAKE256-256 | KMAC256-256               | Version 2, ML-KEM-768              | JSON key bundles | You want a post-quantum-only exchange and the SHAKE/KMAC family for token primitives.                                               |
-| `suite-pq-hybrid-v1` | SHA3-256     | HMAC-SHA3-256 (`HS3-256`) | Version 2, ECDH-P256 + ML-KEM-768  | JSON key bundles | You want a hybrid exchange that combines classical ECDH and post-quantum ML-KEM during a transition or defense-in-depth deployment. |
+| Suite ID         | Token digest | Token MAC                 | Exchange format version and key agreement | Key material     | Choose it when                                                                                                    |
+| ---------------- | ------------ | ------------------------- | ----------------------------------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `suite-sha256`   | SHA-256      | HMAC-SHA256 (`HS256`)     | Version 1, ECDH/JWE                       | PEM              | You need the backward-compatible default or must interoperate with an existing version-1 exchange.                |
+| `suite-sha3`     | SHA3-256     | HMAC-SHA3-256 (`HS3-256`) | Version 1, ECDH/JWE                       | PEM              | All participants support version 1 and you want SHA-3 token primitives without changing the ECDH exchange format. |
+| `suite-pq`       | SHA3-256     | HMAC-SHA3-256 (`HS3-256`) | Version 2, ML-KEM-768                     | JSON key bundles | You want a post-quantum-only exchange and SHA-3/HMAC token primitives.                                            |
+| `suite-pq-shake` | SHAKE256-256 | KMAC256-256               | Version 2, ML-KEM-768                     | JSON key bundles | You want a post-quantum-only exchange and the SHAKE/KMAC family for token primitives.                             |
 
-All suites use AES-256-GCM for token content encryption. The `v1` suffix in a
-suite ID identifies the suite contract; it does not mean that every suite uses
-exchange config version 1. The `suite-pq-*` suites use exchange config version 2.
+All suites use AES-256-GCM for token content encryption. Suite IDs have no
+version suffix. Exchange format versions remain separate protocol metadata:
+the ECDH suites use version 1 and the ML-KEM suites use version 2.
+Exchanges use either ECDH or ML-KEM, never a combination of both.
+
+Old version-suffixed suite IDs are not accepted. Regenerate exchange configs
+and JSON key bundles that explicitly name those old suites.
 
 ## How to choose a suite
 
@@ -67,32 +68,28 @@ Use this decision guide before creating keys or an exchange config:
 
 1. **Are you joining an existing exchange?**
    Use the suite recorded by that exchange. For an existing default exchange,
-   this is usually `suite-sha256-v1`. Do not create a new suite just because it
+   this is usually `suite-sha256`. Do not create a new suite just because it
    is newer; all participants must use the same suite and hashing secret.
 2. **Do you need to keep the version-1 ECDH/JWE format?**
-   Choose `suite-sha256-v1` for existing behavior or `suite-sha3-v1` when the
+   Choose `suite-sha256` for existing behavior or `suite-sha3` when the
    participants have agreed to SHA-3 token primitives.
 3. **Is post-quantum key establishment required for a new exchange?**
-   Choose a version-2 suite. Use `suite-pq-v1` for ML-KEM-only exchange with
-   SHA-3/HMAC token primitives, or `suite-pq-shake-v1` for ML-KEM-only exchange
+   Choose a version-2 suite. Use `suite-pq` for ML-KEM-only exchange with
+   SHA-3/HMAC token primitives, or `suite-pq-shake` for ML-KEM-only exchange
    with SHAKE/KMAC token primitives.
-4. **Do you need both classical and post-quantum key agreement?**
-   Choose `suite-pq-hybrid-v1`. It uses both ECDH-P256 and ML-KEM-768 and is
-   the appropriate option when participants want a hybrid transition profile.
-5. **Are you unsure which post-quantum token primitives to use?**
-   Choose `suite-pq-v1` unless a policy or interoperability requirement
+4. **Are you unsure which post-quantum token primitives to use?**
+   Choose `suite-pq` unless a policy or interoperability requirement
    specifically calls for SHAKE/KMAC. It provides the simpler post-quantum
    profile while retaining SHA-3/HMAC token behavior.
 
 ### Quick recommendations
 
-| Requirement                                    | Recommended suite    |
-| ---------------------------------------------- | -------------------- |
-| Preserve existing token compatibility          | `suite-sha256-v1`    |
-| Version-1 exchange with SHA-3 token primitives | `suite-sha3-v1`      |
-| New post-quantum-only deployment               | `suite-pq-v1`        |
-| Post-quantum-only deployment with SHAKE/KMAC   | `suite-pq-shake-v1`  |
-| Classical plus post-quantum transition         | `suite-pq-hybrid-v1` |
+| Requirement                                    | Recommended suite |
+| ---------------------------------------------- | ----------------- |
+| Preserve existing token compatibility          | `suite-sha256`    |
+| Version-1 exchange with SHA-3 token primitives | `suite-sha3`      |
+| New post-quantum-only deployment               | `suite-pq`        |
+| Post-quantum-only deployment with SHAKE/KMAC   | `suite-pq-shake`  |
 
 ## Key generation and exchange setup
 
@@ -106,11 +103,11 @@ key pair; P-256 is the default.
 
 ```bash
 olt generate-key-pair \
-  --crypto-suite suite-sha256-v1 \
+  --crypto-suite suite-sha256 \
   --name partner
 
 olt initiate-exchange \
-  --crypto-suite suite-sha256-v1 \
+  --crypto-suite suite-sha256 \
   --public-key ~/.openlinktoken/partner.public.pem \
   --output ./partner.exchange.json
 ```
@@ -118,30 +115,30 @@ olt initiate-exchange \
 The private key remains local. Share only the public key and the exchange
 config.
 
-### Version 2: ML-KEM or hybrid exchange and JSON bundles
+### Version 2: ML-KEM exchange and JSON bundles
 
 Version-2 suites use JSON key bundles instead of PEM files:
 
 ```bash
 olt generate-key-pair \
-  --crypto-suite suite-pq-hybrid-v1 \
+  --crypto-suite suite-pq \
   --name partner
 
 olt initiate-exchange \
-  --crypto-suite suite-pq-hybrid-v1 \
+  --crypto-suite suite-pq \
   --public-key ~/.openlinktoken/partner.public.bundle.json \
   --output ./partner.exchange.json
 ```
 
 This creates:
 
-- `<name>.public.bundle.json` containing public ML-KEM material and, for the
-  hybrid suite, the ECDH-P256 public key. This file may be shared.
+- `<name>.public.bundle.json` containing public ML-KEM material. This file may
+  be shared.
 - `<name>.private.bundle.json` containing the private material. Keep it local
   and protect it as a secret.
 
 The `--curve` option applies only to version-1 ECDH PEM generation. Version-2
-key bundles use ML-KEM-768 and the hybrid profile's fixed ECDH-P256 component.
+key bundles use only ML-KEM-768.
 
 For a field-by-field description of both exchange versions, see the
 `docs/exchange-config-format.md` reference in the repository.
@@ -156,7 +153,7 @@ For a field-by-field description of both exchange versions, see the
   source control, logs, and tickets.
 - Treat a new suite as a new token namespace. During migration, run both
   profiles deliberately and label the outputs rather than mixing them.
-- `suite-pq-shake-v1` requires a hashing secret of at least 32 bytes because
+- `suite-pq-shake` requires a hashing secret of at least 32 bytes because
   KMAC256 uses the secret directly as a KMAC key. Use a high-entropy secret
   from a secret manager or secure environment input.
 - Version-2 key bundles are larger and have more exchange processing overhead

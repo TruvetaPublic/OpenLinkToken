@@ -111,7 +111,7 @@ public final class ExchangeInteropHarness {
     }
 
     /**
-     * Generates a pure or hybrid ML-KEM envelope using the public v2 exchange API.
+     * Generates an ML-KEM envelope using the public v2 exchange API.
      *
      * <p>This method returns no value.</p>
      *

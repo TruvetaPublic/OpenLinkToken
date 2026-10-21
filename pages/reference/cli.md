@@ -156,11 +156,11 @@ Available in the Python CLI.
 
 Use `--crypto-suite` to select the key format and algorithms. Version 1 suites
 write PEM key pairs; version 2 suites write JSON key bundles containing
-ML-KEM-768 material and, for the hybrid suite, an ECDH-P256 key.
+ML-KEM-768 material only.
 
 | Argument         | Short | Required | Default                        | Description                                                                                          |
 | ---------------- | ----- | -------- | ------------------------------ | ---------------------------------------------------------------------------------------------------- |
-| `--crypto-suite` |       | No       | `suite-sha256-v1`              | Registered suite ID. Version 2 suites create `.private.bundle.json` and `.public.bundle.json` files. |
+| `--crypto-suite` |       | No       | `suite-sha256`                 | Registered suite ID. Version 2 suites create `.private.bundle.json` and `.public.bundle.json` files. |
 | `--curve`        | `-c`  | No       | `P-256`                        | ECDH curve for version 1 PEM keys: `P-256`, `P-384`, or `P-521`. Not valid for version 2 suites.     |
 | `--name`         | `-n`  | No       | `openlinktoken-<ISO8601-date>` | Base name for output key files.                                                                      |
 | `--force`        |       | No       | `false`                        | Overwrite existing key files if they already exist.                                                  |
@@ -173,8 +173,8 @@ Writes key files to `~/.openlinktoken/`:
 
 For version 2 suites, the corresponding files are:
 
-- `~/.openlinktoken/<name>.private.bundle.json` — private ML-KEM material and,
-  for the hybrid suite, private ECDH material (permissions `600`)
+- `~/.openlinktoken/<name>.private.bundle.json` — private ML-KEM material
+  (permissions `600`)
 - `~/.openlinktoken/<name>.public.bundle.json` — public key bundle (permissions
   `644`)
 
@@ -191,7 +191,7 @@ artifact does **not** embed private keys.
 
 | Argument                         | Short   | Required | Default                        | Description                                                                                                                                                      |
 | -------------------------------- | ------- | -------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--crypto-suite`                 |         | No       | `suite-sha256-v1`              | Registered suite ID. It must match the partner's public key format and the suite used for key generation.                                                        |
+| `--crypto-suite`                 |         | No       | `suite-sha256`                 | Registered suite ID. It must match the partner's public key format and the suite used for key generation.                                                        |
 | `--public-key`                   |         | Yes\*    |                                | Path to the partner's public PEM key or JSON public key bundle.                                                                                                  |
 | `--public-key-base`              |         | Yes\*    |                                | Base path for the partner's public key; the selected suite appends `.public.pem` for version 1 or `.public.bundle.json` for version 2.                           |
 | `--public-key-stdin`             |         | Yes\*    | `false`                        | Read the partner's public PEM key or JSON public key bundle from stdin instead of `--public-key`.                                                                |
@@ -358,7 +358,7 @@ olt package \
   --exchange-config ./partner.exchange.json
 ```
 
-**Token Pipeline (for `suite-sha256-v1`):**
+**Token Pipeline (for `suite-sha256`):**
 
 ```
 Signature → SHA-256 → HMAC-SHA256 → AES-256-GCM transform
@@ -376,7 +376,7 @@ olt tokenize \
 
 ```
 
-**Token Pipeline (for `suite-sha256-v1`):**
+**Token Pipeline (for `suite-sha256`):**
 
 ```
 Signature → suite-selected digest → suite-selected MAC → Base64

@@ -24,9 +24,8 @@ import org.junit.jupiter.api.Test;
 class ExchangeKemTest {
 
     private static final List<String> V2_SUITES = List.of(
-            "suite-pq-v1",
-            "suite-pq-shake-v1",
-            "suite-pq-hybrid-v1");
+            "suite-pq",
+            "suite-pq-shake");
 
     /**
      * Verifies each version-two suite encrypts and decrypts equivalent payloads for both recipients.
@@ -72,17 +71,14 @@ class ExchangeKemTest {
 
             List<?> recipients = (List<?>) envelope.get("recipients");
             assertEquals(2, recipients.size());
-            String expectedAlgorithm = suiteId.equals("suite-pq-hybrid-v1")
-                    ? "ECDH-ES+ML-KEM-768"
-                    : "ML-KEM-768";
             for (Object value : recipients) {
                 Map<?, ?> entry = (Map<?, ?>) value;
                 Map<?, ?> header = (Map<?, ?>) entry.get("header");
-                assertEquals(expectedAlgorithm, header.get("alg"));
+                assertEquals("ML-KEM-768", header.get("alg"));
                 assertTrue(header.get("kid") instanceof String);
                 byte[] encryptedKey = decode((String) entry.get("encrypted_key"));
                 assertEquals(1128, encryptedKey.length);
-                assertEquals(suiteId.equals("suite-pq-hybrid-v1"), header.containsKey("epk"));
+                assertFalse(header.containsKey("epk"));
             }
 
             ExchangeKem.DecryptionResult senderResult = ExchangeKem.decryptExchangeEnvelopeV2(envelope, sender);
@@ -136,9 +132,9 @@ class ExchangeKemTest {
      */
     @Test
     void rejectsInvalidDirectJweBuildInputs() {
-        ExchangeKeyBundle sender = ExchangeKeyBundle.generate("suite-pq-v1");
-        ExchangeKeyBundle recipient = ExchangeKeyBundle.generate("suite-pq-v1");
-        Map<String, Object> header = protectedHeader("suite-pq-v1");
+        ExchangeKeyBundle sender = ExchangeKeyBundle.generate("suite-pq");
+        ExchangeKeyBundle recipient = ExchangeKeyBundle.generate("suite-pq");
+        Map<String, Object> header = protectedHeader("suite-pq");
 
         assertThrows(IllegalArgumentException.class, () -> JweMlkem.build(null, header, List.of(sender, recipient)));
         assertThrows(IllegalArgumentException.class, () -> JweMlkem.build(new byte[0], null, List.of(sender, recipient)));
@@ -166,7 +162,7 @@ class ExchangeKemTest {
                 () -> JweMlkem.build(
                         new byte[0],
                         header,
-                        List.of(sender, ExchangeKeyBundle.generate("suite-pq-shake-v1"))));
+                        List.of(sender, ExchangeKeyBundle.generate("suite-pq-shake"))));
     }
 
     /**
@@ -176,8 +172,8 @@ class ExchangeKemTest {
      */
     @Test
     void rejectsMalformedJweMembersAndContentParameters() {
-        ExchangeKeyBundle sender = ExchangeKeyBundle.generate("suite-pq-v1");
-        ExchangeKeyBundle recipient = ExchangeKeyBundle.generate("suite-pq-v1");
+        ExchangeKeyBundle sender = ExchangeKeyBundle.generate("suite-pq");
+        ExchangeKeyBundle recipient = ExchangeKeyBundle.generate("suite-pq");
         Map<String, Object> envelope = ExchangeKem.buildExchangeEnvelopeV2(
                 "malformed-test",
                 "hash-secret".getBytes(StandardCharsets.UTF_8),
@@ -223,38 +219,33 @@ class ExchangeKemTest {
     }
 
     /**
-     * Verifies malformed hybrid ephemeral keys and tampered wrapped content keys are rejected.
+     * Verifies unsupported ECDH material and tampered wrapped content keys are rejected.
      *
      * <p>This test method accepts no arguments and returns no value.</p>
      */
     @Test
-    void rejectsMalformedHybridEphemeralKeysAndWrappedContentKeys() {
-        ExchangeKeyBundle sender = ExchangeKeyBundle.generate("suite-pq-hybrid-v1");
-        ExchangeKeyBundle recipient = ExchangeKeyBundle.generate("suite-pq-hybrid-v1");
+    void rejectsEcMaterialAndWrappedContentKeyTampering() {
+        ExchangeKeyBundle sender = ExchangeKeyBundle.generate("suite-pq");
+        ExchangeKeyBundle recipient = ExchangeKeyBundle.generate("suite-pq");
         Map<String, Object> envelope = ExchangeKem.buildExchangeEnvelopeV2(
-                "hybrid-malformed-test",
+                "unsupported-ec-test",
                 "hash-secret".getBytes(StandardCharsets.UTF_8),
                 sender,
                 recipient,
                 "2026-03-12T00:00:00Z",
-                "exchange-hybrid-malformed");
+                "exchange-unsupported-ec");
 
         Map<String, Object> invalidCurve = copyEnvelope(envelope);
         Map<String, Object> curveHeader = copyFirstRecipientHeader(invalidCurve);
-        Map<String, Object> invalidCurveEpk = copyStringMap((Map<?, ?>) curveHeader.get("epk"));
-        invalidCurveEpk.put("crv", "P-384");
-        curveHeader.put("epk", invalidCurveEpk);
+        curveHeader.put("epk", Map.of("kty", "EC", "crv", "P-256"));
         setFirstRecipientHeader(invalidCurve, curveHeader);
         assertThrows(IllegalArgumentException.class, () -> JweMlkem.decrypt(invalidCurve, sender));
 
-        Map<String, Object> invalidCoordinates = copyEnvelope(envelope);
-        Map<String, Object> coordinatesHeader = copyFirstRecipientHeader(invalidCoordinates);
-        Map<String, Object> invalidEpk = copyStringMap((Map<?, ?>) coordinatesHeader.get("epk"));
-        invalidEpk.put("x", encode(new byte[32]));
-        invalidEpk.put("y", encode(new byte[32]));
-        coordinatesHeader.put("epk", invalidEpk);
-        setFirstRecipientHeader(invalidCoordinates, coordinatesHeader);
-        assertThrows(IllegalArgumentException.class, () -> JweMlkem.decrypt(invalidCoordinates, sender));
+        Map<String, Object> unsupportedAlgorithm = copyEnvelope(envelope);
+        Map<String, Object> algorithmHeader = copyFirstRecipientHeader(unsupportedAlgorithm);
+        algorithmHeader.put("alg", "ECDH-ES+ML-KEM-768");
+        setFirstRecipientHeader(unsupportedAlgorithm, algorithmHeader);
+        assertThrows(IllegalArgumentException.class, () -> JweMlkem.decrypt(unsupportedAlgorithm, sender));
 
         Map<String, Object> invalidWrappedKey = copyEnvelope(envelope);
         Map<String, Object> recipientEntry = recipients(invalidWrappedKey).get(0);
@@ -271,10 +262,10 @@ class ExchangeKemTest {
      */
     @Test
     void rejectsTamperingWrongSuiteWrongKeyAndRecipientLength() {
-        ExchangeKeyBundle sender = ExchangeKeyBundle.generate("suite-pq-v1");
-        ExchangeKeyBundle recipient = ExchangeKeyBundle.generate("suite-pq-v1");
-        ExchangeKeyBundle unrelated = ExchangeKeyBundle.generate("suite-pq-v1");
-        ExchangeKeyBundle hybrid = ExchangeKeyBundle.generate("suite-pq-hybrid-v1");
+        ExchangeKeyBundle sender = ExchangeKeyBundle.generate("suite-pq");
+        ExchangeKeyBundle recipient = ExchangeKeyBundle.generate("suite-pq");
+        ExchangeKeyBundle unrelated = ExchangeKeyBundle.generate("suite-pq");
+        ExchangeKeyBundle shake = ExchangeKeyBundle.generate("suite-pq-shake");
         Map<String, Object> envelope = ExchangeKem.buildExchangeEnvelopeV2(
                 "tamper-test",
                 "hash-secret".getBytes(StandardCharsets.UTF_8),
@@ -305,7 +296,7 @@ class ExchangeKemTest {
                 () -> ExchangeKem.decryptExchangeEnvelopeV2(tamperedAad, sender));
 
         assertThrows(IllegalArgumentException.class,
-                () -> ExchangeKem.decryptExchangeEnvelopeV2(envelope, hybrid));
+                () -> ExchangeKem.decryptExchangeEnvelopeV2(envelope, shake));
         assertThrows(IllegalArgumentException.class,
                 () -> ExchangeKem.decryptExchangeEnvelopeV2(envelope, unrelated));
 
@@ -326,8 +317,8 @@ class ExchangeKemTest {
      */
     @Test
     void rejectsMismatchedSuitesAndInvalidExchangeInputs() {
-        ExchangeKeyBundle pure = ExchangeKeyBundle.generate("suite-pq-v1");
-        ExchangeKeyBundle shake = ExchangeKeyBundle.generate("suite-pq-shake-v1");
+        ExchangeKeyBundle pure = ExchangeKeyBundle.generate("suite-pq");
+        ExchangeKeyBundle shake = ExchangeKeyBundle.generate("suite-pq-shake");
 
         assertThrows(
                 IllegalArgumentException.class,
@@ -381,8 +372,8 @@ class ExchangeKemTest {
      * <p>This test method accepts no arguments and returns no value.</p>
      */
     void preservesNonKmacEmptyHashingSecretBehavior() {
-        ExchangeKeyBundle sender = ExchangeKeyBundle.generate("suite-pq-v1");
-        ExchangeKeyBundle recipient = ExchangeKeyBundle.generate("suite-pq-v1");
+        ExchangeKeyBundle sender = ExchangeKeyBundle.generate("suite-pq");
+        ExchangeKeyBundle recipient = ExchangeKeyBundle.generate("suite-pq");
         Map<String, Object> envelope = ExchangeKem.buildExchangeEnvelopeV2(
                 "empty-secret",
                 new byte[0],

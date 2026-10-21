@@ -7,19 +7,21 @@ encrypted hashing secret and the key material needed by both participants.
 The matching private key remains local; the JSON file contains public
 recipient information only.
 
-The selected crypto suite determines the exchange version:
+Suite IDs have no version suffix. The selected crypto suite determines the
+exchange format version, which remains separate protocol metadata:
 
-| Suite                | Token primitives             | Exchange version | Key agreement             | Key material |
-| -------------------- | ---------------------------- | ---------------: | ------------------------- | ------------ |
-| `suite-sha256-v1`    | SHA-256 and HMAC-SHA256      |                1 | ECDH/JWE                  | PEM          |
-| `suite-sha3-v1`      | SHA3-256 and HMAC-SHA3-256   |                1 | ECDH/JWE                  | PEM          |
-| `suite-pq-shake-v1`  | SHAKE256-256 and KMAC256-256 |                2 | ML-KEM-768                | JSON bundles |
-| `suite-pq-v1`        | SHA3-256 and HMAC-SHA3-256   |                2 | ML-KEM-768                | JSON bundles |
-| `suite-pq-hybrid-v1` | SHA3-256 and HMAC-SHA3-256   |                2 | ECDH-P256 plus ML-KEM-768 | JSON bundles |
+| Suite            | Token primitives             | Exchange format version | Key agreement | Key material |
+| ---------------- | ---------------------------- | ----------------------: | ------------- | ------------ |
+| `suite-sha256`   | SHA-256 and HMAC-SHA256      |                       1 | ECDH/JWE      | PEM          |
+| `suite-sha3`     | SHA3-256 and HMAC-SHA3-256   |                       1 | ECDH/JWE      | PEM          |
+| `suite-pq-shake` | SHAKE256-256 and KMAC256-256 |                       2 | ML-KEM-768    | JSON bundles |
+| `suite-pq`       | SHA3-256 and HMAC-SHA3-256   |                       2 | ML-KEM-768    | JSON bundles |
 
 Both participants can decrypt the same configuration because the sender and
 partner public keys are added as JWE recipients. Consumers reject a suite or
 version mismatch instead of silently selecting another algorithm.
+Old version-suffixed suite IDs are rejected; regenerate exchange configs and
+JSON key bundles that explicitly name them. Hybrid exchanges are not supported.
 
 ## Java library boundary
 
@@ -27,7 +29,7 @@ The Java core library provides the same exchange operations without adopting
 the Python CLI's filesystem policy:
 
 - `ExchangeJwe` builds and decrypts version-1 ECDH/JWE envelopes.
-- `ExchangeKem` builds and decrypts version-2 ML-KEM and hybrid envelopes.
+- `ExchangeKem` builds and decrypts version-2 ML-KEM envelopes.
 - `ExchangeKeyBundle` generates, parses, and serializes version-2 key bundles.
 - `ExchangeConfig` loads caller-supplied JSON or paths and resolves it with
   caller-supplied private PEM or bundle material.
@@ -67,7 +69,7 @@ The required protected header is:
   "cty": "application/openlinktoken-exchange+json",
   "enc": "A256GCM",
   "version": 2,
-  "cryptoSuite": "suite-pq-hybrid-v1",
+  "cryptoSuite": "suite-pq",
   "exchangeId": "0f3d5f8a-3f2a-4c2f-b69d-cb1f9d08d4ab"
 }
 ```
@@ -79,31 +81,24 @@ derivation.
 ### Recipients
 
 Each object in `recipients` contains the standard JWE `encrypted_key` and an
-optional `header` object:
+required `header` object:
 
 ```json
 {
   "encrypted_key": "Base64UrlEncoded1128ByteValue",
   "header": {
-    "alg": "ECDH-ES+ML-KEM-768",
-    "kid": "sha256:11-22-33-44-55-66-77-88",
-    "epk": {
-      "kty": "EC",
-      "crv": "P-256",
-      "x": "...",
-      "y": "..."
-    }
+    "alg": "ML-KEM-768",
+    "kid": "sha256:11-22-33-44-55-66-77-88"
   }
 }
 ```
 
 The recipient `alg` and headers are suite-specific:
 
-| Suite                | `alg`                | Required recipient headers |
-| -------------------- | -------------------- | -------------------------- |
-| `suite-pq-v1`        | `ML-KEM-768`         | `kid`                      |
-| `suite-pq-shake-v1`  | `ML-KEM-768`         | `kid`                      |
-| `suite-pq-hybrid-v1` | `ECDH-ES+ML-KEM-768` | `kid`, P-256 `epk`         |
+| Suite            | `alg`        | Required recipient headers |
+| ---------------- | ------------ | -------------------------- |
+| `suite-pq`       | `ML-KEM-768` | `kid`                      |
+| `suite-pq-shake` | `ML-KEM-768` | `kid`                      |
 
 `kid` is a stable identifier derived from the recipient public bundle. It is
 not the friendly local name used for files under `~/.openlinktoken/`.
@@ -114,11 +109,9 @@ For every version 2 recipient, `encrypted_key` contains:
 2. A 40-byte AES-KW result wrapping the 32-byte JWE content-encryption key
    (CEK).
 
-After base64url decoding, the member is therefore 1128 bytes. For the hybrid
-algorithm, the recipient shared secret is the concatenation of the P-256 ECDH
-shared secret and the ML-KEM shared secret. Both algorithms derive a
-recipient-specific 32-byte AES-KW key with HKDF-SHA256 using the exchange ID
-as salt and this domain-separated info:
+After base64url decoding, the member is therefore 1128 bytes. The ML-KEM
+shared secret derives a recipient-specific 32-byte AES-KW key with HKDF-SHA256
+using the exchange ID as salt and this domain-separated info:
 
 ```text
 openlinktoken:jwe:v2:<cryptoSuite>:<alg>:<kid>
@@ -160,11 +153,11 @@ the protected `cryptoSuite`, `version`, and `exchangeId` before accepting it.
 
 ## Version 1
 
-Version 1 uses ECDH/JWE and PEM key pairs for `suite-sha256-v1` and
-`suite-sha3-v1`. When `cryptoSuite` is absent from the protected header, readers
-resolve the legacy default `suite-sha256-v1`, so existing default-suite
-envelopes retain their original wire format. For `suite-sha3-v1`, the
-authenticated protected header contains `cryptoSuite: "suite-sha3-v1"` and
+Version 1 uses ECDH/JWE and PEM key pairs for `suite-sha256` and
+`suite-sha3`. When `cryptoSuite` is absent from the protected header, readers
+resolve the legacy default `suite-sha256`, so existing default-suite
+envelopes retain their original wire format. For `suite-sha3`, the
+authenticated protected header contains `cryptoSuite: "suite-sha3"` and
 `crit: ["cryptoSuite"]`. Suite identity is not added to the v1 payload or the
 top-level envelope. Readers reject unknown, incompatible, unprotected, or
 non-critical suite markers; older readers that do not recognize the critical
@@ -185,23 +178,23 @@ for existing exchanges and is independent of the version 2 algorithms above.
 Version 2 uses JSON key bundles instead of PEM files:
 
 ```bash
-olt generate-key-pair --crypto-suite suite-pq-v1 --name partner --force
+olt generate-key-pair --crypto-suite suite-pq --name partner --force
 olt initiate-exchange \
-  --crypto-suite suite-pq-v1 \
+  --crypto-suite suite-pq \
   --public-key ~/.openlinktoken/partner.public.bundle.json \
   --output ./partner.exchange.json
 ```
 
 The public bundle may be shared. The private bundle contains ML-KEM private
-material and must remain local with restrictive permissions. The hybrid
-profile also stores the P-256 private key in the private bundle.
+material and must remain local with restrictive permissions. ML-KEM bundles
+reject EC key sections.
 
 Version 1 continues to use PEM key pairs:
 
 ```bash
-olt generate-key-pair --crypto-suite suite-sha256-v1 --name partner
+olt generate-key-pair --crypto-suite suite-sha256 --name partner
 olt initiate-exchange \
-  --crypto-suite suite-sha256-v1 \
+  --crypto-suite suite-sha256 \
   --public-key ~/.openlinktoken/partner.public.pem \
   --output ./partner.exchange.json
 ```

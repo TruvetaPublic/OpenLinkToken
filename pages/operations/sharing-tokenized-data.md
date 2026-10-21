@@ -50,14 +50,11 @@ Organizations often need to identify overlapping individuals across datasets wit
 
 Partners must agree on a crypto suite before generating keys. Use the
 [Cryptographic Suites](../concepts/crypto-suites.md) guide to choose between
-the backward-compatible version-1 ECDH profiles and the version-2 ML-KEM or
-hybrid profiles.
+the version-1 ECDH profiles and the version-2 ML-KEM profiles.
 
-- Use `suite-sha256-v1` when an existing exchange or token namespace requires
+- Use `suite-sha256` when an existing exchange or token namespace requires
   the default version-1 behavior.
-- Use `suite-pq-v1` or `suite-pq-shake-v1` for a new ML-KEM-only exchange.
-- Use `suite-pq-hybrid-v1` when the exchange must combine ECDH-P256 and
-  ML-KEM-768.
+- Use `suite-pq` or `suite-pq-shake` for a new ML-KEM-only exchange.
 
 The sender and recipient must use the same suite ID. Do not mix PEM keys with
 version-2 JSON bundles.
@@ -232,7 +229,7 @@ olt package \
   --exchange-config sender-q2.exchange.json
 ```
 
-## Version 2 ML-KEM or Hybrid Workflow
+## Version 2 ML-KEM Workflow
 
 Version 2 suites use JSON key bundles and the RFC 7516 general JWE JSON
 Serialization. The workflow is the same as the version 1 exchange, but both
@@ -241,12 +238,12 @@ parties generate and share public bundles using the selected suite:
 ```bash
 # Recipient: generate a bundle and share only the public bundle
 olt generate-key-pair \
-  --crypto-suite suite-pq-hybrid-v1 \
+  --crypto-suite suite-pq \
   --name recipient-org
 
 # Sender: use the same suite and the recipient's public bundle
 olt initiate-exchange \
-  --crypto-suite suite-pq-hybrid-v1 \
+  --crypto-suite suite-pq \
   --public-key ~/.openlinktoken/recipient-org.public.bundle.json \
   --output ./sender-q2.exchange.json
 ```
@@ -254,9 +251,8 @@ olt initiate-exchange \
 The private bundle remains under `~/.openlinktoken/` on the machine that
 generated it. Consumer commands still use only `--exchange-config` plus the
 matching private bundle; the suite is read from the exchange artifact.
-For the ML-KEM-only suites, JWE recipients use `alg=ML-KEM-768`. The hybrid
-suite uses `alg=ECDH-ES+ML-KEM-768` and includes an ephemeral P-256 public key
-in each recipient header. The protected JWE header authenticates the exchange
+JWE recipients use `alg=ML-KEM-768` without an ECDH ephemeral key.
+The protected JWE header authenticates the exchange
 version, suite, and exchange ID.
 
 ---
@@ -438,7 +434,7 @@ See [Decrypting Tokens](decrypting-tokens.md) for details.
 
 Encrypted mode (`package` with an exchange config) adds AES-256-GCM encryption
 on top of the suite-selected keyed MAC. For the default
-`suite-sha256-v1`, that MAC is HMAC-SHA256:
+`suite-sha256`, that MAC is HMAC-SHA256:
 
 | Mode      | External Sharing    | Defense in Depth | Reversible                               |
 | --------- | ------------------- | ---------------- | ---------------------------------------- |

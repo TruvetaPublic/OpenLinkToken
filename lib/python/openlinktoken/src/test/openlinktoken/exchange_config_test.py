@@ -129,12 +129,12 @@ def test_build_v1_sha3_exchange_marks_suite_in_critical_protected_header():
         curve="P-256",
         created_at="2026-03-11T00:00:00Z",
         exchange_id="exchange-legacy-suite",
-        crypto_suite=CryptoSuite.from_id("suite-sha3-v1"),
+        crypto_suite=CryptoSuite.from_id("suite-sha3"),
     )
     protected_header = _decode_protected_header(envelope)
     payload = json.loads(decrypt_exchange_envelope(envelope, sender_private_pem))
 
-    assert protected_header["cryptoSuite"] == "suite-sha3-v1"
+    assert protected_header["cryptoSuite"] == "suite-sha3"
     assert protected_header["crit"] == ["cryptoSuite"]
     assert "cryptoSuite" not in payload
 
@@ -162,7 +162,7 @@ def test_resolve_v1_exchange_rejects_payload_suite_marker(monkeypatch):
         exchange_id="exchange-legacy-suite",
     )
     payload = json.loads(decrypt_exchange_envelope(envelope, sender_private_pem))
-    payload["cryptoSuite"] = "suite-sha256-v1"
+    payload["cryptoSuite"] = "suite-sha256"
     loaded = load_exchange_config(exchange_config_value=envelope)
     monkeypatch.setattr(
         "openlinktoken.exchange_config.decrypt_exchange_envelope",
@@ -192,7 +192,7 @@ def test_resolve_v1_sha3_exchange_uses_protected_suite_marker():
         curve="P-256",
         created_at="2026-03-11T00:00:00Z",
         exchange_id="exchange-legacy-suite",
-        crypto_suite=CryptoSuite.from_id("suite-sha3-v1"),
+        crypto_suite=CryptoSuite.from_id("suite-sha3"),
     )
 
     resolved = resolve_loaded_exchange_config(
@@ -201,26 +201,26 @@ def test_resolve_v1_sha3_exchange_uses_protected_suite_marker():
     )
 
     assert resolved.version == 1
-    assert resolved.crypto_suite == CryptoSuite.from_id("suite-sha3-v1")
+    assert resolved.crypto_suite == CryptoSuite.from_id("suite-sha3")
 
 
 @pytest.mark.parametrize(
     ("protected_header", "unprotected_header", "message"),
     [
         pytest.param(
-            {"cryptoSuite": "suite-sha3-v1"},
+            {"cryptoSuite": "suite-sha3"},
             None,
             "listed in the protected crit header",
             id="noncritical",
         ),
         pytest.param(
             {},
-            {"cryptoSuite": "suite-sha3-v1"},
+            {"cryptoSuite": "suite-sha3"},
             "only in the protected header",
             id="unprotected",
         ),
         pytest.param(
-            {"cryptoSuite": "suite-sha3-v1", "crit": "cryptoSuite"},
+            {"cryptoSuite": "suite-sha3", "crit": "cryptoSuite"},
             None,
             "crit must be an array of strings",
             id="malformed-crit",
@@ -250,7 +250,7 @@ def test_resolve_v1_crypto_suite_rejects_noncritical_or_unprotected_markers(
     ("suite_id", "message"),
     [
         pytest.param("suite-unregistered-v1", "Unknown crypto suite", id="unknown"),
-        pytest.param("suite-pq-v1", "incompatible with version 1 ECDH", id="version-two"),
+        pytest.param("suite-pq", "incompatible with version 1 ECDH", id="version-two"),
     ],
 )
 def test_resolve_v1_crypto_suite_rejects_unknown_or_incompatible_suites(suite_id: str, message: str):
@@ -288,7 +288,7 @@ def test_default_jwcrypto_reader_rejects_unknown_critical_suite_extension():
         curve="P-256",
         created_at="2026-03-11T00:00:00Z",
         exchange_id="exchange-legacy-suite",
-        crypto_suite=CryptoSuite.from_id("suite-sha3-v1"),
+        crypto_suite=CryptoSuite.from_id("suite-sha3"),
     )
     reader = jwe.JWE()
     reader.deserialize(json.dumps(envelope))
@@ -346,8 +346,8 @@ def test_resolve_exchange_config_private_key_continues_after_invalid_bundle(
     Returns:
         None.
     """
-    sender = generate_exchange_key_bundle("suite-pq-v1")
-    recipient = generate_exchange_key_bundle("suite-pq-v1")
+    sender = generate_exchange_key_bundle("suite-pq")
+    recipient = generate_exchange_key_bundle("suite-pq")
     envelope = build_exchange_envelope_v2(
         "lookup-fallback",
         b"hash-secret",
@@ -531,7 +531,7 @@ def test_load_exchange_config_rejects_unknown_exchange_config_version(tmp_path: 
         load_exchange_config(exchange_config_path)
 
 
-@pytest.mark.parametrize("suite_id", ["suite-pq-v1", "suite-pq-shake-v1", "suite-pq-hybrid-v1"])
+@pytest.mark.parametrize("suite_id", ["suite-pq", "suite-pq-shake"])
 def test_load_exchange_config_detects_v2_from_protected_header(suite_id):
     """Standard v2 configs detect their version from the protected header.
 
@@ -567,8 +567,8 @@ def test_resolve_v2_exchange_exposes_same_transport_key_for_both_private_bundles
     Returns:
         None.
     """
-    sender = generate_exchange_key_bundle("suite-pq-v1")
-    recipient = generate_exchange_key_bundle("suite-pq-v1")
+    sender = generate_exchange_key_bundle("suite-pq")
+    recipient = generate_exchange_key_bundle("suite-pq")
     envelope = build_exchange_envelope_v2(
         "resolved-v2",
         b"hash-secret",
@@ -600,8 +600,8 @@ def test_resolve_v2_exchange_accepts_private_key_bundle_mapping():
     Returns:
         None.
     """
-    sender = generate_exchange_key_bundle("suite-pq-v1")
-    recipient = generate_exchange_key_bundle("suite-pq-v1")
+    sender = generate_exchange_key_bundle("suite-pq")
+    recipient = generate_exchange_key_bundle("suite-pq")
     envelope = build_exchange_envelope_v2(
         "mapping-v2",
         b"hash-secret",
@@ -630,8 +630,8 @@ def test_derive_v2_transport_key_rejects_invalid_cached_key():
     Returns:
         None.
     """
-    sender = generate_exchange_key_bundle("suite-pq-v1")
-    recipient = generate_exchange_key_bundle("suite-pq-v1")
+    sender = generate_exchange_key_bundle("suite-pq")
+    recipient = generate_exchange_key_bundle("suite-pq")
     envelope = build_exchange_envelope_v2(
         "invalid-key",
         b"hash-secret",
@@ -658,8 +658,8 @@ def test_resolve_v2_exchange_rejects_tampered_protected_exchange_id():
     Returns:
         None.
     """
-    sender = generate_exchange_key_bundle("suite-pq-v1")
-    recipient = generate_exchange_key_bundle("suite-pq-v1")
+    sender = generate_exchange_key_bundle("suite-pq")
+    recipient = generate_exchange_key_bundle("suite-pq")
     envelope = build_exchange_envelope_v2(
         "tampered-v2",
         b"hash-secret",

@@ -57,9 +57,9 @@ class GenerateKeyPairCommand:
         parser.add_argument(
             "--crypto-suite",
             dest="crypto_suite",
-            default="suite-sha256-v1",
+            default="suite-sha256",
             metavar="SUITE_ID",
-            help="Crypto suite to generate (default: suite-sha256-v1; version-2 suites create JSON bundles)",
+            help="Crypto suite to generate (default: suite-sha256; version-2 suites create JSON bundles)",
         )
 
         parser.add_argument(

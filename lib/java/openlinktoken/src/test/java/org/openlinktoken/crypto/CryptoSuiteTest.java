@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
@@ -23,11 +24,11 @@ class CryptoSuiteTest {
      */
     @Test
     void publicConstantsAreRegisteredSuites() {
-        assertSame(CryptoSuite.SUITE_SHA256_V1, CryptoSuite.fromId("suite-sha256-v1"));
-        assertSame(CryptoSuite.SUITE_SHA3_V1, CryptoSuite.fromId("suite-sha3-v1"));
-        assertSame(CryptoSuite.SUITE_PQ_SHAKE_V1, CryptoSuite.fromId("suite-pq-shake-v1"));
-        assertSame(CryptoSuite.SUITE_PQ_V1, CryptoSuite.fromId("suite-pq-v1"));
-        assertSame(CryptoSuite.SUITE_PQ_HYBRID_V1, CryptoSuite.fromId("suite-pq-hybrid-v1"));
+        assertSame(CryptoSuite.SUITE_SHA256, CryptoSuite.fromId("suite-sha256"));
+        assertSame(CryptoSuite.SUITE_SHA3, CryptoSuite.fromId("suite-sha3"));
+        assertSame(CryptoSuite.SUITE_PQ_SHAKE, CryptoSuite.fromId("suite-pq-shake"));
+        assertSame(CryptoSuite.SUITE_PQ, CryptoSuite.fromId("suite-pq"));
+        assertEquals(4, CryptoSuite.all().size());
     }
 
     /**
@@ -67,20 +68,20 @@ class CryptoSuiteTest {
      */
     @Test
     void registeredSuitesHaveExpectedContracts() {
-        assertEquals("suite-sha256-v1", CryptoSuite.defaultSuite().getSuiteId());
+        assertEquals("suite-sha256", CryptoSuite.defaultSuite().getSuiteId());
         assertEquals("SHA-256", CryptoSuite.defaultSuite().getTokenDigestAlgorithm());
         assertEquals("HS256", CryptoSuite.defaultSuite().getTokenMacAlgorithm());
         assertEquals("ECDH", CryptoSuite.defaultSuite().getExchangeKeyAgreement());
         assertEquals(1, CryptoSuite.defaultSuite().getExchangeConfigVersion());
 
-        CryptoSuite hybrid = CryptoSuite.fromId("suite-pq-hybrid-v1");
-        assertEquals("ECDH+ML-KEM-768", hybrid.getExchangeKeyAgreement());
-        assertEquals(2, hybrid.getExchangeConfigVersion());
-        assertEquals("HS3-256", hybrid.getTokenMacAlgorithm());
-        assertEquals("SHA3-256", hybrid.getTokenDigestAlgorithm());
-        assertTrue(hybrid.isPostQuantum());
+        CryptoSuite pq = CryptoSuite.fromId("suite-pq");
+        assertEquals("ML-KEM-768", pq.getExchangeKeyAgreement());
+        assertEquals(2, pq.getExchangeConfigVersion());
+        assertEquals("HS3-256", pq.getTokenMacAlgorithm());
+        assertEquals("SHA3-256", pq.getTokenDigestAlgorithm());
+        assertTrue(pq.isPostQuantum());
 
-        CryptoSuite pqShake = CryptoSuite.fromId("suite-pq-shake-v1");
+        CryptoSuite pqShake = CryptoSuite.fromId("suite-pq-shake");
         assertEquals("SHAKE256-256", pqShake.getTokenDigestAlgorithm());
         assertEquals("KMAC256-256", pqShake.getTokenMacAlgorithm());
         assertEquals("ML-KEM-768", pqShake.getExchangeKeyAgreement());
@@ -105,7 +106,6 @@ class CryptoSuiteTest {
         assertEquals("A256GCM", CryptoSuite.TOKEN_CONTENT_ENCRYPTION_A256GCM);
         assertEquals("ECDH", CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH);
         assertEquals("ML-KEM-768", CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM768);
-        assertEquals("ECDH+ML-KEM-768", CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH_MLKEM768);
         assertEquals("ML-KEM", CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM_PREFIX);
     }
 
@@ -119,6 +119,11 @@ class CryptoSuiteTest {
         assertThrows(IllegalArgumentException.class, () -> CryptoSuite.fromId("unknown"));
         assertThrows(IllegalArgumentException.class, () -> CryptoSuite.fromId(""));
         assertThrows(IllegalArgumentException.class, () -> CryptoSuite.fromId("suite-shake-v1"));
+        for (String removedId : List.of(
+                "suite-sha256-v1", "suite-sha3-v1", "suite-pq-v1",
+                "suite-pq-shake-v1", "suite-pq-hybrid-v1", "suite-pq-hybrid")) {
+            assertThrows(IllegalArgumentException.class, () -> CryptoSuite.fromId(removedId));
+        }
     }
 
     /**
@@ -142,7 +147,12 @@ class CryptoSuiteTest {
                 "A256GCM",
                 "ECDH",
                 2,
-                "Exchange configuration version 2 requires a non-ECDH key agreement.");
+                "Exchange configuration version 2 only supports ML-KEM-768.");
+        assertInvalidSuite(
+                "A256GCM",
+                "ECDH+ML-KEM-768",
+                2,
+                "Exchange configuration version 2 only supports ML-KEM-768.");
         assertInvalidSuite(
                 "A256GCM",
                 "ML-KEM-768",

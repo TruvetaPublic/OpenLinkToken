@@ -131,18 +131,18 @@ class JavaSerializationTest {
     }
 
     /**
-     * Verifies crypto suites retain canonical identity and hybrid key bundles preserve their private key material.
+     * Verifies crypto suites retain canonical identity and ML-KEM bundles preserve their private key material.
      *
      * <p>This test method accepts no arguments and returns no value.</p>
      *
      * @throws Exception if suite or key-bundle serialization fails
      */
     @Test
-    void cryptoSuiteAndHybridKeyBundleRoundTripPrivateState() throws Exception {
-        CryptoSuite suite = roundTrip(CryptoSuite.SUITE_PQ_HYBRID_V1, CryptoSuite.class);
+    void cryptoSuiteAndKeyBundleRoundTripPrivateState() throws Exception {
+        CryptoSuite suite = roundTrip(CryptoSuite.SUITE_PQ, CryptoSuite.class);
 
-        assertSame(CryptoSuite.SUITE_PQ_HYBRID_V1, suite);
-        assertEquals(CryptoSuite.SUITE_PQ_HYBRID_V1.getSuiteId(), suite.getSuiteId());
+        assertSame(CryptoSuite.SUITE_PQ, suite);
+        assertEquals(CryptoSuite.SUITE_PQ.getSuiteId(), suite.getSuiteId());
 
         ExchangeKeyBundle bundle = ExchangeKeyBundle.generate(suite.getSuiteId());
         ExchangeKeyBundle bundleCopy = roundTrip(bundle, ExchangeKeyBundle.class);
@@ -152,8 +152,6 @@ class JavaSerializationTest {
         assertEquals(bundle.getKid(), bundleCopy.getKid());
         assertArrayEquals(bundle.getMlkemPublicKey(), bundleCopy.getMlkemPublicKey());
         assertArrayEquals(bundle.getMlkemPrivateSeed(), bundleCopy.getMlkemPrivateSeed());
-        assertArrayEquals(bundle.getEcPublicPem(), bundleCopy.getEcPublicPem());
-        assertArrayEquals(bundle.getEcPrivatePem(), bundleCopy.getEcPrivatePem());
     }
 
     /**
@@ -184,8 +182,8 @@ class JavaSerializationTest {
         assertArrayEquals(payload.rotationIv(), payloadCopy.rotationIv());
         assertEquals(payload.dimensionBias(), payloadCopy.dimensionBias());
 
-        ExchangeKeyBundle sender = ExchangeKeyBundle.generate("suite-pq-v1");
-        ExchangeKeyBundle recipient = ExchangeKeyBundle.generate("suite-pq-v1");
+        ExchangeKeyBundle sender = ExchangeKeyBundle.generate("suite-pq");
+        ExchangeKeyBundle recipient = ExchangeKeyBundle.generate("suite-pq");
         Map<String, Object> envelope = ExchangeKem.buildExchangeEnvelopeV2(
                 "serialized-exchange",
                 HASHING_SECRET,

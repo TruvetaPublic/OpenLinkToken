@@ -134,7 +134,7 @@ def test_inspector_prints_standard_v2_jwe_with_private_bundle() -> None:
         "decryptedPayload",
     }
     assert rendered_envelope["protectedDecoded"]["version"] == 2
-    assert rendered_envelope["protectedDecoded"]["cryptoSuite"] == "suite-pq-v1"
+    assert rendered_envelope["protectedDecoded"]["cryptoSuite"] == "suite-pq"
     assert rendered_envelope["decryptedPayload"]["hashingSecretEncoding"] == "base64url"
 
 

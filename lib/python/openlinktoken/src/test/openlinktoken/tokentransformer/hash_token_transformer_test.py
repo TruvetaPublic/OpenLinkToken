@@ -134,7 +134,7 @@ class TestHashTokenTransformer:
         Returns:
             None.
         """
-        transformer = HashTokenTransformer("sampleSecret", CryptoSuite.from_id("suite-sha3-v1"))
+        transformer = HashTokenTransformer("sampleSecret", CryptoSuite.from_id("suite-sha3"))
 
         assert (
             transformer.transform("ab96273f069fc38264bf16cc2287218779c5eed6c0fee89490b990ffc35a2af5")
@@ -153,7 +153,7 @@ class TestHashTokenTransformer:
         from Crypto.Hash import KMAC256
 
         secret = b"0123456789abcdef0123456789abcdef"
-        transformer = HashTokenTransformer(secret, CryptoSuite.from_id("suite-pq-shake-v1"))
+        transformer = HashTokenTransformer(secret, CryptoSuite.from_id("suite-pq-shake"))
         expected = KMAC256.new(key=secret, data=b"person", mac_len=32).digest()
 
         assert base64.b64decode(transformer.transform("person")) == expected
@@ -167,9 +167,9 @@ class TestHashTokenTransformer:
         Returns:
             None.
         """
-        transformer = HashTokenTransformer(b"x" * 31, CryptoSuite.from_id("suite-pq-shake-v1"))
+        transformer = HashTokenTransformer(b"x" * 31, CryptoSuite.from_id("suite-pq-shake"))
 
-        with pytest.raises(ValueError, match="suite-pq-shake-v1.*KMAC256.*32 bytes"):
+        with pytest.raises(ValueError, match="suite-pq-shake.*KMAC256.*32 bytes"):
             transformer.transform(self.VALID_TOKEN)
 
     def _calculate_expected_hash(self, secret: str, token: str) -> str:

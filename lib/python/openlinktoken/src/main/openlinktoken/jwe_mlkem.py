@@ -9,8 +9,8 @@ import os
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import ec, mlkem
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import mlkem
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives.keywrap import aes_key_unwrap, aes_key_wrap
 from jwcrypto import jwe
@@ -24,7 +24,6 @@ EXCHANGE_V2_TYPE = "openlinktoken-exchange+jwe"
 EXCHANGE_V2_CONTENT_TYPE = "application/openlinktoken-exchange+json"
 EXCHANGE_V2_ENCRYPTION = CryptoSuite.TOKEN_CONTENT_ENCRYPTION_A256GCM
 PURE_KEM_ALGORITHM = CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM768
-HYBRID_KEM_ALGORITHM = f"ECDH-ES+{CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM768}"
 TOKEN_TRANSPORT_KEY_INFO = b"openlinktoken:token-encryption:v2"
 
 CEK_SIZE = 32
@@ -32,7 +31,7 @@ MLKEM_CIPHERTEXT_SIZE = 1088
 AES_KW_WRAPPED_CEK_SIZE = 40
 RECIPIENT_ENCRYPTED_KEY_SIZE = MLKEM_CIPHERTEXT_SIZE + AES_KW_WRAPPED_CEK_SIZE
 
-_ALLOWED_ALGORITHMS = [PURE_KEM_ALGORITHM, HYBRID_KEM_ALGORITHM, EXCHANGE_V2_ENCRYPTION]
+_ALLOWED_ALGORITHMS = [PURE_KEM_ALGORITHM, EXCHANGE_V2_ENCRYPTION]
 _REQUIRED_PROTECTED_FIELDS = {
     "typ",
     "cty",
@@ -74,7 +73,7 @@ class OpenLinkTokenJWE(jwe.JWE):
             The local ML-KEM handler for an allowed custom algorithm, or the
             handler selected by ``jwcrypto.jwe.JWE`` for other algorithms.
         """
-        if name in {PURE_KEM_ALGORITHM, HYBRID_KEM_ALGORITHM}:
+        if name == PURE_KEM_ALGORITHM:
             allowed = self._allowed_algs
             if allowed is None or name not in allowed:
                 raise InvalidJWEOperation("Algorithm not allowed")
@@ -121,7 +120,7 @@ class _MLKEMKeyManagement:
 
         Returns:
             A key-management result containing the CEK, combined ML-KEM and
-            AES-KW encrypted key, and an ephemeral-key header for hybrid suites.
+            AES-KW encrypted key.
         """
         _validate_key_and_headers(key, headers, self.algorithm, require_private=False)
         if bitsize != CEK_SIZE * 8:
@@ -131,7 +130,7 @@ class _MLKEMKeyManagement:
         if len(cek) != CEK_SIZE:
             raise ValueError(f"Version-2 JWE CEK must be {CEK_SIZE} bytes.")
 
-        shared_secret, mlkem_ciphertext, epk = _encapsulate(key, self.algorithm)
+        shared_secret, mlkem_ciphertext = _encapsulate(key)
         kek = _derive_recipient_kek(shared_secret, headers)
         try:
             wrapped_cek = aes_key_wrap(kek, cek)
@@ -142,8 +141,6 @@ class _MLKEMKeyManagement:
             "cek": cek,
             "ek": mlkem_ciphertext + wrapped_cek,
         }
-        if epk is not None:
-            result["header"] = {"epk": epk}
         return result
 
     def unwrap(
@@ -175,7 +172,7 @@ class _MLKEMKeyManagement:
 
         mlkem_ciphertext = encrypted_key[:MLKEM_CIPHERTEXT_SIZE]
         wrapped_cek = encrypted_key[MLKEM_CIPHERTEXT_SIZE:]
-        shared_secret = _decapsulate(key, self.algorithm, mlkem_ciphertext, headers)
+        shared_secret = _decapsulate(key, mlkem_ciphertext)
         kek = _derive_recipient_kek(shared_secret, headers)
         try:
             cek = aes_key_unwrap(kek, wrapped_cek)
@@ -360,10 +357,8 @@ def _validate_recipient(recipient: Any, algorithm: str) -> None:
             f"Recipient encrypted_key must decode to {RECIPIENT_ENCRYPTED_KEY_SIZE} bytes, got {len(encrypted_key)}."
         )
 
-    if algorithm == HYBRID_KEM_ALGORITHM:
-        _validate_epk(header.get("epk"))
-    elif "epk" in header:
-        raise ValueError("Pure ML-KEM recipients must not contain epk.")
+    if "epk" in header:
+        raise ValueError("ML-KEM recipients must not contain epk.")
 
 
 def _decode_protected_header(value: Any) -> dict[str, Any]:
@@ -411,14 +406,12 @@ def _algorithm_for_suite(suite: CryptoSuite) -> str:
         suite: Validated crypto suite selecting version-2 key agreement.
 
     Returns:
-        The pure ML-KEM or hybrid ECDH-plus-ML-KEM JOSE algorithm identifier.
+        The ML-KEM JOSE algorithm identifier.
     """
     if suite.exchange_config_version != EXCHANGE_V2_VERSION:
         raise ValueError(f"Suite '{suite.suite_id}' does not use exchange configuration version 2.")
     if suite.exchange_key_agreement == CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM768:
         return PURE_KEM_ALGORITHM
-    if suite.exchange_key_agreement == CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH_MLKEM768:
-        return HYBRID_KEM_ALGORITHM
     raise ValueError(f"Unsupported version-2 exchange agreement '{suite.exchange_key_agreement}'.")
 
 
@@ -453,11 +446,6 @@ def _validate_key_and_headers(
         raise ValueError("Exchange key bundle is missing its ML-KEM public key.")
     if require_private and key.mlkem_private_seed is None:
         raise ValueError("Exchange key bundle is missing its ML-KEM private seed.")
-    if algorithm == HYBRID_KEM_ALGORITHM:
-        if key.ec_public_pem is None:
-            raise ValueError("Hybrid exchange key bundle is missing its EC public key.")
-        if require_private and key.ec_private_pem is None:
-            raise ValueError("Hybrid exchange key bundle is missing its EC private key.")
 
 
 def _validate_header_context(headers: Mapping[str, Any], algorithm: str) -> None:
@@ -486,57 +474,38 @@ def _validate_header_context(headers: Mapping[str, Any], algorithm: str) -> None
 
 def _encapsulate(
     bundle: ExchangeKeyBundle,
-    algorithm: str,
-) -> tuple[bytes, bytes, dict[str, Any] | None]:
-    """Encapsulate ML-KEM and optional ephemeral ECDH material.
+) -> tuple[bytes, bytes]:
+    """Encapsulate an ML-KEM shared secret.
 
     Args:
         bundle: Recipient's public exchange key bundle.
-        algorithm: Pure or hybrid key-management algorithm to use.
 
     Returns:
-        A tuple containing the combined shared secret, ML-KEM ciphertext, and
-        optional ephemeral P-256 public JWK for a hybrid suite.
+        A tuple containing the shared secret and ML-KEM ciphertext.
     """
     mlkem_public = mlkem.MLKEM768PublicKey.from_public_bytes(bundle.mlkem_public_key or b"")
     mlkem_shared_secret, mlkem_ciphertext = mlkem_public.encapsulate()
     if len(mlkem_ciphertext) != MLKEM_CIPHERTEXT_SIZE:
         raise ValueError(f"{CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM768} produced an unexpected ciphertext length.")
 
-    if algorithm == PURE_KEM_ALGORITHM:
-        return mlkem_shared_secret, mlkem_ciphertext, None
-
-    recipient_public = _load_ec_public_key(bundle.ec_public_pem)
-    ephemeral_private = ec.generate_private_key(ec.SECP256R1())
-    shared_secret = ephemeral_private.exchange(ec.ECDH(), recipient_public) + mlkem_shared_secret
-    return shared_secret, mlkem_ciphertext, _serialize_ephemeral_public_key(ephemeral_private.public_key())
+    return mlkem_shared_secret, mlkem_ciphertext
 
 
 def _decapsulate(
     bundle: ExchangeKeyBundle,
-    algorithm: str,
     mlkem_ciphertext: bytes,
-    headers: Mapping[str, Any],
 ) -> bytes:
-    """Decapsulate ML-KEM and optional ephemeral ECDH material.
+    """Decapsulate an ML-KEM shared secret.
 
     Args:
         bundle: Recipient's private exchange key bundle.
-        algorithm: Pure or hybrid key-management algorithm to use.
         mlkem_ciphertext: ML-KEM ciphertext produced during encapsulation.
-        headers: JOSE header values containing any hybrid ephemeral key.
 
     Returns:
-        The combined shared secret bytes.
+        The shared secret bytes.
     """
     mlkem_private = mlkem.MLKEM768PrivateKey.from_seed_bytes(bundle.mlkem_private_seed or b"")
-    mlkem_shared_secret = mlkem_private.decapsulate(mlkem_ciphertext)
-    if algorithm == PURE_KEM_ALGORITHM:
-        return mlkem_shared_secret
-
-    private_ec = _load_ec_private_key(bundle.ec_private_pem)
-    ephemeral_public = _load_ephemeral_public_key(headers.get("epk"))
-    return private_ec.exchange(ec.ECDH(), ephemeral_public) + mlkem_shared_secret
+    return mlkem_private.decapsulate(mlkem_ciphertext)
 
 
 def _derive_recipient_kek(shared_secret: bytes, headers: Mapping[str, Any]) -> bytes:
@@ -565,103 +534,6 @@ def _derive_recipient_kek(shared_secret: bytes, headers: Mapping[str, Any]) -> b
         salt=headers["exchangeId"].encode("utf-8"),
         info=info,
     ).derive(shared_secret)
-
-
-def _serialize_ephemeral_public_key(public_key: ec.EllipticCurvePublicKey) -> dict[str, str]:
-    """Serialize an ephemeral P-256 public key into a JOSE EC JWK.
-
-    Args:
-        public_key: Ephemeral P-256 elliptic-curve public key.
-
-    Returns:
-        An EC JWK mapping containing the curve and encoded coordinates.
-    """
-    numbers = public_key.public_numbers()
-    return {
-        "kty": "EC",
-        "crv": "P-256",
-        "x": _encode_base64url(numbers.x.to_bytes(32, "big")),
-        "y": _encode_base64url(numbers.y.to_bytes(32, "big")),
-    }
-
-
-def _validate_epk(value: Any) -> None:
-    """Validate a hybrid recipient's ephemeral P-256 JWK.
-
-    Args:
-        value: Candidate ephemeral public-key JWK mapping.
-
-    Returns:
-        None.
-    """
-    if not isinstance(value, Mapping):
-        raise ValueError("Hybrid recipients require a P-256 epk.")
-    if value.get("kty") != "EC" or value.get("crv") != "P-256":
-        raise ValueError("Hybrid recipient epk must be a P-256 EC JWK.")
-    x = _decode_base64url(value.get("x"), "recipient epk.x")
-    y = _decode_base64url(value.get("y"), "recipient epk.y")
-    if len(x) != 32 or len(y) != 32:
-        raise ValueError("Recipient epk coordinates must be 32 bytes.")
-    if "d" in value:
-        raise ValueError("Recipient epk must not contain private key material.")
-
-
-def _load_ephemeral_public_key(value: Any) -> ec.EllipticCurvePublicKey:
-    """Load and validate an ephemeral P-256 public key from a JOSE JWK.
-
-    Args:
-        value: Ephemeral public-key JWK mapping.
-
-    Returns:
-        The validated P-256 elliptic-curve public key.
-    """
-    _validate_epk(value)
-    x = int.from_bytes(_decode_base64url(value["x"], "recipient epk.x"), "big")
-    y = int.from_bytes(_decode_base64url(value["y"], "recipient epk.y"), "big")
-    try:
-        return ec.EllipticCurvePublicNumbers(x, y, ec.SECP256R1()).public_key()
-    except ValueError as error:
-        raise ValueError(f"Recipient epk is not a valid P-256 public key: {error}") from error
-
-
-def _load_ec_public_key(value: bytes | None) -> ec.EllipticCurvePublicKey:
-    """Load a P-256 public key from a bundle.
-
-    Args:
-        value: Public-key PEM bytes, or ``None`` when the key is absent.
-
-    Returns:
-        The validated P-256 elliptic-curve public key.
-    """
-    if value is None:
-        raise ValueError("Exchange key bundle is missing its EC public key.")
-    try:
-        public_key = serialization.load_pem_public_key(value)
-    except (TypeError, ValueError) as error:
-        raise ValueError(f"Exchange key bundle EC public key is invalid: {error}") from error
-    if not isinstance(public_key, ec.EllipticCurvePublicKey) or public_key.curve.name != "secp256r1":
-        raise ValueError("Exchange key bundle EC public key must use P-256.")
-    return public_key
-
-
-def _load_ec_private_key(value: bytes | None) -> ec.EllipticCurvePrivateKey:
-    """Load a P-256 private key from a bundle.
-
-    Args:
-        value: Private-key PEM bytes, or ``None`` when the key is absent.
-
-    Returns:
-        The validated P-256 elliptic-curve private key.
-    """
-    if value is None:
-        raise ValueError("Exchange key bundle is missing its EC private key.")
-    try:
-        private_key = serialization.load_pem_private_key(value, password=None)
-    except (TypeError, ValueError) as error:
-        raise ValueError(f"Exchange key bundle EC private key is invalid: {error}") from error
-    if not isinstance(private_key, ec.EllipticCurvePrivateKey) or private_key.curve.name != "secp256r1":
-        raise ValueError("Exchange key bundle EC private key must use P-256.")
-    return private_key
 
 
 def _encode_base64url(value: bytes) -> str:

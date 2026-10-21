@@ -175,7 +175,7 @@ class TestGenerateKeyPairCommandIntegration:
                 [
                     "generate-key-pair",
                     "--crypto-suite",
-                    "suite-pq-v1",
+                    "suite-pq",
                     "--name",
                     "pq-key",
                 ]

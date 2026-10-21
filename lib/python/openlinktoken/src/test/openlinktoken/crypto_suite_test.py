@@ -29,12 +29,11 @@ def test_public_constants_are_registered_suites():
     Returns:
         None.
     """
-    assert CryptoSuite.SUITE_SHA256_V1 is CryptoSuite.from_id("suite-sha256-v1")
-    assert CryptoSuite.SUITE_SHA3_V1 is CryptoSuite.from_id("suite-sha3-v1")
-    assert CryptoSuite.SUITE_PQ_SHAKE_V1 is CryptoSuite.from_id("suite-pq-shake-v1")
-    assert CryptoSuite.SUITE_PQ_V1 is CryptoSuite.from_id("suite-pq-v1")
-    assert CryptoSuite.SUITE_PQ_HYBRID_V1 is CryptoSuite.from_id("suite-pq-hybrid-v1")
-    assert CryptoSuite.default() is CryptoSuite.SUITE_SHA256_V1
+    assert CryptoSuite.SUITE_SHA256 is CryptoSuite.from_id("suite-sha256")
+    assert CryptoSuite.SUITE_SHA3 is CryptoSuite.from_id("suite-sha3")
+    assert CryptoSuite.SUITE_PQ_SHAKE is CryptoSuite.from_id("suite-pq-shake")
+    assert CryptoSuite.SUITE_PQ is CryptoSuite.from_id("suite-pq")
+    assert CryptoSuite.default() is CryptoSuite.SUITE_SHA256
 
 
 def test_registered_suites_have_expected_contracts():
@@ -47,17 +46,14 @@ def test_registered_suites_have_expected_contracts():
         None.
     """
     assert [suite.suite_id for suite in CryptoSuite.all()] == [
-        "suite-sha256-v1",
-        "suite-sha3-v1",
-        "suite-pq-shake-v1",
-        "suite-pq-v1",
-        "suite-pq-hybrid-v1",
+        "suite-sha256",
+        "suite-sha3",
+        "suite-pq-shake",
+        "suite-pq",
     ]
 
-    assert CryptoSuite.from_id("suite-sha256-v1") == CryptoSuite(
-        "suite-sha256-v1", "SHA-256", "HS256", "A256GCM", "ECDH", 1
-    )
-    assert CryptoSuite.from_id("suite-pq-hybrid-v1").exchange_key_agreement == "ECDH+ML-KEM-768"
+    assert CryptoSuite.from_id("suite-sha256") == CryptoSuite("suite-sha256", "SHA-256", "HS256", "A256GCM", "ECDH", 1)
+    assert CryptoSuite.from_id("suite-pq").exchange_key_agreement == "ML-KEM-768"
 
 
 def test_algorithm_identifiers_are_stable_constants():
@@ -79,7 +75,6 @@ def test_algorithm_identifiers_are_stable_constants():
     assert CryptoSuite.TOKEN_CONTENT_ENCRYPTION_A256GCM == "A256GCM"
     assert CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH == "ECDH"
     assert CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM768 == "ML-KEM-768"
-    assert CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH_MLKEM768 == "ECDH+ML-KEM-768"
     assert CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM_PREFIX == "ML-KEM"
 
 
@@ -92,7 +87,7 @@ def test_shake_suite_declares_fixed_output_and_kmac():
     Returns:
         None.
     """
-    suite = CryptoSuite.from_id("suite-pq-shake-v1")
+    suite = CryptoSuite.from_id("suite-pq-shake")
 
     assert suite.token_digest_algorithm == "SHAKE256-256"
     assert suite.token_mac_algorithm == "KMAC256-256"
@@ -110,9 +105,9 @@ def test_kmac_suite_rejects_hashing_secrets_shorter_than_32_bytes():
     Returns:
         None.
     """
-    suite = CryptoSuite.from_id("suite-pq-shake-v1")
+    suite = CryptoSuite.from_id("suite-pq-shake")
 
-    with pytest.raises(CryptoSuiteError, match="suite-pq-shake-v1.*32 bytes"):
+    with pytest.raises(CryptoSuiteError, match="suite-pq-shake.*32 bytes"):
         suite.validate_hashing_secret(b"x" * 31)
 
 
@@ -127,7 +122,7 @@ def test_hashing_secret_validation_accepts_valid_default_and_kmac_secrets():
     """
     assert CryptoSuite.default().validate_hashing_secret(b"x") == b"x"
     kmac_secret = b"x" * 32
-    assert CryptoSuite.from_id("suite-pq-shake-v1").validate_hashing_secret(kmac_secret) == kmac_secret
+    assert CryptoSuite.from_id("suite-pq-shake").validate_hashing_secret(kmac_secret) == kmac_secret
 
 
 def test_default_suite_preserves_legacy_contract():
@@ -149,7 +144,20 @@ def test_default_suite_preserves_legacy_contract():
     assert not suite.is_post_quantum
 
 
-@pytest.mark.parametrize("suite_id", ["", "unknown", None])
+@pytest.mark.parametrize(
+    "suite_id",
+    [
+        "",
+        "unknown",
+        None,
+        "suite-sha256-v1",
+        "suite-sha3-v1",
+        "suite-pq-v1",
+        "suite-pq-shake-v1",
+        "suite-pq-hybrid-v1",
+        "suite-pq-hybrid",
+    ],
+)
 def test_unknown_suite_ids_fail_closed(suite_id):
     """Unknown or malformed IDs must not silently fall back to the default.
 
@@ -170,7 +178,8 @@ def test_unknown_suite_ids_fail_closed(suite_id):
         ({"token_mac_algorithm": "UNKNOWN-MAC"}, "Unsupported token MAC algorithm"),
         ({"token_content_encryption": "A128GCM"}, "content encryption"),
         ({"exchange_config_version": 1, "exchange_key_agreement": "ML-KEM-768"}, "only supports ECDH"),
-        ({"exchange_config_version": 2, "exchange_key_agreement": "ECDH"}, "requires a non-ECDH"),
+        ({"exchange_config_version": 2, "exchange_key_agreement": "ECDH"}, "only supports ML-KEM-768"),
+        ({"exchange_config_version": 2, "exchange_key_agreement": "ECDH+ML-KEM-768"}, "only supports ML-KEM-768"),
         ({"exchange_config_version": 3, "exchange_key_agreement": "ML-KEM-768"}, "Unsupported exchange"),
     ],
 )

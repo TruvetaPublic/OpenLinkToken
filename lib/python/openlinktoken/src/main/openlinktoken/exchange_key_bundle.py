@@ -10,8 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping
 
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import ec, mlkem
+from cryptography.hazmat.primitives.asymmetric import mlkem
 
 from openlinktoken.crypto.crypto_suite import CryptoSuite
 
@@ -20,7 +19,6 @@ BUNDLE_TYPE = "openlinktoken-key-bundle"
 MLKEM_ALGORITHM = CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM768
 MLKEM_PUBLIC_KEY_SIZE = 1184
 MLKEM_PRIVATE_SEED_SIZE = 64
-EC_ALGORITHM = "ECDH-P256"
 
 
 class KeyBundleError(ValueError):
@@ -98,8 +96,6 @@ class ExchangeKeyBundle:
         suite: Crypto suite selecting the key-agreement algorithms.
         mlkem_public_key: Optional ML-KEM public key bytes.
         mlkem_private_seed: Optional local ML-KEM private seed bytes.
-        ec_public_pem: Optional P-256 public key in PEM format.
-        ec_private_pem: Optional local P-256 private key in PEM format.
 
     Returns:
         A frozen ``ExchangeKeyBundle`` containing the supplied key material.
@@ -108,8 +104,6 @@ class ExchangeKeyBundle:
     suite: CryptoSuite
     mlkem_public_key: bytes | None = None
     mlkem_private_seed: bytes | None = None
-    ec_public_pem: bytes | None = None
-    ec_private_pem: bytes | None = None
 
     @property
     def kid(self) -> str:
@@ -125,13 +119,6 @@ class ExchangeKeyBundle:
         fingerprint_input = b"openlinktoken:key-bundle:v1:" + self.suite.suite_id.encode("ascii")
         if self.mlkem_public_key is not None:
             fingerprint_input += b":mlkem:" + self.mlkem_public_key
-        if self.ec_public_pem is not None:
-            public_key = serialization.load_pem_public_key(self.ec_public_pem)
-            ec_der = public_key.public_bytes(
-                encoding=serialization.Encoding.DER,
-                format=serialization.PublicFormat.SubjectPublicKeyInfo,
-            )
-            fingerprint_input += b":ec:" + ec_der
         return _fingerprint_to_kid(_sha256_fingerprint(fingerprint_input))
 
     @property
@@ -145,13 +132,10 @@ class ExchangeKeyBundle:
             ``True`` when all private keys required by the exchange suite are
             present; otherwise, ``False``.
         """
-        mlkem_private = self.mlkem_private_seed is not None
-        ec_private = self.ec_private_pem is not None
-        if self.suite.exchange_key_agreement == CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM768:
-            return mlkem_private
-        if self.suite.exchange_key_agreement == CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH_MLKEM768:
-            return mlkem_private and ec_private
-        return False
+        return (
+            self.suite.exchange_key_agreement == CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM768
+            and self.mlkem_private_seed is not None
+        )
 
     def to_mapping(self, include_private: bool = False) -> dict[str, Any]:
         """Serialize this bundle into its JSON-compatible mapping.
@@ -182,23 +166,6 @@ class ExchangeKeyBundle:
                     }
                 )
             keys["mlkem"] = mlkem_section
-
-        if self.ec_public_pem is not None:
-            ec_section: dict[str, Any] = {
-                "algorithm": EC_ALGORITHM,
-                "publicKeyEncoding": "pem",
-                "publicKey": self.ec_public_pem.decode("utf-8"),
-            }
-            if include_private:
-                if self.ec_private_pem is None:
-                    raise KeyBundleError("EC private key is missing.")
-                ec_section.update(
-                    {
-                        "privateKeyEncoding": "pem",
-                        "privateKey": self.ec_private_pem.decode("utf-8"),
-                    }
-                )
-            keys["ec"] = ec_section
 
         return {
             "version": BUNDLE_VERSION,
@@ -263,11 +230,14 @@ class ExchangeKeyBundle:
         keys = mapping.get("keys")
         if not isinstance(keys, Mapping):
             raise KeyBundleError("Key bundle is missing its keys object.")
+        for key in keys:
+            if key != "mlkem":
+                raise KeyBundleError(f"Key bundle contains an unsupported key section '{key}'.")
 
         mlkem_section = keys.get("mlkem")
         mlkem_public_key = None
         mlkem_private_seed = None
-        if CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM768 in suite.exchange_key_agreement:
+        if suite.exchange_key_agreement == CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM768:
             if not isinstance(mlkem_section, Mapping):
                 raise KeyBundleError("The selected suite requires an mlkem key section.")
             if mlkem_section.get("algorithm") != MLKEM_ALGORITHM:
@@ -291,36 +261,10 @@ class ExchangeKeyBundle:
                 if mlkem_private_key.public_key().public_bytes_raw() != mlkem_public_key:
                     raise KeyBundleError("mlkem.privateKey does not match mlkem.publicKey.")
 
-        ec_section = keys.get("ec")
-        ec_public_pem = None
-        ec_private_pem = None
-        if suite.exchange_key_agreement == CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH_MLKEM768:
-            if not isinstance(ec_section, Mapping):
-                raise KeyBundleError("The selected hybrid suite requires an ec key section.")
-            if ec_section.get("algorithm") != EC_ALGORITHM:
-                raise KeyBundleError(f"Unsupported EC algorithm '{ec_section.get('algorithm')}'.")
-            if ec_section.get("publicKeyEncoding") != "pem":
-                raise KeyBundleError("ec.publicKeyEncoding must be pem.")
-            ec_public_value = ec_section.get("publicKey")
-            if not isinstance(ec_public_value, str) or not ec_public_value:
-                raise KeyBundleError("ec.publicKey must be non-empty PEM text.")
-            ec_public_pem = ec_public_value.encode("utf-8")
-            _validate_ec_public_key(ec_public_pem)
-            if "privateKey" in ec_section:
-                if ec_section.get("privateKeyEncoding") != "pem":
-                    raise KeyBundleError("ec.privateKeyEncoding must be pem.")
-                ec_private_value = ec_section.get("privateKey")
-                if not isinstance(ec_private_value, str) or not ec_private_value:
-                    raise KeyBundleError("ec.privateKey must be non-empty PEM text.")
-                ec_private_pem = ec_private_value.encode("utf-8")
-                _validate_ec_private_key(ec_private_pem, ec_public_pem)
-
         bundle = cls(
             suite=suite,
             mlkem_public_key=mlkem_public_key,
             mlkem_private_seed=mlkem_private_seed,
-            ec_public_pem=ec_public_pem,
-            ec_private_pem=ec_private_pem,
         )
         if mapping.get("kid") != bundle.kid:
             raise KeyBundleError("Key-bundle kid does not match its public key material.")
@@ -351,26 +295,10 @@ def generate_exchange_key_bundle(suite_id: str) -> ExchangeKeyBundle:
             f"from the configured cryptography provider: {error}"
         ) from error
 
-    ec_private_pem = None
-    ec_public_pem = None
-    if suite.exchange_key_agreement == CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH_MLKEM768:
-        private_ec = ec.generate_private_key(ec.SECP256R1())
-        ec_private_pem = private_ec.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=serialization.NoEncryption(),
-        )
-        ec_public_pem = private_ec.public_key().public_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo,
-        )
-
     return ExchangeKeyBundle(
         suite=suite,
         mlkem_public_key=mlkem_private.public_key().public_bytes_raw(),
         mlkem_private_seed=mlkem_private.private_bytes_raw(),
-        ec_public_pem=ec_public_pem,
-        ec_private_pem=ec_private_pem,
     )
 
 
@@ -407,44 +335,3 @@ def resolve_private_bundle_by_kid(directory: Path, kid: str) -> bytes:
             f"invalid bundle candidates: {invalid_candidate_details}"
         )
     raise FileNotFoundError(f"No private key bundle found for recipient kid '{kid}' in {directory}.")
-
-
-def _validate_ec_public_key(public_pem: bytes) -> None:
-    """Validate that PEM bytes contain a P-256 public key.
-
-    Args:
-        public_pem: Candidate public-key PEM bytes.
-
-    Returns:
-        None.
-    """
-    try:
-        public_key = serialization.load_pem_public_key(public_pem)
-    except (ValueError, TypeError) as error:
-        raise KeyBundleError(f"ec.publicKey is not valid PEM: {error}") from error
-    if not isinstance(public_key, ec.EllipticCurvePublicKey) or public_key.curve.name != "secp256r1":
-        raise KeyBundleError("ec.publicKey must be a P-256 public key.")
-
-
-def _validate_ec_private_key(private_pem: bytes, public_pem: bytes) -> None:
-    """Validate a P-256 private key and its correspondence to the public key.
-
-    Args:
-        private_pem: Candidate private-key PEM bytes.
-        public_pem: Expected corresponding public-key PEM bytes.
-
-    Returns:
-        None.
-    """
-    try:
-        private_key = serialization.load_pem_private_key(private_pem, password=None)
-    except (ValueError, TypeError) as error:
-        raise KeyBundleError(f"ec.privateKey is not valid PEM: {error}") from error
-    if not isinstance(private_key, ec.EllipticCurvePrivateKey) or private_key.curve.name != "secp256r1":
-        raise KeyBundleError("ec.privateKey must be a P-256 private key.")
-    derived_public = private_key.public_key().public_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo,
-    )
-    if derived_public != public_pem:
-        raise KeyBundleError("ec.privateKey does not match ec.publicKey.")

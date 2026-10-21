@@ -42,7 +42,6 @@ class CryptoSuite:
     TOKEN_CONTENT_ENCRYPTION_A256GCM: ClassVar[str] = "A256GCM"
     EXCHANGE_KEY_AGREEMENT_ECDH: ClassVar[str] = "ECDH"
     EXCHANGE_KEY_AGREEMENT_MLKEM768: ClassVar[str] = "ML-KEM-768"
-    EXCHANGE_KEY_AGREEMENT_ECDH_MLKEM768: ClassVar[str] = "ECDH+ML-KEM-768"
     EXCHANGE_KEY_AGREEMENT_MLKEM_PREFIX: ClassVar[str] = "ML-KEM"
 
     suite_id: str
@@ -52,11 +51,10 @@ class CryptoSuite:
     exchange_key_agreement: str
     exchange_config_version: int
 
-    SUITE_SHA256_V1: ClassVar["CryptoSuite"]
-    SUITE_SHA3_V1: ClassVar["CryptoSuite"]
-    SUITE_PQ_SHAKE_V1: ClassVar["CryptoSuite"]
-    SUITE_PQ_V1: ClassVar["CryptoSuite"]
-    SUITE_PQ_HYBRID_V1: ClassVar["CryptoSuite"]
+    SUITE_SHA256: ClassVar["CryptoSuite"]
+    SUITE_SHA3: ClassVar["CryptoSuite"]
+    SUITE_PQ_SHAKE: ClassVar["CryptoSuite"]
+    SUITE_PQ: ClassVar["CryptoSuite"]
     _REGISTRY: ClassVar[dict[str, "CryptoSuite"]]
 
     @classmethod
@@ -83,15 +81,15 @@ class CryptoSuite:
 
     @classmethod
     def default(cls) -> "CryptoSuite":
-        """Return the backward-compatible default suite.
+        """Return the default suite.
 
         Args:
             None.
 
         Returns:
-            The registered SHA-256 v1 ``CryptoSuite``.
+            The registered SHA-256 ``CryptoSuite``.
         """
-        return cls.SUITE_SHA256_V1
+        return cls.SUITE_SHA256
 
     @classmethod
     def all(cls) -> tuple["CryptoSuite", ...]:
@@ -186,62 +184,52 @@ class CryptoSuite:
             raise CryptoSuiteError(f"Unsupported token content encryption '{self.token_content_encryption}'.")
         if self.exchange_config_version == 1 and self.exchange_key_agreement != self.EXCHANGE_KEY_AGREEMENT_ECDH:
             raise CryptoSuiteError("Exchange configuration version 1 only supports ECDH.")
-        if self.exchange_config_version == 2 and self.exchange_key_agreement == self.EXCHANGE_KEY_AGREEMENT_ECDH:
-            raise CryptoSuiteError("Exchange configuration version 2 requires a non-ECDH key agreement.")
+        if self.exchange_config_version == 2 and self.exchange_key_agreement != self.EXCHANGE_KEY_AGREEMENT_MLKEM768:
+            raise CryptoSuiteError("Exchange configuration version 2 only supports ML-KEM-768.")
         if self.exchange_config_version not in {1, 2}:
             raise CryptoSuiteError(f"Unsupported exchange configuration version '{self.exchange_config_version}'.")
         return self
 
 
-CryptoSuite.SUITE_SHA256_V1 = CryptoSuite(
-    suite_id="suite-sha256-v1",
+CryptoSuite.SUITE_SHA256 = CryptoSuite(
+    suite_id="suite-sha256",
     token_digest_algorithm=CryptoSuite.TOKEN_DIGEST_SHA256,
     token_mac_algorithm=CryptoSuite.TOKEN_MAC_HS256,
     token_content_encryption=CryptoSuite.TOKEN_CONTENT_ENCRYPTION_A256GCM,
     exchange_key_agreement=CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH,
     exchange_config_version=1,
 )
-CryptoSuite.SUITE_SHA3_V1 = CryptoSuite(
-    suite_id="suite-sha3-v1",
+CryptoSuite.SUITE_SHA3 = CryptoSuite(
+    suite_id="suite-sha3",
     token_digest_algorithm=CryptoSuite.TOKEN_DIGEST_SHA3_256,
     token_mac_algorithm=CryptoSuite.TOKEN_MAC_HS3_256,
     token_content_encryption=CryptoSuite.TOKEN_CONTENT_ENCRYPTION_A256GCM,
     exchange_key_agreement=CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH,
     exchange_config_version=1,
 )
-CryptoSuite.SUITE_PQ_SHAKE_V1 = CryptoSuite(
-    suite_id="suite-pq-shake-v1",
+CryptoSuite.SUITE_PQ_SHAKE = CryptoSuite(
+    suite_id="suite-pq-shake",
     token_digest_algorithm=CryptoSuite.TOKEN_DIGEST_SHAKE256_256,
     token_mac_algorithm=CryptoSuite.TOKEN_MAC_KMAC256_256,
     token_content_encryption=CryptoSuite.TOKEN_CONTENT_ENCRYPTION_A256GCM,
     exchange_key_agreement=CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM768,
     exchange_config_version=2,
 )
-CryptoSuite.SUITE_PQ_V1 = CryptoSuite(
-    suite_id="suite-pq-v1",
+CryptoSuite.SUITE_PQ = CryptoSuite(
+    suite_id="suite-pq",
     token_digest_algorithm=CryptoSuite.TOKEN_DIGEST_SHA3_256,
     token_mac_algorithm=CryptoSuite.TOKEN_MAC_HS3_256,
     token_content_encryption=CryptoSuite.TOKEN_CONTENT_ENCRYPTION_A256GCM,
     exchange_key_agreement=CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM768,
     exchange_config_version=2,
 )
-CryptoSuite.SUITE_PQ_HYBRID_V1 = CryptoSuite(
-    suite_id="suite-pq-hybrid-v1",
-    token_digest_algorithm=CryptoSuite.TOKEN_DIGEST_SHA3_256,
-    token_mac_algorithm=CryptoSuite.TOKEN_MAC_HS3_256,
-    token_content_encryption=CryptoSuite.TOKEN_CONTENT_ENCRYPTION_A256GCM,
-    exchange_key_agreement=CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH_MLKEM768,
-    exchange_config_version=2,
-)
-
 CryptoSuite._REGISTRY = {
     suite.suite_id: suite
     for suite in (
-        CryptoSuite.SUITE_SHA256_V1,
-        CryptoSuite.SUITE_SHA3_V1,
-        CryptoSuite.SUITE_PQ_SHAKE_V1,
-        CryptoSuite.SUITE_PQ_V1,
-        CryptoSuite.SUITE_PQ_HYBRID_V1,
+        CryptoSuite.SUITE_SHA256,
+        CryptoSuite.SUITE_SHA3,
+        CryptoSuite.SUITE_PQ_SHAKE,
+        CryptoSuite.SUITE_PQ,
     )
 }
 
