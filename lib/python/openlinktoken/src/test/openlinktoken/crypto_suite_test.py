@@ -29,11 +29,11 @@ def test_public_constants_are_registered_suites():
     Returns:
         None.
     """
-    assert CryptoSuite.SUITE_SHA256 is CryptoSuite.from_id("suite-sha256")
-    assert CryptoSuite.SUITE_SHA3 is CryptoSuite.from_id("suite-sha3")
-    assert CryptoSuite.SUITE_PQ_SHAKE is CryptoSuite.from_id("suite-pq-shake")
-    assert CryptoSuite.SUITE_PQ is CryptoSuite.from_id("suite-pq")
-    assert CryptoSuite.default() is CryptoSuite.SUITE_SHA256
+    assert CryptoSuite.ECDH_SHA256 is CryptoSuite.from_id("ecdh-sha256")
+    assert CryptoSuite.ECDH_SHA3_256 is CryptoSuite.from_id("ecdh-sha3-256")
+    assert CryptoSuite.MLKEM768_SHAKE256 is CryptoSuite.from_id("mlkem768-shake256")
+    assert CryptoSuite.MLKEM768_SHA3_256 is CryptoSuite.from_id("mlkem768-sha3-256")
+    assert CryptoSuite.default() is CryptoSuite.ECDH_SHA256
 
 
 def test_registered_suites_have_expected_contracts():
@@ -46,14 +46,14 @@ def test_registered_suites_have_expected_contracts():
         None.
     """
     assert [suite.suite_id for suite in CryptoSuite.all()] == [
-        "suite-sha256",
-        "suite-sha3",
-        "suite-pq-shake",
-        "suite-pq",
+        "ecdh-sha256",
+        "ecdh-sha3-256",
+        "mlkem768-shake256",
+        "mlkem768-sha3-256",
     ]
 
-    assert CryptoSuite.from_id("suite-sha256") == CryptoSuite("suite-sha256", "SHA-256", "HS256", "A256GCM", "ECDH", 1)
-    assert CryptoSuite.from_id("suite-pq").exchange_key_agreement == "ML-KEM-768"
+    assert CryptoSuite.from_id("ecdh-sha256") == CryptoSuite("ecdh-sha256", "SHA-256", "HS256", "A256GCM", "ECDH", 1)
+    assert CryptoSuite.from_id("mlkem768-sha3-256").exchange_key_agreement == "ML-KEM-768"
 
 
 def test_algorithm_identifiers_are_stable_constants():
@@ -87,7 +87,7 @@ def test_shake_suite_declares_fixed_output_and_kmac():
     Returns:
         None.
     """
-    suite = CryptoSuite.from_id("suite-pq-shake")
+    suite = CryptoSuite.from_id("mlkem768-shake256")
 
     assert suite.token_digest_algorithm == "SHAKE256-256"
     assert suite.token_mac_algorithm == "KMAC256-256"
@@ -105,9 +105,9 @@ def test_kmac_suite_rejects_hashing_secrets_shorter_than_32_bytes():
     Returns:
         None.
     """
-    suite = CryptoSuite.from_id("suite-pq-shake")
+    suite = CryptoSuite.from_id("mlkem768-shake256")
 
-    with pytest.raises(CryptoSuiteError, match="suite-pq-shake.*32 bytes"):
+    with pytest.raises(CryptoSuiteError, match="mlkem768-shake256.*32 bytes"):
         suite.validate_hashing_secret(b"x" * 31)
 
 
@@ -122,7 +122,7 @@ def test_hashing_secret_validation_accepts_valid_default_and_kmac_secrets():
     """
     assert CryptoSuite.default().validate_hashing_secret(b"x") == b"x"
     kmac_secret = b"x" * 32
-    assert CryptoSuite.from_id("suite-pq-shake").validate_hashing_secret(kmac_secret) == kmac_secret
+    assert CryptoSuite.from_id("mlkem768-shake256").validate_hashing_secret(kmac_secret) == kmac_secret
 
 
 def test_default_suite_preserves_legacy_contract():
@@ -150,6 +150,10 @@ def test_default_suite_preserves_legacy_contract():
         "",
         "unknown",
         None,
+        "suite-sha256",
+        "suite-sha3",
+        "suite-pq",
+        "suite-pq-shake",
         "suite-sha256-v1",
         "suite-sha3-v1",
         "suite-pq-v1",

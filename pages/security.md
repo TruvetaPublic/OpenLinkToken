@@ -25,7 +25,7 @@ Open Link Token generates cryptographically secure tokens for privacy-preserving
 Open Link Token transforms person attributes through multiple layers:
 
 **Encryption mode (default):** The digest and MAC depend on the selected
-crypto suite. `suite-sha256` is shown below; the post-quantum profiles use
+crypto suite. `ecdh-sha256` is shown below; the post-quantum profiles use
 SHA3-256/HMAC-SHA3-256 or SHAKE256-256/KMAC256-256 instead.
 
 ```
@@ -56,11 +56,11 @@ Base64 Encode
 
 The suite fixes the digest and keyed MAC used for deterministic token values:
 
-| Suite family             | Digest       | MAC           |
-| ------------------------ | ------------ | ------------- |
-| `suite-sha256`           | SHA-256      | HMAC-SHA256   |
-| `suite-sha3`, `suite-pq` | SHA3-256     | HMAC-SHA3-256 |
-| `suite-pq-shake`         | SHAKE256-256 | KMAC256-256   |
+| Suite family                         | Digest       | MAC           |
+| ------------------------------------ | ------------ | ------------- |
+| `ecdh-sha256`                        | SHA-256      | HMAC-SHA256   |
+| `ecdh-sha3-256`, `mlkem768-sha3-256` | SHA3-256     | HMAC-SHA3-256 |
+| `mlkem768-shake256`                  | SHAKE256-256 | KMAC256-256   |
 
 See [Cryptographic Suites](concepts/crypto-suites.md) for the exchange key
 agreement and selection guidance.

@@ -33,5 +33,5 @@ class SHA256Tokenizer(CryptoSuiteTokenizer):
         Returns:
             None.
         """
-        selected_suite = crypto_suite if crypto_suite is not None else CryptoSuite.SUITE_SHA256
+        selected_suite = crypto_suite if crypto_suite is not None else CryptoSuite.ECDH_SHA256
         super().__init__(token_transformer_list, selected_suite)

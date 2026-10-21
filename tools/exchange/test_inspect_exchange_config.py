@@ -106,7 +106,7 @@ def test_inspector_prints_v2_summary() -> None:
         )
 
     assert completed.returncode == 0, completed.stderr
-    assert "Crypto suite    : suite-pq" in completed.stdout
+    assert "Crypto suite    : mlkem768-sha3-256" in completed.stdout
     assert "Config version  : 2" in completed.stdout
     assert "Private key role : recipient" in completed.stdout
     assert "Sender    : sha256:" in completed.stdout
@@ -145,7 +145,7 @@ def test_inspector_outputs_v2_payload_as_json() -> None:
 
     assert completed.returncode == 0, completed.stderr
     payload = json.loads(completed.stdout)
-    assert payload["cryptoSuite"] == "suite-pq"
+    assert payload["cryptoSuite"] == "mlkem768-sha3-256"
     assert payload["hashingSecretEncoding"] == "base64url"
 
 

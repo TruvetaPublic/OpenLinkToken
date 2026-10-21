@@ -85,7 +85,7 @@ def test_initiate_exchange_version_two_suite_round_trips(tmp_path: Path) -> None
                 [
                     "generate-key-pair",
                     "--crypto-suite",
-                    "suite-pq",
+                    "mlkem768-sha3-256",
                     "--name",
                     "partner",
                 ]
@@ -97,7 +97,7 @@ def test_initiate_exchange_version_two_suite_round_trips(tmp_path: Path) -> None
                 [
                     "initiate-exchange",
                     "--crypto-suite",
-                    "suite-pq",
+                    "mlkem768-sha3-256",
                     "--name",
                     "sender",
                     "--public-key",
@@ -121,8 +121,8 @@ def test_initiate_exchange_version_two_suite_round_trips(tmp_path: Path) -> None
         config = json.loads((tmp_path / "exchange.json").read_text(encoding="utf-8"))
 
     assert resolved.version == 2
-    assert resolved.crypto_suite.suite_id == "suite-pq"
-    _assert_v2_jwe_header(config, "suite-pq")
+    assert resolved.crypto_suite.suite_id == "mlkem768-sha3-256"
+    _assert_v2_jwe_header(config, "mlkem768-sha3-256")
 
 
 def test_initiate_exchange_sha3_v1_suite_round_trips(tmp_path: Path) -> None:
@@ -146,7 +146,7 @@ def test_initiate_exchange_sha3_v1_suite_round_trips(tmp_path: Path) -> None:
                 [
                     "initiate-exchange",
                     "--crypto-suite",
-                    "suite-sha3",
+                    "ecdh-sha3-256",
                     "--name",
                     "sender",
                     "--public-key",
@@ -169,8 +169,8 @@ def test_initiate_exchange_sha3_v1_suite_round_trips(tmp_path: Path) -> None:
 
     protected_header = _decode_base64url_json(config["protected"])
     assert resolved.version == 1
-    assert resolved.crypto_suite.suite_id == "suite-sha3"
-    assert protected_header["cryptoSuite"] == "suite-sha3"
+    assert resolved.crypto_suite.suite_id == "ecdh-sha3-256"
+    assert protected_header["cryptoSuite"] == "ecdh-sha3-256"
     assert protected_header["crit"] == ["cryptoSuite"]
     assert "cryptoSuite" not in resolved.payload
 
@@ -195,7 +195,7 @@ def test_initiate_exchange_resolves_v1_public_key_from_base_path(tmp_path: Path)
                 [
                     "initiate-exchange",
                     "--crypto-suite",
-                    "suite-sha256",
+                    "ecdh-sha256",
                     "--name",
                     "sender",
                     "--public-key-base",
@@ -226,7 +226,7 @@ def test_initiate_exchange_resolves_v2_public_key_from_base_path(tmp_path: Path)
                 [
                     "generate-key-pair",
                     "--crypto-suite",
-                    "suite-pq",
+                    "mlkem768-sha3-256",
                     "--name",
                     "partner",
                 ]
@@ -239,7 +239,7 @@ def test_initiate_exchange_resolves_v2_public_key_from_base_path(tmp_path: Path)
                 [
                     "initiate-exchange",
                     "--crypto-suite",
-                    "suite-pq",
+                    "mlkem768-sha3-256",
                     "--name",
                     "sender",
                     "--public-key-base",
@@ -282,7 +282,7 @@ def test_initiate_exchange_rejects_short_kmac_secret_before_writing_config(
     Returns:
         None.
     """
-    partner_bundle = generate_exchange_key_bundle("suite-pq-shake")
+    partner_bundle = generate_exchange_key_bundle("mlkem768-shake256")
     partner_path = tmp_path / "partner.public.bundle.json"
     partner_path.write_bytes(partner_bundle.to_json())
     output_path = tmp_path / "short-kmac.exchange.json"
@@ -290,7 +290,7 @@ def test_initiate_exchange_rejects_short_kmac_secret_before_writing_config(
     command = [
         "initiate-exchange",
         "--crypto-suite",
-        "suite-pq-shake",
+        "mlkem768-shake256",
         "--name",
         "short-kmac",
         "--public-key",
@@ -314,7 +314,7 @@ def test_initiate_exchange_rejects_short_kmac_secret_before_writing_config(
 
     captured = capsys.readouterr()
     assert exit_code == 1
-    assert "suite-pq-shake" in captured.err
+    assert "mlkem768-shake256" in captured.err
     assert "32 bytes" in captured.err
     assert not output_path.exists()
 
@@ -344,7 +344,7 @@ def test_initiate_exchange_shake_suite_flows_through_tokenize_and_package(tmp_pa
                 [
                     "generate-key-pair",
                     "--crypto-suite",
-                    "suite-pq-shake",
+                    "mlkem768-shake256",
                     "--name",
                     "partner",
                 ]
@@ -358,7 +358,7 @@ def test_initiate_exchange_shake_suite_flows_through_tokenize_and_package(tmp_pa
                 [
                     "initiate-exchange",
                     "--crypto-suite",
-                    "suite-pq-shake",
+                    "mlkem768-shake256",
                     "--name",
                     "shake",
                     "--public-key",
@@ -381,7 +381,7 @@ def test_initiate_exchange_shake_suite_flows_through_tokenize_and_package(tmp_pa
             private_key_path=private_key_path,
         )
         assert resolved.version == 2
-        assert resolved.crypto_suite.suite_id == "suite-pq-shake"
+        assert resolved.crypto_suite.suite_id == "mlkem768-shake256"
         transport_key = derive_transport_encryption_key(resolved)
 
         assert (

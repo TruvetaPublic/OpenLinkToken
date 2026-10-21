@@ -122,7 +122,7 @@ class ExchangeConfigTest {
         assertEquals(32, sender.transportEncryptionKey().length);
         assertThrows(
                 IllegalArgumentException.class,
-                () -> ExchangeConfig.resolveExchangeConfig(loaded, ExchangeKeyBundle.generate("suite-pq")));
+                () -> ExchangeConfig.resolveExchangeConfig(loaded, ExchangeKeyBundle.generate("mlkem768-sha3-256")));
     }
 
     /**
@@ -133,13 +133,13 @@ class ExchangeConfigTest {
     @Test
     void resolvesV1Sha3FromCriticalHeaderWithoutPayloadSuite() {
         V1Keys keys = generateV1Keys();
-        Map<String, Object> envelope = buildV1Envelope(keys, 3, CryptoSuite.SUITE_SHA3);
+        Map<String, Object> envelope = buildV1Envelope(keys, 3, CryptoSuite.ECDH_SHA3_256);
 
         ExchangeConfig.ResolvedExchangeConfig resolved =
                 ExchangeConfig.resolveExchangeConfig(envelope, keys.senderPrivatePem());
 
         assertEquals(1, resolved.version());
-        assertEquals(CryptoSuite.SUITE_SHA3, resolved.cryptoSuite());
+        assertEquals(CryptoSuite.ECDH_SHA3_256, resolved.cryptoSuite());
         assertFalse(resolved.payload().containsKey("cryptoSuite"));
         assertArrayEquals(HASHING_SECRET, resolved.hashingSecret());
     }
@@ -151,8 +151,8 @@ class ExchangeConfigTest {
      */
     @Test
     void resolvesV2ForBothRolesAndReturnsKemTransportKey() {
-        ExchangeKeyBundle senderBundle = ExchangeKeyBundle.generate("suite-pq");
-        ExchangeKeyBundle recipientBundle = ExchangeKeyBundle.generate("suite-pq");
+        ExchangeKeyBundle senderBundle = ExchangeKeyBundle.generate("mlkem768-sha3-256");
+        ExchangeKeyBundle recipientBundle = ExchangeKeyBundle.generate("mlkem768-sha3-256");
         Map<String, Object> envelope = ExchangeKem.buildExchangeEnvelopeV2(
                 "pqc-exchange",
                 "0123456789abcdef0123456789abcdef".getBytes(StandardCharsets.UTF_8),
@@ -168,7 +168,7 @@ class ExchangeConfigTest {
                 ExchangeConfig.resolveExchangeConfig(loaded, recipientBundle);
 
         assertEquals(2, sender.version());
-        assertEquals(CryptoSuite.SUITE_PQ, sender.cryptoSuite());
+        assertEquals(CryptoSuite.MLKEM768_SHA3_256, sender.cryptoSuite());
         assertEquals("sender", sender.privateKeyRole());
         assertEquals("recipient", recipient.privateKeyRole());
         assertArrayEquals(sender.transportEncryptionKey(), recipient.transportEncryptionKey());
@@ -209,8 +209,8 @@ class ExchangeConfigTest {
                 IllegalArgumentException.class,
                 () -> ExchangeConfig.loadExchangeConfig(unsupported));
 
-        ExchangeKeyBundle sender = ExchangeKeyBundle.generate("suite-pq");
-        ExchangeKeyBundle recipient = ExchangeKeyBundle.generate("suite-pq");
+        ExchangeKeyBundle sender = ExchangeKeyBundle.generate("mlkem768-sha3-256");
+        ExchangeKeyBundle recipient = ExchangeKeyBundle.generate("mlkem768-sha3-256");
         Map<String, Object> v2 = ExchangeKem.buildExchangeEnvelopeV2(
                 "pqc-exchange",
                 HASHING_SECRET,
@@ -252,9 +252,9 @@ class ExchangeConfigTest {
                 IllegalArgumentException.class,
                 () -> ExchangeConfig.resolveExchangeConfig(validLoaded, unrelated.senderPrivatePem()));
 
-        ExchangeKeyBundle sender = ExchangeKeyBundle.generate("suite-pq");
-        ExchangeKeyBundle recipient = ExchangeKeyBundle.generate("suite-pq");
-        ExchangeKeyBundle unrelatedBundle = ExchangeKeyBundle.generate("suite-pq");
+        ExchangeKeyBundle sender = ExchangeKeyBundle.generate("mlkem768-sha3-256");
+        ExchangeKeyBundle recipient = ExchangeKeyBundle.generate("mlkem768-sha3-256");
+        ExchangeKeyBundle unrelatedBundle = ExchangeKeyBundle.generate("mlkem768-sha3-256");
         ExchangeConfig.LoadedExchangeConfig v2Loaded = ExchangeConfig.loadExchangeConfig(
                 ExchangeKem.buildExchangeEnvelopeV2(
                         "pqc-exchange",

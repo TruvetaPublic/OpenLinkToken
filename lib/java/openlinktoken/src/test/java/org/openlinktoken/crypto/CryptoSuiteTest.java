@@ -24,10 +24,10 @@ class CryptoSuiteTest {
      */
     @Test
     void publicConstantsAreRegisteredSuites() {
-        assertSame(CryptoSuite.SUITE_SHA256, CryptoSuite.fromId("suite-sha256"));
-        assertSame(CryptoSuite.SUITE_SHA3, CryptoSuite.fromId("suite-sha3"));
-        assertSame(CryptoSuite.SUITE_PQ_SHAKE, CryptoSuite.fromId("suite-pq-shake"));
-        assertSame(CryptoSuite.SUITE_PQ, CryptoSuite.fromId("suite-pq"));
+        assertSame(CryptoSuite.ECDH_SHA256, CryptoSuite.fromId("ecdh-sha256"));
+        assertSame(CryptoSuite.ECDH_SHA3_256, CryptoSuite.fromId("ecdh-sha3-256"));
+        assertSame(CryptoSuite.MLKEM768_SHAKE256, CryptoSuite.fromId("mlkem768-shake256"));
+        assertSame(CryptoSuite.MLKEM768_SHA3_256, CryptoSuite.fromId("mlkem768-sha3-256"));
         assertEquals(4, CryptoSuite.all().size());
     }
 
@@ -68,20 +68,20 @@ class CryptoSuiteTest {
      */
     @Test
     void registeredSuitesHaveExpectedContracts() {
-        assertEquals("suite-sha256", CryptoSuite.defaultSuite().getSuiteId());
+        assertEquals("ecdh-sha256", CryptoSuite.defaultSuite().getSuiteId());
         assertEquals("SHA-256", CryptoSuite.defaultSuite().getTokenDigestAlgorithm());
         assertEquals("HS256", CryptoSuite.defaultSuite().getTokenMacAlgorithm());
         assertEquals("ECDH", CryptoSuite.defaultSuite().getExchangeKeyAgreement());
         assertEquals(1, CryptoSuite.defaultSuite().getExchangeConfigVersion());
 
-        CryptoSuite pq = CryptoSuite.fromId("suite-pq");
+        CryptoSuite pq = CryptoSuite.fromId("mlkem768-sha3-256");
         assertEquals("ML-KEM-768", pq.getExchangeKeyAgreement());
         assertEquals(2, pq.getExchangeConfigVersion());
         assertEquals("HS3-256", pq.getTokenMacAlgorithm());
         assertEquals("SHA3-256", pq.getTokenDigestAlgorithm());
         assertTrue(pq.isPostQuantum());
 
-        CryptoSuite pqShake = CryptoSuite.fromId("suite-pq-shake");
+        CryptoSuite pqShake = CryptoSuite.fromId("mlkem768-shake256");
         assertEquals("SHAKE256-256", pqShake.getTokenDigestAlgorithm());
         assertEquals("KMAC256-256", pqShake.getTokenMacAlgorithm());
         assertEquals("ML-KEM-768", pqShake.getExchangeKeyAgreement());
@@ -120,6 +120,7 @@ class CryptoSuiteTest {
         assertThrows(IllegalArgumentException.class, () -> CryptoSuite.fromId(""));
         assertThrows(IllegalArgumentException.class, () -> CryptoSuite.fromId("suite-shake-v1"));
         for (String removedId : List.of(
+                "suite-sha256", "suite-sha3", "suite-pq", "suite-pq-shake",
                 "suite-sha256-v1", "suite-sha3-v1", "suite-pq-v1",
                 "suite-pq-shake-v1", "suite-pq-hybrid-v1", "suite-pq-hybrid")) {
             assertThrows(IllegalArgumentException.class, () -> CryptoSuite.fromId(removedId));

@@ -189,7 +189,7 @@ class TestJweMatchTokenFormatter(unittest.TestCase):
             self.TEST_RING_ID,
             self.TEST_RULE_ID,
             self.TEST_ISSUER,
-            CryptoSuite.from_id("suite-sha3"),
+            CryptoSuite.from_id("ecdh-sha3-256"),
         )
 
         result = formatter.transform(self.TEST_TOKEN)
@@ -218,7 +218,7 @@ class TestJweMatchTokenFormatter(unittest.TestCase):
             self.TEST_RING_ID,
             self.TEST_RULE_ID,
             self.TEST_ISSUER,
-            CryptoSuite.from_id("suite-pq-shake"),
+            CryptoSuite.from_id("mlkem768-shake256"),
         )
 
         result = formatter.transform(self.TEST_TOKEN)

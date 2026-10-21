@@ -283,8 +283,13 @@
       "id": "cryptoSuite",
       "type": "pickString",
       "description": "Select the crypto suite",
-      "options": ["suite-pq", "suite-pq-shake", "suite-sha3", "suite-sha256"],
-      "default": "suite-sha256"
+      "options": [
+        "mlkem768-sha3-256",
+        "mlkem768-shake256",
+        "ecdh-sha3-256",
+        "ecdh-sha256"
+      ],
+      "default": "ecdh-sha256"
     },
     {
       "id": "publicKeyBundlePath",

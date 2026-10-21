@@ -46,9 +46,9 @@ public final class CryptoSuite implements Serializable {
     public static final String EXCHANGE_KEY_AGREEMENT_MLKEM_PREFIX = "ML-KEM";
 
     /** The SHA-256 and ECDH crypto suite. */
-    public static final CryptoSuite SUITE_SHA256 =
+    public static final CryptoSuite ECDH_SHA256 =
             new CryptoSuite(
-                    "suite-sha256",
+                    "ecdh-sha256",
                     TOKEN_DIGEST_SHA256,
                     TOKEN_MAC_HS256,
                     TOKEN_CONTENT_ENCRYPTION_A256GCM,
@@ -56,9 +56,9 @@ public final class CryptoSuite implements Serializable {
                     1);
 
     /** The SHA-3-256 and ECDH crypto suite. */
-    public static final CryptoSuite SUITE_SHA3 =
+    public static final CryptoSuite ECDH_SHA3_256 =
             new CryptoSuite(
-                    "suite-sha3",
+                    "ecdh-sha3-256",
                     TOKEN_DIGEST_SHA3_256,
                     TOKEN_MAC_HS3_256,
                     TOKEN_CONTENT_ENCRYPTION_A256GCM,
@@ -66,9 +66,9 @@ public final class CryptoSuite implements Serializable {
                     1);
 
     /** The SHAKE256 and ML-KEM-768 crypto suite. */
-    public static final CryptoSuite SUITE_PQ_SHAKE =
+    public static final CryptoSuite MLKEM768_SHAKE256 =
             new CryptoSuite(
-                    "suite-pq-shake",
+                    "mlkem768-shake256",
                     TOKEN_DIGEST_SHAKE256_256,
                     TOKEN_MAC_KMAC256_256,
                     TOKEN_CONTENT_ENCRYPTION_A256GCM,
@@ -76,9 +76,9 @@ public final class CryptoSuite implements Serializable {
                     2);
 
     /** The SHA-3-256 and ML-KEM-768 crypto suite. */
-    public static final CryptoSuite SUITE_PQ =
+    public static final CryptoSuite MLKEM768_SHA3_256 =
             new CryptoSuite(
-                    "suite-pq",
+                    "mlkem768-sha3-256",
                     TOKEN_DIGEST_SHA3_256,
                     TOKEN_MAC_HS3_256,
                     TOKEN_CONTENT_ENCRYPTION_A256GCM,
@@ -86,14 +86,14 @@ public final class CryptoSuite implements Serializable {
                     2);
 
     private static final Map<String, CryptoSuite> REGISTRY = Map.of(
-            SUITE_SHA256.getSuiteId(),
-            SUITE_SHA256,
-            SUITE_SHA3.getSuiteId(),
-            SUITE_SHA3,
-            SUITE_PQ_SHAKE.getSuiteId(),
-            SUITE_PQ_SHAKE,
-            SUITE_PQ.getSuiteId(),
-            SUITE_PQ);
+            ECDH_SHA256.getSuiteId(),
+            ECDH_SHA256,
+            ECDH_SHA3_256.getSuiteId(),
+            ECDH_SHA3_256,
+            MLKEM768_SHAKE256.getSuiteId(),
+            MLKEM768_SHAKE256,
+            MLKEM768_SHA3_256.getSuiteId(),
+            MLKEM768_SHA3_256);
 
     private final String suiteId;
     private final String tokenDigestAlgorithm;
@@ -210,7 +210,7 @@ public final class CryptoSuite implements Serializable {
      * @return the default suite
      */
     public static CryptoSuite defaultSuite() {
-        return SUITE_SHA256;
+        return ECDH_SHA256;
     }
 
     /**

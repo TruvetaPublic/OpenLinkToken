@@ -10,18 +10,25 @@ recipient information only.
 Suite IDs have no version suffix. The selected crypto suite determines the
 exchange format version, which remains separate protocol metadata:
 
-| Suite            | Token primitives             | Exchange format version | Key agreement | Key material |
-| ---------------- | ---------------------------- | ----------------------: | ------------- | ------------ |
-| `suite-sha256`   | SHA-256 and HMAC-SHA256      |                       1 | ECDH/JWE      | PEM          |
-| `suite-sha3`     | SHA3-256 and HMAC-SHA3-256   |                       1 | ECDH/JWE      | PEM          |
-| `suite-pq-shake` | SHAKE256-256 and KMAC256-256 |                       2 | ML-KEM-768    | JSON bundles |
-| `suite-pq`       | SHA3-256 and HMAC-SHA3-256   |                       2 | ML-KEM-768    | JSON bundles |
+| Suite               | Token primitives             | Exchange format version | Key agreement | Key material |
+| ------------------- | ---------------------------- | ----------------------: | ------------- | ------------ |
+| `ecdh-sha256`       | SHA-256 and HMAC-SHA256      |                       1 | ECDH/JWE      | PEM          |
+| `ecdh-sha3-256`     | SHA3-256 and HMAC-SHA3-256   |                       1 | ECDH/JWE      | PEM          |
+| `mlkem768-shake256` | SHAKE256-256 and KMAC256-256 |                       2 | ML-KEM-768    | JSON bundles |
+| `mlkem768-sha3-256` | SHA3-256 and HMAC-SHA3-256   |                       2 | ML-KEM-768    | JSON bundles |
 
 Both participants can decrypt the same configuration because the sender and
 partner public keys are added as JWE recipients. Consumers reject a suite or
 version mismatch instead of silently selecting another algorithm.
-Old version-suffixed suite IDs are rejected; regenerate exchange configs and
-JSON key bundles that explicitly name them. Hybrid exchanges are not supported.
+Former `suite-` IDs, with or without version suffixes, are rejected; regenerate
+exchange configs and JSON key bundles that explicitly name them. Renaming
+an existing artifact's suite field does not migrate its authenticated metadata,
+key identifier, or derived keys. Hybrid exchanges are not supported.
+
+Suite names encode key agreement and digest; the MAC is implicit in the
+registered profile shown above. `mlkem768` means ML-KEM-768, and `shake256`
+uses a fixed 256-bit output with KMAC256-256. All profiles use AES-256-GCM;
+ECDH curves are selected separately from the suite name.
 
 ## Java library boundary
 
@@ -69,7 +76,7 @@ The required protected header is:
   "cty": "application/openlinktoken-exchange+json",
   "enc": "A256GCM",
   "version": 2,
-  "cryptoSuite": "suite-pq",
+  "cryptoSuite": "mlkem768-sha3-256",
   "exchangeId": "0f3d5f8a-3f2a-4c2f-b69d-cb1f9d08d4ab"
 }
 ```
@@ -95,10 +102,10 @@ required `header` object:
 
 The recipient `alg` and headers are suite-specific:
 
-| Suite            | `alg`        | Required recipient headers |
-| ---------------- | ------------ | -------------------------- |
-| `suite-pq`       | `ML-KEM-768` | `kid`                      |
-| `suite-pq-shake` | `ML-KEM-768` | `kid`                      |
+| Suite               | `alg`        | Required recipient headers |
+| ------------------- | ------------ | -------------------------- |
+| `mlkem768-sha3-256` | `ML-KEM-768` | `kid`                      |
+| `mlkem768-shake256` | `ML-KEM-768` | `kid`                      |
 
 `kid` is a stable identifier derived from the recipient public bundle. It is
 not the friendly local name used for files under `~/.openlinktoken/`.
@@ -153,11 +160,11 @@ the protected `cryptoSuite`, `version`, and `exchangeId` before accepting it.
 
 ## Version 1
 
-Version 1 uses ECDH/JWE and PEM key pairs for `suite-sha256` and
-`suite-sha3`. When `cryptoSuite` is absent from the protected header, readers
-resolve the legacy default `suite-sha256`, so existing default-suite
-envelopes retain their original wire format. For `suite-sha3`, the
-authenticated protected header contains `cryptoSuite: "suite-sha3"` and
+Version 1 uses ECDH/JWE and PEM key pairs for `ecdh-sha256` and
+`ecdh-sha3-256`. When `cryptoSuite` is absent from the protected header, readers
+resolve the legacy default `ecdh-sha256`, so existing default-suite
+envelopes retain their original wire format. For `ecdh-sha3-256`, the
+authenticated protected header contains `cryptoSuite: "ecdh-sha3-256"` and
 `crit: ["cryptoSuite"]`. Suite identity is not added to the v1 payload or the
 top-level envelope. Readers reject unknown, incompatible, unprotected, or
 non-critical suite markers; older readers that do not recognize the critical
@@ -178,9 +185,9 @@ for existing exchanges and is independent of the version 2 algorithms above.
 Version 2 uses JSON key bundles instead of PEM files:
 
 ```bash
-olt generate-key-pair --crypto-suite suite-pq --name partner --force
+olt generate-key-pair --crypto-suite mlkem768-sha3-256 --name partner --force
 olt initiate-exchange \
-  --crypto-suite suite-pq \
+  --crypto-suite mlkem768-sha3-256 \
   --public-key ~/.openlinktoken/partner.public.bundle.json \
   --output ./partner.exchange.json
 ```
@@ -192,9 +199,9 @@ reject EC key sections.
 Version 1 continues to use PEM key pairs:
 
 ```bash
-olt generate-key-pair --crypto-suite suite-sha256 --name partner
+olt generate-key-pair --crypto-suite ecdh-sha256 --name partner
 olt initiate-exchange \
-  --crypto-suite suite-sha256 \
+  --crypto-suite ecdh-sha256 \
   --public-key ~/.openlinktoken/partner.public.pem \
   --output ./partner.exchange.json
 ```

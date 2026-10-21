@@ -25,9 +25,9 @@ class ExchangeKeyBundleTest {
      */
     @Test
     void generatesAndRoundTripsPureMlKemBundle() {
-        ExchangeKeyBundle bundle = ExchangeKeyBundle.generate("suite-pq");
+        ExchangeKeyBundle bundle = ExchangeKeyBundle.generate("mlkem768-sha3-256");
 
-        assertEquals(CryptoSuite.SUITE_PQ, bundle.getSuite());
+        assertEquals(CryptoSuite.MLKEM768_SHA3_256, bundle.getSuite());
         assertEquals(1184, bundle.getMlkemPublicKey().length);
         assertEquals(64, bundle.getMlkemPrivateSeed().length);
         assertTrue(bundle.hasPrivateMaterial());
@@ -49,7 +49,7 @@ class ExchangeKeyBundleTest {
      */
     @Test
     void rejectsPublicOnlyBundleWhenPrivateMaterialIsRequired() {
-        ExchangeKeyBundle bundle = ExchangeKeyBundle.generate("suite-pq");
+        ExchangeKeyBundle bundle = ExchangeKeyBundle.generate("mlkem768-sha3-256");
 
         assertThrows(
                 ExchangeKeyBundle.KeyBundleException.class,
@@ -63,7 +63,7 @@ class ExchangeKeyBundleTest {
      */
     @Test
     void rejectsTamperedPublicFingerprintAndKeyId() {
-        ExchangeKeyBundle bundle = ExchangeKeyBundle.generate("suite-pq");
+        ExchangeKeyBundle bundle = ExchangeKeyBundle.generate("mlkem768-sha3-256");
         Map<String, Object> mapping = bundle.toMapping(true);
         Map<String, Object> keys = (Map<String, Object>) mapping.get("keys");
         Map<String, Object> mlkem = (Map<String, Object>) keys.get("mlkem");
@@ -87,8 +87,8 @@ class ExchangeKeyBundleTest {
      */
     @Test
     void rejectsMismatchedMlKemPrivateSeed() {
-        ExchangeKeyBundle bundle = ExchangeKeyBundle.generate("suite-pq");
-        ExchangeKeyBundle otherBundle = ExchangeKeyBundle.generate("suite-pq");
+        ExchangeKeyBundle bundle = ExchangeKeyBundle.generate("mlkem768-sha3-256");
+        ExchangeKeyBundle otherBundle = ExchangeKeyBundle.generate("mlkem768-sha3-256");
         Map<String, Object> mapping = bundle.toMapping(true);
         Map<String, Object> keys = (Map<String, Object>) mapping.get("keys");
         Map<String, Object> mlkem = (Map<String, Object>) keys.get("mlkem");
@@ -110,7 +110,7 @@ class ExchangeKeyBundleTest {
     void rejectsVersionOneSuiteAndMalformedEnvelope() {
         assertThrows(
                 ExchangeKeyBundle.KeyBundleException.class,
-                () -> ExchangeKeyBundle.generate("suite-sha256"));
+                () -> ExchangeKeyBundle.generate("ecdh-sha256"));
         assertThrows(
                 ExchangeKeyBundle.KeyBundleException.class,
                 () -> ExchangeKeyBundle.generate("unknown-suite"));
@@ -129,7 +129,7 @@ class ExchangeKeyBundleTest {
      */
     @Test
     void rejectsTrailingJsonTokens() {
-        ExchangeKeyBundle bundle = ExchangeKeyBundle.generate("suite-pq");
+        ExchangeKeyBundle bundle = ExchangeKeyBundle.generate("mlkem768-sha3-256");
         byte[] serialized = bundle.toJson();
         byte[] withTrailingObject = new byte[serialized.length + 2];
         System.arraycopy(serialized, 0, withTrailingObject, 0, serialized.length);
@@ -164,7 +164,7 @@ class ExchangeKeyBundleTest {
      */
     @Test
     void rejectsEcSectionForPureMlKemBundle() {
-        ExchangeKeyBundle bundle = ExchangeKeyBundle.generate("suite-pq");
+        ExchangeKeyBundle bundle = ExchangeKeyBundle.generate("mlkem768-sha3-256");
         Map<String, Object> mapping = bundle.toMapping();
         Map<String, Object> keys = (Map<String, Object>) mapping.get("keys");
         keys.put("ec", Map.of("algorithm", "ECDH-P256"));
@@ -181,7 +181,7 @@ class ExchangeKeyBundleTest {
      */
     @Test
     void rejectsOrphanPrivateEncodingField() {
-        ExchangeKeyBundle bundle = ExchangeKeyBundle.generate("suite-pq");
+        ExchangeKeyBundle bundle = ExchangeKeyBundle.generate("mlkem768-sha3-256");
         Map<String, Object> mapping = bundle.toMapping();
         Map<String, Object> keys = (Map<String, Object>) mapping.get("keys");
         Map<String, Object> mlkem = (Map<String, Object>) keys.get("mlkem");
@@ -199,7 +199,7 @@ class ExchangeKeyBundleTest {
      */
     @Test
     void returnsDefensiveCopiesOfKeyMaterial() {
-        ExchangeKeyBundle bundle = ExchangeKeyBundle.generate("suite-pq");
+        ExchangeKeyBundle bundle = ExchangeKeyBundle.generate("mlkem768-sha3-256");
         byte[] publicKey = bundle.getMlkemPublicKey();
         byte[] original = publicKey.clone();
 

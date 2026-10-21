@@ -35,11 +35,11 @@ Base64-encoded hashed token
 
 The digest and MAC are selected by the crypto suite:
 
-| Suite family             | Digest       | Keyed MAC     |
-| ------------------------ | ------------ | ------------- |
-| `suite-sha256`           | SHA-256      | HMAC-SHA256   |
-| `suite-sha3`, `suite-pq` | SHA3-256     | HMAC-SHA3-256 |
-| `suite-pq-shake`         | SHAKE256-256 | KMAC256-256   |
+| Suite family                         | Digest       | Keyed MAC     |
+| ------------------------------------ | ------------ | ------------- |
+| `ecdh-sha256`                        | SHA-256      | HMAC-SHA256   |
+| `ecdh-sha3-256`, `mlkem768-sha3-256` | SHA3-256     | HMAC-SHA3-256 |
+| `mlkem768-shake256`                  | SHAKE256-256 | KMAC256-256   |
 
 The same normalized attributes, suite, and hashing secret produce the same
 hashed token. Changing any of those inputs produces a different token

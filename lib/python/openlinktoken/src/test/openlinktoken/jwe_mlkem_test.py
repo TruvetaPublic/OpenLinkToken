@@ -84,7 +84,7 @@ def test_v2_token_transport_key_uses_the_documented_hkdf_contract():
 
 @pytest.mark.parametrize(
     "suite_id",
-    ["suite-pq", "suite-pq-shake"],
+    ["mlkem768-sha3-256", "mlkem768-shake256"],
 )
 def test_build_v2_jwe_uses_standard_general_json_shape(suite_id):
     """Every v2 suite serializes as a standard two-recipient JWE JSON object.
@@ -117,7 +117,7 @@ def test_build_v2_jwe_uses_standard_general_json_shape(suite_id):
         assert "epk" not in entry["header"]
 
 
-@pytest.mark.parametrize("suite_id", ["suite-pq", "suite-pq-shake"])
+@pytest.mark.parametrize("suite_id", ["mlkem768-sha3-256", "mlkem768-shake256"])
 def test_v2_jwe_round_trip_derives_transport_key_separately_from_cek(suite_id):
     """Both recipients recover the plaintext and a CEK-derived transport key.
 
@@ -157,9 +157,9 @@ def test_custom_handlers_do_not_mutate_jwcrypto_registry():
     """
     registry_before = dict(jwa.JWA.algorithms_registry)
 
-    sender = generate_exchange_key_bundle("suite-pq")
-    recipient = generate_exchange_key_bundle("suite-pq")
-    build_v2_jwe(b"registry-test", _protected_header("suite-pq"), [sender, recipient])
+    sender = generate_exchange_key_bundle("mlkem768-sha3-256")
+    recipient = generate_exchange_key_bundle("mlkem768-sha3-256")
+    build_v2_jwe(b"registry-test", _protected_header("mlkem768-sha3-256"), [sender, recipient])
 
     assert jwa.JWA.algorithms_registry == registry_before
 
@@ -217,9 +217,9 @@ def test_key_management_validates_sizes_and_wrap_errors(monkeypatch):
     Returns:
         None.
     """
-    sender = generate_exchange_key_bundle("suite-pq")
+    sender = generate_exchange_key_bundle("mlkem768-sha3-256")
     headers = {
-        **_protected_header("suite-pq"),
+        **_protected_header("mlkem768-sha3-256"),
         "alg": PURE_KEM_ALGORITHM,
         "kid": sender.kid,
     }
@@ -260,7 +260,7 @@ def test_protected_header_validation_rejects_invalid_context():
     Returns:
         None.
     """
-    valid = _protected_header("suite-pq")
+    valid = _protected_header("mlkem768-sha3-256")
     invalid_headers = (
         (None, "JSON object"),
         ({}, "missing fields"),
@@ -286,9 +286,11 @@ def test_recipient_validation_rejects_invalid_members():
     Returns:
         None.
     """
-    sender = generate_exchange_key_bundle("suite-pq")
+    sender = generate_exchange_key_bundle("mlkem768-sha3-256")
     envelope = build_v2_jwe(
-        b"validation", _protected_header("suite-pq"), [sender, generate_exchange_key_bundle("suite-pq")]
+        b"validation",
+        _protected_header("mlkem768-sha3-256"),
+        [sender, generate_exchange_key_bundle("mlkem768-sha3-256")],
     )
     valid_recipient = envelope["recipients"][0]
     algorithm = PURE_KEM_ALGORITHM
@@ -329,15 +331,15 @@ def test_key_helpers_reject_invalid_material():
     Returns:
         None.
     """
-    sender = generate_exchange_key_bundle("suite-pq")
+    sender = generate_exchange_key_bundle("mlkem768-sha3-256")
     headers = {
-        **_protected_header("suite-pq"),
+        **_protected_header("mlkem768-sha3-256"),
         "alg": PURE_KEM_ALGORITHM,
         "kid": sender.kid,
     }
 
     with pytest.raises(ValueError, match="exchange configuration version 2"):
-        _algorithm_for_suite(jwe_mlkem.CryptoSuite.from_id("suite-sha256"))
+        _algorithm_for_suite(jwe_mlkem.CryptoSuite.from_id("ecdh-sha256"))
     with pytest.raises(ValueError, match="protected cryptoSuite"):
         _validate_header_context({**headers, "cryptoSuite": ""}, PURE_KEM_ALGORITHM)
     with pytest.raises(ValueError, match="ExchangeKeyBundle"):

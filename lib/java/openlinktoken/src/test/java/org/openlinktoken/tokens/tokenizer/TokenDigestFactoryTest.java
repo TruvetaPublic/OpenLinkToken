@@ -26,13 +26,13 @@ class TokenDigestFactoryTest {
     void factorySelectsDigestImplementationForEachSuite() {
         assertInstanceOf(
                 SHA256TokenDigest.class,
-                TokenDigestFactory.forSuite(CryptoSuite.fromId("suite-sha256")));
+                TokenDigestFactory.forSuite(CryptoSuite.fromId("ecdh-sha256")));
         assertInstanceOf(
                 SHA3TokenDigest.class,
-                TokenDigestFactory.forSuite(CryptoSuite.fromId("suite-sha3")));
+                TokenDigestFactory.forSuite(CryptoSuite.fromId("ecdh-sha3-256")));
         assertInstanceOf(
                 SHAKE256TokenDigest.class,
-                TokenDigestFactory.forSuite(CryptoSuite.fromId("suite-pq-shake")));
+                TokenDigestFactory.forSuite(CryptoSuite.fromId("mlkem768-shake256")));
     }
 
     /**

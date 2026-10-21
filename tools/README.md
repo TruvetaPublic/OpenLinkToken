@@ -92,11 +92,11 @@ suite for both commands:
 
 ```bash
 olt generate-key-pair \
-  --crypto-suite suite-pq \
+  --crypto-suite mlkem768-sha3-256 \
   --name partner
 
 olt initiate-exchange \
-  --crypto-suite suite-pq \
+  --crypto-suite mlkem768-sha3-256 \
   --public-key ~/.openlinktoken/partner.public.bundle.json \
   --name sender-q2 \
   --output ./sender-q2.exchange.json

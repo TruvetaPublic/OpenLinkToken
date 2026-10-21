@@ -24,8 +24,8 @@ import org.junit.jupiter.api.Test;
 class ExchangeKemTest {
 
     private static final List<String> V2_SUITES = List.of(
-            "suite-pq",
-            "suite-pq-shake");
+            "mlkem768-sha3-256",
+            "mlkem768-shake256");
 
     /**
      * Verifies each version-two suite encrypts and decrypts equivalent payloads for both recipients.
@@ -132,9 +132,9 @@ class ExchangeKemTest {
      */
     @Test
     void rejectsInvalidDirectJweBuildInputs() {
-        ExchangeKeyBundle sender = ExchangeKeyBundle.generate("suite-pq");
-        ExchangeKeyBundle recipient = ExchangeKeyBundle.generate("suite-pq");
-        Map<String, Object> header = protectedHeader("suite-pq");
+        ExchangeKeyBundle sender = ExchangeKeyBundle.generate("mlkem768-sha3-256");
+        ExchangeKeyBundle recipient = ExchangeKeyBundle.generate("mlkem768-sha3-256");
+        Map<String, Object> header = protectedHeader("mlkem768-sha3-256");
 
         assertThrows(IllegalArgumentException.class, () -> JweMlkem.build(null, header, List.of(sender, recipient)));
         assertThrows(IllegalArgumentException.class, () -> JweMlkem.build(new byte[0], null, List.of(sender, recipient)));
@@ -162,7 +162,7 @@ class ExchangeKemTest {
                 () -> JweMlkem.build(
                         new byte[0],
                         header,
-                        List.of(sender, ExchangeKeyBundle.generate("suite-pq-shake"))));
+                        List.of(sender, ExchangeKeyBundle.generate("mlkem768-shake256"))));
     }
 
     /**
@@ -172,8 +172,8 @@ class ExchangeKemTest {
      */
     @Test
     void rejectsMalformedJweMembersAndContentParameters() {
-        ExchangeKeyBundle sender = ExchangeKeyBundle.generate("suite-pq");
-        ExchangeKeyBundle recipient = ExchangeKeyBundle.generate("suite-pq");
+        ExchangeKeyBundle sender = ExchangeKeyBundle.generate("mlkem768-sha3-256");
+        ExchangeKeyBundle recipient = ExchangeKeyBundle.generate("mlkem768-sha3-256");
         Map<String, Object> envelope = ExchangeKem.buildExchangeEnvelopeV2(
                 "malformed-test",
                 "hash-secret".getBytes(StandardCharsets.UTF_8),
@@ -225,8 +225,8 @@ class ExchangeKemTest {
      */
     @Test
     void rejectsEcMaterialAndWrappedContentKeyTampering() {
-        ExchangeKeyBundle sender = ExchangeKeyBundle.generate("suite-pq");
-        ExchangeKeyBundle recipient = ExchangeKeyBundle.generate("suite-pq");
+        ExchangeKeyBundle sender = ExchangeKeyBundle.generate("mlkem768-sha3-256");
+        ExchangeKeyBundle recipient = ExchangeKeyBundle.generate("mlkem768-sha3-256");
         Map<String, Object> envelope = ExchangeKem.buildExchangeEnvelopeV2(
                 "unsupported-ec-test",
                 "hash-secret".getBytes(StandardCharsets.UTF_8),
@@ -262,10 +262,10 @@ class ExchangeKemTest {
      */
     @Test
     void rejectsTamperingWrongSuiteWrongKeyAndRecipientLength() {
-        ExchangeKeyBundle sender = ExchangeKeyBundle.generate("suite-pq");
-        ExchangeKeyBundle recipient = ExchangeKeyBundle.generate("suite-pq");
-        ExchangeKeyBundle unrelated = ExchangeKeyBundle.generate("suite-pq");
-        ExchangeKeyBundle shake = ExchangeKeyBundle.generate("suite-pq-shake");
+        ExchangeKeyBundle sender = ExchangeKeyBundle.generate("mlkem768-sha3-256");
+        ExchangeKeyBundle recipient = ExchangeKeyBundle.generate("mlkem768-sha3-256");
+        ExchangeKeyBundle unrelated = ExchangeKeyBundle.generate("mlkem768-sha3-256");
+        ExchangeKeyBundle shake = ExchangeKeyBundle.generate("mlkem768-shake256");
         Map<String, Object> envelope = ExchangeKem.buildExchangeEnvelopeV2(
                 "tamper-test",
                 "hash-secret".getBytes(StandardCharsets.UTF_8),
@@ -317,8 +317,8 @@ class ExchangeKemTest {
      */
     @Test
     void rejectsMismatchedSuitesAndInvalidExchangeInputs() {
-        ExchangeKeyBundle pure = ExchangeKeyBundle.generate("suite-pq");
-        ExchangeKeyBundle shake = ExchangeKeyBundle.generate("suite-pq-shake");
+        ExchangeKeyBundle pure = ExchangeKeyBundle.generate("mlkem768-sha3-256");
+        ExchangeKeyBundle shake = ExchangeKeyBundle.generate("mlkem768-shake256");
 
         assertThrows(
                 IllegalArgumentException.class,
@@ -372,8 +372,8 @@ class ExchangeKemTest {
      * <p>This test method accepts no arguments and returns no value.</p>
      */
     void preservesNonKmacEmptyHashingSecretBehavior() {
-        ExchangeKeyBundle sender = ExchangeKeyBundle.generate("suite-pq");
-        ExchangeKeyBundle recipient = ExchangeKeyBundle.generate("suite-pq");
+        ExchangeKeyBundle sender = ExchangeKeyBundle.generate("mlkem768-sha3-256");
+        ExchangeKeyBundle recipient = ExchangeKeyBundle.generate("mlkem768-sha3-256");
         Map<String, Object> envelope = ExchangeKem.buildExchangeEnvelopeV2(
                 "empty-secret",
                 new byte[0],

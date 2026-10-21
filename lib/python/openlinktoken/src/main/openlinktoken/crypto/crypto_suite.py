@@ -51,10 +51,10 @@ class CryptoSuite:
     exchange_key_agreement: str
     exchange_config_version: int
 
-    SUITE_SHA256: ClassVar["CryptoSuite"]
-    SUITE_SHA3: ClassVar["CryptoSuite"]
-    SUITE_PQ_SHAKE: ClassVar["CryptoSuite"]
-    SUITE_PQ: ClassVar["CryptoSuite"]
+    ECDH_SHA256: ClassVar["CryptoSuite"]
+    ECDH_SHA3_256: ClassVar["CryptoSuite"]
+    MLKEM768_SHAKE256: ClassVar["CryptoSuite"]
+    MLKEM768_SHA3_256: ClassVar["CryptoSuite"]
     _REGISTRY: ClassVar[dict[str, "CryptoSuite"]]
 
     @classmethod
@@ -89,7 +89,7 @@ class CryptoSuite:
         Returns:
             The registered SHA-256 ``CryptoSuite``.
         """
-        return cls.SUITE_SHA256
+        return cls.ECDH_SHA256
 
     @classmethod
     def all(cls) -> tuple["CryptoSuite", ...]:
@@ -191,32 +191,32 @@ class CryptoSuite:
         return self
 
 
-CryptoSuite.SUITE_SHA256 = CryptoSuite(
-    suite_id="suite-sha256",
+CryptoSuite.ECDH_SHA256 = CryptoSuite(
+    suite_id="ecdh-sha256",
     token_digest_algorithm=CryptoSuite.TOKEN_DIGEST_SHA256,
     token_mac_algorithm=CryptoSuite.TOKEN_MAC_HS256,
     token_content_encryption=CryptoSuite.TOKEN_CONTENT_ENCRYPTION_A256GCM,
     exchange_key_agreement=CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH,
     exchange_config_version=1,
 )
-CryptoSuite.SUITE_SHA3 = CryptoSuite(
-    suite_id="suite-sha3",
+CryptoSuite.ECDH_SHA3_256 = CryptoSuite(
+    suite_id="ecdh-sha3-256",
     token_digest_algorithm=CryptoSuite.TOKEN_DIGEST_SHA3_256,
     token_mac_algorithm=CryptoSuite.TOKEN_MAC_HS3_256,
     token_content_encryption=CryptoSuite.TOKEN_CONTENT_ENCRYPTION_A256GCM,
     exchange_key_agreement=CryptoSuite.EXCHANGE_KEY_AGREEMENT_ECDH,
     exchange_config_version=1,
 )
-CryptoSuite.SUITE_PQ_SHAKE = CryptoSuite(
-    suite_id="suite-pq-shake",
+CryptoSuite.MLKEM768_SHAKE256 = CryptoSuite(
+    suite_id="mlkem768-shake256",
     token_digest_algorithm=CryptoSuite.TOKEN_DIGEST_SHAKE256_256,
     token_mac_algorithm=CryptoSuite.TOKEN_MAC_KMAC256_256,
     token_content_encryption=CryptoSuite.TOKEN_CONTENT_ENCRYPTION_A256GCM,
     exchange_key_agreement=CryptoSuite.EXCHANGE_KEY_AGREEMENT_MLKEM768,
     exchange_config_version=2,
 )
-CryptoSuite.SUITE_PQ = CryptoSuite(
-    suite_id="suite-pq",
+CryptoSuite.MLKEM768_SHA3_256 = CryptoSuite(
+    suite_id="mlkem768-sha3-256",
     token_digest_algorithm=CryptoSuite.TOKEN_DIGEST_SHA3_256,
     token_mac_algorithm=CryptoSuite.TOKEN_MAC_HS3_256,
     token_content_encryption=CryptoSuite.TOKEN_CONTENT_ENCRYPTION_A256GCM,
@@ -226,10 +226,10 @@ CryptoSuite.SUITE_PQ = CryptoSuite(
 CryptoSuite._REGISTRY = {
     suite.suite_id: suite
     for suite in (
-        CryptoSuite.SUITE_SHA256,
-        CryptoSuite.SUITE_SHA3,
-        CryptoSuite.SUITE_PQ_SHAKE,
-        CryptoSuite.SUITE_PQ,
+        CryptoSuite.ECDH_SHA256,
+        CryptoSuite.ECDH_SHA3_256,
+        CryptoSuite.MLKEM768_SHAKE256,
+        CryptoSuite.MLKEM768_SHA3_256,
     )
 }
 

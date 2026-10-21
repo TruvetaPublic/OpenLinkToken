@@ -172,7 +172,7 @@ class HashTokenTransformerTest {
     @Test
     void testTransform_Sha3Suite_ReturnsFixedVector() throws Exception {
         HashTokenTransformer sha3Transformer =
-                new HashTokenTransformer("sampleSecret".getBytes(), CryptoSuite.fromId("suite-sha3"));
+                new HashTokenTransformer("sampleSecret".getBytes(), CryptoSuite.fromId("ecdh-sha3-256"));
 
         assertEquals(
                 "0Y3qAZTI1zwnHdNznv7lec1sz5Uu8rpa/dYMZFWqLSg=",
@@ -188,7 +188,7 @@ class HashTokenTransformerTest {
     void testTransform_ShakeSuite_ReturnsFixedVector() throws Exception {
         HashTokenTransformer shakeTransformer = new HashTokenTransformer(
                 "0123456789abcdef0123456789abcdef".getBytes(),
-                CryptoSuite.fromId("suite-pq-shake"));
+                CryptoSuite.fromId("mlkem768-shake256"));
 
         assertEquals(
                 "ylKfGg587NihC8+Sc2GSeR4g+INl76rLvAB1RYLRfA8=",

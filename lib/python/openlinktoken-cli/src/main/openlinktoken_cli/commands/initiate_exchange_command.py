@@ -63,9 +63,12 @@ class InitiateExchangeCommand:
         parser.add_argument(
             "--crypto-suite",
             dest="crypto_suite",
-            default="suite-sha256",
+            default="ecdh-sha256",
             metavar="SUITE_ID",
-            help=("Crypto suite to use (default: suite-sha256). Use suite-pq or suite-pq-shake with JSON key bundles."),
+            help=(
+                "Crypto suite to use (default: ecdh-sha256). "
+                "Use mlkem768-sha3-256 or mlkem768-shake256 with JSON key bundles."
+            ),
         )
 
         partner_public_key_group = parser.add_mutually_exclusive_group(required=True)

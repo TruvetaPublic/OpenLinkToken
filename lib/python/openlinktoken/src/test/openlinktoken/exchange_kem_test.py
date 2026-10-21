@@ -45,7 +45,7 @@ def _decode_protected_header(envelope: dict) -> dict:
     return json.loads(base64.urlsafe_b64decode(protected + "=" * (-len(protected) % 4)))
 
 
-@pytest.mark.parametrize("suite_id", ["suite-pq", "suite-pq-shake"])
+@pytest.mark.parametrize("suite_id", ["mlkem768-sha3-256", "mlkem768-shake256"])
 def test_v2_exchange_round_trips_for_both_participants(suite_id):
     """ML-KEM recipients recover the same payload and transport key.
 
@@ -102,10 +102,10 @@ def test_v2_exchange_rejects_short_kmac_hashing_secret():
     Returns:
         None.
     """
-    sender = generate_exchange_key_bundle("suite-pq-shake")
-    recipient = generate_exchange_key_bundle("suite-pq-shake")
+    sender = generate_exchange_key_bundle("mlkem768-shake256")
+    recipient = generate_exchange_key_bundle("mlkem768-shake256")
 
-    with pytest.raises(ValueError, match="suite-pq-shake.*32 bytes"):
+    with pytest.raises(ValueError, match="mlkem768-shake256.*32 bytes"):
         build_exchange_envelope_v2(
             exchange_name="short-kmac-secret",
             hashing_secret=b"x" * 31,
@@ -116,7 +116,7 @@ def test_v2_exchange_rejects_short_kmac_hashing_secret():
         )
 
 
-@pytest.mark.parametrize("suite_id", ["suite-pq", "suite-pq-shake"])
+@pytest.mark.parametrize("suite_id", ["mlkem768-sha3-256", "mlkem768-shake256"])
 def test_v2_transport_key_encrypts_and_decrypts_match_tokens(suite_id):
     """The derived v2 transport key works with the match-token formatter.
 
@@ -163,8 +163,8 @@ def test_v2_exchange_resolves_suite_and_transport_key():
     Returns:
         None.
     """
-    sender = generate_exchange_key_bundle("suite-pq")
-    recipient = generate_exchange_key_bundle("suite-pq")
+    sender = generate_exchange_key_bundle("mlkem768-sha3-256")
+    recipient = generate_exchange_key_bundle("mlkem768-sha3-256")
     envelope = build_exchange_envelope_v2(
         "resolver-test",
         b"hash-secret",
@@ -193,8 +193,8 @@ def test_v2_exchange_rejects_tampered_recipient_algorithm():
     Returns:
         None.
     """
-    sender = generate_exchange_key_bundle("suite-pq")
-    recipient = generate_exchange_key_bundle("suite-pq")
+    sender = generate_exchange_key_bundle("mlkem768-sha3-256")
+    recipient = generate_exchange_key_bundle("mlkem768-sha3-256")
     envelope = build_exchange_envelope_v2(
         "tamper-test",
         b"hash-secret",
@@ -219,9 +219,9 @@ def test_v2_exchange_rejects_wrong_private_bundle():
     Returns:
         None.
     """
-    sender = generate_exchange_key_bundle("suite-pq")
-    recipient = generate_exchange_key_bundle("suite-pq")
-    unrelated = generate_exchange_key_bundle("suite-pq")
+    sender = generate_exchange_key_bundle("mlkem768-sha3-256")
+    recipient = generate_exchange_key_bundle("mlkem768-sha3-256")
+    unrelated = generate_exchange_key_bundle("mlkem768-sha3-256")
     envelope = build_exchange_envelope_v2(
         "wrong-key-test",
         b"hash-secret",
@@ -244,8 +244,8 @@ def test_v2_exchange_rejects_wrong_protected_version():
     Returns:
         None.
     """
-    sender = generate_exchange_key_bundle("suite-pq")
-    recipient = generate_exchange_key_bundle("suite-pq")
+    sender = generate_exchange_key_bundle("mlkem768-sha3-256")
+    recipient = generate_exchange_key_bundle("mlkem768-sha3-256")
     envelope = build_exchange_envelope_v2(
         "version-test",
         b"hash-secret",
@@ -275,8 +275,8 @@ def test_v2_exchange_rejects_v1_crypto_suite():
     Returns:
         None.
     """
-    sender = generate_exchange_key_bundle("suite-pq")
-    recipient = generate_exchange_key_bundle("suite-pq")
+    sender = generate_exchange_key_bundle("mlkem768-sha3-256")
+    recipient = generate_exchange_key_bundle("mlkem768-sha3-256")
     envelope = build_exchange_envelope_v2(
         "suite-test",
         b"hash-secret",
@@ -286,7 +286,7 @@ def test_v2_exchange_rejects_v1_crypto_suite():
         "exchange-suite",
     )
     protected = _decode_protected_header(envelope)
-    protected["cryptoSuite"] = "suite-sha256"
+    protected["cryptoSuite"] = "ecdh-sha256"
     envelope["protected"] = (
         base64.urlsafe_b64encode(json.dumps(protected, sort_keys=True, separators=(",", ":")).encode("utf-8"))
         .decode("ascii")
@@ -306,8 +306,8 @@ def test_v2_exchange_rejects_missing_recipient_header():
     Returns:
         None.
     """
-    sender = generate_exchange_key_bundle("suite-pq")
-    recipient = generate_exchange_key_bundle("suite-pq")
+    sender = generate_exchange_key_bundle("mlkem768-sha3-256")
+    recipient = generate_exchange_key_bundle("mlkem768-sha3-256")
     envelope = build_exchange_envelope_v2(
         "header-test",
         b"hash-secret",
@@ -331,7 +331,7 @@ def test_key_bundle_rejects_public_fingerprint_mismatch():
     Returns:
         None.
     """
-    bundle = generate_exchange_key_bundle("suite-pq").to_mapping(include_private=True)
+    bundle = generate_exchange_key_bundle("mlkem768-sha3-256").to_mapping(include_private=True)
     bundle["keys"]["mlkem"]["fingerprint"] = "00:" * 31 + "00"
 
     with pytest.raises(KeyBundleError, match="fingerprint"):
@@ -344,8 +344,8 @@ def test_key_bundle_rejects_mismatched_mlkem_private_seed():
     Returns:
         None.
     """
-    bundle = generate_exchange_key_bundle("suite-pq").to_mapping(include_private=True)
-    other_bundle = generate_exchange_key_bundle("suite-pq").to_mapping(include_private=True)
+    bundle = generate_exchange_key_bundle("mlkem768-sha3-256").to_mapping(include_private=True)
+    other_bundle = generate_exchange_key_bundle("mlkem768-sha3-256").to_mapping(include_private=True)
     bundle["keys"]["mlkem"]["privateKey"] = other_bundle["keys"]["mlkem"]["privateKey"]
 
     with pytest.raises(KeyBundleError, match="mlkem.privateKey does not match"):
@@ -361,7 +361,7 @@ def test_key_bundle_requires_private_material():
     Returns:
         None.
     """
-    bundle = generate_exchange_key_bundle("suite-pq")
+    bundle = generate_exchange_key_bundle("mlkem768-sha3-256")
 
     with pytest.raises(KeyBundleError, match="private material"):
         ExchangeKeyBundle.from_mapping(bundle.to_mapping(), require_private=True)
@@ -376,7 +376,7 @@ def test_key_bundle_rejects_unsupported_version():
     Returns:
         None.
     """
-    bundle = generate_exchange_key_bundle("suite-pq").to_mapping(include_private=True)
+    bundle = generate_exchange_key_bundle("mlkem768-sha3-256").to_mapping(include_private=True)
     bundle["version"] = 2
 
     with pytest.raises(KeyBundleError, match="Unsupported or missing"):
@@ -392,7 +392,7 @@ def test_key_bundle_rejects_missing_keys_object():
     Returns:
         None.
     """
-    bundle = generate_exchange_key_bundle("suite-pq").to_mapping(include_private=True)
+    bundle = generate_exchange_key_bundle("mlkem768-sha3-256").to_mapping(include_private=True)
     del bundle["keys"]
 
     with pytest.raises(KeyBundleError, match="missing its keys object"):
@@ -409,7 +409,7 @@ def test_key_bundle_rejects_non_v2_suite():
         None.
     """
     with pytest.raises(KeyBundleError, match="does not require a version-2 key bundle"):
-        generate_exchange_key_bundle("suite-sha256")
+        generate_exchange_key_bundle("ecdh-sha256")
 
 
 def test_v2_exchange_rejects_invalid_build_inputs():
@@ -421,16 +421,16 @@ def test_v2_exchange_rejects_invalid_build_inputs():
     Returns:
         None.
     """
-    sender = generate_exchange_key_bundle("suite-pq")
-    recipient = generate_exchange_key_bundle("suite-pq-shake")
+    sender = generate_exchange_key_bundle("mlkem768-sha3-256")
+    recipient = generate_exchange_key_bundle("mlkem768-shake256")
     with pytest.raises(ValueError, match="same crypto suite"):
         build_exchange_envelope_v2("name", b"secret", sender, recipient, "now", "id")
 
-    v1_bundle = ExchangeKeyBundle(CryptoSuite.from_id("suite-sha256"))
+    v1_bundle = ExchangeKeyBundle(CryptoSuite.from_id("ecdh-sha256"))
     with pytest.raises(ValueError, match="version 2"):
         build_exchange_envelope_v2("name", b"secret", v1_bundle, v1_bundle, "now", "id")
 
-    recipient = generate_exchange_key_bundle("suite-pq")
+    recipient = generate_exchange_key_bundle("mlkem768-sha3-256")
     invalid_inputs = (
         (("", b"secret", b"", 0, 0.05), "non-empty"),
         (("name", "secret", b"", 0, 0.05), "bytes"),
@@ -443,7 +443,7 @@ def test_v2_exchange_rejects_invalid_build_inputs():
             build_exchange_envelope_v2(
                 name,
                 secret,
-                generate_exchange_key_bundle("suite-pq"),
+                generate_exchange_key_bundle("mlkem768-sha3-256"),
                 recipient,
                 "now",
                 "id",
@@ -462,8 +462,8 @@ def test_v2_exchange_accepts_bundle_mapping_and_object_inputs():
     Returns:
         None.
     """
-    sender = generate_exchange_key_bundle("suite-pq")
-    recipient = generate_exchange_key_bundle("suite-pq")
+    sender = generate_exchange_key_bundle("mlkem768-sha3-256")
+    recipient = generate_exchange_key_bundle("mlkem768-sha3-256")
     envelope = build_exchange_envelope_v2("mapping-input", b"secret", sender, recipient, "now", "mapping-id")
 
     mapping_plaintext, _ = decrypt_exchange_envelope_v2(
@@ -484,13 +484,13 @@ def test_v2_exchange_payload_helpers_reject_malformed_values():
     Returns:
         None.
     """
-    sender = generate_exchange_key_bundle("suite-pq")
-    recipient = generate_exchange_key_bundle("suite-pq")
+    sender = generate_exchange_key_bundle("mlkem768-sha3-256")
+    recipient = generate_exchange_key_bundle("mlkem768-sha3-256")
     envelope = build_exchange_envelope_v2("payload-test", b"secret", sender, recipient, "now", "payload-id")
     protected = json.loads(base64.urlsafe_b64decode(envelope["protected"] + "=" * (-len(envelope["protected"]) % 4)))
     payload, _ = decrypt_exchange_envelope_v2(envelope, sender)
     payload_mapping = json.loads(payload)
-    suite = CryptoSuite.from_id("suite-pq")
+    suite = CryptoSuite.from_id("mlkem768-sha3-256")
 
     with pytest.raises(ValueError, match="not valid JSON"):
         _parse_payload(b"not-json")
@@ -506,7 +506,7 @@ def test_v2_exchange_payload_helpers_reject_malformed_values():
         _decode("not base64!", "field")
 
     invalid_payloads = (
-        ({"cryptoSuite": "suite-pq-shake"}, "suite"),
+        ({"cryptoSuite": "mlkem768-shake256"}, "suite"),
         ({"exchangeId": "other-id"}, "exchangeId"),
         ({"senderKeyId": ""}, "senderKeyId"),
         ({"recipientKeyId": ""}, "recipientKeyId"),
@@ -534,7 +534,7 @@ def test_key_bundle_rejects_malformed_sections():
     Returns:
         None.
     """
-    pure = generate_exchange_key_bundle("suite-pq").to_mapping(include_private=True)
+    pure = generate_exchange_key_bundle("mlkem768-sha3-256").to_mapping(include_private=True)
     invalid_pure_sections = (
         ({"mlkem": None}, "requires an mlkem"),
         ({"mlkem": {**pure["keys"]["mlkem"], "algorithm": "wrong"}}, "algorithm"),
@@ -566,7 +566,7 @@ def test_key_bundle_rejects_invalid_json_kid_and_private_serialization():
     Returns:
         None.
     """
-    bundle = generate_exchange_key_bundle("suite-pq")
+    bundle = generate_exchange_key_bundle("mlkem768-sha3-256")
     mapping = bundle.to_mapping(include_private=True)
 
     with pytest.raises(KeyBundleError, match="not valid UTF-8 JSON"):
@@ -592,11 +592,11 @@ def test_private_bundle_resolution_finds_matching_kid(tmp_path):
     Returns:
         None.
     """
-    bundle = generate_exchange_key_bundle("suite-pq")
+    bundle = generate_exchange_key_bundle("mlkem768-sha3-256")
     matching_path = tmp_path / "matching.private.bundle.json"
     matching_path.write_bytes(bundle.to_json(include_private=True))
     (tmp_path / "unrelated.private.bundle.json").write_bytes(
-        generate_exchange_key_bundle("suite-pq").to_json(include_private=True)
+        generate_exchange_key_bundle("mlkem768-sha3-256").to_json(include_private=True)
     )
 
     assert resolve_private_bundle_by_kid(tmp_path, bundle.kid) == matching_path.read_bytes()
@@ -614,7 +614,7 @@ def test_private_bundle_resolution_skips_invalid_candidate_before_match(tmp_path
         None.
     """
     (tmp_path / "a-invalid.private.bundle.json").write_bytes(b"{")
-    bundle = generate_exchange_key_bundle("suite-pq")
+    bundle = generate_exchange_key_bundle("mlkem768-sha3-256")
     matching_bundle = bundle.to_json(include_private=True)
     matching_path = tmp_path / "z-matching.private.bundle.json"
     matching_path.write_bytes(matching_bundle)

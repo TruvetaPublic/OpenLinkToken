@@ -175,7 +175,7 @@ class TestGenerateKeyPairCommandIntegration:
                 [
                     "generate-key-pair",
                     "--crypto-suite",
-                    "suite-pq",
+                    "mlkem768-sha3-256",
                     "--name",
                     "pq-key",
                 ]

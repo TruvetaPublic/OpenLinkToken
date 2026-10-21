@@ -44,7 +44,7 @@ class CryptoSuiteTokenizerTest {
     void tokenizeUsesSuiteDigestAndHexEncoding() throws Exception {
         CryptoSuiteTokenizer tokenizer = new CryptoSuiteTokenizer(
                 new ArrayList<>(),
-                CryptoSuite.fromId("suite-sha3"));
+                CryptoSuite.fromId("ecdh-sha3-256"));
 
         assertEquals(
                 "ab96273f069fc38264bf16cc2287218779c5eed6c0fee89490b990ffc35a2af5",
@@ -74,7 +74,7 @@ class CryptoSuiteTokenizerTest {
     void explicitSuiteTokenizerRoundTripsThroughSerialization() throws Exception {
         CryptoSuiteTokenizer tokenizer = new CryptoSuiteTokenizer(
                 new ArrayList<>(),
-                CryptoSuite.fromId("suite-sha3"));
+                CryptoSuite.fromId("ecdh-sha3-256"));
 
         CryptoSuiteTokenizer deserializedTokenizer = serializeAndDeserialize(tokenizer);
 

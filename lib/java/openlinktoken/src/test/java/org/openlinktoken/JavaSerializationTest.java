@@ -139,10 +139,10 @@ class JavaSerializationTest {
      */
     @Test
     void cryptoSuiteAndKeyBundleRoundTripPrivateState() throws Exception {
-        CryptoSuite suite = roundTrip(CryptoSuite.SUITE_PQ, CryptoSuite.class);
+        CryptoSuite suite = roundTrip(CryptoSuite.MLKEM768_SHA3_256, CryptoSuite.class);
 
-        assertSame(CryptoSuite.SUITE_PQ, suite);
-        assertEquals(CryptoSuite.SUITE_PQ.getSuiteId(), suite.getSuiteId());
+        assertSame(CryptoSuite.MLKEM768_SHA3_256, suite);
+        assertEquals(CryptoSuite.MLKEM768_SHA3_256.getSuiteId(), suite.getSuiteId());
 
         ExchangeKeyBundle bundle = ExchangeKeyBundle.generate(suite.getSuiteId());
         ExchangeKeyBundle bundleCopy = roundTrip(bundle, ExchangeKeyBundle.class);
@@ -182,8 +182,8 @@ class JavaSerializationTest {
         assertArrayEquals(payload.rotationIv(), payloadCopy.rotationIv());
         assertEquals(payload.dimensionBias(), payloadCopy.dimensionBias());
 
-        ExchangeKeyBundle sender = ExchangeKeyBundle.generate("suite-pq");
-        ExchangeKeyBundle recipient = ExchangeKeyBundle.generate("suite-pq");
+        ExchangeKeyBundle sender = ExchangeKeyBundle.generate("mlkem768-sha3-256");
+        ExchangeKeyBundle recipient = ExchangeKeyBundle.generate("mlkem768-sha3-256");
         Map<String, Object> envelope = ExchangeKem.buildExchangeEnvelopeV2(
                 "serialized-exchange",
                 HASHING_SECRET,

@@ -7,7 +7,7 @@ non-specialists and engineers. By the end, viewers should understand what
 post-quantum cryptography changes in Open Link Token, how the available suites
 differ, and when each profile is appropriate.
 
-The presentation compares the current `suite-sha256` profile
+The presentation compares the current `ecdh-sha256` profile
 (SHA-256/HMAC-SHA256 with ECDH) with the SHA-3 and post-quantum profiles. It
 explains the documented reasons for each profile without implying that the
 legacy suite is already broken or that every algorithm in it must be replaced.
@@ -27,7 +27,7 @@ legacy suite is already broken or that every algorithm in it must be replaced.
    decrypt later” concerns.
 3. **Three different jobs:** Deterministic token digest/MAC, exchange key
    establishment, and token content encryption are separate functions.
-4. **The current default:** Show the `suite-sha256` path: SHA-256 and
+4. **The current default:** Show the `ecdh-sha256` path: SHA-256 and
    HMAC-SHA256 for deterministic tokens, ECDH/JWE for exchange, and
    AES-256-GCM for token content encryption.
 5. **What PQC changes:** Explain ML-KEM as a key-encapsulation mechanism and
@@ -39,7 +39,7 @@ legacy suite is already broken or that every algorithm in it must be replaced.
    Distinguish documented use-case rationale
    from historical selection details that are not recorded.
 8. **Choosing a suite:** Recommend retaining the suite for an existing
-   exchange; use `suite-pq` as the standard new PQ-only choice unless a
+   exchange; use `mlkem768-sha3-256` as the standard new PQ-only choice unless a
    policy or interoperability need calls for SHAKE/KMAC.
 9. **What changes operationally:** Explain version-1 PEM keys versus
    version-2 JSON key bundles, larger version-2 artifacts and processing
@@ -50,12 +50,12 @@ legacy suite is already broken or that every algorithm in it must be replaced.
 
 ## Suite content
 
-| Suite            | Token digest and MAC       | Exchange key agreement | Intended explanation                                                                                                |
-| ---------------- | -------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `suite-sha256`   | SHA-256 / HMAC-SHA256      | ECDH/JWE, version 1    | Backward-compatible default for existing exchanges.                                                                 |
-| `suite-sha3`     | SHA3-256 / HMAC-SHA3-256   | ECDH/JWE, version 1    | SHA-3 token primitives without changing the version-1 ECDH exchange; this is not a PQ suite.                        |
-| `suite-pq`       | SHA3-256 / HMAC-SHA3-256   | ML-KEM-768, version 2  | Standard PQ-only profile; the documented default when no policy or interoperability requirement selects SHAKE/KMAC. |
-| `suite-pq-shake` | SHAKE256-256 / KMAC256-256 | ML-KEM-768, version 2  | PQ-only exchange with the SHAKE/KMAC token primitive family, for a specific policy or interoperability need.        |
+| Suite               | Token digest and MAC       | Exchange key agreement | Intended explanation                                                                                                |
+| ------------------- | -------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `ecdh-sha256`       | SHA-256 / HMAC-SHA256      | ECDH/JWE, version 1    | Backward-compatible default for existing exchanges.                                                                 |
+| `ecdh-sha3-256`     | SHA3-256 / HMAC-SHA3-256   | ECDH/JWE, version 1    | SHA-3 token primitives without changing the version-1 ECDH exchange; this is not a PQ suite.                        |
+| `mlkem768-sha3-256` | SHA3-256 / HMAC-SHA3-256   | ML-KEM-768, version 2  | Standard PQ-only profile; the documented default when no policy or interoperability requirement selects SHAKE/KMAC. |
+| `mlkem768-shake256` | SHAKE256-256 / KMAC256-256 | ML-KEM-768, version 2  | PQ-only exchange with the SHAKE/KMAC token primitive family, for a specific policy or interoperability need.        |
 
 All currently supported suites use AES-256-GCM for token content encryption.
 Suite IDs have no version suffix. The ML-KEM profiles use exchange format
@@ -74,9 +74,9 @@ version 2; the ECDH profiles use exchange format version 1.
   decreasing performance; present -768 as the middle profile, not as a
   universally optimal choice.
 - Explain that each exchange uses either ECDH or ML-KEM, not both.
-- Never label `suite-sha3` as post-quantum.
+- Never label `ecdh-sha3-256` as post-quantum.
 - Avoid implying SHAKE/KMAC is more quantum-safe than SHA3/HMAC. The repository
-  recommends `suite-pq` unless a policy or interoperability requirement
+  recommends `mlkem768-sha3-256` unless a policy or interoperability requirement
   calls for SHAKE/KMAC.
 - Do not invent an undocumented historical reason for the original
   SHA-256/HMAC-SHA256 + ECDH selection; explain its documented compatibility

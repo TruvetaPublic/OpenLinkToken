@@ -52,9 +52,9 @@ Partners must agree on a crypto suite before generating keys. Use the
 [Cryptographic Suites](../concepts/crypto-suites.md) guide to choose between
 the version-1 ECDH profiles and the version-2 ML-KEM profiles.
 
-- Use `suite-sha256` when an existing exchange or token namespace requires
+- Use `ecdh-sha256` when an existing exchange or token namespace requires
   the default version-1 behavior.
-- Use `suite-pq` or `suite-pq-shake` for a new ML-KEM-only exchange.
+- Use `mlkem768-sha3-256` or `mlkem768-shake256` for a new ML-KEM-only exchange.
 
 The sender and recipient must use the same suite ID. Do not mix PEM keys with
 version-2 JSON bundles.
@@ -67,14 +67,14 @@ The recipient sends their public key or bundle to the sender; the sender
 returns the exchange config and encrypted tokens. Never transfer either
 party's private key or bundle.
 
-### Current default: `suite-sha256`
+### Current default: `ecdh-sha256`
 
 The recipient creates an ECDH key pair and securely sends the public PEM file
 to the sender as `./recipient-sha256.public.pem`:
 
 ```bash
 olt generate-key-pair \
-  --crypto-suite suite-sha256 \
+  --crypto-suite ecdh-sha256 \
   --name recipient-sha256
 ```
 
@@ -83,7 +83,7 @@ sample data:
 
 ```bash
 olt initiate-exchange \
-  --crypto-suite suite-sha256 \
+  --crypto-suite ecdh-sha256 \
   --public-key ./recipient-sha256.public.pem \
   --name sender-sha256 \
   --output ./sender-sha256.exchange.json
@@ -106,14 +106,14 @@ olt decrypt \
   --private-key ~/.openlinktoken/recipient-sha256.private.pem
 ```
 
-### Post-quantum: `suite-pq`
+### Post-quantum: `mlkem768-sha3-256`
 
 The recipient creates an ML-KEM key bundle and securely sends the public
 bundle to the sender as `./recipient-pq.public.bundle.json`:
 
 ```bash
 olt generate-key-pair \
-  --crypto-suite suite-pq \
+  --crypto-suite mlkem768-sha3-256 \
   --name recipient-pq
 ```
 
@@ -122,7 +122,7 @@ the same sample data:
 
 ```bash
 olt initiate-exchange \
-  --crypto-suite suite-pq \
+  --crypto-suite mlkem768-sha3-256 \
   --public-key ./recipient-pq.public.bundle.json \
   --name sender-pq \
   --output ./sender-pq.exchange.json
@@ -146,9 +146,9 @@ olt decrypt \
 
 ### Differences
 
-- `suite-sha256` uses the version-1 ECDH exchange and PEM keys; `suite-pq`
+- `ecdh-sha256` uses the version-1 ECDH exchange and PEM keys; `mlkem768-sha3-256`
   uses the version-2 ML-KEM-768 exchange and JSON key bundles.
-- `suite-pq` also changes the token primitives from SHA-256/HMAC-SHA-256 to
+- `mlkem768-sha3-256` also changes the token primitives from SHA-256/HMAC-SHA-256 to
   SHA3-256/HMAC-SHA3-256. The command flow is otherwise the same.
 - Tokens produced with different suites are not interchangeable for matching.
 - In both workflows, share the recipient's public key and then the exchange
@@ -336,7 +336,7 @@ Each party keeps its own private bundle local.
 ```text
 Recipient                                                   Sender
 -----------------------------------------------------------|--------------------
-generate-key-pair --crypto-suite suite-pq                  |
+generate-key-pair --crypto-suite mlkem768-sha3-256                  |
   private bundle: keep local                               |
   public bundle ------------------------------------------>|
                                                            |
@@ -367,12 +367,12 @@ person data.
 ```bash
 # Recipient: generate a bundle and share only the public bundle
 olt generate-key-pair \
-  --crypto-suite suite-pq \
+  --crypto-suite mlkem768-sha3-256 \
   --name recipient-org
 
 # Sender: use the same suite and the recipient's public bundle
 olt initiate-exchange \
-  --crypto-suite suite-pq \
+  --crypto-suite mlkem768-sha3-256 \
   --public-key ~/.openlinktoken/recipient-org.public.bundle.json \
   --output ./sender-q2.exchange.json
 ```
@@ -563,7 +563,7 @@ See [Decrypting Tokens](decrypting-tokens.md) for details.
 
 Encrypted mode (`package` with an exchange config) adds AES-256-GCM encryption
 on top of the suite-selected keyed MAC. For the default
-`suite-sha256`, that MAC is HMAC-SHA256:
+`ecdh-sha256`, that MAC is HMAC-SHA256:
 
 | Mode      | External Sharing    | Defense in Depth | Reversible                               |
 | --------- | ------------------- | ---------------- | ---------------------------------------- |
