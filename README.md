@@ -66,8 +66,8 @@ Download the binary for your platform from the [latest release](https://github.c
 
 Each ZIP contains the executable and its runtime files. Each asset has a matching
 `.sha256` file you can use to verify the download.
-The Linux ZIP defaults to CPU inference; use the installer with `--cuda` to
-include the optional NVIDIA runtime.
+The Linux ZIP contains the CPU-capable runtime. The installer includes the
+optional NVIDIA runtime by default; pass `--no-cuda` for a CPU-only installation.
 
 **One-line installers:**
 
@@ -79,13 +79,13 @@ curl -fsSL https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/downlo
 curl -fsSL https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.sh | \
   bash -s -- --version v2.2.1
 
-# Linux x86_64 - install with the optional CUDA runtime
+# Linux x86_64 - install CPU-only instead of the default CUDA-enabled bundle
 curl -fsSL https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.sh | \
-  bash -s -- --cuda
+  bash -s -- --no-cuda
 
-# Linux x86_64 - install a specific version with CUDA
+# Linux x86_64 - install a specific version (CUDA is included by default)
 curl -fsSL https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.sh | \
-  bash -s -- --version v2.2.1 --cuda
+  bash -s -- --version v2.2.1
 ```
 
 ```powershell
@@ -152,7 +152,7 @@ See <a href="https://truvetapublic.github.io/OpenLinkToken/quickstarts/" target=
 
 - **Token rules**: Five rules (T1–T5) combine attributes in different ways — see <a href="https://truvetapublic.github.io/OpenLinkToken/concepts/token-rules.html" target="_blank" rel="noopener noreferrer">Token Rules</a>
 - **ML1 matching**: The default ONNX matching model generates embeddings from which ML1 derives rotation-based, quantized token projections. When a T1 signature is available, each projection is SHA-256 hashed with a T1-derived blocking key. ML1 is more compute-intensive and slower than T1–T5 alone, but delivers significantly better matching outcomes. Disable it with `package --disable-inferencing` or `tokenize --disable-inferencing`; see the <a href="https://truvetapublic.github.io/OpenLinkToken/reference/cli.html" target="_blank" rel="noopener noreferrer">CLI Reference</a> for options.
-- **Hardware acceleration**: Linux x86_64 uses CPU inference by default; pass `--cuda` to `install.sh` to install the optional NVIDIA runtime. CUDA inference requires a compatible host NVIDIA driver. macOS and other systems use CPU inference; CoreML is disabled for ML1 because compiling this large transformer can exhaust unified memory.
+- **Hardware acceleration**: Linux x86_64 installs the NVIDIA runtime by default and uses CUDA when a compatible host NVIDIA driver is available. Pass `--no-cuda` to `install.sh` to install a CPU-only bundle. macOS and other systems use CPU inference; CoreML is disabled for ML1 because compiling this large transformer can exhaust unified memory.
 - **Normalization**: Names, dates, postal codes normalized before tokenization — see <a href="https://truvetapublic.github.io/OpenLinkToken/concepts/normalization-and-validation.html" target="_blank" rel="noopener noreferrer">Normalization and Validation</a>
 - **Metadata**: Processing statistics and audit trail — see <a href="https://truvetapublic.github.io/OpenLinkToken/reference/metadata-format.html" target="_blank" rel="noopener noreferrer">Metadata Format</a>
 

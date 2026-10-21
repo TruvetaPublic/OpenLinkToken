@@ -104,8 +104,8 @@ def _create_release_assets(assets_dir: Path, include_cuda: bool) -> None:
         manifest.write_text(f"{_write_checksum(part)}\t{part_name}\n", encoding="utf-8")
 
 
-def test_install_script_installs_cpu_bundle_by_default(tmp_path):
-    """Default installation should not include optional NVIDIA libraries."""
+def test_install_script_installs_cuda_bundle_by_default(tmp_path):
+    """Default Linux installation should include the NVIDIA runtime."""
     assets_dir = tmp_path / "assets"
     assets_dir.mkdir()
     _create_release_assets(assets_dir, include_cuda=True)
@@ -122,11 +122,12 @@ def test_install_script_installs_cpu_bundle_by_default(tmp_path):
 
     assert result.returncode == 0, result.stderr
     assert (install_dir / ".olt" / "_internal" / "runtime").read_bytes() == b"cpu"
-    assert not (install_dir / ".olt" / "_internal" / "nvidia").exists()
+    assert (install_dir / ".olt" / "_internal" / "nvidia" / "cublas" / "lib" / "libcuda.so").read_bytes() == b"cuda"
+    assert "Installing the NVIDIA CUDA runtime by default" in result.stdout
 
 
-def test_install_script_overlays_verified_cuda_parts(tmp_path):
-    """The CUDA flag should verify and overlay optional libraries before install."""
+def test_install_script_no_cuda_skips_optional_libraries(tmp_path):
+    """The no-cuda flag should install only the CPU-capable bundle."""
     assets_dir = tmp_path / "assets"
     assets_dir.mkdir()
     _create_release_assets(assets_dir, include_cuda=True)
@@ -134,7 +135,7 @@ def test_install_script_overlays_verified_cuda_parts(tmp_path):
     environment = _installer_environment(tmp_path, assets_dir)
 
     result = subprocess.run(
-        ["bash", str(INSTALL_SCRIPT), "--version", "1.0.0", "--install-dir", str(install_dir), "--cuda"],
+        ["bash", str(INSTALL_SCRIPT), "--version", "1.0.0", "--install-dir", str(install_dir), "--no-cuda"],
         env=environment,
         capture_output=True,
         text=True,
@@ -142,7 +143,8 @@ def test_install_script_overlays_verified_cuda_parts(tmp_path):
     )
 
     assert result.returncode == 0, result.stderr
-    assert (install_dir / ".olt" / "_internal" / "nvidia" / "cublas" / "lib" / "libcuda.so").read_bytes() == b"cuda"
+    assert not (install_dir / ".olt" / "_internal" / "nvidia").exists()
+    assert "Installing the CPU-only runtime." in result.stdout
 
 
 def test_install_script_keeps_existing_bundle_when_cuda_download_fails(tmp_path):
@@ -160,7 +162,7 @@ def test_install_script_keeps_existing_bundle_when_cuda_download_fails(tmp_path)
     environment = _installer_environment(tmp_path, assets_dir)
 
     result = subprocess.run(
-        ["bash", str(INSTALL_SCRIPT), "--version", "1.0.0", "--install-dir", str(install_dir), "--cuda"],
+        ["bash", str(INSTALL_SCRIPT), "--version", "1.0.0", "--install-dir", str(install_dir)],
         env=environment,
         capture_output=True,
         text=True,
@@ -186,7 +188,7 @@ def test_install_script_keeps_existing_bundle_when_cuda_checksum_fails(tmp_path)
     environment = _installer_environment(tmp_path, assets_dir)
 
     result = subprocess.run(
-        ["bash", str(INSTALL_SCRIPT), "--version", "1.0.0", "--install-dir", str(install_dir), "--cuda"],
+        ["bash", str(INSTALL_SCRIPT), "--version", "1.0.0", "--install-dir", str(install_dir)],
         env=environment,
         capture_output=True,
         text=True,
@@ -198,21 +200,30 @@ def test_install_script_keeps_existing_bundle_when_cuda_checksum_fails(tmp_path)
     assert (existing_bundle / "marker").read_text(encoding="utf-8") == "old"
 
 
-def test_install_script_rejects_cuda_on_macos(tmp_path):
-    """CUDA installation must fail clearly on unsupported operating systems."""
+def test_install_script_no_cuda_is_harmless_on_macos(tmp_path):
+    """The Linux-specific no-cuda option should be harmless on macOS."""
     assets_dir = tmp_path / "assets"
     assets_dir.mkdir()
-    _create_release_assets(assets_dir, include_cuda=False)
+    asset_name = "olt-cli-1.0.0-macos-x86_64.zip"
+    archive = assets_dir / asset_name
+    _write_archive(
+        archive,
+        {"olt-cli-1.0.0-macos-x86_64/olt": b"executable", "olt-cli-1.0.0-macos-x86_64/_internal/runtime": b"cpu"},
+    )
+    (assets_dir / f"{asset_name}.sha256").write_text(
+        f"{_write_checksum(archive)}  {asset_name}\n",
+        encoding="utf-8",
+    )
     environment = _installer_environment(tmp_path, assets_dir)
     environment["TEST_UNAME_S"] = "Darwin"
 
     result = subprocess.run(
-        ["bash", str(INSTALL_SCRIPT), "--version", "1.0.0", "--cuda"],
+        ["bash", str(INSTALL_SCRIPT), "--version", "1.0.0", "--no-cuda"],
         env=environment,
         capture_output=True,
         text=True,
         check=False,
     )
 
-    assert result.returncode != 0
-    assert "--cuda is supported only on Linux x86_64" in result.stderr
+    assert result.returncode == 0, result.stderr
+    assert "Installing the CPU-only runtime." in result.stdout

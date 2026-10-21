@@ -8,19 +8,19 @@ readonly API_URL="https://api.github.com/repos/${REPOSITORY}"
 
 version=""
 install_dir="${OLT_INSTALL_DIR:-$HOME/.local/bin}"
-install_cuda=false
+no_cuda=false
 
 usage() {
     cat <<'EOF'
 Install the Open Link Token CLI for Linux or macOS.
 
 Usage:
-  install.sh [--version VERSION] [--install-dir DIRECTORY] [--cuda]
+  install.sh [--version VERSION] [--install-dir DIRECTORY] [--no-cuda]
 
 Options:
   --version VERSION       Install a specific release (default: latest)
   --install-dir DIRECTORY Install into DIRECTORY (default: ~/.local/bin)
-  --cuda                  Install the optional CUDA runtime (Linux x86_64 only)
+  --no-cuda               Skip CUDA runtime installation (Linux x86_64 only)
   -h, --help              Show this help
 EOF
 }
@@ -64,8 +64,8 @@ while (($# > 0)); do
             install_dir="$2"
             shift 2
             ;;
-        --cuda)
-            install_cuda=true
+        --no-cuda)
+            no_cuda=true
             shift
             ;;
         --help|-h)
@@ -120,14 +120,19 @@ case "$(uname -s)" in
                 fail "No Linux CLI asset is available for architecture $(uname -m)"
                 ;;
         esac
+        install_cuda=true
         ;;
     *)
+        install_cuda=false
         fail "This installer supports macOS and Linux only"
         ;;
 esac
 
-if [[ "$install_cuda" == true && "$(uname -s)" != "Linux" ]]; then
-    fail "--cuda is supported only on Linux x86_64"
+if [[ "$no_cuda" == true ]]; then
+    install_cuda=false
+fi
+if [[ "$(uname -s)" == "Darwin" ]]; then
+    install_cuda=false
 fi
 
 tmp_dir=$(mktemp -d "${TMPDIR:-/tmp}/olt-install.XXXXXX")
@@ -171,6 +176,7 @@ cp -R "$bundle_source/." "$staged_bundle"
 chmod 0755 "$staged_bundle/olt"
 
 if [[ "$install_cuda" == true ]]; then
+    printf 'Installing the NVIDIA CUDA runtime by default (use --no-cuda to skip)...\n'
     cuda_manifest="$tmp_dir/olt-cuda-${version}-linux-x64.manifest"
     cuda_manifest_url="${RELEASES_URL}/download/${tag}/olt-cuda-${version}-linux-x64.manifest"
     curl -fL --retry 3 --output "$cuda_manifest" "$cuda_manifest_url" ||
@@ -211,6 +217,8 @@ if [[ "$install_cuda" == true ]]; then
     ((cuda_part_count > 0)) || fail "CUDA runtime manifest contains no parts"
     [[ -n "$(find "$staged_bundle/_internal/nvidia" -type f -print -quit 2>/dev/null)" ]] ||
         fail "CUDA runtime parts contain no NVIDIA libraries"
+else
+    printf 'Installing the CPU-only runtime.\n'
 fi
 
 old_bundle="$install_dir/.olt.previous.$$"

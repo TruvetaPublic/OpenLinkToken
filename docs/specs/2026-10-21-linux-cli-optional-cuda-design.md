@@ -7,9 +7,9 @@ its default PyInstaller bundle. The resulting release ZIP is about 4.45 GB,
 which exceeds GitHub's release-asset limit and the current upload step's
 in-memory file limit. Release v2.2.0 and v2.2.1 both exhibit this failure.
 
-The default Linux install should remain self-contained for CPU inference and
-small enough to publish as a GitHub release asset. Linux x86_64 users who need
-GPU inference should be able to opt in to the bundled CUDA runtime. The change
+The default Linux install should include the CUDA runtime while keeping each
+asset small enough to publish as a GitHub release asset. Linux x86_64 users who
+do not need GPU inference should be able to skip the runtime. The change
 targets `release/2.2.1`; it must not update `main` or rewrite an existing tag.
 
 ## Design
@@ -39,27 +39,27 @@ asset fails with a clear error before memory buffering or upload.
 
 ## Installer behavior
 
-Extend `install.sh` with `--cuda`, supported only on Linux x86_64. Without the
-flag, installation downloads and installs only the CPU-capable default ZIP.
-With the flag, the installer downloads every CUDA part listed in the versioned
-release manifest, verifies each part's SHA-256 before extracting it, and
-overlays its files into the staged bundle's `_internal` directory.
+Extend `install.sh` so Linux x86_64 installs CUDA by default. `--no-cuda` skips
+the runtime download and installs only the CPU-capable default ZIP. Otherwise,
+the installer downloads every CUDA part listed in the versioned release
+manifest, verifies each part's SHA-256 before extracting it, and overlays its
+files into the staged bundle's `_internal` directory.
 
 The installer must finish all downloads, integrity checks, and extraction
 before swapping the staged bundle into the install location. A missing
 manifest/part, checksum mismatch, unsupported platform, or extraction error
 fails explicitly and leaves the previously installed bundle intact. The
 installer does not require Python or `jq`; use shell utilities already required
-by the script. Users who want CUDA after an upgrade must pass `--cuda` again.
-CUDA execution still requires a compatible host NVIDIA driver; runtime provider
-selection and CPU fallback behavior remain unchanged.
+by the script. macOS remains CPU-only, and `--no-cuda` is accepted there as a
+harmless no-op. CUDA execution still requires a compatible host NVIDIA driver;
+runtime provider selection and CPU fallback behavior remain unchanged.
 
 ## Documentation and compatibility
 
 Update the README's one-line install examples and hardware-acceleration note to
-explain that Linux defaults to CPU inference and `--cuda` opts into the
-version-matched NVIDIA runtime. Keep the Windows installer and non-Linux
-packages unchanged.
+explain that Linux installs the NVIDIA runtime by default and `--no-cuda`
+selects CPU-only inference. Keep the Windows installer and non-Linux packages
+unchanged.
 
 This changes only future release packaging and installer behavior. It does not
 retroactively change already-published release assets or tags. Rebuilding
@@ -71,13 +71,13 @@ is merged into the release branch.
 - Unit-test asset preparation: default Linux ZIP excludes NVIDIA runtime files,
   CUDA parts preserve their original relative destinations, parts stay within
   the configured bound, and the manifest checksums match their contents.
-- Unit-test installer behavior for CPU-only install, successful opt-in overlay,
-  checksum/missing-part failures, unsupported platforms, and preservation of an
+- Unit-test installer behavior for default CUDA install, CPU-only opt-out,
+  checksum/missing-part failures, non-Linux behavior, and preservation of an
   existing installation on failure.
 - Verify the upload step rejects any file above its guard before reading it.
 - Run the relevant Python CLI tests and shell syntax/install-script tests.
 - Run the Linux PyInstaller build and smoke test; on a CUDA-capable runner,
-  verify CUDA provider activation with `--cuda` and CPU fallback without it.
+  verify CUDA provider activation by default and CPU fallback with `--no-cuda`.
 - Confirm each release asset is below GitHub's per-asset limit.
 
 No new runtime dependency is planned.
