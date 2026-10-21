@@ -59,6 +59,101 @@ the version-1 ECDH profiles and the version-2 ML-KEM profiles.
 The sender and recipient must use the same suite ID. Do not mix PEM keys with
 version-2 JSON bundles.
 
+## End-to-end examples
+
+The two examples below use the same sample input to show the current default
+workflow and the post-quantum workflow. Run them from the repository root.
+The recipient sends their public key or bundle to the sender; the sender
+returns the exchange config and encrypted tokens. Never transfer either
+party's private key or bundle.
+
+### Current default: `suite-sha256`
+
+The recipient creates an ECDH key pair and securely sends the public PEM file
+to the sender as `./recipient-sha256.public.pem`:
+
+```bash
+olt generate-key-pair \
+  --crypto-suite suite-sha256 \
+  --name recipient-sha256
+```
+
+The sender uses that public key to create the exchange config and package the
+sample data:
+
+```bash
+olt initiate-exchange \
+  --crypto-suite suite-sha256 \
+  --public-key ./recipient-sha256.public.pem \
+  --name sender-sha256 \
+  --output ./sender-sha256.exchange.json
+
+olt package \
+  -i ./resources/sample.csv \
+  -o ./sample-sha256-encrypted.csv \
+  --exchange-config ./sender-sha256.exchange.json
+```
+
+The sender shares `sender-sha256.exchange.json` and
+`sample-sha256-encrypted.csv` with the recipient. The recipient decrypts with
+their local private PEM file:
+
+```bash
+olt decrypt \
+  -i ./sample-sha256-encrypted.csv \
+  -o ./sample-sha256-decrypted.csv \
+  --exchange-config ./sender-sha256.exchange.json \
+  --private-key ~/.openlinktoken/recipient-sha256.private.pem
+```
+
+### Post-quantum: `suite-pq`
+
+The recipient creates an ML-KEM key bundle and securely sends the public
+bundle to the sender as `./recipient-pq.public.bundle.json`:
+
+```bash
+olt generate-key-pair \
+  --crypto-suite suite-pq \
+  --name recipient-pq
+```
+
+The sender uses that public bundle to create the exchange config and package
+the same sample data:
+
+```bash
+olt initiate-exchange \
+  --crypto-suite suite-pq \
+  --public-key ./recipient-pq.public.bundle.json \
+  --name sender-pq \
+  --output ./sender-pq.exchange.json
+
+olt package \
+  -i ./resources/sample.csv \
+  -o ./sample-pq-encrypted.csv \
+  --exchange-config ./sender-pq.exchange.json
+```
+
+The sender shares `sender-pq.exchange.json` and `sample-pq-encrypted.csv`
+with the recipient. The recipient decrypts with their local private bundle:
+
+```bash
+olt decrypt \
+  -i ./sample-pq-encrypted.csv \
+  -o ./sample-pq-decrypted.csv \
+  --exchange-config ./sender-pq.exchange.json \
+  --private-key ~/.openlinktoken/recipient-pq.private.bundle.json
+```
+
+### Differences
+
+- `suite-sha256` uses the version-1 ECDH exchange and PEM keys; `suite-pq`
+  uses the version-2 ML-KEM-768 exchange and JSON key bundles.
+- `suite-pq` also changes the token primitives from SHA-256/HMAC-SHA-256 to
+  SHA3-256/HMAC-SHA3-256. The command flow is otherwise the same.
+- Tokens produced with different suites are not interchangeable for matching.
+- In both workflows, share the recipient's public key and then the exchange
+  config and encrypted token output. Keep the private key or bundle local.
+
 ## Version 1 ECDH Bootstrap Workflow
 
 The version-1 ECDH bootstrap workflow lets partners establish a shared hashing
@@ -232,8 +327,42 @@ olt package \
 ## Version 2 ML-KEM Workflow
 
 Version 2 suites use JSON key bundles and the RFC 7516 general JWE JSON
-Serialization. The workflow is the same as the version 1 exchange, but both
-parties generate and share public bundles using the selected suite:
+Serialization. The recipient shares a public bundle with the sender, who
+creates the exchange config and generates or reuses a local sender bundle.
+Each party keeps its own private bundle local.
+
+### Overview
+
+```text
+Recipient                                                   Sender
+-----------------------------------------------------------|--------------------
+generate-key-pair --crypto-suite suite-pq                  |
+  private bundle: keep local                               |
+  public bundle ------------------------------------------>|
+                                                           |
+                                                           | initiate-exchange
+                                                           |   use recipient public bundle
+                                                           |   create exchange config
+                                                           |   private bundle: keep local
+                                                           |
+exchange config <------------------------------------------|
+  (encrypted secret and ML-KEM ciphertexts)               |
+                                                           |
+                                                           | package sample.csv
+encrypted tokens <-----------------------------------------|
+decrypt with recipient private bundle                      |
+  → decrypted tokens (local only)                          |
+```
+
+Unlike ECDH, ML-KEM uses encapsulation and decapsulation rather than deriving
+a shared secret from a peer public key and a local private key. Each JWE
+recipient entry carries an ML-KEM ciphertext that the matching private
+bundle can decapsulate. Both parties can open the same exchange config
+using their own private bundle; neither needs the other's private bundle.
+Token decryption reveals suite-specific hashed tokens, not the original
+person data.
+
+### Key generation and exchange creation
 
 ```bash
 # Recipient: generate a bundle and share only the public bundle
