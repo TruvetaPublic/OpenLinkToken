@@ -8,17 +8,19 @@ readonly API_URL="https://api.github.com/repos/${REPOSITORY}"
 
 version=""
 install_dir="${OLT_INSTALL_DIR:-$HOME/.local/bin}"
+install_cuda=false
 
 usage() {
     cat <<'EOF'
 Install the Open Link Token CLI for Linux or macOS.
 
 Usage:
-  install.sh [--version VERSION] [--install-dir DIRECTORY]
+  install.sh [--version VERSION] [--install-dir DIRECTORY] [--cuda]
 
 Options:
   --version VERSION       Install a specific release (default: latest)
   --install-dir DIRECTORY Install into DIRECTORY (default: ~/.local/bin)
+  --cuda                  Install the optional CUDA runtime (Linux x86_64 only)
   -h, --help              Show this help
 EOF
 }
@@ -26,6 +28,28 @@ EOF
 fail() {
     printf 'Error: %s\n' "$1" >&2
     exit 1
+}
+
+sha256_file() {
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha256sum "$1" | awk '{print $1}'
+    elif command -v shasum >/dev/null 2>&1; then
+        shasum -a 256 "$1" | awk '{print $1}'
+    else
+        fail "shasum or sha256sum is required to verify downloads"
+    fi
+}
+
+verify_sha256() {
+    local expected actual file description
+    expected="$1"
+    file="$2"
+    description="$3"
+    [[ "$expected" =~ ^[[:xdigit:]]{64}$ ]] || fail "Invalid SHA-256 checksum for $description"
+    actual=$(sha256_file "$file")
+    expected=$(printf '%s' "$expected" | tr '[:upper:]' '[:lower:]')
+    actual=$(printf '%s' "$actual" | tr '[:upper:]' '[:lower:]')
+    [[ "$actual" == "$expected" ]] || fail "SHA-256 verification failed for $description"
 }
 
 while (($# > 0)); do
@@ -39,6 +63,10 @@ while (($# > 0)); do
             (($# >= 2)) || fail "$1 requires a value"
             install_dir="$2"
             shift 2
+            ;;
+        --cuda)
+            install_cuda=true
+            shift
             ;;
         --help|-h)
             usage
@@ -98,6 +126,10 @@ case "$(uname -s)" in
         ;;
 esac
 
+if [[ "$install_cuda" == true && "$(uname -s)" != "Linux" ]]; then
+    fail "--cuda is supported only on Linux x86_64"
+fi
+
 tmp_dir=$(mktemp -d "${TMPDIR:-/tmp}/olt-install.XXXXXX")
 trap 'rm -rf "$tmp_dir"' EXIT
 
@@ -123,21 +155,7 @@ curl -fL --retry 3 --output "$checksum_file" "${download_url}.sha256" ||
     fail "Checksum asset not found for $asset"
 
 expected_checksum=$(awk 'NF { print $1; exit }' "$checksum_file")
-[[ "$expected_checksum" =~ ^[[:xdigit:]]{64}$ ]] ||
-    fail "Invalid SHA-256 checksum file"
-
-if command -v shasum >/dev/null 2>&1; then
-    actual_checksum=$(shasum -a 256 "$archive" | awk '{print $1}')
-elif command -v sha256sum >/dev/null 2>&1; then
-    actual_checksum=$(sha256sum "$archive" | awk '{print $1}')
-else
-    fail "shasum or sha256sum is required to verify the download"
-fi
-
-actual_checksum=$(printf '%s' "$actual_checksum" | tr '[:upper:]' '[:lower:]')
-expected_checksum=$(printf '%s' "$expected_checksum" | tr '[:upper:]' '[:lower:]')
-[[ "$actual_checksum" == "$expected_checksum" ]] ||
-    fail "SHA-256 verification failed"
+verify_sha256 "$expected_checksum" "$archive" "$asset"
 
 extract_dir="$tmp_dir/extracted"
 mkdir -p "$extract_dir"
@@ -151,6 +169,49 @@ bundle_dir="$install_dir/.olt"
 staged_bundle="$tmp_dir/staged-bundle"
 cp -R "$bundle_source/." "$staged_bundle"
 chmod 0755 "$staged_bundle/olt"
+
+if [[ "$install_cuda" == true ]]; then
+    cuda_manifest="$tmp_dir/olt-cuda-${version}-linux-x64.manifest"
+    cuda_manifest_url="${RELEASES_URL}/download/${tag}/olt-cuda-${version}-linux-x64.manifest"
+    curl -fL --retry 3 --output "$cuda_manifest" "$cuda_manifest_url" ||
+        fail "CUDA runtime manifest not found for $tag"
+
+    cuda_part_prefix="olt-cuda-${version}-linux-x64-part-"
+    cuda_part_count=0
+    while IFS=$'\t' read -r expected_checksum cuda_asset extra; do
+        [[ -n "$expected_checksum" && -n "$cuda_asset" && -z "${extra:-}" ]] ||
+            fail "Invalid CUDA runtime manifest entry"
+        [[ "$cuda_asset" == "$cuda_part_prefix"* && "$cuda_asset" == *.zip ]] ||
+            fail "Invalid CUDA runtime asset name in manifest"
+        part_number="${cuda_asset#"$cuda_part_prefix"}"
+        part_number="${part_number%.zip}"
+        [[ "$part_number" =~ ^[0-9]{3}$ ]] || fail "Invalid CUDA runtime part number"
+
+        cuda_archive="$tmp_dir/$cuda_asset"
+        cuda_url="${RELEASES_URL}/download/${tag}/${cuda_asset}"
+        printf 'Downloading CUDA runtime part %s...\n' "$part_number"
+        curl -fL --retry 3 --output "$cuda_archive" "$cuda_url" ||
+            fail "CUDA runtime part not found: $cuda_asset"
+        verify_sha256 "$expected_checksum" "$cuda_archive" "$cuda_asset"
+
+        cuda_entries="$tmp_dir/${cuda_asset}.entries"
+        unzip -Z1 "$cuda_archive" > "$cuda_entries" ||
+            fail "Unable to list CUDA runtime part: $cuda_asset"
+        while IFS= read -r cuda_entry; do
+            [[ "$cuda_entry" == nvidia/* ]] || fail "Invalid path in CUDA runtime part: $cuda_entry"
+            case "/$cuda_entry/" in
+                *"/../"*|*"/./"*) fail "Invalid path in CUDA runtime part: $cuda_entry" ;;
+            esac
+        done < "$cuda_entries"
+        unzip -o -q "$cuda_archive" -d "$staged_bundle/_internal" ||
+            fail "Unable to extract CUDA runtime part: $cuda_asset"
+        cuda_part_count=$((cuda_part_count + 1))
+    done < "$cuda_manifest"
+
+    ((cuda_part_count > 0)) || fail "CUDA runtime manifest contains no parts"
+    [[ -n "$(find "$staged_bundle/_internal/nvidia" -type f -print -quit 2>/dev/null)" ]] ||
+        fail "CUDA runtime parts contain no NVIDIA libraries"
+fi
 
 old_bundle="$install_dir/.olt.previous.$$"
 if [[ -e "$bundle_dir" || -L "$bundle_dir" ]]; then

@@ -173,6 +173,34 @@ jobs:
             --dist-dir dist \
             --output-dir release-assets
 
+      - name: Smoke test CPU-only Linux release bundle
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p smoke/cpu-only
+          unzip -q "release-assets/olt-cli-${VERSION}-linux-x64.zip" -d smoke/cpu-only
+          cpu_cli="smoke/cpu-only/olt-cli-${VERSION}-linux-x64/olt"
+          "$cpu_cli" tokenize \
+            -i smoke/input.csv \
+            -o smoke/cpu-only/out.csv \
+            --exchange-config smoke/smoke.exchange.json \
+            --private-key "$HOME/.openlinktoken/smoke.private.pem"
+          python - smoke/cpu-only/out.csv <<'PY'
+          import csv
+          import sys
+          from pathlib import Path
+
+          with Path(sys.argv[1]).open(newline="", encoding="utf-8") as file_handle:
+              ml1_tokens = [
+                  row["Token"]
+                  for row in csv.DictReader(file_handle)
+                  if row.get("RuleId") == "ML1" and row.get("Token")
+              ]
+          if not ml1_tokens or any(token == "0" * 64 for token in ml1_tokens):
+              raise SystemExit("CPU-only CLI bundle did not generate a non-blank ML1 token")
+          PY
+
       - name: Add bootstrap installers
         if: runner.os == 'Linux'
         shell: bash
@@ -233,6 +261,9 @@ jobs:
             for (const filePath of files) {
               const name = path.basename(filePath);
               const size = fs.statSync(filePath).size;
+              if (size > 1536 * 1024 * 1024) {
+                throw new Error(`Release asset ${name} exceeds the 1.5 GiB upload limit (${size} bytes)`);
+              }
               const existingAssetId = existingAssets.get(name);
 
               if (existingAssetId) {

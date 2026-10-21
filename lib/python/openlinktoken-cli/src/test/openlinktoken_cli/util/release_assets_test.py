@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from openlinktoken_cli.util import release_assets
 from openlinktoken_cli.util.release_assets import create_release_assets
 
 
@@ -31,6 +32,9 @@ class TestCreateReleaseAssets:
         (bundle_dir / "olt").write_bytes(b"bundle executable")
         (bundle_dir / "_internal").mkdir()
         (bundle_dir / "_internal" / "runtime.dat").write_bytes(b"runtime")
+        cuda_lib = bundle_dir / "_internal" / "nvidia" / "cublas" / "lib" / "libcuda.so"
+        cuda_lib.parent.mkdir(parents=True)
+        cuda_lib.write_bytes(b"cuda")
 
         create_release_assets("2.1.0", "Linux", tmp_path / "dist", tmp_path / "release-assets")
 
@@ -39,6 +43,9 @@ class TestCreateReleaseAssets:
                 "olt-cli-2.1.0-linux-x64/_internal/runtime.dat",
                 "olt-cli-2.1.0-linux-x64/olt",
             ]
+        with zipfile.ZipFile(tmp_path / "release-assets/olt-cuda-2.1.0-linux-x64-part-001.zip") as archive:
+            assert archive.namelist() == ["nvidia/cublas/lib/libcuda.so"]
+            assert archive.read("nvidia/cublas/lib/libcuda.so") == b"cuda"
 
     def test_creates_linux_release_assets_and_checksums(self, tmp_path):
         """Linux builds should emit updater binary, zip package, and checksum sidecars."""
@@ -46,6 +53,9 @@ class TestCreateReleaseAssets:
         output_dir = tmp_path / "release-assets"
         binary_content = b"linux binary"
         _write_binary(dist_dir, "olt", binary_content)
+        cuda_lib = dist_dir / "_internal" / "nvidia" / "cublas" / "lib" / "libcuda.so"
+        cuda_lib.parent.mkdir(parents=True)
+        cuda_lib.write_bytes(b"cuda")
 
         generated_paths = create_release_assets("2.1.0", "Linux", dist_dir, output_dir)
 
@@ -55,6 +65,8 @@ class TestCreateReleaseAssets:
             "olt-v2.1.0-linux-x86_64.sha256",
             "olt-cli-2.1.0-linux-x64.zip",
             "olt-cli-2.1.0-linux-x64.zip.sha256",
+            "olt-cuda-2.1.0-linux-x64-part-001.zip",
+            "olt-cuda-2.1.0-linux-x64.manifest",
         }
 
         binary_path = output_dir / "olt-v2.1.0-linux-x86_64"
@@ -72,6 +84,40 @@ class TestCreateReleaseAssets:
         assert (output_dir / f"{zip_path.name}.sha256").read_text() == _expected_checksum(
             zip_path.read_bytes(), zip_path.name
         )
+        manifest = output_dir / "olt-cuda-2.1.0-linux-x64.manifest"
+        checksum, part_name = manifest.read_text().strip().split("\t")
+        assert part_name == "olt-cuda-2.1.0-linux-x64-part-001.zip"
+        assert checksum == hashlib.sha256((output_dir / part_name).read_bytes()).hexdigest()
+
+    def test_splits_cuda_runtime_files_under_part_target(self, tmp_path, monkeypatch):
+        """CUDA assets should split deterministically without changing member paths."""
+        monkeypatch.setattr(release_assets, "_CUDA_PART_TARGET_BYTES", 4)
+        dist_dir = tmp_path / "dist"
+        cuda_root = dist_dir / "_internal" / "nvidia"
+        for name, content in (("a.so", b"aaa"), ("b.so", b"bbb")):
+            file_path = cuda_root / "cublas" / "lib" / name
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+            file_path.write_bytes(content)
+        _write_binary(dist_dir, "olt", b"linux binary")
+
+        create_release_assets("2.1.0", "Linux", dist_dir, tmp_path / "release-assets")
+
+        for index, expected_name in enumerate(("a.so", "b.so"), start=1):
+            part = tmp_path / f"release-assets/olt-cuda-2.1.0-linux-x64-part-{index:03}.zip"
+            with zipfile.ZipFile(part) as archive:
+                assert archive.namelist() == [f"nvidia/cublas/lib/{expected_name}"]
+
+    def test_rejects_cuda_file_above_part_limit(self, tmp_path, monkeypatch):
+        """A single CUDA library too large for one part must fail asset generation."""
+        monkeypatch.setattr(release_assets, "_CUDA_PART_MAX_BYTES", 3)
+        dist_dir = tmp_path / "dist"
+        cuda_lib = dist_dir / "_internal" / "nvidia" / "libcuda.so"
+        cuda_lib.parent.mkdir(parents=True)
+        cuda_lib.write_bytes(b"four")
+        _write_binary(dist_dir, "olt", b"linux binary")
+
+        with pytest.raises(ValueError, match="exceeds the 512 MiB part limit"):
+            create_release_assets("2.1.0", "Linux", dist_dir, tmp_path / "release-assets")
 
     def test_creates_macos_arm64_release_assets(self, tmp_path):
         """macOS arm64 builds should use an architecture-specific asset name."""

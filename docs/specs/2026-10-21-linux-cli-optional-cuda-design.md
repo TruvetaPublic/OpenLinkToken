@@ -25,9 +25,9 @@ preparation:
   deterministic, independently extractable ZIP parts. Preserve their paths
   relative to `_internal` so extraction overlays the same paths used by the
   current frozen runtime.
-- Limit each CUDA part to 512 MiB of uncompressed input and fail asset
-  generation if one file cannot fit. Generate a manifest listing each part and
-  its SHA-256 digest. Reject any generated release asset above a 1.5 GiB upload
+- Target 500 MiB of uncompressed input per CUDA part, with a hard 512 MiB cap,
+  and fail asset generation if one file cannot fit. Generate a manifest listing
+  each part and its SHA-256 digest. Reject any generated release asset above a 1.5 GiB upload
   guard, leaving margin below GitHub's 2 GiB asset limit and avoiding large
   Node.js buffers.
 - Keep non-Linux release assets unchanged. The existing Linux standalone
