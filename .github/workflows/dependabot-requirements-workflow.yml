@@ -74,8 +74,8 @@ jobs:
               for item in requirements
               if "==" in item and item.split("==", 1)[0].lower() in {"jwcrypto", "pycryptodome"}
           }
-          setup = root / "lib/python/openlinktoken-pyspark/setup.py"
-          source = setup.read_text(encoding="utf-8")
+          pyproject = root / "lib/python/openlinktoken-pyspark/pyproject.toml"
+          source = pyproject.read_text(encoding="utf-8")
           for package, version in versions.items():
               source, count = re.subn(
                   rf'(?m)^([ \t]*"{re.escape(package)}==)[^"]+(",?)$',
@@ -84,7 +84,7 @@ jobs:
               )
               if count != 1:
                   raise SystemExit(f"Expected exactly one {package} pin, found {count}")
-          setup.write_text(source, encoding="utf-8")
+          pyproject.write_text(source, encoding="utf-8")
           PY
 
       - name: Regenerate requirements and dev requirements
