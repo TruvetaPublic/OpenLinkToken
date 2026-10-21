@@ -107,17 +107,22 @@ class TestCreateReleaseAssets:
             with zipfile.ZipFile(part) as archive:
                 assert archive.namelist() == [f"nvidia/cublas/lib/{expected_name}"]
 
-    def test_rejects_cuda_file_above_part_limit(self, tmp_path, monkeypatch):
-        """A single CUDA library too large for one part must fail asset generation."""
-        monkeypatch.setattr(release_assets, "_CUDA_PART_MAX_BYTES", 3)
+    def test_places_large_cuda_library_in_own_bounded_part(self, tmp_path, monkeypatch):
+        """A library larger than the normal part target should be packaged alone."""
+        monkeypatch.setattr(release_assets, "_CUDA_PART_TARGET_BYTES", 3)
         dist_dir = tmp_path / "dist"
         cuda_lib = dist_dir / "_internal" / "nvidia" / "libcuda.so"
         cuda_lib.parent.mkdir(parents=True)
         cuda_lib.write_bytes(b"four")
         _write_binary(dist_dir, "olt", b"linux binary")
 
-        with pytest.raises(ValueError, match="exceeds the 512 MiB part limit"):
-            create_release_assets("2.1.0", "Linux", dist_dir, tmp_path / "release-assets")
+        generated_paths = create_release_assets("2.1.0", "Linux", dist_dir, tmp_path / "release-assets")
+
+        part = tmp_path / "release-assets/olt-cuda-2.1.0-linux-x64-part-001.zip"
+        assert part in generated_paths
+        with zipfile.ZipFile(part) as archive:
+            assert archive.namelist() == ["nvidia/libcuda.so"]
+            assert archive.read("nvidia/libcuda.so") == b"four"
 
     def test_creates_macos_arm64_release_assets(self, tmp_path):
         """macOS arm64 builds should use an architecture-specific asset name."""

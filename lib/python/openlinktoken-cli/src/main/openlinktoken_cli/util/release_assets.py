@@ -40,8 +40,8 @@ _RELEASE_ASSET_SPECS = {
     ),
 }
 _CUDA_PART_TARGET_BYTES = 500 * 1024 * 1024
-_CUDA_PART_MAX_BYTES = 512 * 1024 * 1024
 _RELEASE_ASSET_MAX_BYTES = 1536 * 1024 * 1024
+_CUDA_PART_MAX_BYTES = _RELEASE_ASSET_MAX_BYTES
 
 
 def create_release_assets(
@@ -262,8 +262,6 @@ def _create_cuda_assets(bundle_root: Path, version: str, output_dir: Path) -> li
     current_size = 0
     for cuda_file in cuda_files:
         file_size = cuda_file.stat().st_size
-        if file_size > _CUDA_PART_MAX_BYTES:
-            raise ValueError(f"CUDA runtime file exceeds the 512 MiB part limit: {cuda_file}")
         if current_part and current_size + file_size > _CUDA_PART_TARGET_BYTES:
             parts.append(current_part)
             current_part = []
@@ -282,7 +280,7 @@ def _create_cuda_assets(bundle_root: Path, version: str, output_dir: Path) -> li
             for cuda_file in part_files:
                 archive.write(cuda_file, arcname=Path("nvidia") / cuda_file.relative_to(cuda_root))
         if part_path.stat().st_size > _CUDA_PART_MAX_BYTES:
-            raise ValueError(f"Compressed CUDA part exceeds the 512 MiB asset limit: {part_path}")
+            raise ValueError(f"Compressed CUDA part exceeds the 1.5 GiB asset limit: {part_path}")
         manifest_entries.append(f"{_sha256_file(part_path)}\t{part_path.name}\n")
         asset_paths.append(part_path)
 
