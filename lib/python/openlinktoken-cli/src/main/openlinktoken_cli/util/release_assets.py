@@ -42,10 +42,7 @@ _RELEASE_ASSET_SPECS = {
 _CUDA_PART_TARGET_BYTES = 500 * 1024 * 1024
 _RELEASE_ASSET_MAX_BYTES = 1536 * 1024 * 1024
 _CUDA_PART_MAX_BYTES = _RELEASE_ASSET_MAX_BYTES
-_ML1_ASSET_PATHS = {
-    Path("_internal/openlinktoken/core/ai/tokens") / filename
-    for filename in ("asset-manifest.json", "model.onnx", "model.onnx.data", "tokenizer.json")
-}
+_ML1_ASSET_FILENAMES = {"asset-manifest.json", "model.onnx", "model.onnx.data", "tokenizer.json"}
 
 
 def create_release_assets(
@@ -243,7 +240,10 @@ def _create_zip_archive(
             if (
                 not source_path.is_file()
                 or (exclude_cuda and relative_path.parts[:2] == ("_internal", "nvidia"))
-                or relative_path in _ML1_ASSET_PATHS
+                or (
+                    relative_path.name in _ML1_ASSET_FILENAMES
+                    and relative_path.parent.parts[-4:] == ("openlinktoken", "core", "ai", "tokens")
+                )
             ):
                 continue
             archive.write(source_path, arcname=Path(package_name) / relative_path)

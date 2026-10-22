@@ -18,7 +18,7 @@ def _write_binary(dist_dir: Path, name: str, content: bytes) -> None:
 
 def _write_model_assets(bundle_dir: Path, model_data: bytes) -> tuple[Path, Path]:
     """Create the ML1 files in the bundle location used by CLI builds."""
-    model_root = bundle_dir / "_internal" / "openlinktoken" / "core" / "ai" / "tokens"
+    model_root = bundle_dir / "openlinktoken" / "core" / "ai" / "tokens"
     model_root.mkdir(parents=True, exist_ok=True)
     model_path = model_root / "model.onnx"
     model_data_path = model_root / "model.onnx.data"
@@ -26,6 +26,10 @@ def _write_model_assets(bundle_dir: Path, model_data: bytes) -> tuple[Path, Path
     model_data_path.write_bytes(model_data)
     (model_root / "tokenizer.json").write_text('{"version":"fixture"}', encoding="utf-8")
     (model_root / "asset-manifest.json").write_text("{}", encoding="utf-8")
+    internal_model_root = bundle_dir / "_internal" / "openlinktoken" / "core" / "ai" / "tokens"
+    internal_model_root.mkdir(parents=True, exist_ok=True)
+    for filename in ("asset-manifest.json", "model.onnx", "model.onnx.data", "tokenizer.json"):
+        (internal_model_root / filename).write_bytes(b"duplicate fixture")
     return model_path, model_data_path
 
 
