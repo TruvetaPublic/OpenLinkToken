@@ -80,7 +80,7 @@ except FileNotFoundError:
 
 setup(
     name="openlinktoken-core-ai",
-    version="2.2.0",
+    version="2.2.1",
     author="Open Link Token Contributors",
     description="Open Link Token Core AI package for ML1/ONNX inference",
     long_description=long_description,

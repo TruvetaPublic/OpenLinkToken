@@ -195,7 +195,7 @@ unwrapped values rather than `olt.V1` strings.
 {
   "Platform": "Java",
   "JavaVersion": "21.0.0",
-  "Version": "2.2.0",
+  "Version": "2.2.1",
   "TotalRows": 100,
   "TotalRowsWithInvalidAttributes": 3,
   "InvalidAttributesByType": { "BirthDate": 2, "PostalCode": 1 },
