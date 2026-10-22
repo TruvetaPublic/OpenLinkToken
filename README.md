@@ -105,6 +105,10 @@ model files. The installers download the selected model from the public GHCR
 OCI package (default tag `v1`); use `--model-tag vN` with `install.sh` or
 `-ModelTag vN` with `install.ps1` to select another immutable model version.
 Directly extracting a CLI ZIP does not include the ML1 model.
+For installation without the bootstrap scripts, follow the
+[manual ZIP installation guide](pages/quickstarts/cli-quickstart.md#manual-zip-installation),
+including the model destination and checksum verification commands for
+Linux/macOS and Windows.
 
 Then run:
 

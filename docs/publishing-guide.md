@@ -89,6 +89,14 @@ vN`, `install.ps1 -ModelTag vN`, or `OLT_ML1_MODEL_TAG`. Installers bootstrap
 and checksum-verify ORAS 1.3.3. Direct ZIP users must pull the OCI package
 themselves. The published Docker image includes the model assets.
 
+For standalone ZIPs, the destination is
+`_internal/openlinktoken/core/ai/tokens/` inside the extracted bundle, beside
+the frozen Python modules, not an arbitrary `/opt` directory. Follow the
+[manual CLI installation guide](../pages/quickstarts/cli-quickstart.md#manual-zip-installation)
+for Linux/macOS and Windows commands to verify the ZIP, pull all four files,
+and verify the model hashes. The `/opt` example below is for applications
+that explicitly configure model and tokenizer paths.
+
 ### Downloading the ML1 OCI package
 
 The repository also publishes the ML1 files as a release-independent OCI
@@ -100,8 +108,13 @@ ghcr.io/truvetapublic/openlinktoken-ml1-assets:v1
 ```
 
 Installers pull this package automatically. To install a model manually or
-for direct ZIP use, install [ORAS](https://oras.land/docs/installation) and
-pull the package into a local directory:
+for direct ZIP use, install [ORAS](https://oras.land/docs/installation).
+
+The [CLI quickstart's ORAS installation steps](../pages/quickstarts/cli-quickstart.md#install-oras)
+cover Homebrew, WinGet, and Snap, with a link to the official guide for other
+installation methods.
+
+Pull the package into a local directory:
 
 ```bash
 mkdir -p /opt/openlinktoken/ml1
