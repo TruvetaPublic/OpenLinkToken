@@ -7,6 +7,11 @@ on:
         description: "Version to build/release (e.g., 1.12.5)"
         required: false
         type: string
+      model_tag:
+        description: "ML1 OCI model tag to verify (default: v1)"
+        required: false
+        default: v1
+        type: string
   push:
     branches:
       - main
@@ -173,12 +178,24 @@ jobs:
             --dist-dir dist \
             --output-dir release-assets
 
-      - name: Verify detached model assets
+      - name: Install ORAS
+        uses: oras-project/setup-oras@005458ad77f1c8facd38a094e4af2e69e5607ff4 # v2.0.2
+        with:
+          version: 1.3.3
+
+      - name: Verify OCI model assets and release ZIP
         shell: bash
+        env:
+          MODEL_TAG: ${{ github.event.inputs.model_tag || 'v1' }}
         run: |
           set -euo pipefail
+          mkdir -p smoke/model-assets
+          oras pull "ghcr.io/truvetapublic/openlinktoken-ml1-assets:${MODEL_TAG}" \
+            --output smoke/model-assets
           python - "${VERSION}" "${{ runner.os }}" "${{ matrix.architecture }}" <<'PY'
           import hashlib
+          import json
+          import shutil
           import sys
           import zipfile
           from pathlib import Path
@@ -193,36 +210,31 @@ jobs:
           archive_path = Path("release-assets") / f"{package}.zip"
           with zipfile.ZipFile(archive_path) as archive:
               names = archive.namelist()
-              if any(name.endswith(("model.onnx", "model.onnx.data")) for name in names):
-                  raise SystemExit(f"{archive_path} unexpectedly includes ONNX model files")
+              model_files = ("asset-manifest.json", "model.onnx", "model.onnx.data", "tokenizer.json")
+              if any(name.endswith(model_files) for name in names):
+                  raise SystemExit(f"{archive_path} unexpectedly includes ML1 model files")
               archive.extractall("smoke/release-bundle")
 
           model_root = Path("smoke/release-bundle") / package / "_internal/openlinktoken/core/ai/tokens"
-          for asset_id, filename in (("model", "model.onnx"), ("model-data", "model.onnx.data")):
-              prefix = f"olt-model-{version}-{platform}-{asset_id}"
-              manifest_lines = (Path("release-assets") / f"{prefix}.manifest").read_text().splitlines()
-              header = manifest_lines[0].split("\t")
-              if len(header) != 2 or header[0] != "sha256":
-                  raise SystemExit(f"Invalid model asset manifest: {prefix}")
+          asset_directory = Path("smoke/model-assets")
+          manifest = json.loads((asset_directory / "asset-manifest.json").read_text(encoding="utf-8"))
+          required_files = {"asset-manifest.json", "model.onnx", "model.onnx.data", "tokenizer.json"}
+          asset_names = required_files - {"asset-manifest.json"}
+          if not isinstance(manifest.get("assets"), dict) or set(manifest["assets"]) != asset_names:
+              raise SystemExit("OCI model package does not contain the required ML1 assets")
+          for filename, metadata in manifest["assets"].items():
+              asset_path = asset_directory / filename
+              if not asset_path.is_file() or asset_path.stat().st_size != metadata["size"]:
+                  raise SystemExit(f"Missing or incorrectly sized OCI model asset: {filename}")
               digest = hashlib.sha256()
-              destination = model_root / filename
-              destination.parent.mkdir(parents=True, exist_ok=True)
-              with destination.open("wb") as output:
-                  for line in manifest_lines[1:]:
-                      entry_kind, expected_checksum, part_name = line.split("\t")
-                      part_path = Path("release-assets") / part_name
-                      part_hash = hashlib.sha256()
-                      with part_path.open("rb") as part:
-                          while chunk := part.read(1024 * 1024):
-                              part_hash.update(chunk)
-                      if entry_kind != "part" or part_hash.hexdigest() != expected_checksum:
-                          raise SystemExit(f"Invalid model asset part: {part_name}")
-                      with part_path.open("rb") as part:
-                          while chunk := part.read(1024 * 1024):
-                              output.write(chunk)
-                              digest.update(chunk)
-              if digest.hexdigest() != header[1]:
-                  raise SystemExit(f"Model asset checksum mismatch: {filename}")
+              with asset_path.open("rb") as asset_file:
+                  for chunk in iter(lambda: asset_file.read(1024 * 1024), b""):
+                      digest.update(chunk)
+              if digest.hexdigest() != metadata["sha256"]:
+                  raise SystemExit(f"OCI model asset checksum mismatch: {filename}")
+          model_root.mkdir(parents=True, exist_ok=True)
+          for filename in required_files:
+              shutil.copy2(asset_directory / filename, model_root / filename)
           PY
 
       - name: Smoke test CPU-only Linux release bundle

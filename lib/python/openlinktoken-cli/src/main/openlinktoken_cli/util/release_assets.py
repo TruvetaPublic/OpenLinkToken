@@ -42,7 +42,10 @@ _RELEASE_ASSET_SPECS = {
 _CUDA_PART_TARGET_BYTES = 500 * 1024 * 1024
 _RELEASE_ASSET_MAX_BYTES = 1536 * 1024 * 1024
 _CUDA_PART_MAX_BYTES = _RELEASE_ASSET_MAX_BYTES
-_MODEL_PART_BYTES = 256 * 1024 * 1024
+_ML1_ASSET_PATHS = {
+    Path("_internal/openlinktoken/core/ai/tokens") / filename
+    for filename in ("asset-manifest.json", "model.onnx", "model.onnx.data", "tokenizer.json")
+}
 
 
 def create_release_assets(
@@ -82,14 +85,12 @@ def create_release_assets(
     zip_path = output_dir / f"{spec.package_name}.zip"
     normalized_os = runner_os.strip().lower()
     is_linux = normalized_os == "linux"
-    model_platform = _model_platform(normalized_os, architecture)
-    _create_zip_archive(bundle_root, spec.package_name, zip_path, exclude_cuda=is_linux, exclude_model_files=True)
+    _create_zip_archive(bundle_root, spec.package_name, zip_path, exclude_cuda=is_linux)
 
     binary_checksum_path = _write_checksum_file(raw_binary_path)
     zip_checksum_path = _write_checksum_file(zip_path)
 
     assets = [raw_binary_path, binary_checksum_path, zip_path, zip_checksum_path]
-    assets.extend(_create_model_assets(bundle_root, version, output_dir, model_platform))
     if is_linux:
         assets.extend(_create_cuda_assets(bundle_root, version, output_dir))
     for asset in assets:
@@ -221,32 +222,11 @@ def _normalize_macos_architecture(architecture: str) -> str:
     raise ValueError(f"Unsupported macOS architecture: {architecture}")
 
 
-def _model_platform(runner_os: str, architecture: str | None) -> str:
-    """
-    Resolve the model asset platform suffix used by installers.
-
-    Args:
-        runner_os: GitHub Actions runner OS name.
-        architecture: Target architecture for macOS builds.
-
-    Returns:
-        Platform suffix shared by model asset names and installer downloads.
-    """
-    if runner_os == "linux":
-        return "linux-x64"
-    if runner_os == "windows":
-        return "windows-x64"
-    if runner_os == "macos":
-        return f"macos-{_normalize_macos_architecture(architecture or platform.machine())}"
-    raise ValueError(f"Unsupported runner OS: {runner_os}")
-
-
 def _create_zip_archive(
     bundle_root: Path,
     package_name: str,
     zip_path: Path,
     exclude_cuda: bool = False,
-    exclude_model_files: bool = False,
 ) -> None:
     """
     Create a ZIP containing the complete one-folder bundle.
@@ -256,62 +236,17 @@ def _create_zip_archive(
         package_name: Name of the package.
         zip_path: Filesystem path to the zip handled by the operation.
         exclude_cuda: Whether to omit bundled NVIDIA libraries.
-        exclude_model_files: Whether to omit the separately distributed ML1 model files.
     """
-    model_paths = {
-        Path("_internal/openlinktoken/core/ai/tokens/model.onnx"),
-        Path("_internal/openlinktoken/core/ai/tokens/model.onnx.data"),
-    }
     with zipfile.ZipFile(zip_path, mode="w", compression=zipfile.ZIP_DEFLATED) as archive:
         for source_path in sorted(bundle_root.rglob("*")):
             relative_path = source_path.relative_to(bundle_root)
             if (
                 not source_path.is_file()
                 or (exclude_cuda and relative_path.parts[:2] == ("_internal", "nvidia"))
-                or (exclude_model_files and relative_path in model_paths)
+                or relative_path in _ML1_ASSET_PATHS
             ):
                 continue
             archive.write(source_path, arcname=Path(package_name) / relative_path)
-
-
-def _create_model_assets(bundle_root: Path, version: str, output_dir: Path, model_platform: str) -> list[Path]:
-    """
-    Split the ML1 model files into bounded, checksummed release parts.
-
-    Args:
-        bundle_root: PyInstaller bundle root containing the model data.
-        version: Release version used to name the model assets.
-        output_dir: Directory where the model parts and manifest are written.
-        model_platform: Platform suffix used in model asset names.
-
-    Returns:
-        Created model data parts and their manifest.
-    """
-    version = _normalize_version(version)
-    assets = []
-    model_root = bundle_root / "_internal" / "openlinktoken" / "core" / "ai" / "tokens"
-    for model_file, asset_id in (("model.onnx", "model"), ("model.onnx.data", "model-data")):
-        model_path = model_root / model_file
-        if not model_path.is_file():
-            raise FileNotFoundError(f"Expected ML1 model asset at {model_path}")
-
-        digest = hashlib.sha256()
-        manifest_entries = []
-        with model_path.open("rb") as source:
-            part_number = 0
-            while chunk := source.read(_MODEL_PART_BYTES):
-                part_number += 1
-                part_name = f"olt-model-{version}-{model_platform}-{asset_id}-part-{part_number:03}.bin"
-                part_path = output_dir / part_name
-                part_path.write_bytes(chunk)
-                digest.update(chunk)
-                manifest_entries.append(f"part\t{_sha256_file(part_path)}\t{part_name}\n")
-                assets.append(part_path)
-
-        manifest_path = output_dir / f"olt-model-{version}-{model_platform}-{asset_id}.manifest"
-        manifest_path.write_text(f"sha256\t{digest.hexdigest()}\n{''.join(manifest_entries)}", encoding="utf-8")
-        assets.append(manifest_path)
-    return assets
 
 
 def _create_cuda_assets(bundle_root: Path, version: str, output_dir: Path) -> list[Path]:

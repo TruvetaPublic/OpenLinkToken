@@ -81,10 +81,13 @@ ML1InferenceConfig.configure(
 data file that ONNX Runtime loads automatically from the same directory as
 `model.onnx`.
 
-Standalone `olt` CLI release bundles include the model assets and do not need a
-network connection for ML1 because the files are packaged inside the binary.
-The published Docker image also includes the model assets beside the installed
-Python modules.
+Standalone `olt` release ZIPs omit the large ML1 files. The Linux/macOS and
+Windows installers retrieve them from the public GHCR OCI package during
+installation and place them beside the installed Python modules. The default
+model tag is `v1`; select another immutable tag with `install.sh --model-tag
+vN`, `install.ps1 -ModelTag vN`, or `OLT_ML1_MODEL_TAG`. Installers bootstrap
+and checksum-verify ORAS 1.3.3. Direct ZIP users must pull the OCI package
+themselves. The published Docker image includes the model assets.
 
 ### Downloading the ML1 OCI package
 
@@ -96,8 +99,9 @@ not the Open Link Token library:
 ghcr.io/truvetapublic/openlinktoken-ml1-assets:v1
 ```
 
-Install [ORAS](https://oras.land/docs/installation), then pull the package
-into a local directory:
+Installers pull this package automatically. To install a model manually or
+for direct ZIP use, install [ORAS](https://oras.land/docs/installation) and
+pull the package into a local directory:
 
 ```bash
 mkdir -p /opt/openlinktoken/ml1
@@ -107,8 +111,9 @@ oras pull \
 ```
 
 The package contains `model.onnx`, `model.onnx.data`, `tokenizer.json`, and
-`asset-manifest.json`. Public packages can be pulled without login. For a
-private package, log in with a GitHub token that has `read:packages`:
+`asset-manifest.json`. Keep the package public so installer pulls work without
+credentials. A manually run ORAS pull from a private package can authenticate
+with a GitHub token that has `read:packages`:
 
 ```bash
 printf '%s' "$GITHUB_TOKEN" | oras login ghcr.io \
@@ -117,7 +122,8 @@ printf '%s' "$GITHUB_TOKEN" | oras login ghcr.io \
 ```
 
 After the first publish, set the GHCR package visibility to **public** in the
-repository package settings if anonymous downloads are required.
+repository package settings. Model tags use the `vN` format and cannot be
+overwritten; publish changed model files under a new tag.
 
 After the pull, use the model and tokenizer paths from the previous section.
 The publishing workflow runs manually and creates a new package tag only when

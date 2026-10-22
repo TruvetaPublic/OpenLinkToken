@@ -99,7 +99,10 @@ irm https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/inst
 ```
 
 Use the platform installer for a complete installation, including the ML1
-model files. Directly extracting a CLI ZIP does not include the ML1 model.
+model files. The installers download the selected model from the public GHCR
+OCI package (default tag `v1`); use `--model-tag vN` with `install.sh` or
+`-ModelTag vN` with `install.ps1` to select another immutable model version.
+Directly extracting a CLI ZIP does not include the ML1 model.
 
 Then run:
 

@@ -5,9 +5,12 @@ set -euo pipefail
 readonly REPOSITORY="TruvetaPublic/OpenLinkToken"
 readonly RELEASES_URL="https://github.com/${REPOSITORY}/releases"
 readonly API_URL="https://api.github.com/repos/${REPOSITORY}"
+readonly MODEL_PACKAGE="ghcr.io/truvetapublic/openlinktoken-ml1-assets"
+readonly ORAS_VERSION="1.3.3"
 
 version=""
 install_dir="${OLT_INSTALL_DIR:-$HOME/.local/bin}"
+model_tag="${OLT_ML1_MODEL_TAG:-v1}"
 no_cuda=false
 
 usage() {
@@ -15,10 +18,11 @@ usage() {
 Install the Open Link Token CLI for Linux or macOS.
 
 Usage:
-  install.sh [--version VERSION] [--install-dir DIRECTORY] [--no-cuda]
+  install.sh [--version VERSION] [--model-tag TAG] [--install-dir DIRECTORY] [--no-cuda]
 
 Options:
   --version VERSION       Install a specific release (default: latest)
+  --model-tag TAG         Install this ML1 model tag (default: v1 or OLT_ML1_MODEL_TAG)
   --install-dir DIRECTORY Install into DIRECTORY (default: ~/.local/bin)
   --no-cuda               Skip CUDA runtime installation (Linux x86_64 only)
   -h, --help              Show this help
@@ -52,68 +56,78 @@ verify_sha256() {
     [[ "$actual" == "$expected" ]] || fail "SHA-256 verification failed for $description"
 }
 
-install_model_asset() {
-    local asset_id filename destination manifest manifest_url legacy_manifest
-    local manifest_kind model_checksum manifest_extra part_prefix entry_kind expected_checksum legacy_manifest
-    local model_asset extra part_number expected_part_number part_path model_data part_count
-
-    asset_id="$1"
-    filename="$2"
-    destination="$staged_bundle/_internal/openlinktoken/core/ai/tokens/$filename"
-    [[ -f "$destination" ]] && return
-
-    manifest="$tmp_dir/olt-model-${version}-${model_platform}-${asset_id}.manifest"
-    manifest_url="${RELEASES_URL}/download/${tag}/$(basename "$manifest")"
-    legacy_manifest=false
-    if ! curl -fL --retry 3 --output "$manifest" "$manifest_url"; then
-        if [[ "$asset_id" == "model-data" && "$model_platform" == "linux-x64" ]]; then
-            legacy_manifest="$tmp_dir/olt-model-${version}-linux-x64.manifest"
-            curl -fL --retry 3 --output "$legacy_manifest" \
-                "${RELEASES_URL}/download/${tag}/$(basename "$legacy_manifest")" ||
-                fail "ML1 model asset manifest not found for $tag"
-            manifest="$legacy_manifest"
-            legacy_manifest=true
-        else
-            fail "ML1 model asset manifest not found for $tag"
-        fi
+install_ml1_assets() {
+    local model_root oras_dir oras_archive oras_checksum oras_url oras_binary model_assets_dir
+    local filename metadata expected_checksum expected_size actual_size
+    model_root="$staged_bundle/_internal/openlinktoken/core/ai/tokens"
+    if [[ -s "$model_root/model.onnx" && -s "$model_root/model.onnx.data" &&
+        -s "$model_root/tokenizer.json" && -s "$model_root/asset-manifest.json" ]]; then
+        printf 'ML1 model assets are already included in the CLI archive.\n'
+        return
     fi
 
-    IFS=$'\t' read -r manifest_kind model_checksum manifest_extra < "$manifest" ||
-        fail "Invalid ML1 model asset manifest"
-    [[ "$manifest_kind" == "sha256" && "$model_checksum" =~ ^[[:xdigit:]]{64}$ && -z "${manifest_extra:-}" ]] ||
-        fail "Invalid ML1 model asset manifest"
+    case "$(uname -s):$(uname -m)" in
+        Linux:x86_64|Linux:amd64)
+            oras_archive="oras_${ORAS_VERSION}_linux_amd64.tar.gz"
+            oras_checksum="9ce999f8d2de03fc03968b29d743077a58783e545e5eaa53917ca177352d0e59"
+            ;;
+        Darwin:x86_64|Darwin:amd64)
+            oras_archive="oras_${ORAS_VERSION}_darwin_amd64.tar.gz"
+            oras_checksum="aeb684d8c24c18dce28fd1f7326636e4782b573108e244a93d4b1c4a5ec50f48"
+            ;;
+        Darwin:arm64|Darwin:aarch64)
+            oras_archive="oras_${ORAS_VERSION}_darwin_arm64.tar.gz"
+            oras_checksum="f33fc12753c54172b0d0d19eaa0318d3f90fe9b094d96e8b259c881713c92e1c"
+            ;;
+        *)
+            fail "No ORAS binary is available for $(uname -s) $(uname -m)"
+            ;;
+    esac
 
-    if [[ "$legacy_manifest" == true ]]; then
-        part_prefix="olt-model-${version}-linux-x64-part-"
-    else
-        part_prefix="olt-model-${version}-${model_platform}-${asset_id}-part-"
-    fi
-    model_data="$tmp_dir/$filename"
-    : > "$model_data"
-    part_count=0
-    while IFS=$'\t' read -r entry_kind expected_checksum model_asset extra; do
-        [[ "$entry_kind" == "part" && "$expected_checksum" =~ ^[[:xdigit:]]{64}$ &&
-            -n "$model_asset" && -z "${extra:-}" ]] || fail "Invalid ML1 model asset manifest entry"
-        [[ "$model_asset" == "$part_prefix"* && "$model_asset" == *.bin && "$model_asset" != */* ]] ||
-            fail "Invalid ML1 model asset name in manifest"
-        part_number="${model_asset#"$part_prefix"}"
-        part_number="${part_number%.bin}"
-        [[ "$part_number" =~ ^[0-9]{3}$ ]] || fail "Invalid ML1 model asset part number"
-        expected_part_number=$(printf '%03d' "$((part_count + 1))")
-        [[ "$part_number" == "$expected_part_number" ]] || fail "Unexpected ML1 model asset part order"
+    oras_dir="$tmp_dir/oras"
+    mkdir -p "$oras_dir"
+    oras_url="https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/${oras_archive}"
+    oras_archive="$oras_dir/$oras_archive"
+    printf 'Downloading ORAS %s...\n' "$ORAS_VERSION"
+    curl -fL --retry 3 --output "$oras_archive" "$oras_url" || fail "Unable to download ORAS"
+    verify_sha256 "$oras_checksum" "$oras_archive" "ORAS $ORAS_VERSION"
+    tar -xzf "$oras_archive" -C "$oras_dir" oras || fail "Unable to extract ORAS"
+    oras_binary="$oras_dir/oras"
 
-        part_path="$tmp_dir/$model_asset"
-        curl -fL --retry 3 --output "$part_path" "${RELEASES_URL}/download/${tag}/${model_asset}" ||
-            fail "ML1 model asset part not found: $model_asset"
-        verify_sha256 "$expected_checksum" "$part_path" "$model_asset"
-        cat "$part_path" >> "$model_data" || fail "Unable to assemble ML1 model asset"
-        part_count=$((part_count + 1))
-    done < <(tail -n +2 "$manifest")
-
-    ((part_count > 0)) || fail "ML1 model asset manifest contains no parts"
-    verify_sha256 "$model_checksum" "$model_data" "assembled $filename"
-    mkdir -p "$(dirname "$destination")"
-    mv "$model_data" "$destination"
+    model_assets_dir="$tmp_dir/ml1-assets"
+    mkdir -p "$model_assets_dir"
+    printf 'Downloading ML1 model assets %s...\n' "$model_tag"
+    "$oras_binary" pull "${MODEL_PACKAGE}:${model_tag}" --output "$model_assets_dir" ||
+        fail "Unable to pull ML1 model assets ${MODEL_PACKAGE}:${model_tag}; ensure the GHCR package is public"
+    for filename in model.onnx model.onnx.data tokenizer.json asset-manifest.json; do
+        [[ -s "$model_assets_dir/$filename" ]] || fail "ML1 OCI artifact is missing $filename"
+    done
+    for filename in model.onnx model.onnx.data tokenizer.json; do
+        metadata=$(awk -v asset="\"$filename\"" '
+            index($0, asset) { in_asset = 1; next }
+            in_asset && /"sha256"[[:space:]]*:/ {
+                sub(/^.*"sha256"[[:space:]]*:[[:space:]]*"/, "")
+                sub(/".*$/, "")
+                checksum = $0
+            }
+            in_asset && /"size"[[:space:]]*:/ {
+                sub(/^.*"size"[[:space:]]*:[[:space:]]*/, "")
+                sub(/[,[:space:]]*$/, "")
+                print checksum "\t" $0
+                exit
+            }
+            in_asset && /}/ { in_asset = 0 }
+        ' "$model_assets_dir/asset-manifest.json")
+        IFS=$'\t' read -r expected_checksum expected_size <<< "$metadata"
+        [[ "$expected_checksum" =~ ^[[:xdigit:]]{64}$ && "$expected_size" =~ ^[0-9]+$ ]] ||
+            fail "Invalid ML1 asset manifest entry for $filename"
+        verify_sha256 "$expected_checksum" "$model_assets_dir/$filename" "$filename"
+        actual_size=$(wc -c < "$model_assets_dir/$filename" | tr -d '[:space:]')
+        [[ "$actual_size" == "$expected_size" ]] || fail "Unexpected size for ML1 asset $filename"
+    done
+    mkdir -p "$model_root"
+    cp "$model_assets_dir"/{model.onnx,model.onnx.data,tokenizer.json,asset-manifest.json} "$model_root/" ||
+        fail "Unable to install ML1 model assets"
 }
 
 while (($# > 0)); do
@@ -126,6 +140,11 @@ while (($# > 0)); do
         --install-dir)
             (($# >= 2)) || fail "$1 requires a value"
             install_dir="$2"
+            shift 2
+            ;;
+        --model-tag)
+            (($# >= 2)) || fail "$1 requires a value"
+            model_tag="$2"
             shift 2
             ;;
         --no-cuda)
@@ -155,6 +174,7 @@ fi
 
 [[ "$version" =~ ^v?[0-9]+(\.[0-9]+){2}([.-][0-9A-Za-z.-]+)?$ ]] ||
     fail "Invalid version: $version"
+[[ "$model_tag" =~ ^v[0-9]+$ ]] || fail "Invalid ML1 model tag: $model_tag (expected vN)"
 version="${version#v}"
 version="${version#V}"
 tag="v${version}"
@@ -242,9 +262,7 @@ staged_bundle="$tmp_dir/staged-bundle"
 cp -R "$bundle_source/." "$staged_bundle"
 chmod 0755 "$staged_bundle/olt"
 
-printf 'Downloading required ML1 model assets when missing...\n'
-install_model_asset "model" "model.onnx"
-install_model_asset "model-data" "model.onnx.data"
+install_ml1_assets
 
 if [[ "$install_cuda" == true ]]; then
     if [[ -n "$(find "$staged_bundle/_internal/nvidia" -type f -print -quit 2>/dev/null)" ]]; then
