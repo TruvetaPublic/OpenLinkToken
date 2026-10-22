@@ -174,6 +174,29 @@ For a field-by-field description of both exchange versions, see the
   than version-1 PEM/ECDH keys. Account for that when selecting a suite for
   high-volume key provisioning or constrained environments.
 
+## Migration from version 1 (ECDH) to version 2 (ML-KEM)
+
+- A version-1 peer cannot read a version-2 exchange envelope and vice versa.
+  Both partners must move to the same version and suite together; there is no
+  in-band negotiation.
+- Generate new version-2 key bundles; PEM keys cannot be converted.
+- Changing the suite changes the token digest or MAC (SHA-256, SHA3-256, or
+  KMAC256), so new tokens will **not** match tokens produced under the old
+  suite. Re-tokenize both datasets before joining them.
+- Retire version-1 keys and exchange files after both sides have confirmed
+  the switch.
+
+## Key lifecycle
+
+1. **Generate** keys on the machine that will use them, after choosing the suite.
+2. **Store** private keys and bundles with owner-only permissions (`0600` files,
+   `0700` directories) or in a secret manager. Share only public material.
+3. **Rotate** by generating a new bundle and exchange config, then
+   re-exchanging with every partner. Old exchange files cannot be reused.
+4. **Revoke** by deleting the private bundle and notifying partners to stop
+   using the matching public key.
+5. **Retain** exchange files only as long as the data they protect is in use.
+
 ## Related documentation
 
 - [Configuration guide](../config/configuration.md) - CLI setup and secret requirements

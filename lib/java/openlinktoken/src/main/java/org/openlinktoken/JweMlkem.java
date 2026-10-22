@@ -12,6 +12,7 @@ import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashSet;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -128,7 +129,12 @@ final class JweMlkem implements Serializable {
         List<Map<String, Object>> serializedRecipients = recipients.stream()
                 .map(bundle -> buildRecipient(bundle, algorithm, header, cek))
                 .toList();
-        byte[] encrypted = encryptContent(plaintext, cek, iv, protectedValue);
+        byte[] encrypted;
+        try {
+            encrypted = encryptContent(plaintext, cek, iv, protectedValue);
+        } finally {
+            Arrays.fill(cek, (byte) 0);
+        }
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("protected", protectedValue);
@@ -208,8 +214,23 @@ final class JweMlkem implements Serializable {
         }
 
         byte[] sharedSecret = decapsulate(privateBundle, encryptedKey);
-        byte[] kek = deriveRecipientKek(sharedSecret, protectedHeader, algorithm, (String) recipientHeader.get("kid"));
-        byte[] cek = unwrap(kek, Arrays.copyOfRange(encryptedKey, MLKEM_CIPHERTEXT_SIZE, encryptedKey.length));
+        byte[] cek;
+        byte[] kek = null;
+        try {
+            kek = deriveRecipientKek(
+                    sharedSecret,
+                    protectedHeader,
+                    algorithm,
+                    (String) recipientHeader.get("kid"),
+                    Arrays.copyOf(encryptedKey, MLKEM_CIPHERTEXT_SIZE),
+                    privateBundle.getMlkemPublicKey());
+            cek = unwrap(kek, Arrays.copyOfRange(encryptedKey, MLKEM_CIPHERTEXT_SIZE, encryptedKey.length));
+        } finally {
+            Arrays.fill(sharedSecret, (byte) 0);
+            if (kek != null) {
+                Arrays.fill(kek, (byte) 0);
+            }
+        }
         byte[] encrypted = new byte[ciphertext.length + tag.length];
         System.arraycopy(ciphertext, 0, encrypted, 0, ciphertext.length);
         System.arraycopy(tag, 0, encrypted, ciphertext.length, tag.length);
@@ -258,8 +279,16 @@ final class JweMlkem implements Serializable {
                 encapsulation.sharedSecret,
                 protectedHeader,
                 algorithm,
-                bundle.getKid());
-        byte[] wrappedCek = wrap(kek, cek);
+                bundle.getKid(),
+                encapsulation.ciphertext,
+                bundle.getMlkemPublicKey());
+        byte[] wrappedCek;
+        try {
+            wrappedCek = wrap(kek, cek);
+        } finally {
+            Arrays.fill(kek, (byte) 0);
+            Arrays.fill(encapsulation.sharedSecret, (byte) 0);
+        }
         byte[] encryptedKey = new byte[encapsulation.ciphertext.length + wrappedCek.length];
         System.arraycopy(encapsulation.ciphertext, 0, encryptedKey, 0, encapsulation.ciphertext.length);
         System.arraycopy(wrappedCek, 0, encryptedKey, encapsulation.ciphertext.length, wrappedCek.length);
@@ -321,12 +350,13 @@ final class JweMlkem implements Serializable {
         }
         byte[] ciphertext = Arrays.copyOf(encryptedKey, MLKEM_CIPHERTEXT_SIZE);
         MLKEMPrivateKeyParameters privateKey;
+        byte[] seed = bundle.getMlkemPrivateSeed();
         try {
-            privateKey = new MLKEMPrivateKeyParameters(
-                    MLKEMParameters.ml_kem_768,
-                    bundle.getMlkemPrivateSeed());
+            privateKey = new MLKEMPrivateKeyParameters(MLKEMParameters.ml_kem_768, seed);
         } catch (RuntimeException exception) {
             throw new IllegalArgumentException("Exchange key bundle ML-KEM private seed is invalid.", exception);
+        } finally {
+            Arrays.fill(seed, (byte) 0);
         }
         byte[] mlkemSecret;
         try {
@@ -344,13 +374,17 @@ final class JweMlkem implements Serializable {
      * @param protectedHeader authenticated protected-header fields
      * @param algorithm recipient key-management algorithm
      * @param kid recipient key identifier
+     * @param mlkemCiphertext ML-KEM ciphertext bound into the derivation
+     * @param recipientPublicKey recipient ML-KEM public key bound into the derivation
      * @return the derived AES key-encryption key
      */
     private static byte[] deriveRecipientKek(
             byte[] sharedSecret,
             Map<String, Object> protectedHeader,
             String algorithm,
-            String kid) {
+            String kid,
+            byte[] mlkemCiphertext,
+            byte[] recipientPublicKey) {
         String info = String.join(
                 ":",
                 "openlinktoken",
@@ -358,12 +392,29 @@ final class JweMlkem implements Serializable {
                 "v2",
                 (String) protectedHeader.get("cryptoSuite"),
                 algorithm,
-                kid);
+                kid,
+                kemTranscriptHash(mlkemCiphertext, recipientPublicKey));
         return hkdf(
                 sharedSecret,
                 ((String) protectedHeader.get("exchangeId")).getBytes(StandardCharsets.UTF_8),
                 info.getBytes(StandardCharsets.US_ASCII),
                 CEK_SIZE);
+    }
+
+    /**
+     * Hashes the ML-KEM ciphertext and recipient public key for KDF context binding.
+     *
+     * @param mlkemCiphertext ML-KEM ciphertext
+     * @param recipientPublicKey recipient ML-KEM public key
+     * @return lowercase hex SHA-256 of ciphertext followed by public key
+     */
+    private static String kemTranscriptHash(byte[] mlkemCiphertext, byte[] recipientPublicKey) {
+        SHA256Digest digest = new SHA256Digest();
+        digest.update(mlkemCiphertext, 0, mlkemCiphertext.length);
+        digest.update(recipientPublicKey, 0, recipientPublicKey.length);
+        byte[] out = new byte[digest.getDigestSize()];
+        digest.doFinal(out, 0);
+        return HexFormat.of().formatHex(out);
     }
 
     /**

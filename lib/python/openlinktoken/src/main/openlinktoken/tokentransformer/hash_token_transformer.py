@@ -58,6 +58,24 @@ class HashTokenTransformer(TokenTransformer):
         else:
             self.hashing_secret = hashing_secret.encode("utf-8")
             self._mac_available = True
+        if self.crypto_suite.token_mac_algorithm == CryptoSuite.TOKEN_MAC_KMAC256_256:
+            self._load_kmac256()
+
+    @staticmethod
+    def _load_kmac256():
+        """Import KMAC256 eagerly so a missing dependency fails at construction.
+
+        Returns:
+            The pycryptodome ``KMAC256`` module.
+
+        Raises:
+            RuntimeError: If pycryptodome with KMAC256 support is unavailable.
+        """
+        try:
+            from Crypto.Hash import KMAC256
+        except ImportError as exc:
+            raise RuntimeError("KMAC256 requires the 'pycryptodome' package (>=3.19).") from exc
+        return KMAC256
 
     def transform(self, token: str) -> str:
         """Hash a token with the suite-selected keyed MAC.
@@ -87,9 +105,9 @@ class HashTokenTransformer(TokenTransformer):
         with self._lock:
             if self.crypto_suite.token_mac_algorithm == CryptoSuite.TOKEN_MAC_KMAC256_256:
                 self.crypto_suite.validate_hashing_secret(self.hashing_secret)
-                from Crypto.Hash import KMAC256
-
-                digest = KMAC256.new(key=self.hashing_secret, data=token.encode("utf-8"), mac_len=32).digest()
+                digest = (
+                    self._load_kmac256().new(key=self.hashing_secret, data=token.encode("utf-8"), mac_len=32).digest()
+                )
                 return base64.b64encode(digest).decode("utf-8")
 
             digest_name = {

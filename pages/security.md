@@ -62,7 +62,7 @@ The suite fixes the digest and keyed MAC used for deterministic token values:
 | `ecdh-sha3-256`, `mlkem768-sha3-256` | SHA3-256     | HMAC-SHA3-256 |
 | `mlkem768-shake256`                  | SHAKE256-256 | KMAC256-256   |
 
-See [Cryptographic Suites](concepts/crypto-suites.md) for the exchange key
+See [Cryptographic Suites](concepts/crypto-suites.md#migration-from-version-1-ecdh-to-version-2-ml-kem) for the exchange key
 agreement and selection guidance.
 
 ### SHA-256 (Secure Hash Algorithm)
@@ -307,6 +307,26 @@ Open Link Token provides cryptographic primitives but **users are responsible fo
 - Protection against compromised execution environments
 - Protection after decryption (decrypted tokens are plaintext hashes)
 - Protection against authorized users misusing tokens
+
+### Post-Quantum (Version 2) Exchange Limitations
+
+- **No sender authentication:** version-2 exchange uses ML-KEM encapsulation
+  only and carries no signature. Verify the partner's public key and exchange
+  config through a trusted out-of-band channel.
+- **No in-band downgrade path:** the crypto suite is fixed by the exchange
+  config and protected header. Peers never negotiate; a suite mismatch fails
+  closed.
+- **KDF scope:** the key-encryption key is derived from the ML-KEM shared
+  secret with the exchange ID, suite, algorithm, key ID, and a SHA-256 hash of
+  the ML-KEM ciphertext and recipient public key as context, so the
+  derivation also suits future hybrid KEMs.
+- **Memory handling:** secrets (private seeds, shared secrets, derived keys)
+  are wiped after use in Java. Python clears derived key-encryption keys
+  on a best-effort basis, but immutable `bytes` returned by cryptographic
+  libraries cannot be reliably zeroized. Do not
+  run on hosts where process memory may be inspected by untrusted parties.
+- **Suite changes break joins:** switching suites changes tokens. See the
+  [migration notes](concepts/crypto-suites.md#migration-from-version-1-ecdh-to-version-2-ml-kem).
 
 ### Data Quality: Normalization and Validation
 

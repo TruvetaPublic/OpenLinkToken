@@ -360,3 +360,55 @@ def _encode(value: bytes) -> str:
         Base64url text without padding.
     """
     return base64.urlsafe_b64encode(value).decode("ascii").rstrip("=")
+
+
+def test_v2_jwe_rejects_tampered_recipient_header_or_suite():
+    """Altering a recipient kid/alg or the protected cryptoSuite must fail decryption.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
+    import copy
+
+    suite_id = "mlkem768-sha3-256"
+    sender = generate_exchange_key_bundle(suite_id)
+    recipient = generate_exchange_key_bundle(suite_id)
+    envelope = build_v2_jwe(b"payload", _protected_header(suite_id), [sender, recipient])
+
+    bad_alg = copy.deepcopy(envelope)
+    for entry in bad_alg["recipients"]:
+        entry["header"]["alg"] = "ECDH-ES+A256KW"
+    with pytest.raises(Exception):
+        decrypt_v2_jwe(bad_alg, sender)
+
+    bad_kid = copy.deepcopy(envelope)
+    for entry in bad_kid["recipients"]:
+        entry["header"]["kid"] = entry["header"]["kid"] + "x"
+    with pytest.raises(Exception):
+        decrypt_v2_jwe(bad_kid, sender)
+
+    protected = json.loads(_decode(envelope["protected"]))
+    protected["cryptoSuite"] = "mlkem768-shake256"
+    bad_suite = copy.deepcopy(envelope)
+    bad_suite["protected"] = base64.urlsafe_b64encode(json.dumps(protected).encode()).rstrip(b"=").decode()
+    with pytest.raises(Exception):
+        decrypt_v2_jwe(bad_suite, sender)
+
+
+def test_wipe_zeroes_mutable_buffer():
+    """The best-effort wipe helper clears a mutable secret buffer.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
+    buffer = bytearray(b"secret-key-material")
+
+    jwe_mlkem._wipe(buffer)
+
+    assert buffer == bytearray(len(b"secret-key-material"))

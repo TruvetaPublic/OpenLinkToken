@@ -121,8 +121,13 @@ shared secret derives a recipient-specific 32-byte AES-KW key with HKDF-SHA256
 using the exchange ID as salt and this domain-separated info:
 
 ```text
-openlinktoken:jwe:v2:<cryptoSuite>:<alg>:<kid>
+openlinktoken:jwe:v2:<cryptoSuite>:<alg>:<kid>:<kemHash>
 ```
+
+`<kemHash>` is the lowercase hex SHA-256 of the 1088-byte ML-KEM ciphertext
+followed by the recipient's raw ML-KEM public key. Binding both values keeps
+the derivation sound if hybrid KEMs are added. Exchange files created before
+this binding was added cannot be decrypted and must be regenerated.
 
 The CEK is used only by the standard JWE content-encryption layer. After the
 payload is authenticated and decrypted, the exchange code derives a separate

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 import json
 import os
 from collections.abc import Mapping, Sequence
@@ -131,11 +132,13 @@ class _MLKEMKeyManagement:
             raise ValueError(f"Version-2 JWE CEK must be {CEK_SIZE} bytes.")
 
         shared_secret, mlkem_ciphertext = _encapsulate(key)
-        kek = _derive_recipient_kek(shared_secret, headers)
+        kek = bytearray(_derive_recipient_kek(shared_secret, headers, mlkem_ciphertext, key.mlkem_public_key or b""))
         try:
-            wrapped_cek = aes_key_wrap(kek, cek)
+            wrapped_cek = aes_key_wrap(bytes(kek), cek)
         except ValueError as error:
             raise ValueError(f"Failed to wrap the version-2 JWE CEK: {error}") from error
+        finally:
+            _wipe(kek)
 
         result: dict[str, Any] = {
             "cek": cek,
@@ -173,11 +176,13 @@ class _MLKEMKeyManagement:
         mlkem_ciphertext = encrypted_key[:MLKEM_CIPHERTEXT_SIZE]
         wrapped_cek = encrypted_key[MLKEM_CIPHERTEXT_SIZE:]
         shared_secret = _decapsulate(key, mlkem_ciphertext)
-        kek = _derive_recipient_kek(shared_secret, headers)
+        kek = bytearray(_derive_recipient_kek(shared_secret, headers, mlkem_ciphertext, key.mlkem_public_key or b""))
         try:
-            cek = aes_key_unwrap(kek, wrapped_cek)
+            cek = aes_key_unwrap(bytes(kek), wrapped_cek)
         except ValueError as error:
             raise ValueError(f"Failed to unwrap the version-2 JWE CEK: {error}") from error
+        finally:
+            _wipe(kek)
         if len(cek) != CEK_SIZE:
             raise ValueError(f"Unwrapped version-2 JWE CEK must be {CEK_SIZE} bytes.")
         return cek
@@ -508,12 +513,22 @@ def _decapsulate(
     return mlkem_private.decapsulate(mlkem_ciphertext)
 
 
-def _derive_recipient_kek(shared_secret: bytes, headers: Mapping[str, Any]) -> bytes:
+def _derive_recipient_kek(
+    shared_secret: bytes,
+    headers: Mapping[str, Any],
+    mlkem_ciphertext: bytes,
+    recipient_public_key: bytes,
+) -> bytes:
     """Derive the AES-KW key-encryption key from the exchange context.
+
+    The ML-KEM ciphertext and recipient public key are bound into the HKDF
+    info so the derivation stays sound if hybrid KEMs are added later.
 
     Args:
         shared_secret: Shared secret produced by the recipient key agreement.
         headers: Authenticated exchange and recipient header values.
+        mlkem_ciphertext: ML-KEM ciphertext for this recipient.
+        recipient_public_key: Recipient ML-KEM public key bytes.
 
     Returns:
         The derived AES-KW key-encryption key bytes.
@@ -526,6 +541,7 @@ def _derive_recipient_kek(shared_secret: bytes, headers: Mapping[str, Any]) -> b
             headers["cryptoSuite"],
             headers["alg"],
             headers["kid"],
+            hashlib.sha256(mlkem_ciphertext + recipient_public_key).hexdigest(),
         )
     ).encode("ascii")
     return HKDF(
@@ -534,6 +550,21 @@ def _derive_recipient_kek(shared_secret: bytes, headers: Mapping[str, Any]) -> b
         salt=headers["exchangeId"].encode("utf-8"),
         info=info,
     ).derive(shared_secret)
+
+
+def _wipe(buffer: bytearray) -> None:
+    """Overwrite a mutable secret buffer with zeros.
+
+    This is best effort: immutable ``bytes`` copies created by libraries
+    such as ``cryptography`` cannot be cleared from Python.
+
+    Args:
+        buffer: Mutable buffer holding secret material.
+
+    Returns:
+        None.
+    """
+    buffer[:] = bytes(len(buffer))
 
 
 def _encode_base64url(value: bytes) -> str:

@@ -97,6 +97,46 @@ class ExchangeKemTest {
     }
 
     /**
+     * Verifies tampering with a recipient kid or alg, or the protected crypto suite, fails decryption.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    void rejectsTamperedRecipientHeaderOrSuite() {
+        ExchangeKeyBundle sender = ExchangeKeyBundle.generate("mlkem768-sha3-256");
+        ExchangeKeyBundle recipient = ExchangeKeyBundle.generate("mlkem768-sha3-256");
+        Map<String, Object> envelope = JweMlkem.build(
+                "payload".getBytes(StandardCharsets.UTF_8),
+                protectedHeader("mlkem768-sha3-256"),
+                List.of(sender, recipient));
+
+        Map<String, Object> badAlg = deepCopy(envelope);
+        for (Object entry : (List<?>) badAlg.get("recipients")) {
+            ((Map<String, Object>) ((Map<String, Object>) entry).get("header")).put("alg", "ECDH-ES+A256KW");
+        }
+        assertThrows(RuntimeException.class, () -> JweMlkem.decrypt(badAlg, sender));
+
+        Map<String, Object> badKid = deepCopy(envelope);
+        for (Object entry : (List<?>) badKid.get("recipients")) {
+            Map<String, Object> header = (Map<String, Object>) ((Map<String, Object>) entry).get("header");
+            header.put("kid", header.get("kid") + "x");
+        }
+        assertThrows(RuntimeException.class, () -> JweMlkem.decrypt(badKid, sender));
+
+        Map<String, Object> badSuite = deepCopy(envelope);
+        Map<String, Object> header = ExchangeJsonTestSupport.readObject(
+                Base64.getUrlDecoder().decode((String) envelope.get("protected")));
+        header.put("cryptoSuite", "mlkem768-shake256");
+        badSuite.put("protected", encode(ExchangeJsonTestSupport.writeObject(header)));
+        assertThrows(RuntimeException.class, () -> JweMlkem.decrypt(badSuite, sender));
+    }
+
+    private static Map<String, Object> deepCopy(Map<String, Object> value) {
+        return ExchangeJsonTestSupport.readObject(ExchangeJsonTestSupport.writeObject(value));
+    }
+
+    /**
      * Verifies the derived token transport key differs from the JWE content key and depends on the exchange ID.
      *
      * <p>This test method accepts no arguments and returns no value.</p>

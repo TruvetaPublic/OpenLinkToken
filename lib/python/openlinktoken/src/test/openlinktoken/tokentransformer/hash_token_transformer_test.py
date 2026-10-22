@@ -172,6 +172,40 @@ class TestHashTokenTransformer:
         with pytest.raises(ValueError, match="mlkem768-shake256.*KMAC256.*32 bytes"):
             transformer.transform(self.VALID_TOKEN)
 
+    def test_shake_suite_matches_java_fixed_vector(self):
+        """KMAC256 output matches the Java HashTokenTransformerTest fixed vector.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+        """
+        transformer = HashTokenTransformer(
+            b"0123456789abcdef0123456789abcdef", CryptoSuite.from_id("mlkem768-shake256")
+        )
+
+        assert (
+            transformer.transform("083e2185f52946fb45e459794409b2ea56e64241ba22a29072ad25b5947c023a")
+            == "ylKfGg587NihC8+Sc2GSeR4g+INl76rLvAB1RYLRfA8="
+        )
+
+    def test_kmac_unavailable_fails_at_construction(self, monkeypatch):
+        """A missing KMAC256 implementation is reported when the transformer is built.
+
+        Args:
+            monkeypatch: Pytest fixture used to hide the pycryptodome module.
+
+        Returns:
+            None.
+        """
+        import sys
+
+        monkeypatch.setitem(sys.modules, "Crypto.Hash", None)
+
+        with pytest.raises(RuntimeError, match="pycryptodome"):
+            HashTokenTransformer(b"x" * 32, CryptoSuite.from_id("mlkem768-shake256"))
+
     def _calculate_expected_hash(self, secret: str, token: str) -> str:
         """Calculate the expected HMAC-SHA256 hash for validation.
 
