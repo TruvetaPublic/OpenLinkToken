@@ -71,10 +71,6 @@ install_ml1_assets() {
             oras_archive="oras_${ORAS_VERSION}_linux_amd64.tar.gz"
             oras_checksum="9ce999f8d2de03fc03968b29d743077a58783e545e5eaa53917ca177352d0e59"
             ;;
-        Darwin:x86_64|Darwin:amd64)
-            oras_archive="oras_${ORAS_VERSION}_darwin_amd64.tar.gz"
-            oras_checksum="aeb684d8c24c18dce28fd1f7326636e4782b573108e244a93d4b1c4a5ec50f48"
-            ;;
         Darwin:arm64|Darwin:aarch64)
             oras_archive="oras_${ORAS_VERSION}_darwin_arm64.tar.gz"
             oras_checksum="f33fc12753c54172b0d0d19eaa0318d3f90fe9b094d96e8b259c881713c92e1c"
@@ -188,9 +184,7 @@ case "$(uname -s)" in
                 model_platform="macos-arm64"
                 ;;
             x86_64|amd64)
-                asset="olt-cli-${version}-macos-x86_64.zip"
-                legacy_asset="olt-cli-${version}-macos-universal.zip"
-                model_platform="macos-x86_64"
+                fail "Intel Macs are no longer supported by the standalone CLI; macOS requires Apple Silicon (arm64)"
                 ;;
             *)
                 fail "No macOS CLI asset is available for architecture $(uname -m)"

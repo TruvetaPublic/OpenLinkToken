@@ -57,12 +57,11 @@ Perfect for understanding privacy-preserving record linkage concepts before divi
 
 Download the binary for your platform from the [latest release](https://github.com/TruvetaPublic/OpenLinkToken/releases):
 
-| Platform            | Asset                            |
-| ------------------- | -------------------------------- |
-| Linux               | `olt-cli-X.Y.Z-linux-x64.zip`    |
-| macOS Apple Silicon | `olt-cli-X.Y.Z-macos-arm64.zip`  |
-| macOS Intel         | `olt-cli-X.Y.Z-macos-x86_64.zip` |
-| Windows             | `olt-cli-X.Y.Z-windows-x64.zip`  |
+| Platform            | Asset                           |
+| ------------------- | ------------------------------- |
+| Linux               | `olt-cli-X.Y.Z-linux-x64.zip`   |
+| macOS Apple Silicon | `olt-cli-X.Y.Z-macos-arm64.zip` |
+| Windows             | `olt-cli-X.Y.Z-windows-x64.zip` |
 
 Each ZIP contains the executable and its runtime files. Each asset has a matching
 `.sha256` file you can use to verify the download. CLI ZIPs omit the ML1 ONNX
@@ -70,6 +69,9 @@ model files; use `install.sh` on Linux/macOS or `install.ps1` on Windows to
 download and verify them during installation. The Linux x86_64 ZIP also omits
 NVIDIA libraries: `install.sh` installs them by default, or pass `--no-cuda` to
 skip them.
+
+The standalone macOS CLI supports Apple Silicon (arm64) only; Intel Macs are
+no longer supported. This does not change Java or Python library support.
 
 **One-line installers:**
 

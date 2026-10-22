@@ -19,7 +19,6 @@ MODEL_FILES = {
 }
 ORAS_CHECKSUMS = {
     "oras_1.3.3_linux_amd64.tar.gz": "9ce999f8d2de03fc03968b29d743077a58783e545e5eaa53917ca177352d0e59",
-    "oras_1.3.3_darwin_amd64.tar.gz": "aeb684d8c24c18dce28fd1f7326636e4782b573108e244a93d4b1c4a5ec50f48",
     "oras_1.3.3_darwin_arm64.tar.gz": "f33fc12753c54172b0d0d19eaa0318d3f90fe9b094d96e8b259c881713c92e1c",
     "oras_1.3.3_windows_amd64.zip": "30ca213a565a450de33001dae83053db53c221e6674c5233dc3406b686657969",
 }
@@ -381,7 +380,6 @@ def test_keeps_existing_bundle_when_cuda_checksum_fails(tmp_path):
 @pytest.mark.parametrize(
     ("system", "machine", "archive_name"),
     [
-        ("Darwin", "x86_64", "oras_1.3.3_darwin_amd64.tar.gz"),
         ("Darwin", "arm64", "oras_1.3.3_darwin_arm64.tar.gz"),
     ],
 )
@@ -402,6 +400,27 @@ def test_selects_the_matching_macos_oras_archive(tmp_path, system, machine, arch
     assert result.returncode == 0, result.stderr
     assert Path(environment["TEST_ORAS_REFERENCE_FILE"]).read_text().endswith(":v1")
     assert (assets_dir / archive_name).exists()
+
+
+@pytest.mark.parametrize("machine", ["x86_64", "amd64"])
+def test_rejects_intel_macos_without_installing(tmp_path, machine):
+    """Intel Macs receive an explicit error and no installation is created."""
+    assets_dir = tmp_path / "assets"
+    assets_dir.mkdir()
+    install_dir = tmp_path / "installed"
+    result, environment = _run_installer(
+        tmp_path,
+        assets_dir,
+        "--install-dir",
+        str(install_dir),
+        TEST_UNAME_S="Darwin",
+        TEST_UNAME_M=machine,
+    )
+
+    assert result.returncode != 0
+    assert "macOS requires Apple Silicon (arm64)" in result.stderr
+    assert not install_dir.exists()
+    assert not Path(environment["TEST_ORAS_REFERENCE_FILE"]).exists()
 
 
 def test_windows_installer_keeps_legacy_self_contained_archives(tmp_path):

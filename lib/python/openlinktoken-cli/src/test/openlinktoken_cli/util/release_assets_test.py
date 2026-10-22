@@ -178,29 +178,12 @@ class TestCreateReleaseAssets:
                 for name in archive.namelist()
             )
 
-    def test_creates_macos_x86_64_release_assets(self, tmp_path):
-        """macOS Intel builds should use an architecture-specific asset name."""
-        dist_dir = tmp_path / "dist"
-        output_dir = tmp_path / "release-assets"
-        _write_binary(dist_dir, "olt", b"macOS x86_64 binary")
-        _write_model_assets(dist_dir, b"macOS model data")
-
-        generated_paths = create_release_assets("2.1.0", "macOS", dist_dir, output_dir, architecture="x86_64")
-
-        assert (output_dir / "olt-cli-2.1.0-macos-x86_64.zip").exists()
-        assert (output_dir / "olt-v2.1.0-macos-x86_64").exists()
-        assert len(generated_paths) == 4
-        with zipfile.ZipFile(output_dir / "olt-cli-2.1.0-macos-x86_64.zip") as archive:
-            assert not any(
-                name.endswith(("asset-manifest.json", "model.onnx", "model.onnx.data", "tokenizer.json"))
-                for name in archive.namelist()
-            )
-
-    def test_rejects_unsupported_macos_architecture(self, tmp_path):
+    @pytest.mark.parametrize("architecture", ["x86_64", "amd64", "x64", "ppc64"])
+    def test_rejects_unsupported_macos_architecture(self, tmp_path, architecture):
         """Unsupported macOS architectures should fail before creating assets."""
         with pytest.raises(ValueError, match="Unsupported macOS architecture"):
             create_release_assets(
-                "2.1.0", "macOS", tmp_path / "dist", tmp_path / "release-assets", architecture="ppc64"
+                "2.1.0", "macOS", tmp_path / "dist", tmp_path / "release-assets", architecture=architecture
             )
 
     def test_normalizes_v_prefixed_versions_for_windows_assets(self, tmp_path):

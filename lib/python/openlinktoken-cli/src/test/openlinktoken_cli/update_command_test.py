@@ -76,16 +76,18 @@ class TestFindAsset:
         assert asset is not None
         assert asset["name"] == "olt-cli-2.1.0-macos-arm64.zip"
 
-    def test_darwin_x86_64_matches_macos_intel_asset(self):
-        """Intel macOS should select the architecture-specific Intel bundle."""
+    def test_darwin_x86_64_rejects_intel_and_legacy_universal_assets(self):
+        """Intel macOS no longer selects standalone updates, including legacy assets."""
         release = _make_release(
             tag="v2.1.0",
-            assets=[{"name": "olt-cli-2.1.0-macos-x86_64.zip", "browser_download_url": "u"}],
+            assets=[
+                {"name": "olt-cli-2.1.0-macos-x86_64.zip", "browser_download_url": "u"},
+                {"name": "openlinktoken-v2.1.0-macos-universal", "browser_download_url": "u"},
+            ],
         )
         with patch("platform.system", return_value="Darwin"), patch("platform.machine", return_value="x86_64"):
             asset = UpdateCommand._find_asset(release)
-        assert asset is not None
-        assert asset["name"] == "olt-cli-2.1.0-macos-x86_64.zip"
+        assert asset is None
 
     def test_no_matching_asset_returns_none(self):
         release = _make_release(

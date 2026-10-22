@@ -214,8 +214,6 @@ def _normalize_macos_architecture(architecture: str) -> str:
     normalized_architecture = architecture.strip().lower()
     if normalized_architecture in {"arm64", "aarch64"}:
         return "arm64"
-    if normalized_architecture in {"x86_64", "amd64", "x64"}:
-        return "x86_64"
     raise ValueError(f"Unsupported macOS architecture: {architecture}")
 
 
