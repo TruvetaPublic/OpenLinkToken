@@ -310,6 +310,16 @@ Both `maven-publish.yml` and `python-publish.yml` are triggered by any of the fo
 | `workflow_run` (completed)              | The "Create Release on Merge" workflow (`auto-release.yml`) completes successfully | Merging a `release/2.0.0` → `main` PR triggers `auto-release.yml`, which in turn fires `maven-publish.yml` and `python-publish.yml` |
 | `workflow_dispatch` (manual)            | A workflow manually triggered via the GitHub UI with a `version` input             | Clicking **Run workflow** in Actions tab                                                                                            |
 
+### Testing standalone CLI builds before release
+
+Manually dispatch `build-olt-cli.yml` on the feature branch with `dry_run=true`
+(the default), the intended CLI `version`, and `model_tag=v1`. Manual builds
+always check out the selected branch commit, even when that version already
+has a GitHub Release. Dry runs upload Actions artifacts but never replace
+GitHub Release assets. Set `dry_run=false` explicitly when a manual build is
+intended to update assets on an existing release. Automatic release builds
+continue to use the release tag.
+
 ### Trigger Chain
 
 ```
