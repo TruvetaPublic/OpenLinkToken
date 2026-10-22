@@ -14,6 +14,83 @@ $Repository = "TruvetaPublic/OpenLinkToken"
 $ReleasesUrl = "https://github.com/$Repository/releases"
 $ApiUrl = "https://api.github.com/repos/$Repository"
 
+function Install-ModelAsset {
+    param(
+        [string]$AssetId,
+        [string]$FileName
+    )
+
+    $ModelDirectory = Join-Path $StagedDir "_internal\openlinktoken\core\ai\tokens"
+    $Destination = Join-Path $ModelDirectory $FileName
+    if (Test-Path -LiteralPath $Destination) {
+        return
+    }
+
+    $ManifestName = "olt-model-$Version-windows-x64-$AssetId.manifest"
+    $ManifestPath = Join-Path $TempDir $ManifestName
+    Invoke-WebRequest -Uri "$ReleasesUrl/download/$Tag/$ManifestName" -OutFile $ManifestPath
+    $ManifestLines = @(Get-Content -LiteralPath $ManifestPath)
+    if ($ManifestLines.Count -lt 2) {
+        throw "Invalid ML1 model asset manifest: $ManifestName"
+    }
+
+    $Header = $ManifestLines[0] -split "`t"
+    if ($Header.Count -ne 2 -or $Header[0] -ne "sha256" -or $Header[1] -notmatch '^[0-9a-fA-F]{64}$') {
+        throw "Invalid ML1 model asset manifest: $ManifestName"
+    }
+
+    $PartPrefix = "olt-model-$Version-windows-x64-$AssetId-part-"
+    $AssembledPath = Join-Path $TempDir $FileName
+    $OutputStream = [System.IO.File]::Open(
+        $AssembledPath,
+        [System.IO.FileMode]::Create,
+        [System.IO.FileAccess]::Write,
+        [System.IO.FileShare]::None
+    )
+    $PartCount = 0
+    try {
+        foreach ($Line in $ManifestLines | Select-Object -Skip 1) {
+            $Entry = $Line -split "`t"
+            if ($Entry.Count -ne 3 -or $Entry[0] -ne "part" -or $Entry[1] -notmatch '^[0-9a-fA-F]{64}$') {
+                throw "Invalid ML1 model asset manifest entry"
+            }
+
+            $ExpectedPartNumber = "{0:D3}" -f ($PartCount + 1)
+            if ($Entry[2] -notmatch "^$([regex]::Escape($PartPrefix))$ExpectedPartNumber\.bin$") {
+                throw "Invalid ML1 model asset part name: $($Entry[2])"
+            }
+
+            $PartPath = Join-Path $TempDir $Entry[2]
+            Invoke-WebRequest -Uri "$ReleasesUrl/download/$Tag/$($Entry[2])" -OutFile $PartPath
+            $PartChecksum = (Get-FileHash -Algorithm SHA256 -LiteralPath $PartPath).Hash
+            if ($PartChecksum -ine $Entry[1]) {
+                throw "SHA-256 verification failed for $($Entry[2])"
+            }
+
+            $PartStream = [System.IO.File]::OpenRead($PartPath)
+            try {
+                $PartStream.CopyTo($OutputStream)
+            } finally {
+                $PartStream.Dispose()
+            }
+            $PartCount++
+        }
+    } finally {
+        $OutputStream.Dispose()
+    }
+
+    if ($PartCount -eq 0) {
+        throw "ML1 model asset manifest contains no parts: $ManifestName"
+    }
+    $ModelChecksum = (Get-FileHash -Algorithm SHA256 -LiteralPath $AssembledPath).Hash
+    if ($ModelChecksum -ine $Header[1]) {
+        throw "SHA-256 verification failed for assembled $FileName"
+    }
+
+    New-Item -ItemType Directory -Path $ModelDirectory -Force | Out-Null
+    Move-Item -LiteralPath $AssembledPath -Destination $Destination -Force
+}
+
 function Show-Usage {
     @"
 Install the Open Link Token CLI for Windows.
@@ -98,6 +175,10 @@ try {
     $StagedDir = Join-Path $InstallParent (".olt-staged-" + [Guid]::NewGuid().ToString("N"))
     New-Item -ItemType Directory -Path $StagedDir -Force | Out-Null
     Copy-Item -Path (Join-Path $Binary.Directory.FullName "*") -Destination $StagedDir -Recurse -Force
+
+    Write-Host "Downloading required ML1 model assets when missing..."
+    Install-ModelAsset -AssetId "model" -FileName "model.onnx"
+    Install-ModelAsset -AssetId "model-data" -FileName "model.onnx.data"
 
     $PreviousDir = "$InstallDir.previous"
     if (Test-Path -LiteralPath $PreviousDir) {

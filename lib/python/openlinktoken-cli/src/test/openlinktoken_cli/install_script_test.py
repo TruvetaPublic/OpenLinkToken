@@ -2,9 +2,12 @@
 
 import hashlib
 import os
+import shutil
 import subprocess
 import zipfile
 from pathlib import Path
+
+import pytest
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[6]
 INSTALL_SCRIPT = REPOSITORY_ROOT / "install.sh"
@@ -20,6 +23,19 @@ def _write_archive(path: Path, entries: dict[str, bytes]) -> None:
 def _write_checksum(path: Path) -> str:
     """Return the SHA-256 checksum for a fixture file."""
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _write_model_release_assets(assets_dir: Path, platform: str) -> None:
+    """Create checksummed model assets for a platform-specific installer."""
+    prefix = f"olt-model-1.0.0-{platform}"
+    for asset_id, content in (("model", b"required model"), ("model-data", b"required model data")):
+        part_name = f"{prefix}-{asset_id}-part-001.bin"
+        part_path = assets_dir / part_name
+        part_path.write_bytes(content)
+        (assets_dir / f"{prefix}-{asset_id}.manifest").write_text(
+            f"sha256\t{hashlib.sha256(content).hexdigest()}\npart\t{_write_checksum(part_path)}\t{part_name}\n",
+            encoding="utf-8",
+        )
 
 
 def _installer_environment(tmp_path: Path, assets_dir: Path) -> dict[str, str]:
@@ -86,16 +102,22 @@ esac
     }
 
 
-def _create_release_assets(assets_dir: Path, include_cuda: bool, include_legacy_payloads: bool = False) -> None:
-    """Create a minimal Linux release with model data and an optional CUDA part."""
-    asset_name = "olt-cli-1.0.0-linux-x64.zip"
-    bundle_prefix = "olt-cli-1.0.0-linux-x64"
+def _create_release_assets(
+    assets_dir: Path,
+    include_cuda: bool,
+    include_legacy_payloads: bool = False,
+    platform: str = "linux-x64",
+) -> None:
+    """Create a minimal release with model assets and an optional CUDA part."""
+    asset_name = f"olt-cli-1.0.0-{platform}.zip"
+    bundle_prefix = asset_name.removesuffix(".zip")
     base_archive = assets_dir / asset_name
     entries = {f"{bundle_prefix}/olt": b"executable", f"{bundle_prefix}/_internal/runtime": b"cpu"}
     if include_legacy_payloads:
         entries.update(
             {
                 f"{bundle_prefix}/_internal/openlinktoken/core/ai/tokens/model.onnx.data": b"required model data",
+                f"{bundle_prefix}/_internal/openlinktoken/core/ai/tokens/model.onnx": b"required model",
                 f"{bundle_prefix}/_internal/nvidia/cublas/lib/libcuda.so": b"cuda",
             }
         )
@@ -105,15 +127,7 @@ def _create_release_assets(assets_dir: Path, include_cuda: bool, include_legacy_
         encoding="utf-8",
     )
     if not include_legacy_payloads:
-        model_data = b"required model data"
-        model_part_name = "olt-model-1.0.0-linux-x64-part-001.bin"
-        (assets_dir / model_part_name).write_bytes(model_data)
-        model_manifest = assets_dir / "olt-model-1.0.0-linux-x64.manifest"
-        model_manifest.write_text(
-            f"sha256\t{hashlib.sha256(model_data).hexdigest()}\n"
-            f"part\t{_write_checksum(assets_dir / model_part_name)}\t{model_part_name}\n",
-            encoding="utf-8",
-        )
+        _write_model_release_assets(assets_dir, platform)
     if include_cuda:
         part_name = "olt-cuda-1.0.0-linux-x64-part-001.zip"
         part = assets_dir / part_name
@@ -141,6 +155,9 @@ def test_install_script_installs_cuda_bundle_by_default(tmp_path):
     assert result.returncode == 0, result.stderr
     assert (install_dir / ".olt" / "_internal" / "runtime").read_bytes() == b"cpu"
     assert (
+        install_dir / ".olt" / "_internal" / "openlinktoken" / "core" / "ai" / "tokens" / "model.onnx"
+    ).read_bytes() == b"required model"
+    assert (
         install_dir / ".olt" / "_internal" / "openlinktoken" / "core" / "ai" / "tokens" / "model.onnx.data"
     ).read_bytes() == b"required model data"
     assert (install_dir / ".olt" / "_internal" / "nvidia" / "cublas" / "lib" / "libcuda.so").read_bytes() == b"cuda"
@@ -164,6 +181,9 @@ def test_install_script_no_cuda_skips_optional_libraries(tmp_path):
     )
 
     assert result.returncode == 0, result.stderr
+    assert (
+        install_dir / ".olt" / "_internal" / "openlinktoken" / "core" / "ai" / "tokens" / "model.onnx"
+    ).read_bytes() == b"required model"
     assert (
         install_dir / ".olt" / "_internal" / "openlinktoken" / "core" / "ai" / "tokens" / "model.onnx.data"
     ).read_bytes() == b"required model data"
@@ -192,6 +212,48 @@ def test_install_script_supports_legacy_linux_archives(tmp_path):
     assert (installed_bundle / "openlinktoken/core/ai/tokens/model.onnx.data").read_bytes() == b"required model data"
     assert (installed_bundle / "nvidia/cublas/lib/libcuda.so").read_bytes() == b"cuda"
     assert "already included in the CLI archive" in result.stdout
+
+
+def test_install_script_supports_previous_split_linux_model_assets(tmp_path):
+    """Installers should still handle the earlier Linux data-only split format."""
+    assets_dir = tmp_path / "assets"
+    assets_dir.mkdir()
+    asset_name = "olt-cli-1.0.0-linux-x64.zip"
+    archive = assets_dir / asset_name
+    _write_archive(
+        archive,
+        {
+            "olt-cli-1.0.0-linux-x64/olt": b"executable",
+            "olt-cli-1.0.0-linux-x64/_internal/openlinktoken/core/ai/tokens/model.onnx": b"required model",
+        },
+    )
+    (assets_dir / f"{asset_name}.sha256").write_text(
+        f"{_write_checksum(archive)}  {asset_name}\n",
+        encoding="utf-8",
+    )
+    model_data = b"required model data"
+    part_name = "olt-model-1.0.0-linux-x64-part-001.bin"
+    part_path = assets_dir / part_name
+    part_path.write_bytes(model_data)
+    (assets_dir / "olt-model-1.0.0-linux-x64.manifest").write_text(
+        f"sha256\t{hashlib.sha256(model_data).hexdigest()}\npart\t{_write_checksum(part_path)}\t{part_name}\n",
+        encoding="utf-8",
+    )
+    install_dir = tmp_path / "home" / ".local" / "bin"
+    environment = _installer_environment(tmp_path, assets_dir)
+
+    result = subprocess.run(
+        ["bash", str(INSTALL_SCRIPT), "--version", "1.0.0", "--install-dir", str(install_dir), "--no-cuda"],
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    installed_model_dir = install_dir / ".olt" / "_internal" / "openlinktoken" / "core" / "ai" / "tokens"
+    assert (installed_model_dir / "model.onnx").read_bytes() == b"required model"
+    assert (installed_model_dir / "model.onnx.data").read_bytes() == model_data
 
 
 def test_install_script_keeps_existing_bundle_when_cuda_download_fails(tmp_path):
@@ -252,8 +314,8 @@ def test_install_script_keeps_existing_bundle_when_model_checksum_fails(tmp_path
     assets_dir = tmp_path / "assets"
     assets_dir.mkdir()
     _create_release_assets(assets_dir, include_cuda=False)
-    model_manifest = assets_dir / "olt-model-1.0.0-linux-x64.manifest"
-    model_part_name = "olt-model-1.0.0-linux-x64-part-001.bin"
+    model_manifest = assets_dir / "olt-model-1.0.0-linux-x64-model-data.manifest"
+    model_part_name = "olt-model-1.0.0-linux-x64-model-data-part-001.bin"
     model_manifest.write_text(
         f"sha256\t{'0' * 64}\npart\t{'0' * 64}\t{model_part_name}\n",
         encoding="utf-8",
@@ -281,6 +343,7 @@ def test_install_script_no_cuda_is_harmless_on_macos(tmp_path):
     """The Linux-specific no-cuda option should be harmless on macOS."""
     assets_dir = tmp_path / "assets"
     assets_dir.mkdir()
+    _write_model_release_assets(assets_dir, "macos-x86_64")
     asset_name = "olt-cli-1.0.0-macos-x86_64.zip"
     archive = assets_dir / asset_name
     _write_archive(
@@ -303,4 +366,62 @@ def test_install_script_no_cuda_is_harmless_on_macos(tmp_path):
     )
 
     assert result.returncode == 0, result.stderr
+    installed_model_dir = Path(
+        environment["HOME"], ".local", "bin", ".olt", "_internal", "openlinktoken", "core", "ai", "tokens"
+    )
+    assert (installed_model_dir / "model.onnx").read_bytes() == b"required model"
+    assert (installed_model_dir / "model.onnx.data").read_bytes() == b"required model data"
     assert "Installing the CPU-only runtime." in result.stdout
+
+
+def test_windows_installer_downloads_and_verifies_model_assets(tmp_path):
+    """Windows installer should restore model files omitted from the CLI ZIP."""
+    pwsh = shutil.which("pwsh")
+    if not pwsh:
+        pytest.skip("PowerShell is not installed")
+
+    assets_dir = tmp_path / "assets"
+    assets_dir.mkdir()
+    asset_name = "olt-cli-1.0.0-windows-x64.zip"
+    archive_path = assets_dir / asset_name
+    _write_archive(
+        archive_path,
+        {
+            "olt-cli-1.0.0-windows-x64/olt.exe": b"executable",
+            "olt-cli-1.0.0-windows-x64/_internal/runtime": b"cpu",
+        },
+    )
+    (assets_dir / f"{asset_name}.sha256").write_text(
+        f"{_write_checksum(archive_path)}  {asset_name}\n",
+        encoding="utf-8",
+    )
+    _write_model_release_assets(assets_dir, "windows-x64")
+    install_dir = tmp_path / "installed"
+    environment = {
+        **os.environ,
+        "TEST_ASSETS": str(assets_dir),
+        "TEST_INSTALLER": str(REPOSITORY_ROOT / "install.ps1"),
+        "TEST_INSTALL_DIR": str(install_dir),
+        "PROCESSOR_ARCHITECTURE": "AMD64",
+    }
+    command = r"""
+function Invoke-WebRequest {
+    param([string]$Uri, [string]$OutFile, [hashtable]$Headers)
+    $asset = [System.IO.Path]::GetFileName(([System.Uri]$Uri).AbsolutePath)
+    Copy-Item -LiteralPath (Join-Path $env:TEST_ASSETS $asset) -Destination $OutFile
+}
+& $env:TEST_INSTALLER -Version 1.0.0 -InstallDir $env:TEST_INSTALL_DIR
+"""
+
+    result = subprocess.run(
+        [pwsh, "-NoProfile", "-Command", command],
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    model_dir = install_dir / "_internal" / "openlinktoken" / "core" / "ai" / "tokens"
+    assert (model_dir / "model.onnx").read_bytes() == b"required model"
+    assert (model_dir / "model.onnx.data").read_bytes() == b"required model data"

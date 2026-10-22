@@ -173,26 +173,65 @@ jobs:
             --dist-dir dist \
             --output-dir release-assets
 
+      - name: Verify detached model assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - "${VERSION}" "${{ runner.os }}" "${{ matrix.architecture }}" <<'PY'
+          import hashlib
+          import sys
+          import zipfile
+          from pathlib import Path
+
+          version, runner_os, architecture = sys.argv[1:]
+          platform = {
+              "Linux": "linux-x64",
+              "macOS": f"macos-{architecture}",
+              "Windows": "windows-x64",
+          }[runner_os]
+          package = f"olt-cli-{version}-{platform}"
+          archive_path = Path("release-assets") / f"{package}.zip"
+          with zipfile.ZipFile(archive_path) as archive:
+              names = archive.namelist()
+              if any(name.endswith(("model.onnx", "model.onnx.data")) for name in names):
+                  raise SystemExit(f"{archive_path} unexpectedly includes ONNX model files")
+              archive.extractall("smoke/release-bundle")
+
+          model_root = Path("smoke/release-bundle") / package / "_internal/openlinktoken/core/ai/tokens"
+          for asset_id, filename in (("model", "model.onnx"), ("model-data", "model.onnx.data")):
+              prefix = f"olt-model-{version}-{platform}-{asset_id}"
+              manifest_lines = (Path("release-assets") / f"{prefix}.manifest").read_text().splitlines()
+              header = manifest_lines[0].split("\t")
+              if len(header) != 2 or header[0] != "sha256":
+                  raise SystemExit(f"Invalid model asset manifest: {prefix}")
+              digest = hashlib.sha256()
+              destination = model_root / filename
+              destination.parent.mkdir(parents=True, exist_ok=True)
+              with destination.open("wb") as output:
+                  for line in manifest_lines[1:]:
+                      entry_kind, expected_checksum, part_name = line.split("\t")
+                      part_path = Path("release-assets") / part_name
+                      part_hash = hashlib.sha256()
+                      with part_path.open("rb") as part:
+                          while chunk := part.read(1024 * 1024):
+                              part_hash.update(chunk)
+                      if entry_kind != "part" or part_hash.hexdigest() != expected_checksum:
+                          raise SystemExit(f"Invalid model asset part: {part_name}")
+                      with part_path.open("rb") as part:
+                          while chunk := part.read(1024 * 1024):
+                              output.write(chunk)
+                              digest.update(chunk)
+              if digest.hexdigest() != header[1]:
+                  raise SystemExit(f"Model asset checksum mismatch: {filename}")
+          PY
+
       - name: Smoke test CPU-only Linux release bundle
         if: runner.os == 'Linux'
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p smoke/cpu-only
-          unzip -q "release-assets/olt-cli-${VERSION}-linux-x64.zip" -d smoke/cpu-only
-          model_manifest="release-assets/olt-model-${VERSION}-linux-x64.manifest"
-          model_data="smoke/cpu-only/olt-cli-${VERSION}-linux-x64/_internal/openlinktoken/core/ai/tokens/model.onnx.data"
-          read -r manifest_kind model_checksum < "$model_manifest"
-          test "$manifest_kind" = "sha256"
-          mkdir -p "$(dirname "$model_data")"
-          : > "$model_data"
-          while IFS=$'\t' read -r entry_kind part_checksum part_name; do
-            test "$entry_kind" = "part"
-            printf '%s  %s\n' "$part_checksum" "release-assets/$part_name" | sha256sum -c -
-            cat "release-assets/$part_name" >> "$model_data"
-          done < <(tail -n +2 "$model_manifest")
-          printf '%s  %s\n' "$model_checksum" "$model_data" | sha256sum -c -
-          cpu_cli="smoke/cpu-only/olt-cli-${VERSION}-linux-x64/olt"
+          cpu_cli="smoke/release-bundle/olt-cli-${VERSION}-linux-x64/olt"
           "$cpu_cli" tokenize \
             -i smoke/input.csv \
             -o smoke/cpu-only/out.csv \

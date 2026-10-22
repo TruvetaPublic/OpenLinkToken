@@ -52,6 +52,70 @@ verify_sha256() {
     [[ "$actual" == "$expected" ]] || fail "SHA-256 verification failed for $description"
 }
 
+install_model_asset() {
+    local asset_id filename destination manifest manifest_url legacy_manifest
+    local manifest_kind model_checksum manifest_extra part_prefix entry_kind expected_checksum legacy_manifest
+    local model_asset extra part_number expected_part_number part_path model_data part_count
+
+    asset_id="$1"
+    filename="$2"
+    destination="$staged_bundle/_internal/openlinktoken/core/ai/tokens/$filename"
+    [[ -f "$destination" ]] && return
+
+    manifest="$tmp_dir/olt-model-${version}-${model_platform}-${asset_id}.manifest"
+    manifest_url="${RELEASES_URL}/download/${tag}/$(basename "$manifest")"
+    legacy_manifest=false
+    if ! curl -fL --retry 3 --output "$manifest" "$manifest_url"; then
+        if [[ "$asset_id" == "model-data" && "$model_platform" == "linux-x64" ]]; then
+            legacy_manifest="$tmp_dir/olt-model-${version}-linux-x64.manifest"
+            curl -fL --retry 3 --output "$legacy_manifest" \
+                "${RELEASES_URL}/download/${tag}/$(basename "$legacy_manifest")" ||
+                fail "ML1 model asset manifest not found for $tag"
+            manifest="$legacy_manifest"
+            legacy_manifest=true
+        else
+            fail "ML1 model asset manifest not found for $tag"
+        fi
+    fi
+
+    IFS=$'\t' read -r manifest_kind model_checksum manifest_extra < "$manifest" ||
+        fail "Invalid ML1 model asset manifest"
+    [[ "$manifest_kind" == "sha256" && "$model_checksum" =~ ^[[:xdigit:]]{64}$ && -z "${manifest_extra:-}" ]] ||
+        fail "Invalid ML1 model asset manifest"
+
+    if [[ "$legacy_manifest" == true ]]; then
+        part_prefix="olt-model-${version}-linux-x64-part-"
+    else
+        part_prefix="olt-model-${version}-${model_platform}-${asset_id}-part-"
+    fi
+    model_data="$tmp_dir/$filename"
+    : > "$model_data"
+    part_count=0
+    while IFS=$'\t' read -r entry_kind expected_checksum model_asset extra; do
+        [[ "$entry_kind" == "part" && "$expected_checksum" =~ ^[[:xdigit:]]{64}$ &&
+            -n "$model_asset" && -z "${extra:-}" ]] || fail "Invalid ML1 model asset manifest entry"
+        [[ "$model_asset" == "$part_prefix"* && "$model_asset" == *.bin && "$model_asset" != */* ]] ||
+            fail "Invalid ML1 model asset name in manifest"
+        part_number="${model_asset#"$part_prefix"}"
+        part_number="${part_number%.bin}"
+        [[ "$part_number" =~ ^[0-9]{3}$ ]] || fail "Invalid ML1 model asset part number"
+        expected_part_number=$(printf '%03d' "$((part_count + 1))")
+        [[ "$part_number" == "$expected_part_number" ]] || fail "Unexpected ML1 model asset part order"
+
+        part_path="$tmp_dir/$model_asset"
+        curl -fL --retry 3 --output "$part_path" "${RELEASES_URL}/download/${tag}/${model_asset}" ||
+            fail "ML1 model asset part not found: $model_asset"
+        verify_sha256 "$expected_checksum" "$part_path" "$model_asset"
+        cat "$part_path" >> "$model_data" || fail "Unable to assemble ML1 model asset"
+        part_count=$((part_count + 1))
+    done < <(tail -n +2 "$manifest")
+
+    ((part_count > 0)) || fail "ML1 model asset manifest contains no parts"
+    verify_sha256 "$model_checksum" "$model_data" "assembled $filename"
+    mkdir -p "$(dirname "$destination")"
+    mv "$model_data" "$destination"
+}
+
 while (($# > 0)); do
     case "$1" in
         --version|-v)
@@ -101,10 +165,12 @@ case "$(uname -s)" in
             arm64|aarch64)
                 asset="olt-cli-${version}-macos-arm64.zip"
                 legacy_asset="olt-cli-${version}-macos-universal.zip"
+                model_platform="macos-arm64"
                 ;;
             x86_64|amd64)
                 asset="olt-cli-${version}-macos-x86_64.zip"
                 legacy_asset="olt-cli-${version}-macos-universal.zip"
+                model_platform="macos-x86_64"
                 ;;
             *)
                 fail "No macOS CLI asset is available for architecture $(uname -m)"
@@ -115,6 +181,7 @@ case "$(uname -s)" in
         case "$(uname -m)" in
             x86_64|amd64)
                 asset="olt-cli-${version}-linux-x64.zip"
+                model_platform="linux-x64"
                 ;;
             *)
                 fail "No Linux CLI asset is available for architecture $(uname -m)"
@@ -175,52 +242,9 @@ staged_bundle="$tmp_dir/staged-bundle"
 cp -R "$bundle_source/." "$staged_bundle"
 chmod 0755 "$staged_bundle/olt"
 
-if [[ "$(uname -s)" == "Linux" ]]; then
-    model_destination="$staged_bundle/_internal/openlinktoken/core/ai/tokens/model.onnx.data"
-    if [[ ! -f "$model_destination" ]]; then
-        printf 'Downloading required ML1 model data...\n'
-        model_manifest="$tmp_dir/olt-model-${version}-linux-x64.manifest"
-        model_manifest_url="${RELEASES_URL}/download/${tag}/olt-model-${version}-linux-x64.manifest"
-        curl -fL --retry 3 --output "$model_manifest" "$model_manifest_url" ||
-            fail "ML1 model data manifest not found for $tag"
-
-        IFS=$'\t' read -r manifest_kind model_checksum manifest_extra < "$model_manifest" ||
-            fail "Invalid ML1 model data manifest"
-        [[ "$manifest_kind" == "sha256" && -n "$model_checksum" && -z "${manifest_extra:-}" ]] ||
-            fail "Invalid ML1 model data manifest"
-        [[ "$model_checksum" =~ ^[[:xdigit:]]{64}$ ]] || fail "Invalid ML1 model data checksum"
-
-        model_part_prefix="olt-model-${version}-linux-x64-part-"
-        model_data="$tmp_dir/model.onnx.data"
-        : > "$model_data"
-        model_part_count=0
-        while IFS=$'\t' read -r entry_kind expected_checksum model_asset extra; do
-            [[ "$entry_kind" == "part" && -n "$expected_checksum" && -n "$model_asset" && -z "${extra:-}" ]] ||
-                fail "Invalid ML1 model data manifest entry"
-            [[ "$model_asset" == "$model_part_prefix"* && "$model_asset" == *.bin && "$model_asset" != */* ]] ||
-                fail "Invalid ML1 model data asset name in manifest"
-            part_number="${model_asset#"$model_part_prefix"}"
-            part_number="${part_number%.bin}"
-            [[ "$part_number" =~ ^[0-9]{3}$ ]] || fail "Invalid ML1 model data part number"
-            expected_part_number=$(printf '%03d' "$((model_part_count + 1))")
-            [[ "$part_number" == "$expected_part_number" ]] || fail "Unexpected ML1 model data part order"
-
-            model_part="$tmp_dir/$model_asset"
-            model_url="${RELEASES_URL}/download/${tag}/${model_asset}"
-            printf 'Downloading ML1 model data part %s...\n' "$part_number"
-            curl -fL --retry 3 --output "$model_part" "$model_url" ||
-                fail "ML1 model data part not found: $model_asset"
-            verify_sha256 "$expected_checksum" "$model_part" "$model_asset"
-            cat "$model_part" >> "$model_data" || fail "Unable to assemble ML1 model data"
-            model_part_count=$((model_part_count + 1))
-        done < <(tail -n +2 "$model_manifest")
-
-        ((model_part_count > 0)) || fail "ML1 model data manifest contains no parts"
-        verify_sha256 "$model_checksum" "$model_data" "assembled ML1 model data"
-        mkdir -p "$(dirname "$model_destination")"
-        mv "$model_data" "$model_destination"
-    fi
-fi
+printf 'Downloading required ML1 model assets when missing...\n'
+install_model_asset "model" "model.onnx"
+install_model_asset "model-data" "model.onnx.data"
 
 if [[ "$install_cuda" == true ]]; then
     if [[ -n "$(find "$staged_bundle/_internal/nvidia" -type f -print -quit 2>/dev/null)" ]]; then
