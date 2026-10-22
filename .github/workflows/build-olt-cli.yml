@@ -232,6 +232,7 @@ jobs:
           set -euo pipefail
           mkdir -p smoke/cpu-only
           cpu_cli="smoke/release-bundle/olt-cli-${VERSION}-linux-x64/olt"
+          chmod 0755 "$cpu_cli"
           "$cpu_cli" tokenize \
             -i smoke/input.csv \
             -o smoke/cpu-only/out.csv \
