@@ -26,8 +26,8 @@ dev = [
    "csv2parquet==0.0.9",
    "pytest==9.1.1",
    "pytest-cov==7.1.0",
-   "ruff==0.16.10",
-   "pycryptodome==3.24.0",
+   "ruff==0.17.0",
+   "pycryptodome==4.0.0",
    "jupyter==1.1.1",
    "notebook==7.6.3",
    "ipykernel==7.3.0",
@@ -36,8 +36,8 @@ dev = [
    "pyinstaller==6.22.3",
 ]
 tools = [
-    "faker==40.41.0",
-    "pycryptodome==3.24.0",
+    "faker==40.43.0",
+    "pycryptodome==4.0.0",
 ]
 [tool.ruff]
 line-length = 120
