@@ -194,11 +194,12 @@ uv pip install -r requirements.txt -r dev-requirements.txt
 Editable install for local development:
 
 ```shell
-# Install core library
+# Install workspace dependencies
 cd lib/python/openlinktoken && uv pip install -e .
+cd ../openlinktoken-core-ai && uv pip install -e .
 
-# Install CLI (includes core as dependency)
-cd lib/python/openlinktoken-cli && uv pip install -e .
+# Install the CLI
+cd ../openlinktoken-cli && uv pip install -e .
 ```
 
 #### Build a Self-Contained CLI Locally
@@ -345,7 +346,7 @@ Install (from repo root):
 
 ```shell
 uv pip install -r lib/python/openlinktoken-pyspark/requirements.txt -r lib/python/openlinktoken-pyspark/dev-requirements.txt
-uv pip install -e lib/python/openlinktoken-pyspark
+uv pip install -e lib/python/openlinktoken -e lib/python/openlinktoken-pyspark
 ```
 
 Basic Usage:
