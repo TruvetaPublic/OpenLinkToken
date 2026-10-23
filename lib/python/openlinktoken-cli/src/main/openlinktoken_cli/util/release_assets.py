@@ -7,7 +7,6 @@ import argparse
 import hashlib
 import platform
 import shutil
-import tempfile
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -40,6 +39,10 @@ _RELEASE_ASSET_SPECS = {
         binary_asset_name="olt-v{version}-windows-x86_64.exe",
     ),
 }
+_CUDA_PART_TARGET_BYTES = 500 * 1024 * 1024
+_RELEASE_ASSET_MAX_BYTES = 1536 * 1024 * 1024
+_CUDA_PART_MAX_BYTES = _RELEASE_ASSET_MAX_BYTES
+_ML1_ASSET_FILENAMES = {"asset-manifest.json", "model.onnx", "model.onnx.data", "tokenizer.json"}
 
 
 def create_release_assets(
@@ -77,12 +80,20 @@ def create_release_assets(
     shutil.copy2(built_executable, raw_binary_path)
 
     zip_path = output_dir / f"{spec.package_name}.zip"
-    _create_zip_archive(bundle_root, spec.package_name, zip_path)
+    normalized_os = runner_os.strip().lower()
+    is_linux = normalized_os == "linux"
+    _create_zip_archive(bundle_root, spec.package_name, zip_path, exclude_cuda=is_linux)
 
     binary_checksum_path = _write_checksum_file(raw_binary_path)
     zip_checksum_path = _write_checksum_file(zip_path)
 
-    return [raw_binary_path, binary_checksum_path, zip_path, zip_checksum_path]
+    assets = [raw_binary_path, binary_checksum_path, zip_path, zip_checksum_path]
+    if is_linux:
+        assets.extend(_create_cuda_assets(bundle_root, version, output_dir))
+    for asset in assets:
+        if asset.stat().st_size > _RELEASE_ASSET_MAX_BYTES:
+            raise ValueError(f"Release asset exceeds the 1.5 GiB upload limit: {asset}")
+    return assets
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -203,12 +214,15 @@ def _normalize_macos_architecture(architecture: str) -> str:
     normalized_architecture = architecture.strip().lower()
     if normalized_architecture in {"arm64", "aarch64"}:
         return "arm64"
-    if normalized_architecture in {"x86_64", "amd64", "x64"}:
-        return "x86_64"
     raise ValueError(f"Unsupported macOS architecture: {architecture}")
 
 
-def _create_zip_archive(bundle_root: Path, package_name: str, zip_path: Path) -> None:
+def _create_zip_archive(
+    bundle_root: Path,
+    package_name: str,
+    zip_path: Path,
+    exclude_cuda: bool = False,
+) -> None:
     """
     Create a ZIP containing the complete one-folder bundle.
 
@@ -216,21 +230,70 @@ def _create_zip_archive(bundle_root: Path, package_name: str, zip_path: Path) ->
         bundle_root: Path to the bundle root used by the operation.
         package_name: Name of the package.
         zip_path: Filesystem path to the zip handled by the operation.
+        exclude_cuda: Whether to omit bundled NVIDIA libraries.
     """
-    with tempfile.TemporaryDirectory() as temp_dir:
-        package_root = Path(temp_dir) / package_name
-        package_root.mkdir(parents=True, exist_ok=True)
-        for source_path in bundle_root.rglob("*"):
-            if source_path.is_file():
-                relative_path = source_path.relative_to(bundle_root)
-                packaged_path = package_root / relative_path
-                packaged_path.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(source_path, packaged_path)
+    with zipfile.ZipFile(zip_path, mode="w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for source_path in sorted(bundle_root.rglob("*")):
+            relative_path = source_path.relative_to(bundle_root)
+            if (
+                not source_path.is_file()
+                or (exclude_cuda and relative_path.parts[:2] == ("_internal", "nvidia"))
+                or (
+                    relative_path.name in _ML1_ASSET_FILENAMES
+                    and relative_path.parent.parts[-4:] == ("openlinktoken", "core", "ai", "tokens")
+                )
+            ):
+                continue
+            archive.write(source_path, arcname=Path(package_name) / relative_path)
 
-        with zipfile.ZipFile(zip_path, mode="w", compression=zipfile.ZIP_DEFLATED) as archive:
-            for packaged_path in sorted(package_root.rglob("*")):
-                if packaged_path.is_file():
-                    archive.write(packaged_path, arcname=packaged_path.relative_to(Path(temp_dir)))
+
+def _create_cuda_assets(bundle_root: Path, version: str, output_dir: Path) -> list[Path]:
+    """
+    Create bounded CUDA ZIP parts and a manifest for Linux release installs.
+
+    Args:
+        bundle_root: PyInstaller bundle root containing the NVIDIA libraries.
+        version: Release version used to name the CUDA assets.
+        output_dir: Directory where the CUDA assets are written.
+
+    Returns:
+        Created CUDA ZIP parts and their manifest.
+    """
+    cuda_root = bundle_root / "_internal" / "nvidia"
+    cuda_files = sorted(path for path in cuda_root.rglob("*") if path.is_file()) if cuda_root.is_dir() else []
+    if not cuda_files:
+        raise FileNotFoundError(f"Expected NVIDIA runtime libraries under {cuda_root}")
+
+    parts: list[list[Path]] = []
+    current_part: list[Path] = []
+    current_size = 0
+    for cuda_file in cuda_files:
+        file_size = cuda_file.stat().st_size
+        if current_part and current_size + file_size > _CUDA_PART_TARGET_BYTES:
+            parts.append(current_part)
+            current_part = []
+            current_size = 0
+        current_part.append(cuda_file)
+        current_size += file_size
+    if current_part:
+        parts.append(current_part)
+
+    manifest_path = output_dir / f"olt-cuda-{_normalize_version(version)}-linux-x64.manifest"
+    manifest_entries = []
+    asset_paths = []
+    for index, part_files in enumerate(parts, start=1):
+        part_path = output_dir / f"olt-cuda-{_normalize_version(version)}-linux-x64-part-{index:03}.zip"
+        with zipfile.ZipFile(part_path, mode="w", compression=zipfile.ZIP_DEFLATED) as archive:
+            for cuda_file in part_files:
+                archive.write(cuda_file, arcname=Path("nvidia") / cuda_file.relative_to(cuda_root))
+        if part_path.stat().st_size > _CUDA_PART_MAX_BYTES:
+            raise ValueError(f"Compressed CUDA part exceeds the 1.5 GiB asset limit: {part_path}")
+        manifest_entries.append(f"{_sha256_file(part_path)}\t{part_path.name}\n")
+        asset_paths.append(part_path)
+
+    manifest_path.write_text("".join(manifest_entries), encoding="utf-8")
+    asset_paths.append(manifest_path)
+    return asset_paths
 
 
 def _write_checksum_file(asset_path: Path) -> Path:

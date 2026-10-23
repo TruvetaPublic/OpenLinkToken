@@ -246,7 +246,7 @@ uv run python -c "import csv; assert any(row['RuleId'] == 'ML1' for row in csv.D
 ```
 
 If you also want the same ZIP and checksum bundle produced by the release workflow, run
-the following (use `arm64` or `x86_64` on macOS):
+the following (use `arm64` on macOS; Intel Mac CLI builds are not supported):
 
 ```shell
 python -m openlinktoken_cli.util.release_assets \
@@ -257,7 +257,7 @@ python -m openlinktoken_cli.util.release_assets \
   --output-dir release-assets
 ```
 
-Use `--runner-os macOS --architecture arm64` (or `x86_64`) or
+Use `--runner-os macOS --architecture arm64` or
 `--runner-os Windows --architecture x86_64` for those platforms. The helper writes
 the updater-ready raw binary, the downloadable ZIP, and `.sha256` sidecars to
 `release-assets/`.

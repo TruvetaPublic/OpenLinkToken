@@ -19,6 +19,9 @@ env:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    concurrency:
+      group: publish-ml1-assets-${{ inputs.model_tag }}
+      cancel-in-progress: false
     steps:
       - name: Check out model assets
         uses: actions/checkout@v7
@@ -81,8 +84,18 @@ jobs:
         run: |
           set -euo pipefail
           package="${REGISTRY}/${GITHUB_REPOSITORY,,}-${PACKAGE_SUFFIX}"
+          reference="${package}:${MODEL_TAG}"
+          if response="$(oras manifest fetch "${reference}" 2>&1)"; then
+            echo "Refusing to overwrite existing ML1 model tag ${reference}." >&2
+            exit 1
+          elif ! grep -Eiq 'MANIFEST_UNKNOWN|manifest unknown|not found' <<< "${response}"; then
+            printf 'Unable to confirm that ML1 model tag %s is unused:\n%s\n' \
+              "${reference}" "${response}" >&2
+            exit 1
+          fi
+
           cd resources/inferencing/ml1
-          oras push "${package}:${MODEL_TAG}" \
+          oras push "${reference}" \
             --artifact-type application/vnd.openlinktoken.ml1.v1 \
             --annotation "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
             "model.onnx:application/octet-stream" \

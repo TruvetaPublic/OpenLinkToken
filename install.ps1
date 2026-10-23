@@ -3,6 +3,8 @@ param(
     [Alias("v")]
     [string]$Version,
 
+    [string]$ModelTag = $(if ($env:OLT_ML1_MODEL_TAG) { $env:OLT_ML1_MODEL_TAG } else { "v1" }),
+
     [string]$InstallDir = (Join-Path $HOME ".openlinktoken\bin"),
 
     [switch]$Help
@@ -13,16 +15,77 @@ $ErrorActionPreference = "Stop"
 $Repository = "TruvetaPublic/OpenLinkToken"
 $ReleasesUrl = "https://github.com/$Repository/releases"
 $ApiUrl = "https://api.github.com/repos/$Repository"
+$ModelPackage = "ghcr.io/truvetapublic/openlinktoken-ml1-assets"
+$OrasVersion = "1.3.3"
+
+function Install-Ml1Assets {
+    $ModelDirectory = Join-Path $StagedDir "_internal\openlinktoken\core\ai\tokens"
+    $RequiredFiles = @("model.onnx", "model.onnx.data", "tokenizer.json", "asset-manifest.json")
+    if (@($RequiredFiles | Where-Object { -not (Test-Path -LiteralPath (Join-Path $ModelDirectory $_)) }).Count -eq 0) {
+        Write-Host "ML1 model assets are already included in the CLI archive."
+        return
+    }
+
+    $OrasArchive = "oras_${OrasVersion}_windows_amd64.zip"
+    $OrasChecksum = "30ca213a565a450de33001dae83053db53c221e6674c5233dc3406b686657969"
+    $OrasArchivePath = Join-Path $TempDir $OrasArchive
+    $OrasUrl = "https://github.com/oras-project/oras/releases/download/v$OrasVersion/$OrasArchive"
+    Write-Host "Downloading ORAS $OrasVersion..."
+    Invoke-WebRequest -Uri $OrasUrl -OutFile $OrasArchivePath
+    if ((Get-FileHash -Algorithm SHA256 -LiteralPath $OrasArchivePath).Hash -ine $OrasChecksum) {
+        throw "SHA-256 verification failed for ORAS $OrasVersion"
+    }
+
+    $OrasDirectory = Join-Path $TempDir "oras"
+    Expand-Archive -LiteralPath $OrasArchivePath -DestinationPath $OrasDirectory
+    $Oras = Join-Path $OrasDirectory "oras.exe"
+    $ModelAssetsDirectory = Join-Path $TempDir "ml1-assets"
+    New-Item -ItemType Directory -Path $ModelAssetsDirectory -Force | Out-Null
+    Write-Host "Downloading ML1 model assets $ModelTag..."
+    & $Oras pull "${ModelPackage}:$ModelTag" --output $ModelAssetsDirectory
+    if ($LASTEXITCODE -ne 0) {
+        throw "Unable to pull ML1 model assets ${ModelPackage}:$ModelTag; ensure the GHCR package is public"
+    }
+
+    foreach ($FileName in $RequiredFiles) {
+        $AssetPath = Join-Path $ModelAssetsDirectory $FileName
+        if (-not (Test-Path -LiteralPath $AssetPath -PathType Leaf) -or (Get-Item -LiteralPath $AssetPath).Length -eq 0) {
+            throw "ML1 OCI artifact is missing $FileName"
+        }
+    }
+    try {
+        $Manifest = Get-Content -Raw -LiteralPath (Join-Path $ModelAssetsDirectory "asset-manifest.json") |
+            ConvertFrom-Json
+    } catch {
+        throw "Invalid ML1 asset manifest in OCI artifact: $($_.Exception.Message)"
+    }
+    foreach ($FileName in @("model.onnx", "model.onnx.data", "tokenizer.json")) {
+        $AssetMetadata = $Manifest.assets.PSObject.Properties[$FileName].Value
+        if (-not $AssetMetadata) {
+            throw "ML1 asset manifest is missing $FileName"
+        }
+        $AssetPath = Join-Path $ModelAssetsDirectory $FileName
+        if ((Get-Item -LiteralPath $AssetPath).Length -ne $AssetMetadata.size) {
+            throw "Unexpected size for ML1 asset $FileName"
+        }
+        if ((Get-FileHash -Algorithm SHA256 -LiteralPath $AssetPath).Hash -ine $AssetMetadata.sha256) {
+            throw "SHA-256 verification failed for $FileName"
+        }
+    }
+    New-Item -ItemType Directory -Path $ModelDirectory -Force | Out-Null
+    Copy-Item -Path (Join-Path $ModelAssetsDirectory "*") -Destination $ModelDirectory -Force
+}
 
 function Show-Usage {
     @"
 Install the Open Link Token CLI for Windows.
 
 Usage:
-  .\install.ps1 [-Version VERSION] [-InstallDir DIRECTORY]
+  .\install.ps1 [-Version VERSION] [-ModelTag TAG] [-InstallDir DIRECTORY]
 
 Options:
   -Version VERSION        Install a specific release (default: latest)
+  -ModelTag TAG           Install this ML1 model tag (default: v1 or OLT_ML1_MODEL_TAG)
   -InstallDir DIRECTORY   Install into DIRECTORY (default: ~/.openlinktoken/bin)
   -Help                   Show this help
 "@
@@ -46,6 +109,9 @@ if (-not $Version) {
 
 if ($Version -notmatch '^[vV]?\d+(\.\d+){2}([.-][0-9A-Za-z.-]+)?$') {
     throw "Invalid version: $Version"
+}
+if ($ModelTag -notmatch '^v[0-9]+$') {
+    throw "Invalid ML1 model tag: $ModelTag (expected vN)"
 }
 
 $Version = $Version -replace '^[vV]', ''
@@ -98,6 +164,8 @@ try {
     $StagedDir = Join-Path $InstallParent (".olt-staged-" + [Guid]::NewGuid().ToString("N"))
     New-Item -ItemType Directory -Path $StagedDir -Force | Out-Null
     Copy-Item -Path (Join-Path $Binary.Directory.FullName "*") -Destination $StagedDir -Recurse -Force
+
+    Install-Ml1Assets
 
     $PreviousDir = "$InstallDir.previous"
     if (Test-Path -LiteralPath $PreviousDir) {
