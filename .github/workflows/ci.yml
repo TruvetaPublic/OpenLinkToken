@@ -257,7 +257,7 @@ jobs:
 
       - name: Install Python CLI dependencies
         run: |
-          uv pip install --break-system-packages --system -r lib/python/openlinktoken/requirements.txt -e lib/python/openlinktoken/ -r lib/python/openlinktoken-cli/requirements.txt pytest pytest-cov ruff -e lib/python/openlinktoken-cli/
+          uv pip install --break-system-packages --system -r lib/python/openlinktoken/requirements.txt -e lib/python/openlinktoken/ -e lib/python/openlinktoken-core-ai/ -r lib/python/openlinktoken-cli/requirements.txt pytest pytest-cov ruff -e lib/python/openlinktoken-cli/
 
       - name: Lint CLI with ruff
         run: |
