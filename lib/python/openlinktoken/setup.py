@@ -16,9 +16,6 @@ try:
         long_description = f.read()
 except FileNotFoundError:
     long_description = "Open Link Token Python implementation for record linkage."
-# Read requirements from requirements.txt
-with open(os.path.join(THIS_DIR, "requirements.txt"), encoding="utf-8") as f:
-    requirements = [line.strip() for line in f if line.strip() and not line.startswith("#")]
 
 setup(
     name="openlinktoken",
@@ -36,5 +33,4 @@ setup(
     packages=find_packages(where="src/main"),
     package_data={},
     python_requires=">=3.10",
-    install_requires=requirements,
 )

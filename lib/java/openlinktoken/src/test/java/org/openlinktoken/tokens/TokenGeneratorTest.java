@@ -306,16 +306,113 @@ class TokenGeneratorTest {
         });
     }
 
+    /**
+     * Verifies non-hash transformers receive and transform raw token values using a passthrough tokenizer.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
+     *
+     * @throws Exception if the token generator encounters a checked transformation failure
+     */
     @Test
-    void storeRawToken_appliesNonHashTransformersWithPassthroughTokenizer() {
+    void storeRawToken_appliesNonHashTransformersWithPassthroughTokenizer() throws Exception {
         TokenTransformer encryptTransformer = token -> "encrypted:" + token;
         tokenGenerator = new TokenGenerator(
                 tokenDefinition,
-                new PassthroughTokenizer(List.of(encryptTransformer)));
+                new PassthroughTokenizer(List.of(new HashTokenTransformer("secret"), encryptTransformer)));
         TokenGeneratorResult result = new TokenGeneratorResult();
 
         tokenGenerator.storeRawToken(result, "ML1", "quantized-signature");
 
         assertEquals("encrypted:quantized-signature", result.getTokens().get("ML1"));
+    }
+
+    /**
+     * Verifies class-keyed attributes produce raw signatures while requested legacy rules are excluded.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
+     *
+     * @throws Exception if token generation fails
+     */
+    @Test
+    void excludesLegacyRulesAndReturnsValidSignatures() throws Exception {
+        when(tokenDefinition.getTokenIdentifiers()).thenReturn(Set.of("keep", "skip"));
+        when(tokenDefinition.getTokenDefinition("keep"))
+                .thenReturn(List.of(new AttributeExpression(FirstNameAttribute.class, "U")));
+        when(tokenDefinition.getTokenDefinition("skip"))
+                .thenReturn(List.of(new AttributeExpression(FirstNameAttribute.class, "U")));
+        when(tokenizer.tokenize(anyString())).thenReturn("hashed-token");
+        Map<Class<? extends Attribute>, String> personAttributes = Map.of(FirstNameAttribute.class, "John");
+
+        assertEquals(Map.of("keep", "JOHN", "skip", "JOHN"), tokenGenerator.getAllTokenSignatures(personAttributes));
+
+        TokenGeneratorResult result = tokenGenerator.generateTokensExcluding(personAttributes, Set.of("skip"));
+        assertEquals(Map.of("keep", "hashed-token"), result.getTokens());
+    }
+
+    /**
+     * Verifies invalid class-keyed attributes are returned as invalid attribute names.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
+     */
+    @Test
+    void reportsInvalidClassKeyedAttributes() {
+        Map<Class<? extends Attribute>, String> personAttributes = Map.of(
+                FirstNameAttribute.class,
+                "",
+                LastNameAttribute.class,
+                "Smith");
+
+        assertEquals(Set.of("FirstName"), tokenGenerator.getInvalidPersonAttributes(personAttributes));
+    }
+
+    /**
+     * Verifies embedding-derived tokens and precomputed signatures are stored with blank fallbacks.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
+     *
+     * @throws Exception if tokenization fails unexpectedly
+     */
+    @Test
+    void appliesEmbeddingAndPrecomputedSignaturesWithBlankFallback() throws Exception {
+        TokenGeneratorResult result = new TokenGeneratorResult();
+        tokenGenerator.applyEmbeddingDerivedTokens(result, "ML1-R", List.of("first", "second"));
+
+        when(tokenizer.tokenize("signature")).thenReturn("hashed-signature");
+        when(tokenizer.tokenize("blank-signature")).thenReturn(Token.BLANK);
+        when(tokenizer.tokenize("failed-signature")).thenThrow(new IllegalStateException("tokenizer failed"));
+
+        tokenGenerator.applyPrecomputedSignature(result, "ML1", "signature");
+        tokenGenerator.applyPrecomputedSignature(result, "blank", "blank-signature");
+        tokenGenerator.applyPrecomputedSignature(result, "failed", "failed-signature");
+
+        assertEquals("first", result.getTokens().get("ML1-R0"));
+        assertEquals("second", result.getTokens().get("ML1-R1"));
+        assertEquals("hashed-signature", result.getTokens().get("ML1"));
+        assertEquals(Token.BLANK, result.getTokens().get("blank"));
+        assertEquals(Token.BLANK, result.getTokens().get("failed"));
+        assertEquals(Set.of("blank", "failed"), result.getBlankTokensByRule());
+    }
+
+    /**
+     * Verifies null, blank, and transformation-failing raw tokens are stored as blank tokens.
+     *
+     * <p>This test method accepts no arguments and returns no value.</p>
+     */
+    @Test
+    void storesNullBlankAndFailedRawTokensAsBlank() {
+        TokenTransformer failingTransformer = token -> {
+            throw new IllegalStateException("transformer failed");
+        };
+        tokenGenerator = new TokenGenerator(
+                tokenDefinition,
+                new PassthroughTokenizer(List.of(failingTransformer)));
+        TokenGeneratorResult result = new TokenGeneratorResult();
+
+        tokenGenerator.storeRawToken(result, "null", null);
+        tokenGenerator.storeRawToken(result, "blank", Token.BLANK);
+        tokenGenerator.storeRawToken(result, "failed", "raw-token");
+
+        assertEquals(Map.of("null", Token.BLANK, "blank", Token.BLANK, "failed", Token.BLANK), result.getTokens());
+        assertEquals(Set.of("null", "blank", "failed"), result.getBlankTokensByRule());
     }
 }

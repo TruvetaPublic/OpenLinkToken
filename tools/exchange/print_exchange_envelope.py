@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Print the contents of an Open Link Token exchange JWE envelope and payload."""
+"""Print the contents of an Open Link Token standard JWE envelope and payload."""
 
 from __future__ import annotations
 
@@ -17,10 +17,17 @@ PROGRAM = "print_exchange_envelope.py"
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments for exchange envelope inspection."""
+    """Parse command-line arguments for exchange envelope inspection.
+
+    Args:
+        None; this function takes no arguments.
+
+    Returns:
+        Parsed command-line arguments for the envelope inspector.
+    """
     parser = argparse.ArgumentParser(
         prog=PROGRAM,
-        description="Print an initiate-exchange JWE envelope, decode its protected header, and decrypt its payload.",
+        description="Print an initiate-exchange JWE JSON object, decode its protected header, and decrypt its payload.",
     )
     parser.add_argument(
         "--exchange-config",
@@ -31,13 +38,13 @@ def parse_args() -> argparse.Namespace:
     private_key_group.add_argument(
         "--private-key",
         required=False,
-        help="Optional path to a sender or recipient private key PEM that matches one JWE recipient entry.",
+        help="Optional path to a sender or recipient private PEM or JSON bundle that matches one JWE recipient entry.",
     )
     private_key_group.add_argument(
         "--private-key-stdin",
         action="store_true",
         default=False,
-        help="Read a sender or recipient private key PEM from stdin instead of a file path.",
+        help="Read a sender or recipient private PEM or JSON bundle from stdin instead of a file path.",
     )
     return parser.parse_args()
 
