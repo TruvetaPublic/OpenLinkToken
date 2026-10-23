@@ -309,8 +309,8 @@ class UpdateCommand:
                 f"olt-v{version}-linux-x86_64",
                 f"openlinktoken-v{version}-linux-x86_64",
             )
-        if system == "macos" and machine in {"x86_64", "amd64", "arm64", "aarch64"}:
-            architecture = "arm64" if machine in {"arm64", "aarch64"} else "x86_64"
+        if system == "macos" and machine in {"arm64", "aarch64"}:
+            architecture = "arm64"
             return (
                 f"olt-cli-{version}-macos-{architecture}.zip",
                 f"olt-v{version}-macos-{architecture}",
@@ -340,8 +340,6 @@ class UpdateCommand:
         """
         if machine in {"arm64", "aarch64"}:
             return ("-macos-arm64", "-macos-universal")
-        if machine in {"x86_64", "amd64", "x64"}:
-            return ("-macos-x86_64", "-macos-universal")
         return ()
 
     @staticmethod
