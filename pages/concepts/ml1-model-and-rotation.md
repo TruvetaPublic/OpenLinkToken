@@ -135,8 +135,12 @@ ML1InferenceConfig.configure(
 The repository workflow can publish the matched files as a
 release-independent OCI package in GitHub Container Registry. The tag identifies
 the model version, not the library release. Install
-[ORAS](https://oras.land/docs/installation), then pull the package into the
-asset directory:
+[ORAS](https://oras.land/docs/installation).
+
+For Homebrew, WinGet, and Snap installation commands, see
+[Install ORAS](../quickstarts/cli-quickstart.md#install-oras).
+
+Then pull the package into the asset directory:
 
 ```bash
 mkdir -p /opt/openlinktoken/ml1
@@ -149,8 +153,17 @@ The package contains `model.onnx`, `model.onnx.data`, `tokenizer.json`, and
 `asset-manifest.json`. Public packages do not require login. For a private
 package, authenticate ORAS with a GitHub token that has `read:packages`.
 
-Standalone CLI installers and published Docker images include the ML1 files
-already. They do not need an ORAS pull or another asset download.
+Standalone CLI ZIPs omit all four files. The Linux/macOS and Windows installers
+bootstrap checksum-verified ORAS 1.3.3 and pull the public OCI package during
+installation, defaulting to model tag `v1`. Override it with `--model-tag vN`
+on Linux/macOS, `-ModelTag vN` on Windows, or `OLT_ML1_MODEL_TAG`. Once installed,
+ML1 does not download assets at runtime.
+
+For direct ZIP installation, pull the files into
+`_internal/openlinktoken/core/ai/tokens/` inside the extracted CLI bundle and
+verify them before use. See the [manual CLI installation instructions](../quickstarts/cli-quickstart.md#manual-zip-installation)
+for Linux/macOS and Windows commands, including checksum verification.
+Published Docker images still include the ML1 files and need no separate pull.
 
 ## Rotation and Quantization
 
