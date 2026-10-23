@@ -41,6 +41,28 @@ This folder contains the repository's GitHub Actions workflows for CI, releases,
 - Review permissions, triggers, and branch targeting whenever you change a workflow.
 - Keep workflow behavior aligned with repo standards from [`../instructions/`](../instructions/README.md).
 
+### Maven Central bundle validation
+
+The `central-release` profile in [`../../lib/java/pom.xml`](../../lib/java/pom.xml)
+uses Central Publishing Plugin 0.12.0, which removes Maven 3.10 local repository
+metadata from publication bundles. Older plugin versions can leave
+`maven-metadata-local.xml` files in the bundle, causing Central to reject it with
+“Bundle has content that does NOT have a .pom file”.
+
+To generate a bundle without uploading or requiring signing credentials, run:
+
+```bash
+mvn -B -f lib/java/pom.xml clean deploy -Pcentral-release \
+  -DskipUpload=true -Dgpg.skip=true -Dmaven.test.skip=true
+unzip -l lib/java/target/central-publishing/central-bundle.zip
+```
+
+The unsigned bundle is for local inspection only, not publication. Confirm that
+all three modules have versioned POMs and that no `maven-metadata*.xml` or
+`_remote.repositories` files remain. Actual publication must retain GPG signing.
+The publishing workflow checks out the release tag, so rerunning an old release
+without a separate recovery procedure still uses that tag's plugin version.
+
 ## Related files
 
 - Shared composite actions: [`../actions/`](../actions/README.md)

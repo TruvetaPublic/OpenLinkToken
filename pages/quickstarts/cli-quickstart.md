@@ -12,7 +12,7 @@ Run the Open Link Token CLI end-to-end to generate tokens from a sample dataset 
 
 Choose one of:
 
-- **Self-contained executable** (easiest) - Download and run, zero dependencies
+- **Standalone CLI** (easiest) - No Python or Java installation; the installer downloads ML1 assets
 - **Docker** (recommended for reproducibility) - No other dependencies needed
 - **Python 3.10+**
 
@@ -26,10 +26,11 @@ Download the appropriate executable for your platform from the [latest release](
 
 - **Linux**: `olt-cli-{version}-linux-x64.zip`
 - **macOS Apple Silicon**: `olt-cli-{version}-macos-arm64.zip`
-- **macOS Intel**: `olt-cli-{version}-macos-x86_64.zip`
 - **Windows**: `olt-cli-{version}-windows-x64.zip`
 
 Each downloadable ZIP is also published with a matching `.sha256` sidecar for manual verification.
+macOS standalone builds support Apple Silicon (arm64) only, not Intel Macs.
+ZIPs omit the ML1 model, weights, tokenizer, and asset manifest.
 
 ### One-Line Installers
 
@@ -53,19 +54,83 @@ irm https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/inst
 ```
 
 Both installers detect the platform, install to a user-writable directory, and verify the downloaded ZIP against its SHA-256 release sidecar.
+They also download checksum-verified ORAS 1.3.3 temporarily and pull
+`ghcr.io/truvetapublic/openlinktoken-ml1-assets:v1` without requiring a registry
+login. The model download includes about 1.34 GB of weights. After installation,
+ML1 runs locally without further model downloads.
 
-### Extract and Run
+Model versions are independent of CLI releases. Select an immutable `vN` tag
+with `--model-tag vN` on Linux/macOS, `-ModelTag vN` on Windows, or the
+`OLT_ML1_MODEL_TAG` environment variable. The flag overrides the environment
+variable. Linux installs CUDA runtime libraries by default; pass `--no-cuda`
+for CPU-only installation. A compatible host NVIDIA driver is still required
+for GPU inference. macOS and Windows use CPU inference.
+
+### Manual ZIP Installation
+
+Download the ZIP and its `.sha256` sidecar from the same release. Follow
+[Install ORAS](#install-oras) below first, then continue with the ZIP commands.
+ORAS downloads OCI artifacts; no Docker daemon is needed.
+Keep the executable and its `_internal` directory together.
+
+#### Install ORAS
+
+Use your platform's package manager:
+
+**macOS (Homebrew):**
+
+```bash
+brew install oras
+```
+
+**Windows (WinGet):**
+
+```powershell
+winget install --id ORASProject.ORAS --exact
+```
+
+**Linux (Snap):**
+
+```bash
+sudo snap install oras --classic
+```
+
+Open a new terminal if needed, then verify the installation:
+
+```bash
+oras version
+```
+
+Package managers install their available ORAS version, which may differ from
+the bootstrap installers' pinned 1.3.3. For other installation methods,
+specific versions, archive verification, or PATH setup, use the
+[official ORAS installation guide](https://oras.land/docs/installation).
+
+#### Extract the CLI and Install the Model
 
 **Linux/macOS:**
 
 ```bash
-# Extract the zip file
+# Example: macOS Apple Silicon. On Linux, substitute linux-x64 for macos-arm64.
+shasum -a 256 -c olt-cli-2.2.1-macos-arm64.zip.sha256
 unzip olt-cli-2.2.1-macos-arm64.zip
 cd olt-cli-2.2.1-macos-arm64
-cd olt
-
-# The bundle keeps the executable and its runtime files together.
 chmod +x olt
+
+# Download all four matched model files beside the frozen Python package.
+model_dir="$PWD/_internal/openlinktoken/core/ai/tokens"
+mkdir -p "$model_dir"
+oras pull ghcr.io/truvetapublic/openlinktoken-ml1-assets:v1 --output "$model_dir"
+
+# Verify the v1 model files. For another tag, use its asset-manifest.json hashes.
+(
+  cd "$model_dir"
+  shasum -a 256 -c <<'EOF'
+9d3479558460ec499106c0fa5a1d2c004e158514436aeaef1156016e5890c4aa  model.onnx
+28d75b2b4950c55ef03afb9beafd29250ea086f66f7a85fea783711404cc494e  model.onnx.data
+9db1850d8519a9c2efa93695313555aa45c0110e3f7e7f792bf2d97c06b47a50  tokenizer.json
+EOF
+)
 
 # Simulate receiving the recipient's public key (in practice, your partner provides this)
 ./olt generate-key-pair --name recipient
@@ -75,13 +140,37 @@ chmod +x olt
 ./olt package -i /path/to/sample.csv
 ```
 
+On Linux, use `sha256sum -c` instead of `shasum -a 256 -c` if `shasum` is
+unavailable. Stop if any checksum verification fails. The Linux ZIP works
+with CPU inference without the separate CUDA assets; use the installer for
+automatic CUDA runtime installation.
+
 **Windows PowerShell:**
 
 ```powershell
-# Extract the zip file
-Expand-Archive olt-cli-2.2.1-windows-x64.zip
-cd olt-cli-2.2.1-windows-x64
-cd olt
+$ErrorActionPreference = "Stop"
+$archive = "olt-cli-2.2.1-windows-x64.zip"
+$expected = ((Get-Content -Raw "$archive.sha256").Trim() -split '\s+')[0]
+if ($expected -notmatch '^[0-9a-fA-F]{64}$' -or
+    (Get-FileHash -Algorithm SHA256 $archive).Hash -ine $expected) {
+    throw "CLI archive checksum verification failed"
+}
+Expand-Archive -LiteralPath $archive -DestinationPath ".\olt-manual"
+Set-Location ".\olt-manual\olt-cli-2.2.1-windows-x64"
+
+$modelDir = Join-Path $PWD "_internal\openlinktoken\core\ai\tokens"
+New-Item -ItemType Directory -Force -Path $modelDir | Out-Null
+oras pull ghcr.io/truvetapublic/openlinktoken-ml1-assets:v1 --output $modelDir
+if ($LASTEXITCODE -ne 0) { throw "ML1 OCI download failed" }
+$manifest = Get-Content -Raw (Join-Path $modelDir "asset-manifest.json") | ConvertFrom-Json
+foreach ($name in @("model.onnx", "model.onnx.data", "tokenizer.json")) {
+    $metadata = $manifest.assets.PSObject.Properties[$name].Value
+    $path = Join-Path $modelDir $name
+    if (-not $metadata -or (Get-Item -LiteralPath $path).Length -ne $metadata.size -or
+        (Get-FileHash -Algorithm SHA256 -LiteralPath $path).Hash -ine $metadata.sha256) {
+        throw "ML1 asset verification failed: $name"
+    }
+}
 
 # Simulate receiving the recipient's public key (in practice, your partner provides this)
 .\olt.exe generate-key-pair --name recipient
@@ -99,7 +188,10 @@ The self-contained executable includes:
 - All dependencies (pyarrow, pandas, cryptography)
 - Open Link Token CLI and core library
 
-No installation or setup required — just download, extract, and run.
+The ZIP does not include ML1 assets. Complete the installer or manual model
+setup above before tokenizing with ML1. Keep `model.onnx.data` beside
+`model.onnx`; ONNX Runtime loads those weights automatically. Do not mix files
+from different model tags. Retain `asset-manifest.json` for verification.
 
 ## Quick Start with Docker
 

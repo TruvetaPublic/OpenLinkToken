@@ -81,10 +81,21 @@ ML1InferenceConfig.configure(
 data file that ONNX Runtime loads automatically from the same directory as
 `model.onnx`.
 
-Standalone `olt` CLI release bundles include the model assets and do not need a
-network connection for ML1 because the files are packaged inside the binary.
-The published Docker image also includes the model assets beside the installed
-Python modules.
+Standalone `olt` release ZIPs omit the large ML1 files. The Linux/macOS and
+Windows installers retrieve them from the public GHCR OCI package during
+installation and place them beside the installed Python modules. The default
+model tag is `v1`; select another immutable tag with `install.sh --model-tag
+vN`, `install.ps1 -ModelTag vN`, or `OLT_ML1_MODEL_TAG`. Installers bootstrap
+and checksum-verify ORAS 1.3.3. Direct ZIP users must pull the OCI package
+themselves. The published Docker image includes the model assets.
+
+For standalone ZIPs, the destination is
+`_internal/openlinktoken/core/ai/tokens/` inside the extracted bundle, beside
+the frozen Python modules, not an arbitrary `/opt` directory. Follow the
+[manual CLI installation guide](../pages/quickstarts/cli-quickstart.md#manual-zip-installation)
+for Linux/macOS and Windows commands to verify the ZIP, pull all four files,
+and verify the model hashes. The `/opt` example below is for applications
+that explicitly configure model and tokenizer paths.
 
 ### Downloading the ML1 OCI package
 
@@ -96,8 +107,14 @@ not the Open Link Token library:
 ghcr.io/truvetapublic/openlinktoken-ml1-assets:v1
 ```
 
-Install [ORAS](https://oras.land/docs/installation), then pull the package
-into a local directory:
+Installers pull this package automatically. To install a model manually or
+for direct ZIP use, install [ORAS](https://oras.land/docs/installation).
+
+The [CLI quickstart's ORAS installation steps](../pages/quickstarts/cli-quickstart.md#install-oras)
+cover Homebrew, WinGet, and Snap, with a link to the official guide for other
+installation methods.
+
+Pull the package into a local directory:
 
 ```bash
 mkdir -p /opt/openlinktoken/ml1
@@ -107,8 +124,9 @@ oras pull \
 ```
 
 The package contains `model.onnx`, `model.onnx.data`, `tokenizer.json`, and
-`asset-manifest.json`. Public packages can be pulled without login. For a
-private package, log in with a GitHub token that has `read:packages`:
+`asset-manifest.json`. Keep the package public so installer pulls work without
+credentials. A manually run ORAS pull from a private package can authenticate
+with a GitHub token that has `read:packages`:
 
 ```bash
 printf '%s' "$GITHUB_TOKEN" | oras login ghcr.io \
@@ -117,7 +135,8 @@ printf '%s' "$GITHUB_TOKEN" | oras login ghcr.io \
 ```
 
 After the first publish, set the GHCR package visibility to **public** in the
-repository package settings if anonymous downloads are required.
+repository package settings. Model tags use the `vN` format and cannot be
+overwritten; publish changed model files under a new tag.
 
 After the pull, use the model and tokenizer paths from the previous section.
 The publishing workflow runs manually and creates a new package tag only when
@@ -303,6 +322,16 @@ Both `maven-publish.yml` and `python-publish.yml` are triggered by any of the fo
 | `release.created` / `release.published` | A GitHub Release is created or published                                           | After `auto-release.yml` creates tag `v2.0.0` and its release                                                                       |
 | `workflow_run` (completed)              | The "Create Release on Merge" workflow (`auto-release.yml`) completes successfully | Merging a `release/2.0.0` → `main` PR triggers `auto-release.yml`, which in turn fires `maven-publish.yml` and `python-publish.yml` |
 | `workflow_dispatch` (manual)            | A workflow manually triggered via the GitHub UI with a `version` input             | Clicking **Run workflow** in Actions tab                                                                                            |
+
+### Testing standalone CLI builds before release
+
+Manually dispatch `build-olt-cli.yml` on the feature branch with `dry_run=true`
+(the default), the intended CLI `version`, and `model_tag=v1`. Manual builds
+always check out the selected branch commit, even when that version already
+has a GitHub Release. Dry runs upload Actions artifacts but never replace
+GitHub Release assets. Set `dry_run=false` explicitly when a manual build is
+intended to update assets on an existing release. Automatic release builds
+continue to use the release tag.
 
 ### Trigger Chain
 
