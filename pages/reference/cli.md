@@ -14,12 +14,18 @@ Download the pre-built executable from [releases](https://github.com/TruvetaPubl
 
 - **Linux**: `olt-cli-{version}-linux-x64.zip`
 - **macOS Apple Silicon**: `olt-cli-{version}-macos-arm64.zip`
-- **macOS Intel**: `olt-cli-{version}-macos-x86_64.zip`
 - **Windows**: `olt-cli-{version}-windows-x64.zip`
 
-No dependencies required. Extract the ZIP and run `olt/olt` on Linux/macOS or
-`olt\olt.exe` on Windows. The `olt` directory contains the executable and its
-runtime files.
+No Python or Java installation is required. macOS standalone builds support
+Apple Silicon (arm64) only. Each ZIP contains a versioned bundle directory
+with `olt` (Linux/macOS) or `olt.exe` (Windows) and its runtime files.
+
+ZIPs omit the ML1 model assets. The platform installers pull the public
+`ghcr.io/truvetapublic/openlinktoken-ml1-assets:v1` OCI package using
+checksum-verified ORAS 1.3.3. For direct ZIP use, follow the
+[manual installation and model verification steps](../quickstarts/cli-quickstart.md#manual-zip-installation)
+before using ML1. Linux ZIPs also omit CUDA libraries; the installer retrieves
+them by default unless `--no-cuda` is specified.
 
 ### Other Options
 

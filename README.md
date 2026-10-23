@@ -53,19 +53,25 @@ Perfect for understanding privacy-preserving record linkage concepts before divi
 
 ## Quickstart
 
-**Self-contained executable (easiest):**
+**Standalone CLI packages:**
 
 Download the binary for your platform from the [latest release](https://github.com/TruvetaPublic/OpenLinkToken/releases):
 
-| Platform            | Asset                            |
-| ------------------- | -------------------------------- |
-| Linux               | `olt-cli-X.Y.Z-linux-x64.zip`    |
-| macOS Apple Silicon | `olt-cli-X.Y.Z-macos-arm64.zip`  |
-| macOS Intel         | `olt-cli-X.Y.Z-macos-x86_64.zip` |
-| Windows             | `olt-cli-X.Y.Z-windows-x64.zip`  |
+| Platform            | Asset                           |
+| ------------------- | ------------------------------- |
+| Linux               | `olt-cli-X.Y.Z-linux-x64.zip`   |
+| macOS Apple Silicon | `olt-cli-X.Y.Z-macos-arm64.zip` |
+| Windows             | `olt-cli-X.Y.Z-windows-x64.zip` |
 
 Each ZIP contains the executable and its runtime files. Each asset has a matching
-`.sha256` file you can use to verify the download.
+`.sha256` file you can use to verify the download. CLI ZIPs omit the ML1 ONNX
+model files; use `install.sh` on Linux/macOS or `install.ps1` on Windows to
+download and verify them during installation. The Linux x86_64 ZIP also omits
+NVIDIA libraries: `install.sh` installs them by default, or pass `--no-cuda` to
+skip them.
+
+The standalone macOS CLI supports Apple Silicon (arm64) only; Intel Macs are
+no longer supported. This does not change Java or Python library support.
 
 **One-line installers:**
 
@@ -74,6 +80,14 @@ Each ZIP contains the executable and its runtime files. Each asset has a matchin
 curl -fsSL https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.sh | bash
 
 # macOS/Linux - install a specific version
+curl -fsSL https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.sh | \
+  bash -s -- --version v2.2.1
+
+# Linux x86_64 - install CPU-only instead of the default CUDA-enabled bundle
+curl -fsSL https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.sh | \
+  bash -s -- --no-cuda
+
+# Linux x86_64 - install a specific version (CUDA is included by default)
 curl -fsSL https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.sh | \
   bash -s -- --version v2.2.1
 ```
@@ -86,7 +100,15 @@ irm https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/inst
 & ([scriptblock]::Create((irm https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.ps1))) -Version v2.2.1
 ```
 
-Extract the ZIP, then run the executable inside its `olt` directory.
+Use the platform installer for a complete installation, including the ML1
+model files. The installers download the selected model from the public GHCR
+OCI package (default tag `v1`); use `--model-tag vN` with `install.sh` or
+`-ModelTag vN` with `install.ps1` to select another immutable model version.
+Directly extracting a CLI ZIP does not include the ML1 model.
+For installation without the bootstrap scripts, follow the
+[manual ZIP installation guide](pages/quickstarts/cli-quickstart.md#manual-zip-installation),
+including the model destination and checksum verification commands for
+Linux/macOS and Windows.
 
 Then run:
 
@@ -142,7 +164,7 @@ See <a href="https://truvetapublic.github.io/OpenLinkToken/quickstarts/" target=
 
 - **Token rules**: Five rules (T1–T5) combine attributes in different ways — see <a href="https://truvetapublic.github.io/OpenLinkToken/concepts/token-rules.html" target="_blank" rel="noopener noreferrer">Token Rules</a>
 - **ML1 matching**: The default ONNX matching model generates embeddings from which ML1 derives rotation-based, quantized token projections. When a T1 signature is available, each projection is SHA-256 hashed with a T1-derived blocking key. ML1 is more compute-intensive and slower than T1–T5 alone, but delivers significantly better matching outcomes. Disable it with `package --disable-inferencing` or `tokenize --disable-inferencing`; see the <a href="https://truvetapublic.github.io/OpenLinkToken/reference/cli.html" target="_blank" rel="noopener noreferrer">CLI Reference</a> for options.
-- **Hardware acceleration**: Linux x86_64 installs the CUDA-enabled ONNX Runtime package and selects NVIDIA CUDA when available. macOS and other systems use CPU inference; CoreML is disabled for ML1 because compiling this large transformer can exhaust unified memory.
+- **Hardware acceleration**: Linux x86_64 installs the NVIDIA runtime by default and uses CUDA when a compatible host NVIDIA driver is available. Pass `--no-cuda` to `install.sh` to install a CPU-only bundle. macOS and other systems use CPU inference; CoreML is disabled for ML1 because compiling this large transformer can exhaust unified memory.
 - **Normalization**: Names, dates, postal codes normalized before tokenization — see <a href="https://truvetapublic.github.io/OpenLinkToken/concepts/normalization-and-validation.html" target="_blank" rel="noopener noreferrer">Normalization and Validation</a>
 - **Metadata**: Processing statistics and audit trail — see <a href="https://truvetapublic.github.io/OpenLinkToken/reference/metadata-format.html" target="_blank" rel="noopener noreferrer">Metadata Format</a>
 
