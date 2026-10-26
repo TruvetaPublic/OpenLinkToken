@@ -34,7 +34,8 @@ USER vscode
 # errors when VS Code tries to install its server on first container start.
 RUN mkdir -p /home/vscode/.vscode-server \
              /home/vscode/.vscode-server-insiders \
-             /home/vscode/.copilot
+             /home/vscode/.copilot \
+             /home/vscode/.openlinktoken
 
 # Install UV and global Python CLI tools (each in an isolated uv-managed venv)
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \

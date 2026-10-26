@@ -10,12 +10,12 @@ jwcrypto==1.6.1
     # via
     #   openlinktoken
     #   openlinktoken-pyspark
-pycparser==3.11 ; python_full_version < '3.11' and implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'
-    # via cffi
-pycparser==3.12 ; python_full_version >= '3.11' and implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'
+pycparser==3.11 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'
     # via cffi
 pycryptodome==4.0.0
-    # via openlinktoken-pyspark
+    # via
+    #   openlinktoken
+    #   openlinktoken-pyspark
 pyyaml==6.0.3
     # via openlinktoken
 typing-extensions==4.16.0

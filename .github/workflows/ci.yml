@@ -774,7 +774,7 @@ jobs:
             {
               echo "## Interoperability Tests Passed"
               echo
-              echo "Java core-library parity fixtures and the Java harness both matched Python CLI output."
+              echo "Java core-library parity fixtures and the Java harness matched Python CLI output across all crypto suites."
               echo
               echo "**Environment:** Java 21 + Python 3.10 on Ubuntu"
             } >> "$GITHUB_STEP_SUMMARY"
