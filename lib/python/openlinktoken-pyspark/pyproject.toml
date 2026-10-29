@@ -10,7 +10,7 @@ dynamic = [
 ]
 dependencies = [
   "openlinktoken==2.2.0",
-  "pycryptodome==4.0.0",
+  "pycryptodome==4.1.0",
   "jwcrypto==1.6.1",
 ]
 
