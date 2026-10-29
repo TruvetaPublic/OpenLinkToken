@@ -2,15 +2,15 @@
 #    uv export --project tools/interoperability/pyproject.toml --no-hashes --format requirements.txt --output-file tools/interoperability/requirements.txt
 cffi==2.1.1 ; platform_python_implementation != 'PyPy'
     # via cryptography
-cryptography==50.0.1
+cryptography==50.0.2
     # via jwcrypto
 jwcrypto==1.6.1
     # via openlinktoken-interoperability-requirements
 pyarrow==25.0.1
     # via openlinktoken-interoperability-requirements
-pycparser==3.0 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'
+pycparser==3.11 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'
     # via cffi
-pycryptodome==4.0.0
+pycryptodome==4.1.0
     # via openlinktoken-interoperability-requirements
 typing-extensions==4.16.0
     # via
