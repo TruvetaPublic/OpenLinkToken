@@ -99,7 +99,7 @@ ipython==8.39.0 ; python_full_version < '3.11'
     #   ipykernel
     #   ipywidgets
     #   jupyter-console
-ipython==9.17.1 ; python_full_version >= '3.11'
+ipython==9.18.0 ; python_full_version >= '3.11'
     # via
     #   ipykernel
     #   ipywidgets
