@@ -241,7 +241,7 @@ pluggy==1.7.0
     # via
     #   pytest
     #   pytest-cov
-prek==0.5.5
+prek==0.5.7
 prometheus-client==0.26.0
     # via jupyter-server
 prompt-toolkit==3.0.53
@@ -262,7 +262,7 @@ pycparser==3.11 ; python_full_version < '3.11' and implementation_name != 'PyPy'
     # via cffi
 pycparser==3.12 ; python_full_version >= '3.11' and implementation_name != 'PyPy'
     # via cffi
-pycryptodome==4.0.0
+pycryptodome==4.1.0
 pyflakes==3.4.0
     # via autoflake
 pygments==2.21.0
@@ -324,7 +324,7 @@ rpds-py==2026.9.1 ; python_full_version >= '3.11'
     # via
     #   jsonschema
     #   referencing
-ruff==0.17.0
+ruff==0.17.2
 send2trash==2.1.0
     # via jupyter-server
 setuptools==83.0.0
