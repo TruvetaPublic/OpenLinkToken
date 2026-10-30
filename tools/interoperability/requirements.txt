@@ -10,7 +10,7 @@ pyarrow==25.0.1
     # via openlinktoken-interoperability-requirements
 pycparser==3.0 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'
     # via cffi
-pycryptodome==4.0.0
+pycryptodome==4.1.0
     # via openlinktoken-interoperability-requirements
 typing-extensions==4.16.0
     # via
