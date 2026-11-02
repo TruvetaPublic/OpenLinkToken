@@ -1,12 +1,12 @@
 {
   "assets": {
     "model.onnx": {
-      "sha256": "9d3479558460ec499106c0fa5a1d2c004e158514436aeaef1156016e5890c4aa",
-      "size": 226869
+      "sha256": "aebd101d469169de2511c67b562e599870377ad37cfbdcc6e74010c4a6279722",
+      "size": 545202
     },
     "model.onnx.data": {
-      "sha256": "28d75b2b4950c55ef03afb9beafd29250ea086f66f7a85fea783711404cc494e",
-      "size": 1340579840
+      "sha256": "7cd1e8d8affe038db3ef11b83f595dd59a1c68e8bb3b0fe80fc249e4b9470735",
+      "size": 1336369152
     },
     "tokenizer.json": {
       "sha256": "9db1850d8519a9c2efa93695313555aa45c0110e3f7e7f792bf2d97c06b47a50",
