@@ -10,7 +10,7 @@ from pkgutil import extend_path
 
 __path__ = extend_path(__path__, __name__)
 
-__version__ = "2.2.1"
+__version__ = "2.3.0"
 __author__ = "Open Link Token Contributors"
 
 __all__ = [

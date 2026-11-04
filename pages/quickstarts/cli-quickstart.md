@@ -42,7 +42,7 @@ curl -fsSL https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/downlo
 
 # macOS/Linux - install a specific version
 curl -fsSL https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.sh | \
-  bash -s -- --version v2.2.1
+  bash -s -- --version v2.3.0
 ```
 
 ```powershell
@@ -50,7 +50,7 @@ curl -fsSL https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/downlo
 irm https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.ps1 | iex
 
 # Windows - install a specific version
-& ([scriptblock]::Create((irm https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.ps1))) -Version v2.2.1
+& ([scriptblock]::Create((irm https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/install.ps1))) -Version v2.3.0
 ```
 
 Both installers detect the platform, install to a user-writable directory, and verify the downloaded ZIP against its SHA-256 release sidecar.
@@ -112,9 +112,9 @@ specific versions, archive verification, or PATH setup, use the
 
 ```bash
 # Example: macOS Apple Silicon. On Linux, substitute linux-x64 for macos-arm64.
-shasum -a 256 -c olt-cli-2.2.1-macos-arm64.zip.sha256
-unzip olt-cli-2.2.1-macos-arm64.zip
-cd olt-cli-2.2.1-macos-arm64
+shasum -a 256 -c olt-cli-2.3.0-macos-arm64.zip.sha256
+unzip olt-cli-2.3.0-macos-arm64.zip
+cd olt-cli-2.3.0-macos-arm64
 chmod +x olt
 
 # Download all four matched model files beside the frozen Python package.
@@ -149,14 +149,14 @@ automatic CUDA runtime installation.
 
 ```powershell
 $ErrorActionPreference = "Stop"
-$archive = "olt-cli-2.2.1-windows-x64.zip"
+$archive = "olt-cli-2.3.0-windows-x64.zip"
 $expected = ((Get-Content -Raw "$archive.sha256").Trim() -split '\s+')[0]
 if ($expected -notmatch '^[0-9a-fA-F]{64}$' -or
     (Get-FileHash -Algorithm SHA256 $archive).Hash -ine $expected) {
     throw "CLI archive checksum verification failed"
 }
 Expand-Archive -LiteralPath $archive -DestinationPath ".\olt-manual"
-Set-Location ".\olt-manual\olt-cli-2.2.1-windows-x64"
+Set-Location ".\olt-manual\olt-cli-2.3.0-windows-x64"
 
 $modelDir = Join-Path $PWD "_internal\openlinktoken\core\ai\tokens"
 New-Item -ItemType Directory -Force -Path $modelDir | Out-Null
@@ -377,7 +377,7 @@ create metadata files.
 {
   "Platform": "Python",
   "PythonVersion": "3.11.0",
-  "Version": "2.2.1",
+  "Version": "2.3.0",
   "TotalRows": 2,
   "TotalRowsWithInvalidAttributes": 0,
   "InvalidAttributesByType": {},
@@ -421,8 +421,8 @@ If a command fails unexpectedly, check the `Stack trace: <path>` line printed to
 Each time you run the CLI it silently checks (in the background) whether a newer release is available. If one is found, a notice is printed to **stderr** after the command completes:
 
 ```
-⚠ A new version of Open Link Token is available: v2.2.1 (you have v2.0.0)
-   Release notes: https://github.com/TruvetaPublic/OpenLinkToken/releases/tag/v2.2.1
+⚠ A new version of Open Link Token is available: v2.3.0 (you have v2.0.0)
+   Release notes: https://github.com/TruvetaPublic/OpenLinkToken/releases/tag/v2.3.0
    Run 'olt update' to upgrade, or set OLT_DISABLE_UPDATE_CHECK=1 to silence this message.
 ```
 
@@ -443,7 +443,7 @@ export OLT_DISABLE_UPDATE_CHECK=1
 olt update
 
 # Upgrade to a specific version
-olt update --version v2.2.1
+olt update --version v2.3.0
 
 # Preview changes without applying them
 olt update --dry-run

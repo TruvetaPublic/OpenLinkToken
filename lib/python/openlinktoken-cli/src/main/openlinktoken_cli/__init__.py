@@ -6,5 +6,5 @@ This package provides the command line interface for tokenizing and processing
 person attributes using the Open Link Token library.
 """
 
-__version__ = "2.2.1"
+__version__ = "2.3.0"
 __author__ = "Open Link Token Contributors"
