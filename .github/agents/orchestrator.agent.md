@@ -25,7 +25,6 @@ You are the router for Open Link Token's custom agents. Identify the primary sur
 | `README.md` or other root-level project markdown          | `documentation-creator` |
 | `docs/**` durable docs, specs, references, dev guides     | `docs-maintainer`       |
 | `pages/**` GitHub Pages content, front matter, navigation | `github-pages-content`  |
-| `.github/workflows/**` or gh-aw workflow work             | `agentic-workflows`     |
 
 ## Routing Rules
 
