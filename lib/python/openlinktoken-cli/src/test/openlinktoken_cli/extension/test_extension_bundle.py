@@ -34,6 +34,7 @@ def _make_wheel(
     version: str,
     *,
     requirements: tuple[str, ...] = (),
+    requires_python: str | None = None,
     entry_point: str | None = None,
     files: dict[str, bytes] | None = None,
     data_file: tuple[str, bytes] | None = None,
@@ -48,7 +49,9 @@ def _make_wheel(
         f"{dist_info}/METADATA": (
             "Metadata-Version: 2.1\n"
             f"Name: {distribution}\n"
-            f"Version: {version}\n" + "".join(f"Requires-Dist: {requirement}\n" for requirement in requirements)
+            f"Version: {version}\n"
+            + (f"Requires-Python: {requires_python}\n" if requires_python else "")
+            + "".join(f"Requires-Dist: {requirement}\n" for requirement in requirements)
         ).encode(),
         f"{dist_info}/WHEEL": (
             "Wheel-Version: 1.0\nGenerator: extension-bundle-tests\nRoot-Is-Purelib: true\nTag: py3-none-any\n"
@@ -129,6 +132,7 @@ def _make_extension_and_dependency(
     directory: Path,
     extension_name: str = "demo",
     dependency_version: str = "1.0.0",
+    dependency_requires_python: str | None = None,
 ) -> tuple[Path, Path]:
     """Create an extension wheel and its single pinned dependency."""
     extension = _make_wheel(
@@ -143,6 +147,7 @@ def _make_extension_and_dependency(
         directory,
         "demo-dependency",
         dependency_version,
+        requires_python=dependency_requires_python,
         files={"demo_dependency.py": b"VERSION = 'pinned'\n"},
     )
     return extension, dependency
@@ -170,6 +175,31 @@ def test_extract_and_validate_bundle_checks_complete_lock(tmp_path):
 
     assert {wheel.name for wheel in wheels} == {"openlinktoken-ext-demo", "demo-dependency"}
     assert all(wheel.path.is_file() for wheel in wheels)
+
+
+def test_extract_and_validate_bundle_rejects_incompatible_requires_python(tmp_path):
+    extension, dependency = _make_extension_and_dependency(
+        tmp_path,
+        dependency_requires_python=">=99",
+    )
+    bundle = _make_bundle(
+        tmp_path,
+        "demo",
+        "1.0.0",
+        [
+            (extension, "openlinktoken-ext-demo", "1.0.0"),
+            (dependency, "demo-dependency", "1.0.0"),
+        ],
+    )
+
+    with pytest.raises(BundleValidationError, match="Requires-Python"):
+        extract_and_validate_bundle(
+            bundle,
+            tmp_path / "verified",
+            expected_name="demo",
+            expected_version="1.0.0",
+            core_inventory={"openlinktoken": "2.2.1"},
+        )
 
 
 def test_extract_and_validate_bundle_rejects_missing_transitive_wheel(tmp_path):

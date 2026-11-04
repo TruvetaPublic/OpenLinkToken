@@ -160,10 +160,14 @@ class VersionChecker:
                 if not is_core_compatible(CURRENT_CORE_VERSION, manifest.core_specifier):
                     continue
                 current = metadata.get("version", "0.0.0")
-                latest = max(
-                    (artifact.version for artifact in manifest.artifacts if artifact.version),
-                    key=lambda value: self._version_key(value),
-                    default=current,
+                latest = (
+                    manifest.version
+                    if manifest.schema_version == 2
+                    else max(
+                        (artifact.version for artifact in manifest.artifacts if artifact.version),
+                        key=lambda value: self._version_key(value),
+                        default=current,
+                    )
                 )
                 if self._is_newer(latest, current):
                     self._extension_results.append((name, current, latest))

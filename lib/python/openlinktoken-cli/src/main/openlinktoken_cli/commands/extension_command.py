@@ -35,6 +35,7 @@ from openlinktoken_cli.extension.extension_bundle import (
     extract_and_validate_bundle,
     install_wheel_file,
 )
+from openlinktoken_cli.extension.extension_loader import BUILTIN_COMMANDS
 from openlinktoken_cli.extension.extension_manifest import (
     CURRENT_CORE_VERSION,
     STANDALONE_EXTENSION_RUNTIME_PROTOCOL,
@@ -782,6 +783,12 @@ class ExtensionCommand:
         """
         if not getattr(sys, "frozen", False):
             print("Error: Locked dependency bundles require the standalone CLI.", file=sys.stderr)
+            return 1
+        if command_name in BUILTIN_COMMANDS:
+            print(
+                f"Error: Extension command '{command_name}' conflicts with a built-in command.",
+                file=sys.stderr,
+            )
             return 1
         if not _validate_dist_name(expected_name):
             print(f"Error: Invalid extension name '{expected_name}'.", file=sys.stderr)

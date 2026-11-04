@@ -452,6 +452,24 @@ class TestExtensionUpdate:
         download.assert_not_called()
         install.assert_not_called()
 
+    def test_frozen_install_rejects_builtin_command_names(self, tmp_path, capsys):
+        """A standalone extension cannot shadow a built-in CLI command."""
+        with patch.object(sys, "frozen", True, create=True):
+            result = ExtensionCommand._install_frozen_bundle(
+                tmp_path / "bundle.zip",
+                source_url="https://example.com/tokenize.zip",
+                expected_sha256="a" * 64,
+                expected_name="tokenize",
+                expected_version="1.0.0",
+                command_name="tokenize",
+                description="Built-in command",
+                update_manifest_url=None,
+                core_range=">=2.0.0,<3.0.0",
+            )
+
+        assert result == 1
+        assert "built-in command" in capsys.readouterr().err
+
     def test_bundle_activation_keeps_old_version_and_registers_private_paths(self, tmp_path):
         extensions_dir = tmp_path
         versions_dir = extensions_dir / "demo" / "versions"

@@ -22,6 +22,7 @@ from installer.exceptions import InstallerError
 from installer.sources import WheelFile
 from packaging.markers import UndefinedEnvironmentName, default_environment
 from packaging.requirements import InvalidRequirement, Requirement
+from packaging.specifiers import InvalidSpecifier, SpecifierSet
 from packaging.tags import sys_tags
 from packaging.utils import canonicalize_name, parse_wheel_filename
 from packaging.version import InvalidVersion, Version
@@ -386,6 +387,18 @@ def _validate_wheel_file(wheel_path: Path, record: _WheelRecord) -> tuple[str, .
         raise BundleValidationError(f"wheel '{record.filename}' has an invalid metadata version") from exc
     if canonicalize_name(raw_name) != record.name or metadata_version != Version(record.version):
         raise BundleValidationError(f"wheel metadata does not match lock entry for '{record.filename}'")
+    raw_requires_python = metadata.get("Requires-Python")
+    if raw_requires_python is not None:
+        try:
+            requires_python = SpecifierSet(raw_requires_python)
+        except InvalidSpecifier as exc:
+            raise BundleValidationError(f"wheel '{record.filename}' has invalid Requires-Python metadata") from exc
+        runtime_version = Version(platform.python_version())
+        if runtime_version not in requires_python:
+            raise BundleValidationError(
+                f"wheel '{record.filename}' has incompatible Requires-Python "
+                f"'{raw_requires_python}' for runtime '{runtime_version}'"
+            )
     return tuple(metadata.get_all("Requires-Dist", []))
 
 
