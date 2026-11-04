@@ -14,8 +14,13 @@ from packaging.version import InvalidVersion, Version
 from openlinktoken.metadata import Metadata
 
 MANIFEST_SCHEMA_VERSION = 1
+CURRENT_MANIFEST_SCHEMA_VERSION = 2
+STANDALONE_EXTENSION_RUNTIME_PROTOCOL = 2
+SUPPORTED_MANIFEST_SCHEMA_VERSIONS = frozenset({1, CURRENT_MANIFEST_SCHEMA_VERSION})
 CURRENT_CORE_VERSION = Metadata.DEFAULT_VERSION
 _SHA256_RE = re.compile(r"^[0-9a-fA-F]{64}$")
+_EXTENSION_COMMAND_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+_PYTHON_ABI_RE = re.compile(r"^cp\d{2,3}$")
 _SIGNATURE_ALGORITHMS = frozenset({"ed25519", "ecdsa-sha256", "rsa-sha256"})
 _SIGNATURE_KEYS = frozenset({"algorithm", "value", "key_id"})
 
@@ -35,6 +40,16 @@ class ArtifactRecord:
 
 
 @dataclass(frozen=True)
+class BundleRecord:
+    """A target-specific, checksum-verified standalone dependency bundle."""
+
+    target: str
+    python_abi: str
+    url: str
+    sha256: str
+
+
+@dataclass(frozen=True)
 class ExtensionManifest:
     """Normalized representation of a bootstrap or update manifest."""
 
@@ -46,6 +61,10 @@ class ExtensionManifest:
     update_manifest_url: Optional[str] = None
     distribution_name: Optional[str] = None
     source_url: Optional[str] = None
+    minimum_runtime_protocol: Optional[int] = None
+    command_name: Optional[str] = None
+    description: Optional[str] = None
+    bundles: tuple[BundleRecord, ...] = ()
 
 
 def parse_manifest(
@@ -70,8 +89,20 @@ def parse_manifest(
     """
     if not isinstance(payload, Mapping):
         raise ManifestValidationError("Manifest must be a JSON object.")
-    if payload.get("schema_version") != MANIFEST_SCHEMA_VERSION:
-        raise ManifestValidationError("Unsupported or missing schema_version; expected 1.")
+    schema_version = payload.get("schema_version")
+    if (
+        isinstance(schema_version, int)
+        and not isinstance(schema_version, bool)
+        and schema_version == CURRENT_MANIFEST_SCHEMA_VERSION
+    ):
+        return _parse_bundle_manifest(payload, expected_name=expected_name, allow_local=allow_local)
+    if (
+        not isinstance(schema_version, int)
+        or isinstance(schema_version, bool)
+        or schema_version not in SUPPORTED_MANIFEST_SCHEMA_VERSIONS
+    ):
+        supported = ", ".join(str(version) for version in sorted(SUPPORTED_MANIFEST_SCHEMA_VERSIONS))
+        raise ManifestValidationError(f"Unsupported or missing schema_version; expected one of {supported}.")
 
     extension = payload.get("extension")
     if isinstance(extension, Mapping):
@@ -114,10 +145,110 @@ def parse_manifest(
         version=version,
         core_specifier=core_specifier,
         artifacts=artifacts,
+        schema_version=MANIFEST_SCHEMA_VERSION,
         update_manifest_url=update_manifest_url,
         distribution_name=distribution_name,
         source_url=source_url,
     )
+
+
+def _parse_bundle_manifest(
+    payload: Mapping[str, Any],
+    *,
+    expected_name: Optional[str],
+    allow_local: bool,
+) -> ExtensionManifest:
+    """
+    Validate a schema-version-2 manifest that points to locked wheel bundles.
+
+    Args:
+        payload: Structured schema-version-2 manifest.
+        expected_name: Expected extension identity, when supplied by an update.
+        allow_local: Whether local bundle URLs are permitted.
+
+    Returns:
+        Normalized standalone extension manifest.
+
+    Raises:
+        ManifestValidationError: If the manifest violates the bundle contract.
+    """
+    extension = payload.get("extension")
+    if isinstance(extension, Mapping):
+        name = _required_string(extension, "name")
+        version = _required_version(extension, "version")
+        update_manifest_url = _optional_url(extension.get("update_manifest_url"), allow_local=allow_local)
+        core_specifier = _bootstrap_core_specifier(payload.get("core"))
+    elif isinstance(extension, str):
+        name = extension.strip()
+        if not name:
+            raise ManifestValidationError("extension identity must not be empty.")
+        version = _required_version(payload, "latest_version")
+        update_manifest_url = None
+        core_specifier = _required_core_specifier(payload.get("requires_core"))
+    else:
+        raise ManifestValidationError("extension must be an object or extension name string.")
+
+    if expected_name is not None and name != expected_name:
+        raise ManifestValidationError(
+            f"Manifest extension '{name}' does not match requested extension '{expected_name}'."
+        )
+    command_name = _required_string(payload, "command_name")
+    if not _EXTENSION_COMMAND_RE.fullmatch(command_name):
+        raise ManifestValidationError("command_name contains unsupported characters.")
+    if command_name != name:
+        raise ManifestValidationError("command_name must match the extension identity.")
+    description = _required_string(payload, "description")
+    protocol = payload.get("minimum_runtime_protocol")
+    if isinstance(protocol, bool) or not isinstance(protocol, int) or protocol < 1:
+        raise ManifestValidationError("minimum_runtime_protocol must be a positive integer.")
+
+    raw_bundles = payload.get("bundles")
+    if not isinstance(raw_bundles, list) or not raw_bundles:
+        raise ManifestValidationError("Schema-version-2 manifests require a non-empty bundles list.")
+    bundles = tuple(_parse_bundle(bundle, allow_local=allow_local) for bundle in raw_bundles)
+    targets = {(bundle.target, bundle.python_abi) for bundle in bundles}
+    if len(targets) != len(bundles):
+        raise ManifestValidationError("Bundle target and Python ABI pairs must be unique.")
+
+    return ExtensionManifest(
+        name=name,
+        version=version,
+        core_specifier=core_specifier,
+        artifacts=(),
+        schema_version=CURRENT_MANIFEST_SCHEMA_VERSION,
+        update_manifest_url=update_manifest_url,
+        minimum_runtime_protocol=protocol,
+        command_name=command_name,
+        description=description,
+        bundles=bundles,
+    )
+
+
+def _parse_bundle(payload: Any, *, allow_local: bool) -> BundleRecord:
+    """
+    Parse one target-specific bundle locator.
+
+    Args:
+        payload: Bundle object from a schema-version-2 manifest.
+        allow_local: Whether local bundle URLs are permitted.
+
+    Returns:
+        Validated target, ABI, URL, and SHA-256 metadata.
+
+    Raises:
+        ManifestValidationError: If a bundle field is invalid.
+    """
+    if not isinstance(payload, Mapping):
+        raise ManifestValidationError("Each bundle must be a JSON object.")
+    target = _required_string(payload, "target")
+    python_abi = _required_string(payload, "python_abi")
+    if not _PYTHON_ABI_RE.fullmatch(python_abi):
+        raise ManifestValidationError("python_abi must be a CPython ABI such as 'cp312'.")
+    url = _required_url(payload.get("url"), allow_local=allow_local)
+    sha256 = payload.get("sha256")
+    if not isinstance(sha256, str) or not _SHA256_RE.fullmatch(sha256):
+        raise ManifestValidationError("Each bundle requires a 64-character hexadecimal sha256.")
+    return BundleRecord(target, python_abi, url, sha256.lower())
 
 
 def is_core_compatible(core_version: str, core_specifier: str) -> bool:

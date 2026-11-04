@@ -55,6 +55,8 @@ This guide centralizes contributor-facing information. It covers local setup, la
     - [Run the extension tests](#run-the-extension-tests)
     - [Developing your own extension](#developing-your-own-extension)
       - [Reporting custom progress metrics](#reporting-custom-progress-metrics)
+    - [Persistent standalone extensions](#persistent-standalone-extensions)
+      - [Standalone dependency bundles (schema v2)](#standalone-dependency-bundles-schema-v2)
     - [Extension tests in `openlinktoken-cli`](#extension-tests-in-openlinktoken-cli)
   - [Development Container](#development-container)
   - [Version Bumping Policy](#version-bumping-policy)
@@ -914,10 +916,96 @@ recorded in the registry for the contract, but checksum verification is the
 currently enforced integrity check until a trusted vendor-key distribution
 mechanism is defined.
 
-Frozen extensions may depend only on runtime packages included in the core
-bundle's allowlist. Vendor-specific dependencies must be added to a core
-release before an extension can declare them; the frozen installer does not
-silently install packages outside the bundle.
+Schema-version-1 manifests remain supported. In the standalone binary, their
+wheel dependencies must already be present in the core runtime. Use
+schema-version-2 manifests when a standalone extension needs its own
+third-party dependencies.
+
+#### Standalone dependency bundles (schema v2)
+
+A schema-version-2 bootstrap manifest declares the command metadata, minimum
+worker protocol, and one checksum-protected ZIP per supported platform/ABI:
+
+```json
+{
+  "schema_version": 2,
+  "extension": {
+    "name": "truveta",
+    "version": "1.0.0",
+    "update_manifest_url": "https://example.com/truveta-extension.json"
+  },
+  "core": {
+    "min_version": "2.2.1",
+    "max_version": "<3.0.0"
+  },
+  "minimum_runtime_protocol": 2,
+  "command_name": "truveta",
+  "description": "Truveta extension",
+  "bundles": [
+    {
+      "target": "linux-x64",
+      "python_abi": "cp312",
+      "url": "https://example.com/truveta-1.0.0-linux-x64-cp312.zip",
+      "sha256": "..."
+    }
+  ]
+}
+```
+
+Update manifests use the same command metadata, protocol, and `bundles`
+fields, with `extension` as the extension name, `latest_version` for the
+release, and `requires_core` for the compatibility range. The standalone
+runtime currently recognizes `linux-x64`, `windows-x64`, and `macos-arm64`.
+The ABI must identify the embedded CPython runtime (for example, `cp312`), and
+each target/ABI pair must be unique.
+
+Each bundle ZIP contains only `bundle-manifest.json` and the locked wheel
+files at its root. The bundle manifest identifies the extension and lists
+every wheel with its normalized distribution name, version, exact filename
+tags, and SHA-256 digest:
+
+```json
+{
+  "schema_version": 1,
+  "extension": { "name": "truveta", "version": "1.0.0" },
+  "target": "linux-x64",
+  "python_abi": "cp312",
+  "wheels": [
+    {
+      "filename": "openlinktoken_ext_truveta-1.0.0-py3-none-any.whl",
+      "name": "openlinktoken-ext-truveta",
+      "version": "1.0.0",
+      "tags": ["py3-none-any"],
+      "sha256": "..."
+    },
+    {
+      "filename": "httpx-0.28.1-py3-none-any.whl",
+      "name": "httpx",
+      "version": "0.28.1",
+      "tags": ["py3-none-any"],
+      "sha256": "..."
+    }
+  ]
+}
+```
+
+The outer SHA-256 verifies the ZIP; each inner digest verifies its wheel.
+Open Link Token validates wheel metadata, tags, the complete dependency
+closure, and conflicts with the exact core-runtime inventory before installing
+anything. The bundle is installed offline—there is no package-index lookup or
+dependency resolution. Core-owned packages are not copied into the bundle.
+Each successful version is staged in its own immutable directory and becomes
+active only after installation and registry activation succeed; a failed
+install leaves the previous version active.
+
+In the frozen CLI, the parent process reads only registry metadata to build
+help and starts a fresh worker process for each extension command. The worker
+adds only that extension's code and private dependency paths before importing
+it, so extensions can use different versions of the same dependency. This is
+dependency isolation, not a security sandbox: workers still run as the user
+and share the user's filesystem and network access. Schema-version-2 bundles
+are supported only by the standalone CLI; the normal Python-package CLI
+continues to use its installed entry points and dependencies.
 
 #### Reporting custom progress metrics
 

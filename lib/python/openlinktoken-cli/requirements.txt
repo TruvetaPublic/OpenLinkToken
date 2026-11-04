@@ -58,6 +58,8 @@ idna==3.20
     # via
     #   anyio
     #   httpx
+installer==0.7.0
+    # via openlinktoken-cli
 jwcrypto==1.6.1
     # via
     #   openlinktoken

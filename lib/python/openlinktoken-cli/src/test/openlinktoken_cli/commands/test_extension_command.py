@@ -3,6 +3,7 @@
 Unit tests for ExtensionCommand.
 """
 
+import hashlib
 import json
 import logging
 import os
@@ -11,8 +12,19 @@ import zipfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from openlinktoken_cli.commands.extension_command import _SECURITY_WARNING, ExtensionCommand
+from openlinktoken_cli.extension.extension_bundle import LockedWheel
 from openlinktoken_cli.extension.extension_registry import ExtensionRegistry
+
+_CORE_RUNTIME_INVENTORY = {
+    "openlinktoken": "2.2.1",
+    "openlinktoken-cli": "2.2.1",
+    "openlinktoken-core-ai": "2.2.1",
+    "pandas": "2.2.3",
+    "pyarrow": "25.0.1",
+}
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -372,6 +384,13 @@ class TestExtensionInstall:
 class TestExtensionUpdate:
     """Tests for explicit persistent extension updates."""
 
+    @pytest.fixture(autouse=True)
+    def _core_runtime_inventory(self, monkeypatch):
+        monkeypatch.setattr(
+            "openlinktoken_cli.commands.extension_command.load_core_runtime_inventory",
+            lambda: _CORE_RUNTIME_INVENTORY,
+        )
+
     def test_update_parser_wires_name_and_all_targets(self):
         """The extension parser accepts either one name or --all."""
         from openlinktoken_cli.commands.open_link_token_command import OpenLinkTokenCommand
@@ -433,6 +452,158 @@ class TestExtensionUpdate:
         download.assert_not_called()
         install.assert_not_called()
 
+    def test_bundle_activation_keeps_old_version_and_registers_private_paths(self, tmp_path):
+        extensions_dir = tmp_path
+        versions_dir = extensions_dir / "demo" / "versions"
+        old_install = versions_dir / "old-version"
+        (old_install / "extension" / "site-packages").mkdir(parents=True)
+        (old_install / "extension" / "site-packages" / "old.py").write_text("OLD = True\n")
+        (old_install / "dependencies" / "site-packages").mkdir(parents=True)
+        stage_dir = versions_dir / ".stage-test"
+        (stage_dir / "extension" / "site-packages").mkdir(parents=True)
+        (stage_dir / "extension" / "site-packages" / "demo.py").write_text("EXTENSION = True\n")
+        (stage_dir / "dependencies" / "site-packages").mkdir(parents=True)
+        (stage_dir / "dependencies" / "site-packages" / "dependency.py").write_text("DEPENDENCY = True\n")
+        old_registry = {
+            "demo": {"version": "1.0.0", "install_location": str(old_install)},
+            "other": {"version": "3.0.0"},
+        }
+        (extensions_dir / "registry.json").write_text(json.dumps(old_registry))
+
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(extensions_dir)}):
+            metadata = ExtensionCommand._activate_frozen_install(
+                stage_dir,
+                extension_name="demo",
+                version="2.0.0",
+                artifact_sha256="a" * 64,
+                metadata={"version": "2.0.0"},
+                source_relative_path=Path("extension") / "site-packages",
+                dependency_relative_path=Path("dependencies") / "site-packages",
+            )
+
+        registry = json.loads((extensions_dir / "registry.json").read_text())
+        assert registry["demo"] == metadata
+        assert registry["other"] == old_registry["other"]
+        assert metadata["source_path"] == str(Path(metadata["install_location"]) / "extension" / "site-packages")
+        assert metadata["dependency_path"] == str(Path(metadata["install_location"]) / "dependencies" / "site-packages")
+        assert (old_install / "extension" / "site-packages" / "old.py").is_file()
+        assert (Path(metadata["source_path"]) / "demo.py").is_file()
+        assert (Path(metadata["dependency_path"]) / "dependency.py").is_file()
+
+    def test_bundle_activation_removes_new_version_when_registry_write_fails(self, tmp_path):
+        versions_dir = tmp_path / "demo" / "versions"
+        old_install = versions_dir / "old-version"
+        old_install.mkdir(parents=True)
+        stage_dir = versions_dir / ".stage-test"
+        stage_dir.mkdir()
+        old_registry = {"demo": {"version": "1.0.0", "install_location": str(old_install)}}
+        (tmp_path / "registry.json").write_text(json.dumps(old_registry))
+
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
+            with patch.object(ExtensionRegistry, "save", side_effect=OSError("disk full")):
+                with pytest.raises(OSError, match="disk full"):
+                    ExtensionCommand._activate_frozen_install(
+                        stage_dir,
+                        extension_name="demo",
+                        version="2.0.0",
+                        artifact_sha256="b" * 64,
+                        metadata={"version": "2.0.0"},
+                        source_relative_path=Path("extension") / "site-packages",
+                        dependency_relative_path=Path("dependencies") / "site-packages",
+                    )
+
+        assert json.loads((tmp_path / "registry.json").read_text()) == old_registry
+        assert list(versions_dir.iterdir()) == [old_install]
+
+    def test_standalone_bundle_install_activates_private_wheel_paths(self, tmp_path, capsys):
+        bundle_path = tmp_path / "demo-bundle.zip"
+        bundle_path.write_bytes(b"locked bundle")
+        extension_wheel_path = tmp_path / "openlinktoken_ext_demo-1.0.0-py3-none-any.whl"
+        dependency_wheel_path = tmp_path / "demo_dependency-1.0.0-py3-none-any.whl"
+        for wheel_path in (extension_wheel_path, dependency_wheel_path):
+            with zipfile.ZipFile(wheel_path, "w") as archive:
+                archive.writestr("test.txt", "")
+        extension_wheel = LockedWheel(
+            filename=extension_wheel_path.name,
+            name="openlinktoken-ext-demo",
+            version="1.0.0",
+            tags=frozenset({"py3-none-any"}),
+            sha256="1" * 64,
+            path=extension_wheel_path,
+            requirements=(),
+        )
+        dependency_wheel = LockedWheel(
+            filename=dependency_wheel_path.name,
+            name="demo-dependency",
+            version="1.0.0",
+            tags=frozenset({"py3-none-any"}),
+            sha256="2" * 64,
+            path=dependency_wheel_path,
+            requirements=(),
+        )
+        old_install = tmp_path / "demo" / "versions" / "old-version"
+        old_install.mkdir(parents=True)
+        old_registry = {
+            "demo": {"version": "0.9.0", "install_location": str(old_install)},
+            "other": {"version": "3.0.0"},
+        }
+        (tmp_path / "registry.json").write_text(json.dumps(old_registry))
+
+        def fake_install(wheel_path: Path, destination: Path) -> None:
+            site_packages = destination / "site-packages"
+            site_packages.mkdir(parents=True)
+            (site_packages / "installed.py").write_text(f"NAME = '{wheel_path.name}'\n")
+
+        entry_point = ("demo", "demo_extension", "DemoExtension", "1.0.0", "openlinktoken-ext-demo")
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
+            with patch.object(sys, "frozen", True, create=True):
+                with patch(
+                    "openlinktoken_cli.commands.extension_command.load_core_runtime_inventory",
+                    return_value={"openlinktoken": "2.2.1"},
+                ):
+                    with patch(
+                        "openlinktoken_cli.commands.extension_command.current_extension_target",
+                        return_value=("linux-x64", "cp312"),
+                    ):
+                        with patch(
+                            "openlinktoken_cli.commands.extension_command.extract_and_validate_bundle",
+                            return_value=(extension_wheel, dependency_wheel),
+                        ):
+                            with patch.object(
+                                ExtensionCommand,
+                                "_extract_entry_point",
+                                side_effect=[entry_point, None],
+                            ):
+                                with patch(
+                                    "openlinktoken_cli.commands.extension_command.install_wheel_file",
+                                    side_effect=fake_install,
+                                ) as install:
+                                    result = ExtensionCommand._install_frozen_bundle(
+                                        bundle_path,
+                                        source_url="https://example.com/demo-bundle.zip",
+                                        expected_sha256=hashlib.sha256(bundle_path.read_bytes()).hexdigest(),
+                                        expected_name="demo",
+                                        expected_version="1.0.0",
+                                        command_name="demo",
+                                        description="Demo extension",
+                                        update_manifest_url="https://example.com/demo.json",
+                                        core_range=">=2.2.1,<3.0.0",
+                                    )
+            registry = ExtensionRegistry.load()
+
+        assert result == 0
+        assert install.call_count == 2
+        assert registry["demo"]["version"] == "1.0.0"
+        source_path = Path(registry["demo"]["source_path"])
+        dependency_path = Path(registry["demo"]["dependency_path"])
+        assert source_path.parts[-2:] == ("extension", "site-packages")
+        assert dependency_path.parts[-2:] == ("dependencies", "site-packages")
+        assert (source_path / "installed.py").is_file()
+        assert (dependency_path / "installed.py").is_file()
+        assert registry["other"] == old_registry["other"]
+        assert old_install.is_dir()
+        assert "installed successfully" in capsys.readouterr().out
+
     def test_frozen_install_rolls_back_directory_and_registry_when_registry_write_fails(self, tmp_path):
         """A failed atomic registry commit leaves the prior extension untouched."""
         wheel = _make_loadable_wheel(tmp_path)
@@ -473,9 +644,14 @@ class TestExtensionUpdate:
         (tmp_path / "registry.json").write_text(json.dumps(old_registry))
 
         original_replace = Path.replace
+        versions_dir = ext_dir / "versions"
 
         def fail_stage_swap(source: Path, target: Path) -> Path:
-            if source.name.startswith(".hello-world.stage-") and target == ext_dir:
+            if (
+                source.name.startswith(".hello-world.stage-")
+                and source.parent == versions_dir
+                and target.parent == versions_dir
+            ):
                 raise OSError("rename failed")
             return original_replace(source, target)
 
@@ -567,45 +743,28 @@ class TestExtensionUpdate:
                     result = ExtensionCommand._install(args)
 
         assert result != 0
-        # src_dir must not be left on disk after the ValueError
-        src_dir = tmp_path / "hello-world" / "src"
-        assert not src_dir.exists()
+        versions_dir = tmp_path / "hello-world" / "versions"
+        assert list(versions_dir.iterdir()) == []
 
-    def test_frozen_install_cleans_up_src_dir_on_none_command_name(self, tmp_path):
-        """install removes src_dir when _resolve_extension_command_name returns None (frozen mode)."""
+    def test_frozen_install_uses_registry_metadata_without_importing_extension(self, tmp_path):
+        """Frozen wheel installs register parsed metadata without importing the extension."""
         whl = _make_wheel(tmp_path)
         args = _make_args(url=f"file://{whl}", yes=True)
 
         with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
             with patch("sys.frozen", True, create=True):
-                with patch.object(ExtensionCommand, "_safe_extract_wheel"):
-                    with patch(
-                        "openlinktoken_cli.commands.extension_command._resolve_extension_command_name",
-                        return_value=None,
-                    ):
-                        result = ExtensionCommand._install(args)
+                with patch(
+                    "openlinktoken_cli.commands.extension_command._resolve_extension_command_name",
+                    side_effect=AssertionError("frozen install must not import extension code"),
+                ) as resolve_command_name:
+                    result = ExtensionCommand._install(args)
 
-        assert result != 0
-        src_dir = tmp_path / "hello-world" / "src"
-        assert not src_dir.exists()
-
-    def test_frozen_install_cleans_up_src_dir_on_command_name_mismatch(self, tmp_path):
-        """install removes src_dir when _resolve_extension_command_name returns a mismatched name (frozen mode)."""
-        whl = _make_wheel(tmp_path)
-        args = _make_args(url=f"file://{whl}", yes=True)
-
-        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
-            with patch("sys.frozen", True, create=True):
-                with patch.object(ExtensionCommand, "_safe_extract_wheel"):
-                    with patch(
-                        "openlinktoken_cli.commands.extension_command._resolve_extension_command_name",
-                        return_value="wrong-name",
-                    ):
-                        result = ExtensionCommand._install(args)
-
-        assert result != 0
-        src_dir = tmp_path / "hello-world" / "src"
-        assert not src_dir.exists()
+        assert result == 0
+        resolve_command_name.assert_not_called()
+        installed = json.loads((tmp_path / "registry.json").read_text())["hello-world"]
+        assert installed["command_name"] == "hello-world"
+        assert installed["description"] is None
+        assert Path(installed["source_path"]).is_dir()
 
     def test_install_rolls_back_pip_on_command_name_mismatch(self, tmp_path):
         """install rolls back pip when _resolve_extension_command_name returns a name that doesn't match."""
@@ -655,6 +814,13 @@ class TestExtensionUpdate:
 
 class TestCheckFrozenDeps:
     """Unit tests for ExtensionCommand._check_frozen_deps."""
+
+    @pytest.fixture(autouse=True)
+    def _core_runtime_inventory(self, monkeypatch):
+        monkeypatch.setattr(
+            "openlinktoken_cli.commands.extension_command.load_core_runtime_inventory",
+            lambda: _CORE_RUNTIME_INVENTORY,
+        )
 
     def _make_wheel_with_metadata(self, dest: Path, metadata_content: str) -> zipfile.ZipFile:
         whl_path = dest / "test-1.0.0-py3-none-any.whl"
