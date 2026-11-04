@@ -252,7 +252,7 @@ the following (use `arm64` on macOS; Intel Mac CLI builds are not supported):
 
 ```shell
 python -m openlinktoken_cli.util.release_assets \
-  --version 2.3.0 \
+  --version 2.2.1 \
   --runner-os Linux \
   --architecture x86_64 \
   --dist-dir dist \
