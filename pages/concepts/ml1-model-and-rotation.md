@@ -69,16 +69,16 @@ model accepts:
 | `position_ids`   | `int64` | `[batch, sequence_length]` | Model-dependent |
 
 Sequence length is dynamically padded to the longest encoded row in a batch
-and capped at `128`. The bundled model exposes:
+and capped at `128`. The current bundled model exposes a single CLS embedding output:
 
 ```text
-last_hidden_state: [batch, sequence_length, 1024]
-pooler_output:     [batch, 1024]
+cls_embedding: [batch, 1024]
 ```
 
-The implementation uses the first token (CLS) from a three-dimensional output,
-or the two-dimensional output directly. The resulting embedding has 1024
-float32 values.
+The graph returns the CLS vector directly and omits the unused pooler. For
+compatibility with previously published model assets, the implementation also
+accepts a three-dimensional `last_hidden_state` output and selects its first
+token. The resulting embedding has 1024 float32 values.
 
 The model path, tokenizer path, maximum sequence length, batch size, and
 thread count can be configured through the ML1 runtime configuration. See the

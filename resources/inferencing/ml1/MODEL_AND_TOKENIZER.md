@@ -18,8 +18,10 @@ The model does not load vocabulary files. It receives tokenized integer arrays:
 - `token_type_ids`, when present in the model inputs
 - `position_ids`, when present in the model inputs
 
-The generator extracts the embedding for the first (`[CLS]`) position and
-serializes it into the ML1 signature.
+The current ONNX graph returns only the 1,024-dimensional float32 `[CLS]`
+embedding as `cls_embedding` with shape `[batch, 1024]`; it omits the unused
+pooler output. The runtime also accepts older graphs that return a
+three-dimensional `last_hidden_state` and extracts its first token.
 
 ## `tokenizer.json`
 
