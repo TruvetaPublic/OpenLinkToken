@@ -2,14 +2,18 @@
 
 import os
 import sys
+from pathlib import Path
 
-from PyInstaller.utils.hooks import collect_all, collect_dynamic_libs
+from PyInstaller.utils.hooks import collect_all, collect_dynamic_libs, copy_metadata
 
 block_cipher = None
 
 # Anchor to spec file location for reproducible builds
 # Note: SPECPATH is provided by PyInstaller when executing the spec
 base_dir = os.path.abspath(SPECPATH)
+sys.path.insert(0, os.path.join(base_dir, "src", "main"))
+
+from openlinktoken_cli.extension.core_runtime_inventory import write_core_runtime_inventory
 
 # OLT_TARGET_ARCH allows callers to request a specific target architecture
 # (e.g. "universal2" for macOS universal binaries) without passing --target-arch,
@@ -34,11 +38,15 @@ for package_name in (
     "cryptography",
     "tokenizers",
     "onnxruntime",
+    "installer",
 ):
     package_datas, package_binaries, package_hiddenimports = collect_all(package_name)
     datas += package_datas
     binaries += package_binaries
     hiddenimports += package_hiddenimports
+
+# Extensions check the host CLI version via importlib.metadata.
+datas += copy_metadata("openlinktoken-cli")
 
 if sys.platform.startswith("linux"):
     nvidia_library_patterns = ["*.so", "*.so.*"]
@@ -75,6 +83,17 @@ a = Analysis(
     noarchive=False,
     target_arch=target_arch,
 )
+
+inventory_path = Path(base_dir) / "build" / "core_runtime_inventory.json"
+write_core_runtime_inventory(a.pure + a.binaries + a.datas, inventory_path)
+a.datas += [
+    (
+        "openlinktoken_cli/data/core_runtime_inventory.json",
+        str(inventory_path),
+        "DATA",
+    )
+]
+
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 exe = EXE(
     pyz,
