@@ -1052,6 +1052,9 @@ workflow lives in the extension repository; both its code and extension source
 are pinned to the same commit in the caller. Update those pins together after
 validating a new counterpart revision.
 
+Pull requests targeting `main`, `develop`, or `release/**` run this integration,
+source CI, and CodeQL so release retargeting retains the same validation.
+
 The six native jobs cover Linux x64, macOS arm64, and Windows x64 with CPython
 3.11 and 3.12. They download temporary installer copies and branch-built assets
 from local HTTPS, verify checksums, install/reinstall into a path with spaces,
