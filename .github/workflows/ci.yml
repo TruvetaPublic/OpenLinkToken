@@ -354,6 +354,26 @@ jobs:
           validate_ml1_output target/decrypted.csv 1
           echo "Output CSV contains $line_count lines"
 
+  windows-installer-tests:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup toolchain (Python)
+        uses: ./.github/actions/setup-toolchain
+        with:
+          enable-java: false
+          enable-python: true
+          python-version: "3.11"
+
+      - name: Install pytest
+        run: uv pip install --break-system-packages --system pytest==9.1.1
+
+      - name: Test Windows installer scripts
+        run: python -m pytest lib/python/openlinktoken-cli/src/test/openlinktoken_cli/install_script_test.py -k windows_installer
+
   standalone-cli-smoke:
     runs-on: ubuntu-latest
     permissions:

@@ -1,4 +1,4 @@
-"""Integration tests for the POSIX CLI installer."""
+"""Integration tests for the POSIX and Windows CLI installers."""
 
 import hashlib
 import json
