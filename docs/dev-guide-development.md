@@ -57,6 +57,7 @@ This guide centralizes contributor-facing information. It covers local setup, la
       - [Reporting custom progress metrics](#reporting-custom-progress-metrics)
     - [Persistent standalone extensions](#persistent-standalone-extensions)
       - [Standalone dependency bundles (schema v2)](#standalone-dependency-bundles-schema-v2)
+      - [Cross-repository standalone integration](#cross-repository-standalone-integration)
     - [Extension tests in `openlinktoken-cli`](#extension-tests-in-openlinktoken-cli)
   - [Development Container](#development-container)
   - [Version Bumping Policy](#version-bumping-policy)
@@ -1042,6 +1043,31 @@ reporter.add_stats_provider(stats)
 The reporter calls `get_metrics()` on each render tick (~10 Hz while active). Metrics are appended to the same single-line status display as the built-in metrics. Return `(label, number_string, unit_string)` triples — use an empty string for unit when not applicable.
 
 See `lib/python/openlinktoken_ext_hello_world/README.md` for the full lifecycle walkthrough and `pages/quickstarts/extension-quickstart.md` for a step-by-step guide.
+
+#### Cross-repository standalone integration
+
+The `Standalone extension integration` workflow tests the actual core commit
+against a pinned Truveta extension revision on each pull request. The reusable
+workflow lives in the extension repository; both its code and extension source
+are pinned to the same commit in the caller. Update those pins together after
+validating a new counterpart revision.
+
+The six native jobs cover Linux x64, macOS arm64, and Windows x64 with CPython
+3.11 and 3.12. They download temporary installer copies and branch-built assets
+from local HTTPS, verify checksums, install/reinstall into a path with spaces,
+and reject corrupt downloads without replacing the installed CLI. Each job
+then installs and updates the real Truveta bundle, runs an extension worker and
+a core command, verifies exact bundle ABI/digest selection and unchanged core
+metadata, and checks rejection of corrupt or unavailable ABI bundles.
+
+Manual runs accept `core_ref` and `extension_ref` to test unmerged branches.
+The extension's `standalone-integration.yml` can also be dispatched directly
+with both refs. Every run resolves source refs to exact commits and records them
+in its summary; it never creates or modifies a release.
+
+The installer check uses the CPU-only path and includes the real ML1 assets in
+the test ZIP. It does not replace the existing release workflow's separate
+ORAS/GHCR asset verification or CUDA checks.
 
 ### Extension tests in `openlinktoken-cli`
 
