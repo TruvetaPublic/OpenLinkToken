@@ -55,6 +55,9 @@ This guide centralizes contributor-facing information. It covers local setup, la
     - [Run the extension tests](#run-the-extension-tests)
     - [Developing your own extension](#developing-your-own-extension)
       - [Reporting custom progress metrics](#reporting-custom-progress-metrics)
+    - [Persistent standalone extensions](#persistent-standalone-extensions)
+      - [Standalone dependency bundles (schema v2)](#standalone-dependency-bundles-schema-v2)
+      - [Cross-repository standalone integration](#cross-repository-standalone-integration)
     - [Extension tests in `openlinktoken-cli`](#extension-tests-in-openlinktoken-cli)
   - [Development Container](#development-container)
   - [Version Bumping Policy](#version-bumping-policy)
@@ -914,10 +917,104 @@ recorded in the registry for the contract, but checksum verification is the
 currently enforced integrity check until a trusted vendor-key distribution
 mechanism is defined.
 
-Frozen extensions may depend only on runtime packages included in the core
-bundle's allowlist. Vendor-specific dependencies must be added to a core
-release before an extension can declare them; the frozen installer does not
-silently install packages outside the bundle.
+Schema-version-1 manifests remain supported. In the standalone binary, their
+wheel dependencies must already be present in the core runtime. Use
+schema-version-2 manifests when a standalone extension needs its own
+third-party dependencies.
+
+#### Standalone dependency bundles (schema v2)
+
+A schema-version-2 bootstrap manifest declares the command metadata, minimum
+worker protocol, and one checksum-protected ZIP per supported platform/ABI:
+the Truveta release includes all six combinations of `linux-x64`,
+`macos-arm64`, and `windows-x64` with `cp311` and `cp312`. The example below
+shows one record.
+
+```json
+{
+  "schema_version": 2,
+  "extension": {
+    "name": "truveta",
+    "version": "1.0.0",
+    "update_manifest_url": "https://example.com/truveta-extension.json"
+  },
+  "core": {
+    "min_version": "2.2.1",
+    "max_version": "<3.0.0"
+  },
+  "minimum_runtime_protocol": 2,
+  "command_name": "truveta",
+  "description": "Truveta extension",
+  "bundles": [
+    {
+      "target": "linux-x64",
+      "python_abi": "cp312",
+      "url": "https://example.com/truveta-1.0.0-linux-x64-cp312.zip",
+      "sha256": "..."
+    }
+  ]
+}
+```
+
+Update manifests use the same command metadata, protocol, and `bundles`
+fields, with `extension` as the extension name, `latest_version` for the
+release, and `requires_core` for the compatibility range. The standalone
+runtime currently recognizes `linux-x64`, `windows-x64`, and `macos-arm64`.
+The ABI identifies the embedded CPython runtime (`cp311` or `cp312`), and each
+target/ABI pair must be unique. The loader selects the exact pair matching the
+standalone CLI's platform and Python ABI.
+
+Each bundle ZIP contains only `bundle-manifest.json` and the locked wheel
+files at its root. The bundle manifest identifies the extension and lists
+every wheel with its normalized distribution name, version, exact filename
+tags, and SHA-256 digest:
+
+```json
+{
+  "schema_version": 1,
+  "extension": { "name": "truveta", "version": "1.0.0" },
+  "target": "linux-x64",
+  "python_abi": "cp312",
+  "wheels": [
+    {
+      "filename": "openlinktoken_ext_truveta-1.0.0-py3-none-any.whl",
+      "name": "openlinktoken-ext-truveta",
+      "version": "1.0.0",
+      "tags": ["py3-none-any"],
+      "sha256": "..."
+    },
+    {
+      "filename": "httpx-0.28.1-py3-none-any.whl",
+      "name": "httpx",
+      "version": "0.28.1",
+      "tags": ["py3-none-any"],
+      "sha256": "..."
+    }
+  ]
+}
+```
+
+The outer SHA-256 verifies the ZIP; each inner digest verifies its wheel.
+Open Link Token validates wheel metadata, tags, the complete dependency
+closure, and conflicts with the exact core-runtime inventory before installing
+anything. The bundle is installed offline—there is no package-index lookup or
+dependency resolution. Bundles may include packages the core CLI already
+ships; Open Link Token skips those wheels and uses the core copy, provided the
+core version satisfies every requirement specifier in the extension's
+dependency closure. Otherwise installation fails with a core dependency
+conflict.
+Each successful version is staged in its own immutable directory and becomes
+active only after installation and registry activation succeed; a failed
+install leaves the previous version active.
+
+In the frozen CLI, the parent process reads only registry metadata to build
+help and starts a fresh worker process for each extension command. The worker
+adds only that extension's code and private dependency paths before importing
+it, so extensions can use different versions of the same dependency. This is
+dependency isolation, not a security sandbox: workers still run as the user
+and share the user's filesystem and network access. Schema-version-2 bundles
+are supported only by the standalone CLI; the normal Python-package CLI
+continues to use its installed entry points and dependencies.
 
 #### Reporting custom progress metrics
 
@@ -946,6 +1043,34 @@ reporter.add_stats_provider(stats)
 The reporter calls `get_metrics()` on each render tick (~10 Hz while active). Metrics are appended to the same single-line status display as the built-in metrics. Return `(label, number_string, unit_string)` triples — use an empty string for unit when not applicable.
 
 See `lib/python/openlinktoken_ext_hello_world/README.md` for the full lifecycle walkthrough and `pages/quickstarts/extension-quickstart.md` for a step-by-step guide.
+
+#### Cross-repository standalone integration
+
+The `Standalone extension integration` workflow tests the actual core commit
+against a pinned Truveta extension revision on each pull request. The reusable
+workflow lives in the extension repository; both its code and extension source
+are pinned to the same commit in the caller. Update those pins together after
+validating a new counterpart revision.
+
+Pull requests targeting `main`, `develop`, or `release/**` run this integration,
+source CI, and CodeQL so release retargeting retains the same validation.
+
+The six native jobs cover Linux x64, macOS arm64, and Windows x64 with CPython
+3.11 and 3.12. They download temporary installer copies and branch-built assets
+from local HTTPS, verify checksums, install/reinstall into a path with spaces,
+and reject corrupt downloads without replacing the installed CLI. Each job
+then installs and updates the real Truveta bundle, runs an extension worker and
+a core command, verifies exact bundle ABI/digest selection and unchanged core
+metadata, and checks rejection of corrupt or unavailable ABI bundles.
+
+Manual runs accept `core_ref` and `extension_ref` to test unmerged branches.
+The extension's `standalone-integration.yml` can also be dispatched directly
+with both refs. Every run resolves source refs to exact commits and records them
+in its summary; it never creates or modifies a release.
+
+The installer check uses the CPU-only path and includes the real ML1 assets in
+the test ZIP. It does not replace the existing release workflow's separate
+ORAS/GHCR asset verification or CUDA checks.
 
 ### Extension tests in `openlinktoken-cli`
 

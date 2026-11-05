@@ -7,6 +7,7 @@ import json
 import logging
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -14,17 +15,32 @@ import uuid
 import zipfile
 from contextlib import contextmanager
 from datetime import datetime, timezone
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Optional
 from urllib.parse import unquote, urlparse
 from urllib.request import url2pathname, urlopen
 
-from packaging.markers import UndefinedEnvironmentName
+from packaging.markers import UndefinedEnvironmentName, default_environment
 from packaging.requirements import InvalidRequirement, Requirement
+from packaging.utils import canonicalize_name
 from packaging.version import Version
 
+from openlinktoken_cli.extension.core_runtime_inventory import (
+    CoreRuntimeInventoryError,
+    load_core_runtime_inventory,
+)
+from openlinktoken_cli.extension.extension_bundle import (
+    BundleValidationError,
+    current_extension_target,
+    extract_and_validate_bundle,
+    install_wheel_file,
+)
+from openlinktoken_cli.extension.extension_loader import BUILTIN_COMMANDS
 from openlinktoken_cli.extension.extension_manifest import (
     CURRENT_CORE_VERSION,
+    STANDALONE_EXTENSION_RUNTIME_PROTOCOL,
+    BundleRecord,
+    ExtensionManifest,
     ManifestValidationError,
     is_core_compatible,
     parse_manifest,
@@ -112,27 +128,6 @@ def _resolve_extension_command_name(
 _SECURITY_WARNING = (
     "WARNING: Extensions are arbitrary Python code and are not verified by the Open Link Token project. "
     "Install only extensions from sources you trust."
-)
-
-#: Dependencies bundled into the frozen binary that extensions may rely on.
-#: Derived from the packages collected in openlinktoken-cli.spec and requirements.txt.
-_BUNDLED_DEPS: frozenset[str] = frozenset(
-    {
-        "openlinktoken",
-        "openlinktoken-cli",
-        "openlinktoken-core-ai",
-        "pandas",
-        "pyarrow",
-        "csv2parquet",
-        "cryptography",
-        "jwcrypto",
-        "packaging",
-        "onnxruntime",
-        "onnxruntime-gpu",
-        "pyyaml",
-        "tokenizers",
-        "urllib3",
-    }
 )
 
 _REQUEST_TIMEOUT_SECONDS = 60
@@ -328,6 +323,34 @@ class ExtensionCommand:
         except ManifestValidationError as exc:
             print(f"Error: Invalid bootstrap manifest: {exc}", file=sys.stderr)
             return 1
+        if manifest.schema_version == 2:
+            if not getattr(sys, "frozen", False):
+                print(
+                    "Error: Schema-version-2 dependency bundles are supported by the standalone CLI only.",
+                    file=sys.stderr,
+                )
+                return 1
+            if not ExtensionCommand._supports_runtime_protocol(manifest):
+                return 1
+            bundle = ExtensionCommand._select_bundle(manifest)
+            if bundle is None:
+                return 1
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                bundle_path = Path(tmp_dir) / (Path(urlparse(bundle.url).path).name or "extension-bundle.zip")
+                if not ExtensionCommand._download(bundle.url, bundle_path):
+                    return 1
+                return ExtensionCommand._install_frozen_bundle(
+                    bundle_path,
+                    source_url=bundle.url,
+                    expected_sha256=bundle.sha256,
+                    expected_name=manifest.name,
+                    expected_version=manifest.version,
+                    command_name=manifest.command_name or manifest.name,
+                    description=manifest.description or "",
+                    update_manifest_url=manifest.update_manifest_url,
+                    core_range=manifest.core_specifier,
+                )
+
         artifact = manifest.artifacts[0]
         with tempfile.TemporaryDirectory() as tmp_dir:
             artifact_name = Path(urlparse(artifact.url).path).name or "extension.whl"
@@ -344,6 +367,55 @@ class ExtensionCommand:
                 expected_name=manifest.name,
                 expected_version=manifest.version,
             )
+
+    @staticmethod
+    def _supports_runtime_protocol(manifest: ExtensionManifest) -> bool:
+        """
+        Ensure the manifest's worker protocol is supported by this binary.
+
+        Args:
+            manifest: Validated schema-version-2 extension manifest.
+
+        Returns:
+            Whether the current standalone runtime supports the requested protocol.
+        """
+        protocol = manifest.minimum_runtime_protocol
+        if protocol is None or protocol > STANDALONE_EXTENSION_RUNTIME_PROTOCOL:
+            required = protocol if protocol is not None else "unknown"
+            print(
+                f"Error: This extension requires runtime protocol {required}; "
+                f"update Open Link Token to a runtime supporting protocol "
+                f"{STANDALONE_EXTENSION_RUNTIME_PROTOCOL} or later.",
+                file=sys.stderr,
+            )
+            return False
+        return True
+
+    @staticmethod
+    def _select_bundle(manifest: ExtensionManifest) -> Optional[BundleRecord]:
+        """
+        Select the bundle matching this runtime's operating system, architecture, and ABI.
+
+        Args:
+            manifest: Validated schema-version-2 extension manifest.
+
+        Returns:
+            Matching bundle record, or ``None`` after printing an actionable error.
+        """
+        try:
+            target, python_abi = current_extension_target()
+        except BundleValidationError as exc:
+            print(f"Error: {exc}", file=sys.stderr)
+            return None
+        for bundle in manifest.bundles:
+            if bundle.target == target and bundle.python_abi == python_abi:
+                return bundle
+        print(
+            f"Error: No extension bundle is available for {target}/{python_abi}. "
+            "Update Open Link Token or use a supported platform.",
+            file=sys.stderr,
+        )
+        return None
 
     @staticmethod
     def _list(args) -> int:  # noqa: ARG004
@@ -591,22 +663,45 @@ class ExtensionCommand:
                 file=sys.stderr,
             )
             return 1
+        if manifest.schema_version == 2:
+            if not getattr(sys, "frozen", False):
+                print(
+                    f"[{name}] failed: schema-version-2 dependency bundles require the standalone CLI.",
+                    file=sys.stderr,
+                )
+                return 1
+            if not ExtensionCommand._supports_runtime_protocol(manifest):
+                return 1
 
         current_version = metadata.get("version", "0.0.0")
         try:
             current = Version(current_version)
-            candidates = [
-                artifact for artifact in manifest.artifacts if artifact.version and Version(artifact.version) > current
-            ]
         except ValueError as exc:
             print(f"[{name}] failed: invalid installed version: {exc}", file=sys.stderr)
             return 1
-        if not candidates:
-            print(f"[{name}] up to date ({current_version}).")
-            return 0
-        artifact = max(candidates, key=lambda item: Version(item.version or "0.0.0"))
+
+        bundle = None
+        artifact = None
+        if manifest.schema_version == 2:
+            if Version(manifest.version) <= current:
+                print(f"[{name}] up to date ({current_version}).")
+                return 0
+            bundle = ExtensionCommand._select_bundle(manifest)
+            if bundle is None:
+                return 1
+            artifact_version = manifest.version
+            artifact_url = bundle.url
+        else:
+            candidates = [item for item in manifest.artifacts if item.version and Version(item.version) > current]
+            if not candidates:
+                print(f"[{name}] up to date ({current_version}).")
+                return 0
+            artifact = max(candidates, key=lambda item: Version(item.version or "0.0.0"))
+            artifact_version = artifact.version or manifest.version
+            artifact_url = artifact.url
+
         if dry_run:
-            print(f"[{name}] would update {current_version} -> {artifact.version} from {artifact.url}")
+            print(f"[{name}] would update {current_version} -> {artifact_version} from {artifact_url}")
             return 0
 
         if not skip_confirm:
@@ -614,7 +709,7 @@ class ExtensionCommand:
                 print(f"[{name}] failed: pass --yes in non-interactive mode.", file=sys.stderr)
                 return 1
             try:
-                answer = input(f"Update extension '{name}' to {artifact.version}? [y/N] ").strip().lower()
+                answer = input(f"Update extension '{name}' to {artifact_version}? [y/N] ").strip().lower()
             except (EOFError, KeyboardInterrupt):
                 answer = ""
             if answer not in ("y", "yes"):
@@ -622,26 +717,239 @@ class ExtensionCommand:
                 return 0
 
         with tempfile.TemporaryDirectory() as tmp_dir:
-            filename = Path(urlparse(artifact.url).path).name or f"{name}.whl"
-            wheel_path = Path(tmp_dir) / filename
-            if not ExtensionCommand._download(artifact.url, wheel_path):
+            filename = Path(urlparse(artifact_url).path).name or f"{name}.zip"
+            artifact_path = Path(tmp_dir) / filename
+            if not ExtensionCommand._download(artifact_url, artifact_path):
                 print(f"[{name}] failed: artifact download failed.", file=sys.stderr)
                 return 1
-            result = ExtensionCommand._install_wheel(
-                wheel_path,
-                source_url=artifact.url,
-                expected_sha256=artifact.sha256,
-                signature=artifact.signature,
-                update_manifest_url=manifest_url,
-                core_range=manifest.core_specifier,
-                expected_name=name,
-                expected_version=artifact.version,
-            )
+            if bundle is not None:
+                result = ExtensionCommand._install_frozen_bundle(
+                    artifact_path,
+                    source_url=bundle.url,
+                    expected_sha256=bundle.sha256,
+                    expected_name=name,
+                    expected_version=artifact_version,
+                    command_name=manifest.command_name or name,
+                    description=manifest.description or "",
+                    update_manifest_url=manifest_url,
+                    core_range=manifest.core_specifier,
+                )
+            else:
+                result = ExtensionCommand._install_wheel(
+                    artifact_path,
+                    source_url=artifact_url,
+                    expected_sha256=artifact.sha256,
+                    signature=artifact.signature,
+                    update_manifest_url=manifest_url,
+                    core_range=manifest.core_specifier,
+                    expected_name=name,
+                    expected_version=artifact_version,
+                )
         if result == 0:
-            print(f"[{name}] updated to {artifact.version}.")
+            print(f"[{name}] updated to {artifact_version}.")
         else:
             print(f"[{name}] failed: previous installation was retained.", file=sys.stderr)
         return result
+
+    @staticmethod
+    def _install_frozen_bundle(
+        bundle_path: Path,
+        *,
+        source_url: str,
+        expected_sha256: str,
+        expected_name: str,
+        expected_version: str,
+        command_name: str,
+        description: str,
+        update_manifest_url: Optional[str],
+        core_range: str,
+    ) -> int:
+        """
+        Validate, stage, and atomically activate a locked standalone bundle.
+
+        Args:
+            bundle_path: Downloaded bundle ZIP.
+            source_url: URL used to fetch the bundle.
+            expected_sha256: Bundle digest from the bootstrap or update manifest.
+            expected_name: Expected extension command name.
+            expected_version: Expected extension release version.
+            command_name: Top-level command name from the manifest.
+            description: Top-level help description from the manifest.
+            update_manifest_url: URL for future extension updates.
+            core_range: Core-version compatibility range required by the extension.
+
+        Returns:
+            Zero on success, or one if validation or activation fails.
+        """
+        if not getattr(sys, "frozen", False):
+            print("Error: Locked dependency bundles require the standalone CLI.", file=sys.stderr)
+            return 1
+        if command_name in BUILTIN_COMMANDS:
+            print(
+                f"Error: Extension command '{command_name}' conflicts with a built-in command.",
+                file=sys.stderr,
+            )
+            return 1
+        if not _validate_dist_name(expected_name):
+            print(f"Error: Invalid extension name '{expected_name}'.", file=sys.stderr)
+            return 1
+        if not is_core_compatible(CURRENT_CORE_VERSION, core_range):
+            print(
+                f"Error: Extension '{expected_name}' requires core '{core_range}', "
+                f"but this binary is {CURRENT_CORE_VERSION}.",
+                file=sys.stderr,
+            )
+            return 1
+
+        actual_sha256 = ExtensionCommand._sha256_file(bundle_path)
+        if actual_sha256 != expected_sha256.lower():
+            print(
+                f"Error: Bundle checksum verification failed.\n"
+                f"  Expected: {expected_sha256}\n"
+                f"  Actual  : {actual_sha256}",
+                file=sys.stderr,
+            )
+            return 1
+        try:
+            core_inventory = load_core_runtime_inventory()
+        except CoreRuntimeInventoryError as exc:
+            print(f"Error: Could not verify the standalone core runtime: {exc}", file=sys.stderr)
+            return 1
+
+        extensions_dir = ExtensionRegistry.get_extensions_dir()
+        versions_dir = extensions_dir / expected_name / "versions"
+        stage_dir: Optional[Path] = None
+        try:
+            versions_dir.mkdir(parents=True, exist_ok=True)
+            stage_dir = Path(tempfile.mkdtemp(prefix=".stage-", dir=versions_dir))
+            with tempfile.TemporaryDirectory() as wheel_dir:
+                wheels = extract_and_validate_bundle(
+                    bundle_path,
+                    Path(wheel_dir),
+                    expected_name=expected_name,
+                    expected_version=expected_version,
+                    core_inventory=core_inventory,
+                )
+                extension_wheels = []
+                entry_point_info = None
+                extension_wheel = None
+                for wheel in wheels:
+                    with zipfile.ZipFile(wheel.path) as archive:
+                        wheel_entry_point = ExtensionCommand._extract_entry_point(archive)
+                    if wheel_entry_point is not None:
+                        extension_wheels.append(wheel)
+                        entry_point_info = wheel_entry_point
+                        extension_wheel = wheel
+                if len(extension_wheels) != 1 or entry_point_info is None or extension_wheel is None:
+                    raise BundleValidationError("bundle must contain exactly one extension entry point")
+
+                entry_name, module_name, class_name, version, dist_name = entry_point_info
+                if entry_name != expected_name or command_name != expected_name:
+                    raise BundleValidationError("extension command name does not match the bundle manifest")
+                if Version(version) != Version(expected_version) or Version(extension_wheel.version) != Version(
+                    expected_version
+                ):
+                    raise BundleValidationError("extension wheel version does not match the bundle manifest")
+                if canonicalize_name(dist_name) != extension_wheel.name:
+                    raise BundleValidationError("extension wheel distribution name does not match its lock entry")
+
+                install_wheel_file(extension_wheel.path, stage_dir / "extension")
+                for wheel in wheels:
+                    if wheel is not extension_wheel:
+                        install_wheel_file(wheel.path, stage_dir / "dependencies")
+
+            target, python_abi = current_extension_target()
+            metadata = {
+                "schema_version": 2,
+                "version": expected_version,
+                "source_url": source_url,
+                "update_manifest_url": update_manifest_url,
+                "supported_core": core_range,
+                "supported_core_version_range": core_range,
+                "core_range": core_range,
+                "bundle_sha256": actual_sha256,
+                "artifact_sha256": extension_wheel.sha256,
+                "sha256": extension_wheel.sha256,
+                "signature": None,
+                "artifact_signature": None,
+                "runtime_protocol": STANDALONE_EXTENSION_RUNTIME_PROTOCOL,
+                "bundle_target": target,
+                "python_abi": python_abi,
+                "module": module_name,
+                "class": class_name,
+                "command_name": command_name,
+                "description": description,
+                "dist_name": dist_name,
+                "distribution_name": dist_name,
+                "disabled": False,
+                "error": None,
+            }
+            ExtensionCommand._activate_frozen_install(
+                stage_dir,
+                extension_name=expected_name,
+                version=expected_version,
+                artifact_sha256=actual_sha256,
+                metadata=metadata,
+                source_relative_path=Path("extension") / "site-packages",
+                dependency_relative_path=Path("dependencies") / "site-packages",
+            )
+            print(f"Extension '{expected_name}' (v{expected_version}) installed successfully.")
+            print(f"Run: olt {command_name} --help")
+            return 0
+        except (BundleValidationError, CoreRuntimeInventoryError, OSError, ValueError, zipfile.BadZipFile) as exc:
+            print(f"Error: Could not install dependency bundle for '{expected_name}': {exc}", file=sys.stderr)
+            return 1
+        finally:
+            if stage_dir is not None and stage_dir.exists():
+                shutil.rmtree(stage_dir, ignore_errors=True)
+
+    @staticmethod
+    def _activate_frozen_install(
+        stage_dir: Path,
+        *,
+        extension_name: str,
+        version: str,
+        artifact_sha256: str,
+        metadata: dict,
+        source_relative_path: Path,
+        dependency_relative_path: Optional[Path] = None,
+    ) -> dict:
+        """
+        Atomically point the registry at a newly staged immutable extension version.
+
+        Args:
+            stage_dir: Staged extension version directory.
+            extension_name: Registry key identifying the extension.
+            version: Extension version string.
+            artifact_sha256: Digest used to identify this immutable installation.
+            metadata: Registry metadata to activate.
+            source_relative_path: Relative path to the extension's installed Python files.
+            dependency_relative_path: Optional path to private dependency Python files.
+
+        Returns:
+            The registry metadata with its final installation paths.
+
+        Raises:
+            OSError: If the staged directory or registry cannot be committed.
+        """
+        base_dir = ExtensionRegistry.get_extensions_dir()
+        versions_dir = base_dir / extension_name / "versions"
+        final_dir = versions_dir / f"{Version(version)}-{artifact_sha256[:16]}-{uuid.uuid4().hex[:8]}"
+        metadata = dict(metadata)
+        metadata["install_location"] = str(final_dir)
+        metadata["source_path"] = str(final_dir / source_relative_path)
+        if dependency_relative_path is not None:
+            metadata["dependency_path"] = str(final_dir / dependency_relative_path)
+
+        stage_dir.replace(final_dir)
+        try:
+            registry = ExtensionRegistry.load()
+            registry[extension_name] = metadata
+            ExtensionRegistry.save(registry)
+        except OSError:
+            shutil.rmtree(final_dir, ignore_errors=True)
+            raise
+        return metadata
 
     @staticmethod
     def _fetch_manifest(url: str) -> dict:
@@ -786,11 +1094,12 @@ class ExtensionCommand:
         dest_dir_resolved = dest_dir.resolve()
 
         for member in zf.infolist():
-            member_path = Path(member.filename)
-
-            # Skip empty names
             if not member.filename:
                 continue
+            member_path = PurePosixPath(member.filename)
+            mode = member.external_attr >> 16
+            if "\\" in member.filename or member_path.is_absolute() or ".." in member_path.parts or stat.S_ISLNK(mode):
+                raise ValueError(f"Illegal path in wheel entry: {member.filename!r}")
 
             target_path = (dest_dir_resolved / member_path).resolve()
 
@@ -859,7 +1168,7 @@ class ExtensionCommand:
                     print(
                         f"Error: This extension requires external dependencies that are not bundled "
                         f"in the Open Link Token binary: {issue}\n"
-                        "Install the Python package version of Open Link Token CLI to use this extension.",
+                        "Install it from a schema-version-2 dependency bundle or use the Python-package CLI.",
                         file=sys.stderr,
                     )
                     return 1
@@ -1048,24 +1357,15 @@ class ExtensionCommand:
         if not _validate_dist_name(ext_name):
             print(f"Error: Wheel entry-point key '{ext_name}' is not a valid extension name.", file=sys.stderr)
             return None
-        base_dir = ExtensionRegistry.get_extensions_dir()
-        ext_dir = base_dir / ext_name
+        versions_dir = ExtensionRegistry.get_extensions_dir() / ext_name / "versions"
         stage_dir: Optional[Path] = None
-        backup_dir: Optional[Path] = None
         try:
-            base_dir.mkdir(parents=True, exist_ok=True)
-            stage_dir = Path(tempfile.mkdtemp(prefix=f".{ext_name}.stage-", dir=base_dir))
+            versions_dir.mkdir(parents=True, exist_ok=True)
+            stage_dir = Path(tempfile.mkdtemp(prefix=f".{ext_name}.stage-", dir=versions_dir))
             src_dir = stage_dir / "src"
             src_dir.mkdir(parents=True, exist_ok=True)
             ExtensionCommand._safe_extract_wheel(zf, src_dir)
-            resolved_command_name = _resolve_extension_command_name(module_name, class_name, src_dir)
-            if resolved_command_name is None:
-                raise ValueError(f"Unable to load extension {module_name}.{class_name}.")
-            if resolved_command_name != ext_name:
-                raise ValueError(
-                    f"Extension command name mismatch: entry point '{ext_name}' "
-                    f"does not match extension.command_name '{resolved_command_name}'."
-                )
+            resolved_command_name = ext_name
             metadata = {
                 "schema_version": 1,
                 "version": version,
@@ -1078,40 +1378,27 @@ class ExtensionCommand:
                 "sha256": artifact_sha256,
                 "signature": signature,
                 "artifact_signature": signature,
-                "install_location": str(base_dir / ext_name),
-                "source_path": str(base_dir / ext_name / "src"),
                 "module": module_name,
                 "class": class_name,
                 "command_name": resolved_command_name,
+                "description": None,
                 "dist_name": dist_name,
                 "distribution_name": dist_name,
                 "disabled": False,
                 "error": None,
             }
-            backup_dir = base_dir / f".{ext_name}.backup-{uuid.uuid4().hex}"
-            old_registry = ExtensionRegistry.load()
-            if backup_dir.exists():
-                shutil.rmtree(backup_dir)
-            if ext_dir.exists():
-                ext_dir.replace(backup_dir)
-            try:
-                stage_dir.replace(ext_dir)
-                new_registry = dict(old_registry)
-                new_registry[ext_name] = metadata
-                ExtensionRegistry.save(new_registry)
-            except OSError:
-                shutil.rmtree(ext_dir, ignore_errors=True)
-                if backup_dir.exists():
-                    backup_dir.replace(ext_dir)
-                raise
-            shutil.rmtree(backup_dir, ignore_errors=True)
-            return metadata
+            return ExtensionCommand._activate_frozen_install(
+                stage_dir,
+                extension_name=ext_name,
+                version=version,
+                artifact_sha256=artifact_sha256,
+                metadata=metadata,
+                source_relative_path=Path("src"),
+            )
         except (OSError, ValueError, ImportError) as exc:
             print(f"Error: Could not install frozen extension '{ext_name}': {exc}", file=sys.stderr)
             if stage_dir is not None and stage_dir.exists():
                 shutil.rmtree(stage_dir, ignore_errors=True)
-            if backup_dir is not None and backup_dir.exists() and not ext_dir.exists():
-                backup_dir.replace(ext_dir)
             return None
 
     @staticmethod
@@ -1155,6 +1442,11 @@ class ExtensionCommand:
                 metadata_candidates,
             )
 
+        try:
+            core_inventory = load_core_runtime_inventory()
+        except CoreRuntimeInventoryError as exc:
+            return f"core runtime inventory is unavailable ({exc})"
+
         content = zf.read(metadata_candidates[0]).decode("utf-8", errors="replace")
         external = []
         for line in content.splitlines():
@@ -1167,13 +1459,16 @@ class ExtensionCommand:
                     continue
                 if req.marker is not None:
                     try:
-                        if not req.marker.evaluate():
+                        if not req.marker.evaluate(environment=default_environment()):
                             continue  # marker evaluates to False in this environment; skip
                     except UndefinedEnvironmentName:
                         continue  # marker references a variable missing from this environment (e.g. "extra")
-                dep_name_norm = re.sub(r"[-_.]+", "-", req.name).lower()
-                if dep_name_norm not in _BUNDLED_DEPS:
+                dep_name_norm = canonicalize_name(req.name)
+                core_version = core_inventory.get(dep_name_norm)
+                if core_version is None:
                     external.append(req.name)
+                elif req.specifier and Version(core_version) not in req.specifier:
+                    external.append(f"{req.name} {req.specifier} (core provides {core_version})")
         return ", ".join(external) if external else None
 
     @staticmethod

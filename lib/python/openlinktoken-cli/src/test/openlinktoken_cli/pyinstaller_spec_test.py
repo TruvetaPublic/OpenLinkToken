@@ -12,18 +12,20 @@ SPEC_PATH = Path(__file__).parents[3] / "openlinktoken-cli.spec"
 class _FakeAnalysis:
     """Minimal Analysis result needed to execute the spec in a unit test."""
 
-    pure = ()
-    zipped_data = ()
-    scripts = ()
-    binaries = ()
-    zipfiles = ()
-    datas = ()
+    def __init__(self):
+        self.pure = []
+        self.zipped_data = []
+        self.scripts = []
+        self.binaries = []
+        self.zipfiles = []
+        self.datas = []
 
 
 def test_pyinstaller_spec_collects_ml1_runtime_dependencies():
     """The frozen bundle must wire ML1 dependencies and assets into Analysis."""
     collected_packages = []
     analysis_kwargs = {}
+    analysis_result = _FakeAnalysis()
 
     def collect_all(package_name):
         collected_packages.append(package_name)
@@ -34,11 +36,12 @@ def test_pyinstaller_spec_collects_ml1_runtime_dependencies():
 
     def fake_analysis(*args, **kwargs):
         analysis_kwargs.update(kwargs)
-        return _FakeAnalysis()
+        return analysis_result
 
     fake_hooks = types.ModuleType("PyInstaller.utils.hooks")
     fake_hooks.collect_all = collect_all
     fake_hooks.collect_dynamic_libs = collect_dynamic_libs
+    fake_hooks.copy_metadata = lambda distribution: [f"{distribution}:metadata"]
     fake_utils = types.ModuleType("PyInstaller.utils")
     fake_utils.hooks = fake_hooks
     fake_pyinstaller = types.ModuleType("PyInstaller")
@@ -64,9 +67,14 @@ def test_pyinstaller_spec_collects_ml1_runtime_dependencies():
         )
 
     assert {"openlinktoken.core.ai", "pyarrow", "tokenizers", "onnxruntime"}.issubset(collected_packages)
-    assert {"tokenizers:data", "onnxruntime:data"}.issubset(analysis_kwargs["datas"])
+    assert {"tokenizers:data", "onnxruntime:data", "openlinktoken-cli:metadata"}.issubset(analysis_kwargs["datas"])
     assert {"tokenizers:binary", "onnxruntime:binary"}.issubset(analysis_kwargs["binaries"])
     assert {"tokenizers:hidden", "onnxruntime:hidden"}.issubset(analysis_kwargs["hiddenimports"])
+    assert (
+        "openlinktoken_cli/data/core_runtime_inventory.json",
+        str((SPEC_PATH.parent / "build" / "core_runtime_inventory.json").resolve()),
+        "DATA",
+    ) in analysis_result.datas
 
     repository_root = SPEC_PATH.parents[3]
     expected_asset_paths = {

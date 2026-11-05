@@ -256,6 +256,45 @@ class TestRun:
         assert checker._extension_results == [("demo", "2.0.0", "2.1.0")]
         fetch.assert_called_once()
 
+    def test_extension_manifest_check_uses_v2_latest_version(self, tmp_path):
+        """Schema-v2 update manifests use their latest bundle version for notices."""
+        manifest = {
+            "schema_version": 2,
+            "extension": "demo",
+            "latest_version": "2.1.0",
+            "requires_core": ">=2.0.0,<3.0.0",
+            "minimum_runtime_protocol": 2,
+            "command_name": "demo",
+            "description": "Demo extension",
+            "bundles": [
+                {
+                    "target": "linux-x64",
+                    "python_abi": "cp312",
+                    "url": "https://example.com/demo-2.1.0-linux-x64-cp312.zip",
+                    "sha256": "a" * 64,
+                }
+            ],
+        }
+        registry = {
+            "demo": {
+                "version": "2.0.0",
+                "update_manifest_url": "https://example.com/demo.json",
+            }
+        }
+        response = MagicMock()
+        response.read.return_value = json.dumps(manifest).encode()
+        response.geturl.return_value = "https://example.com/demo.json"
+        response.__enter__ = lambda value: value
+        response.__exit__ = MagicMock(return_value=False)
+        checker = VersionChecker(_CURRENT)
+        with patch.object(ExtensionRegistry, "load", return_value=registry):
+            with patch.object(VersionChecker, "_get_extension_cache_path", return_value=tmp_path / "cache.json"):
+                with patch("openlinktoken_cli.util.version_checker.urlopen", return_value=response) as fetch:
+                    checker._check_extension_updates()
+
+        assert checker._extension_results == [("demo", "2.0.0", "2.1.0")]
+        fetch.assert_called_once()
+
     def test_extension_manifest_check_ignores_entries_without_manifest_url(self):
         """No network request is made for registry entries without update manifests."""
         checker = VersionChecker(_CURRENT)

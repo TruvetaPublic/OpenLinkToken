@@ -134,36 +134,15 @@ class TestLoadExtensionsEntryPoints:
 class TestLoadExtensionsFrozen:
     """Tests for the frozen-binary (registry) discovery track."""
 
-    def test_frozen_track_loads_extension_from_registry(self, tmp_path):
-        """When sys.frozen is True, extensions are loaded from registry.json."""
-        # Build a tiny importable module on the fly.
-        pkg_dir = tmp_path / "myext_src"
-        pkg_dir.mkdir()
-        (pkg_dir / "__init__.py").write_text("")
-        mod_file = pkg_dir / "ext_mod.py"
-        mod_file.write_text(
-            "import argparse\n"
-            "from openlinktoken_cli.extension import OpenLinkTokenExtension\n"
-            "class FrozenExt(OpenLinkTokenExtension):\n"
-            "    @property\n"
-            "    def command_name(self): return 'frozen-cmd'\n"
-            "    @property\n"
-            "    def description(self): return 'frozen'\n"
-            "    @property\n"
-            "    def version(self): return '1.0.0'\n"
-            "    def register_subcommand(self, sp): sp.add_parser(self.command_name)\n"
-        )
-
+    def test_frozen_track_loads_extension_from_registry(self):
+        """Frozen CLI help registration reads metadata without importing extensions."""
         fake_registry = {
             "frozen-cmd": {
                 "version": "1.0.0",
-                "source_url": "file:///tmp/fake.whl",
-                "source_path": str(pkg_dir),
-                "module": "ext_mod",
-                "class": "FrozenExt",
+                "command_name": "frozen-cmd",
+                "description": "Frozen extension",
             }
         }
-
         subparsers = _make_subparsers()
 
         with patch.object(sys, "frozen", True, create=True):
@@ -171,9 +150,65 @@ class TestLoadExtensionsFrozen:
                 "openlinktoken_cli.extension.extension_registry.ExtensionRegistry.load",
                 return_value=fake_registry,
             ):
-                ExtensionLoader.load_extensions(subparsers, set())
+                with patch("importlib.import_module") as import_module:
+                    ExtensionLoader.load_extensions(subparsers, set())
 
         assert "frozen-cmd" in subparsers.choices
+        import_module.assert_not_called()
+
+    def test_worker_loads_only_the_requested_extension(self, tmp_path, monkeypatch):
+        """A frozen worker imports one extension and appends only its private paths."""
+        extensions_dir = tmp_path / "extensions"
+        source_path = extensions_dir / "demo" / "extension" / "site-packages"
+        dependency_path = extensions_dir / "demo" / "dependencies" / "site-packages"
+        source_path.mkdir(parents=True)
+        dependency_path.mkdir(parents=True)
+        (source_path / "worker_demo.py").write_text(
+            "from openlinktoken_cli.extension import OpenLinkTokenExtension\n"
+            "class WorkerDemo(OpenLinkTokenExtension):\n"
+            "    @property\n"
+            "    def command_name(self): return 'demo'\n"
+            "    @property\n"
+            "    def description(self): return 'Demo extension'\n"
+            "    @property\n"
+            "    def version(self): return '1.0.0'\n"
+            "    def register_subcommand(self, subparsers): subparsers.add_parser('demo')\n"
+        )
+        (source_path / "must_not_import.py").write_text("raise RuntimeError('unselected extension imported')\n")
+        registry = {
+            "demo": {
+                "command_name": "demo",
+                "description": "Demo extension",
+                "module": "worker_demo",
+                "class": "WorkerDemo",
+                "source_path": str(source_path),
+                "dependency_path": str(dependency_path),
+            },
+            "other": {
+                "command_name": "other",
+                "module": "must_not_import",
+                "class": "OtherExtension",
+                "source_path": str(source_path),
+            },
+        }
+        monkeypatch.setenv("OLT_EXTENSIONS_DIR", str(extensions_dir))
+        monkeypatch.setattr(sys, "path", list(sys.path))
+        monkeypatch.setattr(sys, "dont_write_bytecode", False)
+        monkeypatch.delitem(sys.modules, "worker_demo", raising=False)
+        monkeypatch.delitem(sys.modules, "must_not_import", raising=False)
+        subparsers = _make_subparsers()
+
+        with patch.object(sys, "frozen", True, create=True):
+            with patch(
+                "openlinktoken_cli.extension.extension_registry.ExtensionRegistry.load",
+                return_value=registry,
+            ):
+                ExtensionLoader.load_extensions(subparsers, set(), worker_extension_name="demo")
+
+        assert "demo" in subparsers.choices
+        assert str(source_path) in sys.path
+        assert str(dependency_path) in sys.path
+        assert "must_not_import" not in sys.modules
 
     def test_incompatible_extension_is_disabled_without_importing_code(self):
         """An incompatible registry entry is skipped and marked disabled."""
