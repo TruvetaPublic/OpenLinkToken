@@ -41,6 +41,7 @@ def test_pyinstaller_spec_collects_ml1_runtime_dependencies():
     fake_hooks = types.ModuleType("PyInstaller.utils.hooks")
     fake_hooks.collect_all = collect_all
     fake_hooks.collect_dynamic_libs = collect_dynamic_libs
+    fake_hooks.copy_metadata = lambda distribution: [f"{distribution}:metadata"]
     fake_utils = types.ModuleType("PyInstaller.utils")
     fake_utils.hooks = fake_hooks
     fake_pyinstaller = types.ModuleType("PyInstaller")
@@ -66,7 +67,7 @@ def test_pyinstaller_spec_collects_ml1_runtime_dependencies():
         )
 
     assert {"openlinktoken.core.ai", "pyarrow", "tokenizers", "onnxruntime"}.issubset(collected_packages)
-    assert {"tokenizers:data", "onnxruntime:data"}.issubset(analysis_kwargs["datas"])
+    assert {"tokenizers:data", "onnxruntime:data", "openlinktoken-cli:metadata"}.issubset(analysis_kwargs["datas"])
     assert {"tokenizers:binary", "onnxruntime:binary"}.issubset(analysis_kwargs["binaries"])
     assert {"tokenizers:hidden", "onnxruntime:hidden"}.issubset(analysis_kwargs["hiddenimports"])
     assert (

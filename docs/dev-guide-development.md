@@ -925,6 +925,9 @@ third-party dependencies.
 
 A schema-version-2 bootstrap manifest declares the command metadata, minimum
 worker protocol, and one checksum-protected ZIP per supported platform/ABI:
+the Truveta release includes all six combinations of `linux-x64`,
+`macos-arm64`, and `windows-x64` with `cp311` and `cp312`. The example below
+shows one record.
 
 ```json
 {
@@ -956,8 +959,9 @@ Update manifests use the same command metadata, protocol, and `bundles`
 fields, with `extension` as the extension name, `latest_version` for the
 release, and `requires_core` for the compatibility range. The standalone
 runtime currently recognizes `linux-x64`, `windows-x64`, and `macos-arm64`.
-The ABI must identify the embedded CPython runtime (for example, `cp312`), and
-each target/ABI pair must be unique.
+The ABI identifies the embedded CPython runtime (`cp311` or `cp312`), and each
+target/ABI pair must be unique. The loader selects the exact pair matching the
+standalone CLI's platform and Python ABI.
 
 Each bundle ZIP contains only `bundle-manifest.json` and the locked wheel
 files at its root. The bundle manifest identifies the extension and lists
@@ -993,7 +997,11 @@ The outer SHA-256 verifies the ZIP; each inner digest verifies its wheel.
 Open Link Token validates wheel metadata, tags, the complete dependency
 closure, and conflicts with the exact core-runtime inventory before installing
 anything. The bundle is installed offline—there is no package-index lookup or
-dependency resolution. Core-owned packages are not copied into the bundle.
+dependency resolution. Bundles may include packages the core CLI already
+ships; Open Link Token skips those wheels and uses the core copy, provided the
+core version satisfies every requirement specifier in the extension's
+dependency closure. Otherwise installation fails with a core dependency
+conflict.
 Each successful version is staged in its own immutable directory and becomes
 active only after installation and registry activation succeed; a failed
 install leaves the previous version active.

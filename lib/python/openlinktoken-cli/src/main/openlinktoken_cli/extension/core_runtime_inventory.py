@@ -87,6 +87,10 @@ def write_core_runtime_inventory(analysis_items: Iterable[tuple], output_path: P
     """
     file_owners: dict[Path, tuple[str, str]] = {}
     for distribution in importlib.metadata.distributions():
+        distribution_root = Path(distribution.locate_file("")).resolve()
+        # Vendored packages live in private namespaces and are not top-level runtime distributions.
+        if "_vendor" in distribution_root.parts:
+            continue
         raw_name = distribution.metadata.get("Name")
         if not raw_name:
             continue

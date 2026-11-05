@@ -246,6 +246,86 @@ def test_extract_and_validate_bundle_rejects_core_version_conflict(tmp_path):
         )
 
 
+def test_extract_and_validate_bundle_evaluates_requirement_markers(tmp_path):
+    extension = _make_wheel(
+        tmp_path,
+        "openlinktoken-ext-demo",
+        "1.0.0",
+        requirements=(
+            "demo-dependency==1.0.0",
+            'never-installed==1.0 ; python_version < "3"',
+            'extra-only==1.0 ; extra == "optional"',
+        ),
+        entry_point="demo = demo_extension:DemoExtension",
+    )
+    (tmp_path / "deps").mkdir()
+    _, dependency = _make_extension_and_dependency(tmp_path / "deps")
+    bundle = _make_bundle(
+        tmp_path,
+        "demo",
+        "1.0.0",
+        [
+            (extension, "openlinktoken-ext-demo", "1.0.0"),
+            (dependency, "demo-dependency", "1.0.0"),
+        ],
+    )
+
+    wheels = extract_and_validate_bundle(
+        bundle,
+        tmp_path / "verified",
+        expected_name="demo",
+        expected_version="1.0.0",
+        core_inventory={},
+    )
+
+    assert {wheel.name for wheel in wheels} == {"openlinktoken-ext-demo", "demo-dependency"}
+
+
+def test_extract_and_validate_bundle_skips_compatible_core_owned_wheels(tmp_path):
+    extension, dependency = _make_extension_and_dependency(tmp_path)
+    bundle = _make_bundle(
+        tmp_path,
+        "demo",
+        "1.0.0",
+        [
+            (extension, "openlinktoken-ext-demo", "1.0.0"),
+            (dependency, "demo-dependency", "1.0.0"),
+        ],
+    )
+
+    wheels = extract_and_validate_bundle(
+        bundle,
+        tmp_path / "verified",
+        expected_name="demo",
+        expected_version="1.0.0",
+        core_inventory={"demo-dependency": "1.0.0"},
+    )
+
+    assert [wheel.name for wheel in wheels] == ["openlinktoken-ext-demo"]
+
+
+def test_extract_and_validate_bundle_rejects_incompatible_core_owned_wheel(tmp_path):
+    extension, dependency = _make_extension_and_dependency(tmp_path)
+    bundle = _make_bundle(
+        tmp_path,
+        "demo",
+        "1.0.0",
+        [
+            (extension, "openlinktoken-ext-demo", "1.0.0"),
+            (dependency, "demo-dependency", "1.0.0"),
+        ],
+    )
+
+    with pytest.raises(BundleValidationError, match="core dependency conflict for 'demo-dependency'"):
+        extract_and_validate_bundle(
+            bundle,
+            tmp_path / "verified",
+            expected_name="demo",
+            expected_version="1.0.0",
+            core_inventory={"demo-dependency": "2.0.0"},
+        )
+
+
 def test_extract_and_validate_bundle_rejects_boolean_schema_version(tmp_path):
     extension, dependency = _make_extension_and_dependency(tmp_path)
     bundle = _make_bundle(

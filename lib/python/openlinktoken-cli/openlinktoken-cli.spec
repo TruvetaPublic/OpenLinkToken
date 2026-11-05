@@ -4,7 +4,7 @@ import os
 import sys
 from pathlib import Path
 
-from PyInstaller.utils.hooks import collect_all, collect_dynamic_libs
+from PyInstaller.utils.hooks import collect_all, collect_dynamic_libs, copy_metadata
 
 block_cipher = None
 
@@ -44,6 +44,9 @@ for package_name in (
     datas += package_datas
     binaries += package_binaries
     hiddenimports += package_hiddenimports
+
+# Extensions check the host CLI version via importlib.metadata.
+datas += copy_metadata("openlinktoken-cli")
 
 if sys.platform.startswith("linux"):
     nvidia_library_patterns = ["*.so", "*.so.*"]

@@ -102,7 +102,7 @@ def extract_and_validate_bundle(
         core_inventory: Normalized core distribution names and fixed versions.
 
     Returns:
-        The extension wheel and all locked dependency wheels.
+        The extension wheel and locked dependency wheels not already provided by the core.
 
     Raises:
         BundleValidationError: If the bundle, wheel metadata, or dependency lock is invalid.
@@ -172,8 +172,7 @@ def extract_and_validate_bundle(
                 )
             )
 
-    _validate_dependency_lock(extracted, normalized_core)
-    return tuple(extracted)
+    return tuple(_validate_dependency_lock(extracted, normalized_core))
 
 
 def install_wheel_file(wheel_path: Path, destination: Path) -> None:
@@ -402,26 +401,30 @@ def _validate_wheel_file(wheel_path: Path, record: _WheelRecord) -> tuple[str, .
     return tuple(metadata.get_all("Requires-Dist", []))
 
 
-def _validate_dependency_lock(wheels: list[LockedWheel], core_inventory: Mapping[str, str]) -> None:
+def _validate_dependency_lock(wheels: list[LockedWheel], core_inventory: Mapping[str, str]) -> list[LockedWheel]:
     """
     Confirm every active runtime requirement is provided by the core or the lock.
+
+    Locked wheels for distributions the core already ships are skipped; the core
+    copy is used when it satisfies the extension's requirement specifiers.
 
     Args:
         wheels: Verified wheel records with their Requires-Dist metadata.
         core_inventory: Normalized core distribution names and versions.
 
-    Raises:
-        BundleValidationError: If the lock omits, duplicates, or conflicts with a dependency.
-    """
-    wheel_by_name = {wheel.name: wheel for wheel in wheels}
-    for name in wheel_by_name:
-        if name in core_inventory:
-            raise BundleValidationError(f"bundle duplicates core-owned distribution '{name}'")
+    Returns:
+        The wheels to install, excluding core-owned distributions.
 
+    Raises:
+        BundleValidationError: If the lock omits or conflicts with a dependency.
+    """
     extension_wheels = [wheel for wheel in wheels if _has_extension_entry_point(wheel.path)]
     if len(extension_wheels) != 1:
         raise BundleValidationError("bundle must contain exactly one extension wheel")
     root_name = extension_wheels[0].name
+    if root_name in core_inventory:
+        raise BundleValidationError(f"extension wheel '{root_name}' is a core-owned distribution")
+    wheel_by_name = {wheel.name: wheel for wheel in wheels if wheel.name not in core_inventory}
 
     requested_extras: dict[str, set[str]] = defaultdict(set)
     processed_extras: dict[str, set[str]] = {}
@@ -446,7 +449,7 @@ def _validate_dependency_lock(wheels: list[LockedWheel], core_inventory: Mapping
             contexts = {"", *extras}
             if requirement.marker is not None:
                 try:
-                    if not any(requirement.marker.evaluate(environment=environment, extra=extra) for extra in contexts):
+                    if not any(requirement.marker.evaluate({**environment, "extra": extra}) for extra in contexts):
                         continue
                 except UndefinedEnvironmentName as exc:
                     raise BundleValidationError(
@@ -487,6 +490,7 @@ def _validate_dependency_lock(wheels: list[LockedWheel], core_inventory: Mapping
     unused = sorted(set(wheel_by_name) - reachable)
     if unused:
         raise BundleValidationError(f"bundle lock contains unreferenced wheels: {', '.join(unused)}")
+    return list(wheel_by_name.values())
 
 
 def _has_extension_entry_point(wheel_path: Path) -> bool:
