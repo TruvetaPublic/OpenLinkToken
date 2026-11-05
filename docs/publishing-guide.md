@@ -124,34 +124,44 @@ ghcr.io/truvetapublic/openlinktoken-ml1-assets:v1
 
 The manually dispatched
 [Publish ML1 Assets workflow](../.github/workflows/publish-ml1-assets.yml)
-continues to publish FP32 tags from the checked-in assets. Selecting
-`model_tag=v1-fp16` verifies the checked-in FP32 manifest, converts the ONNX
-weights with the pinned `onnxconverter-common` tool while preserving input and
-output types, keeps the tokenizer unchanged, and generates a new hash/size
-manifest. The converted model is staged separately; it never replaces the
-checked-in FP32 model. The workflow validates inference on Linux x86_64,
-macOS arm64, Windows x86_64, and a Linux CUDA runner before it can publish the
-immutable `v1-fp16` tag. The CUDA check requires ONNX Runtime profiling to show
-that at least one node actually ran on `CUDAExecutionProvider`. A missing GPU
-runner or any failed platform check blocks publication. CPU jobs install the
-`tools` dependency group; the CUDA job uses `tools-gpu` so CPU checks do not
-install CUDA and cuDNN packages. The installer option works only after the
-workflow has successfully published the artifact.
+continues to publish FP32 tags from the checked-in assets. The FP16 package is
+generated from FP32 v1 with the pinned `onnxconverter-common` tool, preserving
+the public input/output types and tokenizer, and is checked in at
+[`resources/inferencing/ml1-fp16/`](../resources/inferencing/ml1-fp16/). Its
+ONNX files are stored with Git LFS. For `model_tag=v1-fp16`, the workflow
+copies this package to staging and validates its manifest and CPU inference
+before the platform checks; it does not convert the model during publication
+or modify the checked-in FP32 model. The workflow validates inference on Linux
+x86_64, macOS arm64, Windows x86_64, and a Linux CUDA runner before it can
+publish the immutable `v1-fp16` tag. The CUDA check requires ONNX Runtime
+profiling to show that at least one node actually ran on
+`CUDAExecutionProvider`. A missing GPU runner or any failed platform check
+blocks publication. CPU jobs install the `tools` dependency group; the CUDA
+job uses `tools-gpu` so CPU checks do not install CUDA and cuDNN packages. The
+installer option works only after the workflow has successfully published the
+artifact.
 
-To prepare and CPU-check the staged artifact locally:
+To regenerate and CPU-check the checked-in FP16 package locally, use a new
+output directory (the preparation tool requires that it not already exist):
 
 ```bash
 uv sync --no-default-groups --group tools --no-install-workspace
 uv run --no-sync python tools/ml1/prepare_model_assets.py \
   --source-dir resources/inferencing/ml1 \
-  --output-dir /tmp/ml1-v1-fp16 \
+  --output-dir /tmp/ml1-v1-fp16-generated \
+  --model-tag v1-fp16
+cp /tmp/ml1-v1-fp16-generated/{model.onnx,model.onnx.data,tokenizer.json,asset-manifest.json} \
+  resources/inferencing/ml1-fp16/
+uv run --no-sync python tools/ml1/prepare_model_assets.py \
+  --validate-dir resources/inferencing/ml1-fp16 \
   --model-tag v1-fp16
 ```
 
 The preparation tool currently supports `v1-fp16` only because the repository
-contains the FP32 v1 source. Do not publish a later FP16 tag until its matching
-FP32 source model and compatibility checks are added. To install a model
-manually or for direct ZIP use, install [ORAS](https://oras.land/docs/installation).
+contains the matching FP32 v1 source. Do not publish a later FP16 tag until its
+matching FP32 source model and compatibility checks are added. To install a
+model manually or for direct ZIP use, install
+[ORAS](https://oras.land/docs/installation).
 
 The [CLI quickstart's ORAS installation steps](../pages/quickstarts/cli-quickstart.md#install-oras)
 cover Homebrew, WinGet, and Snap, with a link to the official guide for other
@@ -181,7 +191,7 @@ printf '%s' "$GITHUB_TOKEN" | oras login ghcr.io \
 
 After the first publish, set the GHCR package visibility to **public** in the
 repository package settings. FP32 model tags use the `vN` format, and the
-current FP16 conversion uses `v1-fp16`. Tags cannot be overwritten; publish
+current FP16 package uses `v1-fp16`. Tags cannot be overwritten; publish
 changed model files under a new tag. The converter currently supports only
 `v1-fp16` because the repository contains only the matching FP32 v1 source.
 

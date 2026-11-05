@@ -207,10 +207,13 @@ generator through `uv` with `faker` provided automatically.
 
 `tools/ml1/prepare_model_assets.py` verifies the checked-in ML1 asset manifest,
 stages the FP32 model unchanged, or converts the FP32 v1 ONNX model to FP16 as
-the unpublished `v1-fp16` artifact. The converter keeps the model's public
-input/output contract, writes external weights to `model.onnx.data`, preserves
-the tokenizer, and regenerates the artifact manifest. It never overwrites the
-source assets.
+the `v1-fp16` artifact. The converter keeps the model's public input/output
+contract, writes external weights to `model.onnx.data`, preserves the
+tokenizer, and regenerates the artifact manifest. The checked-in FP16 package
+is stored under `resources/inferencing/ml1-fp16/`; Git LFS tracks its ONNX
+files. The publishing workflow validates and publishes this package rather
+than converting it during the release workflow. The converter never
+overwrites the FP32 source assets.
 
 Prepare and CPU-validate an FP16 artifact with the tool dependency group:
 
@@ -230,8 +233,10 @@ validation and avoids installing CUDA runtime dependencies on CPU-only jobs.
 The manual
 [ML1 asset publishing workflow](../.github/workflows/publish-ml1-assets.yml)
 requires CPU checks on Linux x86_64, macOS arm64, and Windows x86_64, plus the
-CUDA check, before it publishes `v1-fp16`. The repository currently contains
-only the matching FP32 v1 source; this tool rejects other FP16 tags.
+CUDA check, before it publishes `v1-fp16`. Copy a regenerated and validated
+artifact into `resources/inferencing/ml1-fp16/` to update the package that the
+workflow publishes. The tool rejects other FP16 tags because only the matching
+FP32 v1 source is available.
 
 ## Interoperability Tools
 

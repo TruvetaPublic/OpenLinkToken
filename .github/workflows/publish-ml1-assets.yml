@@ -46,14 +46,26 @@ jobs:
       - name: Prepare and verify model assets
         run: |
           set -euo pipefail
-          if [[ ! "${MODEL_TAG}" =~ ^v[0-9]+(-fp16)?$ ]]; then
-            echo "model_tag must match vN or vN-fp16." >&2
+          if [[ "${MODEL_TAG}" == "v1-fp16" ]]; then
+            mkdir -p "${RUNNER_TEMP}/ml1-assets"
+            cp \
+              resources/inferencing/ml1-fp16/model.onnx \
+              resources/inferencing/ml1-fp16/model.onnx.data \
+              resources/inferencing/ml1-fp16/tokenizer.json \
+              resources/inferencing/ml1-fp16/asset-manifest.json \
+              "${RUNNER_TEMP}/ml1-assets/"
+            python tools/ml1/prepare_model_assets.py \
+              --validate-dir "${RUNNER_TEMP}/ml1-assets" \
+              --model-tag "${MODEL_TAG}"
+          elif [[ "${MODEL_TAG}" =~ ^v[0-9]+$ ]]; then
+            python tools/ml1/prepare_model_assets.py \
+              --source-dir resources/inferencing/ml1 \
+              --output-dir "${RUNNER_TEMP}/ml1-assets" \
+              --model-tag "${MODEL_TAG}"
+          else
+            echo "model_tag must match vN or be v1-fp16." >&2
             exit 1
           fi
-          python tools/ml1/prepare_model_assets.py \
-            --source-dir resources/inferencing/ml1 \
-            --output-dir "${RUNNER_TEMP}/ml1-assets" \
-            --model-tag "${MODEL_TAG}"
 
       - name: Upload staged model assets
         uses: actions/upload-artifact@v7
