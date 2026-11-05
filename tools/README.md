@@ -206,14 +206,14 @@ generator through `uv` with `faker` provided automatically.
 ## ML1 Model Assets
 
 `tools/ml1/prepare_model_assets.py` verifies the checked-in ML1 asset manifest,
-stages the FP32 model unchanged, or converts the FP32 v1 ONNX model to FP16 as
-the `v1-fp16` artifact. The converter keeps the model's public input/output
-contract, writes external weights to `model.onnx.data`, preserves the
-tokenizer, and regenerates the artifact manifest. The checked-in FP16 package
-is stored under `resources/inferencing/ml1-fp16/`; Git LFS tracks its ONNX
-files. The publishing workflow validates and publishes this package rather
-than converting it during the release workflow. The converter never
-overwrites the FP32 source assets.
+stages the FP32 model unchanged, or converts the full-output FP32 ONNX model to
+FP16 and applies ONNX Runtime's BERT graph optimizer for `v1-fp16`. Conversion
+keeps FP32 I/O types, writes external weights to `model.onnx.data`, preserves
+the tokenizer, and regenerates the artifact manifest. The checked-in FP16
+package is stored under `resources/inferencing/ml1-fp16/`; Git LFS tracks its
+ONNX files. The publishing workflow validates and publishes this package
+rather than converting it during the release workflow. The preparation tool
+never overwrites the FP32 source assets.
 
 Prepare and CPU-validate an FP16 artifact with the tool dependency group:
 
@@ -221,9 +221,17 @@ Prepare and CPU-validate an FP16 artifact with the tool dependency group:
 uv sync --no-default-groups --group tools --no-install-workspace
 uv run --no-sync python tools/ml1/prepare_model_assets.py \
   --source-dir resources/inferencing/ml1 \
+  --source-model /path/to/model_fp32.onnx \
   --output-dir /tmp/ml1-v1-fp16 \
   --model-tag v1-fp16
 ```
+
+Keep the source model's `model_fp32.onnx.data` sidecar beside it. The converter
+uses ONNX Runtime 1.25.1 with the BERT optimizer configured for 16 heads,
+hidden size 1024, and optimization level 0; the expected graph contains 24
+`com.microsoft::BiasGelu` nodes. The optimized candidate can change token
+signatures, and the current timing result is not a statistically conclusive
+speedup.
 
 Validate a previously staged artifact on a specific execution provider with
 `--validate-dir` and `--provider`. CUDA validation checks the ONNX Runtime
@@ -236,7 +244,7 @@ requires CPU checks on Linux x86_64, macOS arm64, and Windows x86_64, plus the
 CUDA check, before it publishes `v1-fp16`. Copy a regenerated and validated
 artifact into `resources/inferencing/ml1-fp16/` to update the package that the
 workflow publishes. The tool rejects other FP16 tags because only the matching
-FP32 v1 source is available.
+full-output FP32 source is available.
 
 ## Interoperability Tools
 

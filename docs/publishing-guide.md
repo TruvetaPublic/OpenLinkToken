@@ -125,8 +125,9 @@ ghcr.io/truvetapublic/openlinktoken-ml1-assets:v1
 The manually dispatched
 [Publish ML1 Assets workflow](../.github/workflows/publish-ml1-assets.yml)
 continues to publish FP32 tags from the checked-in assets. The FP16 package is
-generated from FP32 v1 with the pinned `onnxconverter-common` tool, preserving
-the public input/output types and tokenizer, and is checked in at
+generated from the full-output FP32 ONNX source with ONNX Runtime's FP16
+converter and BERT graph optimizer, preserving the model's FP32 I/O types and
+the checked-in tokenizer. The generated package is checked in at
 [`resources/inferencing/ml1-fp16/`](../resources/inferencing/ml1-fp16/). Its
 ONNX files are stored with Git LFS. For `model_tag=v1-fp16`, the workflow
 copies this package to staging and validates its manifest and CPU inference
@@ -148,6 +149,7 @@ output directory (the preparation tool requires that it not already exist):
 uv sync --no-default-groups --group tools --no-install-workspace
 uv run --no-sync python tools/ml1/prepare_model_assets.py \
   --source-dir resources/inferencing/ml1 \
+  --source-model /path/to/model_fp32.onnx \
   --output-dir /tmp/ml1-v1-fp16-generated \
   --model-tag v1-fp16
 cp /tmp/ml1-v1-fp16-generated/{model.onnx,model.onnx.data,tokenizer.json,asset-manifest.json} \
@@ -158,9 +160,14 @@ uv run --no-sync python tools/ml1/prepare_model_assets.py \
 ```
 
 The preparation tool currently supports `v1-fp16` only because the repository
-contains the matching FP32 v1 source. Do not publish a later FP16 tag until its
-matching FP32 source model and compatibility checks are added. To install a
-model manually or for direct ZIP use, install
+contains the matching full-output FP32 source model. Keep the source's
+`model_fp32.onnx.data` sidecar beside `model_fp32.onnx`. The tool uses
+ONNX Runtime 1.25.1, 16 BERT attention heads, hidden size 1024, and optimizer
+level 0; the generated graph contains 24 `com.microsoft::BiasGelu` nodes.
+The fused model can produce different ML1 tokens, and measured speed
+improvement is not statistically conclusive. Do not publish a later FP16 tag
+until its matching FP32 source model and compatibility checks are added. To
+install a model manually or for direct ZIP use, install
 [ORAS](https://oras.land/docs/installation).
 
 The [CLI quickstart's ORAS installation steps](../pages/quickstarts/cli-quickstart.md#install-oras)

@@ -18,7 +18,9 @@ import numpy as np
 import onnx
 import onnxruntime as ort
 from onnx import TensorProto
-from onnxconverter_common import float16
+from onnxruntime.transformers.float16 import convert_float_to_float16
+from onnxruntime.transformers.onnx_model import OnnxModel
+from onnxruntime.transformers.optimizer import optimize_model
 
 MODEL_FILES = ("model.onnx", "model.onnx.data", "tokenizer.json")
 REQUIRED_FILES = (*MODEL_FILES, "asset-manifest.json")
@@ -51,7 +53,7 @@ def _validate_model_tag(model_tag: str) -> bool:
     if not MODEL_TAG_PATTERN.fullmatch(model_tag):
         raise ValueError(f"Invalid ML1 model tag: {model_tag} (expected vN or vN-fp16)")
     if model_tag.endswith("-fp16") and model_tag != "v1-fp16":
-        raise ValueError("FP16 publishing currently supports only v1-fp16 from the checked-in v1 model")
+        raise ValueError("FP16 model preparation currently supports only v1-fp16")
     return model_tag == "v1-fp16"
 
 
@@ -250,8 +252,8 @@ def validate_model_assets(asset_dir: Path, model_tag: str, provider: str = "CPUE
         for entry in initializer.external_data
         if entry.key == "location"
     }
-    if "model.onnx.data" not in external_locations:
-        raise ValueError("The ML1 model does not reference model.onnx.data")
+    if external_locations != {"model.onnx.data"}:
+        raise ValueError(f"Unexpected ML1 external data locations: {sorted(external_locations)}")
 
     fp16_initializers = sum(initializer.data_type == TensorProto.FLOAT16 for initializer in model.graph.initializer)
     if fp16_expected and fp16_initializers == 0:
@@ -262,27 +264,30 @@ def validate_model_assets(asset_dir: Path, model_tag: str, provider: str = "CPUE
     _validate_inference(model_path, provider)
 
 
-def _prepare_fp16_assets(source_dir: Path, staging_dir: Path) -> int:
-    """Convert the verified v1 ONNX model and preserve its public tensor contract.
+def _prepare_fp16_assets(source_model_path: Path, tokenizer_path: Path, staging_dir: Path) -> tuple[int, int]:
+    """Convert and fuse the full-output FP32 ONNX model.
 
     Args:
-        source_dir: Directory containing verified FP32 v1 assets.
+        source_model_path: FP32 ONNX model with its external-data sidecar beside it.
+        tokenizer_path: Tokenizer JSON to include with the converted model.
         staging_dir: New temporary directory for the converted artifact.
 
     Returns:
-        Number of graph initializers converted to FP16.
+        Tuple containing the number of FP16 initializers and fused BiasGelu nodes.
     """
-    source_model = onnx.load_model(str(source_dir / "model.onnx"), load_external_data=True)
+    source_model_path = source_model_path.resolve()
+    source_data_path = source_model_path.with_name(f"{source_model_path.name}.data")
+    if not source_model_path.is_file():
+        raise FileNotFoundError(f"FP32 source model is missing: {source_model_path}")
+    if not source_data_path.is_file():
+        raise FileNotFoundError(f"FP32 source model external data is missing: {source_data_path}")
+
+    onnx.checker.check_model(str(source_model_path))
+    source_model = onnx.load_model(str(source_model_path), load_external_data=True)
     source_contract = _io_contract(source_model)
-    # Gather also consumes outputs retained as float32 by keep_io_types.
-    op_block_list = [*float16.DEFAULT_OP_BLOCK_LIST, "Gather"]
     with warnings.catch_warnings(record=True) as conversion_warnings:
         warnings.simplefilter("always", UserWarning)
-        converted_model = float16.convert_float_to_float16(
-            source_model,
-            keep_io_types=True,
-            op_block_list=op_block_list,
-        )
+        converted_model = convert_float_to_float16(source_model, keep_io_types=True)
     if conversion_warnings:
         examples = "; ".join(dict.fromkeys(str(item.message) for item in conversion_warnings[:3]))
         print(
@@ -292,41 +297,82 @@ def _prepare_fp16_assets(source_dir: Path, staging_dir: Path) -> int:
     if _io_contract(converted_model) != source_contract:
         raise RuntimeError("FP16 conversion changed the model input or output contract")
 
-    onnx.save_model(
-        converted_model,
-        str(staging_dir / "model.onnx"),
-        save_as_external_data=True,
-        all_tensors_to_one_file=True,
-        location="model.onnx.data",
-        size_threshold=1024,
-    )
-    shutil.copyfile(source_dir / "tokenizer.json", staging_dir / "tokenizer.json")
+    OnnxModel(converted_model).topological_sort()
+    del source_model
+    with tempfile.TemporaryDirectory(dir=staging_dir, prefix=".ml1-fp16-build-") as build_directory:
+        build_dir = Path(build_directory)
+        fp16_path = build_dir / "model_fp16.onnx"
+        fused_dir = build_dir / "fused"
+        fused_dir.mkdir()
+        fused_path = fused_dir / "model.onnx"
+        onnx.save_model(
+            converted_model,
+            str(fp16_path),
+            save_as_external_data=True,
+            all_tensors_to_one_file=True,
+            location=f"{fp16_path.name}.data",
+            size_threshold=0,
+        )
+        del converted_model
+        onnx.checker.check_model(str(fp16_path))
 
-    converted_weights = (staging_dir / "model.onnx.data").stat().st_size
-    source_weights = (source_dir / "model.onnx.data").stat().st_size
-    if converted_weights >= source_weights:
-        raise RuntimeError("FP16 conversion did not reduce the external model weight size")
+        optimized_model = optimize_model(
+            str(fp16_path),
+            model_type="bert",
+            num_heads=16,
+            hidden_size=1024,
+            opt_level=0,
+        )
+        optimized_model.save_model_to_file(str(fused_path), use_external_data_format=True)
+        onnx.checker.check_model(str(fused_path))
 
-    converted_graph = onnx.load_model(str(staging_dir / "model.onnx"), load_external_data=False)
+        fused_graph = onnx.load_model(str(fused_path), load_external_data=False)
+        if _io_contract(fused_graph) != source_contract:
+            raise RuntimeError("BERT optimization changed the model input or output contract")
+        shutil.copyfile(fused_path, staging_dir / "model.onnx")
+        shutil.copyfile(
+            fused_path.with_name(f"{fused_path.name}.data"),
+            staging_dir / "model.onnx.data",
+        )
+        onnx.checker.check_model(str(staging_dir / "model.onnx"))
+
     fp16_initializers = sum(
-        initializer.data_type == TensorProto.FLOAT16 for initializer in converted_graph.graph.initializer
+        initializer.data_type == TensorProto.FLOAT16 for initializer in fused_graph.graph.initializer
+    )
+    bias_gelu_count = sum(
+        node.domain == "com.microsoft" and node.op_type == "BiasGelu" for node in fused_graph.graph.node
     )
     if fp16_initializers == 0:
         raise RuntimeError("FP16 conversion produced no FP16 model weights")
-    return fp16_initializers
+
+    shutil.copyfile(tokenizer_path, staging_dir / "tokenizer.json")
+    converted_weights = (staging_dir / "model.onnx.data").stat().st_size
+    source_weights = source_data_path.stat().st_size
+    if converted_weights >= source_weights:
+        raise RuntimeError("FP16 conversion did not reduce the external model weight size")
+    return fp16_initializers, bias_gelu_count
 
 
-def prepare_model_assets(source_dir: Path, output_dir: Path, model_tag: str) -> None:
+def prepare_model_assets(
+    source_dir: Path,
+    output_dir: Path,
+    model_tag: str,
+    source_model_path: Path | None = None,
+) -> None:
     """Stage an immutable FP32 or FP16 artifact without changing source assets.
 
     Args:
         source_dir: Directory containing checked-in FP32 model assets.
         output_dir: New directory to create for the staged artifact.
         model_tag: Immutable OCI model tag to prepare.
+        source_model_path: Optional full-output FP32 ONNX model to convert for v1-fp16.
     """
     fp16 = _validate_model_tag(model_tag)
     source_dir = source_dir.resolve()
     output_dir = output_dir.resolve()
+    if source_model_path is not None and not fp16:
+        raise ValueError("An explicit source model can only be used to prepare v1-fp16")
+    source_model_path = (source_model_path or source_dir / "model.onnx").resolve()
     if source_dir == output_dir:
         raise ValueError("The output directory must be separate from the source model directory")
     if output_dir.exists():
@@ -338,13 +384,18 @@ def prepare_model_assets(source_dir: Path, output_dir: Path, model_tag: str) -> 
         staging_dir = Path(temporary_dir) / "assets"
         staging_dir.mkdir()
         if fp16:
-            initializer_count = _prepare_fp16_assets(source_dir, staging_dir)
+            initializer_count, bias_gelu_count = _prepare_fp16_assets(
+                source_model_path,
+                source_dir / "tokenizer.json",
+                staging_dir,
+            )
             _write_manifest(staging_dir)
             validate_model_assets(staging_dir, model_tag)
-            source_size = (source_dir / "model.onnx.data").stat().st_size
+            source_data_path = source_model_path.with_name(f"{source_model_path.name}.data")
+            source_size = source_data_path.stat().st_size
             converted_size = (staging_dir / "model.onnx.data").stat().st_size
             print(
-                f"Converted {initializer_count} initializers to FP16; "
+                f"Converted {initializer_count} initializers to FP16 and fused {bias_gelu_count} BiasGelu nodes; "
                 f"external weights {source_size} -> {converted_size} bytes."
             )
         else:
@@ -363,6 +414,7 @@ def _parse_args() -> argparse.Namespace:
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--source-dir", type=Path, help="Checked-in FP32 model asset directory to stage")
     mode.add_argument("--validate-dir", type=Path, help="Already-staged model asset directory to validate")
+    parser.add_argument("--source-model", type=Path, help="Optional full-output FP32 ONNX model for v1-fp16")
     parser.add_argument("--output-dir", type=Path, help="New directory for staged assets")
     return parser.parse_args()
 
@@ -373,8 +425,10 @@ def main() -> None:
     if args.source_dir is not None:
         if args.output_dir is None:
             raise SystemExit("--output-dir is required when preparing model assets")
-        prepare_model_assets(args.source_dir, args.output_dir, args.model_tag)
+        prepare_model_assets(args.source_dir, args.output_dir, args.model_tag, args.source_model)
         return
+    if args.source_model is not None:
+        raise SystemExit("--source-model can only be used with --source-dir")
     if args.output_dir is not None:
         raise SystemExit("--output-dir cannot be used with --validate-dir")
     validate_model_assets(args.validate_dir, args.model_tag, args.provider)

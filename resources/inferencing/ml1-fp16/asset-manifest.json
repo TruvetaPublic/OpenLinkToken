@@ -1,16 +1,16 @@
 {
   "assets": {
     "model.onnx": {
-      "sha256": "c9c4edab609993c7b7a1eedc1786590a68286ac3d44d47958ad0dfbd91a2a9a6",
-      "size": 228942
+      "sha256": "49f7e1ad5bf424c8913edb3e92cac0d99f96908deb37e4c563a778b0c117618d",
+      "size": 2318482
     },
     "model.onnx.data": {
-      "sha256": "8da5420b63f02043a2bbd95b0638968e1d677037983b0abb2c7f7f9544c96cab",
-      "size": 670283776
+      "sha256": "ae3dfa875b0ff12360e7aa99a8be8c73dd6c6cf8f7665b979f00babf6f01d460",
+      "size": 670287872
     },
     "tokenizer.json": {
-      "sha256": "9db1850d8519a9c2efa93695313555aa45c0110e3f7e7f792bf2d97c06b47a50",
-      "size": 710500
+      "sha256": "34616ca2972eddfc5f0b39dbb12275a5c0c61df254ebcaef42e1b33afd2f7eb9",
+      "size": 710421
     }
   }
 }

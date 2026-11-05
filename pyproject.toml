@@ -39,7 +39,7 @@ ml1-model-tools = [
     "numpy==1.26.4; python_version < '3.14'",
     "numpy==2.3.3; python_version >= '3.14'",
     "onnx==1.16.2",
-    "onnxconverter-common==1.16.0",
+    "sympy==1.14.0",
 ]
 tools = [
     "faker==40.43.0",

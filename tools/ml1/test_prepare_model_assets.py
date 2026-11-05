@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import shutil
 from pathlib import Path
 
 import numpy as np
@@ -53,10 +54,13 @@ def test_prepares_fp16_assets_without_changing_the_fp32_source(tmp_path):
     source_dir = tmp_path / "source"
     output_dir = tmp_path / "fp16"
     _create_source_model(source_dir)
+    source_model_path = source_dir / "model_fp32.onnx"
+    shutil.copyfile(source_dir / "model.onnx", source_model_path)
+    shutil.copyfile(source_dir / "model.onnx.data", source_dir / "model_fp32.onnx.data")
     source_files = {path.name: path.read_bytes() for path in source_dir.iterdir()}
-    source_model = onnx.load_model(str(source_dir / "model.onnx"), load_external_data=False)
+    source_model = onnx.load_model(str(source_model_path), load_external_data=False)
 
-    prepare_model_assets(source_dir, output_dir, "v1-fp16")
+    prepare_model_assets(source_dir, output_dir, "v1-fp16", source_model_path)
 
     validate_model_assets(output_dir, "v1-fp16")
     converted_model = onnx.load_model(str(output_dir / "model.onnx"), load_external_data=False)
@@ -102,6 +106,22 @@ def test_rejects_bad_source_manifest_before_creating_output(tmp_path):
         assert "Unexpected size" in str(error)
     else:
         raise AssertionError("Expected source manifest verification to fail")
+
+    assert not output_dir.exists()
+
+
+def test_rejects_explicit_source_model_for_fp32_tag(tmp_path):
+    """An alternate FP32 source is only valid for preparing v1-fp16."""
+    source_dir = tmp_path / "source"
+    output_dir = tmp_path / "fp32"
+    _create_source_model(source_dir)
+
+    try:
+        prepare_model_assets(source_dir, output_dir, "v1", source_dir / "model.onnx")
+    except ValueError as error:
+        assert "only be used to prepare v1-fp16" in str(error)
+    else:
+        raise AssertionError("Expected an explicit FP32 source model to be rejected for v1")
 
     assert not output_dir.exists()
 
