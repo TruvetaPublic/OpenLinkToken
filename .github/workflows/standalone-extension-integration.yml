@@ -11,7 +11,7 @@ on:
       extension_ref:
         description: "Extension branch, tag or SHA (default: tested baseline)"
         type: string
-        default: "70695bb3b46931981b5202d478439666b7fe62e0"
+        default: "42ba6452d127cfec37987d5b5035c097ba7365e5"
 
 permissions:
   contents: read
@@ -19,7 +19,7 @@ permissions:
 jobs:
   integration:
     # Pin workflow code and counterpart source together; update deliberately.
-    uses: TruvetaPublic/OpenLinkToken-Truveta-Extension/.github/workflows/standalone-integration.yml@70695bb3b46931981b5202d478439666b7fe62e0
+    uses: TruvetaPublic/OpenLinkToken-Truveta-Extension/.github/workflows/standalone-integration.yml@42ba6452d127cfec37987d5b5035c097ba7365e5
     with:
       core_ref: ${{ inputs.core_ref || github.event.pull_request.head.sha || github.sha }}
-      extension_ref: ${{ inputs.extension_ref || '70695bb3b46931981b5202d478439666b7fe62e0' }}
+      extension_ref: ${{ inputs.extension_ref || '42ba6452d127cfec37987d5b5035c097ba7365e5' }}
