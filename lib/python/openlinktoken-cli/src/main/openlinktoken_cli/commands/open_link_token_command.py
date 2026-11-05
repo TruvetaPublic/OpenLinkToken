@@ -1,14 +1,17 @@
 # SPDX-License-Identifier: MIT
 
 import argparse
+import json
 import logging
 import os
 import sys
+from typing import Optional
 
 from openlinktoken.metadata import Metadata
 from openlinktoken_cli.util.version_checker import start_version_check
 
 logger = logging.getLogger(__name__)
+_INTERNAL_WORKER_ARGUMENTS = frozenset({"--_olt-extension-worker", "--_olt-extension-metadata"})
 
 
 class OpenLinkTokenCommand:
@@ -68,12 +71,16 @@ class OpenLinkTokenCommand:
         )
 
     @staticmethod
-    def create_parser(load_extensions: bool = True):
+    def create_parser(
+        load_extensions: bool = True,
+        worker_extension_name: Optional[str] = None,
+    ):
         """
         Create the main argument parser with subcommands.
 
         Args:
             load_extensions: Whether to load extensions.
+            worker_extension_name: Load only this extension inside a standalone worker.
 
         Returns:
             Created the main argument parser with subcommands.
@@ -133,7 +140,11 @@ class OpenLinkTokenCommand:
 
         if load_extensions:
             # Load installed extensions only when the selected command needs them.
-            ExtensionLoader.load_extensions(subparsers, BUILTIN_COMMANDS)
+            ExtensionLoader.load_extensions(
+                subparsers,
+                BUILTIN_COMMANDS,
+                worker_extension_name=worker_extension_name,
+            )
 
         # Sort all subcommands (built-ins and extensions) alphabetically.
         # Uses private argparse internals that may not exist in all Python versions;
@@ -152,12 +163,13 @@ class OpenLinkTokenCommand:
         return parser
 
     @staticmethod
-    def main(args=None):
+    def main(args=None, *, _worker_extension=None):
         """
         Main entry point for the command-line application.
 
         Args:
             args: Optional command-line argument list; when omitted, the command uses sys.argv.
+            _worker_extension: Internal extension identity for a standalone worker invocation.
 
         Returns:
             Integer exit status returned by the selected command or argument parser.
@@ -165,14 +177,39 @@ class OpenLinkTokenCommand:
         from openlinktoken_cli.util.cli_error_reporter import archive_unexpected_error, format_unexpected_error_message
         from openlinktoken_cli.util.cli_run_reporter import configure_default_logging
 
-        configure_default_logging()
         raw_args = list(sys.argv[1:] if args is None else args)
+        if _worker_extension is None and raw_args and raw_args[0] in _INTERNAL_WORKER_ARGUMENTS:
+            return OpenLinkTokenCommand._handle_internal_worker_args(raw_args)
+        if _worker_extension is None and getattr(sys, "frozen", False):
+            from openlinktoken_cli.extension.extension_loader import ExtensionLoader
+
+            dispatch = ExtensionLoader.find_extension_command(raw_args)
+            if dispatch is not None:
+                return ExtensionLoader.run_worker(*dispatch)
+
+        configure_default_logging()
         load_extensions = (
-            not raw_args
+            _worker_extension is not None
+            or not raw_args
             or OpenLinkTokenCommand._is_help_request(raw_args)
             or OpenLinkTokenCommand._should_load_extensions(raw_args)
         )
-        parser = OpenLinkTokenCommand.create_parser(load_extensions)
+        if _worker_extension is None:
+            parser = OpenLinkTokenCommand.create_parser(
+                load_extensions,
+                worker_extension_name=_worker_extension,
+            )
+        else:
+            from openlinktoken_cli.extension.extension_loader import ExtensionLoadError
+
+            try:
+                parser = OpenLinkTokenCommand.create_parser(
+                    load_extensions,
+                    worker_extension_name=_worker_extension,
+                )
+            except ExtensionLoadError as error:
+                print(f"Error: {error}", file=sys.stderr)
+                return 1
 
         # Show banner for help-oriented entry points, bare invocation, and bare subcommand.
         if OpenLinkTokenCommand._should_show_banner(raw_args):
@@ -195,7 +232,9 @@ class OpenLinkTokenCommand:
             return error.code if isinstance(error.code, int) else 1
 
         no_update_check = getattr(parsed_args, "no_update_check", False)
-        should_start_version_check = OpenLinkTokenCommand._should_start_version_check(parsed_args)
+        should_start_version_check = _worker_extension is None and OpenLinkTokenCommand._should_start_version_check(
+            parsed_args
+        )
 
         version_checker = None
         if should_start_version_check:
@@ -223,6 +262,60 @@ class OpenLinkTokenCommand:
         # Surface any update notice after command output; never let this affect the exit code.
         OpenLinkTokenCommand._safe_wait_and_notify(version_checker)
         return exit_code
+
+    @staticmethod
+    def _handle_internal_worker_args(args: list[str]) -> int:
+        """
+        Handle private metadata and command worker invocations.
+
+        Args:
+            args: Raw arguments beginning with a private standalone worker option.
+
+        Returns:
+            Worker exit status, or a non-zero status for invalid worker requests.
+        """
+        from openlinktoken_cli.extension.extension_loader import (
+            METADATA_ARGUMENT,
+            METADATA_MARKER,
+            WORKER_ARGUMENT,
+            ExtensionLoader,
+        )
+
+        if not getattr(sys, "frozen", False):
+            print(
+                "Error: Private extension worker options are available only in the standalone binary.",
+                file=sys.stderr,
+            )
+            return 2
+        if args[0] == METADATA_ARGUMENT:
+            if len(args) != 2:
+                print("Error: Invalid extension metadata worker request.", file=sys.stderr)
+                return 2
+            try:
+                extension = ExtensionLoader.load_worker_extension(args[1])
+                payload = {
+                    "command_name": extension.command_name,
+                    "description": extension.description,
+                }
+            except Exception as error:
+                print(f"Error: Could not read extension metadata: {error}", file=sys.stderr)
+                return 1
+            print(f"{METADATA_MARKER}{json.dumps(payload)}")
+            return 0
+
+        if args[0] != WORKER_ARGUMENT:
+            print("Error: Unknown private extension worker option.", file=sys.stderr)
+            return 2
+        if len(args) < 4 or args[2] != "--":
+            print("Error: Invalid extension worker request.", file=sys.stderr)
+            return 2
+        extension_name = args[1]
+        forwarded_args = args[3:]
+        dispatch = ExtensionLoader.find_extension_command(forwarded_args)
+        if dispatch is None or dispatch[0] != extension_name:
+            print(f"Error: Worker arguments do not select extension '{extension_name}'.", file=sys.stderr)
+            return 2
+        return OpenLinkTokenCommand.main(forwarded_args, _worker_extension=extension_name)
 
     @staticmethod
     def execute(args):
