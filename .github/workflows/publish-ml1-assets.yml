@@ -4,70 +4,148 @@ on:
   workflow_dispatch:
     inputs:
       model_tag:
-        description: "Immutable model tag, for example v1"
+        description: "Immutable model tag (vN for FP32 or v1-fp16)"
         required: true
         type: string
 
+concurrency:
+  group: publish-ml1-assets-${{ inputs.model_tag }}
+  cancel-in-progress: false
+
 permissions:
   contents: read
-  packages: write
 
 env:
   REGISTRY: ghcr.io
   PACKAGE_SUFFIX: ml1-assets
 
 jobs:
-  publish:
+  prepare:
     runs-on: ubuntu-latest
-    concurrency:
-      group: publish-ml1-assets-${{ inputs.model_tag }}
-      cancel-in-progress: false
+    permissions:
+      contents: read
+    env:
+      MODEL_TAG: ${{ inputs.model_tag }}
     steps:
       - name: Check out model assets
         uses: actions/checkout@v7
         with:
           lfs: true
 
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: Set up UV
+        uses: astral-sh/setup-uv@v7
+
+      - name: Install model preparation dependencies
+        run: uv pip install --break-system-packages --system --group tools
+
+      - name: Prepare and verify model assets
+        run: |
+          set -euo pipefail
+          if [[ ! "${MODEL_TAG}" =~ ^v[0-9]+(-fp16)?$ ]]; then
+            echo "model_tag must match vN or vN-fp16." >&2
+            exit 1
+          fi
+          python tools/ml1/prepare_model_assets.py \
+            --source-dir resources/inferencing/ml1 \
+            --output-dir "${RUNNER_TEMP}/ml1-assets" \
+            --model-tag "${MODEL_TAG}"
+
+      - name: Upload staged model assets
+        uses: actions/upload-artifact@v7
+        with:
+          name: ml1-assets
+          path: ${{ runner.temp }}/ml1-assets
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+
+  validate-fp16:
+    if: ${{ inputs.model_tag == 'v1-fp16' }}
+    name: Validate FP16 (${{ matrix.platform }})
+    needs: prepare
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux-x86_64-cpu
+            runner: ubuntu-latest
+            dependency_group: tools
+            provider: CPUExecutionProvider
+          - platform: macos-arm64-cpu
+            runner: macos-15
+            dependency_group: tools
+            provider: CPUExecutionProvider
+          - platform: windows-x86_64-cpu
+            runner: windows-latest
+            dependency_group: tools
+            provider: CPUExecutionProvider
+          - platform: linux-x86_64-cuda
+            runner: [self-hosted, linux, x64, gpu]
+            dependency_group: tools-gpu
+            provider: CUDAExecutionProvider
+    env:
+      MODEL_TAG: ${{ inputs.model_tag }}
+    steps:
+      - name: Check out validation tools
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: Set up UV
+        uses: astral-sh/setup-uv@v7
+
+      - name: Install model validation dependencies
+        run: uv pip install --break-system-packages --system --group ${{ matrix.dependency_group }}
+
+      - name: Download staged model assets
+        uses: actions/download-artifact@v8
+        with:
+          name: ml1-assets
+          path: ${{ runner.temp }}/ml1-assets
+
+      - name: Validate FP16 model inference
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/ml1/prepare_model_assets.py \
+            --validate-dir "${RUNNER_TEMP}/ml1-assets" \
+            --model-tag "${MODEL_TAG}" \
+            --provider "${{ matrix.provider }}"
+
+  publish:
+    needs: [prepare, validate-fp16]
+    if: >-
+      ${{
+        always() &&
+        needs.prepare.result == 'success' &&
+        (inputs.model_tag != 'v1-fp16' || needs.validate-fp16.result == 'success')
+      }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      MODEL_TAG: ${{ inputs.model_tag }}
+    steps:
+      - name: Download validated model assets
+        uses: actions/download-artifact@v8
+        with:
+          name: ml1-assets
+          path: ${{ runner.temp }}/ml1-assets
+
       - name: Install ORAS
         uses: oras-project/setup-oras@005458ad77f1c8facd38a094e4af2e69e5607ff4 # v2.0.2
         with:
           version: 1.3.3
-
-      - name: Validate model tag
-        env:
-          MODEL_TAG: ${{ inputs.model_tag }}
-        run: |
-          set -euo pipefail
-          if [[ ! "${MODEL_TAG}" =~ ^v[0-9]+$ ]]; then
-            echo "model_tag must match vN, for example v1." >&2
-            exit 1
-          fi
-
-      - name: Validate model assets
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          import hashlib
-          import json
-          from pathlib import Path
-
-          asset_dir = Path("resources/inferencing/ml1")
-          manifest = json.loads((asset_dir / "asset-manifest.json").read_text(encoding="utf-8"))
-
-          for filename, metadata in manifest["assets"].items():
-              path = asset_dir / filename
-              if not path.is_file():
-                  raise SystemExit(f"Missing ML1 asset: {path}")
-              if path.stat().st_size != metadata["size"]:
-                  raise SystemExit(f"Unexpected size for {path}")
-
-              digest = hashlib.sha256()
-              with path.open("rb") as asset_file:
-                  for chunk in iter(lambda: asset_file.read(1024 * 1024), b""):
-                      digest.update(chunk)
-              if digest.hexdigest() != metadata["sha256"]:
-                  raise SystemExit(f"Unexpected SHA-256 digest for {path}")
-          PY
 
       - name: Log in to GHCR
         env:
@@ -79,8 +157,6 @@ jobs:
             --password-stdin
 
       - name: Publish ML1 OCI artifact
-        env:
-          MODEL_TAG: ${{ inputs.model_tag }}
         run: |
           set -euo pipefail
           package="${REGISTRY}/${GITHUB_REPOSITORY,,}-${PACKAGE_SUFFIX}"
@@ -94,7 +170,7 @@ jobs:
             exit 1
           fi
 
-          cd resources/inferencing/ml1
+          cd "${RUNNER_TEMP}/ml1-assets"
           oras push "${reference}" \
             --artifact-type application/vnd.openlinktoken.ml1.v1 \
             --annotation "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
@@ -106,5 +182,5 @@ jobs:
           {
             echo "### ML1 OCI artifact"
             echo
-            echo "\`${package}:${MODEL_TAG}\`"
+            echo "\`${reference}\`"
           } >> "${GITHUB_STEP_SUMMARY}"

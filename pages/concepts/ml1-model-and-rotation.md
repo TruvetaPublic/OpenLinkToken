@@ -155,9 +155,13 @@ package, authenticate ORAS with a GitHub token that has `read:packages`.
 
 Standalone CLI ZIPs omit all four files. The Linux/macOS and Windows installers
 bootstrap checksum-verified ORAS 1.3.3 and pull the public OCI package during
-installation, defaulting to model tag `v1`. Override it with `--model-tag vN`
-on Linux/macOS, `-ModelTag vN` on Windows, or `OLT_ML1_MODEL_TAG`. Once installed,
-ML1 does not download assets at runtime.
+installation, defaulting to FP32 model tag `v1`. Select `v1-fp16` with
+`--model-tag v1-fp16` on Linux/macOS, `-ModelTag v1-fp16` on Windows, or
+`OLT_ML1_MODEL_TAG=v1-fp16`. An explicit flag overrides the environment
+variable. The FP16 artifact must be published before it can be installed.
+FP16 and FP32 can produce different embeddings and ML1 tokens, so participants
+in a matching exchange must use the same model tag. Once installed, ML1 does
+not download assets at runtime.
 
 For direct ZIP installation, pull the files into
 `_internal/openlinktoken/core/ai/tokens/` inside the extracted CLI bundle and

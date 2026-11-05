@@ -87,7 +87,22 @@ installation and place them beside the installed Python modules. The default
 model tag is `v1`; select another immutable tag with `install.sh --model-tag
 vN`, `install.ps1 -ModelTag vN`, or `OLT_ML1_MODEL_TAG`. Installers bootstrap
 and checksum-verify ORAS 1.3.3. Direct ZIP users must pull the OCI package
-themselves. The published Docker image includes the model assets.
+themselves. The published Docker image includes the FP32 model assets.
+
+The installers also accept `v1-fp16`:
+
+```bash
+install.sh --model-tag v1-fp16
+```
+
+```powershell
+.\install.ps1 -ModelTag v1-fp16
+```
+
+`OLT_ML1_MODEL_TAG=v1-fp16` selects the same model when no installer flag is
+provided. FP32 `v1` remains the default. The FP16 and FP32 models are not
+guaranteed to produce identical embeddings or ML1 tokens; parties in an
+exchange must select the same model tag.
 
 For standalone ZIPs, the destination is
 `_internal/openlinktoken/core/ai/tokens/` inside the extracted bundle, beside
@@ -107,8 +122,36 @@ not the Open Link Token library:
 ghcr.io/truvetapublic/openlinktoken-ml1-assets:v1
 ```
 
-Installers pull this package automatically. To install a model manually or
-for direct ZIP use, install [ORAS](https://oras.land/docs/installation).
+The manually dispatched
+[Publish ML1 Assets workflow](../.github/workflows/publish-ml1-assets.yml)
+continues to publish FP32 tags from the checked-in assets. Selecting
+`model_tag=v1-fp16` verifies the checked-in FP32 manifest, converts the ONNX
+weights with the pinned `onnxconverter-common` tool while preserving input and
+output types, keeps the tokenizer unchanged, and generates a new hash/size
+manifest. The converted model is staged separately; it never replaces the
+checked-in FP32 model. The workflow validates inference on Linux x86_64,
+macOS arm64, Windows x86_64, and a Linux CUDA runner before it can publish the
+immutable `v1-fp16` tag. The CUDA check requires ONNX Runtime profiling to show
+that at least one node actually ran on `CUDAExecutionProvider`. A missing GPU
+runner or any failed platform check blocks publication. CPU jobs install the
+`tools` dependency group; the CUDA job uses `tools-gpu` so CPU checks do not
+install CUDA and cuDNN packages. The installer option works only after the
+workflow has successfully published the artifact.
+
+To prepare and CPU-check the staged artifact locally:
+
+```bash
+uv sync --no-default-groups --group tools --no-install-workspace
+uv run --no-sync python tools/ml1/prepare_model_assets.py \
+  --source-dir resources/inferencing/ml1 \
+  --output-dir /tmp/ml1-v1-fp16 \
+  --model-tag v1-fp16
+```
+
+The preparation tool currently supports `v1-fp16` only because the repository
+contains the FP32 v1 source. Do not publish a later FP16 tag until its matching
+FP32 source model and compatibility checks are added. To install a model
+manually or for direct ZIP use, install [ORAS](https://oras.land/docs/installation).
 
 The [CLI quickstart's ORAS installation steps](../pages/quickstarts/cli-quickstart.md#install-oras)
 cover Homebrew, WinGet, and Snap, with a link to the official guide for other
@@ -124,8 +167,10 @@ oras pull \
 ```
 
 The package contains `model.onnx`, `model.onnx.data`, `tokenizer.json`, and
-`asset-manifest.json`. Keep the package public so installer pulls work without
-credentials. A manually run ORAS pull from a private package can authenticate
+`asset-manifest.json`. The `v1-fp16` model is a distinct, immutable artifact;
+do not mix it with `v1` across parties in the same exchange. Keep the package
+public so installer pulls work without credentials. A manually run ORAS pull
+from a private package can authenticate
 with a GitHub token that has `read:packages`:
 
 ```bash
@@ -135,8 +180,10 @@ printf '%s' "$GITHUB_TOKEN" | oras login ghcr.io \
 ```
 
 After the first publish, set the GHCR package visibility to **public** in the
-repository package settings. Model tags use the `vN` format and cannot be
-overwritten; publish changed model files under a new tag.
+repository package settings. FP32 model tags use the `vN` format, and the
+current FP16 conversion uses `v1-fp16`. Tags cannot be overwritten; publish
+changed model files under a new tag. The converter currently supports only
+`v1-fp16` because the repository contains only the matching FP32 v1 source.
 
 After the pull, use the model and tokenizer paths from the previous section.
 The publishing workflow runs manually and creates a new package tag only when

@@ -4,6 +4,7 @@
   - [Decryptor Tools](#decryptor-tools)
   - [Exchange Tools](#exchange-tools)
   - [Mock Data Tools](#mock-data-tools)
+  - [ML1 Model Assets](#ml1-model-assets)
   - [Interoperability Tools](#interoperability-tools)
   - [Multi-Language Sync Tool](#multi-language-sync-tool)
     - [Overview](#overview)
@@ -201,6 +202,36 @@ Arguments are:
 
 For the default quick-start flow, `tools/mockdata/generate.sh` runs the
 generator through `uv` with `faker` provided automatically.
+
+## ML1 Model Assets
+
+`tools/ml1/prepare_model_assets.py` verifies the checked-in ML1 asset manifest,
+stages the FP32 model unchanged, or converts the FP32 v1 ONNX model to FP16 as
+the unpublished `v1-fp16` artifact. The converter keeps the model's public
+input/output contract, writes external weights to `model.onnx.data`, preserves
+the tokenizer, and regenerates the artifact manifest. It never overwrites the
+source assets.
+
+Prepare and CPU-validate an FP16 artifact with the tool dependency group:
+
+```bash
+uv sync --no-default-groups --group tools --no-install-workspace
+uv run --no-sync python tools/ml1/prepare_model_assets.py \
+  --source-dir resources/inferencing/ml1 \
+  --output-dir /tmp/ml1-v1-fp16 \
+  --model-tag v1-fp16
+```
+
+Validate a previously staged artifact on a specific execution provider with
+`--validate-dir` and `--provider`. CUDA validation checks the ONNX Runtime
+profile for actual node execution by `CUDAExecutionProvider`. CPU preparation
+uses the `tools` dependency group; the separate `tools-gpu` group is for CUDA
+validation and avoids installing CUDA runtime dependencies on CPU-only jobs.
+The manual
+[ML1 asset publishing workflow](../.github/workflows/publish-ml1-assets.yml)
+requires CPU checks on Linux x86_64, macOS arm64, and Windows x86_64, plus the
+CUDA check, before it publishes `v1-fp16`. The repository currently contains
+only the matching FP32 v1 source; this tool rejects other FP16 tags.
 
 ## Interoperability Tools
 

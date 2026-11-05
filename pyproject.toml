@@ -35,9 +35,23 @@ dev = [
    "autoflake==2.4.0",
    "pyinstaller==6.22.3",
 ]
+ml1-model-tools = [
+    "numpy==1.26.4; python_version < '3.14'",
+    "numpy==2.3.3; python_version >= '3.14'",
+    "onnx==1.16.2",
+    "onnxconverter-common==1.16.0",
+]
 tools = [
     "faker==40.43.0",
     "pycryptodome==4.0.0",
+    { include-group = "ml1-model-tools" },
+    "onnxruntime==1.23.2; python_version < '3.11'",
+    "onnxruntime==1.25.1; python_version >= '3.11'",
+]
+tools-gpu = [
+    { include-group = "ml1-model-tools" },
+    "onnxruntime-gpu[cuda,cudnn]==1.23.2; platform_system == 'Linux' and platform_machine == 'x86_64' and python_version < '3.11'",
+    "onnxruntime-gpu[cuda,cudnn]==1.25.1; platform_system == 'Linux' and platform_machine == 'x86_64' and python_version >= '3.11'",
 ]
 [tool.ruff]
 line-length = 120

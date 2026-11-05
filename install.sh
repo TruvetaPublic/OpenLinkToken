@@ -18,11 +18,11 @@ usage() {
 Install the Open Link Token CLI for Linux or macOS.
 
 Usage:
-  install.sh [--version VERSION] [--model-tag TAG] [--install-dir DIRECTORY] [--no-cuda]
+  install.sh [--version VERSION] [--model-tag vN[-fp16]] [--install-dir DIRECTORY] [--no-cuda]
 
 Options:
   --version VERSION       Install a specific release (default: latest)
-  --model-tag TAG         Install this ML1 model tag (default: v1 or OLT_ML1_MODEL_TAG)
+  --model-tag TAG         Install an ML1 model tag: vN or vN-fp16 (default: v1 or OLT_ML1_MODEL_TAG)
   --install-dir DIRECTORY Install into DIRECTORY (default: ~/.local/bin)
   --no-cuda               Skip CUDA runtime installation (Linux x86_64 only)
   -h, --help              Show this help
@@ -60,7 +60,7 @@ install_ml1_assets() {
     local model_root oras_dir oras_archive oras_checksum oras_url oras_binary model_assets_dir
     local filename metadata expected_checksum expected_size actual_size
     model_root="$staged_bundle/_internal/openlinktoken/core/ai/tokens"
-    if [[ -s "$model_root/model.onnx" && -s "$model_root/model.onnx.data" &&
+    if [[ "$model_tag" == "v1" && -s "$model_root/model.onnx" && -s "$model_root/model.onnx.data" &&
         -s "$model_root/tokenizer.json" && -s "$model_root/asset-manifest.json" ]]; then
         printf 'ML1 model assets are already included in the CLI archive.\n'
         return
@@ -157,6 +157,9 @@ while (($# > 0)); do
     esac
 done
 
+[[ "$model_tag" =~ ^v[0-9]+(-fp16)?$ ]] ||
+    fail "Invalid ML1 model tag: $model_tag (expected vN or vN-fp16)"
+
 command -v curl >/dev/null 2>&1 || fail "curl is required"
 command -v unzip >/dev/null 2>&1 || fail "unzip is required"
 
@@ -170,7 +173,6 @@ fi
 
 [[ "$version" =~ ^v?[0-9]+(\.[0-9]+){2}([.-][0-9A-Za-z.-]+)?$ ]] ||
     fail "Invalid version: $version"
-[[ "$model_tag" =~ ^v[0-9]+$ ]] || fail "Invalid ML1 model tag: $model_tag (expected vN)"
 version="${version#v}"
 version="${version#V}"
 tag="v${version}"

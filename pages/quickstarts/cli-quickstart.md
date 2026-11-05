@@ -59,12 +59,15 @@ They also download checksum-verified ORAS 1.3.3 temporarily and pull
 login. The model download includes about 1.34 GB of weights. After installation,
 ML1 runs locally without further model downloads.
 
-Model versions are independent of CLI releases. Select an immutable `vN` tag
-with `--model-tag vN` on Linux/macOS, `-ModelTag vN` on Windows, or the
-`OLT_ML1_MODEL_TAG` environment variable. The flag overrides the environment
-variable. Linux installs CUDA runtime libraries by default; pass `--no-cuda`
-for CPU-only installation. A compatible host NVIDIA driver is still required
-for GPU inference. macOS and Windows use CPU inference.
+Model versions are independent of CLI releases. The default immutable tag `v1`
+uses the FP32 model. To choose the FP16 model, use `--model-tag v1-fp16` on
+Linux/macOS or `-ModelTag v1-fp16` on Windows; the equivalent environment
+variable is `OLT_ML1_MODEL_TAG=v1-fp16`. An explicit flag overrides the
+environment variable. The FP16 artifact must be published before it can be
+installed. FP16 and FP32 can produce different ML1 tokens, so matching parties
+must use the same model tag. Linux installs CUDA runtime libraries by default;
+pass `--no-cuda` for CPU-only installation. A compatible host NVIDIA driver is
+still required for GPU inference. macOS and Windows use CPU inference.
 
 ### Manual ZIP Installation
 

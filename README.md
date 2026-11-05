@@ -102,8 +102,13 @@ irm https://github.com/TruvetaPublic/OpenLinkToken/releases/latest/download/inst
 
 Use the platform installer for a complete installation, including the ML1
 model files. The installers download the selected model from the public GHCR
-OCI package (default tag `v1`); use `--model-tag vN` with `install.sh` or
-`-ModelTag vN` with `install.ps1` to select another immutable model version.
+OCI package (default tag `v1`, FP32). Use `--model-tag v1-fp16` with
+`install.sh` or `-ModelTag v1-fp16` with `install.ps1` to select the FP16
+variant; the equivalent `OLT_ML1_MODEL_TAG=v1-fp16` environment variable is
+also supported. The flag overrides the environment variable. FP16 must first
+be published using the manual ML1 asset workflow; the installer does not
+convert or download a fallback model. Keep the same model tag for both sides
+of an exchange because FP16 and FP32 can produce different ML1 tokens.
 Directly extracting a CLI ZIP does not include the ML1 model.
 For installation without the bootstrap scripts, follow the
 [manual ZIP installation guide](pages/quickstarts/cli-quickstart.md#manual-zip-installation),

@@ -36,17 +36,18 @@ def _write_checksum(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def _write_oci_assets(assets_dir: Path) -> Path:
+def _write_oci_assets(assets_dir: Path, model_files: dict[str, bytes] | None = None) -> Path:
     """Create the ML1 files served by the fake ORAS command."""
+    model_files = model_files or MODEL_FILES
     oci_dir = assets_dir / "oci"
     oci_dir.mkdir(parents=True, exist_ok=True)
     manifest = {
         "assets": {
             filename: {"sha256": hashlib.sha256(content).hexdigest(), "size": len(content)}
-            for filename, content in MODEL_FILES.items()
+            for filename, content in model_files.items()
         }
     }
-    for filename, content in MODEL_FILES.items():
+    for filename, content in model_files.items():
         (oci_dir / filename).write_bytes(content)
     (oci_dir / "asset-manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     return oci_dir
@@ -212,24 +213,31 @@ def _create_release_assets(
         )
 
 
-def _write_fixture_model_files() -> dict[str, bytes]:
+def _write_fixture_model_files(model_files: dict[str, bytes] | None = None) -> dict[str, bytes]:
     """Return all files needed by a self-contained CLI archive."""
-    model_files = dict(MODEL_FILES)
-    model_files["asset-manifest.json"] = json.dumps(
+    source_files = model_files or MODEL_FILES
+    fixture_files = dict(source_files)
+    fixture_files["asset-manifest.json"] = json.dumps(
         {
             "assets": {
                 filename: {"sha256": hashlib.sha256(content).hexdigest(), "size": len(content)}
-                for filename, content in MODEL_FILES.items()
+                for filename, content in source_files.items()
             }
         },
         indent=2,
     ).encode()
-    return model_files
+    return fixture_files
 
 
-def _run_installer(tmp_path: Path, assets_dir: Path, *arguments: str, **environment_updates: str):
+def _run_installer(
+    tmp_path: Path,
+    assets_dir: Path,
+    *arguments: str,
+    model_files: dict[str, bytes] | None = None,
+    **environment_updates: str,
+):
     """Run install.sh with deterministic fake downloads and platform details."""
-    model_assets_dir = _write_oci_assets(assets_dir)
+    model_assets_dir = _write_oci_assets(assets_dir, model_files)
     environment = _installer_environment(tmp_path, assets_dir, model_assets_dir)
     environment.update(environment_updates)
     return subprocess.run(
@@ -276,6 +284,76 @@ def test_model_tag_can_be_overridden_and_cuda_can_be_skipped(tmp_path):
     assert "Installing the CPU-only runtime." in result.stdout
 
 
+def test_installs_fp16_tag_over_embedded_legacy_model(tmp_path):
+    """An explicit FP16 tag replaces model assets embedded in older CLI archives."""
+    assets_dir = tmp_path / "assets"
+    assets_dir.mkdir()
+    fp16_files = {
+        **MODEL_FILES,
+        "model.onnx": b"fp16 model",
+        "model.onnx.data": b"fp16 model data",
+    }
+    _create_release_assets(assets_dir, include_cuda=False, include_legacy_payloads=True)
+    install_dir = tmp_path / "home" / ".local" / "bin"
+    result, environment = _run_installer(
+        tmp_path,
+        assets_dir,
+        "--install-dir",
+        str(install_dir),
+        "--model-tag",
+        "v1-fp16",
+        "--no-cuda",
+        model_files=fp16_files,
+    )
+
+    assert result.returncode == 0, result.stderr
+    model_dir = install_dir / ".olt" / "_internal" / "openlinktoken" / "core" / "ai" / "tokens"
+    for filename, content in _write_fixture_model_files(fp16_files).items():
+        assert (model_dir / filename).read_bytes() == content
+    assert (
+        Path(environment["TEST_ORAS_REFERENCE_FILE"]).read_text()
+        == "ghcr.io/truvetapublic/openlinktoken-ml1-assets:v1-fp16"
+    )
+
+
+def test_model_tag_environment_variable_and_flag_precedence(tmp_path):
+    """The model-tag flag overrides OLT_ML1_MODEL_TAG."""
+    assets_dir = tmp_path / "assets"
+    assets_dir.mkdir()
+    _create_release_assets(assets_dir, include_cuda=False)
+    result, environment = _run_installer(
+        tmp_path,
+        assets_dir,
+        "--install-dir",
+        str(tmp_path / "installed"),
+        "--model-tag",
+        "v1-fp16",
+        "--no-cuda",
+        OLT_ML1_MODEL_TAG="v7",
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert Path(environment["TEST_ORAS_REFERENCE_FILE"]).read_text().endswith(":v1-fp16")
+
+
+def test_model_tag_environment_variable_selects_fp16(tmp_path):
+    """The environment variable selects FP16 when no model-tag flag is passed."""
+    assets_dir = tmp_path / "assets"
+    assets_dir.mkdir()
+    _create_release_assets(assets_dir, include_cuda=False)
+    result, environment = _run_installer(
+        tmp_path,
+        assets_dir,
+        "--install-dir",
+        str(tmp_path / "installed"),
+        "--no-cuda",
+        OLT_ML1_MODEL_TAG="v1-fp16",
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert Path(environment["TEST_ORAS_REFERENCE_FILE"]).read_text().endswith(":v1-fp16")
+
+
 def test_rejects_invalid_model_tag(tmp_path):
     """Invalid model tags must be rejected before downloads or installation."""
     assets_dir = tmp_path / "assets"
@@ -295,16 +373,44 @@ def test_rejects_invalid_model_tag(tmp_path):
     assert "Invalid ML1 model tag" in result.stderr
 
 
+def test_rejects_missing_model_tag_value(tmp_path):
+    """A missing model-tag value fails before attempting a release download."""
+    assets_dir = tmp_path / "assets"
+    assets_dir.mkdir()
+    model_assets_dir = _write_oci_assets(assets_dir)
+    environment = _installer_environment(tmp_path, assets_dir, model_assets_dir)
+
+    result = subprocess.run(
+        ["bash", str(INSTALL_SCRIPT), "--version", "1.0.0", "--model-tag"],
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode != 0
+    assert "--model-tag requires a value" in result.stderr
+
+
 def test_keeps_existing_bundle_when_oci_pull_fails(tmp_path):
     """An unavailable OCI artifact must not replace an existing installation."""
     assets_dir = tmp_path / "assets"
     assets_dir.mkdir()
-    _create_release_assets(assets_dir, include_cuda=False)
+    _create_release_assets(assets_dir, include_cuda=False, include_legacy_payloads=True)
     install_dir = tmp_path / "home" / ".local" / "bin"
     existing_bundle = install_dir / ".olt"
     existing_bundle.mkdir(parents=True)
     (existing_bundle / "marker").write_text("old", encoding="utf-8")
-    result, _ = _run_installer(tmp_path, assets_dir, "--install-dir", str(install_dir), TEST_ORAS_FAIL="1")
+    result, _ = _run_installer(
+        tmp_path,
+        assets_dir,
+        "--install-dir",
+        str(install_dir),
+        "--model-tag",
+        "v1-fp16",
+        "--no-cuda",
+        TEST_ORAS_FAIL="1",
+    )
 
     assert result.returncode != 0
     assert "Unable to pull ML1 model assets" in result.stderr
@@ -315,12 +421,21 @@ def test_keeps_existing_bundle_when_oci_asset_checksum_fails(tmp_path):
     """Model assets that disagree with the OCI manifest must not be installed."""
     assets_dir = tmp_path / "assets"
     assets_dir.mkdir()
-    _create_release_assets(assets_dir, include_cuda=False)
+    _create_release_assets(assets_dir, include_cuda=False, include_legacy_payloads=True)
     install_dir = tmp_path / "home" / ".local" / "bin"
     existing_bundle = install_dir / ".olt"
     existing_bundle.mkdir(parents=True)
     (existing_bundle / "marker").write_text("old", encoding="utf-8")
-    result, _ = _run_installer(tmp_path, assets_dir, "--install-dir", str(install_dir), TEST_ORAS_CORRUPT="1")
+    result, _ = _run_installer(
+        tmp_path,
+        assets_dir,
+        "--install-dir",
+        str(install_dir),
+        "--model-tag",
+        "v1-fp16",
+        "--no-cuda",
+        TEST_ORAS_CORRUPT="1",
+    )
 
     assert result.returncode != 0
     assert "SHA-256 verification failed" in result.stderr
@@ -466,3 +581,88 @@ function Invoke-WebRequest {
     model_dir = install_dir / "_internal" / "openlinktoken" / "core" / "ai" / "tokens"
     for filename, content in _write_fixture_model_files().items():
         assert (model_dir / filename).read_bytes() == content
+
+
+def test_windows_installer_pulls_non_default_model_tag(tmp_path):
+    """A non-default Windows model tag cannot silently reuse embedded v1 assets."""
+    pwsh = shutil.which("pwsh")
+    if not pwsh:
+        pytest.skip("PowerShell is not installed")
+
+    assets_dir = tmp_path / "assets"
+    assets_dir.mkdir()
+    _create_release_assets(
+        assets_dir,
+        include_cuda=False,
+        include_legacy_payloads=True,
+        platform="windows-x64",
+    )
+    download_log = tmp_path / "downloads"
+    environment = {
+        **os.environ,
+        "TEST_ASSETS": str(assets_dir),
+        "TEST_DOWNLOAD_LOG": str(download_log),
+        "TEST_INSTALLER": str(REPOSITORY_ROOT / "install.ps1"),
+        "TEST_INSTALL_DIR": str(tmp_path / "installed"),
+        "PROCESSOR_ARCHITECTURE": "AMD64",
+    }
+    command = r"""
+function Invoke-WebRequest {
+    param([string]$Uri, [string]$OutFile, [hashtable]$Headers)
+    Add-Content -LiteralPath $env:TEST_DOWNLOAD_LOG -Value $Uri
+    $asset = [System.IO.Path]::GetFileName(([System.Uri]$Uri).AbsolutePath)
+    if ($asset -eq "oras_1.3.3_windows_amd64.zip") {
+        throw "Stopped after confirming the non-default model pull."
+    }
+    Copy-Item -LiteralPath (Join-Path $env:TEST_ASSETS $asset) -Destination $OutFile
+}
+& $env:TEST_INSTALLER -Version 1.0.0 -ModelTag v1-fp16 -InstallDir $env:TEST_INSTALL_DIR
+"""
+
+    result = subprocess.run(
+        [pwsh, "-NoProfile", "-Command", command],
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode != 0
+    assert "Stopped after confirming the non-default model pull." in result.stderr
+    assert "oras_1.3.3_windows_amd64.zip" in download_log.read_text(encoding="utf-8")
+    assert not (tmp_path / "installed").exists()
+
+
+def test_windows_installer_rejects_invalid_model_tag_before_downloading(tmp_path):
+    """An invalid Windows model tag fails before release downloads begin."""
+    pwsh = shutil.which("pwsh")
+    if not pwsh:
+        pytest.skip("PowerShell is not installed")
+
+    download_log = tmp_path / "downloads"
+    environment = {
+        **os.environ,
+        "TEST_DOWNLOAD_LOG": str(download_log),
+        "TEST_INSTALLER": str(REPOSITORY_ROOT / "install.ps1"),
+        "PROCESSOR_ARCHITECTURE": "AMD64",
+    }
+    command = r"""
+function Invoke-WebRequest {
+    param([string]$Uri, [string]$OutFile, [hashtable]$Headers)
+    Add-Content -LiteralPath $env:TEST_DOWNLOAD_LOG -Value $Uri
+    throw "Unexpected download"
+}
+& $env:TEST_INSTALLER -Version 1.0.0 -ModelTag ../latest
+"""
+
+    result = subprocess.run(
+        [pwsh, "-NoProfile", "-Command", command],
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode != 0
+    assert "Invalid ML1 model tag" in result.stderr
+    assert not download_log.exists()

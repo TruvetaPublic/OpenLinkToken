@@ -21,7 +21,8 @@ $OrasVersion = "1.3.3"
 function Install-Ml1Assets {
     $ModelDirectory = Join-Path $StagedDir "_internal\openlinktoken\core\ai\tokens"
     $RequiredFiles = @("model.onnx", "model.onnx.data", "tokenizer.json", "asset-manifest.json")
-    if (@($RequiredFiles | Where-Object { -not (Test-Path -LiteralPath (Join-Path $ModelDirectory $_)) }).Count -eq 0) {
+    if ($ModelTag -eq "v1" -and
+        @($RequiredFiles | Where-Object { -not (Test-Path -LiteralPath (Join-Path $ModelDirectory $_)) }).Count -eq 0) {
         Write-Host "ML1 model assets are already included in the CLI archive."
         return
     }
@@ -81,11 +82,11 @@ function Show-Usage {
 Install the Open Link Token CLI for Windows.
 
 Usage:
-  .\install.ps1 [-Version VERSION] [-ModelTag TAG] [-InstallDir DIRECTORY]
+  .\install.ps1 [-Version VERSION] [-ModelTag vN[-fp16]] [-InstallDir DIRECTORY]
 
 Options:
   -Version VERSION        Install a specific release (default: latest)
-  -ModelTag TAG           Install this ML1 model tag (default: v1 or OLT_ML1_MODEL_TAG)
+  -ModelTag TAG           Install an ML1 model tag: vN or vN-fp16 (default: v1 or OLT_ML1_MODEL_TAG)
   -InstallDir DIRECTORY   Install into DIRECTORY (default: ~/.openlinktoken/bin)
   -Help                   Show this help
 "@
@@ -94,6 +95,10 @@ Options:
 if ($Help) {
     Show-Usage
     exit 0
+}
+
+if ($ModelTag -notmatch '^v[0-9]+(-fp16)?$') {
+    throw "Invalid ML1 model tag: $ModelTag (expected vN or vN-fp16)"
 }
 
 if (-not $Version) {
@@ -109,9 +114,6 @@ if (-not $Version) {
 
 if ($Version -notmatch '^[vV]?\d+(\.\d+){2}([.-][0-9A-Za-z.-]+)?$') {
     throw "Invalid version: $Version"
-}
-if ($ModelTag -notmatch '^v[0-9]+$') {
-    throw "Invalid ML1 model tag: $ModelTag (expected vN)"
 }
 
 $Version = $Version -replace '^[vV]', ''

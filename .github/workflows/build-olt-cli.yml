@@ -98,6 +98,15 @@ jobs:
         run: |
           uv sync --all-packages
 
+      - name: Test Windows installer model-tag selection
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv run --no-sync pytest \
+            lib/python/openlinktoken-cli/src/test/openlinktoken_cli/install_script_test.py \
+            -k windows_installer
+
       - name: Build CLI binary
         shell: bash
         run: |
