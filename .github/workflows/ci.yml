@@ -374,9 +374,27 @@ jobs:
         run: |
           uv sync --all-packages
 
+      - name: Test standalone extension smoke manifest
+        run: |
+          uv run pytest tools/cli/test_smoke_standalone_extension.py -q
+
       - name: Build standalone CLI
         run: |
           uv run pyinstaller --clean --noconfirm lib/python/openlinktoken-cli/openlinktoken-cli.spec
+
+      - name: Build hello-world smoke extension wheel
+        run: |
+          mkdir -p smoke/hello-world
+          uv build --wheel --out-dir smoke/hello-world lib/python/openlinktoken_ext_hello_world
+
+      - name: Smoke test frozen extension installation and invocation
+        run: |
+          set -euo pipefail
+          wheel=$(find smoke/hello-world -name '*.whl' -print -quit)
+          test -n "$wheel"
+          uv run python tools/cli/smoke_standalone_extension.py \
+            --executable dist/olt/olt \
+            --wheel "$wheel"
 
       - name: Run standalone tokenize and package smoke tests
         run: |
