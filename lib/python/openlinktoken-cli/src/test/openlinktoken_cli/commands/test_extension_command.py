@@ -315,6 +315,30 @@ class TestExtensionInstall:
         assert call.kwargs["update_manifest_url"] == "https://example.com/hello-world.json"
         assert call.kwargs["signature"]["algorithm"] == "ed25519"
 
+    def test_install_bootstrap_manifest_accepts_windows_local_source_path(self, tmp_path):
+        """A Windows local manifest path allows its file-based artifact URL."""
+        wheel = _make_wheel(tmp_path)
+        payload = {
+            "schema_version": 1,
+            "extension": {
+                "name": "hello-world",
+                "version": "1.0.0",
+                "artifact_url": wheel.as_uri(),
+                "sha256": ExtensionCommand._sha256_file(wheel),
+            },
+            "core": {"min_version": "2.0.0", "max_version": "<3.0.0"},
+        }
+
+        with patch.object(Path, "is_file", return_value=True):
+            with patch.object(ExtensionCommand, "_install_wheel", return_value=0) as install_wheel:
+                result = ExtensionCommand._install_bootstrap_manifest(
+                    payload,
+                    source_url=r"C:\temp\bootstrap.json",
+                )
+
+        assert result == 0
+        install_wheel.assert_called_once()
+
     def test_install_manifest_option_accepts_https_manifest(self, tmp_path):
         """The explicit --manifest form uses the same bootstrap installer path."""
         manifest = {
