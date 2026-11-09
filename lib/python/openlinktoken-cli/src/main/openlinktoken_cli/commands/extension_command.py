@@ -15,7 +15,7 @@ import uuid
 import zipfile
 from contextlib import contextmanager
 from datetime import datetime, timezone
-from pathlib import Path, PurePosixPath
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Optional
 from urllib.parse import unquote, urlparse
 from urllib.request import url2pathname, urlopen
@@ -315,8 +315,10 @@ class ExtensionCommand:
             Validated a bootstrap manifest and install its declared wheel.
         """
         parsed_source = urlparse(source_url)
+        source_path = Path(source_url).expanduser()
+        is_windows_drive_path = len(parsed_source.scheme) == 1 and bool(PureWindowsPath(source_url).drive)
         allow_local = parsed_source.scheme == "file" or (
-            not parsed_source.scheme and Path(source_url).expanduser().is_file()
+            (not parsed_source.scheme or is_windows_drive_path) and source_path.is_file()
         )
         try:
             manifest = parse_manifest(payload, allow_local=allow_local)
