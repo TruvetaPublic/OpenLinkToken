@@ -853,10 +853,10 @@ class ExtensionCommand:
                 if canonicalize_name(dist_name) != extension_wheel.name:
                     raise BundleValidationError("extension wheel distribution name does not match its lock entry")
 
+                dependency_wheels = [wheel for wheel in wheels if wheel is not extension_wheel]
                 install_wheel_file(extension_wheel.path, stage_dir / "extension")
-                for wheel in wheels:
-                    if wheel is not extension_wheel:
-                        install_wheel_file(wheel.path, stage_dir / "dependencies")
+                for wheel in dependency_wheels:
+                    install_wheel_file(wheel.path, stage_dir / "dependencies")
 
             target, python_abi = current_extension_target()
             metadata = {
@@ -891,7 +891,7 @@ class ExtensionCommand:
                 artifact_sha256=actual_sha256,
                 metadata=metadata,
                 source_relative_path=Path("extension") / "site-packages",
-                dependency_relative_path=Path("dependencies") / "site-packages",
+                dependency_relative_path=(Path("dependencies") / "site-packages" if dependency_wheels else None),
             )
             print(f"Extension '{expected_name}' (v{expected_version}) installed successfully.")
             print(f"Run: olt {command_name} --help")
