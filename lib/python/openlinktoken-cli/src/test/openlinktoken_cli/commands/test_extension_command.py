@@ -622,6 +622,70 @@ class TestExtensionUpdate:
         assert old_install.is_dir()
         assert "installed successfully" in capsys.readouterr().out
 
+    def test_standalone_bundle_without_private_wheels_omits_dependency_path(self, tmp_path):
+        bundle_path = tmp_path / "demo-bundle.zip"
+        bundle_path.write_bytes(b"locked bundle")
+        extension_wheel_path = tmp_path / "openlinktoken_ext_demo-1.0.0-py3-none-any.whl"
+        with zipfile.ZipFile(extension_wheel_path, "w") as archive:
+            archive.writestr("demo.py", "")
+        extension_wheel = LockedWheel(
+            filename=extension_wheel_path.name,
+            name="openlinktoken-ext-demo",
+            version="1.0.0",
+            tags=frozenset({"py3-none-any"}),
+            sha256="1" * 64,
+            path=extension_wheel_path,
+            requirements=(),
+        )
+
+        def fake_install(wheel_path: Path, destination: Path) -> None:
+            site_packages = destination / "site-packages"
+            site_packages.mkdir(parents=True)
+            (site_packages / "installed.py").write_text("EXTENSION = True\n")
+
+        entry_point = ("demo", "demo_extension", "DemoExtension", "1.0.0", "openlinktoken-ext-demo")
+        with patch.dict(os.environ, {"OLT_EXTENSIONS_DIR": str(tmp_path)}):
+            with patch.object(sys, "frozen", True, create=True):
+                with patch(
+                    "openlinktoken_cli.commands.extension_command.load_core_runtime_inventory",
+                    return_value={"openlinktoken": "2.2.1"},
+                ):
+                    with patch(
+                        "openlinktoken_cli.commands.extension_command.current_extension_target",
+                        return_value=("linux-x64", "cp312"),
+                    ):
+                        with patch(
+                            "openlinktoken_cli.commands.extension_command.extract_and_validate_bundle",
+                            return_value=(extension_wheel,),
+                        ):
+                            with patch.object(
+                                ExtensionCommand,
+                                "_extract_entry_point",
+                                return_value=entry_point,
+                            ):
+                                with patch(
+                                    "openlinktoken_cli.commands.extension_command.install_wheel_file",
+                                    side_effect=fake_install,
+                                ) as install:
+                                    result = ExtensionCommand._install_frozen_bundle(
+                                        bundle_path,
+                                        source_url="https://example.com/demo-bundle.zip",
+                                        expected_sha256=hashlib.sha256(bundle_path.read_bytes()).hexdigest(),
+                                        expected_name="demo",
+                                        expected_version="1.0.0",
+                                        command_name="demo",
+                                        description="Demo extension",
+                                        update_manifest_url="https://example.com/demo.json",
+                                        core_range=">=2.2.1,<3.0.0",
+                                    )
+            registry = ExtensionRegistry.load()
+
+        assert result == 0
+        assert install.call_count == 1
+        metadata = registry["demo"]
+        assert "dependency_path" not in metadata
+        assert not (Path(metadata["install_location"]) / "dependencies" / "site-packages").exists()
+
     def test_frozen_install_rolls_back_directory_and_registry_when_registry_write_fails(self, tmp_path):
         """A failed atomic registry commit leaves the prior extension untouched."""
         wheel = _make_loadable_wheel(tmp_path)
