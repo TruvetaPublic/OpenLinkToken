@@ -13,7 +13,6 @@ This folder holds the repository's custom Copilot agent definitions.
 | `documentation-creator.agent.md` | Owns repo-root project markdown such as `README.md` and contributor-facing docs.                 |
 | `docs-maintainer.agent.md`       | Owns `docs/**` and keeps durable reference/spec content aligned.                                 |
 | `github-pages-content.agent.md`  | Owns `pages/**`, including GitHub Pages navigation and front matter.                             |
-| `agentic-workflows.agent.md`     | Handles gh-aw workflow authoring, debugging, and upgrade tasks.                                  |
 
 ## Editing guidance
 

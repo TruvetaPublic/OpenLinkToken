@@ -7,11 +7,19 @@ import pickle
 
 import pytest
 
+from openlinktoken.crypto.crypto_suite import CryptoSuite
 from openlinktoken.tokentransformer.hash_token_transformer import HashTokenTransformer
 
 
 class TestHashTokenTransformer:
-    """Test cases for HashTokenTransformer."""
+    """Test suite-selected token MAC behavior and validation.
+
+    Args:
+        None.
+
+    Returns:
+        A ``TestHashTokenTransformer`` instance for pytest to collect.
+    """
 
     VALID_SECRET = "sampleSecret"
     VALID_TOKEN = "sampleToken"
@@ -117,9 +125,89 @@ class TestHashTokenTransformer:
         ).decode("utf-8")
         assert expected_hashed_token == hashed_token
 
-    def _calculate_expected_hash(self, secret: str, token: str) -> str:
+    def test_sha3_suite_matches_fixed_vector(self):
+        """The SHA3 suite produces the cross-language HS3-256 vector.
+
+        Args:
+            None.
+
+        Returns:
+            None.
         """
-        Calculate the expected HMAC-SHA256 hash for validation.
+        transformer = HashTokenTransformer("sampleSecret", CryptoSuite.from_id("ecdh-sha3-256"))
+
+        assert (
+            transformer.transform("ab96273f069fc38264bf16cc2287218779c5eed6c0fee89490b990ffc35a2af5")
+            == "0Y3qAZTI1zwnHdNznv7lec1sz5Uu8rpa/dYMZFWqLSg="
+        )
+
+    def test_shake_suite_uses_kmac256_with_32_byte_output(self):
+        """The SHAKE suite uses standardized KMAC256 output.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+        """
+        from Crypto.Hash import KMAC256
+
+        secret = b"0123456789abcdef0123456789abcdef"
+        transformer = HashTokenTransformer(secret, CryptoSuite.from_id("mlkem768-shake256"))
+        expected = KMAC256.new(key=secret, data=b"person", mac_len=32).digest()
+
+        assert base64.b64decode(transformer.transform("person")) == expected
+
+    def test_shake_suite_rejects_short_secret_with_suite_requirement(self):
+        """The transformer enforces the KMAC key length required by its suite.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+        """
+        transformer = HashTokenTransformer(b"x" * 31, CryptoSuite.from_id("mlkem768-shake256"))
+
+        with pytest.raises(ValueError, match="mlkem768-shake256.*KMAC256.*32 bytes"):
+            transformer.transform(self.VALID_TOKEN)
+
+    def test_shake_suite_matches_java_fixed_vector(self):
+        """KMAC256 output matches the Java HashTokenTransformerTest fixed vector.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+        """
+        transformer = HashTokenTransformer(
+            b"0123456789abcdef0123456789abcdef", CryptoSuite.from_id("mlkem768-shake256")
+        )
+
+        assert (
+            transformer.transform("083e2185f52946fb45e459794409b2ea56e64241ba22a29072ad25b5947c023a")
+            == "ylKfGg587NihC8+Sc2GSeR4g+INl76rLvAB1RYLRfA8="
+        )
+
+    def test_kmac_unavailable_fails_at_construction(self, monkeypatch):
+        """A missing KMAC256 implementation is reported when the transformer is built.
+
+        Args:
+            monkeypatch: Pytest fixture used to hide the pycryptodome module.
+
+        Returns:
+            None.
+        """
+        import sys
+
+        monkeypatch.setitem(sys.modules, "Crypto.Hash", None)
+
+        with pytest.raises(RuntimeError, match="pycryptodome"):
+            HashTokenTransformer(b"x" * 32, CryptoSuite.from_id("mlkem768-shake256"))
+
+    def _calculate_expected_hash(self, secret: str, token: str) -> str:
+        """Calculate the expected HMAC-SHA256 hash for validation.
 
         Args:
             secret: The secret key.
@@ -127,6 +215,7 @@ class TestHashTokenTransformer:
 
         Returns:
             The base64-encoded HMAC-SHA256 hash.
+
         """
         mac = hmac.new(secret.encode("utf-8"), token.encode("utf-8"), hashlib.sha256)
         expected_hash = mac.digest()

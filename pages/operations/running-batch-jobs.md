@@ -47,12 +47,12 @@ olt <subcommand> [OPTIONS]
 
 ### Optional Arguments
 
-| Argument            | Alias | Description                                         | Default                       |
-| ------------------- | ----- | --------------------------------------------------- | ----------------------------- |
-| `--private-key`     |       | Private key PEM used to decrypt the exchange config | Auto-discovered when possible |
-| `--private-key-env` |       | Environment variable containing the private key PEM |                               |
-| `tokenize`          |       | Tokenize without encryption                         | Subcommand                    |
-| `decrypt`           |       | Decrypt mode                                        | Subcommand                    |
+| Argument            | Alias | Description                                                                | Default                       |
+| ------------------- | ----- | -------------------------------------------------------------------------- | ----------------------------- |
+| `--private-key`     |       | Private PEM key or JSON private bundle used to decrypt the exchange config | Auto-discovered when possible |
+| `--private-key-env` |       | Environment variable containing the private PEM key or JSON private bundle |                               |
+| `tokenize`          |       | Tokenize without encryption                                                | Subcommand                    |
+| `decrypt`           |       | Decrypt mode                                                               | Subcommand                    |
 
 ### CLI Example
 

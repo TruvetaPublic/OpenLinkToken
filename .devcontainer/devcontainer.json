@@ -10,7 +10,7 @@
       "configureZshAsDefaultShell": true
     },
     "ghcr.io/devcontainers/features/java:1": {
-      "version": "21.0.11",
+      "version": "21",
       "installMaven": "true",
       "mavenVersion": "3.8.8",
       "installGradle": "false"
@@ -50,7 +50,7 @@
         "dbaeumer.vscode-eslint"
       ],
       "settings": {
-        "sonarlint.ls.javaHome": "/usr/local/sdkman/candidates/java/21.0.11-ms",
+        "sonarlint.ls.javaHome": "/usr/local/sdkman/candidates/java/current",
         "python.defaultInterpreterPath": "/home/vscode/.local/share/openlinktoken/.venv/bin/python",
         "python.terminal.activateEnvironment": true
       }

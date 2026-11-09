@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Print the decrypted contents of an Open Link Token JWE exchange config file."""
+"""Print the decrypted contents of an Open Link Token standard JWE exchange config."""
 
 from __future__ import annotations
 
@@ -23,11 +23,18 @@ PROGRAM = "inspect_exchange_config.py"
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments."""
+    """Parse command-line arguments.
+
+    Args:
+        None; this function takes no arguments.
+
+    Returns:
+        Parsed command-line arguments for the exchange config inspector.
+    """
     parser = argparse.ArgumentParser(
         prog=PROGRAM,
         description=(
-            "Decrypt and print the contents of an Open Link Token JWE exchange config file.\n\n"
+            "Decrypt and print the contents of an Open Link Token standard JWE exchange config.\n\n"
             "The private key is resolved automatically from ~/.openlinktoken/ when omitted."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -42,12 +49,15 @@ def parse_args() -> argparse.Namespace:
     private_key_group.add_argument(
         "--private-key",
         metavar="PATH",
-        help="Path to the sender or recipient private key PEM. Auto-resolved from ~/.openlinktoken/ when omitted.",
+        help=(
+            "Path to the sender or recipient private PEM or JSON bundle. "
+            "Auto-resolved from ~/.openlinktoken/ when omitted."
+        ),
     )
     private_key_group.add_argument(
         "--private-key-env",
         metavar="ENV_VAR",
-        help="Read the private key PEM from the named environment variable.",
+        help="Read the private PEM key or JSON private bundle from the named environment variable.",
     )
     parser.add_argument(
         "--json",
@@ -65,7 +75,14 @@ def _decode_base64url(value: str) -> bytes:
 
 
 def _print_summary(exchange: ResolvedExchangeConfig) -> None:
-    """Print a human-readable summary of the resolved exchange config."""
+    """Print a human-readable summary of the resolved exchange config.
+
+    Args:
+        exchange: Resolved exchange configuration to summarize.
+
+    Returns:
+        None.
+    """
     p = exchange.payload
 
     print("Exchange Config Summary")
@@ -73,6 +90,8 @@ def _print_summary(exchange: ResolvedExchangeConfig) -> None:
     print(f"  Exchange name    : {p.get('exchangeName', '(none)')}")
     print(f"  Exchange ID      : {p.get('exchangeId', '(none)')}")
     print(f"  Created at       : {p.get('createdAt', '(none)')}")
+    print(f"  Crypto suite    : {p.get('cryptoSuite', exchange.crypto_suite.suite_id)}")
+    print(f"  Config version  : {exchange.version}")
     print(f"  Curve            : {p.get('curve', '(none)')}")
     print(f"  Private key role : {exchange.private_key_role}")
     print()
@@ -98,10 +117,10 @@ def _print_summary(exchange: ResolvedExchangeConfig) -> None:
         print("  Dimension bias  : (not set)")
     print()
 
-    print("Key Fingerprints")
+    print("Key Identifiers")
     print("-" * 60)
-    print(f"  Sender    : {p.get('senderKeyFingerprint', '(none)')}")
-    print(f"  Recipient : {p.get('recipientKeyFingerprint', '(none)')}")
+    print(f"  Sender    : {p.get('senderKeyId', p.get('senderKeyFingerprint', '(none)'))}")
+    print(f"  Recipient : {p.get('recipientKeyId', p.get('recipientKeyFingerprint', '(none)'))}")
     print()
 
 

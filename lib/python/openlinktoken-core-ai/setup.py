@@ -67,7 +67,6 @@ class SdistWithInferencingManifest(sdist):
         dst = os.path.join(base_dir, INFERENCING_ASSETS_SOURCE_PKG)
         os.makedirs(dst, exist_ok=True)
         shutil.copy2(_find_manifest_source(), os.path.join(dst, "asset-manifest.json"))
-        shutil.copy2(os.path.join(THIS_DIR, "requirements.txt"), os.path.join(base_dir, "requirements.txt"))
 
 
 # Read the contents of the project README file.
@@ -78,10 +77,6 @@ try:
         long_description = f.read()
 except FileNotFoundError:
     long_description = "Open Link Token Core AI package for ML1/ONNX inference."
-
-# Read requirements from requirements.txt
-with open(os.path.join(THIS_DIR, "requirements.txt"), encoding="utf-8") as f:
-    requirements = [line.strip() for line in f if line.strip() and not line.startswith("#")]
 
 setup(
     name="openlinktoken-core-ai",
@@ -101,7 +96,6 @@ setup(
         "openlinktoken.core.ai.tokens": INFERENCING_ASSETS,
     },
     python_requires=">=3.10",
-    install_requires=requirements,
     cmdclass={"build_py": BuildWithInferencingAssets, "sdist": SdistWithInferencingManifest},
     entry_points={
         "openlinktoken.inference_providers": [
