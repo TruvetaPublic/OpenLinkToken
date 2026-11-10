@@ -5,7 +5,6 @@ requires-python = ">=3.10"
 dynamic = [
   "authors",
   "description",
-  "optional-dependencies",
   "readme",
   "urls",
 ]
@@ -19,6 +18,9 @@ dependencies = [
   "onnxruntime==1.25.1; (platform_system != 'Linux' or platform_machine != 'x86_64') and python_version >= '3.11'",
   "tokenizers==0.23.3",
 ]
+
+[project.optional-dependencies]
+test = ["pytest==9.2.0"]
 
 [project.entry-points."openlinktoken.inference_providers"]
 ml1 = "openlinktoken.core.ai.tokens.ml1_onnx_signature_provider:ML1OnnxSignatureProvider"
