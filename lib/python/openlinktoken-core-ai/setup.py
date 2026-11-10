@@ -105,4 +105,7 @@ setup(
             "ml1_token = openlinktoken.core.ai.tokens.ml1_token:ML1Token",
         ],
     },
+    extras_require={
+        "test": ["pytest==9.2.0"],
+    },
 )
