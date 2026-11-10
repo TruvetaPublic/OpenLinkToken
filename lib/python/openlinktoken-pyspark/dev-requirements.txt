@@ -120,7 +120,7 @@ jinja2==3.1.6
     #   nbconvert
 json5==0.17.3
     # via jupyterlab-server
-jsonpointer==3.9
+jsonpointer==3.10
     # via jsonschema
 jsonschema==4.26.0
     # via
@@ -166,7 +166,7 @@ jupyter-server==2.21.1
     #   notebook-shim
 jupyter-server-terminals==0.5.4
     # via jupyter-server
-jupyterlab==4.6.5
+jupyterlab==4.6.6
     # via
     #   jupyter
     #   notebook
@@ -273,7 +273,7 @@ pygments==2.21.0
     #   nbconvert
     #   pytest
 pyinstaller==6.22.3
-pyinstaller-hooks-contrib==2026.9
+pyinstaller-hooks-contrib==2026.10
     # via pyinstaller
 pytest==9.1.1
     # via pytest-cov
@@ -339,7 +339,7 @@ six==1.17.0
     #   rfc3339-validator
 soupsieve==2.10 ; python_full_version < '3.11.5'
     # via beautifulsoup4
-soupsieve==4.0.1 ; python_full_version >= '3.11.5'
+soupsieve==4.1 ; python_full_version >= '3.11.5'
     # via beautifulsoup4
 stack-data==0.6.3
     # via ipython
@@ -364,7 +364,7 @@ tornado==6.5.10 ; python_full_version < '3.11'
     #   jupyterlab
     #   notebook
     #   terminado
-tornado==6.6 ; python_full_version >= '3.11'
+tornado==6.6.1 ; python_full_version >= '3.11'
     # via
     #   ipykernel
     #   jupyter-client
