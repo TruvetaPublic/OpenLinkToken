@@ -1,0 +1,25 @@
+name: Standalone extension integration
+
+on:
+  pull_request:
+    branches: [main, develop, "release/**"]
+  workflow_dispatch:
+    inputs:
+      core_ref:
+        description: "Core branch, tag or SHA (default: selected workflow ref)"
+        type: string
+      extension_ref:
+        description: "Extension branch, tag or SHA (default: tested baseline)"
+        type: string
+        default: "fa89e6936a1d740fa5a14685430b8b46576f38f9"
+
+permissions:
+  contents: read
+
+jobs:
+  integration:
+    # Pin workflow code and counterpart source together; update deliberately.
+    uses: TruvetaPublic/OpenLinkToken-Truveta-Extension/.github/workflows/standalone-integration.yml@fa89e6936a1d740fa5a14685430b8b46576f38f9
+    with:
+      core_ref: ${{ inputs.core_ref || github.event.pull_request.head.sha || github.sha }}
+      extension_ref: ${{ inputs.extension_ref || 'fa89e6936a1d740fa5a14685430b8b46576f38f9' }}
