@@ -4,7 +4,7 @@ anyio==4.16.0 ; sys_platform != 'emscripten'
     # via httpx2
 cffi==2.1.1 ; platform_python_implementation != 'PyPy'
     # via cryptography
-click==8.5.0
+click==8.5.1
     # via huggingface-hub
 colorama==0.4.6 ; sys_platform == 'win32'
     # via tqdm
@@ -53,6 +53,8 @@ idna==3.20
     # via
     #   anyio
     #   httpx2
+installer==0.7.0
+    # via openlinktoken-cli
 jwcrypto==1.6.1
     # via
     #   openlinktoken
@@ -79,7 +81,7 @@ nvidia-cuda-nvrtc-cu12==12.9.86 ; platform_machine == 'x86_64' and sys_platform 
     #   onnxruntime-gpu
 nvidia-cuda-runtime-cu12==12.9.79 ; platform_machine == 'x86_64' and sys_platform == 'linux'
     # via onnxruntime-gpu
-nvidia-cudnn-cu12==9.28.0.42 ; platform_machine == 'x86_64' and sys_platform == 'linux'
+nvidia-cudnn-cu12==9.28.1.4 ; platform_machine == 'x86_64' and sys_platform == 'linux'
     # via onnxruntime-gpu
 nvidia-cufft-cu12==11.4.1.4 ; platform_machine == 'x86_64' and sys_platform == 'linux'
     # via onnxruntime-gpu
