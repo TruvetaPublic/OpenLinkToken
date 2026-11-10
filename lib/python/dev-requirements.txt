@@ -262,7 +262,7 @@ pycparser==3.11 ; python_full_version < '3.11' and implementation_name != 'PyPy'
     # via cffi
 pycparser==3.12 ; python_full_version >= '3.11' and implementation_name != 'PyPy'
     # via cffi
-pycryptodome==4.2.0
+pycryptodome==4.1.0
 pyflakes==3.4.0
     # via autoflake
 pygments==2.21.0

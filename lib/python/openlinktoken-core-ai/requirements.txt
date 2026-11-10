@@ -493,7 +493,7 @@ pycparser==3.12 ; python_full_version >= '3.11' and implementation_name != 'PyPy
     --hash=sha256:a076f3f489b39b43ed13563a1dafe42447445bec2e294154ec5c57fcdda4c85e \
     --hash=sha256:f03387877eab82ce01bbdfd0ba7252ee55a90b1c708d5129e2ce915475cf1db6
     # via cffi
-pycryptodome==4.2.0 \
+pycryptodome==4.1.0 \
     --hash=sha256:174fd47875450f632788d6356f10e5ca71bb7b1f4fded9753e62ab2b930d37e5 \
     --hash=sha256:1c3a054ab2552f25a941d6cd6380d9c0618ad0274f48773407b6bf5cd37bc90f \
     --hash=sha256:2c02ad4d122562b8484f662f89e74d58b6c7a99675e12e897f8d6f67cfb8f041 \
