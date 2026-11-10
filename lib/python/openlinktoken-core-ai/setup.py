@@ -106,6 +106,6 @@ setup(
         ],
     },
     extras_require={
-        "test": ["pytest==9.2.0"],
+        "test": ["pytest==9.1.1"],
     },
 )
