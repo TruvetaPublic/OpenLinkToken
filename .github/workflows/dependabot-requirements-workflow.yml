@@ -65,39 +65,42 @@ jobs:
 
           root = Path.cwd()
           with (root / "pyproject.toml").open("rb") as file:
-              dependency_groups = tomllib.load(file)["dependency-groups"]
-              requirements = dependency_groups["tools"] + dependency_groups["dev"]
+              workspace = tomllib.load(file)
+          requirements = workspace["dependency-groups"]["tools"]
+          dev_requirements = workspace["dependency-groups"]["dev"]
           with (root / "lib/python/openlinktoken/pyproject.toml").open("rb") as file:
               requirements += tomllib.load(file)["project"]["dependencies"]
 
           versions = {
               item.split("==", 1)[0].lower(): item.split("==", 1)[1]
               for item in requirements
-              if "==" in item
-              and item.split("==", 1)[0].lower() in {"jwcrypto", "pycryptodome", "pytest"}
+              if "==" in item and item.split("==", 1)[0].lower() in {"jwcrypto", "pycryptodome"}
           }
-          pyproject = root / "lib/python/openlinktoken-pyspark/pyproject.toml"
-          source = pyproject.read_text(encoding="utf-8")
-          for package, version in versions.items():
-              source, count = re.subn(
-                  rf'(?m)^([ \t]*"{re.escape(package)}==)[^"]+(",?)$',
-                  rf"\g<1>{version}\g<2>",
-                  source,
-              )
-              if count != 1:
-                  raise SystemExit(f"Expected exactly one {package} pin, found {count}")
-          pyproject.write_text(source, encoding="utf-8")
+          pytest_versions = [
+              item.split("==", 1)[1]
+              for item in dev_requirements
+              if "==" in item and item.split("==", 1)[0].lower() == "pytest"
+          ]
+          if len(pytest_versions) != 1:
+              raise SystemExit(f"Expected exactly one pytest dev pin, found {len(pytest_versions)}")
 
-          setup_py = root / "lib/python/openlinktoken-core-ai/setup.py"
-          source = setup_py.read_text(encoding="utf-8")
-          source, count = re.subn(
-              r'(?m)^(\s*"test": \["pytest==)[^"]+("\],?)$',
-              rf"\g<1>{versions['pytest']}\g<2>",
-              source,
-          )
-          if count != 1:
-              raise SystemExit(f"Expected exactly one pytest test-extra pin, found {count}")
-          setup_py.write_text(source, encoding="utf-8")
+          pyspark_pyproject = root / "lib/python/openlinktoken-pyspark/pyproject.toml"
+          core_ai_pyproject = root / "lib/python/openlinktoken-core-ai/pyproject.toml"
+          targets = {
+              pyspark_pyproject: {**versions, "pytest": pytest_versions[0]},
+              core_ai_pyproject: {"pytest": pytest_versions[0]},
+          }
+          for pyproject, pins in targets.items():
+              source = pyproject.read_text(encoding="utf-8")
+              for package, version in pins.items():
+                  source, count = re.subn(
+                      rf'(?m)^([ \t]*"{re.escape(package)}==)[^"]+(",?)$',
+                      rf"\g<1>{version}\g<2>",
+                      source,
+                  )
+                  if count != 1:
+                      raise SystemExit(f"Expected exactly one {package} pin in {pyproject}, found {count}")
+              pyproject.write_text(source, encoding="utf-8")
           PY
 
       - name: Regenerate requirements and dev requirements

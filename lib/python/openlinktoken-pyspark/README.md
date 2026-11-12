@@ -126,7 +126,19 @@ tokens_df = processor.process_dataframe(df)
 tokens_df.show()
 ```
 
-`from_exchange_config(...)` resolves the exchange config and private key on the driver, then Spark workers receive only the derived byte payloads needed for token generation.
+`from_exchange_config(...)` resolves the exchange config and private key on the
+driver. Spark workers receive the derived secrets and selected token algorithms,
+while the exchange private key stays on the driver.
+
+The PySpark processor, notebook helpers, and overlap analyzer support all five
+registered crypto suites. The v1 suites use a participant private-key PEM file;
+the three post-quantum v2 suites use a private key-bundle JSON file instead.
+Each bridge resolves the suite from the exchange config, so the processor uses
+the selected digest and MAC algorithms without a separate suite setting. Any
+optional `crypto_suite` argument must match the exchange config. For v2
+examples, set `private_key_path` to the participant's
+`sender.private.bundle.json` file (or pass its JSON contents through
+`private_key_value`).
 
 ### Azure Key Vault Example
 
@@ -160,6 +172,10 @@ processor = OpenLinkTokenProcessor.from_exchange_config(
     private_key_value=participant_private_key_pem,
 )
 ```
+
+This snippet uses a v1 PEM key. For a v2 suite, retrieve the participant's
+private key-bundle JSON from Key Vault and pass that value through
+`private_key_value` instead.
 
 If Azure Key Vault is your system of record for the public keys, use those values when you create or rotate the
 initiate-exchange config upstream. The PySpark bridge does not take public-key arguments directly.

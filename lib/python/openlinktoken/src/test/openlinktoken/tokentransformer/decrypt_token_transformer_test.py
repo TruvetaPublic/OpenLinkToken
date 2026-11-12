@@ -9,7 +9,14 @@ from openlinktoken.tokentransformer.encrypt_token_transformer import EncryptToke
 
 
 class TestDecryptTokenTransformer:
-    """Test cases for DecryptTokenTransformer."""
+    """Test token decryption behavior and key validation.
+
+    Args:
+        None.
+
+    Returns:
+        A ``TestDecryptTokenTransformer`` instance for pytest to collect.
+    """
 
     VALID_KEY = "12345678901234567890123456789012"  # 32-character key
     INVALID_KEY = "short-key"  # Invalid short key
@@ -70,6 +77,18 @@ class TestDecryptTokenTransformer:
         decrypted_token = self.decryptor.transform(encrypted_token)
 
         assert original_token == decrypted_token
+
+    def test_transform_rejects_missing_iv_or_authentication_tag(self):
+        """Malformed ciphertext fails before AES-GCM processing.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+        """
+        with pytest.raises(ValueError, match="missing its initialization vector or authentication tag"):
+            self.decryptor.transform("AA==")
 
     def test_transform_multiple_tokens_decrypts_correctly(self):
         """Test that multiple tokens can be encrypted and decrypted correctly."""

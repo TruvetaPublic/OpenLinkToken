@@ -20,6 +20,13 @@ class DecryptTokenTransformer(TokenTransformer):
     - Java prepends IV to (ciphertext || tag) and GCM consumes combined remainder.
     - Python splits IV, ciphertext, and tag explicitly before constructing GCM mode.
     - Both expect 12-byte IV and 16-byte tag; key length enforced at init.
+
+    Args:
+        encryption_key: AES-256 key as UTF-8 text or raw bytes; it must contain
+            exactly 32 bytes.
+
+    Returns:
+        A ``DecryptTokenTransformer`` initialized with the key.
     """
 
     def __init__(self, encryption_key: Union[str, bytes]):
@@ -31,6 +38,9 @@ class DecryptTokenTransformer(TokenTransformer):
 
         Args:
             encryption_key: The encryption key. The UTF-8 encoded key material must be exactly 32 bytes long.
+
+        Returns:
+            None.
 
         Raises:
             ValueError: If the encryption key material is not exactly 32 bytes long.
@@ -62,6 +72,10 @@ class DecryptTokenTransformer(TokenTransformer):
         try:
             # Decode the base64-encoded token
             message_bytes = base64.b64decode(token)
+
+            minimum_message_length = EncryptionConstants.IV_SIZE + EncryptionConstants.TAG_LENGTH_BYTES
+            if len(message_bytes) < minimum_message_length:
+                raise ValueError("Encrypted token is missing its initialization vector or authentication tag")
 
             # Extract IV, encrypted data, and tag
             iv_bytes = message_bytes[: EncryptionConstants.IV_SIZE]

@@ -1,0 +1,23 @@
+{
+  "PythonVersion": "3.12.13",
+  "Platform": "Python",
+  "Version": "2.2.0",
+  "TotalRows": 105,
+  "TotalRowsWithInvalidAttributes": 11,
+  "InvalidAttributesByType": {
+    "BirthDate": 3,
+    "FirstName": 1,
+    "LastName": 2,
+    "PostalCode": 2,
+    "Sex": 0,
+    "SocialSecurityNumber": 4
+  },
+  "BlankTokensByRule": {
+    "ML1": 0,
+    "T1": 6,
+    "T2": 8,
+    "T3": 6,
+    "T4": 7,
+    "T5": 3
+  }
+}
