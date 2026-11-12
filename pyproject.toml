@@ -24,10 +24,10 @@ dev = [
    "cryptography==50.0.2",
    "jwcrypto==1.6.1",
    "csv2parquet==0.0.9",
-   "pytest==9.1.1",
+   "pytest==9.2.0",
    "pytest-cov==7.1.0",
    "ruff==0.17.2",
-   "pycryptodome==4.1.0",
+   "pycryptodome==4.2.0",
    "jupyter==1.1.1",
    "notebook==7.6.3",
    "ipykernel==7.3.0",
@@ -37,7 +37,7 @@ dev = [
 ]
 tools = [
     "faker==40.43.0",
-    "pycryptodome==4.1.0",
+    "pycryptodome==4.2.0",
 ]
 [tool.ruff]
 line-length = 120
