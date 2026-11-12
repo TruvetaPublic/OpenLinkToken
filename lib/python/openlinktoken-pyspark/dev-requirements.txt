@@ -328,7 +328,7 @@ rpds-py==2026.9.1 ; python_full_version >= '3.11'
     # via
     #   jsonschema
     #   referencing
-ruff==0.17.2
+ruff==0.17.3
 send2trash==2.2.0
     # via jupyter-server
 setuptools==83.0.0
