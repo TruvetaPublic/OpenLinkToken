@@ -20,7 +20,7 @@ dependencies = [
   "urllib3==2.8.0",
   "jwcrypto==1.6.1",
   "packaging==26.3",
-  "installer==0.7.0",
+  "installer==1.1.0",
 ]
 
 [project.scripts]
