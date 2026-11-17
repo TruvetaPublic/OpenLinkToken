@@ -241,7 +241,7 @@ pluggy==1.7.0
     # via
     #   pytest
     #   pytest-cov
-prek==0.5.7
+prek==0.5.10
 prometheus-client==0.26.0
     # via jupyter-server
 prompt-toolkit==3.0.53
@@ -328,7 +328,7 @@ rpds-py==2026.9.1 ; python_full_version >= '3.11'
     # via
     #   jsonschema
     #   referencing
-ruff==0.17.3
+ruff==0.17.4
 send2trash==2.2.0
     # via jupyter-server
 setuptools==83.0.0
