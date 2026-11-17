@@ -12,7 +12,7 @@ appnope==1.0.0 ; sys_platform == 'darwin'
     # via ipykernel
 argon2-cffi==25.1.0
     # via jupyter-server
-argon2-cffi-bindings==26.1.0
+argon2-cffi-bindings==26.2.0
     # via argon2-cffi
 arrow==1.4.0
     # via isoduration
@@ -206,7 +206,7 @@ nbformat==5.11.1
     #   nbconvert
 nest-asyncio2==1.7.4
     # via ipykernel
-notebook==7.6.3
+notebook==7.6.4
     # via jupyter
 notebook-shim==0.2.4
     # via
@@ -262,7 +262,7 @@ pycparser==3.11 ; python_full_version < '3.11' and implementation_name != 'PyPy'
     # via cffi
 pycparser==3.12 ; python_full_version >= '3.11' and implementation_name != 'PyPy'
     # via cffi
-pycryptodome==4.2.0
+pycryptodome==4.3.0
 pyflakes==3.4.0
     # via autoflake
 pygments==2.21.0
@@ -339,7 +339,7 @@ six==1.17.0
     #   rfc3339-validator
 soupsieve==2.10 ; python_full_version < '3.11.5'
     # via beautifulsoup4
-soupsieve==4.1 ; python_full_version >= '3.11.5'
+soupsieve==4.1.1 ; python_full_version >= '3.11.5'
     # via beautifulsoup4
 stack-data==0.6.3
     # via ipython
