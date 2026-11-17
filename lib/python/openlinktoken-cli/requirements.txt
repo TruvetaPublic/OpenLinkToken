@@ -53,7 +53,7 @@ idna==3.20
     # via
     #   anyio
     #   httpx2
-installer==0.7.0
+installer==1.1.0
     # via openlinktoken-cli
 jwcrypto==1.6.1
     # via
@@ -89,9 +89,9 @@ nvidia-curand-cu12==10.3.10.19 ; platform_machine == 'x86_64' and sys_platform =
     # via onnxruntime-gpu
 nvidia-nvjitlink-cu12==12.9.86 ; platform_machine == 'x86_64' and sys_platform == 'linux'
     # via nvidia-cufft-cu12
-onnxruntime==1.23.2 ; (python_full_version < '3.11' and platform_machine != 'x86_64') or (python_full_version < '3.11' and sys_platform != 'linux')
+onnxruntime==1.23.2 ; python_full_version < '3.11' and (platform_machine != 'x86_64' or sys_platform != 'linux')
     # via openlinktoken-core-ai
-onnxruntime==1.25.1 ; (python_full_version >= '3.11' and platform_machine != 'x86_64') or (python_full_version >= '3.11' and sys_platform != 'linux')
+onnxruntime==1.25.1 ; python_full_version >= '3.11' and (platform_machine != 'x86_64' or sys_platform != 'linux')
     # via openlinktoken-core-ai
 onnxruntime-gpu==1.23.2 ; python_full_version < '3.11' and platform_machine == 'x86_64' and sys_platform == 'linux'
     # via openlinktoken-core-ai
