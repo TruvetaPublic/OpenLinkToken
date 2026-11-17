@@ -144,9 +144,11 @@ class SocialSecurityNumberAttributeTest {
         assertFalse(ssnAttribute.validate("899-99-9999"), "Invalid SSN 899-99-9999 should not be allowed");
         assertFalse(ssnAttribute.validate("022-22-2222"), "Invalid SSN 022-22-2222 should not be allowed");
         assertFalse(ssnAttribute.validate("123-45-7896"), "Invalid SSN 123-45-7896 should not be allowed");
+        assertFalse(ssnAttribute.validate("123-45-9999"), "Invalid SSN 123-45-9999 should not be allowed");
         assertFalse(ssnAttribute.validate("123-45-6788"), "Invalid SSN 123-45-6788 should not be allowed");
         assertFalse(ssnAttribute.validate("088-88-8888"), "Invalid SSN 088-88-8888 should not be allowed");
         assertFalse(ssnAttribute.validate("007-77-7777"), "Invalid SSN 007-77-7777 should not be allowed");
+        assertFalse(ssnAttribute.validate("009-99-9999"), "Invalid SSN 009-99-9999 should not be allowed");
         assertFalse(ssnAttribute.validate("077-77-7777"), "Invalid SSN 077-77-7777 should not be allowed");
         assertFalse(ssnAttribute.validate("123-45-6987"), "Invalid SSN 123-45-6987 should not be allowed");
         assertFalse(ssnAttribute.validate("123-45-1234"), "Invalid SSN 123-45-1234 should not be allowed");

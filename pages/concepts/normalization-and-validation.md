@@ -143,6 +143,8 @@ XXX-00-XXXX  (Invalid group)
 XXX-XX-0000  (Invalid serial)
 111-11-1111  (Common test pattern)
 123-45-6789  (Common test pattern)
+009-99-9999  (Known invalid value)
+123-45-9999  (Known invalid value)
 ```
 
 **Examples:**
